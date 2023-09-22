@@ -1,93 +1,76 @@
 [CmdletBinding(SupportsShouldProcess = $true)]
 param (
-    [Parameter(Mandatory = $false)]
-    [Hashtable] $DynParameters
+    [Parameter(Mandatory = $true)]
+    [Hashtable]$DynParameters
 )
-
-[string]$LogDir = "C:\WindowsAzure\Logs\Plugins\Microsoft.Compute.CustomScriptExtension"
-[string]$ScriptName = "Configure-FSLogix"
-[string]$Log = Join-Path -Path $LogDir -ChildPath "$ScriptName.log"
-Start-Transcript -Path "$Log" -Force
-$TempDir = Join-Path -Path $env:Temp -ChildPath $ScriptName
-If (!(Test-Path -Path $TempDir)) { New-Item -Path $TempDir -ItemType Directory -Force | Out-Null }
-[uri]$LGPOWebUrl = "https://www.microsoft.com/en-us/download/confirmation.aspx?id=55319"
-
-$FsLogixKeys = $DynParameters.FSLogix
-$IdentityProvider = $FSLogixKeys.idp
-$CloudCache = $FsLogixKeys.cloudCache
-$StorageSolution = $FSLogixKeys.storageSolution
-Write-Output '* Begin Script Parameters *'
-Write-Output 'Started Script with the following Dynamic Parameters:'
-Write-Output 'IdentityProvider = ' + $IdentityProvider
-Write-Output 'StorageSolution = ' + $StorageSolution
-Write-Output 'CloudCache = ' + $CloudCache
-
-switch($StorageSolution) {
-    'AzureNetAppFiles' {
-        [array]$NetAppFileShares = $FSLogix.NetAppFileShares
-        Write-Output 'NetAppFileShares ='
-        ForEach($Share in $NetAppFileShares) { Write-Output ' ' + $Share }
-        [array]$OfficeContainerPaths += '\\' + $NetAppFileShares[1]
-        [array]$ProfileContainerPaths += '\\' + $NetAppFileShares[0]
-        [array]$CloudCacheOfficeContainerPaths += 'type=smb,connectionString=\\' + $NetAppFileShares[1]
-        [array]$CloudCacheProfileContainerPaths += 'type=smb,connectionString=\\' + $NetAppFileShares[0]
-        Write-Output '* End Script Parameters *'
-    }
-    Else {
-        [array]$StorageAccountNames = $FSLogixKeys.saNames
-        Write-Output 'Azure Storage Account Names ='
-        ForEach($sa in $StorageAccountNames) { Write-Output ' ' + $sa }
-        [array]$StorageAccountKeys = $FSLogixKeys.saKeys
-        if($null -ne $StorageAccountKeys) { Write-Output $StorageAccountKeys.Count + ' storage account keys provided.' }
-        $StorageAccountSuffix = $FSLogixKeys.saSuffix
-        Write-Output 'Storage Account Suffix = ' + $StorageAccountSuffix        
-        $ProfileShareName = $FSLogixKeys.shareNames[0]
-        $OfficeShareName = $FSLogixKeys.shareNames[1]
-        If ($null -ne $OfficeShareName) { Write-Output 'Office Container Share Name = ' + $OfficeShareName }
-        Write-Output 'Profile Container Share Name = ' + $ProfileShareName
-        Write-Output '* End Script Parameters *'
-        Write-Output '* Calculated Values *'
-        For ($i = 0; $i -lt $StorageAccountNames.Count; $i++) {
-            Write-Output 'Storage Account: ' + $StorageAccountNames[$i]
-            $SAFQDN = $StorageAccountNames[$i] + '.file.' + $StorageAccountSuffix
-            Write-Output ' FQDN: ' + $SAFQDN
-            If ($StorageAccountKeys[$i] -and $IdentityProvider -eq 'AAD') {
-                Write-Output ' Storage Key Provided, stored securely in credential manager.'
-                Start-Process -FilePath 'cmdkey.exe' -ArgumentList '/add:' + $SAFQDN + ' /user:localhost\' + $StorageAccountNames[$i] + ' /pass:' + $StorageAccountKeys[$i] -NoNewWindow -Wait
-            }
-            If ($OfficeShareName) {
-                [array]$OfficeContainerPaths += '\\' + $SAFQDN + '\' + $OfficeShareName
-                [array]$CloudCacheOfficeContainerPaths += 'type=smb,connectionString=\\' + $SAFQDN + '\' + $OfficeShareName
-                Write-Output ' Office Container Share Path: \\' + $SAFQDN + '\' + $OfficeShareName
-            }
-            If ($ProfileShareName) {
-                [array]$ProfileContainerPaths += '\\' + $SAFQDN + '\' + $ProfileShareName
-                [array]$CloudCacheProfileContainerPaths += 'type=smb,connectionString=\\' + $SAFQDN + '\' + $ProfileShareName
-                Write-Output ' Profile Container Share Path: \\' + $SAFQDN + '\' + $ProfileShareName
-            }
-        }
-        Write-Output '* End Calculated Values *'
-    }
-}
-[array]$defenderShareExclusionPaths = $OfficeContainerPaths + $ProfileContainerPaths
-
-
-
-[array]$Settings = @()
-
-$redirectionsXMLContent = @'
-<?xml version="1.0" encoding="UTF-8"?>
-<FrxProfileFolderRedirection ExcludeCommonFolders="0">
-<Excludes>
-<Exclude Copy="0">AppData\Roaming\Microsoft\Teams\media-stack</Exclude>
-<Exclude Copy="0">AppData\Local\Microsoft\Teams\meeting-addin\Cache</Exclude>
-</Excludes>
-<Includes>
-</Includes>
-</FrxProfileFolderRedirection>
-'@
+[string]$Script:LogDir = "C:\WindowsAzure\Logs\Plugins\Microsoft.Compute.CustomScriptExtension"
+[string]$Script:Name = [System.IO.Path]::GetFileNameWithoutExtension($PSCommandPath)
 
 #region Functions
+
+function New-Log {
+    <#
+    .SYNOPSIS
+    Sets default log file and stores in a script accessible variable $script:Log
+    Log File name "packageExecution_$date.log"
+
+    .PARAMETER Path
+    Path to the log file
+
+    .EXAMPLE
+    New-Log c:\Windows\Logs
+    Create a new log file in c:\Windows\Logs
+    #>
+
+    Param (
+        [Parameter(Mandatory = $true, Position=0)]
+        [string] $Path
+    )
+
+    # Create central log file with given date
+
+    $date = Get-Date -UFormat "%Y-%m-%d %H-%M-%S"
+    Set-Variable logFile -Scope Script
+    $script:logFile = "$Script:Name-$date.log"
+
+    if ((Test-Path $path ) -eq $false) {
+        $null = New-Item -Path $path -type directory
+    }
+
+    $script:Log = Join-Path $path $logfile
+
+    Add-Content $script:Log "Date`t`t`tCategory`t`tDetails"
+}
+
+function Write-Log {
+
+    <#
+    .SYNOPSIS
+    Creates a log file and stores logs based on categories with tab seperation
+
+    .PARAMETER category
+    Category to put into the trace
+
+    .PARAMETER message
+    Message to be loged
+
+    .EXAMPLE
+    Log 'Info' 'Message'
+
+    #>
+
+    Param (
+        [Parameter(Mandatory=$false, Position=0)]
+        [ValidateSet("Info","Warning","Error")]
+        $category = 'Info',
+        [Parameter(Mandatory=$true, Position=1)]
+        $message
+    )
+
+    $date = get-date
+    $content = "[$date]`t$category`t`t$message`n" 
+    Add-Content $Script:Log $content -ErrorAction Stop
+}
 
 Function Get-InternetUrl {
     [CmdletBinding()]
@@ -495,7 +478,7 @@ Function Set-RegistryValue {
         [string]${CmdletName} = $PSCmdlet.MyInvocation.MyCommand.Name
     }
     Process {
-        $LogOutputValue = 'Path: ' + $Path + ', Name: ' + $Name + ', PropertyType: ' + $PropertyType + ', Value: ' + $Value
+        $LogOutputValue = "Path: $Path, Name: $Name , PropertyType: $PropertyType, Value: $Value"
         # Create the registry Key(s) if necessary.
         If(!(Test-Path -Path $Path)) {
             New-Item -Path $Path -Force | Out-Null
@@ -505,16 +488,16 @@ Function Set-RegistryValue {
         If ($ExistingValue) {
             # Get current Value
             $CurrentValue = Get-ItemPropertyValue -Path $Path -Name $Name
-            Write-Verbose ${CmdletName} + ': Existing Registry Value Found - Path: ' + $Path + ', Name: ' + $Name + ', PropertyType: ' + $PropertyType + ', Value: ' + $CurrentValue
+            Write-Verbose "${CmdletName}: Existing Registry Value Found - Path: $Path, Name: $Name, PropertyType: $PropertyType, Value: $CurrentValue"
             If ($Value -ne $CurrentValue) {
                 Set-ItemProperty -Path $Path -Name $Name -Value $Value -Force | Out-Null
-                Write-Verbose ${CmdletName} + ': Updated registry setting:' + $LogOutputValue
+                Write-Verbose "${CmdletName}: Updated registry setting: $LogOutputValue"
             } Else {
-                Write-Verbose ${CmdletName} + ': Registry Setting exists with correct value: ' + $LogOutputValue
+                Write-Verbose "${CmdletName}: Registry Setting exists with correct value: $LogOutputValue"
             }
         } Else {
             New-ItemProperty -Path $Path -Name $Name -PropertyType $PropertyType -Value $Value -Force | Out-Null
-            Write-Verbose ${CmdletName} + ': Added registry setting: ' + $LogOutputValue
+            Write-Verbose "${CmdletName}: Added registry setting: $LogOutputValue"
         }
         Start-Sleep -Milliseconds 500
     }
@@ -523,6 +506,85 @@ Function Set-RegistryValue {
 }
 
 #endregion Functions
+
+New-Log -Path $Script:LogDir
+Write-Log -message "Starting '$PSCommandPath'."
+$TempDir = Join-Path -Path $env:Temp -ChildPath $Script:Name
+If (!(Test-Path -Path $TempDir)) { New-Item -Path $TempDir -ItemType Directory -Force | Out-Null }
+
+$FsLogixKeys = $DynParameters.FSLogix
+$IdentityProvider = $FSLogixKeys.idp
+$CloudCache = $FsLogixKeys.cloudCache
+$StorageSolution = $FSLogixKeys.storageSolution
+Write-Log -message '* Begin Script Parameters *'
+Write-Log -message 'Started Script with the following Dynamic Parameters:'
+Write-Log -message "IdentityProvider = $IdentityProvider"
+Write-Log -message "StorageSolution = $StorageSolution"
+Write-Log -message "CloudCache = $CloudCache"
+
+switch($StorageSolution) {
+    'AzureNetAppFiles' {
+        [array]$NetAppFileShares = $FSLogix.NetAppFileShares
+        Write-Log -message 'NetAppFileShares ='
+        ForEach($Share in $NetAppFileShares) { Write-Log -message " $Share" }
+        [array]$OfficeContainerPaths += "\\$($NetAppFileShares[1])"
+        [array]$ProfileContainerPaths += "\\$($NetAppFileShares[0])"
+        [array]$CloudCacheOfficeContainerPaths += "type=smb,connectionString=\\$($NetAppFileShares[1])"
+        [array]$CloudCacheProfileContainerPaths += "type=smb,connectionString=\\$($NetAppFileShares[0])"
+        Write-Log -message '* End Script Parameters *'
+    }
+    Else {
+        [array]$StorageAccountNames = $FSLogixKeys.saNames
+        Write-Log -message 'Azure Storage Account Names ='
+        ForEach($sa in $StorageAccountNames) { Write-Log -message " $sa" }
+        [array]$StorageAccountKeys = $FSLogixKeys.saKeys
+        if($null -ne $StorageAccountKeys) { Write-Log -message "$($StorageAccountKeys.Count) storage account keys provided." }
+        $StorageAccountSuffix = $FSLogixKeys.saSuffix
+        Write-Log -message "Storage Account Suffix = $StorageAccountSuffix"        
+        $ProfileShareName = $FSLogixKeys.shareNames[0]
+        $OfficeShareName = $FSLogixKeys.shareNames[1]
+        If ($null -ne $OfficeShareName) { Write-Log -message "Office Container Share Name = $OfficeShareName" }
+        Write-Log -message "Profile Container Share Name = $ProfileShareName"
+        Write-Log -message '* End Script Parameters *'
+        Write-Log -message '* Calculated Values *'
+        For ($i = 0; $i -lt $StorageAccountNames.Count; $i++) {
+            Write-Log -message "Storage Account: $($StorageAccountNames[$i])"
+            $SAFQDN = "$($StorageAccountNames[$i]).file.$StorageAccountSuffix"
+            Write-Log -message " FQDN: $SAFQDN"
+            If ($StorageAccountKeys[$i] -and $IdentityProvider -eq 'AAD') {
+                Write-Log -message ' Storage Key Provided, stored securely in credential manager.'
+                Start-Process -FilePath 'cmdkey.exe' -ArgumentList "/add:$SAFQDN /user:localhost\$($StorageAccountNames[$i]) /pass:$($StorageAccountKeys[$i])" -NoNewWindow -Wait
+            }
+            If ($OfficeShareName) {
+                [array]$OfficeContainerPaths += "\\$SAFQDN\$OfficeShareName"
+                [array]$CloudCacheOfficeContainerPaths += "type=smb,connectionString=\\$SAFQDN\$OfficeShareName"
+                Write-Log -message " Office Container Share Path: \\$SAFQDN\$OfficeShareName"
+            }
+            If ($ProfileShareName) {
+                [array]$ProfileContainerPaths += "\\$SAFQDN\$ProfileShareName"
+                [array]$CloudCacheProfileContainerPaths += "type=smb,connectionString=\\$SAFQDN\$ProfileShareName"
+                Write-Log -message " Profile Container Share Path: \\$SAFQDN\$ProfileShareName"
+            }
+        }
+        Write-Log -message '* End Calculated Values *'
+    }
+}
+
+[array]$defenderShareExclusionPaths = $($OfficeContainerPaths; $ProfileContainerPaths)
+
+[array]$Settings = @()
+
+$redirectionsXMLContent = @'
+<?xml version="1.0" encoding="UTF-8"?>
+<FrxProfileFolderRedirection ExcludeCommonFolders="0">
+<Excludes>
+<Exclude Copy="0">AppData\Roaming\Microsoft\Teams\media-stack</Exclude>
+<Exclude Copy="0">AppData\Local\Microsoft\Teams\meeting-addin\Cache</Exclude>
+</Excludes>
+<Includes>
+</Includes>
+</FrxProfileFolderRedirection>
+'@
 
 # Common Settings
 
@@ -809,39 +871,44 @@ If (Get-InstalledApplication 'Teams') {
         }
     )
 }
+If (Test-Path -Path "$env:SytemRoot\System32\lgpo.exe") {
+    $appName = "Windows_Defender"
+    $DefenderExclusionsRegKeyPath = 'SOFTWARE\Policies\Microsoft\Windows Defender\Exclusions'
+    #Defender Path Exclusions
+    Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $defenderExclusionsRegKeyPath -RegistryValue 'Exclusions_Paths' -RegistryType DWord -RegistryData 1 -outfileprefix $appName -Verbose
+    Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $defenderExclusionsRegKeyPath -RegistryValue 'Exclusions_Processes' -RegistryType DWord -RegistryData 1 -outfileprefix $appName -Verbose
+    $regKey = "$defenderExclusionsRegKeyPath\Paths"
+    Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue '%ProgramFiles%\FSLogix\Apps\frxdrv.sys' -RegistryType String -RegistryData 0 -outfileprefix $appName -Verbose
+    Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue '%ProgramFiles%\FSLogix\Apps\frxdrvvt.sys' -RegistryType String -RegistryData 0 -outfileprefix $appName -Verbose
+    Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue '%ProgramFiles%\FSLogix\Apps\frxccd.sys' -RegistryType String -RegistryData 0 -outfileprefix $appName -Verbose
+    Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue '%TEMP\*.VHD' -RegistryType String -RegistryData 0 -outfileprefix $appName -Verbose
+    Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue '%TEMP\*.VHDX' -RegistryType String -RegistryData 0 -outfileprefix $appName -Verbose
+    Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue '%WINDIR%\TEMP\*.VHD' -RegistryType String -RegistryData 0 -outfileprefix $appName -Verbose
+    Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue '%WINDIR%\TEMP\*.VHDX' -RegistryType String -RegistryData 0 -outfileprefix $appName -Verbose
+    For($i=0,$i -lt $defenderShareExclusionPaths.Length,$i++) {
+        $value = "$($defenderShareExclusionPaths[$i])\*\*.vhdx"
+        Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue $value -RegistryType String -RegistryData '' -outfileprefix $appName -Verbose
+    }
+    if ($CloudCache) {
+        Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue '%ProgramData%\FSLogix\Cache\*.VHD' -RegistryType String -RegistryData 0 -outfileprefix $appName -Verbose
+        Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue '%ProgramData%\FSLogix\Cache\*.VHDX' -RegistryType String -RegistryData 0 -outfileprefix $appName -Verbose
+        Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue '%ProgramData%\FSLogix\Proxy\*.VHD' -RegistryType String -RegistryData 0 -outfileprefix $appName -Verbose
+        Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue '%ProgramData%\FSLogix\Proxy\*.VHDX' -RegistryType String -RegistryData 0 -outfileprefix $appName -Verbose
+    }
+    $regKey = "$defenderExclusionsRegKeyPath\Processes"
+    Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue '%ProgramFiles%\FSLogix\Apps\frxccd.exe' -RegistryType String -RegistryData '' -outfileprefix $appName -Verbose
+    Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue '%ProgramFiles%\FSLogix\Apps\frxccds.exe' -RegistryType String -RegistryData '' -outfileprefix $appName -Verbose
+    Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue '%ProgramFiles%\FSLogix\Apps\frxsvc.exe' -RegistryType String -RegistryData '' -outfileprefix $appName -Verbose
 
-$DefenderExclusionsRegKeyPath = 'SOFTWARE\Policies\Microsoft\Windows Defender\Exclusions'
-#Defender Path Exclusions
-Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $defenderExclusionsRegKeyPath -RegistryValue 'Exclusions_Paths' -RegistryType DWord -RegistryData 1 -outfileprefix $appName -Verbose
-Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $defenderExclusionsRegKeyPath -RegistryValue 'Exclusions_Processes' -RegistryType DWord -RegistryData 1 -outfileprefix $appName -Verbose
-$regKey = "$defenderExclusionsRegKeyPath\Paths"
-Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue '%ProgramFiles%\FSLogix\Apps\frxdrv.sys' -RegistryType String -RegistryData 0 -outfileprefix $appName -Verbose
-Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue '%ProgramFiles%\FSLogix\Apps\frxdrvvt.sys' -RegistryType String -RegistryData 0 -outfileprefix $appName -Verbose
-Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue '%ProgramFiles%\FSLogix\Apps\frxccd.sys' -RegistryType String -RegistryData 0 -outfileprefix $appName -Verbose
-Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue '%TEMP\*.VHD' -RegistryType String -RegistryData 0 -outfileprefix $appName -Verbose
-Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue '%TEMP\*.VHDX' -RegistryType String -RegistryData 0 -outfileprefix $appName -Verbose
-Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue '%WINDIR%\TEMP\*.VHD' -RegistryType String -RegistryData 0 -outfileprefix $appName -Verbose
-Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue '%WINDIR%\TEMP\*.VHDX' -RegistryType String -RegistryData 0 -outfileprefix $appName -Verbose
-For($i=0,$i -lt $defenderShareExclusionPaths.Length,$i++) {
-    $value = $defenderShareExclusionPaths[$i] + "\*\*.vhdx"
-    Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue $value -RegistryType String -RegistryData '' -outfileprefix $appName -Verbose
+    Write-Log -message 'Running function to update Local Group Policy Object with LGPO.'
+    Invoke-LGPO -Verbose
 }
-if ($CloudCache) {
-    Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue '%ProgramData%\FSLogix\Cache\*.VHD' -RegistryType String -RegistryData 0 -outfileprefix $appName -Verbose
-    Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue '%ProgramData%\FSLogix\Cache\*.VHDX' -RegistryType String -RegistryData 0 -outfileprefix $appName -Verbose
-    Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue '%ProgramData%\FSLogix\Proxy\*.VHD' -RegistryType String -RegistryData 0 -outfileprefix $appName -Verbose
-    Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue '%ProgramData%\FSLogix\Proxy\*.VHDX' -RegistryType String -RegistryData 0 -outfileprefix $appName -Verbose
-}
-$regKey = "$defenderExclusionsRegKeyPath\Processes"
-Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue '%ProgramFiles%\FSLogix\Apps\frxccd.exe' -RegistryType String -RegistryData '' -outfileprefix $appName -Verbose
-Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue '%ProgramFiles%\FSLogix\Apps\frxccds.exe' -RegistryType String -RegistryData '' -outfileprefix $appName -Verbose
-Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue '%ProgramFiles%\FSLogix\Apps\frxsvc.exe' -RegistryType String -RegistryData '' -outfileprefix $appName -Verbose
 
 ForEach($Setting in $Settings) {
     Set-RegistryValue -Name $Setting.Name -Path $Setting.Path -PropertyType $Setting.PropertyType -Value $Setting.Value -Verbose
 }
 
-Write-Output "Adding local Administrator account to Exclude List groups to allow emergency troubleshooting."
+Write-Log -message "Adding local Administrator account to Exclude List groups to allow emergency troubleshooting."
 $LocalAdministrator = (Get-LocalUser | Where-Object {$_.SID -like '*-500'}).Name
 $LocalGroups = 'FSLogix Profile Exclude List','FSLogix ODFC Exclude List'
 ForEach ($Group in $LocalGroups) {
@@ -850,32 +917,4 @@ ForEach ($Group in $LocalGroups) {
     }
 }
 
-Write-Output "Checking for lgpo.exe in '$env:SystemRoot\system32'."
-
-If (-not(Test-Path -Path "$env:SystemRoot\System32\Lgpo.exe")) {
-    Write-Output "Not found. Downloading Local GPO tool (lgpo.exe) from Internet."
-    $LGPOUrl = Get-InternetUrl -Url $LGPOWebUrl -Searchstring "LGPO" -Verbose
-    If ($LGPOUrl) {
-        $LGPOZip = Get-InternetFile -url $LGPOUrl -OutputDir $TempDir -Verbose
-        If ($LGPOZip) {
-            Write-Output "Expanding '$LGPOZip' to '$TempDir'."
-            Expand-Archive -path "$LGPOZip" -DestinationPath "$TempDir" -force
-            $algpoexe = Get-ChildItem -Path $TempDir -filter 'lgpo.exe' -recurse
-            If ($algpoexe.count -gt 0) {
-                $lgpoexe=$algpoexe[0].FullName
-                Write-Output "Copying '$lgpoexe' to '$env:SystemRoot\system32'."
-                Copy-Item -Path $lgpoexe -Destination "$env:SystemRoot\System32" -force
-            }
-            Else {
-                Write-Error "'lgpo.exe' not found in downloaded zip."
-                Exit 2
-            }
-        }
-    }
-} Else {
-    Write-Output "Found lgpo.exe in '$env:SystemRoot\system32'." 
-}
-Write-Output 'Running function to update Local Group Policy Object with LGPO.'
-Invoke-LGPO -Verbose
-
-Stop-Transcript
+Write-Log -message "Ending '$PSCommandPath'."

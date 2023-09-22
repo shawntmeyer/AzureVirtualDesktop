@@ -43,7 +43,7 @@ var AvailabilitySetsCount = length(range(BeginAvSetRange, (EndAvSetRange - Begin
 var ArtifactsPath = last(ArtifactsLocation) == '/' ? ArtifactsLocation : '${ArtifactsLocation}/'
 //  Ensure that the CSE Files are supplied correctly.
 var Fslogix = FslogixStorage == 'None' ? false : true
-var CSEArtifacts = Fslogix ? union(CSEFiles,['Configure-FSLogix.zip'],['Set-SessionHostConfiguration.zip'],['cse_master_script.ps1']) : union(CSEFiles, ['Set-SessionHostConfiguration.zip'],['cse_master_script.ps1'])
+var CSEArtifacts = Fslogix ? union(['LGPO.zip'], CSEFiles, ['Configure-FSLogix.zip'], ['Set-SessionHostConfiguration.zip'], ['cse_master_script.ps1']) : union(['LGPO.zip'], CSEFiles, ['Set-SessionHostConfiguration.zip'], ['cse_master_script.ps1'])
 var CSEUris = [ for artifact in CSEArtifacts : contains(toLower(artifact), 'http') ? artifact : '${ArtifactsPath}${artifact}' ]
 var FileShares = FileShareNames[FslogixSolution]
 // ONLY DEPLOY 1 storage account when Cloud Only identity is used because Sharding is not possible.

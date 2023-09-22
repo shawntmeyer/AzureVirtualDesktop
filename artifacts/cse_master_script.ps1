@@ -99,8 +99,8 @@ $Script:Name = [System.IO.Path]::GetFileNameWithoutExtension($PSCommandPath)
 New-Log "C:\WindowsAzure\Logs\Plugins\Microsoft.Compute.CustomScriptExtension"
 Write-Log -category Info -message "Starting '$PSCommandPath'."
 Write-Log -category Info -message "Current working dir: $((Get-Location).Path)"
-$DirTemp = Join-Path -Path $env:Temp -ChildPath 'CSE'
-If (Test-Path -$DirTemp) {Remove-Item -Path $DirTemp -Recurse -Force -ErrorAction SilentlyContinue}
+$DirTemp = Join-Path -Path $env:SystemDrive -ChildPath 'CSE'
+If (Test-Path -Path $DirTemp) {Remove-Item -Path $DirTemp -Recurse -Force -ErrorAction SilentlyContinue}
 New-Item -Path $DirTemp -ItemType Directory -Force | Out-Null
 
 $Files = Get-ChildItem -Path $PSScriptRoot -File | Sort-Object 'LastWriteTime'
@@ -114,7 +114,7 @@ ForEach($File in $Files) {
     } ElseIf ($File.Extension -eq '.zip') {
         $destinationPath = Join-Path $DirTemp -ChildPath $File.BaseName
         Write-Log -category Info -message "Unpacking $($File.FullName)"
-        Expand-Archive -Path $File.FullName -DestinationPath $destinationPath | Out-Null
+        Expand-Archive -Path $File.FullName -DestinationPath $destinationPath -Force | Out-Null
         Write-Log -category Info -message "Searching for PowerShell Scripts in the root of '$destinationPath'."
         $PSScriptsInRootofZip = (Get-ChildItem -path $destinationPath -filter '*.ps1').FullName
         If ($PSScriptsInRootofZip) {
