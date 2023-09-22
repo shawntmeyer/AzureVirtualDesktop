@@ -1,4 +1,4 @@
-param ArtifactsStorageAccountResourceId string
+param ArtifactsUserAssignedIdentityResourceId string
 param DiskEncryption bool
 param DrainMode bool
 param Fslogix bool
@@ -11,12 +11,6 @@ param Timestamp string
 param UserAssignedIdentityName string
 param VirtualNetworkResourceGroupName string
 
-var ArtifactsStorageRoleAssignment = !empty(ArtifactsStorageAccountResourceId) ? [
-  {
-    roleDefinitionId: '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1' // Storage Blob Data Reader
-    scope: '${split(ArtifactsStorageAccountResourceId, '/')[2]}, ${split(ArtifactsStorageAccountResourceId, '/')[4]}'
-  }
-] : []
 var DiskEncryptionRoleAssignment = DiskEncryption ? [
   {
     roleDefinitionId: '14b46e9e-c2b7-41b4-b07b-48a6ebf60603' // Key Vault Crypto Officer (Purpose: create customer managed key)
@@ -48,7 +42,12 @@ var FSLogixPrivateEndpointRoleAssignment = contains(FslogixStorage, 'PrivateEndp
   }
 ] : []
 var FSLogixRoleAssignments = union(FSLogixNtfsRoleAssignments, FSLogixPrivateEndpointRoleAssignment)
-var RoleAssignments = union(ArtifactsStorageRoleAssignment, DiskEncryptionRoleAssignment, DrainModeRoleAssignment, FSLogixRoleAssignments, RemoveManagementVirtualMachine)
+var RoleAssignments = union(DiskEncryptionRoleAssignment, DrainModeRoleAssignment, FSLogixRoleAssignments, RemoveManagementVirtualMachine)
+
+resource artifactsUserAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' existing = if(!empty(ArtifactsUserAssignedIdentityResourceId)) {
+  name: last(split(ArtifactsUserAssignedIdentityResourceId, '/'))
+  scope: resourceGroup(split(ArtifactsUserAssignedIdentityResourceId, '/')[2], split(ArtifactsUserAssignedIdentityResourceId, '/')[4])
+}
 
 resource userAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
   name: UserAssignedIdentityName
@@ -66,6 +65,7 @@ module roleAssignments '../roleAssignment.bicep' = [for i in range(0, length(Rol
   }
 }]
 
+output ArtifactsUserAssignedIdentityClientId string = !empty(ArtifactsUserAssignedIdentityResourceId) ? artifactsUserAssignedIdentity.properties.clientId : ''
 output clientId string = userAssignedIdentity.properties.clientId
 output id string = userAssignedIdentity.id
 output principalId string = userAssignedIdentity.properties.principalId

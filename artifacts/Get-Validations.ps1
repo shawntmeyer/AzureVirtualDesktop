@@ -1,10 +1,6 @@
 [Cmdletbinding()]
 Param(
     [parameter(Mandatory)]
-    [string]
-    $ActiveDirectorySolution,
-
-    [parameter(Mandatory)]
     [int]
     $CpuCountMax,
     
@@ -12,15 +8,15 @@ Param(
     [int]
     $CpuCountMin,
 
-    [parameter(Mandatory)]
+    [parameter()]
     [string]
-    $DomainName,
+    $DomainName = '',
 
     [parameter(Mandatory)]
     [string]
     $Environment,
 
-    [parameter(Mandatory)]
+    [parameter()]
     [string]
     $KerberosEncryption,
 
@@ -111,24 +107,28 @@ try
     ##############################################################
     # Azure NetApp Files Validation
     ##############################################################
-    $Vnet = Get-AzVirtualNetwork -Name $VirtualNetworkName -ResourceGroupName $VirtualNetworkResourceGroupName
-    $DnsServers = "$($Vnet.DhcpOptions.DnsServers[0]),$($Vnet.DhcpOptions.DnsServers[1])"
-    $SubnetId = ($Vnet.Subnets | Where-Object {$_.Delegations[0].ServiceName -eq "Microsoft.NetApp/volumes"}).Id
-    if($null -eq $SubnetId -or $SubnetId -eq "")
-    {
-        Write-Error -Exception "INVALID AZURE NETAPP FILES CONFIGURATION: A dedicated subnet must be delegated to the ANF resource provider."
-    }
-    $DeployAnfAd = "true"
-    $Accounts = Get-AzResource -ResourceType "Microsoft.NetApp/netAppAccounts" | Where-Object {$_.Location -eq $Location}
-    foreach($Account in $Accounts)
-    {
-        $AD = Get-AzNetAppFilesActiveDirectory -ResourceGroupName $Account.ResourceGroupName -AccountName $Account.Name
-        if($AD.ActiveDirectoryId)
-        {
-            $DeployAnfAd = "false"
+    If ($StorageSolution -eq 'AzureNetAppFiles') {
+        $Vnet = Get-AzVirtualNetwork -Name $VirtualNetworkName -ResourceGroupName $VirtualNetworkResourceGroupName
+        If ($null -ne $Vnet.DhcpOptions.DnsServers) {
+            $DnsServers = "$($Vnet.DhcpOptions.DnsServers[0]),$($Vnet.DhcpOptions.DnsServers[1])"
         }
+        $SubnetId = ($Vnet.Subnets | Where-Object {$_.Delegations[0].ServiceName -eq "Microsoft.NetApp/volumes"}).Id
+        if($null -eq $SubnetId -or $SubnetId -eq "")
+        {
+            Write-Error -Exception "INVALID AZURE NETAPP FILES CONFIGURATION: A dedicated subnet must be delegated to the ANF resource provider."
+        }
+        $DeployAnfAd = "true"
+        $Accounts = Get-AzResource -ResourceType "Microsoft.NetApp/netAppAccounts" | Where-Object {$_.Location -eq $Location}
+        foreach($Account in $Accounts)
+        {
+            $AD = Get-AzNetAppFilesActiveDirectory -ResourceGroupName $Account.ResourceGroupName -AccountName $Account.Name
+            if($AD.ActiveDirectoryId)
+            {
+                $DeployAnfAd = "false"
+            }
+        }
+        Write-Log -Message "Azure NetApp Files Validation Succeeded" -Type 'INFO'
     }
-    Write-Log -Message "Azure NetApp Files Validation Succeeded" -Type 'INFO'
 
     ##############################################################
     # Disk SKU Validation
@@ -151,16 +151,15 @@ try
     ##############################################################
     # Kerberos Encryption Validation
     ##############################################################
-    if($ActiveDirectorySolution -eq 'AzureActiveDirectoryDomainServices')
-    {
+    If ($ActiveDirectorySolution -eq 'AzureActiveDirectoryDomainServices') {
         $KerberosRc4Encryption = (Get-AzResource -Name $DomainName -ExpandProperties).Properties.domainSecuritySettings.kerberosRc4Encryption
         if($KerberosRc4Encryption -eq "Enabled" -and $KerberosEncryption -eq "AES256")
         {
-            Write-Error -Exception "INVALID KERBEROS ENCRYPTION: The Kerberos Encryption on Azure AD DS does not match your Kerberos Encyrption selection."
+            Write-Error -Exception "INVALID KERBEROS ENCRYPTION: The Kerberos Encryption on Azure AD DS does not match your Kerberos Encryption selection."
         }
         Write-Log -Message "Kerberos Encryption Validation Succeeded" -Type 'INFO'
     }
-    
+
     ##############################################################
     # Trusted Launch Validation
     ##############################################################
@@ -210,7 +209,7 @@ try
     Disconnect-AzAccount | Out-Null
 
     $Output = [pscustomobject][ordered]@{
-        acceleratedNetworking = $AcceleratedNetworking.ToLower()
+        acceleratedNetworking = $AcceleratedNetworking
         anfDnsServers = if($StorageSolution -eq "AzureNetAppFiles"){$DnsServers}else{"NotApplicable"}
         anfSubnetId = if($StorageSolution -eq "AzureNetAppFiles"){$SubnetId}else{"NotApplicable"}
         anfActiveDirectory = if($StorageSolution -eq "AzureNetAppFiles"){$DeployAnfAd}else{"false"}

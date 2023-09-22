@@ -1,8 +1,10 @@
 targetScope = 'subscription'
 
 param ActiveDirectorySolution string
+param ArtifactsLocation string
 param DiskSku string
 param DomainName string
+param CSEFiles array
 param FileShareNames object
 param FslogixSolution string
 param FslogixStorage string
@@ -19,6 +21,7 @@ param ResourceGroupStorage string
 param SecurityPrincipals array
 param SessionHostCount int
 param SessionHostIndex int
+param StorageCount int
 param VirtualMachineNamePrefix string
 param VirtualMachineSize string
 
@@ -37,8 +40,14 @@ var EndAvSetRange = (SessionHostCount + SessionHostIndex) / MaxAvSetMembers // T
 var AvailabilitySetsCount = length(range(BeginAvSetRange, (EndAvSetRange - BeginAvSetRange) + 1))
 
 // OTHER LOGIC & COMPUTED VALUES
+var ArtifactsPath = last(ArtifactsLocation) == '/' ? ArtifactsLocation : '${ArtifactsLocation}/'
+//  Ensure that the CSE Files are supplied correctly.
+var Fslogix = FslogixStorage == 'None' ? false : true
+var CSEArtifacts = Fslogix ? union(CSEFiles,['Configure-FSLogix.zip'],['Set-SessionHostConfiguration.zip'],['cse_master_script.ps1']) : union(CSEFiles, ['Set-SessionHostConfiguration.zip'],['cse_master_script.ps1'])
+var CSEUris = [ for artifact in CSEArtifacts : contains(toLower(artifact), 'http') ? artifact : '${ArtifactsPath}${artifact}' ]
 var FileShares = FileShareNames[FslogixSolution]
-var Fslogix = FslogixStorage == 'None' || !contains(ActiveDirectorySolution, 'DomainServices') ? false : true
+// ONLY DEPLOY 1 storage account when Cloud Only identity is used because Sharding is not possible.
+var CountStorage = ActiveDirectorySolution == 'AzureActiveDirectory' || ActiveDirectorySolution == 'AzureActiveDirectoryIntuneEnrollment' ? 1 : StorageCount
 var Netbios = split(DomainName, '.')[0]
 var PooledHostPool = split(HostPoolType, ' ')[0] == 'Pooled' ? true : false
 var PrivateEndpoint = contains(FslogixStorage, 'PrivateEndpoint') ? true : false
@@ -67,8 +76,10 @@ var TimeDifference = Locations[LocationVirtualMachines].timeDifference
 var TimeZone = Locations[LocationVirtualMachines].timeZone
 var VmTemplate = '{"domain":"${DomainName}","galleryImageOffer":"${ImageOffer}","galleryImagePublisher":"${ImagePublisher}","galleryImageSKU":"${ImageSku}","imageType":"Gallery","imageUri":null,"customImageId":null,"namePrefix":"${VirtualMachineNamePrefix}","osDiskType":"${DiskSku}","useManagedDisks":true,"VirtualMachineSize":{"id":"${VirtualMachineSize}","cores":null,"ram":null},"galleryItemId":"${ImagePublisher}.${ImageOffer}${ImageSku}"}'
 
+output ArtifactsLocation string = ArtifactsPath
 output AvailabilitySetsCount int = AvailabilitySetsCount
 output BeginAvSetRange int = BeginAvSetRange
+output CSEUris array = CSEUris
 output DivisionRemainderValue int = DivisionRemainderValue
 output FileShares array = FileShares
 output Fslogix bool = Fslogix
@@ -84,6 +95,7 @@ output SmbServerLocation string = SmbServerLocation
 output StorageSku string = StorageSku
 output StorageSolution string = StorageSolution
 output StorageSuffix string = StorageSuffix
+output StorageCount int = CountStorage
 output TimeDifference string = TimeDifference
 output TimeZone string = TimeZone
 output VmTemplate string = VmTemplate

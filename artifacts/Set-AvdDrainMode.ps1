@@ -65,7 +65,7 @@ try
     $SessionHosts = (Get-AzWvdSessionHost -ResourceGroupName $HostPoolResourceGroupName -HostPoolName $HostPoolName).Name
     for($i = $SessionHostIndex; $i -lt $($SessionHostIndex + $SessionHostCount); $i++)
     {
-        $VmNameFull = $VmName + $i.ToString().PadLeft(4,'0')
+        $VmNameFull = $VirtualMachineNamePrefix + $i.ToString().PadLeft(4,'0')
         $SessionHostName = ($SessionHosts | Where-Object {$_ -like "*$VmNameFull*"}).Replace("$HostPoolName/", '')
         Update-AzWvdSessionHost -ResourceGroupName $HostPoolResourceGroupName -HostPoolName $HostPoolName -Name $SessionHostName -AllowNewSession:$False | Out-Null
         Write-Log -Message "Drain Mode set successfully for session host, $SessionHostName" -Type 'INFO'

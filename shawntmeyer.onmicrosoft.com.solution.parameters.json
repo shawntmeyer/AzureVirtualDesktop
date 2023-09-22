@@ -9,19 +9,19 @@
       "value": "/subscriptions/6dc4ed51-16b9-4494-a406-4fb7a8330d95/resourceGroups/rg-image-management-use/providers/Microsoft.ManagedIdentity/userAssignedIdentities/uai-image-management-use"
     },
     "activeDirectorySolution": {
-      "value": "ActiveDirectoryDomainServices"
+      "value": "AzureActiveDirectory"
     },
     "availability": {
       "value": "AvailabilityZones"
     },
     "avdObjectId": {
-      "value": "cdcfb416-e2fe-41e2-be12-33813c1cd427"
+      "value": "9632afe8-82da-4fc0-bbbc-84fdc0820466"
     },
     "azureFilesPrivateDnsZoneResourceId": {
-      "value": "/subscriptions/3764b123-4849-4395-8e6e-ca6d68d8d4b4/resourceGroups/rg-net-d-eu/providers/Microsoft.Network/privateDnsZones/privatelink.file.core.windows.net"
+      "value": "/subscriptions/6dc4ed51-16b9-4494-a406-4fb7a8330d95/resourceGroups/rg-networking-lab-eus/providers/Microsoft.Network/privateDnsZones/privatelink.file.core.windows.net"
     },
     "cseFiles": {
-      "value": []
+      "value": ["cse_master_script.ps1"]
     },
     "CSEScriptAddDynParameters": {
       "value": ""
@@ -35,45 +35,29 @@
     "diskSku": {
       "value": "Premium_LRS"
     },
-    "domainJoinPassword": {
-      "reference": {
-        "keyVault": {
-          "id": "/subscriptions/3764b123-4849-4395-8e6e-ca6d68d8d4b4/resourceGroups/rg-core-d-eu/providers/Microsoft.KeyVault/vaults/kv-core-d-eu"
-        },
-        "secretName": "DomainJoinPassword"
-      }
-    },
-    "domainJoinUserPrincipalName": {
-      "reference": {
-        "keyVault": {
-          "id": "/subscriptions/3764b123-4849-4395-8e6e-ca6d68d8d4b4/resourceGroups/rg-core-d-eu/providers/Microsoft.KeyVault/vaults/kv-core-d-eu"
-        },
-        "secretName": "DomainJoinUsername"
-      }
-    },
-    "domainName": {
-      "value": "jasonmasten.com"
-    },
     "drainMode": {
-      "value": true
+      "value": false
     },
     "environment": {
-      "value": "d"
+      "value": "t"
     },
     "fslogixShareSizeInGB": {
       "value": 100
     },
     "fslogixSolution": {
-      "value": "ProfileContainer"
+      "value": "ProfileOfficeContainer"
     },
     "fslogixStorage": {
-      "value": "AzureStorageAccount Premium PrivateEndpoint"
+      "value": "AzureStorageAccount Standard PrivateEndpoint"
+    },
+    "PeSubnetResourceId": {
+      "value": "/subscriptions/6dc4ed51-16b9-4494-a406-4fb7a8330d95/resourceGroups/rg-avd-networking-eastus/providers/Microsoft.Network/virtualNetworks/vnet-avd-eastus/subnets/PrivateEndpoints"
     },
     "hostPoolType": {
       "value": "Pooled DepthFirst"
     },
     "identifier": {
-      "value": "jnm"
+      "value": "stm"
     },
     "imageOffer": {
       "value": "office-365"
@@ -88,7 +72,7 @@
       "value": ""
     },
     "kerberosEncryption": {
-      "value": "RC4"
+      "value": "AES256"
     },
     "locationControlPlane": {
       "value": "eastus"
@@ -106,7 +90,7 @@
       "value": true
     },
     "ouPath": {
-      "value": "OU=AVD,DC=jasonmasten,DC=com"
+      "value": ""
     },
     "recoveryServices": {
       "value": false
@@ -130,35 +114,33 @@
       "value": true
     },
     "securityLogAnalyticsWorkspaceResourceId": {
-      "value": ""
+      "value": "/subscriptions/6dc4ed51-16b9-4494-a406-4fb7a8330d95/resourcegroups/rg-monitoring-use/providers/microsoft.operationalinsights/workspaces/laws-security-use"
     },
-    "securityPrincipalObjectIds": {
+    "securityPrincipals": {
       "value": [
-        "06c4afa5-b6dc-4719-8034-947887108e29"
-      ]
-    },
-    "securityPrincipalNames": {
-      "value": [
-        "zerocool"
+        {
+          "name": "AVD Users",
+          "objectId": "150bc78c-61de-4fa7-b154-605dc8197fe3"
+        }
       ]
     },
     "sessionHostCount": {
-      "value": 1
+      "value": 2
     },
     "sessionHostIndex": {
-      "value": 0
+      "value": 1
     },
     "stampIndex": {
-      "value": 0
+      "value": 1
     },
     "storageCount": {
       "value": 1
     },
     "storageIndex": {
-      "value": 0
+      "value": 1
     },
-    "subnetResourceId": {
-      "value": "/subscriptions/3764b123-4849-4395-8e6e-ca6d68d8d4b4/resourceGroups/rg-net-d-eu/providers/Microsoft.Network/virtualNetworks/vnet-net-d-eu/subnets/Clients"
+    "vmSubnetResourceId": {
+      "value": "/subscriptions/6dc4ed51-16b9-4494-a406-4fb7a8330d95/resourceGroups/rg-avd-networking-eastus/providers/Microsoft.Network/virtualNetworks/vnet-avd-eastus/subnets/default"
     },
     "tags": {
       "value": {}
@@ -167,26 +149,16 @@
       "value": false
     },
     "virtualMachinePassword": {
-      "reference": {
-        "keyVault": {
-          "id": "/subscriptions/3764b123-4849-4395-8e6e-ca6d68d8d4b4/resourceGroups/rg-core-d-eu/providers/Microsoft.KeyVault/vaults/kv-core-d-eu"
-        },
-        "secretName": "VmPassword"
-      }
+      "value": "1qaz@WSX1qaz@WSX"
     },
     "virtualMachineSize": {
       "value": "Standard_D4ads_v5"
     },
     "virtualMachineUsername": {
-      "reference": {
-        "keyVault": {
-          "id": "/subscriptions/3764b123-4849-4395-8e6e-ca6d68d8d4b4/resourceGroups/rg-core-d-eu/providers/Microsoft.KeyVault/vaults/kv-core-d-eu"
-        },
-        "secretName": "VmUsername"
-      }
+      "value": "vmadmin"
     },
     "WorkspaceFriendlyName": {
-      "value": "Jason Masten"
+      "value": "AVD Workspace"
     }
   }
 }

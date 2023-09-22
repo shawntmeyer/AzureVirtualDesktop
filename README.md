@@ -1,13 +1,12 @@
 # Azure Virtual Desktop Solution
 
-[**Home**](./README.md) | [**Features**](./docs/features.md) | [**Design**](./docs/design.md) | [**Prerequisites**](./docs/prerequisites.md) | [**Troubleshooting**](./docs/troubleshooting.md)
+[**Home**](./readme.md) | [**Features**](./docs/features.md) | [**Design**](./docs/design.md) | [**Prerequisites**](./docs/prerequisites.md) | [**Post Deployment**](./docs/post.md) | [**Troubleshooting**](./docs/troubleshooting.md)
 
-This Azure Virtual Desktop (AVD) solution will deploy a fully operational [stamp](https://learn.microsoft.com/azure/architecture/patterns/deployment-stamp) in an Azure subscription. Many of the [common features](./docs/features.md) used with AVD have been automated in this solution for your convenience. Be sure to complete the necessary [prerequisites](./docs/prerequisites.md) and to review the parameter descriptions to the understand the consequences of your selections.
+This Azure Virtual Desktop (AVD) solution will deploy a fully operational [stamp](https://learn.microsoft.com/azure/architecture/patterns/deployment-stamp) in an Azure subscription. Many of the [features](./docs/features.md) used with AVD have been automated in this solution for your convenience.  When deploying this solution be sure to read the [prerequisites](./docs/prerequisites.md) and the descriptions for each parameter to the understand the consequences of your selections.
 
 ## Deployment Options
 
-> **WARNING**
-> Failure to complete the [prerequisites](./docs/prerequisites.md) will likely result in an unsuccessful deployment.
+> **WARNING**: Be sure to review the [prerequisites](./docs/prerequisites.md) before deploying this solution.
 
 ### Azure Portal
 

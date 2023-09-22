@@ -1,12 +1,10 @@
 targetScope = 'subscription'
-
 param ActiveDirectorySolution string
 param ArtifactsLocation string
-param ArtifactsStorageAccountResourceId string
+param ArtifactsUserAssignedIdentityResourceId string
 param AutomationAccountName string
 param Availability string
 param AvdObjectId string
-param AzurePowerShellAzModuleMsiLink string
 param LocationControlPlane string
 param DiskNamePrefix string
 param DiskEncryption bool
@@ -56,20 +54,23 @@ var CpuCountMax = contains(HostPoolType, 'Pooled') ? 32 : 128
 var CpuCountMin = contains(HostPoolType, 'Pooled') ? 4 : 2
 var VirtualNetworkName = split(SubnetResourceId, '/')[8]
 var VirtualNetworkResourceGroupName = split(SubnetResourceId, '/')[4]
+var DefaultValidationParameters = '-CpuCountMax ${CpuCountMax} -CpuCountMin ${CpuCountMin} -Environment ${environment().name} -Location ${LocationVirtualMachines} -SessionHostCount ${SessionHostCount} -StorageSolution ${StorageSolution} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${userAssignedIdentity.outputs.clientId} -VirtualMachineSize ${VirtualMachineSize} -VirtualNetworkName ${VirtualNetworkName} -VirtualNetworkResourceGroupName ${VirtualNetworkResourceGroupName} -WorkspaceName ${WorkspaceName} -WorkspaceResourceGroupName ${ResourceGroupManagement}'
+var ValidationScriptParameters = ActiveDirectorySolution == 'AzureActiveDirectoryDomainServices' ? '-DomainName ${DomainName} -KerberosEncryption ${KerberosEncryption} ${DefaultValidationParameters}' : DefaultValidationParameters
 
 module userAssignedIdentity 'userAssignedIdentity.bicep' = {
   scope: resourceGroup(ResourceGroupManagement)
   name: 'UserAssignedIdentity_${Timestamp}'
   params: {
-    ArtifactsStorageAccountResourceId: ArtifactsStorageAccountResourceId
+    ArtifactsUserAssignedIdentityResourceId: ArtifactsUserAssignedIdentityResourceId
     DiskEncryption: DiskEncryption
     DrainMode: DrainMode
     Fslogix: Fslogix
     FslogixStorage: FslogixStorage
     Location: LocationVirtualMachines
+    
     UserAssignedIdentityName: UserAssignedIdentityName
-    ResourceGroupControlPlane: ResourceGroupControlPlane
     ResourceGroupStorage: ResourceGroupStorage
+    ResourceGroupControlPlane: ResourceGroupControlPlane
     Tags: contains(Tags, 'Microsoft.ManagedIdentity/userAssignedIdentities') ? Tags['Microsoft.ManagedIdentity/userAssignedIdentities'] : {}
     Timestamp: Timestamp
     VirtualNetworkResourceGroupName: split(SubnetResourceId, '/')[4]
@@ -107,8 +108,8 @@ module virtualMachine 'virtualMachine.bicep' = {
   name: 'ManagementVirtualMachine_${Timestamp}'
   scope: resourceGroup(ResourceGroupManagement)
   params: {
+    ActiveDirectorySolution: ActiveDirectorySolution
     ArtifactsLocation: ArtifactsLocation
-    AzurePowerShellAzModuleMsiLink: AzurePowerShellAzModuleMsiLink 
     DiskEncryption: DiskEncryption
     DiskEncryptionSetResourceId: DiskEncryption ? diskEncryption.outputs.diskEncryptionSetResourceId : ''
     DiskNamePrefix: DiskNamePrefix
@@ -121,7 +122,8 @@ module virtualMachine 'virtualMachine.bicep' = {
     Subnet: split(SubnetResourceId, '/')[10]
     TagsNetworkInterfaces: contains(Tags, 'Microsoft.Network/networkInterfaces') ? Tags['Microsoft.Network/networkInterfaces'] : {}
     TagsVirtualMachines: contains(Tags, 'Microsoft.Compute/virtualMachines') ? Tags['Microsoft.Compute/virtualMachines'] : {}
-    UserAssignedIdentityClientId: userAssignedIdentity.outputs.clientId
+    ArtifactsUserAssignedIdentityResourceId: ArtifactsUserAssignedIdentityResourceId
+    ArtifactsUserAssignedIdentityClientId: userAssignedIdentity.outputs.ArtifactsUserAssignedIdentityClientId
     UserAssignedIdentityResourceId: userAssignedIdentity.outputs.id
     VirtualNetwork: VirtualNetworkName
     VirtualNetworkResourceGroup: VirtualNetworkResourceGroupName
@@ -138,11 +140,13 @@ module validations 'customScriptExtensions.bicep' = {
   name: 'Validations_${Timestamp}'
   params: {
     ArtifactsLocation: ArtifactsLocation
-    File: 'Get-Validations.ps1'
+    ExecuteScript: 'Get-Validations.ps1'
+    Files: ['Get-Validations.ps1']
     Location: LocationVirtualMachines
-    Parameters: '-ActiveDirectorySolution ${ActiveDirectorySolution} -CpuCountMax ${CpuCountMax} -CpuCountMin ${CpuCountMin} -DomainName ${empty(DomainName) ? 'NotApplicable' : DomainName} -Environment ${environment().name} -KerberosEncryption ${KerberosEncryption} -Location ${LocationVirtualMachines} -SessionHostCount ${SessionHostCount} -StorageSolution ${StorageSolution} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${userAssignedIdentity.outputs.clientId} -VirtualMachineSize ${VirtualMachineSize} -VirtualNetworkName ${VirtualNetworkName} -VirtualNetworkResourceGroupName ${VirtualNetworkResourceGroupName} -WorkspaceName ${WorkspaceName} -WorkspaceResourceGroupName ${ResourceGroupManagement}'
+    Output: true
+    Parameters: ValidationScriptParameters
     Tags: contains(Tags, 'Microsoft.Compute/virtualMachines') ? Tags['Microsoft.Compute/virtualMachines'] : {}
-    UserAssignedIdentityClientId: userAssignedIdentity.outputs.clientId
+    UserAssignedIdentityClientId: userAssignedIdentity.outputs.ArtifactsUserAssignedIdentityClientId
     VirtualMachineName: virtualMachine.outputs.Name
   }
 }
@@ -165,7 +169,7 @@ module logAnalyticsWorkspace 'logAnalyticsWorkspace.bicep' = if (Monitoring) {
     LogAnalyticsWorkspaceName: LogAnalyticsWorkspaceName
     LogAnalyticsWorkspaceRetention: LogAnalyticsWorkspaceRetention
     LogAnalyticsWorkspaceSku: LogAnalyticsWorkspaceSku
-    Location: LocationVirtualMachines
+    Location: LocationControlPlane
     Tags: contains(Tags, 'Microsoft.OperationalInsights/workspaces') ? Tags['Microsoft.OperationalInsights/workspaces'] : {}
   }
 }
@@ -181,6 +185,9 @@ module automationAccount 'automationAccount.bicep' = if (PooledHostPool || conta
     Monitoring: Monitoring
     Tags: contains(Tags, 'Microsoft.Automation/automationAccounts') ? Tags['Microsoft.Automation/automationAccounts'] : {}
   }
+  dependsOn: [
+    logAnalyticsWorkspace
+  ]
 }
 
 module recoveryServicesVault 'recoveryServicesVault.bicep' = if (RecoveryServices) {
@@ -212,6 +219,7 @@ module workspace 'workspace.bicep' = {
   }
 }
 
+output ArtifactsUserAssignedIdentityClientId string = !empty(ArtifactsUserAssignedIdentityResourceId) ? userAssignedIdentity.outputs.ArtifactsUserAssignedIdentityClientId : ''
 output DiskEncryptionSetResourceId string = DiskEncryption ? diskEncryption.outputs.diskEncryptionSetResourceId : ''
 output LogAnalyticsWorkspaceResourceId string = Monitoring ? logAnalyticsWorkspace.outputs.ResourceId : ''
 output UserAssignedIdentityClientId string = userAssignedIdentity.outputs.clientId

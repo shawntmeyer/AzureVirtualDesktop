@@ -1,14 +1,24 @@
 param ArtifactsLocation string
-param File string
+param Files array
+param ExecuteScript string = ''
 param Location string
-param Parameters string
+param Output bool = false
+param Parameters string = ''
 param Tags object
 param Timestamp string = utcNow('yyyyMMddhhmmss')
 param UserAssignedIdentityClientId string
 param VirtualMachineName string
 
-var CommandToExecute = 'powershell -ExecutionPolicy Unrestricted -File ${File} ${Parameters}'
-var FileUri = '${ArtifactsLocation}${File}'
+
+var CSEMasterScript = 'cse_master_script.ps1'
+var ScriptToExecute = !empty(ExecuteScript) ? ExecuteScript : CSEMasterScript
+var CommandToExecute = empty(Parameters) ? 'powershell -ExecutionPolicy Unrestricted -File ${ScriptToExecute}' : 'powershell -ExecutionPolicy Unrestricted -File ${ScriptToExecute} ${Parameters}'
+var FileNames = !empty(ExecuteScript) ? union(['${ExecuteScript}'], Files) : union(['${CSEMasterScript}'], Files)
+var FileUris = [for File in FileNames: '${ArtifactsLocation}${File}']
+var DefOutputValue =  {
+  TimeStamp: Timestamp
+  Files: FileNames 
+}
 
 resource virtualMachine 'Microsoft.Compute/virtualMachines@2023-03-01' existing = {
   name: VirtualMachineName
@@ -26,22 +36,17 @@ resource customScriptExtension 'Microsoft.Compute/virtualMachines/extensions@202
     autoUpgradeMinorVersion: true
     settings: {
       timestamp: Timestamp
+      fileUris: FileUris
     }
-    protectedSettings: contains(File, environment().suffixes.storage) ? {
+    protectedSettings: contains(ArtifactsLocation, environment().suffixes.storage) ? {
       commandToExecute: CommandToExecute
-      fileUris: [
-        FileUri
-      ]
       managedIdentity: {
         clientId: UserAssignedIdentityClientId
       }
     } : {
       commandToExecute: CommandToExecute
-      fileUris: [
-        FileUri
-      ]
     }
   }
 }
 
-output value object = json(filter(customScriptExtension.properties.instanceView.substatuses, item => item.code == 'ComponentStatus/StdOut/succeeded')[0].message)
+output value object = Output ? json(filter(customScriptExtension.properties.instanceView.substatuses, item => item.code == 'ComponentStatus/StdOut/succeeded')[0].message) : json(string(DefOutputValue))

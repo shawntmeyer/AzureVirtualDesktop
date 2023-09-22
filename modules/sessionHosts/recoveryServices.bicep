@@ -1,5 +1,5 @@
 param DivisionRemainderValue int
-param Fslogix bool
+param FslogixDeployed bool
 param Location string
 param MaxResourcesPerTemplateDeployment int
 param RecoveryServicesVaultName string
@@ -21,7 +21,7 @@ resource backupPolicy_Vm 'Microsoft.RecoveryServices/vaults/backupPolicies@2022-
   name: 'AvdPolicyVm'
 }
 
-module protectedItems_Vm 'protectedItems.bicep' = [for i in range(1, SessionHostBatchCount): if (!Fslogix) {
+module protectedItems_Vm 'protectedItems.bicep' = [for i in range(1, SessionHostBatchCount): if (!FslogixDeployed) {
   name: 'BackupProtectedItems_VirtualMachines_${i - 1}_${Timestamp}'
   scope: resourceGroup(ResourceGroupManagement) // Management Resource Group
   params: {

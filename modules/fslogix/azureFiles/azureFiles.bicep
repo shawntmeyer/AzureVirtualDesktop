@@ -40,7 +40,7 @@ param VirtualNetwork string
 param VirtualNetworkResourceGroup string
 
 var Endpoint = split(FslogixStorage, ' ')[2]
-var RoleDefinitionId = '0c867c2a-1d8c-454a-a3db-ab2ea1bdc8bb' // Storage File Data SMB Share Contributor 
+var RoleDefinitionId = '0c867c2a-1d8c-454a-a3db-ab2ea1bdc8bb' // Storage File Data SMB Share Contributor  
 var SmbMultiChannel = {
   multichannel: {
     enabled: true
@@ -175,7 +175,7 @@ resource privateDnsZoneGroups 'Microsoft.Network/privateEndpoints/privateDnsZone
   ]
 }]
 
-module ntfsPermissions '../ntfsPermissions.bicep' = if (contains(ActiveDirectorySolution, 'DomainServices')) {
+module ntfsPermissions '../ntfsPermissions.bicep' = if (!contains(ActiveDirectorySolution, 'AzureActiveDirectory')) {
   name: 'FslogixNtfsPermissions_${Timestamp}'
   scope: resourceGroup(ResourceGroupManagement)
   params: {

@@ -1,0 +1,6 @@
+*.exe
+*.cab
+*.msi
+*.zip
+temp/**
+shawn.parameters.json

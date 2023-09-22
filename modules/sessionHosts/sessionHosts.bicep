@@ -3,12 +3,16 @@ targetScope = 'subscription'
 param AcceleratedNetworking string
 param ActiveDirectorySolution string
 param ArtifactsLocation string
+param ArtifactsUserAssignedIdentityClientId string
+param ArtifactsUserAssignedIdentityResourceId string
 param AutomationAccountName string
 param Availability string
 param AvailabilitySetNamePrefix string
 param AvailabilitySetsCount int
 param AvailabilitySetsIndex int
 param AvailabilityZones array
+param CSEScriptAddDynParameters string
+param CSEUris array
 param DiskEncryption bool
 param DiskEncryptionSetResourceId string
 param DiskNamePrefix string
@@ -19,10 +23,11 @@ param DomainJoinPassword string
 param DomainJoinUserPrincipalName string
 param DomainName string
 param DrainMode bool
+param FslogixDeployed bool
+param FslogixConfigureSessionHosts bool
+param FslogixExistingStorageAccountResourceIds array
 param FslogixSolution string
-param Fslogix bool
 param HostPoolName string
-param HostPoolType string
 param ImageOffer string
 param ImagePublisher string
 param ImageSku string
@@ -41,6 +46,7 @@ param RecoveryServicesVaultName string
 param ResourceGroupControlPlane string
 param ResourceGroupHosts string
 param ResourceGroupManagement string
+param ResourceGroupStorage string
 param RoleDefinitions object
 param ScalingBeginPeakTime string
 param ScalingEndPeakTime string
@@ -108,10 +114,14 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, SessionHostB
     AcceleratedNetworking: AcceleratedNetworking
     ActiveDirectorySolution: ActiveDirectorySolution
     ArtifactsLocation: ArtifactsLocation
+    ArtifactsUserAssignedIdentityClientId: ArtifactsUserAssignedIdentityClientId
+    ArtifactsUserAssignedIdentityResourceId: ArtifactsUserAssignedIdentityResourceId
     Availability: Availability
     AvailabilityZones: AvailabilityZones
     AvailabilitySetNamePrefix: AvailabilitySetNamePrefix
     BatchCount: i
+    CSEScriptAddDynParameters: CSEScriptAddDynParameters
+    CSEUris: CSEUris
     DiskEncryption: DiskEncryption
     DiskEncryptionSetResourceId: DiskEncryptionSetResourceId
     DiskNamePrefix: DiskNamePrefix
@@ -120,10 +130,10 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, SessionHostB
     DomainJoinUserPrincipalName: DomainJoinUserPrincipalName
     DomainName: DomainName
     DrainMode: DrainMode
-    Fslogix: Fslogix
+    FslogixConfigureSessionHosts: FslogixConfigureSessionHosts
     FslogixSolution: FslogixSolution
+    FslogixExistingStorageAccountResourceIds: FslogixExistingStorageAccountResourceIds
     HostPoolName: HostPoolName
-    HostPoolType: HostPoolType
     ImageOffer: ImageOffer
     ImagePublisher: ImagePublisher
     ImageSku: ImageSku
@@ -137,6 +147,7 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, SessionHostB
     OuPath: OuPath
     ResourceGroupControlPlane: ResourceGroupControlPlane
     ResourceGroupManagement: ResourceGroupManagement
+    ResourceGroupStorage: ResourceGroupStorage
     SecurityLogAnalyticsWorkspaceResourceId: SecurityLogAnalyticsWorkspaceResourceId
     SessionHostCount: i == SessionHostBatchCount && DivisionRemainderValue > 0 ? DivisionRemainderValue : MaxResourcesPerTemplateDeployment
     SessionHostIndex: i == 1 ? SessionHostIndex : ((i - 1) * MaxResourcesPerTemplateDeployment) + SessionHostIndex
@@ -168,7 +179,7 @@ module recoveryServices 'recoveryServices.bicep' = if (RecoveryServices) {
   scope: resourceGroup(ResourceGroupManagement)
   params: {
     DivisionRemainderValue: DivisionRemainderValue
-    Fslogix: Fslogix
+    FslogixDeployed: FslogixDeployed
     Location: Location
     MaxResourcesPerTemplateDeployment: MaxResourcesPerTemplateDeployment
     RecoveryServicesVaultName: RecoveryServicesVaultName
@@ -194,12 +205,12 @@ module scalingTool '../management/scalingTool.bicep' = if (ScalingTool && Pooled
     BeginPeakTime: ScalingBeginPeakTime
     EndPeakTime: ScalingEndPeakTime
     HostPoolName: HostPoolName
-    HostPoolResourceGroupName: ResourceGroupControlPlane
+    HostPoolResourceGroupName: ResourceGroupManagement
     LimitSecondsToForceLogOffUser: ScalingLimitSecondsToForceLogOffUser
     Location: Location
     MinimumNumberOfRdsh: ScalingMinimumNumberOfRdsh
-    ResourceGroupControlPlane: ResourceGroupControlPlane
     ResourceGroupHosts: ResourceGroupHosts
+    ResourceGroupControlPlane: ResourceGroupControlPlane
     SessionThresholdPerCPU: ScalingSessionThresholdPerCPU
     Tags: TagsAutomationAccounts
     TimeDifference: TimeDifference
