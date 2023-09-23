@@ -68,6 +68,7 @@ $storageParameters = Join-Path -Path $BicepPath -ChildPath 'storage.parameters.j
 
 Write-Verbose ("[{0} entered]" -f $MyInvocation.MyCommand)
 
+. "$FunctionsPath\GeneralDeployment\Get-MSIInfo.ps1"
 . "$FunctionsPath\Storage\Compress-SubFolderContents.ps1"
 . "$FunctionsPath\Storage\Get-InternetFile.ps1"
 . "$FunctionsPath\Storage\Get-InternetUrl.ps1"
@@ -79,7 +80,7 @@ Write-Verbose "#################################################################
 Write-Verbose "## 1 - Deploy/Update Storage Account and gather variables                ##"
 Write-Verbose "###########################################################################"
 
-If ($DeployStorageAccount = $true) {   
+If ($DeployStorageAccount) {   
     Write-Output "Deploying/Updating Storage Account using BICEP template and parameter file." 
     New-AzDeployment -Name "AssetsStorageAccount-$Time" -Location $Location -TemplateFile $storageTemplate -TemplateParameterFile $storageParameters -verbose
 
@@ -126,7 +127,7 @@ if ($DownloadNewSources -and (Test-Path -Path $downloadFilePath)) {
     foreach ($Download in $Downloads.Artifacts) {
         $SoftwareName = $Download.Name
         Write-Output "--------------------------------------------------"
-        Write-Output "## Start - $SoftwareName ##"
+        Write-Output "## Start - $SoftwareName ##"        
         $OutputFile = Join-Path -Path $ArtifactsDir -ChildPath $Download.DestinationFilePath
         If ($Download.DownloadUrl -ne '') {
             Write-Output "Download Url directly available."
@@ -171,13 +172,41 @@ if ($DownloadNewSources -and (Test-Path -Path $downloadFilePath)) {
         If (($DownloadUrl -ne '') -and ($null -ne $DownloadUrl)) {
             Write-Output "Downloading '$SoftwareName'."
             Try {
-
+                If (Test-Path -Path $OutputFile) {
+                    Remove-Item -Path $OutputFile -Force
+                }
                 $DestDir = split-path $outputFile -parent
+                $DestFile = split-path $outputFile -leaf
+                # Build Version File for Artifacts Directory
+                $versionFileName = [System.IO.Path]::GetFileNameWithoutExtension($OutputFile) + "-fileinfo.txt"
+                $VersionFilePath = Join-Path $DestDir -ChildPath $versionFileName
+                $VersionText = @()
+                $VersionText += "DownloadUrl = $DownloadUrl"
                 If (!(Test-Path -Path $DestDir)) {
                     New-Item -Path $DestDir -ItemType Directory -Force
                 }
-                Get-InternetFile -Url $DownloadUrl -OutputFile $OutputFile -Verbose
+                Try {
+                    # Not supplying the destination file name first so we can try to get the original file name that was downloaded for version information.
+                    $DownloadedFile = Get-InternetFile -Url $DownloadUrl -OutputDirectory $DestDir -Verbose
+                    If ($DownloadedFile -ne $OutputFile) {
+                        $VersionText += "Download File = $(split-path $DownloadedFile -leaf)"
+                        Rename-Item -Path $DownloadedFile -NewName $DestFile -Force
+                    }
+                } Catch {
+                    $DownloadedFile = Get-InternetFile -Url $DownloadUrl -OutputDirectory $DestDir -OutputFileName $DestFile
+                    $VersionText += "Download File = $(split-path $DownloadedFile -leaf)"
+                }
                 Write-Output "Finished downloading '$SoftwareName' from Internet."
+
+                Write-Output "Saving File Information to '$VersionFilePath'"
+
+                If ([System.IO.Path]::GetExtension($OutputFile) -eq '.msi') {
+                    $VersionText += Get-MSIInfo -Path $OutputFile
+                } Elseif ([System.IO.Path]::GetExtension($OutputFile) -eq '.exe') {
+                    $Version = (Get-ItemProperty -Path $OutputFile).VersionInfo | Select-Object ProductVersion, FileVersion
+                    $VersionText += "$Version"
+                }
+                $VersionText | Out-File $VersionFilePath -Force
             }
             Catch {
                 Write-Warning "Error downloading software from '$DownloadUrl'."
@@ -243,9 +272,6 @@ If ($UpdateParameters) {
     $JSON.parameters.ArtifactsUserAssignedIdentityResourceId.value = $ManagedIdentityResourceId
     $JSON | ConvertTo-Json -Depth 32 | Out-File $ParametersFile
 }
-#endregion
-
-
 #endregion
 
 #region Output Storage Account Information

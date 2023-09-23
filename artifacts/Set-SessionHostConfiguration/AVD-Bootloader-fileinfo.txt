@@ -1,0 +1,20 @@
+DownloadUrl = https://query.prod.cms.rt.microsoft.com/cms/api/am/binary/RWrxrH
+Download File = Microsoft.RDInfra.RDAgentBootLoader.Installer-x64 (5).msi
+
+File                   : {AVD-Bootloader.msi}
+UpgradeCode            : {E0DCC0F8-F57C-4CB4-A01E-31E39D6A1DFA}
+WixUIRMOption          : UseRM
+ALLUSERS               : 1
+MsiLogging             : v
+BOOTLOADER_VERSION     : 1.0.3.0
+Manufacturer           : Microsoft Corporation
+ProductCode            : {41439A3F-FED7-478A-A71B-8E15AF8A6607}
+ProductLanguage        : 1033
+ProductName            : Remote Desktop Agent Boot Loader
+ProductVersion         : 1.0.3.0
+DefaultUIFont          : WixUI_Font_Normal
+WixUI_Mode             : Mondo
+ErrorDialog            : ErrorDlg
+SecureCustomProperties : WIX_DOWNGRADE_DETECTED;WIX_IS_NETFRAMEWORK_451_OR_LATER_INSTALLED;WIX_UPGRADE_DETECTED;WIXNETFX4RELEASEINSTALLED
+
+

@@ -1,0 +1,3 @@
+DownloadUrl = https://download.microsoft.com/download/2/E/E/2EEEC938-C014-419D-BB4B-D184871450F1/admintemplates_x64_5406-1000_en-us.exe
+Download File = admintemplates_x64_5406-1000_en-us.exe
+@{ProductVersion=16.0.5406.1000; FileVersion=16.0.5406.1000}

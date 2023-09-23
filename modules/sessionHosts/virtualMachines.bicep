@@ -1,3 +1,4 @@
+param ActiveDirectorySolution string
 param ArtifactsLocation string
 param ArtifactsUserAssignedIdentityClientId string
 param ArtifactsUserAssignedIdentityResourceId string
@@ -6,6 +7,8 @@ param Availability string
 param AvailabilitySetNamePrefix string
 param AvailabilityZones array
 param BatchCount int
+param CSEUris array
+param CSEScriptAddDynParameters string
 param DiskEncryption bool
 param DiskEncryptionSetResourceId string
 param DiskNamePrefix string
@@ -14,10 +17,8 @@ param DiskSku string
 param DomainJoinPassword string
 param DomainJoinUserPrincipalName string
 param DomainName string
-param ActiveDirectorySolution string
-param CSEUris array
-param CSEScriptAddDynParameters string
 param DrainMode bool
+param DrainModeUserAssignedIdentityClientId string
 param FslogixConfigureSessionHosts bool
 param FslogixSolution string
 param FslogixExistingStorageAccountResourceIds array
@@ -49,7 +50,7 @@ param TagsNetworkInterfaces object
 param TagsVirtualMachines object
 param Timestamp string
 param TrustedLaunch string
-param UserAssignedIdentityClientId string
+
 param VirtualMachineNamePrefix string
 @secure()
 param VirtualMachinePassword string
@@ -81,7 +82,7 @@ var FslogixIdP = contains(ActiveDirectorySolution, 'Kerberos') ? 'AADKERB' : !co
 var FslogixIdpString = 'idp=\'${FslogixIdP}\''
 var FslogixStorageSolutionString = 'storageSolution=\'${StorageSolution}\''
 var FslogixNetAppSharesString = StorageSolution == 'AzureNetAppFiles' && NetAppFileShares != 'None' ? 'NetAppFileShares=\'${replace(join(NetAppFileShares, ','), ',', '\',\'')}\'' : ''
-var FslogixSASuffixString = StorageSolution == 'AzureStorageAccount' ? 'storageSuffix=\'${StorageSuffix}\'' : ''
+var FslogixSASuffixString = StorageSolution == 'AzureStorageAccount' ? 'saSuffix=\'${StorageSuffix}\'' : ''
 //  build storage account names from Storage Account parameters.
 var FslogixNewSANames = [for i in range(0, StorageCount): '${StorageAccountPrefix}${padLeft(i + StorageIndex, 2, '0')}']
 //  use only first storage account per region with AAD and Storage Key. No sharding possible.
@@ -93,7 +94,7 @@ var FslogixSANamesString = StorageSolution == 'AzureStorageAccount' ? 'saNames=\
 var FslogixSAKey = FslogixIdP == 'AAD' ? [ storageAccounts[0].listKeys().keys[0].value ] : []
 var FslogixHASAKey = FslogixIdP == 'AAD' && !empty(FslogixExistingStorageAccountResourceIds) ? [ existingStorageAccountsforHA.listKeys().keys[0].value ] : []
 var FslogixSAKeysString = FslogixIdP == 'AAD' ? 'saKeys=\'${replace(join(union(FslogixSAKey, FslogixHASAKey), ','), ',', '\',\'')}\'' : ''
-var FslogixSharesString = StorageSolution != 'AzureNetAppFiles' ? contains(FslogixSolution, 'Office') ? 'shares=\'profile-containers\',\'office-containers\'' : 'shares=\'profile-containers\'' : ''
+var FslogixSharesString = StorageSolution != 'AzureNetAppFiles' ? contains(FslogixSolution, 'Office') ? 'shareNames=\'profile-containers\',\'office-containers\'' : 'shareNames=\'profile-containers\'' : ''
 var FslogixCommon = '${FslogixIdpString};${FslogixStorageSolutionString};${FslogixCloudCacheString}'
 var FslogixString = StorageSolution == 'AzureNetAppFiles' ? '${FslogixCommon};${FslogixNetAppSharesString}' : FslogixIdP == 'AAD' ? '${FslogixCommon};${FslogixSASuffixString};${FslogixSANamesString};${FslogixSAKeysString};${FslogixSharesString}' : '${FslogixCommon};${FslogixSASuffixString};${FslogixSANamesString};${FslogixSharesString}'
 var FslogixCustomObject = 'FSLogix=@([pscustomobject]@{${FslogixString}})'
@@ -352,7 +353,7 @@ module drainMode '../management/customScriptExtensions.bicep' = if (DrainMode) {
     Files: ['Set-AvdDrainMode.ps1']
     ExecuteScript: 'Set-AvdDrainMode.ps1'
     Location: Location
-    Parameters: '-Environment ${environment().name} -HostPoolName ${HostPoolName} -HostPoolResourceGroupName ${ResourceGroupControlPlane} -SessionHostCount ${SessionHostCount} -SessionHostIndex ${SessionHostIndex} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${UserAssignedIdentityClientId} -VirtualMachineNamePrefix ${VirtualMachineNamePrefix}'
+    Parameters: '-Environment ${environment().name} -HostPoolName ${HostPoolName} -HostPoolResourceGroupName ${ResourceGroupControlPlane} -SessionHostCount ${SessionHostCount} -SessionHostIndex ${SessionHostIndex} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${DrainModeUserAssignedIdentityClientId} -VirtualMachineNamePrefix ${VirtualMachineNamePrefix}'
     Tags: TagsVirtualMachines
     UserAssignedIdentityClientId: ArtifactsUserAssignedIdentityClientId
     VirtualMachineName: ManagementVMName

@@ -1,0 +1,22 @@
+DownloadUrl = https://github.com/Azure/azure-powershell/releases/download/v10.3.0-September2023/Az-Cmdlets-10.3.0.37655-x64.msi
+Download File = Az-Cmdlets-10.3.0.37655-x64.msi
+
+File                   : {PowerShell-Az.msi}
+UpgradeCode            : {EBC1AD5E-1BBE-45B5-9E8D-ACFC8951C253}
+NETFRAMEWORK472        : 0
+WixUIRMOption          : UseRM
+ALLUSERS               : 1
+ARPNOMODIFY            : 1
+POWERSHELLEXE          : c:\windows\system32\WindowsPowerShell\v1.0\powershell.exe
+ARPPRODUCTICON         : icon.ico
+Manufacturer           : Microsoft Corporation
+ProductCode            : {E628506A-01D4-48E3-91A3-4CE2D9CA6012}
+ProductLanguage        : 1033
+ProductName            : Microsoft Azure PowerShell - September 2023
+ProductVersion         : 10.3.0.37655
+DefaultUIFont          : WixUI_Font_Normal
+WixUI_Mode             : Minimal
+ErrorDialog            : ErrorDlg
+SecureCustomProperties : ISVSINSTALL;NETFRAMEWORK472;WIX_DOWNGRADE_DETECTED;WIX_UPGRADE_DETECTED
+
+

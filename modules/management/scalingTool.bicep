@@ -1,4 +1,5 @@
 param ArtifactsLocation string
+param ArtifactsStorageAccountResourceId string
 param AutomationAccountName string
 param BeginPeakTime string
 param EndPeakTime string
@@ -20,8 +21,25 @@ var RoleAssignments = [
   ResourceGroupHosts
 ]
 
+var sasTokenValidityLength = 'PT1H'
+
+var accountSasProperties = {
+  signedServices: 'b'
+  signedPermission: 'r'
+  signedExpiry: dateTimeAdd(Time, sasTokenValidityLength)
+  signedResourceTypes: 'o'
+  signedProtocol: 'https'
+}
+
+var SasToken = !empty(ArtifactsStorageAccountResourceId) ? storageAccount.listAccountSas('2023-01-01',accountSasProperties).accountSasToken : ''
+
 resource automationAccount 'Microsoft.Automation/automationAccounts@2022-08-08' existing = {
   name: AutomationAccountName
+}
+
+resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' existing = if(ArtifactsStorageAccountResourceId != '') {
+  name: last(split(ArtifactsStorageAccountResourceId, '/'))
+  scope: resourceGroup(split(ArtifactsStorageAccountResourceId, '/')[2], split(ArtifactsStorageAccountResourceId, '/')[4])
 }
 
 resource runbook 'Microsoft.Automation/automationAccounts/runbooks@2019-06-01' = {
@@ -34,7 +52,7 @@ resource runbook 'Microsoft.Automation/automationAccounts/runbooks@2019-06-01' =
     logProgress: false
     logVerbose: false
     publishContentLink: {
-      uri: '${ArtifactsLocation}Set-HostPoolScaling.ps1'
+      uri: !empty(SasToken) ? '${ArtifactsLocation}Set-HostPoolScaling.ps1?${SasToken}' : '${ArtifactsLocation}Set-HostPoolScaling.ps1'
       version: '1.0.0.0'
     }
   }
@@ -85,6 +103,7 @@ resource jobSchedules 'Microsoft.Automation/automationAccounts/jobSchedules@2022
   }
 }]
 
+
 // Gives the Automation Account the "Desktop Virtualization Power On Off Contributor" role on the resource groups containing the hosts and host pool
 module roleAssignment '../roleAssignment.bicep' = [for i in range(0, length(RoleAssignments)): {
   name: 'RoleAssignment_${i}_${RoleAssignments[i]}'
@@ -95,3 +114,5 @@ module roleAssignment '../roleAssignment.bicep' = [for i in range(0, length(Role
     RoleDefinitionId: '40c5ff49-9181-41f8-ae61-143b0e78555e' // Desktop Virtualization Power On Off Contributor
   }
 }]
+
+output runbookUri string = !empty(SasToken) ? '${ArtifactsLocation}Set-HostPoolScaling.ps1?${SasToken}' : '${ArtifactsLocation}Set-HostPoolScaling.ps1'

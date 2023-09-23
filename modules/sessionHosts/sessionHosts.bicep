@@ -3,6 +3,7 @@ targetScope = 'subscription'
 param AcceleratedNetworking string
 param ActiveDirectorySolution string
 param ArtifactsLocation string
+param ArtifactsStorageAccountResourceId string
 param ArtifactsUserAssignedIdentityClientId string
 param ArtifactsUserAssignedIdentityResourceId string
 param AutomationAccountName string
@@ -23,6 +24,7 @@ param DomainJoinPassword string
 param DomainJoinUserPrincipalName string
 param DomainName string
 param DrainMode bool
+param DrainModeUserAssignedIdentityClientId string
 param FslogixDeployed bool
 param FslogixConfigureSessionHosts bool
 param FslogixExistingStorageAccountResourceIds array
@@ -73,7 +75,6 @@ param TimeDifference string
 param Timestamp string
 param TimeZone string
 param TrustedLaunch string
-param UserAssignedIdentityClientId string
 param VirtualMachineNamePrefix string
 @secure()
 param VirtualMachinePassword string
@@ -114,8 +115,8 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, SessionHostB
     AcceleratedNetworking: AcceleratedNetworking
     ActiveDirectorySolution: ActiveDirectorySolution
     ArtifactsLocation: ArtifactsLocation
-    ArtifactsUserAssignedIdentityClientId: ArtifactsUserAssignedIdentityClientId
     ArtifactsUserAssignedIdentityResourceId: ArtifactsUserAssignedIdentityResourceId
+    ArtifactsUserAssignedIdentityClientId: ArtifactsUserAssignedIdentityClientId
     Availability: Availability
     AvailabilityZones: AvailabilityZones
     AvailabilitySetNamePrefix: AvailabilitySetNamePrefix
@@ -130,6 +131,7 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, SessionHostB
     DomainJoinUserPrincipalName: DomainJoinUserPrincipalName
     DomainName: DomainName
     DrainMode: DrainMode
+    DrainModeUserAssignedIdentityClientId: DrainModeUserAssignedIdentityClientId
     FslogixConfigureSessionHosts: FslogixConfigureSessionHosts
     FslogixSolution: FslogixSolution
     FslogixExistingStorageAccountResourceIds: FslogixExistingStorageAccountResourceIds
@@ -161,7 +163,6 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, SessionHostB
     TagsVirtualMachines: TagsVirtualMachines
     Timestamp: Timestamp
     TrustedLaunch: TrustedLaunch
-    UserAssignedIdentityClientId: UserAssignedIdentityClientId
     VirtualMachineNamePrefix: VirtualMachineNamePrefix
     VirtualMachinePassword: VirtualMachinePassword
     VirtualMachineSize: VirtualMachineSize
@@ -201,6 +202,7 @@ module scalingTool '../management/scalingTool.bicep' = if (ScalingTool && Pooled
   scope: resourceGroup(ResourceGroupManagement)
   params: {
     ArtifactsLocation: ArtifactsLocation
+    ArtifactsStorageAccountResourceId: ArtifactsStorageAccountResourceId
     AutomationAccountName: AutomationAccountName
     BeginPeakTime: ScalingBeginPeakTime
     EndPeakTime: ScalingEndPeakTime

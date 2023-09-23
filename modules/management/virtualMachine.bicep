@@ -1,7 +1,5 @@
 param ActiveDirectorySolution string
 param ArtifactsLocation string
-param ArtifactsUserAssignedIdentityResourceId string
-param ArtifactsUserAssignedIdentityClientId string
 param DiskEncryption bool
 param DiskEncryptionSetResourceId string
 param DiskNamePrefix string
@@ -16,7 +14,8 @@ param Subnet string
 param TagsNetworkInterfaces object
 param TagsVirtualMachines object
 param Timestamp string = utcNow('yyyyMMddhhmmss')
-param UserAssignedIdentityResourceId string
+param UserAssignedIdentityClientId string
+param UserAssignedIdentityResourceIds object
 param VirtualNetwork string
 param VirtualNetworkResourceGroup string
 param VirtualMachineNamePrefix string
@@ -26,16 +25,6 @@ param VirtualMachineUsername string
 
 var NicName = '${NetworkInterfaceNamePrefix}mgt'
 var VmName = '${VirtualMachineNamePrefix}mgt'
-var UserAssignedIdentities = empty(ArtifactsUserAssignedIdentityResourceId) ? {
-  '${UserAssignedIdentityResourceId}': {}
-} : {
-  '${ArtifactsUserAssignedIdentityResourceId}' : {}
-  '${UserAssignedIdentityResourceId}': {}
-}
-var Identity = {
-  type: 'UserAssigned'
-  userAssignedIdentities: UserAssignedIdentities
-}
 
 resource networkInterface 'Microsoft.Network/networkInterfaces@2020-05-01' = {
   name: NicName
@@ -126,7 +115,10 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-11-01' = {
     }
     licenseType: 'Windows_Server'
   }
-  identity: Identity
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: UserAssignedIdentityResourceIds
+  }
 }
 
 resource extension_JsonADDomainExtension 'Microsoft.Compute/virtualMachines/extensions@2019-07-01' = if(contains(ActiveDirectorySolution, 'DomainServices')) {
@@ -162,7 +154,7 @@ module extension_CustomScriptExtension 'customScriptExtensions.bicep' = {
     Parameters: ''
     Tags: TagsVirtualMachines
     VirtualMachineName: virtualMachine.name
-    UserAssignedIdentityClientId: !empty(ArtifactsUserAssignedIdentityClientId) ? ArtifactsUserAssignedIdentityClientId : ''
+    UserAssignedIdentityClientId: UserAssignedIdentityClientId
   }
 }
 

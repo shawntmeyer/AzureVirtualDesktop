@@ -1,0 +1,20 @@
+DownloadUrl = https://aka.ms/msrdcwebrtcsvc/msi
+Download File = RW1bg9v
+
+File                   : {Websocket.msi}
+UpgradeCode            : {66722E7E-5DF5-4C1D-841C-1BD9C36830CC}
+WixUIRMOption          : UseRM
+ALLUSERS               : 1
+ARPNOMODIFY            : 1
+QtExecCmdLine          : "[SystemFolder]taskkill.exe" /F /T /IM Teams.exe
+Manufacturer           : Microsoft Corporation
+ProductCode            : {FD4B51B4-F818-432D-9A4F-175600603F56}
+ProductLanguage        : 1033
+ProductName            : Remote Desktop WebRTC Redirector Service
+ProductVersion         : 1.43.2306.30001
+DefaultUIFont          : WixUI_Font_Normal
+WixUI_Mode             : Minimal
+ErrorDialog            : ErrorDlg
+SecureCustomProperties : NEWER_VERSION_FOUND;PREVIOUS_VERSION_FOUND
+
+

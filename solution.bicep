@@ -1,9 +1,19 @@
 targetScope = 'subscription'
 
-@description('The URL prefix for the scripts required in this solution. If you do not have public internet access to the default value below, you need to host the scripts in the "Artifacts" folder in Azure Blobs and provide the URL prefix below.')
-param ArtifactsLocation string = 'https://raw.githubusercontent.com/jamasten/AzureVirtualDesktop/main/artifacts/'
+@description('''Required.
+The URL prefix for the scripts required in this solution.
+If you do not have public internet access to the default value below, you need to host the scripts in the "artifacts" folder in Azure Blobs and provide the URL prefix below.
+''')
+param ArtifactsLocation string
 
-@description('The resource ID of the managed identity with Storage Blob Data Reader Access to the artifacts storage Account.')
+@description('Optional. The storage account resource Id where the artifacts used by this deployment are stored.')
+param ArtifactsStorageAccountResourceId string = ''
+
+@description('''Optional.
+The resource ID of the managed identity with Storage Blob Data Reader Access to the artifacts storage Account.
+If provided this identity will be used to access blobs. Otherwise, the managed identity created
+by this solution will be granted \'Storage Blob Data Reader\' rights on the storage account.
+''')
 param ArtifactsUserAssignedIdentityResourceId string = ''
 
 @allowed([
@@ -31,8 +41,8 @@ param AvdObjectId string
 @description('If using private endpoints with Azure Files, input the Resource ID for the Private DNS Zone linked to your hub virtual network.')
 param AzureFilesPrivateDnsZoneResourceId string = ''
 
-@description('''Array of script (or other artifact) names or full uris that will be downloaded by the Custom Script Extension on each Virtual Machine.
-Either specify the entire URL or just the name of the blob if using the ArtifactsLocation parameter.
+@description('''Array of script (or other artifact) names or full uris that will be downloaded by the Custom Script Extension on each Session Host Virtual Machine.
+Either specify the entire URL or just the name of the blob if is located at the fqdn specified by the [ArtifactsLocation] parameter.
 ''')
 param CSEFiles array = [
   'cse_master_script.ps1'
@@ -43,7 +53,9 @@ param CSEFiles array = [
 ''')
 param CSEScriptAddDynParameters string = ''
 
-@description('Input RDP properties to add or remove RDP functionality on the AVD host pool. Settings reference: https://learn.microsoft.com/windows-server/remote/remote-desktop-services/clients/rdp-files')
+@description('''Optional. Input RDP properties to add or remove RDP functionality on the AVD host pool.
+Settings reference: https://learn.microsoft.com/windows-server/remote/remote-desktop-services/clients/rdp-files
+''')
 param CustomRdpProperty string = 'audiocapturemode:i:1;camerastoredirect:s:*;use multimon:i:0;drivestoredirect:s:;'
 
 @description('Enable Server-Side Encrytion and Encryption at Host on the AVD session hosts and management VM.')
@@ -335,6 +347,7 @@ module management 'modules/management/management.bicep' = {
   params: {
     ActiveDirectorySolution: ActiveDirectorySolution
     ArtifactsLocation: logic.outputs.ArtifactsLocation
+    ArtifactsStorageAccountResourceId: ArtifactsStorageAccountResourceId
     ArtifactsUserAssignedIdentityResourceId: ArtifactsUserAssignedIdentityResourceId
     AutomationAccountName: resourceNames.outputs.AutomationAccountName
     Availability: Availability
@@ -426,12 +439,13 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (FslogixStorage != 'None') {
   name: 'FSLogix_${Timestamp}'
   params: {
     ArtifactsLocation: logic.outputs.ArtifactsLocation
+    ArtifactsUserAssignedIdentityClientId: management.outputs.ArtifactsUserAssignedIdentityClientId
     ActiveDirectoryConnection: management.outputs.ValidateANFfActiveDirectory
     ActiveDirectorySolution: ActiveDirectorySolution
     AutomationAccountName: resourceNames.outputs.AutomationAccountName
     Availability: Availability
     AzureFilesPrivateDnsZoneResourceId: AzureFilesPrivateDnsZoneResourceId
-    ClientId: management.outputs.ArtifactsUserAssignedIdentityClientId
+    AzureFilesUserAssignedIdentityClientId: management.outputs.UserAssignedIdentityClientId
     DelegatedSubnetId: management.outputs.ValidateANFSubnetId
     DnsServers: management.outputs.ValidateANFDnsServers
     DomainJoinPassword: DomainJoinPassword
@@ -491,9 +505,11 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
   name: 'SessionHosts_${Timestamp}'
   params: {
     AcceleratedNetworking: management.outputs.ValidateAcceleratedNetworking
+    ActiveDirectorySolution: ActiveDirectorySolution
     ArtifactsLocation: logic.outputs.ArtifactsLocation
-    ArtifactsUserAssignedIdentityClientId: management.outputs.ArtifactsUserAssignedIdentityClientId
-    ArtifactsUserAssignedIdentityResourceId: ArtifactsUserAssignedIdentityResourceId
+    ArtifactsStorageAccountResourceId: ArtifactsStorageAccountResourceId
+    ArtifactsUserAssignedIdentityClientId: management.outputs.ArtifactsUserAssignedIdentityClientId //ClientId that comes from Management / UserAssignedIdentity Modules is already determined.
+    ArtifactsUserAssignedIdentityResourceId: !empty(ArtifactsUserAssignedIdentityResourceId) ? ArtifactsUserAssignedIdentityResourceId : management.outputs.UserAssignedIdentityResourceId
     AutomationAccountName: resourceNames.outputs.AutomationAccountName
     Availability: Availability
     AvailabilitySetNamePrefix: resourceNames.outputs.AvailabilitySetNamePrefix
@@ -509,9 +525,9 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     DivisionRemainderValue: logic.outputs.DivisionRemainderValue
     DomainJoinPassword: DomainJoinPassword
     DomainJoinUserPrincipalName: DomainJoinUserPrincipalName
-    DomainName: DomainName
-    ActiveDirectorySolution: ActiveDirectorySolution
+    DomainName: DomainName  
     DrainMode: DrainMode
+    DrainModeUserAssignedIdentityClientId: management.outputs.UserAssignedIdentityClientId
     FslogixSolution: FslogixSolution
     FslogixExistingStorageAccountResourceIds: FslogixExistingStorageAccountResourceIds
     FslogixConfigureSessionHosts: FslogixConfigureSessionHosts
@@ -574,7 +590,6 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     Timestamp: Timestamp
     TimeZone: logic.outputs.TimeZone
     TrustedLaunch: management.outputs.ValidateTrustedLaunch
-    UserAssignedIdentityClientId: management.outputs.UserAssignedIdentityClientId
     VirtualMachineNamePrefix: resourceNames.outputs.VirtualMachineNamePrefix
     VirtualMachinePassword: VirtualMachinePassword
     VirtualMachineSize: VirtualMachineSize

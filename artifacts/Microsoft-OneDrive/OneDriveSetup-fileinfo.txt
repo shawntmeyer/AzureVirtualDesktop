@@ -1,0 +1,2 @@
+DownloadUrl = https://go.microsoft.com/fwlink/p/?linkid=2121808
+@{ProductVersion=19.232.1124.0009; FileVersion=19.232.1124.0009}

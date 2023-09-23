@@ -119,6 +119,36 @@
             "GitHubRepo": "",
             "GitHubFileNamePattern": "",
             "DestinationFilePath": "VSCode/VSCodesetup.exe"
-        }
+        },
+        {
+            "Name": "AVD Bootloader",
+            "DownloadUrl": "https://query.prod.cms.rt.microsoft.com/cms/api/am/binary/RWrxrH",
+            "WebsiteUrl": "",
+            "SearchString": "",
+            "APIUrl": "",
+            "GitHubRepo": "",
+            "GitHubFileNamePattern": "",
+            "DestinationFilePath": "Set-SessionHostConfiguration/AVD-Bootloader.msi"
+        },
+        {
+            "Name": "AVD Agent",
+            "DownloadUrl": "https://query.prod.cms.rt.microsoft.com/cms/api/am/binary/RWrmXv",
+            "WebsiteUrl": "",
+            "SearchString": "",
+            "APIUrl": "",
+            "GitHubRepo": "",
+            "GitHubFileNamePattern": "",
+            "DestinationFilePath": "Set-SessionHostConfiguration/AVD-Agent.msi"
+        },
+        {
+            "Name": "DoD STIG GPO Package",
+            "DownloadUrl": "",
+            "WebSiteUrl": "https://public.cyber.mil/stigs/gpo",
+            "SearchString": "GPOs",
+            "APIUrl": "",
+            "GitHubRepo": "",
+            "GitHubFileNamePattern": "",
+            "DestinationFilePath": "STIGs_Client/STIGs.zip"
+        }        
     ]
 }

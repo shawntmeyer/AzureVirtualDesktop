@@ -1,12 +1,13 @@
 targetScope = 'subscription'
 
-param ArtifactsLocation string
 param ActiveDirectoryConnection string
 param ActiveDirectorySolution string
+param ArtifactsLocation string
+param ArtifactsUserAssignedIdentityClientId string
 param AutomationAccountName string
 param Availability string
 param AzureFilesPrivateDnsZoneResourceId string
-param ClientId string
+param AzureFilesUserAssignedIdentityClientId string
 param DelegatedSubnetId string
 param DnsServers string
 @secure()
@@ -54,8 +55,9 @@ module azureNetAppFiles 'azureNetAppFiles.bicep' = if (StorageSolution == 'Azure
   name: 'AzureNetAppFiles_${Timestamp}'
   scope: resourceGroup(ResourceGroupStorage)
   params: {
-    ArtifactsLocation: ArtifactsLocation
     ActiveDirectoryConnection: ActiveDirectoryConnection
+    ArtifactsLocation: ArtifactsLocation
+    ArtifactsUserAssignedIdentityClientId: ArtifactsUserAssignedIdentityClientId
     DelegatedSubnetId: DelegatedSubnetId
     DnsServers: DnsServers
     DomainJoinPassword: DomainJoinPassword
@@ -84,12 +86,13 @@ module azureFiles 'azureFiles/azureFiles.bicep' = if (StorageSolution == 'AzureS
   name: 'AzureFiles_${Timestamp}'
   scope: resourceGroup(ResourceGroupStorage)
   params: {
-    ArtifactsLocation: ArtifactsLocation
     ActiveDirectorySolution: ActiveDirectorySolution
+    ArtifactsLocation: ArtifactsLocation
+    ArtifactsUserAssignedIdentityClientId: ArtifactsUserAssignedIdentityClientId
     AutomationAccountName: AutomationAccountName
     Availability: Availability
     AzureFilesPrivateDnsZoneResourceId: AzureFilesPrivateDnsZoneResourceId
-    ClientId: ClientId
+    AzureFilesUserAssignedIdentityClientId: AzureFilesUserAssignedIdentityClientId
     DomainJoinPassword: DomainJoinPassword
     DomainJoinUserPrincipalName: DomainJoinUserPrincipalName
     FileShares: FileShares

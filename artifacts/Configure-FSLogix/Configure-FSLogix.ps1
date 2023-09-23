@@ -3,7 +3,7 @@ param (
     [Parameter(Mandatory = $true)]
     [Hashtable]$DynParameters
 )
-[string]$Script:LogDir = "C:\WindowsAzure\Logs\Plugins\Microsoft.Compute.CustomScriptExtension"
+[string]$Script:LogDir = "C:\Windows\Logs\Configuration"
 [string]$Script:Name = [System.IO.Path]::GetFileNameWithoutExtension($PSCommandPath)
 
 #region Functions
@@ -510,7 +510,8 @@ Function Set-RegistryValue {
 New-Log -Path $Script:LogDir
 Write-Log -message "Starting '$PSCommandPath'."
 $TempDir = Join-Path -Path $env:Temp -ChildPath $Script:Name
-If (!(Test-Path -Path $TempDir)) { New-Item -Path $TempDir -ItemType Directory -Force | Out-Null }
+If (Test-Path -Path $TempDir) { Remove-Item -Path $TempDir -Recurse -Force }
+New-Item -Path $TempDir -ItemType Directory -Force | Out-Null
 
 $FsLogixKeys = $DynParameters.FSLogix
 $IdentityProvider = $FSLogixKeys.idp
@@ -533,7 +534,7 @@ switch($StorageSolution) {
         [array]$CloudCacheProfileContainerPaths += "type=smb,connectionString=\\$($NetAppFileShares[0])"
         Write-Log -message '* End Script Parameters *'
     }
-    Else {
+    Default {
         [array]$StorageAccountNames = $FSLogixKeys.saNames
         Write-Log -message 'Azure Storage Account Names ='
         ForEach($sa in $StorageAccountNames) { Write-Log -message " $sa" }
@@ -871,6 +872,26 @@ If (Get-InstalledApplication 'Teams') {
         }
     )
 }
+
+If (!(Test-Path -Path "$env:SystemRoot\System32\lgpo.exe")) {
+    Try {
+        $fileLGPO = (Get-ChildItem -Path $PSScriptRoot -File -Filter 'lgpo.exe' -Recurse).FullName
+        If (-not $fileLGPO) {
+            $urlLGPO = 'https://download.microsoft.com/download/8/5/C/85C25433-A1B0-4FFA-9429-7E023E7DA8D8/LGPO.zip'
+            $outputDir = $TempDir
+            $fileLGPODownload = Get-InternetFile -Url $urlLGPO -OutputDirectory $outputDir -ErrorAction SilentlyContinue
+            Expand-Archive -Path $fileLGPODownload -DestinationPath $outputDir -Force
+            Remove-Item $fileLGPODownload -Force
+            $fileLGPO = (Get-ChildItem -Path $outputDir -file -Filter 'lgpo.exe' -Recurse)[0].FullName
+        }
+        Write-Log -category Info -Message "Copying `"$fileLGPO`" to System32"
+        Copy-Item -Path $fileLGPO -Destination "$env:SystemRoot\System32" -Force
+    } Catch {
+        Write-Log -category Warning -Message "LGPO.exe could not be found or downloaded. Unable to apply Defender Exclusions via lgpo."
+    }
+
+}
+
 If (Test-Path -Path "$env:SytemRoot\System32\lgpo.exe") {
     $appName = "Windows_Defender"
     $DefenderExclusionsRegKeyPath = 'SOFTWARE\Policies\Microsoft\Windows Defender\Exclusions'
@@ -916,5 +937,5 @@ ForEach ($Group in $LocalGroups) {
         Add-LocalGroupMember -Group $Group -Member $LocalAdministrator
     }
 }
-
+Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue
 Write-Log -message "Ending '$PSCommandPath'."

@@ -1,0 +1,17 @@
+DownloadUrl = https://teams.microsoft.com/downloads/desktopurl?env=production&plat=windows&arch=x64&managedInstaller=true&download=true
+Download File = Teams_windows_x64.msi
+
+File                     : {Teams-windows-x64.msi}
+ALLUSER                  : 0
+SOURCE                   : default
+OPTIONS                  : default
+allUsersInstallSupported : 1
+Manufacturer             : Microsoft Corporation
+ProductCode              : {731F6BAA-A986-45A4-8936-7C3AAAAA760B}
+ProductLanguage          : 1033
+ProductName              : Teams Machine-Wide Installer
+ProductVersion           : 1.6.0.24078
+UpgradeCode              : {4009BE0E-5D51-5D91-B94C-D00D7B5FE829}
+SecureCustomProperties   : NETFRAMEWORK45
+
+

@@ -3,6 +3,8 @@ param (
     [Parameter(Mandatory = $false)]
     [Hashtable] $DynParameters
 )
+[string]$Script:LogDir = "C:\WindowsAzure\Logs\Plugins\Microsoft.Compute.CustomScriptExtension"
+[string]$Script:Name = [System.IO.Path]::GetFileNameWithoutExtension($PSCommandPath)
 $SHKeys = $DynParameters.SHConfiguration
 $ActiveDirectorySolution = $SHKeys.activeDirectorySolution
 $AmdVmSize = $SHKeys.AmdVmSize
@@ -14,14 +16,117 @@ If ($SecurityWorkspaceId) {
     $SecurityWorkspaceKey = $SHKeys.SecurityWorkspaceKey
 }
 
-[string]$LogDir = "C:\WindowsAzure\Logs\Plugins\Microsoft.Compute.CustomScriptExtension"
-[string]$ScriptName = "Set-SessionHostConfiguration"
-[string]$Log = Join-Path -Path $LogDir -ChildPath "$ScriptName.log"
-Start-Transcript -Path "$Log" -Force
-$TempDir = Join-Path -Path $env:Temp -ChildPath $ScriptName
+$TempDir = Join-Path -Path $env:Temp -ChildPath $Script:Name
+If (Test-Path -Path $TempDir) {Remove-Item -Path $TempDir -Recurse -Force}
+New-Item -Path $TempDir -ItemType Directory -Force | Out-Null
 
 ##############################################################
 #region Functions
+
+function New-Log {
+    <#
+    .SYNOPSIS
+    Sets default log file and stores in a script accessible variable $script:Log
+    Log File name "packageExecution_$date.log"
+
+    .PARAMETER Path
+    Path to the log file
+
+    .EXAMPLE
+    New-Log c:\Windows\Logs
+    Create a new log file in c:\Windows\Logs
+    #>
+
+    Param (
+        [Parameter(Mandatory = $true, Position=0)]
+        [string] $Path
+    )
+
+    # Create central log file with given date
+
+    $date = Get-Date -UFormat "%Y-%m-%d %H-%M-%S"
+    Set-Variable logFile -Scope Script
+    $script:logFile = "$Script:Name-$date.log"
+
+    if ((Test-Path $path ) -eq $false) {
+        $null = New-Item -Path $path -type directory
+    }
+
+    $script:Log = Join-Path $path $logfile
+
+    Add-Content $script:Log "Date`t`t`tCategory`t`tDetails"
+}
+
+function Write-Log {
+
+    <#
+    .SYNOPSIS
+    Creates a log file and stores logs based on categories with tab seperation
+
+    .PARAMETER category
+    Category to put into the trace
+
+    .PARAMETER message
+    Message to be loged
+
+    .EXAMPLE
+    Log 'Info' 'Message'
+
+    #>
+
+    Param (
+        [Parameter(Mandatory=$false, Position=0)]
+        [ValidateSet("Info","Warning","Error")]
+        $category = 'Info',
+        [Parameter(Mandatory=$true, Position=1)]
+        $message
+    )
+
+    $date = get-date
+    $content = "[$date]`t$category`t`t$message`n" 
+    Add-Content $Script:Log $content -ErrorAction Stop
+}
+
+Function Get-InternetUrl {
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory = $true, Position = 0)]
+        [uri]$Url,
+        [Parameter(Mandatory = $true, Position = 1)]
+        [string]$searchstring
+    )
+    Begin {
+        [string]${CmdletName} = $PSCmdlet.MyInvocation.MyCommand.Name
+    }
+    Process {
+        Try {
+            Write-Verbose "${CmdletName}: Now extracting download URL from '$Url'."
+            $HTML = Invoke-WebRequest -Uri $Url -UseBasicParsing
+            $Links = $HTML.Links
+            $ahref = $null
+            $ahref=@()
+            $ahref = ($Links | Where-Object {$_.href -like "*$searchstring*"}).href
+            If ($ahref.count -eq 0 -or $null -eq $ahref) {
+                $ahref = ($Links | Where-Object {$_.OuterHTML -like "*$searchstring*"}).href
+            }
+            If ($ahref.Count -eq 1) {
+                Write-Verbose "${CmdletName}: Download URL = '$ahref'"
+                $ahref
+
+            }
+            Elseif ($ahref.Count -gt 1) {
+                Write-Verbose "${CmdletName}: Download URL = '$($ahref[0])'"
+                $ahref[0]
+            }
+        }
+        Catch {
+            Write-Error "${CmdletName}: Error Downloading HTML and determining link for download."
+            Exit 1
+        }
+    }
+    End {
+    }
+}
 
 Function Get-InternetFile {
     [CmdletBinding()]
@@ -128,7 +233,7 @@ Function Update-LocalGPOTextFile {
         [Parameter(Mandatory = $false, ParameterSetName = 'DeleteAllValues')]
         [switch]$DeleteAllValues,
         [string]$outputDir = $TempDir,
-        [string]$outfileprefix = $ScriptName
+        [string]$outfileprefix = $Script:Name
     )
     Begin {
         [string]${CmdletName} = $PSCmdlet.MyInvocation.MyCommand.Name
@@ -228,7 +333,7 @@ Function Set-RegistryValue {
         [string]${CmdletName} = $PSCmdlet.MyInvocation.MyCommand.Name
     }
     Process {
-        $LogOutputValue = 'Path: ' + $Path + ', Name: ' + $Name + ', PropertyType: ' + $PropertyType + ', Value: ' + $Value
+        $LogOutputValue = "Path: $Path, Name: $Name , PropertyType: $PropertyType, Value: $Value"
         # Create the registry Key(s) if necessary.
         If(!(Test-Path -Path $Path)) {
             New-Item -Path $Path -Force | Out-Null
@@ -238,16 +343,16 @@ Function Set-RegistryValue {
         If ($ExistingValue) {
             # Get current Value
             $CurrentValue = Get-ItemPropertyValue -Path $Path -Name $Name
-            Write-Verbose ${CmdletName} + ': Existing Registry Value Found - Path: ' + $Path + ', Name: ' + $Name + ', PropertyType: ' + $PropertyType + ', Value: ' + $CurrentValue
+            Write-Verbose "${CmdletName}: Existing Registry Value Found - Path: $Path, Name: $Name, PropertyType: $PropertyType, Value: $CurrentValue"
             If ($Value -ne $CurrentValue) {
                 Set-ItemProperty -Path $Path -Name $Name -Value $Value -Force | Out-Null
-                Write-Verbose ${CmdletName} + ': Updated registry setting:' + $LogOutputValue
+                Write-Verbose "${CmdletName}: Updated registry setting: $LogOutputValue"
             } Else {
-                Write-Verbose ${CmdletName} + ': Registry Setting exists with correct value: ' + $LogOutputValue
+                Write-Verbose "${CmdletName}: Registry Setting exists with correct value: $LogOutputValue"
             }
         } Else {
             New-ItemProperty -Path $Path -Name $Name -PropertyType $PropertyType -Value $Value -Force | Out-Null
-            Write-Verbose ${CmdletName} + ': Added registry setting: ' + $LogOutputValue
+            Write-Verbose "${CmdletName}: Added registry setting: $LogOutputValue"
         }
         Start-Sleep -Milliseconds 500
     }
@@ -255,7 +360,10 @@ Function Set-RegistryValue {
     }
 }
 
+
 #endregion
+New-Log -Path $Script:LogDir | Out-Null
+Write-Log -message "Starting '$PSCommandPath'."
 
 try 
 {
@@ -305,48 +413,85 @@ try
     ##############################################################
     #  Add Recommended AVD Settings
     ##############################################################
- 
-    # Disable Automatic Updates: https://learn.microsoft.com/azure/virtual-desktop/set-up-customize-master-image#disable-automatic-updates
-    Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath 'SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU' -RegistryValue 'NoAutoUpdate' -RegistryType DWORD -RegistryData 1 -Verbose
-    # Enable Time Zone Redirection: https://learn.microsoft.com/azure/virtual-desktop/set-up-customize-master-image#set-up-time-zone-redirection
-    Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath 'SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services' -RegistryValue 'fEnableTimeZoneRedirection' -RegistryType DWORD -RegistryData 1 -Verbose
- 
-    ##############################################################
-    #  Add GPU Settings
-    ##############################################################
-    # This setting applies to the VM Size's recommended for AVD with a GPU
-    if ($AmdVmSize -or $NvidiaVmSize) 
-    {
-        # Configure GPU-accelerated app rendering: https://learn.microsoft.com/azure/virtual-desktop/configure-vm-gpu#configure-gpu-accelerated-app-rendering
-        Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath 'SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services' -RegistryValue 'bEnumerateHWBeforeSW' -RegistryType DWORD -RegistryData 1 -Verbose
-
-        # Configure fullscreen video encoding: https://learn.microsoft.com/azure/virtual-desktop/configure-vm-gpu#configure-fullscreen-video-encoding
-        Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath 'SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services' -RegistryValue 'AVC444ModePreferred' -RegistryType DWORD -RegistryData 1 -Verbose
+    If (!(Test-Path -Path "$env:SystemRoot\System32\lgpo.exe")) {
+        Try {
+            $fileLGPO = (Get-ChildItem -Path $PSScriptRoot -File -Filter 'lgpo.exe').FullName
+            If (-not $fileLGPO) {
+                $urlLGPO = 'https://download.microsoft.com/download/8/5/C/85C25433-A1B0-4FFA-9429-7E023E7DA8D8/LGPO.zip'
+                $outputDir = $TempDir
+                $fileLGPODownload = Get-InternetFile -Url $urlLGPO -OutputDirectory $env:Temp -ErrorAction SilentlyContinue
+                Expand-Archive -Path $fileLGPODownload -DestinationPath $outputDir -Force
+                Remove-Item $fileLGPODownload -Force
+                $fileLGPO = (Get-ChildItem -Path $outputDir -file -Filter 'lgpo.exe' -Recurse)[0].FullName
+            }
+            Write-Log -category Info -Message "Copying `"$fileLGPO`" to System32"
+            Copy-Item -Path $fileLGPO -Destination "$env:SystemRoot\System32" -Force
+        } Catch {
+            Write-Log -category Warning -Message "LGPO.exe could not be found or downloaded. Unable to apply local group policy object settings."
+        }    
     }
 
-    # This setting applies only to VM Size's recommended for AVD with a Nvidia GPU
-    if($NvidiaVmSize)
-    {
-        # Configure GPU-accelerated frame encoding: https://learn.microsoft.com/azure/virtual-desktop/configure-vm-gpu#configure-gpu-accelerated-frame-encoding
-        Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath 'SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services' -RegistryValue 'AVChardwareEncodePreferred' -RegistryType DWORD -RegistryData 1 -Verbose
+    If (Test-Path -Path "$env:SystemRoot\System32\lgpo.exe") {
+        # Disable Automatic Updates: https://learn.microsoft.com/azure/virtual-desktop/set-up-customize-master-image#disable-automatic-updates
+        Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath 'SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU' -RegistryValue 'NoAutoUpdate' -RegistryType DWORD -RegistryData 1
+        # Enable Time Zone Redirection: https://learn.microsoft.com/azure/virtual-desktop/set-up-customize-master-image#set-up-time-zone-redirection
+        Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath 'SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services' -RegistryValue 'fEnableTimeZoneRedirection' -RegistryType DWORD -RegistryData 1
+    
+        ##############################################################
+        #  Add GPU Settings
+        ##############################################################
+        # This setting applies to the VM Size's recommended for AVD with a GPU
+        if ($AmdVmSize -or $NvidiaVmSize) 
+        {
+            # Configure GPU-accelerated app rendering: https://learn.microsoft.com/azure/virtual-desktop/configure-vm-gpu#configure-gpu-accelerated-app-rendering
+            Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath 'SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services' -RegistryValue 'bEnumerateHWBeforeSW' -RegistryType DWORD -RegistryData 1
+
+            # Configure fullscreen video encoding: https://learn.microsoft.com/azure/virtual-desktop/configure-vm-gpu#configure-fullscreen-video-encoding
+            Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath 'SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services' -RegistryValue 'AVC444ModePreferred' -RegistryType DWORD -RegistryData 1
+        }
+
+        # This setting applies only to VM Size's recommended for AVD with a Nvidia GPU
+        if($NvidiaVmSize)
+        {
+            # Configure GPU-accelerated frame encoding: https://learn.microsoft.com/azure/virtual-desktop/configure-vm-gpu#configure-gpu-accelerated-frame-encoding
+            Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath 'SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services' -RegistryValue 'AVChardwareEncodePreferred' -RegistryType DWORD -RegistryData 1
+        }
+        Invoke-LGPO -InputDir $TempDir
     }
 
     ##############################################################
     #  Install the AVD Agent
     ##############################################################
     # Disabling this method for installing the AVD agent until AAD Join can completed successfully
-    $BootInstaller = 'AVD-Bootloader.msi'
-    Get-WebFile -FileName $BootInstaller -URL 'https://query.prod.cms.rt.microsoft.com/cms/api/am/binary/RWrxrH'
-    Start-Process -FilePath 'msiexec.exe' -ArgumentList "/i $BootInstaller /quiet /qn /norestart /passive" -Wait -Passthru | Out-Null
-    Write-Log -Message 'Installed AVD Bootloader' -Type 'INFO'
+    $BootInstallerMSI = 'AVD-Bootloader.msi'
+    $BootInstaller = (Get-ChildItem $PSScriptRoot -Filter "$BootInstallerMSI" -Recurse).FullName
+    If (!$BootInstaller) {
+        $url = 'https://query.prod.cms.rt.microsoft.com/cms/api/am/binary/RWrxrH'
+        $BootInstallerMSI = Get-InternetFile -Url $urlLGPO -OutputDirectory $TempDir -OutputFileName $BootInstallerMSI -ErrorAction SilentlyContinue
+    }
+    $Install = Start-Process -FilePath 'msiexec.exe' -ArgumentList "/i $BootInstaller /quiet /norestart" -Wait -Passthru
+    If ($($Install.ExitCode) -eq 0) {
+        Write-Log -category Info -message "'AVD Boot loader' installed successfully."
+    }
+    Else {
+        Write-Log -category Warning -message "The Installer exit code is $($Installer.ExitCode)"
+    }
     Start-Sleep -Seconds 5 | Out-Null
 
-    $AgentInstaller = 'AVD-Agent.msi'
-    Get-WebFile -FileName $AgentInstaller -URL 'https://query.prod.cms.rt.microsoft.com/cms/api/am/binary/RWrmXv'
-    Start-Process -FilePath 'msiexec.exe' -ArgumentList "/i $AgentInstaller /quiet /qn /norestart /passive REGISTRATIONTOKEN=$HostPoolRegistrationToken" -Wait -PassThru | Out-Null
-    Write-Log -Message 'Installed AVD Agent' -Type 'INFO'
+    $AgentInstallerMSI = 'AVD-Bootloader.msi'
+    $AgentInstaller = (Get-ChildItem $PSScriptRoot -Filter "$AgentInstallerMSI" -Recurse).FullName
+    If (!$AgentInstaller) {
+        $url = 'https://query.prod.cms.rt.microsoft.com/cms/api/am/binary/RWrxrH'
+        $AgentInstallerMSI = Get-InternetFile -Url $urlLGPO -OutputDirectory $TempDir -OutputFileName $AgentInstallerMSI -ErrorAction SilentlyContinue
+    }
+    $Install = Start-Process -FilePath 'msiexec.exe' -ArgumentList "/i $AgentInstaller /quiet /norestart REGISTRATIONTOKEN=$HostPoolRegistrationToken" -Wait -Passthru
+    If ($($Install.ExitCode) -eq 0) {
+        Write-Log -category Info -message "'AVD Boot loader' installed successfully."
+    }
+    Else {
+        Write-Log -category Warning -message "The Installer exit code is $($Installer.ExitCode)"
+    }
     Start-Sleep -Seconds 5 | Out-Null
-
 
     ##############################################################
     #  Dual-home Microsoft Monitoring Agent for Azure Sentinel or Defender for Cloud
@@ -365,15 +510,10 @@ try
     {
         Start-Process -FilePath 'shutdown' -ArgumentList '/r /t 30' | Out-Null
     }
-
-    $Output = [pscustomobject][ordered]@{
-        activeDirectorySolution = $ActiveDirectorySolution
-    }
-    $JsonOutput = $Output | ConvertTo-Json
-    return $JsonOutput
+    Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue
 }
 catch 
 {
-    Write-Log -Message $_ -Type 'ERROR'
+    Write-Log -category Error -Message $_
     throw
 }

@@ -1,6 +1,7 @@
 targetScope = 'subscription'
 param ActiveDirectorySolution string
 param ArtifactsLocation string
+param ArtifactsStorageAccountResourceId string
 param ArtifactsUserAssignedIdentityResourceId string
 param AutomationAccountName string
 param Availability string
@@ -61,13 +62,13 @@ module userAssignedIdentity 'userAssignedIdentity.bicep' = {
   scope: resourceGroup(ResourceGroupManagement)
   name: 'UserAssignedIdentity_${Timestamp}'
   params: {
+    ArtifactsStorageAccountResourceId: ArtifactsStorageAccountResourceId
     ArtifactsUserAssignedIdentityResourceId: ArtifactsUserAssignedIdentityResourceId
     DiskEncryption: DiskEncryption
     DrainMode: DrainMode
     Fslogix: Fslogix
     FslogixStorage: FslogixStorage
-    Location: LocationVirtualMachines
-    
+    Location: LocationVirtualMachines    
     UserAssignedIdentityName: UserAssignedIdentityName
     ResourceGroupStorage: ResourceGroupStorage
     ResourceGroupControlPlane: ResourceGroupControlPlane
@@ -122,9 +123,13 @@ module virtualMachine 'virtualMachine.bicep' = {
     Subnet: split(SubnetResourceId, '/')[10]
     TagsNetworkInterfaces: contains(Tags, 'Microsoft.Network/networkInterfaces') ? Tags['Microsoft.Network/networkInterfaces'] : {}
     TagsVirtualMachines: contains(Tags, 'Microsoft.Compute/virtualMachines') ? Tags['Microsoft.Compute/virtualMachines'] : {}
-    ArtifactsUserAssignedIdentityResourceId: ArtifactsUserAssignedIdentityResourceId
-    ArtifactsUserAssignedIdentityClientId: userAssignedIdentity.outputs.ArtifactsUserAssignedIdentityClientId
-    UserAssignedIdentityResourceId: userAssignedIdentity.outputs.id
+    UserAssignedIdentityClientId: !empty(ArtifactsUserAssignedIdentityResourceId) ? userAssignedIdentity.outputs.ArtifactsUserAssignedIdentityClientId : userAssignedIdentity.outputs.clientId
+    UserAssignedIdentityResourceIds: !empty(ArtifactsUserAssignedIdentityResourceId) ? {
+      '${ArtifactsUserAssignedIdentityResourceId}' : {}
+      '${userAssignedIdentity.outputs.id}' : {}
+     } : {
+      '${userAssignedIdentity.outputs.id}' : {}
+     }
     VirtualNetwork: VirtualNetworkName
     VirtualNetworkResourceGroup: VirtualNetworkResourceGroupName
     VirtualMachineNamePrefix: VirtualMachineNamePrefix
@@ -146,7 +151,7 @@ module validations 'customScriptExtensions.bicep' = {
     Output: true
     Parameters: ValidationScriptParameters
     Tags: contains(Tags, 'Microsoft.Compute/virtualMachines') ? Tags['Microsoft.Compute/virtualMachines'] : {}
-    UserAssignedIdentityClientId: userAssignedIdentity.outputs.ArtifactsUserAssignedIdentityClientId
+    UserAssignedIdentityClientId: !empty(ArtifactsUserAssignedIdentityResourceId) ? userAssignedIdentity.outputs.ArtifactsUserAssignedIdentityClientId : userAssignedIdentity.outputs.clientId
     VirtualMachineName: virtualMachine.outputs.Name
   }
 }
@@ -219,7 +224,7 @@ module workspace 'workspace.bicep' = {
   }
 }
 
-output ArtifactsUserAssignedIdentityClientId string = !empty(ArtifactsUserAssignedIdentityResourceId) ? userAssignedIdentity.outputs.ArtifactsUserAssignedIdentityClientId : ''
+output ArtifactsUserAssignedIdentityClientId string = userAssignedIdentity.outputs.ArtifactsUserAssignedIdentityClientId
 output DiskEncryptionSetResourceId string = DiskEncryption ? diskEncryption.outputs.diskEncryptionSetResourceId : ''
 output LogAnalyticsWorkspaceResourceId string = Monitoring ? logAnalyticsWorkspace.outputs.ResourceId : ''
 output UserAssignedIdentityClientId string = userAssignedIdentity.outputs.clientId

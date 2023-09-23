@@ -5,6 +5,7 @@ param Location string
 param ManagementVmName string
 param TagsVirtualMachines object
 param Timestamp string
+param UserAssignedIdentityClientId string
 
 resource customScriptExtension 'Microsoft.Compute/virtualMachines/extensions@2020-12-01' = {
   name: '${ManagementVmName}/CustomScriptExtension'
@@ -21,7 +22,12 @@ resource customScriptExtension 'Microsoft.Compute/virtualMachines/extensions@202
       ]
       timestamp: Timestamp
     }
-    protectedSettings: {
+    protectedSettings: !empty(UserAssignedIdentityClientId) ? {
+      managedIdentity: {
+        clientId: UserAssignedIdentityClientId
+      }
+      commandToExecute: CommandToExecute
+    } : {
       commandToExecute: CommandToExecute
     }
   }

@@ -1,4 +1,5 @@
 param ArtifactsLocation string
+param ArtifactsUserAssignedIdentityClientId string
 param ActiveDirectoryConnection string
 param DelegatedSubnetId string
 param DnsServers string
@@ -135,6 +136,7 @@ module ntfsPermissions 'ntfsPermissions.bicep' = {
   scope: resourceGroup(ResourceGroupManagement)
   params: {
     ArtifactsLocation: ArtifactsLocation
+    UserAssignedIdentityClientId: ArtifactsUserAssignedIdentityClientId
     CommandToExecute: 'powershell -ExecutionPolicy Unrestricted -File Set-NtfsPermissions.ps1 -DomainJoinPassword "${DomainJoinPassword}" -DomainJoinUserPrincipalName ${DomainJoinUserPrincipalName} -FslogixSolution ${FslogixSolution} -SecurityPrincipalNames "${SecurityPrincipalNames}" -SmbServerLocation ${SmbServerLocation} -StorageSolution ${StorageSolution}'
     Location: Location
     ManagementVmName: ManagementVmName

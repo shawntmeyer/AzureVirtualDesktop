@@ -5,6 +5,9 @@
     "ArtifactsLocation": {
       "value": "https://saimageassetsuse.blob.core.windows.net/artifacts/"
     },
+    "ArtifactsStorageAccountResourceId": {
+      "value": "/subscriptions/6dc4ed51-16b9-4494-a406-4fb7a8330d95/resourceGroups/rg-image-management-use/providers/Microsoft.Storage/storageAccounts/saimageassetsuse"
+    },
     "ArtifactsUserAssignedIdentityResourceId": {
       "value": "/subscriptions/6dc4ed51-16b9-4494-a406-4fb7a8330d95/resourceGroups/rg-image-management-use/providers/Microsoft.ManagedIdentity/userAssignedIdentities/uai-image-management-use"
     },
