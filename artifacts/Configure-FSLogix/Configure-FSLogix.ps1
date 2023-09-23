@@ -68,7 +68,7 @@ function Write-Log {
     )
 
     $date = get-date
-    $content = "[$date]`t$category`t`t$message`n" 
+    $content = "[$date]`t$category`t`t$message" 
     Add-Content $Script:Log $content -ErrorAction Stop
 }
 
@@ -282,7 +282,7 @@ Function Invoke-LGPO {
         [string]${CmdletName} = $PSCmdlet.MyInvocation.MyCommand.Name
     }
     Process {
-        Write-Verbose "${CmdletName}: Gathering Registry text files for LGPO from '$InputDir'"
+        Write-Log -message "${CmdletName}: Gathering Registry text files for LGPO from '$InputDir'"
         If ($SearchTerm) {
             $InputFiles = Get-ChildItem -Path $InputDir -Filter "$SearchTerm*.txt"
         }
@@ -291,9 +291,9 @@ Function Invoke-LGPO {
         }
         ForEach ($RegistryFile in $inputFiles) {
             $TxtFilePath = $RegistryFile.FullName
-            Write-Verbose "${CmdletName}: Now applying settings from '$txtFilePath' to Local Group Policy via LGPO.exe."
+            Write-Log -message "${CmdletName}: Now applying settings from '$txtFilePath' to Local Group Policy via LGPO.exe."
             $lgporesult = Start-Process -FilePath 'lgpo.exe' -ArgumentList "/t `"$TxtFilePath`"" -Wait -PassThru
-            Write-Verbose "${CmdletName}: LGPO exitcode: '$($lgporesult.exitcode)'"
+            Write-Log -message "${CmdletName}: LGPO exitcode: '$($lgporesult.exitcode)'"
         }
     }
     End {
@@ -478,7 +478,7 @@ Function Set-RegistryValue {
         [string]${CmdletName} = $PSCmdlet.MyInvocation.MyCommand.Name
     }
     Process {
-        $LogOutputValue = "Path: $Path, Name: $Name , PropertyType: $PropertyType, Value: $Value"
+        $LogOutputValue = "Path: $Path, Name: $Name, PropertyType: $PropertyType, Value: $Value"
         # Create the registry Key(s) if necessary.
         If(!(Test-Path -Path $Path)) {
             New-Item -Path $Path -Force | Out-Null
@@ -488,16 +488,16 @@ Function Set-RegistryValue {
         If ($ExistingValue) {
             # Get current Value
             $CurrentValue = Get-ItemPropertyValue -Path $Path -Name $Name
-            Write-Verbose "${CmdletName}: Existing Registry Value Found - Path: $Path, Name: $Name, PropertyType: $PropertyType, Value: $CurrentValue"
+            Write-Log -message "${CmdletName}: Existing Registry Value Found - Path: $Path, Name: $Name, PropertyType: $PropertyType, Value: $CurrentValue"
             If ($Value -ne $CurrentValue) {
                 Set-ItemProperty -Path $Path -Name $Name -Value $Value -Force | Out-Null
-                Write-Verbose "${CmdletName}: Updated registry setting: $LogOutputValue"
+                Write-Log -message "${CmdletName}: Updated registry setting: $LogOutputValue"
             } Else {
-                Write-Verbose "${CmdletName}: Registry Setting exists with correct value: $LogOutputValue"
+                Write-Log -message "${CmdletName}: Registry Setting exists with correct value: $LogOutputValue"
             }
         } Else {
             New-ItemProperty -Path $Path -Name $Name -PropertyType $PropertyType -Value $Value -Force | Out-Null
-            Write-Verbose "${CmdletName}: Added registry setting: $LogOutputValue"
+            Write-Log -message "${CmdletName}: Added registry setting: $LogOutputValue"
         }
         Start-Sleep -Milliseconds 500
     }
@@ -844,8 +844,7 @@ If ($OfficeContainerPaths) {
 If ($IdentityProvider -eq 'AADKERB') {
     # Support for Azure Files Azure AD Kerberos Authentication for Hybrid Identities
     Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath 'SYSTEM\CurrentControlSet\Control\Lsa\Kerberos\Parameters' -RegistryValue 'CloudKerberosTicketRetrievalEnabled' -RegistryData 1 -RegistryType DWORD -outfileprefix $appName -Verbose
-    $Settings += @(
-        
+    $Settings += @(        
         [PSCustomObject]@{
             Name = 'LoadCredKeyFromProfile'
             Path = 'HKLM:\SOFTWARE\Policies\Microsoft\AzureADAccount'
@@ -924,7 +923,7 @@ If (Test-Path -Path "$env:SytemRoot\System32\lgpo.exe") {
     Write-Log -message 'Running function to update Local Group Policy Object with LGPO.'
     Invoke-LGPO -Verbose
 }
-
+Write-Log -message "Updating Registry Settings."
 ForEach($Setting in $Settings) {
     Set-RegistryValue -Name $Setting.Name -Path $Setting.Path -PropertyType $Setting.PropertyType -Value $Setting.Value -Verbose
 }
