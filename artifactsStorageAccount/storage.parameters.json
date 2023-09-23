@@ -27,7 +27,7 @@
       "value": "/subscriptions/6dc4ed51-16b9-4494-a406-4fb7a8330d95/resourceGroups/rg-avd-networking-eastus/providers/Microsoft.Network/virtualNetworks/vnet-avd-eastus/subnets/PrivateEndpoints"
     },
     "PermittedIPs": {
-      "value": ["71.179.183.121"]
+      "value": []
     },
     "ServiceEndpointSubnetResourceIds": {
       "value": []

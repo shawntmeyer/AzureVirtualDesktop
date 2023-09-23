@@ -116,7 +116,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
       ipRules: IPRules
       defaultAction: 'Deny'
     } : null
-    publicNetworkAccess: PrivateEndpoint && empty(PermittedIPs) && empty(ServiceEndpointSubnetResourceIds) ? 'Disabled' : PublicNetworkAccess
+    publicNetworkAccess: PublicNetworkAccess
     supportsHttpsTrafficOnly: true
     encryption: {
       services: {
