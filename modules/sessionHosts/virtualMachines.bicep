@@ -50,7 +50,6 @@ param TagsNetworkInterfaces object
 param TagsVirtualMachines object
 param Timestamp string
 param TrustedLaunch string
-
 param VirtualMachineNamePrefix string
 @secure()
 param VirtualMachinePassword string

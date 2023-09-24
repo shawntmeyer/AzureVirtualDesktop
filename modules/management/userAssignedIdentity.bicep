@@ -7,6 +7,7 @@ param FslogixStorage string
 param Location string
 param ResourceGroupControlPlane string
 param ResourceGroupStorage string
+param ScalingTool bool
 param Tags object
 param Timestamp string
 param UserAssignedIdentityName string
@@ -16,6 +17,12 @@ var ArtifactsStorageRoleAssignment = !empty(ArtifactsStorageAccountResourceId) &
   {
     roleDefinitionId: '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1' // Storage Blob Data Reader
     scope: '${split(ArtifactsStorageAccountResourceId, '/')[2]}, ${split(ArtifactsStorageAccountResourceId, '/')[4]}'
+  }
+] : []
+var AutomationAccountRoleAssignment = ScalingTool ? [
+  {
+    roleDefinitionId: 'f353d9bd-d4a6-484e-a77a-8050b599b867' // Automation Contributor
+    scope: resourceGroup().name
   }
 ] : []
 var DiskEncryptionRoleAssignment = DiskEncryption ? [
@@ -49,7 +56,7 @@ var FSLogixPrivateEndpointRoleAssignment = contains(FslogixStorage, 'PrivateEndp
   }
 ] : []
 var FSLogixRoleAssignments = union(FSLogixNtfsRoleAssignments, FSLogixPrivateEndpointRoleAssignment)
-var RoleAssignments = union(ArtifactsStorageRoleAssignment, DiskEncryptionRoleAssignment, DrainModeRoleAssignment, FSLogixRoleAssignments, RemoveManagementVirtualMachine)
+var RoleAssignments = union(ArtifactsStorageRoleAssignment, AutomationAccountRoleAssignment, DiskEncryptionRoleAssignment, DrainModeRoleAssignment, FSLogixRoleAssignments, RemoveManagementVirtualMachine)
 
 resource artifactsUserAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' existing = if(!empty(ArtifactsUserAssignedIdentityResourceId)) {
   name: last(split(ArtifactsUserAssignedIdentityResourceId, '/'))

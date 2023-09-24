@@ -380,6 +380,7 @@ module management 'modules/management/management.bicep' = {
     ResourceGroupManagement: resourceNames.outputs.ResourceGroupManagement
     ResourceGroupStorage: resourceNames.outputs.ResourceGroupStorage
     RoleDefinitions: logic.outputs.RoleDefinitions
+    ScalingTool: ScalingTool
     SessionHostCount: SessionHostCount
     StorageSolution: logic.outputs.StorageSolution
     SubnetResourceId: PESubnetResourceId
@@ -477,7 +478,7 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (FslogixStorage != 'None') {
     StorageSolution: logic.outputs.StorageSolution
     Subnet: split(PESubnetResourceId, '/')[10]
     TagsAutomationAccounts: union({
-      'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceNames.outputs.ResourceGroupManagement}/providers/Microsoft.DesktopVirtualization/hostpools/${resourceNames.outputs.HostPoolName}'
+      'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceNames.outputs.ResourceGroupManagement}/providers/Microsoft.DesktopVirtualization/workspaces/${resourceNames.outputs.WorkspaceName}'
     }, contains(Tags, 'Microsoft.Automation/automationAccounts') ? Tags['Microsoft.Automation/automationAccounts'] : {})
     TagsNetAppAccount: union({
       'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceNames.outputs.ResourceGroupManagement}/providers/Microsoft.DesktopVirtualization/hostpools/${resourceNames.outputs.HostPoolName}'
@@ -507,7 +508,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     AcceleratedNetworking: management.outputs.ValidateAcceleratedNetworking
     ActiveDirectorySolution: ActiveDirectorySolution
     ArtifactsLocation: logic.outputs.ArtifactsLocation
-    ArtifactsStorageAccountResourceId: ArtifactsStorageAccountResourceId
+    //ArtifactsStorageAccountResourceId: ArtifactsStorageAccountResourceId
     ArtifactsUserAssignedIdentityClientId: management.outputs.ArtifactsUserAssignedIdentityClientId //ClientId that comes from Management / UserAssignedIdentity Modules is already determined.
     ArtifactsUserAssignedIdentityResourceId: !empty(ArtifactsUserAssignedIdentityResourceId) ? ArtifactsUserAssignedIdentityResourceId : management.outputs.UserAssignedIdentityResourceId
     AutomationAccountName: resourceNames.outputs.AutomationAccountName
@@ -555,6 +556,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     ResourceGroupManagement: resourceNames.outputs.ResourceGroupManagement
     ResourceGroupStorage: resourceNames.outputs.ResourceGroupStorage
     RoleDefinitions: logic.outputs.RoleDefinitions
+    RunBookUpdateUserAssignedIdentityClientId: management.outputs.UserAssignedIdentityClientId
     ScalingBeginPeakTime: ScalingBeginPeakTime
     ScalingEndPeakTime: ScalingEndPeakTime
     ScalingLimitSecondsToForceLogOffUser: ScalingLimitSecondsToForceLogOffUser
@@ -571,9 +573,6 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     StorageSolution: logic.outputs.StorageSolution
     StorageSuffix: logic.outputs.StorageSuffix
     Subnet: split(VMSubnetResourceId, '/')[10]
-    TagsAutomationAccounts: union({
-      'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceNames.outputs.ResourceGroupManagement}/providers/Microsoft.DesktopVirtualization/hostpools/${resourceNames.outputs.HostPoolName}'
-    }, contains(Tags, 'Microsoft.Automation/automationAccounts') ? Tags['Microsoft.Automation/automationAccounts'] : {})
     TagsAvailabilitySets: union({
       'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceNames.outputs.ResourceGroupManagement}/providers/Microsoft.DesktopVirtualization/hostpools/${resourceNames.outputs.HostPoolName}'
     }, contains(Tags, 'Microsoft.Compute/availabilitySets') ? Tags['Microsoft.Compute/availabilitySets'] : {})

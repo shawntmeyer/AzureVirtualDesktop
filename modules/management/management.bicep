@@ -36,6 +36,7 @@ param ResourceGroupControlPlane string
 param ResourceGroupManagement string
 param ResourceGroupStorage string
 param RoleDefinitions object
+param ScalingTool bool
 param SessionHostCount int
 param StorageSolution string
 param SubnetResourceId string
@@ -72,6 +73,7 @@ module userAssignedIdentity 'userAssignedIdentity.bicep' = {
     UserAssignedIdentityName: UserAssignedIdentityName
     ResourceGroupStorage: ResourceGroupStorage
     ResourceGroupControlPlane: ResourceGroupControlPlane
+    ScalingTool: ScalingTool
     Tags: contains(Tags, 'Microsoft.ManagedIdentity/userAssignedIdentities') ? Tags['Microsoft.ManagedIdentity/userAssignedIdentities'] : {}
     Timestamp: Timestamp
     VirtualNetworkResourceGroupName: split(SubnetResourceId, '/')[4]

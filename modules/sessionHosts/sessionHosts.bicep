@@ -3,7 +3,7 @@ targetScope = 'subscription'
 param AcceleratedNetworking string
 param ActiveDirectorySolution string
 param ArtifactsLocation string
-param ArtifactsStorageAccountResourceId string
+//param ArtifactsStorageAccountResourceId string
 param ArtifactsUserAssignedIdentityClientId string
 param ArtifactsUserAssignedIdentityResourceId string
 param AutomationAccountName string
@@ -50,6 +50,7 @@ param ResourceGroupHosts string
 param ResourceGroupManagement string
 param ResourceGroupStorage string
 param RoleDefinitions object
+param RunBookUpdateUserAssignedIdentityClientId string
 param ScalingBeginPeakTime string
 param ScalingEndPeakTime string
 param ScalingLimitSecondsToForceLogOffUser string
@@ -66,7 +67,6 @@ param StorageIndex int
 param StorageSolution string
 param StorageSuffix string
 param Subnet string
-param TagsAutomationAccounts object
 param TagsAvailabilitySets object
 param TagsNetworkInterfaces object
 param TagsRecoveryServicesVault object
@@ -202,7 +202,7 @@ module scalingTool '../management/scalingTool.bicep' = if (ScalingTool && Pooled
   scope: resourceGroup(ResourceGroupManagement)
   params: {
     ArtifactsLocation: ArtifactsLocation
-    ArtifactsStorageAccountResourceId: ArtifactsStorageAccountResourceId
+    //ArtifactsStorageAccountResourceId: ArtifactsStorageAccountResourceId
     AutomationAccountName: AutomationAccountName
     BeginPeakTime: ScalingBeginPeakTime
     EndPeakTime: ScalingEndPeakTime
@@ -213,10 +213,14 @@ module scalingTool '../management/scalingTool.bicep' = if (ScalingTool && Pooled
     MinimumNumberOfRdsh: ScalingMinimumNumberOfRdsh
     ResourceGroupHosts: ResourceGroupHosts
     ResourceGroupControlPlane: ResourceGroupControlPlane
+    RunBookUpdateUserAssignedIdentityClientId: RunBookUpdateUserAssignedIdentityClientId
     SessionThresholdPerCPU: ScalingSessionThresholdPerCPU
-    Tags: TagsAutomationAccounts
+    TagsVirtualMachines: TagsVirtualMachines
     TimeDifference: TimeDifference
     TimeZone: TimeZone
+    ArtifactsUserAssignedIdentityClientId: ArtifactsUserAssignedIdentityClientId
+    ManagementVMName: ManagementVMName
+    Timestamp: Timestamp
   }
   dependsOn: [
     recoveryServices

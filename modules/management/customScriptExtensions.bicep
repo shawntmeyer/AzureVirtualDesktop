@@ -12,7 +12,7 @@ param VirtualMachineName string
 
 var CSEMasterScript = 'cse_master_script.ps1'
 var ScriptToExecute = !empty(ExecuteScript) ? ExecuteScript : CSEMasterScript
-var CommandToExecute = empty(Parameters) ? 'powershell -ExecutionPolicy Unrestricted -File ${ScriptToExecute}' : 'powershell -ExecutionPolicy Unrestricted -File ${ScriptToExecute} ${Parameters}'
+var CommandToExecute = empty(Parameters) ? 'powershell -ExecutionPolicy Unrestricted -command .\\${ScriptToExecute}' : 'powershell -ExecutionPolicy Unrestricted -command .\\${ScriptToExecute} ${Parameters}'
 var FileNames = !empty(ExecuteScript) ? union(['${ExecuteScript}'], Files) : union(['${CSEMasterScript}'], Files)
 var FileUris = [for File in FileNames: '${ArtifactsLocation}${File}']
 var DefOutputValue =  {
