@@ -44,9 +44,13 @@ param AzureFilesPrivateDnsZoneResourceId string = ''
 @description('''Array of script (or other artifact) names or full uris that will be downloaded by the Custom Script Extension on each Session Host Virtual Machine.
 Either specify the entire URL or just the name of the blob if is located at the fqdn specified by the [ArtifactsLocation] parameter.
 ''')
-param CSEFiles array = [
-  'cse_master_script.ps1'
-]
+param CSEBlobNames array = []
+
+@description('Optional. The name of the script and blob that is ran by the Custom Script Extension on Virtual Machines.')
+param CSEMasterScript string = 'cse_master_script.ps1'
+
+@description('Optional. The name of the blob containing the AVDAgent Agent installers and script.')
+param AVDAgentInstallersBlobName string = 'Set-SessionHostConfiguration.zip'
 
 @description('''Additional Custom Dynamic Parameters passed to CSE Scripts.
 (ex: 'Script2Keys=@([pscustomobject]@{stringValue=\'storageAccountName\';booleanValue=\'false\'});Script3Keys=@([pscustomobject]@{intValue=\'10\'}')
@@ -58,8 +62,16 @@ Settings reference: https://learn.microsoft.com/windows-server/remote/remote-des
 ''')
 param CustomRdpProperty string = 'audiocapturemode:i:1;camerastoredirect:s:*;use multimon:i:0;drivestoredirect:s:;'
 
-@description('Enable Server-Side Encrytion and Encryption at Host on the AVD session hosts and management VM.')
-param DiskEncryption bool = true
+@allowed([
+  'SSE + PMK' // Default Encryption in Azure
+  'SSE + CMK' // Server Side Encryption with Customer Managed Keys
+  'EAH + PMK' // Encryption at Host with Platform Managed Keys
+  'EAH + CMK' // Encryption at Host with Customer Managed Keys
+  'ADE'       // Azure Disk Encryption
+  'ADE + KEK' // Azure Disk Encryption with Key Encryption Key
+])
+@description('Optional. The VM disk encryption configuration. (Default: "SSE + PMK")')
+param DiskEncryptionSolution string = 'SSE + PMK'
 
 @allowed([
   'Standard_LRS'
@@ -87,9 +99,10 @@ param DrainMode bool = false
   'p' // Production
   's' // Shared
   't' // Test
+  ''  // Not Defined
 ])
 @description('The target environment for the solution.')
-param Environment string = 'd'
+param Environment string = ''
 
 @description('The file share size(s) in GB for the Fslogix storage solution.')
 param FslogixShareSizeInGB int = 100
@@ -105,16 +118,16 @@ param FslogixSolution string = 'ProfileContainer'
 @allowed([
   'AzureNetAppFiles Premium' // ANF with the Premium SKU, 450,000 IOPS
   'AzureNetAppFiles Standard' // ANF with the Standard SKU, 320,000 IOPS
-  'AzureStorageAccount Premium PublicEndpoint' // Azure Files Premium with the default public endpoint, 100,000 IOPS
-  'AzureStorageAccount Premium PrivateEndpoint' // Azure Files Premium with a Private Endpoint, 100,000 IOPS
-  'AzureStorageAccount Premium ServiceEndpoint' // Azure Files Premium with a Service Endpoint, 100,000 IOPs
-  'AzureStorageAccount Standard PublicEndpoint' // Azure Files Standard with the Large File Share option and the default public endpoint, 20,000 IOPS
-  'AzureStorageAccount Standard PrivateEndpoint' // Azure Files Standard with the Large File Share option and a Private Endpoint, 20,000 IOPS
-  'AzureStorageAccount Standard ServiceEndpoint' // Azure Files Standard with the Large File Share option and a Service Endpoint, 20,000 IOPS
+  'AzureFiles Premium PublicEndpoint' // Azure Files Premium with the default public endpoint, 100,000 IOPS
+  'AzureFiles Premium PrivateEndpoint' // Azure Files Premium with a Private Endpoint, 100,000 IOPS
+  'AzureFiles Premium ServiceEndpoint' // Azure Files Premium with a Service Endpoint, 100,000 IOPs
+  'AzureFiles Standard PublicEndpoint' // Azure Files Standard with the Large File Share option and the default public endpoint, 20,000 IOPS
+  'AzureFiles Standard PrivateEndpoint' // Azure Files Standard with the Large File Share option and a Private Endpoint, 20,000 IOPS
+  'AzureFiles Standard ServiceEndpoint' // Azure Files Standard with the Large File Share option and a Service Endpoint, 20,000 IOPS
   'None'
 ])
 @description('Enable an Fslogix storage option to manage user profiles for the AVD session hosts. The selected service & SKU should provide sufficient IOPS for all of your users. https://docs.microsoft.com/en-us/azure/architecture/example-scenario/wvd/windows-virtual-desktop-fslogix#performance-requirements')
-param FslogixStorage string = 'AzureStorageAccount Standard PublicEndpoint'
+param FslogixStorage string = 'AzureFiles Standard PublicEndpoint'
 
 @description('The Resource Id of the subnet on which to create the storage account private endpoint. Required when storage solution contains PrivateEndpoint.')
 param PESubnetResourceId string = ''
@@ -122,8 +135,11 @@ param PESubnetResourceId string = ''
 @description('Configure FSLogix agent on the session hosts via local registry keys.')
 param FslogixConfigureSessionHosts bool = true
 
+@description('Optional. The name of the blob that contains the FSLogix Configuration Script.')
+param FslogixConfigurationBlobName string = 'FSLogix-Configure.zip'
+
 @description('''Existing FSLogix Storage Account Resource Ids. Only used when FslogixConfigureSessionHosts = "true".
-This list will be added to any storage accounts created when setting "FslogixStorage" to any of the AzureStorageAccount options. 
+This list will be added to any storage accounts created when setting "FslogixStorage" to any of the AzureFiles options. 
 If "ActiveDirectorySolution" is set to "AzureActiveDirectory" or "AzureActiveDirectoryIntuneEnrollment" then only the first storage account listed will be used.
 ''')
 param FslogixExistingStorageAccountResourceIds array = []
@@ -137,9 +153,11 @@ param FslogixExistingStorageAccountResourceIds array = []
 @description('These options specify the host pool type and depending on the type provides the load balancing options and assignment types.')
 param HostPoolType string = 'Pooled DepthFirst'
 
-@maxLength(3)
-@description('The unique identifier between each business unit or project supporting AVD in your tenant. This is the unique naming component between each AVD stamp.')
-param Identifier string = 'avd'
+@maxLength(10)
+@description('''The unique AVD Workspace Identifier between each business unit or project utilizing AVD in your tenant.
+This parameter is combined with the AVDHostpoolIdentifier parameter is used to generate the names of the resource groups and resources for each deployment/stamp.
+''')
+param AVDWorkspaceIdentifier string = 'avd'
 
 @description('Offer for the virtual machine image')
 param ImageOffer string = 'office-365'
@@ -158,7 +176,7 @@ param ImageVersionResourceId string = ''
   'RC4'
 ])
 @description('The Active Directory computer object Kerberos encryption type for the Azure Storage Account or Azure NetApp Files Account.')
-param KerberosEncryption string = 'RC4'
+param KerberosEncryption string = 'AES256'
 
 @description('The deployment location for the AVD management resources.')
 param LocationControlPlane string = deployment().location
@@ -224,12 +242,11 @@ param SessionHostCount int = 1
 @maxValue(4999)
 @minValue(0)
 @description('The starting number for the session hosts. This is important when adding virtual machines to ensure an update deployment is not performed on an exiting, active session host.')
-param SessionHostIndex int = 0
+param SessionHostIndex int = 1
 
-@maxValue(9)
-@minValue(0)
-@description('The stamp index allows for multiple AVD stamps with the same business unit or project to support different use cases. For example, "0" could be used for an office workers host pool and "1" could be used for a developers host pool within the "finance" business unit.')
-param StampIndex int = 0
+@maxLength(10)
+@description('An identifier used to disquish each host pool. This can represent the user or use case.')
+param AVDHostpoolIdentifier string
 
 @maxValue(100)
 @minValue(0)
@@ -242,7 +259,7 @@ param StorageCount int = 1
 @maxValue(99)
 @minValue(0)
 @description('The starting number for the storage accounts to support the required use case for the AVD stamp. https://docs.microsoft.com/en-us/azure/architecture/patterns/sharding')
-param StorageIndex int = 0
+param StorageIndex int = 1
 
 @description('The resource ID of the subnet to place the network interfaces for the AVD session hosts.')
 param VMSubnetResourceId string
@@ -270,6 +287,10 @@ param VirtualMachinePassword string
 @description('The VM SKU for the AVD session hosts.')
 param VirtualMachineSize string = 'Standard_D4ads_v5'
 
+@maxLength(11)
+@description('Required. The Virtual Machine Name prefix.')
+param VirtualMachineNamePrefix string
+
 @description('The Local Administrator Username for the Session Hosts')
 param VirtualMachineUsername string
 
@@ -292,10 +313,10 @@ module resourceNames 'modules/resourceNames.bicep' = {
   name: 'ResourceNames_${Timestamp}'
   params: {
     Environment: Environment
-    Identifier: Identifier
+    AVDWorkspaceIdentifier: AVDWorkspaceIdentifier
     LocationControlPlane: LocationControlPlane
     LocationVirtualMachines: vmVirtualNetwork.location
-    StampIndex: StampIndex
+    AVDHostpoolIdentifier: AVDHostpoolIdentifier
   }
 }
 
@@ -305,10 +326,15 @@ module logic 'modules/logic.bicep' = {
   params: {
     ActiveDirectorySolution: ActiveDirectorySolution
     ArtifactsLocation: ArtifactsLocation
+    AVDAgentInstallersBlobName: AVDAgentInstallersBlobName
+    CSEMasterScript: CSEMasterScript
+    DiskEncryptionSolution: DiskEncryptionSolution
     DiskSku: DiskSku
-    CSEFiles: CSEFiles
+    CSEBlobNames: CSEBlobNames
     DomainName: DomainName
     FileShareNames: resourceNames.outputs.FileShareNames
+    FslogixConfigureSessionHosts: FslogixConfigureSessionHosts
+    FslogixConfigurationBlobName: FslogixConfigurationBlobName
     FslogixSolution: FslogixSolution
     FslogixStorage: FslogixStorage
     HostPoolType: HostPoolType
@@ -325,7 +351,7 @@ module logic 'modules/logic.bicep' = {
     SessionHostCount: SessionHostCount
     SessionHostIndex: SessionHostIndex
     StorageCount: StorageCount
-    VirtualMachineNamePrefix: resourceNames.outputs.VirtualMachineNamePrefix
+    VirtualMachineNamePrefix: VirtualMachineNamePrefix
     VirtualMachineSize: VirtualMachineSize
   }
 }
@@ -353,8 +379,8 @@ module management 'modules/management/management.bicep' = {
     Availability: Availability
     AvdObjectId: AvdObjectId
     LocationControlPlane: LocationControlPlane
-    DiskEncryption: DiskEncryption
-    DiskEncryptionSetName: resourceNames.outputs.DiskEncryptionSetName
+    DiskEncryptionOptions: logic.outputs.DiskEncryptionOptions
+    DiskEncryptionSetName: logic.outputs.DiskEncryptionOptions.DiskEncryptionSet ? resourceNames.outputs.DiskEncryptionSetName : ''
     DiskNamePrefix: resourceNames.outputs.DiskNamePrefix
     DiskSku: DiskSku
     DomainJoinPassword: DomainJoinPassword
@@ -389,7 +415,7 @@ module management 'modules/management/management.bicep' = {
     TimeZone: logic.outputs.TimeZone
     UserAssignedIdentityName: resourceNames.outputs.UserAssignedIdentityName
     LocationVirtualMachines: vmVirtualNetwork.location
-    VirtualMachineNamePrefix: resourceNames.outputs.VirtualMachineNamePrefix
+    VirtualMachineNamePrefix: VirtualMachineNamePrefix
     VirtualMachinePassword: VirtualMachinePassword
     VirtualMachineSize: VirtualMachineSize
     VirtualMachineUsername: VirtualMachineUsername
@@ -507,9 +533,10 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
   params: {
     AcceleratedNetworking: management.outputs.ValidateAcceleratedNetworking
     ActiveDirectorySolution: ActiveDirectorySolution
+    ADEKEKUrl: management.outputs.EncryptionKeyUrl
     ArtifactsLocation: logic.outputs.ArtifactsLocation
     //ArtifactsStorageAccountResourceId: ArtifactsStorageAccountResourceId
-    ArtifactsUserAssignedIdentityClientId: management.outputs.ArtifactsUserAssignedIdentityClientId //ClientId that comes from Management / UserAssignedIdentity Modules is already determined.
+    ArtifactsUserAssignedIdentityClientId: management.outputs.ArtifactsUserAssignedIdentityClientId // ClientId that comes from Management / UserAssignedIdentity Modules is already determined.
     ArtifactsUserAssignedIdentityResourceId: !empty(ArtifactsUserAssignedIdentityResourceId) ? ArtifactsUserAssignedIdentityResourceId : management.outputs.UserAssignedIdentityResourceId
     AutomationAccountName: resourceNames.outputs.AutomationAccountName
     Availability: Availability
@@ -517,10 +544,13 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     AvailabilitySetsCount: logic.outputs.AvailabilitySetsCount
     AvailabilitySetsIndex: logic.outputs.BeginAvSetRange
     AvailabilityZones: management.outputs.ValidateAvailabilityZones
+    CSEMasterScript: CSEMasterScript
     CSEScriptAddDynParameters: CSEScriptAddDynParameters
     CSEUris: logic.outputs.CSEUris
-    DiskEncryption: DiskEncryption
-    DiskEncryptionSetResourceId: DiskEncryption ? management.outputs.DiskEncryptionSetResourceId : ''
+    DiskEncryptionOptions: logic.outputs.DiskEncryptionOptions
+    DiskEncryptionSetResourceId: management.outputs.DiskEncryptionSetResourceId
+    KeyVaultResourceId: management.outputs.KeyVaultResourceId
+    KeyVaultUrl: management.outputs.KeyVaultUrl
     DiskNamePrefix: resourceNames.outputs.DiskNamePrefix
     DiskSku: DiskSku
     DivisionRemainderValue: logic.outputs.DivisionRemainderValue
@@ -589,7 +619,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     Timestamp: Timestamp
     TimeZone: logic.outputs.TimeZone
     TrustedLaunch: management.outputs.ValidateTrustedLaunch
-    VirtualMachineNamePrefix: resourceNames.outputs.VirtualMachineNamePrefix
+    VirtualMachineNamePrefix: VirtualMachineNamePrefix
     VirtualMachinePassword: VirtualMachinePassword
     VirtualMachineSize: VirtualMachineSize
     VirtualMachineUsername: VirtualMachineUsername

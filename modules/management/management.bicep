@@ -8,7 +8,7 @@ param Availability string
 param AvdObjectId string
 param LocationControlPlane string
 param DiskNamePrefix string
-param DiskEncryption bool
+param DiskEncryptionOptions object
 param DiskEncryptionSetName string
 param DiskSku string
 @secure()
@@ -65,7 +65,7 @@ module userAssignedIdentity 'userAssignedIdentity.bicep' = {
   params: {
     ArtifactsStorageAccountResourceId: ArtifactsStorageAccountResourceId
     ArtifactsUserAssignedIdentityResourceId: ArtifactsUserAssignedIdentityResourceId
-    DiskEncryption: DiskEncryption
+    DiskEncryptionSet: DiskEncryptionOptions.DiskEncryptionSet
     DrainMode: DrainMode
     Fslogix: Fslogix
     FslogixStorage: FslogixStorage
@@ -91,10 +91,11 @@ resource roleAssignment_validation 'Microsoft.Authorization/roleAssignments@2022
   }
 }
 
-module diskEncryption 'diskEncryption.bicep' = if (DiskEncryption) {
-  name: 'DiskEncryption_${Timestamp}'
+module keyVault 'keyVault.bicep' =  {
+  name: 'KeyVault_${Timestamp}'
   scope: resourceGroup(ResourceGroupManagement)
   params: {
+    DiskEncryptionOptions: DiskEncryptionOptions
     DiskEncryptionSetName: DiskEncryptionSetName
     Environment: Environment
     KeyVaultName: KeyVaultName
@@ -113,8 +114,8 @@ module virtualMachine 'virtualMachine.bicep' = {
   params: {
     ActiveDirectorySolution: ActiveDirectorySolution
     ArtifactsLocation: ArtifactsLocation
-    DiskEncryption: DiskEncryption
-    DiskEncryptionSetResourceId: DiskEncryption ? diskEncryption.outputs.diskEncryptionSetResourceId : ''
+    DiskEncryptionOptions: DiskEncryptionOptions
+    DiskEncryptionSetResourceId: DiskEncryptionOptions.DiskEncryptionSet ? keyVault.outputs.diskEncryptionSetResourceId : ''
     DiskNamePrefix: DiskNamePrefix
     DiskSku: DiskSku
     DomainJoinPassword: DomainJoinPassword
@@ -182,7 +183,7 @@ module logAnalyticsWorkspace 'logAnalyticsWorkspace.bicep' = if (Monitoring) {
 }
 
 // Automation Account required for the AVD Scaling Tool and the Auto Increase Premium File Share Quota solution
-module automationAccount 'automationAccount.bicep' = if (PooledHostPool || contains(FslogixSolution, 'AzureStorageAccount Premium')) {
+module automationAccount 'automationAccount.bicep' = if (PooledHostPool || contains(FslogixSolution, 'AzureFiles Premium')) {
   name: 'AutomationAccount_${Timestamp}'
   scope: resourceGroup(ResourceGroupManagement)
   params: {
@@ -227,7 +228,11 @@ module workspace 'workspace.bicep' = {
 }
 
 output ArtifactsUserAssignedIdentityClientId string = userAssignedIdentity.outputs.ArtifactsUserAssignedIdentityClientId
-output DiskEncryptionSetResourceId string = DiskEncryption ? diskEncryption.outputs.diskEncryptionSetResourceId : ''
+output KeyVaultResourceId string = keyVault.outputs.keyVaultResourceId
+output KeyVaultUrl string = keyVault.outputs.keyVaultUrl
+output DiskEncryptionSetResourceId string = keyVault.outputs.diskEncryptionSetResourceId
+output EncryptionKeyResourceId string = keyVault.outputs.keyId
+output EncryptionKeyUrl string = keyVault.outputs.keyUrl
 output LogAnalyticsWorkspaceResourceId string = Monitoring ? logAnalyticsWorkspace.outputs.ResourceId : ''
 output UserAssignedIdentityClientId string = userAssignedIdentity.outputs.clientId
 output UserAssignedIdentityResourceId string = userAssignedIdentity.outputs.id

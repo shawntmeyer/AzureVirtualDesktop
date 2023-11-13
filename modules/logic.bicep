@@ -2,10 +2,15 @@ targetScope = 'subscription'
 
 param ActiveDirectorySolution string
 param ArtifactsLocation string
+param AVDAgentInstallersBlobName string
+param DiskEncryptionSolution string
 param DiskSku string
 param DomainName string
-param CSEFiles array
+param CSEBlobNames array
+param CSEMasterScript string
 param FileShareNames object
+param FslogixConfigureSessionHosts bool
+param FslogixConfigurationBlobName string
 param FslogixSolution string
 param FslogixStorage string
 param HostPoolType string
@@ -25,6 +30,7 @@ param StorageCount int
 param VirtualMachineNamePrefix string
 param VirtualMachineSize string
 
+
 //  BATCH SESSION HOSTS
 // The following variables are used to determine the batches to deploy any number of AVD session hosts.
 var MaxResourcesPerTemplateDeployment = 79 // This is the max number of session hosts that can be deployed from the sessionHosts.bicep file in each batch / for loop. Math: (800 - <Number of Static Resources>) / <Number of Looped Resources> 
@@ -43,8 +49,15 @@ var AvailabilitySetsCount = length(range(BeginAvSetRange, (EndAvSetRange - Begin
 var ArtifactsPath = last(ArtifactsLocation) == '/' ? ArtifactsLocation : '${ArtifactsLocation}/'
 //  Ensure that the CSE Files are supplied correctly.
 var Fslogix = FslogixStorage == 'None' ? false : true
-var CSEArtifacts = Fslogix ? union(['LGPO.zip'], CSEFiles, ['Configure-FSLogix.zip'], ['Set-SessionHostConfiguration.zip'], ['cse_master_script.ps1']) : union(['LGPO.zip'], CSEFiles, ['Set-SessionHostConfiguration.zip'], ['cse_master_script.ps1'])
+var CSEArtifacts = FslogixConfigureSessionHosts ? union(['${CSEMasterScript}'], CSEBlobNames, ['${FslogixConfigurationBlobName}'], ['${AVDAgentInstallersBlobName}']) : union(['${CSEMasterScript}'], CSEBlobNames, ['${AVDAgentInstallersBlobName}'])
 var CSEUris = [ for artifact in CSEArtifacts : contains(toLower(artifact), 'http') ? artifact : '${ArtifactsPath}${artifact}' ]
+// Disk Encryption Options
+var DiskEncryptionOptions = {
+  AzureDiskEncryption: contains(DiskEncryptionSolution, 'ADE')
+  EncryptionAtHost: contains(DiskEncryptionSolution, 'EAH')
+  DiskEncryptionSet: contains(DiskEncryptionSolution, 'CMK')
+  KeyEncryptionKey: contains(DiskEncryptionSolution, 'CMK') || contains(DiskEncryptionSolution, 'KEK')
+}
 var FileShares = FileShareNames[FslogixSolution]
 // ONLY DEPLOY 1 storage account when Cloud Only identity is used because Sharding is not possible.
 var CountStorage = ActiveDirectorySolution == 'AzureActiveDirectory' || ActiveDirectorySolution == 'AzureActiveDirectoryIntuneEnrollment' ? 1 : StorageCount
@@ -80,6 +93,7 @@ output ArtifactsLocation string = ArtifactsPath
 output AvailabilitySetsCount int = AvailabilitySetsCount
 output BeginAvSetRange int = BeginAvSetRange
 output CSEUris array = CSEUris
+output DiskEncryptionOptions object =  DiskEncryptionOptions
 output DivisionRemainderValue int = DivisionRemainderValue
 output FileShares array = FileShares
 output Fslogix bool = Fslogix

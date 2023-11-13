@@ -82,7 +82,7 @@ module azureNetAppFiles 'azureNetAppFiles.bicep' = if (StorageSolution == 'Azure
 }
 
 // Azure Files for FSLogix
-module azureFiles 'azureFiles/azureFiles.bicep' = if (StorageSolution == 'AzureStorageAccount') {
+module azureFiles 'azureFiles/azureFiles.bicep' = if (StorageSolution == 'AzureFiles') {
   name: 'AzureFiles_${Timestamp}'
   scope: resourceGroup(ResourceGroupStorage)
   params: {

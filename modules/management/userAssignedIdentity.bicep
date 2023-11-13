@@ -1,6 +1,6 @@
 param ArtifactsStorageAccountResourceId string
 param ArtifactsUserAssignedIdentityResourceId string
-param DiskEncryption bool
+param DiskEncryptionSet bool
 param DrainMode bool
 param Fslogix bool
 param FslogixStorage string
@@ -25,7 +25,7 @@ var AutomationAccountRoleAssignment = ScalingTool ? [
     scope: resourceGroup().name
   }
 ] : []
-var DiskEncryptionRoleAssignment = DiskEncryption ? [
+var DiskEncryptionSetRoleAssignment = DiskEncryptionSet ? [
   {
     roleDefinitionId: '14b46e9e-c2b7-41b4-b07b-48a6ebf60603' // Key Vault Crypto Officer (Purpose: create customer managed key)
     scope: resourceGroup().name
@@ -56,7 +56,7 @@ var FSLogixPrivateEndpointRoleAssignment = contains(FslogixStorage, 'PrivateEndp
   }
 ] : []
 var FSLogixRoleAssignments = union(FSLogixNtfsRoleAssignments, FSLogixPrivateEndpointRoleAssignment)
-var RoleAssignments = union(ArtifactsStorageRoleAssignment, AutomationAccountRoleAssignment, DiskEncryptionRoleAssignment, DrainModeRoleAssignment, FSLogixRoleAssignments, RemoveManagementVirtualMachine)
+var RoleAssignments = union(ArtifactsStorageRoleAssignment, AutomationAccountRoleAssignment, DiskEncryptionSetRoleAssignment, DrainModeRoleAssignment, FSLogixRoleAssignments, RemoveManagementVirtualMachine)
 
 resource artifactsUserAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' existing = if(!empty(ArtifactsUserAssignedIdentityResourceId)) {
   name: last(split(ArtifactsUserAssignedIdentityResourceId, '/'))

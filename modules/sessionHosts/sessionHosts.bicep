@@ -2,6 +2,7 @@ targetScope = 'subscription'
 
 param AcceleratedNetworking string
 param ActiveDirectorySolution string
+param ADEKEKUrl string
 param ArtifactsLocation string
 //param ArtifactsStorageAccountResourceId string
 param ArtifactsUserAssignedIdentityClientId string
@@ -12,9 +13,10 @@ param AvailabilitySetNamePrefix string
 param AvailabilitySetsCount int
 param AvailabilitySetsIndex int
 param AvailabilityZones array
+param CSEMasterScript string
 param CSEScriptAddDynParameters string
 param CSEUris array
-param DiskEncryption bool
+param DiskEncryptionOptions object
 param DiskEncryptionSetResourceId string
 param DiskNamePrefix string
 param DiskSku string
@@ -34,6 +36,8 @@ param ImageOffer string
 param ImagePublisher string
 param ImageSku string
 param ImageVersionResourceId string
+param KeyVaultResourceId string
+param KeyVaultUrl string
 param Location string
 param LogAnalyticsWorkspaceName string
 param ManagementVMName string
@@ -114,6 +118,7 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, SessionHostB
   params: {
     AcceleratedNetworking: AcceleratedNetworking
     ActiveDirectorySolution: ActiveDirectorySolution
+    ADEKEKUrl: ADEKEKUrl
     ArtifactsLocation: ArtifactsLocation
     ArtifactsUserAssignedIdentityResourceId: ArtifactsUserAssignedIdentityResourceId
     ArtifactsUserAssignedIdentityClientId: ArtifactsUserAssignedIdentityClientId
@@ -121,9 +126,10 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, SessionHostB
     AvailabilityZones: AvailabilityZones
     AvailabilitySetNamePrefix: AvailabilitySetNamePrefix
     BatchCount: i
+    CSEMasterScript: CSEMasterScript
     CSEScriptAddDynParameters: CSEScriptAddDynParameters
     CSEUris: CSEUris
-    DiskEncryption: DiskEncryption
+    DiskEncryptionOptions: DiskEncryptionOptions
     DiskEncryptionSetResourceId: DiskEncryptionSetResourceId
     DiskNamePrefix: DiskNamePrefix
     DiskSku: DiskSku
@@ -140,6 +146,8 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, SessionHostB
     ImagePublisher: ImagePublisher
     ImageSku: ImageSku
     ImageVersionResourceId: ImageVersionResourceId
+    KeyVaultResourceId: KeyVaultResourceId
+    KeyVaultUrl: KeyVaultUrl
     Location: Location
     LogAnalyticsWorkspaceName: LogAnalyticsWorkspaceName
     ManagementVMName: ManagementVMName

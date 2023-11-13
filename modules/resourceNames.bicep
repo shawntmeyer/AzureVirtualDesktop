@@ -1,10 +1,10 @@
 targetScope = 'subscription'
 
 param Environment string
-param Identifier string
+param AVDWorkspaceIdentifier string
+param AVDHostpoolIdentifier string
 param LocationControlPlane string
 param LocationVirtualMachines string
-param StampIndex int
 
 var AvailabilitySetNamePrefix = '${replace(replace(NamingConvention, 'resourceType', ResourceAbbreviations.availabilitySets), 'location', Locations[LocationVirtualMachines].abbreviation)}-'
 var AutomationAccountName = replace(replace(NamingConvention_SharedServices, 'resourceType', ResourceAbbreviations.automationAccounts), 'location', Locations[LocationVirtualMachines].abbreviation)
@@ -31,22 +31,21 @@ var HostPoolName = replace(replace(NamingConvention, 'resourceType', ResourceAbb
 var KeyVaultName = replace(replace(NamingConvention_SharedServices, 'resourceType', ResourceAbbreviations.keyVaults), 'location', Locations[LocationVirtualMachines].abbreviation)
 var Locations = loadJsonContent('../data/locations.json')
 var LogAnalyticsWorkspaceName = replace(replace(NamingConvention_SharedServices, 'resourceType', ResourceAbbreviations.logAnalyticsWorkspaces), 'location', Locations[LocationControlPlane].abbreviation)
-var NamingConvention = 'resourceType-${Identifier}-${Environment}-location-${StampIndex}'
-var NamingConvention_SharedServices = 'resourceType-${Identifier}-${Environment}-location'
+var NamingConvention = !empty(Environment) ? '${AVDWorkspaceIdentifier}-${AVDHostpoolIdentifier}-${Environment}-location-resourceType' : '${AVDWorkspaceIdentifier}-${AVDHostpoolIdentifier}-location-resourceType'
+var NamingConvention_SharedServices = !empty(Environment) ? '${AVDWorkspaceIdentifier}-${Environment}-location-resourceType' : '${AVDWorkspaceIdentifier}-location-resourceType'
 var NetAppAccountName = replace(replace(NamingConvention, 'resourceType', ResourceAbbreviations.netAppAccounts), 'location', Locations[LocationVirtualMachines].abbreviation)
 var NetAppCapacityPoolName = replace(replace(NamingConvention, 'resourceType', ResourceAbbreviations.netAppCapacityPools), 'location', Locations[LocationVirtualMachines].abbreviation)
 var NetworkInterfaceNamePrefix = '${replace(replace(NamingConvention, 'resourceType', ResourceAbbreviations.networkInterfaces), 'location', Locations[LocationVirtualMachines].abbreviation)}-'
 var RecoveryServicesVaultName = replace(replace(NamingConvention_SharedServices, 'resourceType', ResourceAbbreviations.recoveryServicesVaults), 'location', Locations[LocationVirtualMachines].abbreviation)
 var ResourceAbbreviations = loadJsonContent('../data/resourceAbbreviations.json')
-var ResourceGroupControlPlane = '${replace(replace(NamingConvention, 'resourceType', ResourceAbbreviations.resourceGroups), 'location', Locations[LocationControlPlane].abbreviation)}-vd-controlPlane'
-var ResourceGroupHosts = '${replace(replace(NamingConvention, 'resourceType', ResourceAbbreviations.resourceGroups), 'location', Locations[LocationVirtualMachines].abbreviation)}-vd-hosts'
-var ResourceGroupManagement = '${replace(replace(NamingConvention_SharedServices, 'resourceType', ResourceAbbreviations.resourceGroups), 'location', Locations[LocationVirtualMachines].abbreviation)}-vd-management'
-var ResourceGroupStorage = '${replace(replace(NamingConvention, 'resourceType', ResourceAbbreviations.resourceGroups), 'location', Locations[LocationVirtualMachines].abbreviation)}-vd-storage'
+
+var ResourceGroupControlPlane = replace(replace(NamingConvention, 'resourceType', 'vd-controlPlane-${ResourceAbbreviations.resourceGroups}'), 'location', Locations[LocationControlPlane].abbreviation)
+var ResourceGroupHosts = replace(replace(NamingConvention, 'resourceType', 'vd-hosts-${ResourceAbbreviations.resourceGroups}'), 'location', Locations[LocationVirtualMachines].abbreviation)
+var ResourceGroupManagement = replace(replace(NamingConvention_SharedServices, 'resourceType', 'vd-management-${ResourceAbbreviations.resourceGroups}'), 'location', Locations[LocationVirtualMachines].abbreviation)
+var ResourceGroupStorage = replace(replace(NamingConvention, 'resourceType', 'vd-storage-${ResourceAbbreviations.resourceGroups}'), 'location', Locations[LocationVirtualMachines].abbreviation)
 var StorageAccountNamePrefix = replace(replace(replace(NamingConvention, 'resourceType', ResourceAbbreviations.storageAccounts), 'location', Locations[LocationVirtualMachines].abbreviation), '-', '')
 var UserAssignedIdentityName = replace(replace(NamingConvention_SharedServices, 'resourceType', ResourceAbbreviations.userAssignedIdentities), 'location', Locations[LocationVirtualMachines].abbreviation)
-var VirtualMachineNamePrefix = replace(replace(replace(NamingConvention, 'resourceType', ResourceAbbreviations.virtualMachines), 'location', Locations[LocationVirtualMachines].abbreviation), '-', '')
 var WorkspaceName = replace(replace(NamingConvention_SharedServices, 'resourceType', ResourceAbbreviations.workspaces), 'location', Locations[LocationControlPlane].abbreviation)
-
 
 output AvailabilitySetNamePrefix string = AvailabilitySetNamePrefix
 output AutomationAccountName string = AutomationAccountName
@@ -68,5 +67,4 @@ output ResourceGroupManagement string = ResourceGroupManagement
 output ResourceGroupStorage string = ResourceGroupStorage
 output StorageAccountNamePrefix string = StorageAccountNamePrefix
 output UserAssignedIdentityName string = UserAssignedIdentityName
-output VirtualMachineNamePrefix string = VirtualMachineNamePrefix
 output WorkspaceName string = WorkspaceName
