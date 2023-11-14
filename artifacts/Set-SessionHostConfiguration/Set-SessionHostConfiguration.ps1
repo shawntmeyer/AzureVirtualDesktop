@@ -506,10 +506,6 @@ try
     ##############################################################
     #  Restart VM
     ##############################################################
-    if(($ActiveDirectorySolution -eq "AzureActiveDirectory" -or $ActiveDirectorySolution -eq "AzureActiveDirectoryIntuneEnrollment") -and !$AmdVmSize -and !$NvidiaVmSize)
-    {
-        Start-Process -FilePath 'shutdown' -ArgumentList '/r /t 30' | Out-Null
-    }
     Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue
 }
 catch 
