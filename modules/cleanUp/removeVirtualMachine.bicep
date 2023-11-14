@@ -51,6 +51,8 @@ resource removeVirtualMachine 'Microsoft.Compute/virtualMachines/runCommands@202
           [string]$VirtualMachineName
         )
         Connect-AzAccount -Environment $Environment -Tenant $TenantId -Subscription $SubscriptionId -Identity -AccountId $UserAssignedIdentityClientId
+        #introduce small delay since all RunCommands require minimum of 20 seconds to process.
+        Start-Sleep -seconds 20
         Remove-AzVM -ResourceGroupName $ResourceGroupName -Name $VirtualMachineName -NoWait -Force -AsJob
       '''
     }
