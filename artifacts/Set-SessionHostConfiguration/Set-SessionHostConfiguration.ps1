@@ -457,10 +457,6 @@ try
         $mma.AddCloudWorkspace($SecurityWorkspaceId, $SecurityWorkspaceKey)
         $mma.ReloadConfiguration() | Out-Null
     }
-
-    ##############################################################
-    #  Restart VM
-    ##############################################################
     Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue
 }
 catch 
