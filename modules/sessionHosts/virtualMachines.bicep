@@ -177,7 +177,7 @@ resource existingStorageAccountsforHA 'Microsoft.Storage/storageAccounts@2023-01
 }
 
 resource networkInterface 'Microsoft.Network/networkInterfaces@2020-05-01' = [for i in range(0, SessionHostCount): {
-  name: '${NetworkInterfaceNamePrefix}${padLeft((i + SessionHostIndex), 4, '0')}'
+  name: '${NetworkInterfaceNamePrefix}${padLeft((i + SessionHostIndex), 3, '0')}'
   location: Location
   tags: TagsNetworkInterfaces
   properties: {
@@ -200,7 +200,7 @@ resource networkInterface 'Microsoft.Network/networkInterfaces@2020-05-01' = [fo
 }]
 
 resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-03-01' = [for i in range(0, SessionHostCount): {
-  name: '${VirtualMachineNamePrefix}${padLeft((i + SessionHostIndex), 4, '0')}'
+  name: '${VirtualMachineNamePrefix}${padLeft((i + SessionHostIndex), 3, '0')}'
   location: Location
   tags: TagsVirtualMachines
   zones: Availability == 'AvailabilityZones' ? [
@@ -217,7 +217,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-03-01' = [for i 
     storageProfile: {
       imageReference: ImageReference
       osDisk: {
-        name: '${DiskNamePrefix}${padLeft((i + SessionHostIndex), 4, '0')}'
+        name: '${DiskNamePrefix}${padLeft((i + SessionHostIndex), 3, '0')}'
         osType: 'Windows'
         createOption: 'FromImage'
         caching: 'ReadWrite'
@@ -232,7 +232,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-03-01' = [for i 
       dataDisks: []
     }
     osProfile: {
-      computerName: '${VirtualMachineNamePrefix}${padLeft((i + SessionHostIndex), 4, '0')}'
+      computerName: '${VirtualMachineNamePrefix}${padLeft((i + SessionHostIndex), 3, '0')}'
       adminUsername: VirtualMachineUsername
       adminPassword: VirtualMachinePassword
       windowsConfiguration: {
@@ -245,7 +245,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-03-01' = [for i 
     networkProfile: {
       networkInterfaces: [
         {
-          id: resourceId('Microsoft.Network/networkInterfaces', '${NetworkInterfaceNamePrefix}${padLeft((i + SessionHostIndex), 4, '0')}')
+          id: resourceId('Microsoft.Network/networkInterfaces', '${NetworkInterfaceNamePrefix}${padLeft((i + SessionHostIndex), 3, '0')}')
           properties: {
             deleteOption: 'Delete'
           }

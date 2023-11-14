@@ -75,6 +75,7 @@ var ResourceGroups = Fslogix ? [
   ResourceGroupManagement
 ]
 var RoleDefinitions = {
+  DesktopVirtualizationApplicationGroupContributor: '86240b0e-9422-4c43-887b-b61143f32ba8'
   DesktopVirtualizationPowerOnContributor: '489581de-a3bd-480d-9518-53dea7416b33'
   DesktopVirtualizationUser: '1d18fff3-a72a-46b5-b4a9-0b38a3cd7e63'
   Reader: 'acdd72a7-3385-48ef-bd42-f606fba81ae7'

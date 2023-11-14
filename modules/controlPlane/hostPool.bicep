@@ -11,7 +11,7 @@ param Time string = utcNow('u')
 param ValidationEnvironment bool
 param VmTemplate string
 
-var CustomRdpProperty_Complete = contains(ActiveDirectorySolution, 'AzureActiveDirectory') ? '${CustomRdpProperty}targetisaadjoined:i:1' : CustomRdpProperty
+var CustomRdpProperty_Complete = contains(ActiveDirectorySolution, 'AzureActiveDirectory') && !contains(CustomRdpProperty, 'targetisaadjoined:i:1') ? '${CustomRdpProperty};targetisaadjoined:i:1' : CustomRdpProperty
 var HostPoolLogs = [
   {
     category: 'Checkpoint'

@@ -7,6 +7,7 @@ param AutomationAccountName string
 param Availability string
 param AvdObjectId string
 param LocationControlPlane string
+param DesktopFriendlyName string
 param DiskNamePrefix string
 param DiskEncryptionOptions object
 param DiskEncryptionSetName string
@@ -86,6 +87,15 @@ resource roleAssignment_validation 'Microsoft.Authorization/roleAssignments@2022
   name: guid(UserAssignedIdentityName, RoleDefinitions.Reader, subscription().id)
   properties: {
     roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', RoleDefinitions.Reader)
+    principalId: userAssignedIdentity.outputs.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource roleAssignment_UpdateDesktopFriendlyName 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(DesktopFriendlyName)) {
+  name: guid(UserAssignedIdentityName, RoleDefinitions.DesktopVirtualizationApplicationGroupContributor, subscription().id)
+  properties: {
+    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', RoleDefinitions.DesktopVirtualizationApplicationGroupContributor)
     principalId: userAssignedIdentity.outputs.principalId
     principalType: 'ServicePrincipal'
   }
