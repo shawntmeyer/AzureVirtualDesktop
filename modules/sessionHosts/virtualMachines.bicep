@@ -7,9 +7,10 @@ param Availability string
 param AvailabilitySetNamePrefix string
 param AvailabilityZones array
 param BatchCount int
+param CSEMasterScript string
 param CSEUris array
 param CSEScriptAddDynParameters string
-param DiskEncryption bool
+param DiskEncryptionOptions object
 param DiskEncryptionSetResourceId string
 param DiskNamePrefix string
 param DiskSku string
@@ -27,6 +28,9 @@ param ImageOffer string
 param ImagePublisher string
 param ImageSku string
 param ImageVersionResourceId string
+param KeyVaultResourceId string
+param KeyVaultUrl string
+param ADEKEKUrl string
 param Location string
 param LogAnalyticsWorkspaceName string
 param ManagementVMName string
@@ -81,14 +85,14 @@ var FslogixIdP = contains(ActiveDirectorySolution, 'Kerberos') ? 'AADKERB' : !co
 var FslogixIdpString = 'idp=\'${FslogixIdP}\''
 var FslogixStorageSolutionString = 'storageSolution=\'${StorageSolution}\''
 var FslogixNetAppSharesString = StorageSolution == 'AzureNetAppFiles' && NetAppFileShares != 'None' ? 'NetAppFileShares=\'${replace(join(NetAppFileShares, ','), ',', '\',\'')}\'' : ''
-var FslogixSASuffixString = StorageSolution == 'AzureStorageAccount' ? 'saSuffix=\'${StorageSuffix}\'' : ''
+var FslogixSASuffixString = StorageSolution == 'AzureFiles' ? 'saSuffix=\'${StorageSuffix}\'' : ''
 //  build storage account names from Storage Account parameters.
 var FslogixNewSANames = [for i in range(0, StorageCount): '${StorageAccountPrefix}${padLeft(i + StorageIndex, 2, '0')}']
 //  use only first storage account per region with AAD and Storage Key. No sharding possible.
 var FslogixNewStorageNames = FslogixIdP == 'AAD' ? [FslogixNewSANames[0]] : FslogixNewSANames
 var FslogixExistingSANames = [for resourceId in FslogixExistingStorageAccountResourceIds: last(split(resourceId, '/')) ]
 var FslogixExistingStorageNames  = FslogixIdP == 'AAD' && !empty(FslogixExistingStorageAccountResourceIds) ? [FslogixExistingSANames[0]] : FslogixExistingSANames
-var FslogixSANamesString = StorageSolution == 'AzureStorageAccount' ? 'saNames=\'${replace(join(union(FslogixNewStorageNames, FslogixExistingStorageNames), ','), ',', '\',\'')}\'' : ''
+var FslogixSANamesString = StorageSolution == 'AzureFiles' ? 'saNames=\'${replace(join(union(FslogixNewStorageNames, FslogixExistingStorageNames), ','), ',', '\',\'')}\'' : ''
 //  get only the first storage account key per region with AAD and Storage Key. No sharding possible.
 var FslogixSAKey = FslogixIdP == 'AAD' ? [ storageAccounts[0].listKeys().keys[0].value ] : []
 var FslogixHASAKey = FslogixIdP == 'AAD' && !empty(FslogixExistingStorageAccountResourceIds) ? [ existingStorageAccountsforHA.listKeys().keys[0].value ] : []
@@ -109,7 +113,7 @@ var SHCCustomObject = 'SHConfiguration=@([pscustomobject]@{${SHCString}})'
 var CSEScriptCalculatedParameters = FslogixConfigureSessionHosts ? '${FslogixCustomObject};${SHCCustomObject}' : '${SHCCustomObject}'
 var CSEScriptDynamicParameters = empty(CSEScriptAddDynParameters) ? '@{${CSEScriptCalculatedParameters}}': '@{${CSEScriptCalculatedParameters};${CSEScriptAddDynParameters}}'
 // When sending a hashtable via powershell.exe you must use -command instead of -File in order for the parameter to be interpreted as a hashtable and not a string
-var CSECommandToExecute = 'powershell -ExecutionPolicy Unrestricted -Command .\\cse_master_script.ps1 -DynParameters ${CSEScriptDynamicParameters}'
+var CSECommandToExecute = 'powershell -ExecutionPolicy Unrestricted -Command .\\${CSEMasterScript} -DynParameters ${CSEScriptDynamicParameters}'
 
 var IdentityType = (!contains(ActiveDirectorySolution, 'DomainServices') ? true : false) ? (!empty(ArtifactsUserAssignedIdentityResourceId) ? 'SystemAssigned,UserAssigned' : 'SystemAssigned') : (!empty(ArtifactsUserAssignedIdentityResourceId) ? 'UserAssigned' : 'None')
 
@@ -162,18 +166,18 @@ resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2021-06
 }
 
 // call on new storage accounts only if we need the Storage Key(s)
-resource storageAccounts 'Microsoft.Storage/storageAccounts@2023-01-01' existing = [for i in range(0, StorageCount): if (StorageSolution == 'AzureStorageAccount' && !contains(ActiveDirectorySolution, 'Kerberos') && !contains(ActiveDirectorySolution, 'DomainServices')) {
+resource storageAccounts 'Microsoft.Storage/storageAccounts@2023-01-01' existing = [for i in range(0, StorageCount): if (StorageSolution == 'AzureFiles' && !contains(ActiveDirectorySolution, 'Kerberos') && !contains(ActiveDirectorySolution, 'DomainServices')) {
   name: '${StorageAccountPrefix}${padLeft(i + StorageIndex, 2, '0')}'
   scope: resourceGroup(ResourceGroupStorage)
 }]
 
-resource existingStorageAccountsforHA 'Microsoft.Storage/storageAccounts@2023-01-01' existing = if (StorageSolution == 'AzureStorageAccount' && !contains(ActiveDirectorySolution, 'Kerberos') && !contains(ActiveDirectorySolution, 'DomainServices')){
+resource existingStorageAccountsforHA 'Microsoft.Storage/storageAccounts@2023-01-01' existing = if (StorageSolution == 'AzureFiles' && !contains(ActiveDirectorySolution, 'Kerberos') && !contains(ActiveDirectorySolution, 'DomainServices')){
   name: last(split(FslogixExistingStorageAccountResourceIds[0], '/'))
   scope: resourceGroup(split(FslogixExistingStorageAccountResourceIds[0], '/')[2], split(FslogixExistingStorageAccountResourceIds[0], '/')[4])
 }
 
 resource networkInterface 'Microsoft.Network/networkInterfaces@2020-05-01' = [for i in range(0, SessionHostCount): {
-  name: '${NetworkInterfaceNamePrefix}${padLeft((i + SessionHostIndex), 4, '0')}'
+  name: '${NetworkInterfaceNamePrefix}${padLeft((i + SessionHostIndex), 3, '0')}'
   location: Location
   tags: TagsNetworkInterfaces
   properties: {
@@ -196,7 +200,7 @@ resource networkInterface 'Microsoft.Network/networkInterfaces@2020-05-01' = [fo
 }]
 
 resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-03-01' = [for i in range(0, SessionHostCount): {
-  name: '${VirtualMachineNamePrefix}${padLeft((i + SessionHostIndex), 4, '0')}'
+  name: '${VirtualMachineNamePrefix}${padLeft((i + SessionHostIndex), 3, '0')}'
   location: Location
   tags: TagsVirtualMachines
   zones: Availability == 'AvailabilityZones' ? [
@@ -213,13 +217,13 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-03-01' = [for i 
     storageProfile: {
       imageReference: ImageReference
       osDisk: {
-        name: '${DiskNamePrefix}${padLeft((i + SessionHostIndex), 4, '0')}'
+        name: '${DiskNamePrefix}${padLeft((i + SessionHostIndex), 3, '0')}'
         osType: 'Windows'
         createOption: 'FromImage'
         caching: 'ReadWrite'
         deleteOption: 'Delete'
         managedDisk: {
-          diskEncryptionSet: DiskEncryption ? {
+          diskEncryptionSet: DiskEncryptionOptions.DiskEncryptionSet ? {
             id: DiskEncryptionSetResourceId
           } : null
           storageAccountType: DiskSku
@@ -228,7 +232,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-03-01' = [for i 
       dataDisks: []
     }
     osProfile: {
-      computerName: '${VirtualMachineNamePrefix}${padLeft((i + SessionHostIndex), 4, '0')}'
+      computerName: '${VirtualMachineNamePrefix}${padLeft((i + SessionHostIndex), 3, '0')}'
       adminUsername: VirtualMachineUsername
       adminPassword: VirtualMachinePassword
       windowsConfiguration: {
@@ -241,7 +245,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-03-01' = [for i 
     networkProfile: {
       networkInterfaces: [
         {
-          id: resourceId('Microsoft.Network/networkInterfaces', '${NetworkInterfaceNamePrefix}${padLeft((i + SessionHostIndex), 4, '0')}')
+          id: resourceId('Microsoft.Network/networkInterfaces', '${NetworkInterfaceNamePrefix}${padLeft((i + SessionHostIndex), 3, '0')}')
           properties: {
             deleteOption: 'Delete'
           }
@@ -254,7 +258,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-03-01' = [for i 
         vTpmEnabled: true
       } : null
       securityType: TrustedLaunch == 'true' ? 'TrustedLaunch' : null
-      encryptionAtHost: DiskEncryption
+      encryptionAtHost: DiskEncryptionOptions.EncryptionAtHost
     }
     diagnosticsProfile: {
       bootDiagnostics: {
@@ -361,6 +365,27 @@ module drainMode '../management/customScriptExtensions.bicep' = if (DrainMode) {
     extension_CustomScriptExtension
   ]
 }
+
+resource extension_AzureDiskEncryption 'Microsoft.Compute/virtualMachines/extensions@2023-07-01' = [for i in range(0, SessionHostCount): if (DiskEncryptionOptions.AzureDiskEncryption) {
+  parent: virtualMachine[i]
+  name: 'AzureDiskEncryption'
+  location: Location
+  tags: TagsVirtualMachines
+  properties: {
+    publisher: 'Microsoft.Azure.Security'
+    type: 'AzureDiskEncryption'
+    typeHandlerVersion: '2.2'
+    autoUpgradeMinorVersion: true
+    settings: {
+      EncryptionOperation: 'EnableEncryption'
+      KeyEncryptionAlgorith: 'RSA-OAEP-256'
+      KeyVaultURL: KeyVaultUrl
+      KeyVaultResourceId: KeyVaultResourceId
+      KeyEncryptionKeyUrl: DiskEncryptionOptions.KeyEncryptionKey ? ADEKEKUrl : null
+      VolumeType: 'All'
+    }
+  }
+}]
 
 resource extension_JsonADDomainExtension 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, SessionHostCount): if (contains(ActiveDirectorySolution, 'DomainServices')) {
   parent: virtualMachine[i]

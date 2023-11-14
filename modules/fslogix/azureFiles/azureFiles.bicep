@@ -158,7 +158,7 @@ resource privateEndpoints 'Microsoft.Network/privateEndpoints@2020-05-01' = [for
   }
 }]
 
-resource privateDnsZoneGroups 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2021-08-01' = [for i in range(0, StorageCount): if (PrivateEndpoint) {
+resource privateDnsZoneGroups 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2021-08-01' = [for i in range(0, StorageCount): if (PrivateEndpoint || !empty(AzureFilesPrivateDnsZoneResourceId)) {
   parent: privateEndpoints[i]
   name: '${StorageAccountNamePrefix}${padLeft(i + StorageIndex, 2, '0')}'
   properties: {
@@ -211,7 +211,7 @@ module recoveryServices 'recoveryServices.bicep' = if (RecoveryServices) {
   }
 }
 
-module autoIncreasePremiumFileShareQuota '../../management/autoIncreasePremiumFileShareQuota.bicep' = if (contains(FslogixStorage, 'AzureStorageAccount Premium') && StorageCount > 0) {
+module autoIncreasePremiumFileShareQuota '../../management/autoIncreasePremiumFileShareQuota.bicep' = if (contains(FslogixStorage, 'AzureFiles Premium') && StorageCount > 0) {
   name: 'AutoIncreasePremiumFileShareQuota_${Timestamp}'
   scope: resourceGroup(ResourceGroupManagement)
   params: {

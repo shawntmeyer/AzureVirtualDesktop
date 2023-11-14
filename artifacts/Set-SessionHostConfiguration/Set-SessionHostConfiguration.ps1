@@ -366,50 +366,7 @@ New-Log -Path $Script:LogDir | Out-Null
 Write-Log -message "Starting '$PSCommandPath'."
 
 try 
-{
-    ##############################################################
-    #  Run the Virtual Desktop Optimization Tool (VDOT)
-    ##############################################################
-    # https://github.com/The-Virtual-Desktop-Team/Virtual-Desktop-Optimization-Tool
-    <# if($ImagePublisher -eq 'MicrosoftWindowsDesktop' -and $ImageOffer -ne 'windows-7')
-    {
-        # Download VDOT
-        $URL = 'https://github.com/The-Virtual-Desktop-Team/Virtual-Desktop-Optimization-Tool/archive/refs/heads/main.zip'
-        $ZIP = 'VDOT.zip'
-        Invoke-WebRequest -Uri $URL -OutFile $ZIP
-        
-        # Extract VDOT from ZIP archive
-        Expand-Archive -LiteralPath $ZIP -Force
-        
-        # Fix to disable AppX Packages
-        # As of 2/8/22, all AppX Packages are enabled by default
-        $Files = (Get-ChildItem -Path .\VDOT\Virtual-Desktop-Optimization-Tool-main -File -Recurse -Filter "AppxPackages.json").FullName
-        foreach($File in $Files)
-        {
-            $Content = Get-Content -Path $File
-            $Settings = $Content | ConvertFrom-Json
-            $NewSettings = @()
-            foreach($Setting in $Settings)
-            {
-                $NewSettings += [pscustomobject][ordered]@{
-                    AppxPackage = $Setting.AppxPackage
-                    VDIState = 'Disabled'
-                    URL = $Setting.URL
-                    Description = $Setting.Description
-                }
-            }
-
-            $JSON = $NewSettings | ConvertTo-Json
-            $JSON | Out-File -FilePath $File -Force
-        }
-
-        # Run VDOT
-        & .\VDOT\Virtual-Desktop-Optimization-Tool-main\Windows_VDOT.ps1 -Optimizations 'AppxPackages','Autologgers','DefaultUserSettings','LGPO','NetworkOptimizations','ScheduledTasks','Services','WindowsMediaPlayer' -AdvancedOptimizations 'Edge','RemoveLegacyIE' -AcceptEULA
-
-
-        Write-Log -Message 'Optimized the operating system using VDOT' -Type 'INFO'
-    } #>
-
+{ 
     ##############################################################
     #  Add Recommended AVD Settings
     ##############################################################
@@ -422,7 +379,7 @@ try
                 $fileLGPODownload = Get-InternetFile -Url $urlLGPO -OutputDirectory $env:Temp -ErrorAction SilentlyContinue
                 Expand-Archive -Path $fileLGPODownload -DestinationPath $outputDir -Force
                 Remove-Item $fileLGPODownload -Force
-                $fileLGPO = (Get-ChildItem -Path $outputDir -file -Filter 'lgpo.exe' -Recurse)[0].FullName
+                $fileLGPO = (Get-ChildItem -Path $outputDir -file -Filter 'lgpo.exe' -Recurse).FullName
             }
             Write-Log -category Info -Message "Copying `"$fileLGPO`" to System32"
             Copy-Item -Path $fileLGPO -Destination "$env:SystemRoot\System32" -Force
@@ -463,8 +420,7 @@ try
     #  Install the AVD Agent
     ##############################################################
     # Disabling this method for installing the AVD agent until AAD Join can completed successfully
-    $BootInstallerMSI = 'AVD-Bootloader.msi'
-    $BootInstaller = (Get-ChildItem $PSScriptRoot -Filter "$BootInstallerMSI" -Recurse).FullName
+    $BootInstaller = (Get-ChildItem $PSScriptRoot -Filter '*Bootloader.msi' -Recurse).FullName
     If (!$BootInstaller) {
         $url = 'https://query.prod.cms.rt.microsoft.com/cms/api/am/binary/RWrxrH'
         $BootInstallerMSI = Get-InternetFile -Url $urlLGPO -OutputDirectory $TempDir -OutputFileName $BootInstallerMSI -ErrorAction SilentlyContinue
@@ -478,8 +434,7 @@ try
     }
     Start-Sleep -Seconds 5 | Out-Null
 
-    $AgentInstallerMSI = 'AVD-Bootloader.msi'
-    $AgentInstaller = (Get-ChildItem $PSScriptRoot -Filter "$AgentInstallerMSI" -Recurse).FullName
+    $AgentInstaller = (Get-ChildItem $PSScriptRoot -Filter '*Agent.msi' -Recurse).FullName
     If (!$AgentInstaller) {
         $url = 'https://query.prod.cms.rt.microsoft.com/cms/api/am/binary/RWrxrH'
         $AgentInstallerMSI = Get-InternetFile -Url $urlLGPO -OutputDirectory $TempDir -OutputFileName $AgentInstallerMSI -ErrorAction SilentlyContinue

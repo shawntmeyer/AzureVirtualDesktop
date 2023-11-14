@@ -3,10 +3,12 @@ targetScope = 'subscription'
 param ActiveDirectorySolution string
 param CustomRdpProperty string
 param DesktopApplicationGroupName string
+param DesktopFriendlyName string
 param HostPoolName string
 param HostPoolType string
 param Location string
 param LogAnalyticsWorkspaceResourceId string
+param ManagementVmName string
 param MaxSessionLimit int
 param Monitoring bool
 param ResourceGroupControlPlane string
@@ -16,6 +18,7 @@ param SecurityPrincipalObjectIds array
 param TagsApplicationGroup object
 param TagsHostPool object
 param Timestamp string
+param UserAssignedIdentityClientId string
 param ValidationEnvironment bool
 param VmTemplate string
 param WorkspaceFriendlyName string
@@ -49,6 +52,19 @@ module applicationGroup 'applicationGroup.bicep' = {
     RoleDefinitions: RoleDefinitions
     SecurityPrincipalObjectIds: SecurityPrincipalObjectIds
     TagsApplicationGroup: TagsApplicationGroup
+  }
+}
+
+module updateDesktopFriendlyName 'updateDesktopFriendlyName.bicep' = if (!empty(DesktopFriendlyName)) {
+  scope: resourceGroup(ResourceGroupManagement)
+  name: 'Update_Desktop_Friendly_Name_${Timestamp}'
+  params: {
+    DesktopAppGroupName: last(split(applicationGroup.outputs.ResourceId, '/'))
+    DesktopAppGroupResourceGroup: split(applicationGroup.outputs.ResourceId, '/')[4]
+    DesktopFriendlyName: DesktopFriendlyName
+    Location: Location
+    ManagementVmName: ManagementVmName
+    UserAssignedIdentityClientId: UserAssignedIdentityClientId
   }
 }
 

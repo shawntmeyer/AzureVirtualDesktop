@@ -1,6 +1,6 @@
 param ActiveDirectorySolution string
 param ArtifactsLocation string
-param DiskEncryption bool
+param DiskEncryptionOptions object
 param DiskEncryptionSetResourceId string
 param DiskNamePrefix string
 param DiskSku string
@@ -70,7 +70,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-11-01' = {
         createOption: 'FromImage'
         caching: 'None'
         managedDisk: {
-          diskEncryptionSet: DiskEncryption ? {
+          diskEncryptionSet: DiskEncryptionOptions.DiskEncryptionSet ? {
             id: DiskEncryptionSetResourceId
           } : null
           storageAccountType: DiskSku
@@ -106,7 +106,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-11-01' = {
         vTpmEnabled: true
       }
       securityType: 'TrustedLaunch'
-      encryptionAtHost: DiskEncryption
+      encryptionAtHost: DiskEncryptionOptions.EncryptionAtHost
     }
     diagnosticsProfile: {
       bootDiagnostics: {

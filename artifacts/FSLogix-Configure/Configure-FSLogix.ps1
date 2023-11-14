@@ -519,52 +519,55 @@ $CloudCache = $FsLogixKeys.cloudCache
 $StorageSolution = $FSLogixKeys.storageSolution
 Write-Log -message '* Begin Script Parameters *'
 Write-Log -message 'Started Script with the following Dynamic Parameters:'
-Write-Log -message "IdentityProvider = $IdentityProvider"
-Write-Log -message "StorageSolution = $StorageSolution"
-Write-Log -message "CloudCache = $CloudCache"
+Write-Log -message " IdentityProvider = $IdentityProvider"
+Write-Log -message " StorageSolution = $StorageSolution"
+Write-Log -message " CloudCache = $CloudCache"
 
 switch($StorageSolution) {
     'AzureNetAppFiles' {
         [array]$NetAppFileShares = $FSLogix.NetAppFileShares
-        Write-Log -message 'NetAppFileShares ='
-        ForEach($Share in $NetAppFileShares) { Write-Log -message " $Share" }
+        Write-Log -message ' NetAppFileShares ='
+        ForEach($Share in $NetAppFileShares) { Write-Log -message "  $Share" }
         [array]$OfficeContainerPaths += "\\$($NetAppFileShares[1])"
         [array]$ProfileContainerPaths += "\\$($NetAppFileShares[0])"
         [array]$CloudCacheOfficeContainerPaths += "type=smb,connectionString=\\$($NetAppFileShares[1])"
         [array]$CloudCacheProfileContainerPaths += "type=smb,connectionString=\\$($NetAppFileShares[0])"
         Write-Log -message '* End Script Parameters *'
     }
-    Default {
+    'AzureFiles' {
         [array]$StorageAccountNames = $FSLogixKeys.saNames
-        Write-Log -message 'Azure Storage Account Names ='
-        ForEach($sa in $StorageAccountNames) { Write-Log -message " $sa" }
+        Write-Log -message ' Azure Storage Account Names ='
+        ForEach($sa in $StorageAccountNames) { Write-Log -message "  $sa" }
         [array]$StorageAccountKeys = $FSLogixKeys.saKeys
-        if($null -ne $StorageAccountKeys) { Write-Log -message "$($StorageAccountKeys.Count) storage account keys provided." }
+        if($null -ne $StorageAccountKeys) { Write-Log -message " $($StorageAccountKeys.Count) storage account keys provided." }
         $StorageAccountSuffix = $FSLogixKeys.saSuffix
-        Write-Log -message "Storage Account Suffix = $StorageAccountSuffix"        
-        $ProfileShareName = $FSLogixKeys.shareNames[0]
-        $OfficeShareName = $FSLogixKeys.shareNames[1]
-        If ($null -ne $OfficeShareName) { Write-Log -message "Office Container Share Name = $OfficeShareName" }
-        Write-Log -message "Profile Container Share Name = $ProfileShareName"
+        Write-Log -message " Storage Account Suffix = $StorageAccountSuffix"
+        [array]$shares = $FSlogixKeys.shareNames       
+        $ProfileShareName = $shares[0]
+        Write-Log -message " Profile Container Share Name = $ProfileShareName"
+        if ($shares.Count -gt 1) {
+            $OfficeShareName = $shares[1]
+            Write-Log -message " Office Container Share Name = $OfficeShareName"
+        }
         Write-Log -message '* End Script Parameters *'
         Write-Log -message '* Calculated Values *'
         For ($i = 0; $i -lt $StorageAccountNames.Count; $i++) {
-            Write-Log -message "Storage Account: $($StorageAccountNames[$i])"
+            Write-Log -message " Storage Account: $($StorageAccountNames[$i])"
             $SAFQDN = "$($StorageAccountNames[$i]).file.$StorageAccountSuffix"
-            Write-Log -message " FQDN: $SAFQDN"
+            Write-Log -message "  FQDN: $SAFQDN"
             If ($StorageAccountKeys[$i] -and $IdentityProvider -eq 'AAD') {
-                Write-Log -message ' Storage Key Provided, stored securely in credential manager.'
+                Write-Log -message '  Storage Key Provided, stored securely in credential manager.'
                 Start-Process -FilePath 'cmdkey.exe' -ArgumentList "/add:$SAFQDN /user:localhost\$($StorageAccountNames[$i]) /pass:$($StorageAccountKeys[$i])" -NoNewWindow -Wait
             }
             If ($OfficeShareName) {
                 [array]$OfficeContainerPaths += "\\$SAFQDN\$OfficeShareName"
                 [array]$CloudCacheOfficeContainerPaths += "type=smb,connectionString=\\$SAFQDN\$OfficeShareName"
-                Write-Log -message " Office Container Share Path: \\$SAFQDN\$OfficeShareName"
+                Write-Log -message "  Office Container Share Path: \\$SAFQDN\$OfficeShareName"
             }
             If ($ProfileShareName) {
                 [array]$ProfileContainerPaths += "\\$SAFQDN\$ProfileShareName"
                 [array]$CloudCacheProfileContainerPaths += "type=smb,connectionString=\\$SAFQDN\$ProfileShareName"
-                Write-Log -message " Profile Container Share Path: \\$SAFQDN\$ProfileShareName"
+                Write-Log -message "  Profile Container Share Path: \\$SAFQDN\$ProfileShareName"
             }
         }
         Write-Log -message '* End Calculated Values *'
@@ -589,10 +592,10 @@ $redirectionsXMLContent = @'
 
 # Common Settings
 
- $Settings += @(
+$Settings += @(
 
-     # Cleans up an invalid sessions to enable a successful sign-in: https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=profiles#cleanupinvalidsessions
-     [PSCustomObject]@{
+    # Cleans up an invalid sessions to enable a successful sign-in: https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=profiles#cleanupinvalidsessions
+    [PSCustomObject]@{
         Name = 'CleanupInvalidSessions'
         Path = 'HKLM:\SOFTWARE\FSLogix\Apps'
         PropertyType = 'DWord'
@@ -673,7 +676,7 @@ $redirectionsXMLContent = @'
 )
 
 If ($IdentityProvider -eq 'AAD') {
-    $Settngs += @(
+    $Settings += @(
         # Attach the users VHD(x) as the computer: https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=profiles#accessnetworkascomputerobject
         [PSCustomObject]@{
             Name = 'AccessNetworkAsComputerObject'

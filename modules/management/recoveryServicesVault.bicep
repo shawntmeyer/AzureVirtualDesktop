@@ -36,7 +36,7 @@ resource vault 'Microsoft.RecoveryServices/vaults@2022-03-01' = {
   properties: {}
 }
 
-resource backupPolicy_Storage 'Microsoft.RecoveryServices/vaults/backupPolicies@2022-03-01' = if (Fslogix && StorageSolution == 'AzureStorageAccount') {
+resource backupPolicy_Storage 'Microsoft.RecoveryServices/vaults/backupPolicies@2022-03-01' = if (Fslogix && StorageSolution == 'AzureFiles') {
   parent: vault
   name: 'AvdPolicyStorage'
   location: Location

@@ -1,3 +1,4 @@
+param DiskEncryptionOptions object
 param DiskEncryptionKeyExpirationInDays int = 30
 param DiskEncryptionSetName string
 param Environment string
@@ -27,10 +28,9 @@ resource vault 'Microsoft.KeyVault/vaults@2022-07-01' = {
   }
 }
 
-resource key 'Microsoft.KeyVault/vaults/keys@2022-07-01' = {
+resource key 'Microsoft.KeyVault/vaults/keys@2022-07-01' = if(DiskEncryptionOptions.KeyEncryptionKey || DiskEncryptionOptions.DiskEncryptionSet) {
   parent: vault
-  name: 'DiskEncryptionKey'
-  tags: TagsKeyVault
+  name: DiskEncryptionOptions.DiskEncryptionSet ? 'DiskEncryptionKey' : 'ADEKeyEncryptionKey'
   properties: {
     attributes: {
       enabled: true
@@ -44,7 +44,7 @@ resource key 'Microsoft.KeyVault/vaults/keys@2022-07-01' = {
       lifetimeActions: [
         {
           action: {
-            type: 'notify'
+            type: 'Notify'
           }
           trigger: {
             timeBeforeExpiry: 'P10D'
@@ -52,7 +52,7 @@ resource key 'Microsoft.KeyVault/vaults/keys@2022-07-01' = {
         }
         {
           action: {
-            type: 'rotate'
+            type: 'Rotate'
           }
           trigger: {
             timeAfterCreate: 'P${string(DiskEncryptionKeyExpirationInDays - 7)}D'
@@ -63,7 +63,7 @@ resource key 'Microsoft.KeyVault/vaults/keys@2022-07-01' = {
   }
 }
 
-resource diskEncryptionSet 'Microsoft.Compute/diskEncryptionSets@2022-07-02' = {
+resource diskEncryptionSet 'Microsoft.Compute/diskEncryptionSets@2022-07-02' = if(DiskEncryptionOptions.DiskEncryptionSet) {
   name: DiskEncryptionSetName
   location: Location
   tags: TagsDiskEncryptionSet
@@ -82,7 +82,7 @@ resource diskEncryptionSet 'Microsoft.Compute/diskEncryptionSets@2022-07-02' = {
   }
 }
 
-module roleAssignment '../roleAssignment.bicep' = {
+module roleAssignment '../roleAssignment.bicep' = if(DiskEncryptionOptions.DiskEncryptionSet) {
   name: 'RoleAssignment_${Timestamp}'
   params: {
     PrincipalId: diskEncryptionSet.identity.principalId
@@ -91,4 +91,8 @@ module roleAssignment '../roleAssignment.bicep' = {
   }
 }
 
-output diskEncryptionSetResourceId string = diskEncryptionSet.id
+output diskEncryptionSetResourceId string = DiskEncryptionOptions.DiskEncryptionSet ? diskEncryptionSet.id : ''
+output keyVaultResourceId string = vault.id
+output keyVaultUrl string = vault.properties.vaultUri
+output keyId string = DiskEncryptionOptions.DiskEncryptionSet || DiskEncryptionOptions.KeyEncryptionKey ? key.id : ''
+output keyUrl string = DiskEncryptionOptions.KeyEncryptionKey ? key.properties.keyUri : ''
