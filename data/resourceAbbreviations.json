@@ -1,6 +1,7 @@
 {
     "automationAccounts": "aa",
     "availabilitySets": "as",
+    "dataCollectionRules": "dcr",
     "desktopApplicationGroups": "dag",
     "remoteApplicationGroups": "rag",
     "disks": "disk",

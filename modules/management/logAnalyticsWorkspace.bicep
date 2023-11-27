@@ -3,8 +3,9 @@ param LogAnalyticsWorkspaceName string
 param LogAnalyticsWorkspaceRetention int
 param LogAnalyticsWorkspaceSku string
 param Tags object
+param VirtualMachineMonitoringAgent string
 
-var WindowsEvents = [
+var WindowsEvents = VirtualMachineMonitoringAgent == 'LogAnalyticsAgent' ? [
   {
     name: 'Microsoft-FSLogix-Apps/Operational'
     types: [
@@ -83,8 +84,8 @@ var WindowsEvents = [
       }
     ]
   }
-]
-var WindowsPerformanceCounters = [
+] : []
+var WindowsPerformanceCounters = VirtualMachineMonitoringAgent == 'LogAnalyticsAgent' ? [
   {
     objectName: 'LogicalDisk'
     instanceName: '*'
@@ -385,7 +386,7 @@ var WindowsPerformanceCounters = [
     intervalSeconds: 30
     counterName: 'Max Input Delay'
   }
-]
+] : []
 
 resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2021-06-01' = {
   name: LogAnalyticsWorkspaceName

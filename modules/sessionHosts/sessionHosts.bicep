@@ -13,9 +13,11 @@ param AvailabilitySetNamePrefix string
 param AvailabilitySetsCount int
 param AvailabilitySetsIndex int
 param AvailabilityZones array
+param AVDInsightsLogAnalyticsWorkspaceResourceId string
 param CSEMasterScript string
 param CSEScriptAddDynParameters string
 param CSEUris array
+param DataCollectionRulesResourceId string
 param DiskEncryptionOptions object
 param DiskEncryptionSetResourceId string
 param DiskNamePrefix string
@@ -39,7 +41,6 @@ param ImageVersionResourceId string
 param KeyVaultResourceId string
 param KeyVaultUrl string
 param Location string
-param LogAnalyticsWorkspaceName string
 param ManagementVMName string
 param MaxResourcesPerTemplateDeployment int
 param Monitoring bool
@@ -61,6 +62,7 @@ param ScalingLimitSecondsToForceLogOffUser string
 param ScalingMinimumNumberOfRdsh string
 param ScalingSessionThresholdPerCPU string
 param ScalingTool bool
+param SecurityDataCollectionRulesResourceId string
 param SecurityPrincipalObjectIds array
 param SecurityLogAnalyticsWorkspaceResourceId string
 param SessionHostBatchCount int
@@ -79,6 +81,7 @@ param TimeDifference string
 param Timestamp string
 param TimeZone string
 param TrustedLaunch string
+param VirtualMachineMonitoringAgent string
 param VirtualMachineNamePrefix string
 @secure()
 param VirtualMachinePassword string
@@ -125,10 +128,12 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, SessionHostB
     Availability: Availability
     AvailabilityZones: AvailabilityZones
     AvailabilitySetNamePrefix: AvailabilitySetNamePrefix
+    AVDInsightsLogAnalyticsWorkspaceResourceId: AVDInsightsLogAnalyticsWorkspaceResourceId
     BatchCount: i
     CSEMasterScript: CSEMasterScript
     CSEScriptAddDynParameters: CSEScriptAddDynParameters
     CSEUris: CSEUris
+    DataCollectionRulesResourceId: DataCollectionRulesResourceId
     DiskEncryptionOptions: DiskEncryptionOptions
     DiskEncryptionSetResourceId: DiskEncryptionSetResourceId
     DiskNamePrefix: DiskNamePrefix
@@ -149,7 +154,6 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, SessionHostB
     KeyVaultResourceId: KeyVaultResourceId
     KeyVaultUrl: KeyVaultUrl
     Location: Location
-    LogAnalyticsWorkspaceName: LogAnalyticsWorkspaceName
     ManagementVMName: ManagementVMName
     Monitoring: Monitoring
     NetAppFileShares: NetAppFileShares
@@ -158,6 +162,7 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, SessionHostB
     ResourceGroupControlPlane: ResourceGroupControlPlane
     ResourceGroupManagement: ResourceGroupManagement
     ResourceGroupStorage: ResourceGroupStorage
+    SecurityDataCollectionRulesResourceId: SecurityDataCollectionRulesResourceId
     SecurityLogAnalyticsWorkspaceResourceId: SecurityLogAnalyticsWorkspaceResourceId
     SessionHostCount: i == SessionHostBatchCount && DivisionRemainderValue > 0 ? DivisionRemainderValue : MaxResourcesPerTemplateDeployment
     SessionHostIndex: i == 1 ? SessionHostIndex : ((i - 1) * MaxResourcesPerTemplateDeployment) + SessionHostIndex
@@ -171,6 +176,7 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, SessionHostB
     TagsVirtualMachines: TagsVirtualMachines
     Timestamp: Timestamp
     TrustedLaunch: TrustedLaunch
+    VirtualMachineMonitoringAgent: VirtualMachineMonitoringAgent
     VirtualMachineNamePrefix: VirtualMachineNamePrefix
     VirtualMachinePassword: VirtualMachinePassword
     VirtualMachineSize: VirtualMachineSize

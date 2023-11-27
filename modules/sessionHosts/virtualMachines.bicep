@@ -10,6 +10,7 @@ param BatchCount int
 param CSEMasterScript string
 param CSEUris array
 param CSEScriptAddDynParameters string
+param DataCollectionRulesResourceId string
 param DiskEncryptionOptions object
 param DiskEncryptionSetResourceId string
 param DiskNamePrefix string
@@ -32,7 +33,7 @@ param KeyVaultResourceId string
 param KeyVaultUrl string
 param ADEKEKUrl string
 param Location string
-param LogAnalyticsWorkspaceName string
+param AVDInsightsLogAnalyticsWorkspaceResourceId string
 param ManagementVMName string
 param Monitoring bool
 param NetAppFileShares array
@@ -41,6 +42,7 @@ param OuPath string
 param ResourceGroupControlPlane string
 param ResourceGroupManagement string
 param ResourceGroupStorage string
+param SecurityDataCollectionRulesResourceId string
 param SecurityLogAnalyticsWorkspaceResourceId string
 param SessionHostCount int
 param SessionHostIndex int
@@ -54,6 +56,7 @@ param TagsNetworkInterfaces object
 param TagsVirtualMachines object
 param Timestamp string
 param TrustedLaunch string
+param VirtualMachineMonitoringAgent string
 param VirtualMachineNamePrefix string
 @secure()
 param VirtualMachinePassword string
@@ -105,8 +108,8 @@ var FslogixCustomObject = 'FSLogix=@([pscustomobject]@{${FslogixString}})'
 // Dynamic Parameters for Set-SessionHostConfiguration.ps1
 //var HostPoolToken = hostPool.properties.registrationInfo.token
 var HostPoolToken = reference(resourceId(ResourceGroupControlPlane, 'Microsoft.DesktopVirtualization/hostpools', HostPoolName), '2019-12-10-preview').registrationInfo.token
-var SHCCommon = 'ActiveDirectorySolution=\'${ActiveDirectorySolution}\';AmdVmSize=\'${AmdVmSize}\';NvidiaVmSize=\'${NvidiaVmSize}\';HostPoolRegistrationToken=\'${HostPoolToken}\''
-var SHCString = SecurityMonitoring ? '${SHCCommon};SecurityWorkspaceId=\'${logAnalyticsWorkspace.properties.customerId}\';SecurityWorkspaceKey=\'${SecurityWorkspaceKey}\'' : SHCCommon
+var SHCCommon = 'AmdVmSize=\'${AmdVmSize}\';NvidiaVmSize=\'${NvidiaVmSize}\';HostPoolRegistrationToken=\'${HostPoolToken}\''
+var SHCString = !empty(SecurityLogAnalyticsWorkspaceResourceId) && VirtualMachineMonitoringAgent == 'LogAnalyticsAgent' ? '${SHCCommon};SecurityWorkspaceId=\'${reference(SecurityLogAnalyticsWorkspaceResourceId).customerId}\';SecurityWorkspaceKey=\'${listKeys(SecurityLogAnalyticsWorkspaceResourceId, '2015-03-20').primarySharedKey}\'' : SHCCommon
 var SHCCustomObject = 'SHConfiguration=@([pscustomobject]@{${SHCString}})'
 
 // CSE Master Script Dynamic Parameters - Built from any custom parameters provided via parameter and the FSLogix and SessionHostConfiguration Parameters.
@@ -115,7 +118,7 @@ var CSEScriptDynamicParameters = empty(CSEScriptAddDynParameters) ? '@{${CSEScri
 // When sending a hashtable via powershell.exe you must use -command instead of -File in order for the parameter to be interpreted as a hashtable and not a string
 var CSECommandToExecute = 'powershell -ExecutionPolicy Unrestricted -Command .\\${CSEMasterScript} -DynParameters ${CSEScriptDynamicParameters}'
 
-var IdentityType = (!contains(ActiveDirectorySolution, 'DomainServices') ? true : false) ? (!empty(ArtifactsUserAssignedIdentityResourceId) ? 'SystemAssigned,UserAssigned' : 'SystemAssigned') : (!empty(ArtifactsUserAssignedIdentityResourceId) ? 'UserAssigned' : 'None')
+var IdentityType = (!contains(ActiveDirectorySolution, 'DomainServices') || VirtualMachineMonitoringAgent == 'AzureMonitorAgent' ? true : false) ? (!empty(ArtifactsUserAssignedIdentityResourceId) ? 'SystemAssigned,UserAssigned' : 'SystemAssigned') : (!empty(ArtifactsUserAssignedIdentityResourceId) ? 'UserAssigned' : 'None')
 
 var UserAssignedIdentities = !empty(ArtifactsUserAssignedIdentityResourceId) ? {
   '${ArtifactsUserAssignedIdentityResourceId}': {}
@@ -154,16 +157,6 @@ var NvidiaVmSizes = [
   'Standard_NV36adms_A10_v5'
   'Standard_NV72ads_A10_v5'
 ]
-var SecurityLogAnalyticsWorkspaceName = SecurityMonitoring ? split(SecurityLogAnalyticsWorkspaceResourceId, '/')[8] : ''
-var SecurityLogAnalyticsWorkspaceResourceGroupName = SecurityMonitoring ? split(SecurityLogAnalyticsWorkspaceResourceId, '/')[4] : resourceGroup().name
-var SecurityLogAnalyticsWorkspaceSubscriptionId = SecurityMonitoring ? split(SecurityLogAnalyticsWorkspaceResourceId, '/')[2] : subscription().subscriptionId
-var SecurityMonitoring = empty(SecurityLogAnalyticsWorkspaceResourceId) ? false : true
-var SecurityWorkspaceKey = SecurityMonitoring ? listKeys(SecurityLogAnalyticsWorkspaceResourceId, '2021-06-01').primarySharedKey : 'NotApplicable'
-
-resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2021-06-01' existing = if (SecurityMonitoring) {
-  name: SecurityLogAnalyticsWorkspaceName
-  scope: resourceGroup(SecurityLogAnalyticsWorkspaceSubscriptionId, SecurityLogAnalyticsWorkspaceResourceGroupName)
-}
 
 // call on new storage accounts only if we need the Storage Key(s)
 resource storageAccounts 'Microsoft.Storage/storageAccounts@2023-01-01' existing = [for i in range(0, StorageCount): if (StorageSolution == 'AzureFiles' && !contains(ActiveDirectorySolution, 'Kerberos') && !contains(ActiveDirectorySolution, 'DomainServices')) {
@@ -282,7 +275,6 @@ resource extension_IaasAntimalware 'Microsoft.Compute/virtualMachines/extensions
     type: 'IaaSAntimalware'
     typeHandlerVersion: '1.3'
     autoUpgradeMinorVersion: true
-    enableAutomaticUpgrade: false
     settings: {
       AntimalwareEnabled: true
       RealtimeProtectionEnabled: 'true'
@@ -299,7 +291,48 @@ resource extension_IaasAntimalware 'Microsoft.Compute/virtualMachines/extensions
   }
 }]
 
-resource extension_MicrosoftMonitoringAgent 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, SessionHostCount): if (Monitoring) {
+resource extension_AzureMonitorWindowsAgent 'Microsoft.Compute/virtualMachines/extensions@2023-03-01' = [for i in range(0, SessionHostCount): if ((Monitoring && VirtualMachineMonitoringAgent == 'AzureMonitorAgent') || !empty(SecurityDataCollectionRulesResourceId)) {
+  parent: virtualMachine[i]
+  name: 'AzureMonitorAgent'
+  location: Location
+  tags: TagsVirtualMachines
+  properties: {
+    publisher: 'Microsoft.Azure.Monitor'
+    type: 'AzureMonitorWindowsAgent'
+    typeHandlerVersion: '1.0'
+    autoUpgradeMinorVersion: true
+    enableAutomaticUpgrade: true
+  }
+  dependsOn: [
+    extension_IaasAntimalware
+  ]
+}]
+
+resource avdInsightsDataCollectionRuleAssociation 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = [for i in range(0, SessionHostCount): if (Monitoring && VirtualMachineMonitoringAgent == 'AzureMonitorAgent') {
+  scope: virtualMachine[i]
+  name: 'avdinsights-${virtualMachine[i].name}-dcra'
+  properties: {
+    dataCollectionRuleId: DataCollectionRulesResourceId
+    description: 'AVD Insights data collection rule association'
+  }
+  dependsOn: [
+    extension_AzureMonitorWindowsAgent
+  ]
+}]
+
+resource securityDataCollectionRuleAssociation 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = [for i in range(0, SessionHostCount): if (!empty(SecurityDataCollectionRulesResourceId)) {
+  scope: virtualMachine[i]
+  name: 'security-${virtualMachine[i].name}-dcra'
+  properties: {
+    dataCollectionRuleId: SecurityDataCollectionRulesResourceId
+    description: 'Security Events data collection rule association'
+  }
+  dependsOn: [
+    extension_AzureMonitorWindowsAgent
+  ]
+}]
+
+resource extension_MicrosoftMonitoringAgent 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, SessionHostCount): if ((Monitoring && VirtualMachineMonitoringAgent == 'LogAnalyticsAgent') || !empty(SecurityLogAnalyticsWorkspaceResourceId)) {
   parent: virtualMachine[i]
   name: 'MicrosoftMonitoringAgent'
   location: Location
@@ -310,10 +343,10 @@ resource extension_MicrosoftMonitoringAgent 'Microsoft.Compute/virtualMachines/e
     typeHandlerVersion: '1.0'
     autoUpgradeMinorVersion: true
     settings: {
-      workspaceId: Monitoring ? reference(resourceId(ResourceGroupManagement, 'Microsoft.OperationalInsights/workspaces', LogAnalyticsWorkspaceName), '2015-03-20').customerId : null
+      workspaceId: Monitoring && VirtualMachineMonitoringAgent == 'LogAnalyticsAgent' ? reference(AVDInsightsLogAnalyticsWorkspaceResourceId).customerId : (!empty(SecurityLogAnalyticsWorkspaceResourceId) ? reference(SecurityLogAnalyticsWorkspaceResourceId).customerId : null)
     }
     protectedSettings: {
-      workspaceKey: Monitoring ? listKeys(resourceId(ResourceGroupManagement, 'Microsoft.OperationalInsights/workspaces', LogAnalyticsWorkspaceName), '2015-03-20').primarySharedKey : null
+      workspaceKey: Monitoring && VirtualMachineMonitoringAgent == 'LogAnalyticsAgent' ? listKeys(AVDInsightsLogAnalyticsWorkspaceResourceId, '2022-10-01').primarySharedKey : (!empty(SecurityLogAnalyticsWorkspaceResourceId) ? listKeys(SecurityLogAnalyticsWorkspaceResourceId, '2022-10-01').primarySharedKey : null)
     }
   }
   dependsOn: [
@@ -343,6 +376,7 @@ resource extension_CustomScriptExtension 'Microsoft.Compute/virtualMachines/exte
     }
   }
   dependsOn: [
+    extension_AzureMonitorWindowsAgent
     extension_MicrosoftMonitoringAgent
   ]
 }]
@@ -409,9 +443,6 @@ resource extension_JsonADDomainExtension 'Microsoft.Compute/virtualMachines/exte
       Password: DomainJoinPassword
     }
   }
-  dependsOn: [
-    drainMode
-  ]
 }]
 
 resource extension_AADLoginForWindows 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, SessionHostCount): if (!contains(ActiveDirectorySolution, 'DomainServices')) {
@@ -428,9 +459,6 @@ resource extension_AADLoginForWindows 'Microsoft.Compute/virtualMachines/extensi
       mdmId: '0000000a-0000-0000-c000-000000000000'
     } : null
   }
-  dependsOn: [
-    drainMode
-  ]
 }]
 
 resource extension_AmdGpuDriverWindows 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, SessionHostCount): if (AmdVmSize) {
@@ -468,5 +496,3 @@ resource extension_NvidiaGpuDriverWindows 'Microsoft.Compute/virtualMachines/ext
     extension_JsonADDomainExtension
   ]
 }]
-
-output CSECommandToExecute string = CSECommandToExecute

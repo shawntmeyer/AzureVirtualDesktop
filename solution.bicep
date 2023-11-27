@@ -243,6 +243,9 @@ param ScalingTool bool = true
 @description('The resource ID of the log analytics workspace used for Azure Sentinel and / or Defender for Cloud. When using the Microsoft Monitoring Agent, this allows you to multihome the agent to reduce unnecessary log collection and reduce cost.')
 param SecurityLogAnalyticsWorkspaceResourceId string = ''
 
+@description('An array of data collection rule resource Ids used for Azure Sentinel and / or Defender for Cloud when using the Azure Monitor Agent.')
+param SecurityDataCollectionRulesResourceId string = ''
+
 @description('An array of Security Principals with their object IDs and display names to assign to the AVD Application Group and FSLogix Storage.')
 param SecurityPrincipals array = []
 
@@ -281,12 +284,12 @@ param Timestamp string = utcNow('yyyyMMddhhmmss')
 @description('The value determines whether the hostpool should receive early AVD updates for testing.')
 param ValidationEnvironment bool = false
 
-/* @allowed([
+@allowed([
   'AzureMonitorAgent'
   'LogAnalyticsAgent'
 ])
 @description('Input the desired monitoring agent to send events and performance counters to a log analytics workspace.')
-param VirtualMachineMonitoringAgent string = 'LogAnalyticsAgent' */
+param VirtualMachineMonitoringAgent string = 'AzureMonitorAgent'
 
 @secure()
 @description('Local administrator password for the AVD session hosts')
@@ -392,6 +395,7 @@ module management 'modules/management/management.bicep' = {
     Availability: Availability
     AvdObjectId: AvdObjectId
     LocationControlPlane: LocationControlPlane
+    DataCollectionRulesName: resourceNames.outputs.DataCollectionRulesName
     DesktopFriendlyName: DesktopFriendlyName
     DiskEncryptionOptions: logic.outputs.DiskEncryptionOptions
     DiskEncryptionSetName: logic.outputs.DiskEncryptionOptions.DiskEncryptionSet ? resourceNames.outputs.DiskEncryptionSetName : ''
@@ -429,6 +433,7 @@ module management 'modules/management/management.bicep' = {
     TimeZone: logic.outputs.TimeZone
     UserAssignedIdentityName: resourceNames.outputs.UserAssignedIdentityName
     LocationVirtualMachines: vmVirtualNetwork.location
+    VirtualMachineMonitoringAgent: VirtualMachineMonitoringAgent
     VirtualMachineNamePrefix: VirtualMachineNamePrefix
     VirtualMachinePassword: VirtualMachinePassword
     VirtualMachineSize: VirtualMachineSize
@@ -561,9 +566,11 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     AvailabilitySetsCount: logic.outputs.AvailabilitySetsCount
     AvailabilitySetsIndex: logic.outputs.BeginAvSetRange
     AvailabilityZones: management.outputs.ValidateAvailabilityZones
+    AVDInsightsLogAnalyticsWorkspaceResourceId: management.outputs.LogAnalyticsWorkspaceResourceId
     CSEMasterScript: CSEMasterScript
     CSEScriptAddDynParameters: CSEScriptAddDynParameters
     CSEUris: logic.outputs.CSEUris
+    DataCollectionRulesResourceId: management.outputs.DataCollectionRulesResourceId
     DiskEncryptionOptions: logic.outputs.DiskEncryptionOptions
     DiskEncryptionSetResourceId: management.outputs.DiskEncryptionSetResourceId
     KeyVaultResourceId: management.outputs.KeyVaultResourceId
@@ -586,7 +593,6 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     ImageSku: ImageSku
     ImageVersionResourceId: ImageVersionResourceId
     Location: vmVirtualNetwork.location
-    LogAnalyticsWorkspaceName: resourceNames.outputs.LogAnalyticsWorkspaceName
     ManagementVMName: management.outputs.VirtualMachineName
     MaxResourcesPerTemplateDeployment: logic.outputs.MaxResourcesPerTemplateDeployment
     Monitoring: Monitoring
@@ -610,6 +616,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     ScalingMinimumNumberOfRdsh: ScalingMinimumNumberOfRdsh
     ScalingSessionThresholdPerCPU: ScalingSessionThresholdPerCPU
     ScalingTool: ScalingTool
+    SecurityDataCollectionRulesResourceId: SecurityDataCollectionRulesResourceId
     SecurityPrincipalObjectIds: map(SecurityPrincipals, item => item.objectId)
     SecurityLogAnalyticsWorkspaceResourceId: SecurityLogAnalyticsWorkspaceResourceId
     SessionHostBatchCount: logic.outputs.SessionHostBatchCount
@@ -636,6 +643,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     Timestamp: Timestamp
     TimeZone: logic.outputs.TimeZone
     TrustedLaunch: management.outputs.ValidateTrustedLaunch
+    VirtualMachineMonitoringAgent: VirtualMachineMonitoringAgent
     VirtualMachineNamePrefix: VirtualMachineNamePrefix
     VirtualMachinePassword: VirtualMachinePassword
     VirtualMachineSize: VirtualMachineSize

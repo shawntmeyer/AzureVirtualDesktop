@@ -48,6 +48,8 @@ var ResourceGroupStorage = replace(replace(NameConv_ResGroups, 'purpose', 'avd-s
 
 var AvailabilitySetNamePrefix = '${replace(replace(NameConv_Resources, 'resourceType', ResourceAbbreviations.availabilitySets), 'location', Locations[LocationVirtualMachines].abbreviation)}-'
 var AutomationAccountName = 'avd-${replace(replace(NameConv_Mgmt_Resources, 'resourceType', ResourceAbbreviations.automationAccounts), 'location', Locations[LocationVirtualMachines].abbreviation)}'
+// the AVD Insights data collection rule must start with 'microsoft-avdi-'
+var DataCollectionRulesName = 'microsoft-avdi-${replace(replace(NameConv_Mgmt_Resources, 'resourceType', ResourceAbbreviations.dataCollectionRules), 'location', Locations[LocationVirtualMachines].abbreviation)}'
 var DesktopApplicationGroupName = replace(replace(NameConv_Resources, 'resourceType', ResourceAbbreviations.desktopApplicationGroups), 'location', Locations[LocationControlPlane].abbreviation)
 var DiskEncryptionSetName = 'avd-${replace(replace(NameConv_Mgmt_Resources, 'resourceType', ResourceAbbreviations.diskEncryptionSets), 'location', Locations[LocationVirtualMachines].abbreviation)}'
 var DiskNamePrefix = VirtualMachineNamePrefix
@@ -65,6 +67,7 @@ var WorkspaceName = 'avd-${replace(replace(NameConv_Mgmt_Resources, 'resourceTyp
 
 output AvailabilitySetNamePrefix string = AvailabilitySetNamePrefix
 output AutomationAccountName string = AutomationAccountName
+output DataCollectionRulesName string = DataCollectionRulesName
 output DesktopApplicationGroupName string = DesktopApplicationGroupName
 output DiskEncryptionSetName string = DiskEncryptionSetName
 output DiskNamePrefix string = DiskNamePrefix

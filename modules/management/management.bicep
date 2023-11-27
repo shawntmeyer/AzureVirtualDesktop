@@ -7,6 +7,7 @@ param AutomationAccountName string
 param Availability string
 param AvdObjectId string
 param LocationControlPlane string
+param DataCollectionRulesName string
 param DesktopFriendlyName string
 param DiskNamePrefix string
 param DiskEncryptionOptions object
@@ -45,6 +46,7 @@ param Tags object
 param Timestamp string
 param TimeZone string
 param UserAssignedIdentityName string
+param VirtualMachineMonitoringAgent string
 param VirtualMachineNamePrefix string
 @secure()
 param VirtualMachinePassword string
@@ -179,7 +181,7 @@ resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
 }
 
 // Monitoring Resources for AVD Insights
-// This module deploys a Log Analytics Workspace with Windows Events & Windows Performance Counters plus diagnostic settings on the required resources 
+// This module deploys a Log Analytics Workspace and if Monitoring agent is the legacy Log Analytics Agent then the Windows Events & Windows Performance Counters plus diagnostic settings on the required resources 
 module logAnalyticsWorkspace 'logAnalyticsWorkspace.bicep' = if (Monitoring) {
   name: 'Monitoring_${Timestamp}'
   scope: resourceGroup(ResourceGroupManagement)
@@ -189,6 +191,19 @@ module logAnalyticsWorkspace 'logAnalyticsWorkspace.bicep' = if (Monitoring) {
     LogAnalyticsWorkspaceSku: LogAnalyticsWorkspaceSku
     Location: LocationControlPlane
     Tags: contains(Tags, 'Microsoft.OperationalInsights/workspaces') ? Tags['Microsoft.OperationalInsights/workspaces'] : {}
+    VirtualMachineMonitoringAgent: VirtualMachineMonitoringAgent
+  }
+}
+
+// Data Collection Rule for AVD Insights required for the Azure Monitor Agent
+module dataCollectionRules 'avdInsightsDataCollectionRules.bicep' = if (VirtualMachineMonitoringAgent == 'AzureMonitorAgent') {
+  name: 'DataCollectionRule_${Timestamp}'
+  scope: resourceGroup(ResourceGroupManagement)
+  params: {
+    LogAWorkspaceId: logAnalyticsWorkspace.outputs.ResourceId
+    Location: LocationControlPlane
+    Name: DataCollectionRulesName
+    Tags: contains(Tags, 'Microsoft.Insights/dataCollectionRules') ? Tags['Microsoft.Insights/dataCollectionRules'] : {}
   }
 }
 
@@ -240,6 +255,7 @@ module workspace 'workspace.bicep' = {
 output ArtifactsUserAssignedIdentityClientId string = userAssignedIdentity.outputs.ArtifactsUserAssignedIdentityClientId
 output KeyVaultResourceId string = keyVault.outputs.keyVaultResourceId
 output KeyVaultUrl string = keyVault.outputs.keyVaultUrl
+output DataCollectionRulesResourceId string = VirtualMachineMonitoringAgent == 'AzureMonitorAgent' ? dataCollectionRules.outputs.dataCollectionRulesId : ''
 output DiskEncryptionSetResourceId string = keyVault.outputs.diskEncryptionSetResourceId
 output EncryptionKeyResourceId string = keyVault.outputs.keyId
 output EncryptionKeyUrl string = keyVault.outputs.keyUrl
