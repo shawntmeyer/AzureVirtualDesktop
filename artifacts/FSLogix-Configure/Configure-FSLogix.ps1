@@ -555,9 +555,11 @@ switch($StorageSolution) {
             Write-Log -message " Storage Account: $($StorageAccountNames[$i])"
             $SAFQDN = "$($StorageAccountNames[$i]).file.$StorageAccountSuffix"
             Write-Log -message "  FQDN: $SAFQDN"
-            If ($StorageAccountKeys[$i] -and $IdentityProvider -eq 'AAD') {
-                Write-Log -message '  Storage Key Provided, stored securely in credential manager.'
-                Start-Process -FilePath 'cmdkey.exe' -ArgumentList "/add:$SAFQDN /user:localhost\$($StorageAccountNames[$i]) /pass:$($StorageAccountKeys[$i])" -NoNewWindow -Wait
+            If ($StorageAccountKeys -and $IdentityProvider -eq 'AAD') {
+                If ($StorageAccountKeys[$i]) {
+                    Write-Log -message '  Storage Key Provided, stored securely in credential manager.'
+                    Start-Process -FilePath 'cmdkey.exe' -ArgumentList "/add:$SAFQDN /user:localhost\$($StorageAccountNames[$i]) /pass:$($StorageAccountKeys[$i])" -NoNewWindow -Wait
+                }
             }
             If ($OfficeShareName) {
                 [array]$OfficeContainerPaths += "\\$SAFQDN\$OfficeShareName"

@@ -4,7 +4,7 @@ param ActiveDirectoryConnection string
 param DelegatedSubnetId string
 param DnsServers string
 @secure()
-param DomainJoinPassword string
+param DomainJoinUserPassword string
 param DomainJoinUserPrincipalName string
 param DomainName string
 param FileShares array
@@ -34,7 +34,7 @@ resource netAppAccount 'Microsoft.NetApp/netAppAccounts@2021-06-01' = {
         domain: DomainName
         dns: DnsServers
         organizationalUnit: OuPath
-        password: DomainJoinPassword
+        password: DomainJoinUserPassword
         smbServerName: 'anf-${SmbServerLocation}'
         username: split(DomainJoinUserPrincipalName, '@')[0]
       }
@@ -137,7 +137,7 @@ module ntfsPermissions 'ntfsPermissions.bicep' = {
   params: {
     ArtifactsLocation: ArtifactsLocation
     UserAssignedIdentityClientId: ArtifactsUserAssignedIdentityClientId
-    CommandToExecute: 'powershell -ExecutionPolicy Unrestricted -File Set-NtfsPermissions.ps1 -DomainJoinPassword "${DomainJoinPassword}" -DomainJoinUserPrincipalName ${DomainJoinUserPrincipalName} -FslogixSolution ${FslogixSolution} -SecurityPrincipalNames "${SecurityPrincipalNames}" -SmbServerLocation ${SmbServerLocation} -StorageSolution ${StorageSolution}'
+    CommandToExecute: 'powershell -ExecutionPolicy Unrestricted -File Set-NtfsPermissions.ps1 -DomainJoinUserPassword "${DomainJoinUserPassword}" -DomainJoinUserPrincipalName ${DomainJoinUserPrincipalName} -FslogixSolution ${FslogixSolution} -SecurityPrincipalNames "${SecurityPrincipalNames}" -SmbServerLocation ${SmbServerLocation} -StorageSolution ${StorageSolution}'
     Location: Location
     ManagementVmName: ManagementVmName
     TagsVirtualMachines: TagsVirtualMachines

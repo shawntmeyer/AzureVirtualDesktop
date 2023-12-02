@@ -11,7 +11,8 @@ param AzureFilesUserAssignedIdentityClientId string
 param DelegatedSubnetId string
 param DnsServers string
 @secure()
-param DomainJoinPassword string
+param DomainJoinUserPassword string
+@secure()
 param DomainJoinUserPrincipalName string
 param DomainName string
 param FileShares array
@@ -60,7 +61,7 @@ module azureNetAppFiles 'azureNetAppFiles.bicep' = if (StorageSolution == 'Azure
     ArtifactsUserAssignedIdentityClientId: ArtifactsUserAssignedIdentityClientId
     DelegatedSubnetId: DelegatedSubnetId
     DnsServers: DnsServers
-    DomainJoinPassword: DomainJoinPassword
+    DomainJoinUserPassword: DomainJoinUserPassword
     DomainJoinUserPrincipalName: DomainJoinUserPrincipalName
     DomainName: DomainName
     FileShares: FileShares
@@ -93,7 +94,7 @@ module azureFiles 'azureFiles/azureFiles.bicep' = if (StorageSolution == 'AzureF
     Availability: Availability
     AzureFilesPrivateDnsZoneResourceId: AzureFilesPrivateDnsZoneResourceId
     AzureFilesUserAssignedIdentityClientId: AzureFilesUserAssignedIdentityClientId
-    DomainJoinPassword: DomainJoinPassword
+    DomainJoinUserPassword: DomainJoinUserPassword
     DomainJoinUserPrincipalName: DomainJoinUserPrincipalName
     FileShares: FileShares
     FslogixShareSizeInGB: FslogixShareSizeInGB

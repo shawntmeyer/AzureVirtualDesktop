@@ -16,7 +16,8 @@ param DiskEncryptionSetResourceId string
 param DiskNamePrefix string
 param DiskSku string
 @secure()
-param DomainJoinPassword string
+param DomainJoinUserPassword string
+@secure()
 param DomainJoinUserPrincipalName string
 param DomainName string
 param DrainMode bool
@@ -46,6 +47,7 @@ param SecurityDataCollectionRulesResourceId string
 param SecurityLogAnalyticsWorkspaceResourceId string
 param SessionHostCount int
 param SessionHostIndex int
+@minLength(1)
 param StorageAccountPrefix string
 param StorageCount int
 param StorageIndex int
@@ -59,9 +61,10 @@ param TrustedLaunch string
 param VirtualMachineMonitoringAgent string
 param VirtualMachineNamePrefix string
 @secure()
-param VirtualMachinePassword string
+param VirtualMachineAdminPassword string
 param VirtualMachineSize string
-param VirtualMachineUsername string
+@secure()
+param VirtualMachineAdminUserName string
 param VirtualNetwork string
 param VirtualNetworkResourceGroup string
 
@@ -226,8 +229,8 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-03-01' = [for i 
     }
     osProfile: {
       computerName: '${VirtualMachineNamePrefix}${padLeft((i + SessionHostIndex), 3, '0')}'
-      adminUsername: VirtualMachineUsername
-      adminPassword: VirtualMachinePassword
+      adminUsername: VirtualMachineAdminUserName
+      adminPassword: VirtualMachineAdminPassword
       windowsConfiguration: {
         provisionVMAgent: true
         enableAutomaticUpdates: false
@@ -440,7 +443,7 @@ resource extension_JsonADDomainExtension 'Microsoft.Compute/virtualMachines/exte
       OUPath: OuPath
     }
     protectedSettings: {
-      Password: DomainJoinPassword
+      Password: DomainJoinUserPassword
     }
   }
 }]
@@ -496,3 +499,5 @@ resource extension_NvidiaGpuDriverWindows 'Microsoft.Compute/virtualMachines/ext
     extension_JsonADDomainExtension
   ]
 }]
+
+output cseScriptDynamicParameters string = CSEScriptDynamicParameters

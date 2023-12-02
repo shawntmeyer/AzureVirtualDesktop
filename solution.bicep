@@ -97,8 +97,9 @@ param DiskSku string = 'Premium_LRS'
 
 @secure()
 @description('The password of the privileged account to domain join the AVD session hosts to your domain')
-param DomainJoinPassword string = ''
+param DomainJoinUserPassword string = ''
 
+@secure()
 @description('The UPN of the privileged account to domain join the AVD session hosts to your domain. This should be an account the resides within the domain you are joining.')
 param DomainJoinUserPrincipalName string = ''
 
@@ -168,7 +169,7 @@ param FslogixExistingStorageAccountResourceIds array = []
 param HostPoolType string = 'Pooled DepthFirst'
 
 @maxLength(10)
-@description('An identifier used to disquish each host pool. This can represent the user or use case.')
+@description('An identifier used to distinquish each host pool. This can represent the user or use case.')
 param HostpoolIdentifier string
 
 @description('Offer for the virtual machine image')
@@ -215,6 +216,9 @@ param MaxSessionLimit int
 
 @description('Deploys the required monitoring resources to enable AVD Insights and monitor features in the automation account.')
 param Monitoring bool = true
+
+@description('Reverse the normal Cloud Adoption Framework naming convention by putting the resource type abbreviation at the end of the resource name.')
+param NameConvResTypeAtEnd bool = false
 
 @description('The distinguished name for the target Organization Unit in Active Directory Domain Services.')
 param OuPath string = ''
@@ -293,7 +297,11 @@ param VirtualMachineMonitoringAgent string = 'AzureMonitorAgent'
 
 @secure()
 @description('Local administrator password for the AVD session hosts')
-param VirtualMachinePassword string
+param VirtualMachineAdminPassword string
+
+@secure()
+@description('The Local Administrator Username for the Session Hosts')
+param VirtualMachineAdminUserName string
 
 @description('The VM SKU for the AVD session hosts.')
 param VirtualMachineSize string = 'Standard_D4ads_v5'
@@ -301,9 +309,6 @@ param VirtualMachineSize string = 'Standard_D4ads_v5'
 @maxLength(12)
 @description('Required. The Virtual Machine Name prefix.')
 param VirtualMachineNamePrefix string
-
-@description('The Local Administrator Username for the Session Hosts')
-param VirtualMachineUsername string
 
 @description('Required. The friendly name for the AVD workspace that is displayed in the client.')
 param WorkspaceFriendlyName string = ''
@@ -322,6 +327,11 @@ resource peVirtualNetwork 'Microsoft.Network/virtualNetworks@2023-04-01' existin
   scope: resourceGroup(split(PESubnetResourceId, '/')[2], split(PESubnetResourceId, '/')[4])
 }
 
+resource keyVault_Reference 'Microsoft.KeyVault/vaults@2021-06-01-preview' existing = if(contains(ActiveDirectorySolution,'DomainServices') && (empty(DomainJoinUserPassword) || empty(DomainJoinUserPrincipalName)) || empty(VirtualMachineAdminPassword) || empty(VirtualMachineAdminUserName))  {
+  name: resourceNames.outputs.KeyVaultName
+  scope: resourceGroup(resourceNames.outputs.ResourceGroupManagement)
+}
+
 // Resource Names
 module resourceNames 'modules/resourceNames.bicep' = {
   name: 'ResourceNames_${Timestamp}'
@@ -329,9 +339,10 @@ module resourceNames 'modules/resourceNames.bicep' = {
     Environment: Environment
     BusinessUnitIdentifier: BusinessUnitIdentifier
     CentralizedAVDManagement: CentralizedAVDManagement
+    HostpoolIdentifier: HostpoolIdentifier
     LocationControlPlane: LocationControlPlane
     LocationVirtualMachines: vmVirtualNetwork.location
-    HostpoolIdentifier: HostpoolIdentifier
+    NameConvResTypeAtEnd: NameConvResTypeAtEnd
     VirtualMachineNamePrefix: VirtualMachineNamePrefix
   }
 }
@@ -401,7 +412,7 @@ module management 'modules/management/management.bicep' = {
     DiskEncryptionSetName: logic.outputs.DiskEncryptionOptions.DiskEncryptionSet ? resourceNames.outputs.DiskEncryptionSetName : ''
     DiskNamePrefix: resourceNames.outputs.DiskNamePrefix
     DiskSku: DiskSku
-    DomainJoinPassword: DomainJoinPassword
+    DomainJoinUserPassword: DomainJoinUserPassword
     DomainJoinUserPrincipalName: DomainJoinUserPrincipalName
     DomainName: DomainName
     DrainMode: DrainMode
@@ -435,9 +446,9 @@ module management 'modules/management/management.bicep' = {
     LocationVirtualMachines: vmVirtualNetwork.location
     VirtualMachineMonitoringAgent: VirtualMachineMonitoringAgent
     VirtualMachineNamePrefix: VirtualMachineNamePrefix
-    VirtualMachinePassword: VirtualMachinePassword
+    VirtualMachineAdminPassword: empty(VirtualMachineAdminPassword) ? keyVault_Reference.getSecret(VirtualMachineAdminPassword) : VirtualMachineAdminPassword
     VirtualMachineSize: VirtualMachineSize
-    VirtualMachineUsername: VirtualMachineUsername
+    VirtualMachineAdminUserName: empty(VirtualMachineAdminUserName) ? keyVault_Reference.getSecret(VirtualMachineAdminUserName) : VirtualMachineAdminUserName
     WorkspaceFriendlyName: WorkspaceFriendlyName
     WorkspaceName: resourceNames.outputs.WorkspaceName
   }
@@ -497,8 +508,8 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (FslogixStorage != 'None') {
     AzureFilesUserAssignedIdentityClientId: management.outputs.UserAssignedIdentityClientId
     DelegatedSubnetId: management.outputs.ValidateANFSubnetId
     DnsServers: management.outputs.ValidateANFDnsServers
-    DomainJoinPassword: DomainJoinPassword
-    DomainJoinUserPrincipalName: DomainJoinUserPrincipalName
+    DomainJoinUserPassword: empty(DomainJoinUserPassword) ? contains(ActiveDirectorySolution, 'DomainServices') ? keyVault_Reference.getSecret(DomainJoinUserPassword) : '' : DomainJoinUserPassword
+    DomainJoinUserPrincipalName: empty(DomainJoinUserPrincipalName) ? contains(ActiveDirectorySolution, 'DomainServices') ? keyVault_Reference.getSecret(DomainJoinUserPrincipalName) : '' : DomainJoinUserPrincipalName
     DomainName: DomainName
     FileShares: logic.outputs.FileShares
     FslogixShareSizeInGB: FslogixShareSizeInGB
@@ -578,8 +589,8 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     DiskNamePrefix: resourceNames.outputs.DiskNamePrefix
     DiskSku: DiskSku
     DivisionRemainderValue: logic.outputs.DivisionRemainderValue
-    DomainJoinPassword: DomainJoinPassword
-    DomainJoinUserPrincipalName: DomainJoinUserPrincipalName
+    DomainJoinUserPassword: empty(DomainJoinUserPassword) ? contains(ActiveDirectorySolution, 'DomainServices') ? keyVault_Reference.getSecret(DomainJoinUserPassword) : '' : DomainJoinUserPassword
+    DomainJoinUserPrincipalName: empty(DomainJoinUserPrincipalName) ? contains(ActiveDirectorySolution, 'DomainServices') ? keyVault_Reference.getSecret(DomainJoinUserPrincipalName) : '' : DomainJoinUserPrincipalName
     DomainName: DomainName
     DrainMode: DrainMode
     DrainModeUserAssignedIdentityClientId: management.outputs.UserAssignedIdentityClientId
@@ -645,9 +656,9 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     TrustedLaunch: management.outputs.ValidateTrustedLaunch
     VirtualMachineMonitoringAgent: VirtualMachineMonitoringAgent
     VirtualMachineNamePrefix: VirtualMachineNamePrefix
-    VirtualMachinePassword: VirtualMachinePassword
+    VirtualMachineAdminPassword: empty(VirtualMachineAdminPassword) ? keyVault_Reference.getSecret(VirtualMachineAdminPassword) : VirtualMachineAdminPassword
     VirtualMachineSize: VirtualMachineSize
-    VirtualMachineUsername: VirtualMachineUsername
+    VirtualMachineAdminUserName: empty(VirtualMachineAdminUserName) ? keyVault_Reference.getSecret(VirtualMachineAdminUserName) : VirtualMachineAdminUserName
     VirtualNetwork: split(VMSubnetResourceId, '/')[8]
     VirtualNetworkResourceGroup: split(VMSubnetResourceId, '/')[4]
   }

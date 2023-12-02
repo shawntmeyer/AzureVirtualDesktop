@@ -3,4 +3,5 @@
 *.msi
 *.zip
 temp/**
-shawn.parameters.json
+shmeyer.onmicrosoft.us.*
+shawntmeyer.onmicrosoft.com.*

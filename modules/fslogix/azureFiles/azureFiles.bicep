@@ -5,7 +5,7 @@ param Availability string
 param AzureFilesPrivateDnsZoneResourceId string
 param AzureFilesUserAssignedIdentityClientId string
 @secure()
-param DomainJoinPassword string
+param DomainJoinUserPassword string
 param DomainJoinUserPrincipalName string
 param ActiveDirectorySolution string
 param FileShares array
@@ -24,6 +24,7 @@ param ResourceGroupManagement string
 param ResourceGroupStorage string
 param SecurityPrincipalObjectIds array
 param SecurityPrincipalNames array
+@minLength(1)
 param StorageAccountNamePrefix string
 param StorageCount int
 param StorageIndex int
@@ -182,7 +183,7 @@ module ntfsPermissions '../ntfsPermissions.bicep' = if (!contains(ActiveDirector
   params: {
     ArtifactsLocation: ArtifactsLocation
     UserAssignedIdentityClientId: ArtifactsUserAssignedIdentityClientId
-    CommandToExecute: 'powershell -ExecutionPolicy Unrestricted -File Set-NtfsPermissions.ps1 -ClientId ${AzureFilesUserAssignedIdentityClientId} -DomainJoinPassword "${DomainJoinPassword}" -DomainJoinUserPrincipalName ${DomainJoinUserPrincipalName} -ActiveDirectorySolution ${ActiveDirectorySolution} -Environment ${environment().name} -FslogixSolution ${FslogixSolution} -KerberosEncryptionType ${KerberosEncryption} -Netbios ${Netbios} -OuPath "${OuPath}" -SecurityPrincipalNames "${SecurityPrincipalNames}" -StorageAccountPrefix ${StorageAccountNamePrefix} -StorageAccountResourceGroupName ${ResourceGroupStorage} -StorageCount ${StorageCount} -StorageIndex ${StorageIndex} -StorageSolution ${StorageSolution} -StorageSuffix ${environment().suffixes.storage} -SubscriptionId ${subscription().subscriptionId} -TenantId ${subscription().tenantId}'
+    CommandToExecute: 'powershell -ExecutionPolicy Unrestricted -File Set-NtfsPermissions.ps1 -ClientId ${AzureFilesUserAssignedIdentityClientId} -DomainJoinUserPassword "${DomainJoinUserPassword}" -DomainJoinUserPrincipalName ${DomainJoinUserPrincipalName} -ActiveDirectorySolution ${ActiveDirectorySolution} -Environment ${environment().name} -FslogixSolution ${FslogixSolution} -KerberosEncryptionType ${KerberosEncryption} -Netbios ${Netbios} -OuPath "${OuPath}" -SecurityPrincipalNames "${SecurityPrincipalNames}" -StorageAccountPrefix ${StorageAccountNamePrefix} -StorageAccountResourceGroupName ${ResourceGroupStorage} -StorageCount ${StorageCount} -StorageIndex ${StorageIndex} -StorageSolution ${StorageSolution} -StorageSuffix ${environment().suffixes.storage} -SubscriptionId ${subscription().subscriptionId} -TenantId ${subscription().tenantId}'
     Location: Location
     ManagementVmName: ManagementVmName
     TagsVirtualMachines: TagsVirtualMachines

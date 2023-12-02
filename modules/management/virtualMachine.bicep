@@ -5,7 +5,8 @@ param DiskEncryptionSetResourceId string
 param DiskNamePrefix string
 param DiskSku string
 @secure()
-param DomainJoinPassword string
+param DomainJoinUserPassword string
+@secure()
 param DomainJoinUserPrincipalName string
 param DomainName string
 param Location string
@@ -20,8 +21,8 @@ param VirtualNetwork string
 param VirtualNetworkResourceGroup string
 param VirtualMachineNamePrefix string
 @secure()
-param VirtualMachinePassword string
-param VirtualMachineUsername string
+param VirtualMachineAdminPassword string
+param VirtualMachineAdminUserName string
 
 var NicName = '${NetworkInterfaceNamePrefix}mgt'
 var VmName = '${VirtualMachineNamePrefix}mgt'
@@ -81,8 +82,8 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-11-01' = {
     }
     osProfile: {
       computerName: VmName
-      adminUsername: VirtualMachineUsername
-      adminPassword: VirtualMachinePassword
+      adminUsername: VirtualMachineAdminUserName
+      adminPassword: VirtualMachineAdminPassword
       windowsConfiguration: {
         provisionVMAgent: true
         enableAutomaticUpdates: true
@@ -139,7 +140,7 @@ resource extension_JsonADDomainExtension 'Microsoft.Compute/virtualMachines/exte
       Options: '3'
     }
     protectedSettings: {
-      Password: DomainJoinPassword
+      Password: DomainJoinUserPassword
     }
   }
 }

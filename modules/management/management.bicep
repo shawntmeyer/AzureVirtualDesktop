@@ -14,7 +14,8 @@ param DiskEncryptionOptions object
 param DiskEncryptionSetName string
 param DiskSku string
 @secure()
-param DomainJoinPassword string
+param DomainJoinUserPassword string
+@secure()
 param DomainJoinUserPrincipalName string
 param DomainName string
 param DrainMode bool
@@ -49,8 +50,9 @@ param UserAssignedIdentityName string
 param VirtualMachineMonitoringAgent string
 param VirtualMachineNamePrefix string
 @secure()
-param VirtualMachinePassword string
-param VirtualMachineUsername string
+param VirtualMachineAdminPassword string
+@secure()
+param VirtualMachineAdminUserName string
 param VirtualMachineSize string
 param WorkspaceFriendlyName string
 param WorkspaceName string
@@ -109,13 +111,22 @@ module keyVault 'keyVault.bicep' =  {
   params: {
     DiskEncryptionOptions: DiskEncryptionOptions
     DiskEncryptionSetName: DiskEncryptionSetName
+    DomainJoinUserPassword: DomainJoinUserPassword
+    DomainJoinUserPrincipalName: DomainJoinUserPrincipalName   
     Environment: Environment
     KeyVaultName: KeyVaultName
     Location: LocationVirtualMachines
     TagsDiskEncryptionSet: contains(Tags, 'Microsoft.Compute/diskEncryptionSets') ? Tags['Microsoft.Compute/diskEncryptionSets'] : {}
     TagsKeyVault: contains(Tags, 'Microsoft.KeyVault/vaults') ? Tags['Microsoft.KeyVault/vaults'] : {}
     Timestamp: Timestamp
+    VirtualMachineAdminPassword: VirtualMachineAdminPassword
+    VirtualMachineAdminUserName: VirtualMachineAdminUserName
   }
+}
+
+resource keyVault_Ref 'Microsoft.KeyVault/vaults@2023-07-01' existing = if(contains(ActiveDirectorySolution,'DomainServices') && (empty(DomainJoinUserPassword) || empty(DomainJoinUserPrincipalName)) || empty(VirtualMachineAdminPassword) || empty(VirtualMachineAdminUserName)) {
+  name: KeyVaultName
+  scope: resourceGroup(ResourceGroupManagement)
 }
 
 // Management VM
@@ -130,8 +141,8 @@ module virtualMachine 'virtualMachine.bicep' = {
     DiskEncryptionSetResourceId: DiskEncryptionOptions.DiskEncryptionSet ? keyVault.outputs.diskEncryptionSetResourceId : ''
     DiskNamePrefix: DiskNamePrefix
     DiskSku: DiskSku
-    DomainJoinPassword: DomainJoinPassword
-    DomainJoinUserPrincipalName: DomainJoinUserPrincipalName
+    DomainJoinUserPassword: !empty(DomainJoinUserPassword) ? DomainJoinUserPassword : contains(ActiveDirectorySolution, 'DomainServices') ? keyVault_Ref.getSecret('DomainJoinUserPassword') : ''
+    DomainJoinUserPrincipalName: !empty(DomainJoinUserPrincipalName) ? DomainJoinUserPrincipalName : contains(ActiveDirectorySolution, 'DomainServices') ? keyVault_Ref.getSecret('DomainJoinUserPrincipalName') : ''
     DomainName: DomainName
     Location: LocationVirtualMachines
     NetworkInterfaceNamePrefix: NetworkInterfaceNamePrefix
@@ -148,8 +159,8 @@ module virtualMachine 'virtualMachine.bicep' = {
     VirtualNetwork: VirtualNetworkName
     VirtualNetworkResourceGroup: VirtualNetworkResourceGroupName
     VirtualMachineNamePrefix: VirtualMachineNamePrefix
-    VirtualMachinePassword: VirtualMachinePassword
-    VirtualMachineUsername: VirtualMachineUsername
+    VirtualMachineAdminPassword: VirtualMachineAdminPassword
+    VirtualMachineAdminUserName: VirtualMachineAdminUserName
   }
 }
 

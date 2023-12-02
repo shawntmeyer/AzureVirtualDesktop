@@ -45,7 +45,7 @@ var FSLogixNtfsRoleAssignments = Fslogix ? [
 ] : []
 var RemoveManagementVirtualMachine = [
   {
-    roleDefinitionId: 'a959dbd1-f747-45e3-8ba6-dd80f235f97c' // Desktop Virtualization Virtual Machine Contributor (Purpose: remove the management virtual machine)
+    roleDefinitionId: '9980e02c-c2be-4d73-94e8-173b1dc7cf3c' // Virtual Machine Contributor (Purpose: remove the management virtual machine)
     scope: resourceGroup().name
   }
 ]

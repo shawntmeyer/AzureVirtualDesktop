@@ -24,7 +24,8 @@ param DiskNamePrefix string
 param DiskSku string
 param DivisionRemainderValue int
 @secure()
-param DomainJoinPassword string
+param DomainJoinUserPassword string
+@secure()
 param DomainJoinUserPrincipalName string
 param DomainName string
 param DrainMode bool
@@ -84,9 +85,10 @@ param TrustedLaunch string
 param VirtualMachineMonitoringAgent string
 param VirtualMachineNamePrefix string
 @secure()
-param VirtualMachinePassword string
+param VirtualMachineAdminPassword string
 param VirtualMachineSize string
-param VirtualMachineUsername string
+@secure()
+param VirtualMachineAdminUserName string
 param VirtualNetwork string
 param VirtualNetworkResourceGroup string
 
@@ -138,7 +140,7 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, SessionHostB
     DiskEncryptionSetResourceId: DiskEncryptionSetResourceId
     DiskNamePrefix: DiskNamePrefix
     DiskSku: DiskSku
-    DomainJoinPassword: DomainJoinPassword
+    DomainJoinUserPassword: DomainJoinUserPassword
     DomainJoinUserPrincipalName: DomainJoinUserPrincipalName
     DomainName: DomainName
     DrainMode: DrainMode
@@ -178,9 +180,9 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, SessionHostB
     TrustedLaunch: TrustedLaunch
     VirtualMachineMonitoringAgent: VirtualMachineMonitoringAgent
     VirtualMachineNamePrefix: VirtualMachineNamePrefix
-    VirtualMachinePassword: VirtualMachinePassword
+    VirtualMachineAdminPassword: VirtualMachineAdminPassword
     VirtualMachineSize: VirtualMachineSize
-    VirtualMachineUsername: VirtualMachineUsername
+    VirtualMachineAdminUserName: VirtualMachineAdminUserName
     VirtualNetwork: VirtualNetwork
     VirtualNetworkResourceGroup: VirtualNetworkResourceGroup
   }

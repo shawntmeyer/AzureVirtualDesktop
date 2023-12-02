@@ -35,12 +35,12 @@
     "diskSku": {
       "value": "Premium_LRS"
     },
-    "domainJoinPassword": {
+    "DomainJoinUserPassword": {
       "reference": {
         "keyVault": {
           "id": "/subscriptions/3764b123-4849-4395-8e6e-ca6d68d8d4b4/resourceGroups/rg-core-d-eu/providers/Microsoft.KeyVault/vaults/kv-core-d-eu"
         },
-        "secretName": "DomainJoinPassword"
+        "secretName": "DomainJoinUserPassword"
       }
     },
     "domainJoinUserPrincipalName": {
@@ -166,7 +166,7 @@
     "validationEnvironment": {
       "value": false
     },
-    "virtualMachinePassword": {
+    "VirtualMachineAdminPassword": {
       "reference": {
         "keyVault": {
           "id": "/subscriptions/3764b123-4849-4395-8e6e-ca6d68d8d4b4/resourceGroups/rg-core-d-eu/providers/Microsoft.KeyVault/vaults/kv-core-d-eu"
@@ -177,7 +177,7 @@
     "virtualMachineSize": {
       "value": "Standard_D4ads_v5"
     },
-    "virtualMachineUsername": {
+    "VirtualMachineAdminUserName": {
       "reference": {
         "keyVault": {
           "id": "/subscriptions/3764b123-4849-4395-8e6e-ca6d68d8d4b4/resourceGroups/rg-core-d-eu/providers/Microsoft.KeyVault/vaults/kv-core-d-eu"

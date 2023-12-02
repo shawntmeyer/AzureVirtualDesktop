@@ -7,7 +7,7 @@ param
     [String]$DomainAccountType = "ComputerAccount",
 
     [Parameter(Mandatory)]
-    [String]$DomainJoinPassword,
+    [String]$DomainJoinUserPassword,
 
     [Parameter(Mandatory)]
     [String]$DomainJoinUserPrincipalName,
@@ -93,7 +93,7 @@ try
     #  Install Prerequisites
     ##############################################################
     # Install Active Directory PowerShell module
-    if($StorageSolution -eq 'AzureNetAppFiles' -or ($StorageSolution -eq 'AzureStorageAccount' -and $ActiveDirectorySolution -eq 'ActiveDirectoryDomainServices'))
+    if($StorageSolution -eq 'AzureNetAppFiles' -or ($StorageSolution -eq 'AzureFiles' -and $ActiveDirectorySolution -eq 'ActiveDirectoryDomainServices'))
     {
         $RsatInstalled = (Get-WindowsFeature -Name 'RSAT-AD-PowerShell').Installed
         if(!$RsatInstalled)
@@ -125,11 +125,11 @@ try
         'ProfileOfficeContainer' {@('office-containers','profile-containers')}
     }
 
-    if($StorageSolution -eq 'AzureNetAppFiles' -or ($StorageSolution -eq 'AzureStorageAccount' -and $ActiveDirectorySolution -eq 'ActiveDirectoryDomainServices'))
+    if($StorageSolution -eq 'AzureNetAppFiles' -or ($StorageSolution -eq 'AzureFiles' -and $ActiveDirectorySolution -eq 'ActiveDirectoryDomainServices'))
     {
         # Create Domain credential
         $DomainUsername = $DomainJoinUserPrincipalName
-        $DomainPassword = ConvertTo-SecureString -String $DomainJoinPassword -AsPlainText -Force
+        $DomainPassword = ConvertTo-SecureString -String $DomainJoinUserPassword -AsPlainText -Force
         [pscredential]$DomainCredential = New-Object System.Management.Automation.PSCredential ($DomainUsername, $DomainPassword)
     
         # Get Domain information
@@ -137,7 +137,7 @@ try
         Write-Log -Message "Domain information collection succeeded" -Type 'INFO'
     }
 
-    if($StorageSolution -eq 'AzureStorageAccount')
+    if($StorageSolution -eq 'AzureFiles')
     {
         $FilesSuffix = '.file.' + $StorageSuffix
         Write-Log -Message "Azure Files Suffix = $FilesSuffix" -Type 'INFO'
@@ -162,7 +162,7 @@ try
                 $SmbServerName = (Get-ADComputer -Filter "Name -like 'anf-$SmbServerLocation*'" -Credential $DomainCredential).Name
                 $FileServer = '\\' + $SmbServerName + '.' + $Domain.DNSRoot
             }
-            'AzureStorageAccount' {
+            'AzureFiles' {
                 $StorageAccountName = $StorageAccountPrefix + ($i + $StorageIndex).ToString().PadLeft(2,'0')
                 $FileServer = '\\' + $StorageAccountName + $FilesSuffix
 

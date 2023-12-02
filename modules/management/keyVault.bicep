@@ -1,12 +1,18 @@
 param DiskEncryptionOptions object
 param DiskEncryptionKeyExpirationInDays int = 30
 param DiskEncryptionSetName string
+param DomainJoinUserPrincipalName string
+@secure()
+param DomainJoinUserPassword string
 param Environment string
 param KeyVaultName string
 param Location string
 param TagsDiskEncryptionSet object
 param TagsKeyVault object
 param Timestamp string
+param VirtualMachineAdminUserName string
+@secure()
+param VirtualMachineAdminPassword string
 
 resource vault 'Microsoft.KeyVault/vaults@2022-07-01' = {
   name: KeyVaultName
@@ -15,7 +21,7 @@ resource vault 'Microsoft.KeyVault/vaults@2022-07-01' = {
   properties: {
     enabledForDeployment: false
     enabledForDiskEncryption: true
-    enabledForTemplateDeployment: false
+    enabledForTemplateDeployment: true
     enablePurgeProtection: true
     enableRbacAuthorization: true
     enableSoftDelete: true
@@ -88,6 +94,42 @@ module roleAssignment '../roleAssignment.bicep' = if(DiskEncryptionOptions.DiskE
     PrincipalId: diskEncryptionSet.identity.principalId
     PrincipalType: 'ServicePrincipal'
     RoleDefinitionId: 'e147488a-f6f5-4113-8e2d-b22465e65bf6' // Key Vault Crypto Service Encryption User
+  }
+}
+
+resource secretDomainJoinUPN 'Microsoft.KeyVault/vaults/secrets@2022-07-01' = if(!empty(DomainJoinUserPrincipalName)) {
+  parent: vault
+  name: 'DomainJoinUserPrincipalName'
+  properties: {
+    contentType: 'text/plain'
+    value: DomainJoinUserPrincipalName
+  }
+}
+
+resource secretDomainJoinUserPassword 'Microsoft.KeyVault/vaults/secrets@2022-07-01' = if(!empty(DomainJoinUserPassword)) {
+  parent: vault
+  name: 'DomainJoinUserPassword'
+  properties: {
+    contentType: 'text/plain'
+    value: DomainJoinUserPassword
+  }
+}
+
+resource secretVirtualMachineAdminUserName 'Microsoft.KeyVault/vaults/secrets@2022-07-01' = if(!empty(VirtualMachineAdminUserName)) {
+  parent: vault
+  name: 'VirtualMachineAdminUserName'
+  properties: {
+    contentType: 'text/plain'
+    value: VirtualMachineAdminUserName
+  }
+}
+
+resource secretVirtualMachineAdminPassword 'Microsoft.KeyVault/vaults/secrets@2022-07-01' = if(!empty(VirtualMachineAdminPassword)) {
+  parent: vault
+  name: 'VirtualMachineAdminPassword'
+  properties: {
+    contentType: 'text/plain'
+    value: VirtualMachineAdminPassword
   }
 }
 
