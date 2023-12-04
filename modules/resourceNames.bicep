@@ -3,6 +3,7 @@ targetScope = 'subscription'
 param Environment string
 param BusinessUnitIdentifier string
 param CentralizedAVDManagement bool
+param FslogixStorageCustomPrefix string
 param HostpoolIdentifier string
 param LocationControlPlane string
 param LocationVirtualMachines string
@@ -74,7 +75,7 @@ var WorkspaceName = replace(replace(NameConv_Mgmt_Resources, 'resourceType', Res
 var ResourceGroupStorage = replace(replace(replace(NameConv_ResGroups, 'resGroupPurpose', 'storage'), 'location', '${Locations[LocationVirtualMachines].abbreviation}'), 'resourceType', '${ResourceAbbreviations.resourceGroups}')
 var NetAppAccountName = replace(replace(NameConv_Resources, 'resourceType', ResourceAbbreviations.netAppAccounts), 'location', Locations[LocationVirtualMachines].abbreviation)
 var NetAppCapacityPoolName = replace(replace(NameConv_Resources, 'resourceType', ResourceAbbreviations.netAppCapacityPools), 'location', Locations[LocationVirtualMachines].abbreviation)
-var StorageAccountNamePrefix = toLower('fsl${replace(replace(replace(replace(NameConv_Resources, 'resourceType', ''), 'location', Locations[LocationVirtualMachines].abbreviation), 'avd-', ''), '-', '')}')
+var StorageAccountNamePrefix = empty(FslogixStorageCustomPrefix) ? toLower('fsl${replace(replace(replace(replace(NameConv_Resources, 'resourceType', ''), 'location', Locations[LocationVirtualMachines].abbreviation), 'avd-', ''), '-', '')}') : FslogixStorageCustomPrefix
 
 output AvailabilitySetNamePrefix string = AvailabilitySetNamePrefix
 output AutomationAccountName string = AutomationAccountName

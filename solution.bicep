@@ -119,6 +119,9 @@ param DrainMode bool = false
 @description('The target environment for the solution.')
 param Environment string = ''
 
+@description('The custom prefix to use for the name of the Azure Files storage accounts to use for FSLogix. If not specified, the name is generated automatically.')
+param FslogixStorageCustomPrefix string = ''
+
 @description('The file share size(s) in GB for the Fslogix storage solution.')
 param FslogixShareSizeInGB int = 100
 
@@ -339,6 +342,7 @@ module resourceNames 'modules/resourceNames.bicep' = {
     Environment: Environment
     BusinessUnitIdentifier: BusinessUnitIdentifier
     CentralizedAVDManagement: CentralizedAVDManagement
+    FslogixStorageCustomPrefix: FslogixStorageCustomPrefix
     HostpoolIdentifier: HostpoolIdentifier
     LocationControlPlane: LocationControlPlane
     LocationVirtualMachines: vmVirtualNetwork.location
