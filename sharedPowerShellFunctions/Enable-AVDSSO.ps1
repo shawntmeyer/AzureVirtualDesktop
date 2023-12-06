@@ -32,7 +32,7 @@ $BodyConfigObject = [PSCustomObject]@{
 $BodyConfig = $BodyConfigObject | ConvertTo-Json
 
 ForEach ($AppId in $AppIds) {
-    $ServicePrincipalId = (Get-MgServicePrincipal -Filter "appId eq 'a4a365df-50f1-4397-bc59-1a1564b8bb9c'").id
+    $ServicePrincipalId = (Get-MgServicePrincipal -Filter "appId eq $AppId").id
     $Uri = "$graphUri/v1.0/servicePrincipals/$ServicePrincipalId/remoteDesktopSecurityConfiguration"
     Invoke-WebRequest -Uri $uri -Headers $Headers -Method Patch -Body $BodyConfig -ContentType $ContentType -UseBasicParsing
     $Uri = "$Uri/targetDeviceGroups"
