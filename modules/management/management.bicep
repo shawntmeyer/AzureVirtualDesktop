@@ -194,7 +194,7 @@ resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
 // Monitoring Resources for AVD Insights
 // This module deploys a Log Analytics Workspace and if Monitoring agent is the legacy Log Analytics Agent then the Windows Events & Windows Performance Counters plus diagnostic settings on the required resources 
 module logAnalyticsWorkspace 'logAnalyticsWorkspace.bicep' = if (Monitoring) {
-  name: 'Monitoring_${Timestamp}'
+  name: 'LogAnalytics_${Timestamp}'
   scope: resourceGroup(ResourceGroupManagement)
   params: {
     LogAnalyticsWorkspaceName: LogAnalyticsWorkspaceName

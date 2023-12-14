@@ -23,7 +23,7 @@ function New-Log {
     #>
 
     Param (
-        [Parameter(Mandatory = $true, Position=0)]
+        [Parameter(Mandatory = $true, Position = 0)]
         [string] $Path
     )
 
@@ -60,10 +60,10 @@ function Write-Log {
     #>
 
     Param (
-        [Parameter(Mandatory=$false, Position=0)]
-        [ValidateSet("Info","Warning","Error")]
+        [Parameter(Mandatory = $false, Position = 0)]
+        [ValidateSet("Info", "Warning", "Error")]
         $category = 'Info',
-        [Parameter(Mandatory=$true, Position=1)]
+        [Parameter(Mandatory = $true, Position = 1)]
         $message
     )
 
@@ -89,10 +89,10 @@ Function Get-InternetUrl {
             $HTML = Invoke-WebRequest -Uri $Url -UseBasicParsing
             $Links = $HTML.Links
             $ahref = $null
-            $ahref=@()
-            $ahref = ($Links | Where-Object {$_.href -like "*$searchstring*"}).href
+            $ahref = @()
+            $ahref = ($Links | Where-Object { $_.href -like "*$searchstring*" }).href
             If ($ahref.count -eq 0 -or $null -eq $ahref) {
-                $ahref = ($Links | Where-Object {$_.OuterHTML -like "*$searchstring*"}).href
+                $ahref = ($Links | Where-Object { $_.OuterHTML -like "*$searchstring*" }).href
             }
             If ($ahref.Count -eq 1) {
                 Write-Verbose "${CmdletName}: Download URL = '$ahref'"
@@ -140,8 +140,8 @@ Function Get-InternetFile {
             Else {
                 Write-Verbose "${CmdletName}: Url does not contain file name. Trying 'Location' Response Header."
                 $request = [System.Net.WebRequest]::Create($url)
-                $request.AllowAutoRedirect=$false
-                $response=$request.GetResponse()
+                $request.AllowAutoRedirect = $false
+                $response = $request.GetResponse()
                 $Location = $response.GetResponseHeader("Location")
                 If ($Location) {
                     $OutputFileName = [System.IO.Path]::GetFileName($Location)
@@ -152,7 +152,7 @@ Function Get-InternetFile {
                     $result = Invoke-WebRequest -Method GET -Uri $Url -UseBasicParsing
                     $contentDisposition = $result.Headers.'Content-Disposition'
                     If ($contentDisposition) {
-                        $OutputFileName = $contentDisposition.Split("=")[1].Replace("`"","")
+                        $OutputFileName = $contentDisposition.Split("=")[1].Replace("`"", "")
                         Write-Verbose "${CmdletName}: File Name from 'Content-Disposition' Response Header is '$OutputFileName'."
                     }
                 }
@@ -228,7 +228,7 @@ Function Update-LocalGPOTextFile {
         $ValueType = $RegistryType.ToUpper()
         # Change String type to SZ for text file
         If ($ValueType -eq 'STRING') { $ValueType = 'SZ' }
-        If ($ValueType -eq 'MultiString') { $ValueType = 'MULTISZ'}
+        If ($ValueType -eq 'MultiString') { $ValueType = 'MULTISZ' }
         # Replace any incorrect registry entries for the format needed by text file.
         $modified = $false
         $SearchStrings = 'HKLM:\', 'HKCU:\', 'HKEY_CURRENT_USER:\', 'HKEY_LOCAL_MACHINE:\'
@@ -329,24 +329,24 @@ Function Get-InstalledApplication {
     #>
     [CmdletBinding()]
     Param (
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory = $false)]
         [ValidateNotNullorEmpty()]
         [string[]]$Name,
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory = $false)]
         [switch]$Exact = $false,
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory = $false)]
         [switch]$WildCard = $false,
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory = $false)]
         [switch]$RegEx = $false,
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory = $false)]
         [ValidateNotNullorEmpty()]
         [string]$ProductCode,
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory = $false)]
         [switch]$IncludeUpdatesAndHotfixes
     )
 
     Begin {
-        [string[]]$regKeyApplications = 'Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall','Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall'
+        [string[]]$regKeyApplications = 'Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall', 'Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall'
     }
     Process { 
         ## Enumerate the installed applications from the registry for applications that have the "DisplayName" property
@@ -359,7 +359,7 @@ Function Get-InstalledApplication {
                         [psobject]$regKeyApplicationProps = Get-ItemProperty -LiteralPath $UninstallKeyApp.PSPath -ErrorAction 'Stop'
                         If ($regKeyApplicationProps.DisplayName) { [psobject[]]$regKeyApplication += $regKeyApplicationProps }
                     }
-                    Catch{
+                    Catch {
                         Continue
                     }
                 }
@@ -382,9 +382,9 @@ Function Get-InstalledApplication {
                 }
 
                 ## Remove any control characters which may interfere with logging and creating file path names from these variables
-                $appDisplayName = $regKeyApp.DisplayName -replace '[^\u001F-\u007F]',''
-                $appDisplayVersion = $regKeyApp.DisplayVersion -replace '[^\u001F-\u007F]',''
-                $appPublisher = $regKeyApp.Publisher -replace '[^\u001F-\u007F]',''
+                $appDisplayName = $regKeyApp.DisplayName -replace '[^\u001F-\u007F]', ''
+                $appDisplayVersion = $regKeyApp.DisplayVersion -replace '[^\u001F-\u007F]', ''
+                $appPublisher = $regKeyApp.Publisher -replace '[^\u001F-\u007F]', ''
 
 
                 ## Determine if application is a 64-bit application
@@ -394,15 +394,15 @@ Function Get-InstalledApplication {
                     ## Verify if there is a match with the product code passed to the script
                     If ($regKeyApp.PSChildName -match [regex]::Escape($productCode)) {
                         $installedApplication += New-Object -TypeName 'PSObject' -Property @{
-                            UninstallSubkey = $regKeyApp.PSChildName
-                            ProductCode = If ($regKeyApp.PSChildName -match $MSIProductCodeRegExPattern) { $regKeyApp.PSChildName } Else { [string]::Empty }
-                            DisplayName = $appDisplayName
-                            DisplayVersion = $appDisplayVersion
-                            UninstallString = $regKeyApp.UninstallString
-                            InstallSource = $regKeyApp.InstallSource
-                            InstallLocation = $regKeyApp.InstallLocation
-                            InstallDate = $regKeyApp.InstallDate
-                            Publisher = $appPublisher
+                            UninstallSubkey    = $regKeyApp.PSChildName
+                            ProductCode        = If ($regKeyApp.PSChildName -match $MSIProductCodeRegExPattern) { $regKeyApp.PSChildName } Else { [string]::Empty }
+                            DisplayName        = $appDisplayName
+                            DisplayVersion     = $appDisplayVersion
+                            UninstallString    = $regKeyApp.UninstallString
+                            InstallSource      = $regKeyApp.InstallSource
+                            InstallLocation    = $regKeyApp.InstallLocation
+                            InstallDate        = $regKeyApp.InstallDate
+                            Publisher          = $appPublisher
                             Is64BitApplication = $Is64BitApp
                         }
                     }
@@ -437,15 +437,15 @@ Function Get-InstalledApplication {
 
                         If ($applicationMatched) {
                             $installedApplication += New-Object -TypeName 'PSObject' -Property @{
-                                UninstallSubkey = $regKeyApp.PSChildName
-                                ProductCode = If ($regKeyApp.PSChildName -match $MSIProductCodeRegExPattern) { $regKeyApp.PSChildName } Else { [string]::Empty }
-                                DisplayName = $appDisplayName
-                                DisplayVersion = $appDisplayVersion
-                                UninstallString = $regKeyApp.UninstallString
-                                InstallSource = $regKeyApp.InstallSource
-                                InstallLocation = $regKeyApp.InstallLocation
-                                InstallDate = $regKeyApp.InstallDate
-                                Publisher = $appPublisher
+                                UninstallSubkey    = $regKeyApp.PSChildName
+                                ProductCode        = If ($regKeyApp.PSChildName -match $MSIProductCodeRegExPattern) { $regKeyApp.PSChildName } Else { [string]::Empty }
+                                DisplayName        = $appDisplayName
+                                DisplayVersion     = $appDisplayVersion
+                                UninstallString    = $regKeyApp.UninstallString
+                                InstallSource      = $regKeyApp.InstallSource
+                                InstallLocation    = $regKeyApp.InstallLocation
+                                InstallDate        = $regKeyApp.InstallDate
+                                Publisher          = $appPublisher
                                 Is64BitApplication = $Is64BitApp
                             }
                         }
@@ -480,7 +480,7 @@ Function Set-RegistryValue {
     Process {
         $LogOutputValue = "Path: $Path, Name: $Name, PropertyType: $PropertyType, Value: $Value"
         # Create the registry Key(s) if necessary.
-        If(!(Test-Path -Path $Path)) {
+        If (!(Test-Path -Path $Path)) {
             New-Item -Path $Path -Force | Out-Null
         }
         # Check for existing registry setting
@@ -492,10 +492,12 @@ Function Set-RegistryValue {
             If ($Value -ne $CurrentValue) {
                 Set-ItemProperty -Path $Path -Name $Name -Value $Value -Force | Out-Null
                 Write-Log -message "${CmdletName}: Updated registry setting: $LogOutputValue"
-            } Else {
+            }
+            Else {
                 Write-Log -message "${CmdletName}: Registry Setting exists with correct value: $LogOutputValue"
             }
-        } Else {
+        }
+        Else {
             New-ItemProperty -Path $Path -Name $Name -PropertyType $PropertyType -Value $Value -Force | Out-Null
             Write-Log -message "${CmdletName}: Added registry setting: $LogOutputValue"
         }
@@ -523,11 +525,11 @@ Write-Log -message " IdentityProvider = $IdentityProvider"
 Write-Log -message " StorageSolution = $StorageSolution"
 Write-Log -message " CloudCache = $CloudCache"
 
-switch($StorageSolution) {
+switch ($StorageSolution) {
     'AzureNetAppFiles' {
         [array]$NetAppFileShares = $FSLogix.NetAppFileShares
         Write-Log -message ' NetAppFileShares ='
-        ForEach($Share in $NetAppFileShares) { Write-Log -message "  $Share" }
+        ForEach ($Share in $NetAppFileShares) { Write-Log -message "  $Share" }
         [array]$OfficeContainerPaths += "\\$($NetAppFileShares[1])"
         [array]$ProfileContainerPaths += "\\$($NetAppFileShares[0])"
         [array]$CloudCacheOfficeContainerPaths += "type=smb,connectionString=\\$($NetAppFileShares[1])"
@@ -537,9 +539,9 @@ switch($StorageSolution) {
     'AzureFiles' {
         [array]$StorageAccountNames = $FSLogixKeys.saNames
         Write-Log -message ' Azure Storage Account Names ='
-        ForEach($sa in $StorageAccountNames) { Write-Log -message "  $sa" }
+        ForEach ($sa in $StorageAccountNames) { Write-Log -message "  $sa" }
         [array]$StorageAccountKeys = $FSLogixKeys.saKeys
-        if($null -ne $StorageAccountKeys) { Write-Log -message " $($StorageAccountKeys.Count) storage account keys provided." }
+        if ($null -ne $StorageAccountKeys) { Write-Log -message " $($StorageAccountKeys.Count) storage account keys provided." }
         $StorageAccountSuffix = $FSLogixKeys.saSuffix
         Write-Log -message " Storage Account Suffix = $StorageAccountSuffix"
         [array]$shares = $FSlogixKeys.shareNames       
@@ -598,82 +600,82 @@ $Settings += @(
 
     # Cleans up an invalid sessions to enable a successful sign-in: https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=profiles#cleanupinvalidsessions
     [PSCustomObject]@{
-        Name = 'CleanupInvalidSessions'
-        Path = 'HKLM:\SOFTWARE\FSLogix\Apps'
+        Name         = 'CleanupInvalidSessions'
+        Path         = 'HKLM:\SOFTWARE\FSLogix\Apps'
         PropertyType = 'DWord'
-        Value = 1
+        Value        = 1
     },
 
     # Enables Fslogix profile containers: https://learn.microsoft.com/fslogix/profile-container-configuration-reference#enabled
     [PSCustomObject]@{
-        Name = 'Enabled'
-        Path = 'HKLM:\SOFTWARE\Fslogix\Profiles'
+        Name         = 'Enabled'
+        Path         = 'HKLM:\SOFTWARE\Fslogix\Profiles'
         PropertyType = 'DWord'
-        Value = 1
+        Value        = 1
     },
 
     # Deletes a local profile if it exists and matches the profile being loaded from VHD: https://learn.microsoft.com/fslogix/profile-container-configuration-reference#deletelocalprofilewhenvhdshouldapply
     [PSCustomObject]@{
-        Name = 'DeleteLocalProfileWhenVHDShouldApply'
-        Path = 'HKLM:\SOFTWARE\FSLogix\Profiles'
+        Name         = 'DeleteLocalProfileWhenVHDShouldApply'
+        Path         = 'HKLM:\SOFTWARE\FSLogix\Profiles'
         PropertyType = 'DWord'
-        Value = 1
+        Value        = 1
     },
 
     # The folder created in the Fslogix fileshare will begin with the username instead of the SID: https://learn.microsoft.com/fslogix/profile-container-configuration-reference#flipflopprofiledirectoryname
     [PSCustomObject]@{
-        Name = 'FlipFlopProfileDirectoryName'
-        Path = 'HKLM:\SOFTWARE\FSLogix\Profiles'
+        Name         = 'FlipFlopProfileDirectoryName'
+        Path         = 'HKLM:\SOFTWARE\FSLogix\Profiles'
         PropertyType = 'DWord'
-        Value = 1
+        Value        = 1
     },
 
     # Prevent Login with a failure: https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=profiles#preventloginwithfailure
     [PSCustomObject]@{
-        Name = 'PreventLoginWithFailure'
-        Path = 'HKLM:\SOFTWARE\FSLogix\Profiles'
+        Name         = 'PreventLoginWithFailure'
+        Path         = 'HKLM:\SOFTWARE\FSLogix\Profiles'
         PropertyType = 'DWord'
-        Value = 1
+        Value        = 1
     },
 
     # Prevent Login with a temporary profile: https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=profiles#preventloginwithtempprofile
     [PSCustomObject]@{
-        Name = 'PreventLoginWithTempProfile'
-        Path = 'HKLM:\SOFTWARE\FSLogix\Profiles'
+        Name         = 'PreventLoginWithTempProfile'
+        Path         = 'HKLM:\SOFTWARE\FSLogix\Profiles'
         PropertyType = 'DWord'
-        Value = 1
+        Value        = 1
     },
 
     # Specifies the number of seconds to wait between retries when attempting to reattach the VHD(x) container if it's disconnected unexpectedly: https://learn.microsoft.com/fslogix/reference-configuration-settings?tabs=profiles#reattachintervalseconds
     [PSCustomObject]@{
-        Name = 'ReAttachIntervalSeconds'
-        Path = 'HKLM:\SOFTWARE\FSLogix\Profiles'
+        Name         = 'ReAttachIntervalSeconds'
+        Path         = 'HKLM:\SOFTWARE\FSLogix\Profiles'
         PropertyType = 'DWord'
-        Value = 15
+        Value        = 15
     },
 
     # Specifies the number of times the system should attempt to reattach the VHD(x) container if it's disconnected unexpectedly: https://learn.microsoft.com/fslogix/reference-configuration-settings?tabs=profiles#reattachretrycount
     [PSCustomObject]@{
-        Name = 'ReAttachRetryCount'
-        Path = 'HKLM:\SOFTWARE\FSLogix\Profiles'
+        Name         = 'ReAttachRetryCount'
+        Path         = 'HKLM:\SOFTWARE\FSLogix\Profiles'
         PropertyType = 'DWord'
-        Value = 3
+        Value        = 3
     },
 
     # Specifies the maximum size of the user's container in megabytes. Newly created VHD(x) containers are of this size: https://learn.microsoft.com/fslogix/reference-configuration-settings?tabs=profiles#sizeinmbs
     [PSCustomObject]@{
-        Name = 'SizeInMBs'
-        Path = 'HKLM:\SOFTWARE\FSLogix\Profiles'
+        Name         = 'SizeInMBs'
+        Path         = 'HKLM:\SOFTWARE\FSLogix\Profiles'
         PropertyType = 'DWord'
-        Value = 30000
+        Value        = 30000
     },
 
     # Specifies the file extension for the profile containers: https://learn.microsoft.com/fslogix/reference-configuration-settings?tabs=profiles#volumetype
     [PSCustomObject]@{
-        Name = 'VolumeType'
-        Path = 'HKLM:\SOFTWARE\FSLogix\Profiles'
+        Name         = 'VolumeType'
+        Path         = 'HKLM:\SOFTWARE\FSLogix\Profiles'
         PropertyType = 'String'
-        Value = 'VHDX'
+        Value        = 'VHDX'
     }
 )
 
@@ -681,10 +683,10 @@ If ($IdentityProvider -eq 'AAD') {
     $Settings += @(
         # Attach the users VHD(x) as the computer: https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=profiles#accessnetworkascomputerobject
         [PSCustomObject]@{
-            Name = 'AccessNetworkAsComputerObject'
-            Path = 'HKLM:\SOFTWARE\FSLogix\Profiles'
+            Name         = 'AccessNetworkAsComputerObject'
+            Path         = 'HKLM:\SOFTWARE\FSLogix\Profiles'
             PropertyType = 'DWord'
-            Value = 1
+            Value        = 1
         }
     )
 }
@@ -693,28 +695,29 @@ If ($CloudCache) {
     $Settings += @(
         # List of file system locations to search for the user's profile VHD(X) file: https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=ccd#ccdlocations
         [PSCustomObject]@{
-            Name = 'CCDLocations'
-            Path = 'HKLM:\SOFTWARE\FSLogix\Profiles'
+            Name         = 'CCDLocations'
+            Path         = 'HKLM:\SOFTWARE\FSLogix\Profiles'
             PropertyType = 'MultiString'
-            Value = $CloudCacheProfileContainerPaths
+            Value        = $CloudCacheProfileContainerPaths
         },
 
         # Clear the cloud cache on logoff: https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=ccd#clearcacheonlogoff
         [PSCustomObject]@{
-            Name = 'ClearCacheOnLogoff'
-            Path = 'HKLM:\SOFTWARE\FSLogix\Profiles'
+            Name         = 'ClearCacheOnLogoff'
+            Path         = 'HKLM:\SOFTWARE\FSLogix\Profiles'
             PropertyType = 'DWord'
-            Value = 1
+            Value        = 1
         }
     )
-} Else {
+}
+Else {
     $Settings += @(
         # List of file system locations to search for the user's profile VHD(X) file: https://learn.microsoft.com/fslogix/profile-container-configuration-reference#vhdlocations
         [PSCustomObject]@{
-            Name = 'VHDLocations'
-            Path = 'HKLM:\SOFTWARE\FSLogix\Profiles'
+            Name         = 'VHDLocations'
+            Path         = 'HKLM:\SOFTWARE\FSLogix\Profiles'
             PropertyType = 'MultiString'
-            Value = $ProfileContainerPaths
+            Value        = $ProfileContainerPaths
         }
     )
 }
@@ -724,82 +727,82 @@ If ($OfficeContainerPaths) {
 
         # Enables Fslogix office containers: https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=odfc#enabled-1
         [PSCustomObject]@{
-            Name = 'Enabled'
-            Path = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'
+            Name         = 'Enabled'
+            Path         = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'
             PropertyType = 'DWord'
-            Value = 1
+            Value        = 1
         },
 
         # The folder created in the Fslogix fileshare will begin with the username instead of the SID: https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=odfc#flipflopprofiledirectoryname-1
         [PSCustomObject]@{
-            Name = 'FlipFlopProfileDirectoryName'
-            Path = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'
+            Name         = 'FlipFlopProfileDirectoryName'
+            Path         = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'
             PropertyType = 'DWord'
-            Value = 1
+            Value        = 1
         },
 
         # Specifies the number of retries attempted when a VHD(x) file is locked: https://learn.microsoft.com/fslogix/reference-configuration-settings?tabs=odfc#lockedretrycount
         [PSCustomObject]@{
-            Name = 'LockedRetryCount'
-            Path = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'
+            Name         = 'LockedRetryCount'
+            Path         = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'
             PropertyType = 'DWord'
-            Value = 3
+            Value        = 3
         },
 
         # Specifies the number of seconds to wait between retries: https://learn.microsoft.com/fslogix/reference-configuration-settings?tabs=odfc#lockedretryinterval
         [PSCustomObject]@{
-            Name = 'LockedRetryInterval'
-            Path = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'
+            Name         = 'LockedRetryInterval'
+            Path         = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'
             PropertyType = 'DWord'
-            Value = 15
+            Value        = 15
         },
 
         # Prevent Login with a failure: https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=odfc#preventloginwithfailure-1
         [PSCustomObject]@{
-            Name = 'PreventLoginWithFailure'
-            Path = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'
+            Name         = 'PreventLoginWithFailure'
+            Path         = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'
             PropertyType = 'DWord'
-            Value = 1
+            Value        = 1
         },
 
         # Prevent Login with Temporary Profile: https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=odfc#preventloginwithtempprofile-1
         [PSCustomObject]@{
-            Name = 'PreventLoginWithTempProfile'
-            Path = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'
+            Name         = 'PreventLoginWithTempProfile'
+            Path         = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'
             PropertyType = 'DWord'
-            Value = 15
+            Value        = 15
         },
         
         # Specifies the number of seconds to wait between retries when attempting to reattach the VHD(x) container if it's disconnected unexpectedly: https://learn.microsoft.com/fslogix/reference-configuration-settings?tabs=odfc#reattachintervalseconds
         [PSCustomObject]@{
-            Name = 'ReAttachIntervalSeconds'
-            Path = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'
+            Name         = 'ReAttachIntervalSeconds'
+            Path         = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'
             PropertyType = 'DWord'
-            Value = 15
+            Value        = 15
         },
 
         # Specifies the number of times the system should attempt to reattach the VHD(x) container if it's disconnected unexpectedly: https://learn.microsoft.com/fslogix/reference-configuration-settings?tabs=odfc#reattachretrycount
         [PSCustomObject]@{
-            Name = 'ReAttachRetryCount'
-            Path = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'
+            Name         = 'ReAttachRetryCount'
+            Path         = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'
             PropertyType = 'DWord'
-            Value = 3
+            Value        = 3
         },
 
         # Specifies the maximum size of the user's container in megabytes: https://learn.microsoft.com/fslogix/reference-configuration-settings?tabs=odfc#sizeinmbs
         [PSCustomObject]@{
-            Name = 'SizeInMBs'
-            Path = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'
+            Name         = 'SizeInMBs'
+            Path         = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'
             PropertyType = 'DWord'
-            Value = 30000
+            Value        = 30000
         },
 
         # Specifies the type of container: https://learn.microsoft.com/fslogix/reference-configuration-settings?tabs=odfc#volumetype
         [PSCustomObject]@{
-            Name = 'VolumeType'
-            Path = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'
+            Name         = 'VolumeType'
+            Path         = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'
             PropertyType = 'String'
-            Value = 'VHDX'
+            Value        = 'VHDX'
         }
     )
 
@@ -807,10 +810,10 @@ If ($OfficeContainerPaths) {
         $Settings += @(
             # Attach the users VHD(x) as the computer: https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=odfc#accessnetworkascomputerobject-1
             [PSCustomObject]@{
-                Name = 'AccessNetworkAsComputerObject'
-                Path = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'
+                Name         = 'AccessNetworkAsComputerObject'
+                Path         = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'
                 PropertyType = 'DWord'
-                Value = 1
+                Value        = 1
             }
         )
     }
@@ -819,28 +822,29 @@ If ($OfficeContainerPaths) {
         $Settings += @(
             # List of file system locations to search for the user's profile VHD(X) file: https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=ccd#ccdlocations
             [PSCustomObject]@{
-                Name = 'CCDLocations'
-                Path = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'
+                Name         = 'CCDLocations'
+                Path         = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'
                 PropertyType = 'MultiString'
-                Value = $CloudCacheOfficeContainerPaths
+                Value        = $CloudCacheOfficeContainerPaths
             },
 
             # Clear the cloud cache on logoff: https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=ccd#clearcacheonlogoff
             [PSCustomObject]@{
-                Name = 'ClearCacheOnLogoff'
-                Path = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'
+                Name         = 'ClearCacheOnLogoff'
+                Path         = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'
                 PropertyType = 'DWord'
-                Value = 1
+                Value        = 1
             }
         )
-    } Else {
+    }
+    Else {
         $Settings += @(
             # List of file system locations to search for the user's profile VHD(X) file: https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=odfc#vhdlocations-1
             [PSCustomObject]@{
-                Name = 'VHDLocations'
-                Path = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'
+                Name         = 'VHDLocations'
+                Path         = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'
                 PropertyType = 'MultiString'
-                Value = $OfficeContainerPaths
+                Value        = $OfficeContainerPaths
             }
         )
     }       
@@ -851,10 +855,10 @@ If ($IdentityProvider -eq 'AADKERB') {
     Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath 'SYSTEM\CurrentControlSet\Control\Lsa\Kerberos\Parameters' -RegistryValue 'CloudKerberosTicketRetrievalEnabled' -RegistryData 1 -RegistryType DWORD -outfileprefix $appName -Verbose
     $Settings += @(        
         [PSCustomObject]@{
-            Name = 'LoadCredKeyFromProfile'
-            Path = 'HKLM:\SOFTWARE\Policies\Microsoft\AzureADAccount'
+            Name         = 'LoadCredKeyFromProfile'
+            Path         = 'HKLM:\SOFTWARE\Policies\Microsoft\AzureADAccount'
             PropertyType = 'DWord'
-            Value = 1
+            Value        = 1
         }
     )
 }
@@ -869,10 +873,10 @@ If (Get-InstalledApplication 'Teams') {
     # Path where FSLogix looks for the redirections.xml file to copy from and into the user's profile: https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=profiles#redirxmlsourcefolder
     $Settings += @(
         [PSCustomObject]@{
-            Name = 'RedirXMLSourceFolder'
-            Path = 'HKLM:\SOFTWARE\FSLogix\Profiles'
+            Name         = 'RedirXMLSourceFolder'
+            Path         = 'HKLM:\SOFTWARE\FSLogix\Profiles'
             PropertyType = 'String'
-            Value = $customRedirFolder
+            Value        = $customRedirFolder
         }
     )
 }
@@ -890,7 +894,8 @@ If (!(Test-Path -Path "$env:SystemRoot\System32\lgpo.exe")) {
         }
         Write-Log -category Info -Message "Copying `"$fileLGPO`" to System32"
         Copy-Item -Path $fileLGPO -Destination "$env:SystemRoot\System32" -Force
-    } Catch {
+    }
+    Catch {
         Write-Log -category Warning -Message "LGPO.exe could not be found or downloaded. Unable to apply Defender Exclusions via lgpo."
     }
 
@@ -910,7 +915,7 @@ If (Test-Path -Path "$env:SytemRoot\System32\lgpo.exe") {
     Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue '%TEMP\*.VHDX' -RegistryType String -RegistryData 0 -outfileprefix $appName -Verbose
     Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue '%WINDIR%\TEMP\*.VHD' -RegistryType String -RegistryData 0 -outfileprefix $appName -Verbose
     Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue '%WINDIR%\TEMP\*.VHDX' -RegistryType String -RegistryData 0 -outfileprefix $appName -Verbose
-    For($i=0,$i -lt $defenderShareExclusionPaths.Length,$i++) {
+    For ($i = 0, $i -lt $defenderShareExclusionPaths.Length, $i++) {
         $value = "$($defenderShareExclusionPaths[$i])\*\*.vhdx"
         Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $regKey -RegistryValue $value -RegistryType String -RegistryData '' -outfileprefix $appName -Verbose
     }
@@ -929,15 +934,15 @@ If (Test-Path -Path "$env:SytemRoot\System32\lgpo.exe") {
     Invoke-LGPO -Verbose
 }
 Write-Log -message "Updating Registry Settings."
-ForEach($Setting in $Settings) {
+ForEach ($Setting in $Settings) {
     Set-RegistryValue -Name $Setting.Name -Path $Setting.Path -PropertyType $Setting.PropertyType -Value $Setting.Value -Verbose
 }
 
 Write-Log -message "Adding local Administrator account to Exclude List groups to allow emergency troubleshooting."
-$LocalAdministrator = (Get-LocalUser | Where-Object {$_.SID -like '*-500'}).Name
-$LocalGroups = 'FSLogix Profile Exclude List','FSLogix ODFC Exclude List'
+$LocalAdministrator = (Get-LocalUser | Where-Object { $_.SID -like '*-500' }).Name
+$LocalGroups = 'FSLogix Profile Exclude List', 'FSLogix ODFC Exclude List'
 ForEach ($Group in $LocalGroups) {
-    If (-not (Get-LocalGroupMember -Group $Group | Where-Object {$_.Name -like "*$LocalAdministrator"})) {
+    If (-not (Get-LocalGroupMember -Group $Group | Where-Object { $_.Name -like "*$LocalAdministrator" })) {
         Add-LocalGroupMember -Group $Group -Member $LocalAdministrator
     }
 }
