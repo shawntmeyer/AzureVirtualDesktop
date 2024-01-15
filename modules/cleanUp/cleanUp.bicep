@@ -1,17 +1,17 @@
 targetScope = 'subscription' 
 
-param Location string
-param ResourceGroupManagement string
-param Timestamp string
-param UserAssignedIdentityClientId string
-param VirtualMachineName string
+param location string
+param resourceGroupManagement string
+param timeStamp string
+param userAssignedIdentityClientId string
+param virtualMachineName string
 
 module removeManagementVirtualMachine 'removeVirtualMachine.bicep' = {
-  scope: resourceGroup(ResourceGroupManagement)
-  name: 'RemoveManagementVirtualMachine_${Timestamp}'
+  scope: resourceGroup(resourceGroupManagement)
+  name: 'RemoveManagementVirtualMachine_${timeStamp}'
   params: {
-    Location: Location
-    UserAssignedIdentityClientId: UserAssignedIdentityClientId
-    VirtualMachineName: VirtualMachineName
+    location: location
+    userAssignedIdentityClientId: userAssignedIdentityClientId
+    virtualMachineName: virtualMachineName
   }
 }

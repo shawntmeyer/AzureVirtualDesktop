@@ -1,11 +1,11 @@
-param Location string
-param LogAnalyticsWorkspaceName string
-param LogAnalyticsWorkspaceRetention int
-param LogAnalyticsWorkspaceSku string
-param Tags object
-param VirtualMachineMonitoringAgent string
+param location string
+param logAnalyticsWorkspaceName string
+param logAnalyticsWorkspaceRetention int
+param logAnalyticsWorkspaceSku string
+param tags object
+param virtualMachineMonitoringAgent string
 
-var WindowsEvents = VirtualMachineMonitoringAgent == 'LogAnalyticsAgent' ? [
+var WindowsEvents = virtualMachineMonitoringAgent == 'LogAnalyticsAgent' ? [
   {
     name: 'Microsoft-FSLogix-Apps/Operational'
     types: [
@@ -85,7 +85,7 @@ var WindowsEvents = VirtualMachineMonitoringAgent == 'LogAnalyticsAgent' ? [
     ]
   }
 ] : []
-var WindowsPerformanceCounters = VirtualMachineMonitoringAgent == 'LogAnalyticsAgent' ? [
+var WindowsPerformanceCounters = virtualMachineMonitoringAgent == 'LogAnalyticsAgent' ? [
   {
     objectName: 'LogicalDisk'
     instanceName: '*'
@@ -389,14 +389,14 @@ var WindowsPerformanceCounters = VirtualMachineMonitoringAgent == 'LogAnalyticsA
 ] : []
 
 resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2021-06-01' = {
-  name: LogAnalyticsWorkspaceName
-  location: Location
-  tags: Tags
+  name: logAnalyticsWorkspaceName
+  location: location
+  tags: tags
   properties: {
     sku: {
-      name: LogAnalyticsWorkspaceSku
+      name: logAnalyticsWorkspaceSku
     }
-    retentionInDays: LogAnalyticsWorkspaceRetention
+    retentionInDays: logAnalyticsWorkspaceRetention
     workspaceCapping: {
       dailyQuotaGb: -1
     }
@@ -409,7 +409,7 @@ resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2021-06
 resource windowsEvents 'Microsoft.OperationalInsights/workspaces/dataSources@2020-08-01' = [for (item, i) in WindowsEvents: {
   parent: logAnalyticsWorkspace
   name: 'WindowsEvent${i}'
-  tags: Tags
+  tags: tags
   kind: 'WindowsEvent'
   properties: {
     eventLogName: item.name
@@ -421,7 +421,7 @@ resource windowsEvents 'Microsoft.OperationalInsights/workspaces/dataSources@202
 resource windowsPerformanceCounters 'Microsoft.OperationalInsights/workspaces/dataSources@2020-08-01' = [for (item, i) in WindowsPerformanceCounters: {
   parent: logAnalyticsWorkspace
   name: 'WindowsPerformanceCounter${i}'
-  tags: Tags
+  tags: tags
   kind: 'WindowsPerformanceCounter'
   properties: {
     objectName: item.objectName

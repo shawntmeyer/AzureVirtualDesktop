@@ -1,16 +1,16 @@
-param ArtifactsLocation string
+param artifactsUri string
 @secure()
 param CommandToExecute string
-param Location string
-param ManagementVmName string
-param TagsVirtualMachines object
-param Timestamp string
-param UserAssignedIdentityClientId string
+param location string
+param managementVirtualMachineName string
+param tagsVirtualMachines object
+param timeStamp string
+param userAssignedIdentityClientId string
 
 resource customScriptExtension 'Microsoft.Compute/virtualMachines/extensions@2020-12-01' = {
-  name: '${ManagementVmName}/CustomScriptExtension'
-  location: Location
-  tags: TagsVirtualMachines
+  name: '${managementVirtualMachineName}/CustomScriptExtension'
+  location: location
+  tags: tagsVirtualMachines
   properties: {
     publisher: 'Microsoft.Compute'
     type: 'CustomScriptExtension'
@@ -18,13 +18,13 @@ resource customScriptExtension 'Microsoft.Compute/virtualMachines/extensions@202
     autoUpgradeMinorVersion: true
     settings: {
       fileUris: [
-        '${ArtifactsLocation}Set-NtfsPermissions.ps1'
+        '${artifactsUri}Set-NtfsPermissions.ps1'
       ]
-      timestamp: Timestamp
+      timeStamp: timeStamp
     }
-    protectedSettings: !empty(UserAssignedIdentityClientId) ? {
+    protectedSettings: !empty(userAssignedIdentityClientId) ? {
       managedIdentity: {
-        clientId: UserAssignedIdentityClientId
+        clientId: userAssignedIdentityClientId
       }
       commandToExecute: CommandToExecute
     } : {

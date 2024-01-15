@@ -1,0 +1,151 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "artifactsUri": {
+      "value": "https://ttimagemgmtassetsusgvasa.blob.core.usgovcloudapi.net/artifacts/"
+    },
+    "ArtifactsStorageAccountResourceId": {
+      "value": "/subscriptions/49c206a0-7707-44f3-99ee-caa1f4124852/resourceGroups/TT-ImageManagement-SharedResources-rg/providers/Microsoft.Storage/storageAccounts/ttimagemgmtassetsusgvasa"
+    },
+    "artifactsUserAssignedIdentityResourceId": {
+      "value": "/subscriptions/49c206a0-7707-44f3-99ee-caa1f4124852/resourceGroups/TT-ImageManagement-SharedResources-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/image-management-usgva-uai"
+    },
+    "activeDirectorySolution": {
+      "value": "AzureActiveDirectory"
+    },
+    "availability": {
+      "value": "availabilityZones"
+    },
+    "AvdObjectId": {
+      "value": "d292a15b-45bf-4c79-9bbf-19fa9b67f7fb"
+    },
+    "azureFilesPrivateDnsZoneResourceId": {
+      "value": ""
+    },
+    "centralizedAVDManagement": {
+      "value": true
+    },
+    "cseBlobNames": {
+      "value": [
+        "cse_master_script.ps1",
+        "AzCli.zip",
+        "Git.zip",
+        "InstallRoot.zip",
+        "LGPO.zip",
+        "PowerShell-Core.zip",
+        "StorageExplorer.zip",
+        "FSLogix-Configure.zip",
+        "STIGs_Client.zip",
+        "STIGs_DefenderForCloudDeltaSettings.zip",
+        "STIGs_MDEAVDDeltaSettings.zip",
+        "STIGs_AVDExceptions.zip",
+        "LocalPolicy_Edge.zip",
+        "LocalPolicy_RemoteDesktopServices.zip",
+        "LocalPolicy_WindowsUpdate.zip",
+        "MDE_TT_Windows_NonPersistent.zip",
+        "MN14182NEPTUNECROSSINGWinWS.zip",
+        "Script-AzurePowerShellandCLIShell.zip",
+        "Set-SessionHostConfiguration.zip"
+      ]
+    },
+    "cseScriptAddDynParameters": {
+      "value": ""
+    },
+    "hostPoolRDPProperties": {
+      "value": "targetisaadjoined:i:1;autoreconnection enabled:i:1;bandwidthautodetect:i:1;networkautodetect:i:1;enablerdsaadauth:i:1;compression:i:1;videoplaybackmode:i:1;audiocapturemode:i:1;encode redirected video capture:i:1;redirectclipboard:i:0;redirectcomports:i:0;redirectsmartcards:i:1"
+    },
+    "diskEncryptionSolution": {
+      "value": "EAH + PMK"
+    },
+    "diskSku": {
+      "value": "Premium_LRS"
+    },
+    "drainMode": {
+      "value": false
+    },
+    "environmentShortName": {
+      "value": ""
+    },
+    "fslogixShareSizeInGB": {
+      "value": 100
+    },
+    "FsLogixSolution": {
+      "value": "CloudCacheProfileContainer"
+    },
+    "fslogixStorageService": {
+      "value": "AzureFiles Standard privateEndpoint"
+    },
+    "FsLogixConfigureSessionHosts": {
+      "value": true
+    },
+    "PeSubnetResourceId": {
+      "value": "/subscriptions/9c74cb92-137c-4f3d-803f-4c607125d1df/resourceGroups/DevTop-usgva-rg/providers/Microsoft.Network/virtualNetworks/devtop-services-spoke-usgva-vnet/subnets/avd-privateendpoints-usgva-sn"
+    },
+    "hostPoolType": {
+      "value": "Pooled BreadthFirst"
+    },
+    "hostPoolIdentifier": {
+      "value": "admin"
+    },
+    "imageOffer": {
+      "value": "windows-11"
+    },
+    "imagePublisher": {
+      "value": "MicrosoftWindowsDesktop"
+    },
+    "imageSku": {
+      "value": "win11-23h2-avd"
+    },
+    "customImageResourceId": {
+      "value": ""
+    },
+    "maxSessionLimit": {
+      "value": 2
+    },
+    "monitoring": {
+      "value": true
+    },
+    "nameConvResTypeAtEnd":{
+      "value": true
+    },
+    "securityLogAnalyticsWorkspaceResourceId": {
+      "value": "/subscriptions/e1798572-020f-46f5-937f-03f7fe916b21/resourcegroups/tt-monitoring-usgovvirginia-rg/providers/microsoft.operationalinsights/workspaces/tt-monitoring-usgovvirginia-loga"
+    },
+    "securityPrincipals": {
+      "value": [
+        {
+          "name": "TT - Admin AVD Users",
+          "objectId": "d50e8bc4-28f0-4f6c-95f2-e59dd768a634"
+        }
+      ]
+    },
+    "sessionHostCount": {
+      "value": 5
+    },
+    "sessionHostIndex": {
+      "value": 1
+    },
+    "virtualMachineSubnetResourceId": {
+      "value": "/subscriptions/9c74cb92-137c-4f3d-803f-4c607125d1df/resourceGroups/DevTop-usgva-rg/providers/Microsoft.Network/virtualNetworks/devtop-services-spoke-usgva-vnet/subnets/admin-avd-usgva-sn"
+    },
+    "tags": {
+      "value": {}
+    },
+    "hostPoolValidationEnvironment": {
+      "value": false
+    },
+    "virtualMachineNamePrefix": {
+      "value": "avd-admin-"
+    },
+    "virtualMachineSize": {
+      "value": "Standard_D4ads_v5"
+    },
+    "workspaceFriendlyName": {
+      "value": "TT Admin Workspace"
+    },
+    "desktopFriendlyName": {
+      "value": "Admin Desktop"
+    }
+  }
+}

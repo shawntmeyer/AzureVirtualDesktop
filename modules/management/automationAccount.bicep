@@ -1,13 +1,19 @@
-param AutomationAccountName string
-param Location string
-param LogAnalyticsWorkspaceResourceId string
-param Monitoring bool
-param Tags object
+param automationAccountName string
+param automationAccountPrivateDnsZoneResourceId string
+param location string
+param logAnalyticsWorkspaceResourceId string
+param monitoring bool
+param privateEndpoint bool
+param privateEndpointNameConv string
+param subnetResourceId string
+param tags object
+
+var privateEndpointName = replace(replace(privateEndpointNameConv, 'subresource', 'DSCAndHybridWorker'), 'resource', automationAccountName)
 
 resource automationAccount 'Microsoft.Automation/automationAccounts@2021-06-22' = {
-  name: AutomationAccountName
-  location: Location
-  tags: Tags
+  name: automationAccountName
+  location: location
+  tags: tags
   identity: {
     type: 'SystemAssigned'
   }
@@ -18,10 +24,49 @@ resource automationAccount 'Microsoft.Automation/automationAccounts@2021-06-22' 
   }
 }
 
+resource automationAccountPrivateEndpoint 'Microsoft.Network/privateEndpoints@2023-05-01' = if(privateEndpoint) {
+  name: privateEndpointName
+  location: location
+  tags: contains(tags, 'Microsoft.Network/privateEndpoints') ? tags['Microsoft.Network/privateEndpoints'] : {}
+  properties: {
+    privateLinkServiceConnections: [
+      {
+        name: privateEndpointName
+        id: resourceId('Microsoft.Network/privateEndpoints/privateLinkServiceConnections', privateEndpointName, privateEndpointName)
+        properties: {
+          privateLinkServiceId: automationAccount.id
+          groupIds: [
+            'DSCAndHybridWorker'
+          ]
+        }
+      }
+    ]
+    customNetworkInterfaceName: 'nic-${automationAccountName}'
+    subnet: {
+      id: subnetResourceId
+    }
+  }
+}
+
+resource privateDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2023-05-01' = if(!empty(automationAccountPrivateDnsZoneResourceId) && privateEndpoint) {
+  parent: automationAccountPrivateEndpoint
+  name: 'default'
+  properties: {
+    privateDnsZoneConfigs: [
+      {
+        name: replace(split(automationAccountPrivateDnsZoneResourceId, '/')[8], '.', '-')
+        properties: {
+          privateDnsZoneId: automationAccountPrivateDnsZoneResourceId
+        }
+      }
+    ]
+  }
+}
+
 // Enables logging in a log analytics workspace for alerting and dashboards
-resource diagnostics 'Microsoft.Insights/diagnosticsettings@2017-05-01-preview' = if (Monitoring) {
+resource diagnostics 'Microsoft.Insights/diagnosticsettings@2017-05-01-preview' = if (monitoring) {
   scope: automationAccount
-  name: 'diag-${AutomationAccountName}'
+  name: 'diag-${automationAccountName}'
   properties: {
     logs: [
       {
@@ -37,6 +82,6 @@ resource diagnostics 'Microsoft.Insights/diagnosticsettings@2017-05-01-preview' 
         enabled: true
       }
     ]
-    workspaceId: LogAnalyticsWorkspaceResourceId
+    workspaceId: logAnalyticsWorkspaceResourceId
   }
 }

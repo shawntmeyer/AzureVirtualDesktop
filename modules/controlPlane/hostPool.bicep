@@ -1,17 +1,23 @@
-param ActiveDirectorySolution string
-param CustomRdpProperty string
-param HostPoolName string
-param HostPoolType string
-param Location string
-param LogAnalyticsWorkspaceResourceId string
-param MaxSessionLimit int
-param Monitoring bool
-param TagsHostPool object
-param Time string = utcNow('u')
-param ValidationEnvironment bool
-param VmTemplate string
+param activeDirectorySolution string
+param avdPrivateLink bool
+param hostPoolPrivateDnsZoneResourceId string
+param hostPoolRDPProperties string
+param hostPoolName string
+param hostPoolPublicNetworkAccess string
+param hostPoolType string
+param location string
+param logAnalyticsWorkspaceResourceId string
+param privateEndpointName string
+param privateEndpointSubnetResourceId string
+param hostPoolMaxSessionLimit int
+param monitoring bool
+param tags object
+param time string = utcNow('u')
+param hostPoolValidationEnvironment bool
+param virtualMachineTemplate string
 
-var CustomRdpProperty_Complete = contains(ActiveDirectorySolution, 'AzureActiveDirectory') && !contains(CustomRdpProperty, 'targetisaadjoined:i:1') ? '${CustomRdpProperty};targetisaadjoined:i:1' : CustomRdpProperty
+var customRdpProperty = contains(activeDirectorySolution, 'AzureActiveDirectory') && !contains(hostPoolRDPProperties, 'targetisaadjoined:i:1') ? '${hostPoolRDPProperties};targetisaadjoined:i:1' : hostPoolRDPProperties
+
 var HostPoolLogs = [
   {
     category: 'Checkpoint'
@@ -39,34 +45,77 @@ var HostPoolLogs = [
   }
 ]
 
-resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2021-03-09-preview' = {
-  name: HostPoolName
-  location: Location
-  tags: TagsHostPool
+resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' = {
+  name: hostPoolName
+  location: location
+  tags: union({
+    'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroup().name}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'
+  }, contains(tags, 'Microsoft.DesktopVirtualization/hostPools') ? tags['Microsoft.DesktopVirtualization/hostPools'] : {})
   properties: {
-    hostPoolType: split(HostPoolType, ' ')[0]
-    maxSessionLimit: MaxSessionLimit
-    loadBalancerType: contains(HostPoolType, 'Pooled') ? split(HostPoolType, ' ')[1] : 'Persistent'
-    validationEnvironment: ValidationEnvironment
+    hostPoolType: split(hostPoolType, ' ')[0]
+    maxSessionLimit: hostPoolMaxSessionLimit
+    loadBalancerType: contains(hostPoolType, 'Pooled') ? split(hostPoolType, ' ')[1] : 'Persistent'
+    validationEnvironment: hostPoolValidationEnvironment
     registrationInfo: {
-      expirationTime: dateTimeAdd(Time, 'PT2H')
+      expirationTime: dateTimeAdd(time, 'PT2H')
       registrationTokenOperation: 'Update'
     }
     preferredAppGroupType: 'Desktop'
-    customRdpProperty: CustomRdpProperty_Complete
-    personalDesktopAssignmentType: contains(HostPoolType, 'Personal') ? split(HostPoolType, ' ')[1] : null
+    customRdpProperty: customRdpProperty
+    personalDesktopAssignmentType: contains(hostPoolType, 'Personal') ? split(hostPoolType, ' ')[1] : null
+    publicNetworkAccess: hostPoolPublicNetworkAccess
     startVMOnConnect: true
-    vmTemplate: VmTemplate
-
+    vmTemplate: virtualMachineTemplate
   }
 }
 
-resource hostPoolDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (Monitoring) {
-  name: 'diag-${HostPoolName}'
+resource hostPoolPrivateEndpoint 'Microsoft.Network/privateEndpoints@2023-05-01' = if(avdPrivateLink) {
+  name: privateEndpointName
+  location: location
+  tags: union({
+    'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroup().name}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'
+  }, contains(tags, 'Microsoft.Network/privateEndpoints') ? tags['Microsoft.Network/privateEndpoints'] : {})
+  properties: {
+    privateLinkServiceConnections: [
+      {
+        name: privateEndpointName
+        id: resourceId('Microsoft.Network/privateEndpoints/privateLinkServiceConnections', privateEndpointName, privateEndpointName)
+        properties: {
+          privateLinkServiceId: hostPool.id
+          groupIds: [
+            'connection'
+          ]
+        }
+      }
+    ]
+    customNetworkInterfaceName: 'nic-${hostPoolName}'
+    subnet: {
+      id: privateEndpointSubnetResourceId
+    }
+  }
+}
+
+resource privateDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2023-05-01' = if(avdPrivateLink && !empty(hostPoolPrivateDnsZoneResourceId)) {
+  parent: hostPoolPrivateEndpoint
+  name: 'default'
+  properties: {
+    privateDnsZoneConfigs: [
+      {
+        name: replace(split(hostPoolPrivateDnsZoneResourceId, '/')[8], '.', '-')
+        properties: {
+          privateDnsZoneId: hostPoolPrivateDnsZoneResourceId
+        }
+      }
+    ]
+  }
+}
+
+resource hostPoolDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (monitoring) {
+  name: 'diag-${hostPoolName}'
   scope: hostPool
   properties: {
     logs: HostPoolLogs
-    workspaceId: LogAnalyticsWorkspaceResourceId
+    workspaceId: logAnalyticsWorkspaceResourceId
   }
 }
 

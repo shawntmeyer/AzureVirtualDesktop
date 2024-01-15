@@ -1,0 +1,105 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "businessUnitIdentifier": {
+      "value": "engineer"
+    },
+    "artifactsUri": {
+      "value": "https://saimageassetsusgvaa4a449.blob.core.usgovcloudapi.net/artifacts/"
+    },
+    "artifactsUserAssignedIdentityResourceId" :{
+      "value": "/subscriptions/70c1bb3a-115f-4300-becd-5f74200999bb/resourceGroups/avd-image-management-usgva-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/avd-image-management-usgva-uai"
+    },
+    "activeDirectorySolution": {
+      "value": "AzureActiveDirectory"
+    },
+    "availability": {
+      "value": "availabilityZones" 
+    },
+    "AvdObjectId": {
+      "value": "01cc41f2-abf3-440e-8847-77c47c9e43ea"
+    },
+    "centralizedAVDManagement": {
+      "value": true
+    },
+    "cseBlobNames": {
+      "value": [
+        "LGPO.zip",
+        "STIGs_Client.zip",
+        "STIGs_AVDExceptions.zip",
+        "LocalPolicy_Edge.zip",
+        "LocalPolicy_RemoteDesktopServices.zip",
+        "LocalPolicy_WindowsUpdate.zip"
+      ]
+    },
+    "hostPoolRDPProperties": {
+      "value": "targetisaadjoined:i:1;enablerdsaadauth:i:1"
+    },
+    "desktopFriendlyName": {
+      "value": "Engineer Desktop"
+    },
+    "diskEncryptionSolution" : {
+      "value": "EAH + CMK"
+    },
+    "FsLogixSolution": {
+      "value": "ProfileContainer"
+    },
+    "FsLogixStorage": {
+      "value": "AzureFiles Standard privateEndpoint"
+    },
+    "fslogixConfigureSessionHosts": {
+      "value": true
+    },
+    "privateEndpointSubnetResourceId": {
+      "value": "/subscriptions/70c1bb3a-115f-4300-becd-5f74200999bb/resourceGroups/rg-avd-networking-lab-va/providers/Microsoft.Network/virtualNetworks/vnet-avd-lab-va/subnets/sn-avd-privateendppoints-lab-va"
+    },
+    "azureFilesPrivateDnsZoneResourceId": {
+      "value": "/subscriptions/70c1bb3a-115f-4300-becd-5f74200999bb/resourceGroups/rg-networking-lab-va/providers/Microsoft.Network/privateDnsZones/privatelink.file.core.usgovcloudapi.net"
+    },
+    "hostPoolMaxSessionLimit": {
+      "value": 2
+    },
+    "hostPoolIdentifier": {
+      "value": "cad"
+    },
+    "virtualMachineSubnetResourceId": {
+      "value": "/subscriptions/70c1bb3a-115f-4300-becd-5f74200999bb/resourceGroups/rg-avd-networking-lab-va/providers/Microsoft.Network/virtualNetworks/vnet-avd-lab-va/subnets/sn-avd-jumphosts-lab-va"
+    },
+    "securityPrincipals": {
+      "value": [
+        {
+          "name": "AVD Users",
+          "objectId": "49f5ec78-599a-4fa8-b9b6-63ca3018ebd1" 
+        }
+      ]
+    },
+    "sessionHostCount": {
+      "value": 3
+    },
+    "sessionHostIndex": {
+      "value": 1
+    },
+    "virtualMachineMonitoringAgent": {
+      "value": "AzureMonitorAgent"
+    },
+    "virtualMachineNamePrefix": {
+      "value": "engcad-va-"
+    },
+    "VirtualMachinePassword": {
+      "value": "1qaz@WSX1qaz@WSX"
+    },
+    "VirtualMachineUsername": {
+      "value": "x_admin"
+    },
+    "workspaceFriendlyName": {
+      "value": "Test AVD Workspace"
+    },
+    "scalingTool": {
+      "value": false
+    },
+    "securityDataCollectionRulesResourceId": {
+      "value": "/subscriptions/70c1bb3a-115f-4300-becd-5f74200999bb/resourcegroups/rg-securitymonitoring/providers/microsoft.insights/datacollectionrules/security-events-dcr"
+    }
+  }
+}

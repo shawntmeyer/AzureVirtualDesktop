@@ -1,36 +1,39 @@
-param ActiveDirectorySolution string
-param ArtifactsLocation string
-param DiskEncryptionOptions object
+param activeDirectorySolution string
+param artifactsUri string
+param diskEncryptionOptions object
 param DiskEncryptionSetResourceId string
-param DiskNamePrefix string
-param DiskSku string
+param diskNamePrefix string
+param diskSku string
 @secure()
-param DomainJoinUserPassword string
+param domainJoinUserPassword string
 @secure()
-param DomainJoinUserPrincipalName string
-param DomainName string
-param Location string
-param NetworkInterfaceNamePrefix string
-param Subnet string
-param TagsNetworkInterfaces object
-param TagsVirtualMachines object
-param Timestamp string = utcNow('yyyyMMddhhmmss')
-param UserAssignedIdentityClientId string
+param domainJoinUserPrincipalName string
+param domainName string
+param location string
+param networkInterfaceNamePrefix string
+param subnet string
+param tagsNetworkInterfaces object
+param tagsVirtualMachines object
+param timeStamp string = utcNow('yyyyMMddhhmmss')
+param userAssignedIdentityClientId string
 param UserAssignedIdentityResourceIds object
-param VirtualNetwork string
-param VirtualNetworkResourceGroup string
-param VirtualMachineNamePrefix string
+param virtualNetwork string
+param virtualNetworkResourceGroup string
+param virtualMachineNamePrefix string
 @secure()
-param VirtualMachineAdminPassword string
-param VirtualMachineAdminUserName string
+param virtualMachineAdminPassword string
+param virtualMachineAdminUserName string
 
-var NicName = '${NetworkInterfaceNamePrefix}mgt'
-var VmName = '${VirtualMachineNamePrefix}mgt'
+var diskEncryptionSet = bool(diskEncryptionOptions.diskEncryptionSet)
+var encryptionAtHost = bool(diskEncryptionOptions.encryptionAtHost)
+
+var NicName = '${networkInterfaceNamePrefix}mgt'
+var VmName = '${virtualMachineNamePrefix}mgt'
 
 resource networkInterface 'Microsoft.Network/networkInterfaces@2020-05-01' = {
   name: NicName
-  location: Location
-  tags: TagsNetworkInterfaces
+  location: location
+  tags: tagsNetworkInterfaces
   properties: {
     ipConfigurations: [
       {
@@ -38,7 +41,7 @@ resource networkInterface 'Microsoft.Network/networkInterfaces@2020-05-01' = {
         properties: {
           privateIPAllocationMethod: 'Dynamic'
           subnet: {
-            id: resourceId(VirtualNetworkResourceGroup, 'Microsoft.Network/virtualNetworks/subnets', VirtualNetwork, Subnet)
+            id: resourceId(virtualNetworkResourceGroup, 'Microsoft.Network/virtualNetworks/subnets', virtualNetwork, subnet)
           }
           primary: true
           privateIPAddressVersion: 'IPv4'
@@ -52,8 +55,8 @@ resource networkInterface 'Microsoft.Network/networkInterfaces@2020-05-01' = {
 
 resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-11-01' = {
   name: VmName
-  location: Location
-  tags: TagsVirtualMachines
+  location: location
+  tags: tagsVirtualMachines
   properties: {
     hardwareProfile: {
       vmSize: 'Standard_B2s'
@@ -71,19 +74,19 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-11-01' = {
         createOption: 'FromImage'
         caching: 'None'
         managedDisk: {
-          diskEncryptionSet: DiskEncryptionOptions.DiskEncryptionSet ? {
+          diskEncryptionSet: diskEncryptionSet ? {
             id: DiskEncryptionSetResourceId
           } : null
-          storageAccountType: DiskSku
+          storageAccountType: diskSku
         }
-        name: '${DiskNamePrefix}mgt'
+        name: '${diskNamePrefix}mgt'
       }
       dataDisks: []
     }
     osProfile: {
       computerName: VmName
-      adminUsername: VirtualMachineAdminUserName
-      adminPassword: VirtualMachineAdminPassword
+      adminUsername: virtualMachineAdminUserName
+      adminPassword: virtualMachineAdminPassword
       windowsConfiguration: {
         provisionVMAgent: true
         enableAutomaticUpdates: true
@@ -106,8 +109,8 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-11-01' = {
         secureBootEnabled: true
         vTpmEnabled: true
       }
-      securityType: 'TrustedLaunch'
-      encryptionAtHost: DiskEncryptionOptions.EncryptionAtHost
+      securityType: 'trustedLaunch'
+      encryptionAtHost: encryptionAtHost
     }
     diagnosticsProfile: {
       bootDiagnostics: {
@@ -122,40 +125,40 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-11-01' = {
   }
 }
 
-resource extension_JsonADDomainExtension 'Microsoft.Compute/virtualMachines/extensions@2019-07-01' = if(contains(ActiveDirectorySolution, 'DomainServices')) {
+resource extension_JsonADDomainExtension 'Microsoft.Compute/virtualMachines/extensions@2019-07-01' = if(contains(activeDirectorySolution, 'DomainServices')) {
   parent: virtualMachine
   name: 'JsonADDomainExtension'
-  location: Location
-  tags: TagsVirtualMachines
+  location: location
+  tags: tagsVirtualMachines
   properties: {
-    forceUpdateTag: Timestamp
+    forceUpdateTag: timeStamp
     publisher: 'Microsoft.Compute'
     type: 'JsonADDomainExtension'
     typeHandlerVersion: '1.3'
     autoUpgradeMinorVersion: true
     settings: {
-      Name: DomainName
-      User: DomainJoinUserPrincipalName
+      Name: domainName
+      User: domainJoinUserPrincipalName
       Restart: 'true'
       Options: '3'
     }
     protectedSettings: {
-      Password: DomainJoinUserPassword
+      Password: domainJoinUserPassword
     }
   }
 }
 
 module extension_CustomScriptExtension 'customScriptExtensions.bicep' = {
-  name: 'CSE_InstallAzurePowerShellAzModule_${Timestamp}'
+  name: 'CSE_InstallAzurePowerShellAzModule_${timeStamp}'
   params: {
-    ArtifactsLocation: ArtifactsLocation
-    ExecuteScript: ''
-    Files: ['PowerShell-Az-Module.zip']
-    Location: Location
-    Parameters: ''
-    Tags: TagsVirtualMachines
-    VirtualMachineName: virtualMachine.name
-    UserAssignedIdentityClientId: UserAssignedIdentityClientId
+    artifactsUri: artifactsUri
+    executeScript: ''
+    files: ['PowerShell-Az-Module.zip']
+    location: location
+    parameters: ''
+    tags: tagsVirtualMachines
+    virtualMachineName: virtualMachine.name
+    userAssignedIdentityClientId: userAssignedIdentityClientId
   }
 }
 

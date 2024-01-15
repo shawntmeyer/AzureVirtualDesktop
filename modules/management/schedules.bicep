@@ -1,11 +1,11 @@
-param AutomationAccountName string
-param FslogixSolution string
+param automationAccountName string
+param fslogixContainerType string
 param StorageAccountName string
 param Time string = utcNow()
-param TimeZone string
+param timeZone string
 
 resource automationAccount 'Microsoft.Automation/automationAccounts@2022-08-08' existing = {
-  name: AutomationAccountName
+  name: automationAccountName
 }
 
 resource schedules_ProfileContainers 'Microsoft.Automation/automationAccounts/schedules@2022-08-08' = [for i in range(0, 4): {
@@ -18,11 +18,11 @@ resource schedules_ProfileContainers 'Microsoft.Automation/automationAccounts/sc
     frequency: 'Hour'
     interval: 1
     startTime: dateTimeAdd(Time, 'PT${(i + 1) * 15}M')
-    timeZone: TimeZone
+    timeZone: timeZone
   }
 }]
 
-resource schedules_OfficeContainers 'Microsoft.Automation/automationAccounts/schedules@2022-08-08' = [for i in range(0, 4): if (contains(FslogixSolution, 'Office')) {
+resource schedules_OfficeContainers 'Microsoft.Automation/automationAccounts/schedules@2022-08-08' = [for i in range(0, 4): if (contains(fslogixContainerType, 'Office')) {
   parent: automationAccount
   name: '${StorageAccountName}_OfficeContainers_${(i + 1) * 15}min'
   properties: {
@@ -32,6 +32,6 @@ resource schedules_OfficeContainers 'Microsoft.Automation/automationAccounts/sch
     frequency: 'Hour'
     interval: 1
     startTime: dateTimeAdd(Time, 'PT${(i + 1) * 15}M')
-    timeZone: TimeZone
+    timeZone: timeZone
   }
 }]

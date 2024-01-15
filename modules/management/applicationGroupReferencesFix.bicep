@@ -1,5 +1,5 @@
-param ApplicationGroupReferences array
+param applicationGroupReferences array
 
-var FixNames = [for ApplicationGroupReference in ApplicationGroupReferences: replace(replace(ApplicationGroupReference, 'resourcegroups', 'resourceGroups'), 'applicationgroups', 'applicationGroups')]
+var FixNames = [for ApplicationGroupReference in applicationGroupReferences: replace(replace(ApplicationGroupReference, 'resourcegroups', 'resourceGroups'), 'applicationgroups', 'applicationGroups')]
 
-output ApplicationGroupReferences array = union(FixNames, [])
+output applicationGroupReferences array = union(FixNames, [])

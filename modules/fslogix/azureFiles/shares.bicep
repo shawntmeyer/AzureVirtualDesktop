@@ -1,13 +1,13 @@
-param FileShares array
-param FslogixShareSizeInGB int
+param fileShares array
+param fslogixShareSizeInGB int
 param StorageAccountName string
-param StorageSku string
+param storageSku string
 
-resource shares 'Microsoft.Storage/storageAccounts/fileServices/shares@2022-09-01' = [for i in range(0, length(FileShares)): {
-  name: '${StorageAccountName}/default/${FileShares[i]}'
+resource shares 'Microsoft.Storage/storageAccounts/fileServices/shares@2022-09-01' = [for i in range(0, length(fileShares)): {
+  name: '${StorageAccountName}/default/${fileShares[i]}'
   properties: {
-    accessTier: StorageSku == 'Premium' ? 'Premium' : 'TransactionOptimized'
-    shareQuota: FslogixShareSizeInGB
+    accessTier: storageSku == 'Premium' ? 'Premium' : 'TransactionOptimized'
+    shareQuota: fslogixShareSizeInGB
     enabledProtocols: 'SMB'
   }
 }]

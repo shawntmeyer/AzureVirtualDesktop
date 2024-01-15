@@ -1,38 +1,38 @@
-param DivisionRemainderValue int
+param divisionRemainderValue int
 param FslogixDeployed bool
-param Location string
-param MaxResourcesPerTemplateDeployment int
-param RecoveryServicesVaultName string
-param ResourceGroupHosts string
-param ResourceGroupManagement string
-param SessionHostBatchCount int
-param SessionHostIndex int
-param TagsRecoveryServicesVault object
-param Timestamp string
-param VirtualMachineNamePrefix string
+param location string
+param maxResourcesPerTemplateDeployment int
+param recoveryServicesVaultName string
+param resourceGroupHosts string
+param resourceGroupManagement string
+param sessionHostBatchCount int
+param sessionHostIndex int
+param tagsRecoveryServicesVault object
+param timeStamp string
+param virtualMachineNamePrefix string
 
-resource vault 'Microsoft.RecoveryServices/vaults@2022-03-01' existing = {
-  name: RecoveryServicesVaultName
-  scope: resourceGroup(ResourceGroupManagement)
+resource vault 'Microsoft.recoveryServices/vaults@2022-03-01' existing = {
+  name: recoveryServicesVaultName
+  scope: resourceGroup(resourceGroupManagement)
 }
 
-resource backupPolicy_Vm 'Microsoft.RecoveryServices/vaults/backupPolicies@2022-03-01' existing = {
+resource backupPolicy_Vm 'Microsoft.recoveryServices/vaults/backupPolicies@2022-03-01' existing = {
   parent: vault
   name: 'AvdPolicyVm'
 }
 
-module protectedItems_Vm 'protectedItems.bicep' = [for i in range(1, SessionHostBatchCount): if (!FslogixDeployed) {
-  name: 'BackupProtectedItems_VirtualMachines_${i - 1}_${Timestamp}'
-  scope: resourceGroup(ResourceGroupManagement) // Management Resource Group
+module protectedItems_Vm 'protectedItems.bicep' = [for i in range(1, sessionHostBatchCount): if (!FslogixDeployed) {
+  name: 'BackupProtectedItems_VirtualMachines_${i - 1}_${timeStamp}'
+  scope: resourceGroup(resourceGroupManagement) // Management Resource Group
   params: {
-    Location: Location
+    location: location
     PolicyId: backupPolicy_Vm.id
-    RecoveryServicesVaultName: vault.name
-    SessionHostCount: i == SessionHostBatchCount && DivisionRemainderValue > 0 ? DivisionRemainderValue : MaxResourcesPerTemplateDeployment
-    SessionHostIndex: i == 1 ? SessionHostIndex : ((i - 1) * MaxResourcesPerTemplateDeployment) + SessionHostIndex
-    Tags: TagsRecoveryServicesVault
-    VirtualMachineNamePrefix: VirtualMachineNamePrefix
-    VirtualMachineResourceGroupName: ResourceGroupHosts
+    recoveryServicesVaultName: vault.name
+    sessionHostCount: i == sessionHostBatchCount && divisionRemainderValue > 0 ? divisionRemainderValue : maxResourcesPerTemplateDeployment
+    sessionHostIndex: i == 1 ? sessionHostIndex : ((i - 1) * maxResourcesPerTemplateDeployment) + sessionHostIndex
+    tags: tagsRecoveryServicesVault
+    virtualMachineNamePrefix: virtualMachineNamePrefix
+    VirtualMachineResourceGroupName: resourceGroupHosts
   }
 
 }]

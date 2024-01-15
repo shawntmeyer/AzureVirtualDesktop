@@ -1,42 +1,42 @@
-param ArtifactsLocation string
-param ArtifactsUserAssignedIdentityClientId string
-param ActiveDirectoryConnection string
-param DelegatedSubnetId string
-param DnsServers string
+param artifactsUri string
+param artifactsUserAssignedIdentityClientId string
+param activeDirectoryConnection string
+param delegatedSubnetId string
+param dnsServers string
 @secure()
-param DomainJoinUserPassword string
-param DomainJoinUserPrincipalName string
-param DomainName string
-param FileShares array
-param FslogixSolution string
-param Location string
-param ManagementVmName string
-param NetAppAccountName string
-param NetAppCapacityPoolName string
-param OuPath string
-param ResourceGroupManagement string
-param SecurityPrincipalNames array
-param SmbServerLocation string
-param StorageSku string
-param StorageSolution string
-param TagsNetAppAccount object
-param TagsVirtualMachines object
-param Timestamp string
+param domainJoinUserPassword string
+param domainJoinUserPrincipalName string
+param domainName string
+param fileShares array
+param fslogixContainerType string
+param location string
+param managementVirtualMachineName string
+param netAppAccountName string
+param netAppCapacityPoolName string
+param ouPath string
+param resourceGroupManagement string
+param securityPrincipalNames array
+param smbServerLocation string
+param storageSku string
+param storageSolution string
+param tagsNetAppAccount object
+param tagsVirtualMachines object
+param timeStamp string
 
 resource netAppAccount 'Microsoft.NetApp/netAppAccounts@2021-06-01' = {
-  name: NetAppAccountName
-  location: Location
-  tags: TagsNetAppAccount
+  name: netAppAccountName
+  location: location
+  tags: tagsNetAppAccount
   properties: {
-    activeDirectories: ActiveDirectoryConnection == 'false' ? null : [
+    activeDirectories: activeDirectoryConnection == 'false' ? null : [
       {
         aesEncryption: false
-        domain: DomainName
-        dns: DnsServers
-        organizationalUnit: OuPath
-        password: DomainJoinUserPassword
-        smbServerName: 'anf-${SmbServerLocation}'
-        username: split(DomainJoinUserPrincipalName, '@')[0]
+        domain: domainName
+        dns: dnsServers
+        organizationalUnit: ouPath
+        password: domainJoinUserPassword
+        smbServerName: 'anf-${smbServerLocation}'
+        username: split(domainJoinUserPrincipalName, '@')[0]
       }
     ]
     encryption: {
@@ -47,29 +47,29 @@ resource netAppAccount 'Microsoft.NetApp/netAppAccounts@2021-06-01' = {
 
 resource capacityPool 'Microsoft.NetApp/netAppAccounts/capacityPools@2021-06-01' = {
   parent: netAppAccount
-  name: NetAppCapacityPoolName
-  location: Location
-  tags: TagsNetAppAccount
+  name: netAppCapacityPoolName
+  location: location
+  tags: tagsNetAppAccount
   properties: {
     coolAccess: false
     encryptionType: 'Single'
     qosType: 'Auto'
-    serviceLevel: StorageSku
+    serviceLevel: storageSku
     size: 4398046511104
   }
 }
 
-resource volumes 'Microsoft.NetApp/netAppAccounts/capacityPools/volumes@2021-06-01' = [for i in range(0, length(FileShares)): {
+resource volumes 'Microsoft.NetApp/netAppAccounts/capacityPools/volumes@2021-06-01' = [for i in range(0, length(fileShares)): {
   parent: capacityPool
-  name: FileShares[i]
-  location: Location
-  tags: TagsNetAppAccount
+  name: fileShares[i]
+  location: location
+  tags: tagsNetAppAccount
   properties: {
     avsDataStore: 'Disabled'
     // backupId: 'string'
     coolAccess: false
     // coolnessPeriod: int
-    creationToken: FileShares[i]
+    creationToken: fileShares[i]
     // dataProtection: {
     //   backup: {
     //     backupEnabled: bool
@@ -117,13 +117,13 @@ resource volumes 'Microsoft.NetApp/netAppAccounts/capacityPools/volumes@2021-06-
       'CIFS'
     ]
     securityStyle: 'ntfs'
-    serviceLevel: StorageSku
+    serviceLevel: storageSku
     // Enable when GA 
     //smbContinuouslyAvailable: true // recommended for FSLogix: https://docs.microsoft.com/en-us/azure/azure-netapp-files/enable-continuous-availability-existing-smb
     smbEncryption: true
     snapshotDirectoryVisible: true
     // snapshotId: 'string'
-    subnetId: DelegatedSubnetId
+    subnetId: delegatedSubnetId
     // throughputMibps: int
     // unixPermissions: 'string'
     usageThreshold: 107374182400
@@ -132,23 +132,23 @@ resource volumes 'Microsoft.NetApp/netAppAccounts/capacityPools/volumes@2021-06-
 }]
 
 module ntfsPermissions 'ntfsPermissions.bicep' = {
-  name: 'FslogixNtfsPermissions_${Timestamp}'
-  scope: resourceGroup(ResourceGroupManagement)
+  name: 'FslogixNtfsPermissions_${timeStamp}'
+  scope: resourceGroup(resourceGroupManagement)
   params: {
-    ArtifactsLocation: ArtifactsLocation
-    UserAssignedIdentityClientId: ArtifactsUserAssignedIdentityClientId
-    CommandToExecute: 'powershell -ExecutionPolicy Unrestricted -File Set-NtfsPermissions.ps1 -DomainJoinUserPassword "${DomainJoinUserPassword}" -DomainJoinUserPrincipalName ${DomainJoinUserPrincipalName} -FslogixSolution ${FslogixSolution} -SecurityPrincipalNames "${SecurityPrincipalNames}" -SmbServerLocation ${SmbServerLocation} -StorageSolution ${StorageSolution}'
-    Location: Location
-    ManagementVmName: ManagementVmName
-    TagsVirtualMachines: TagsVirtualMachines
-    Timestamp: Timestamp
+    artifactsUri: artifactsUri
+    userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
+    CommandToExecute: 'powershell -ExecutionPolicy Unrestricted -File Set-NtfsPermissions.ps1 -domainJoinUserPassword "${domainJoinUserPassword}" -domainJoinUserPrincipalName ${domainJoinUserPrincipalName} -fslogixContainerType ${fslogixContainerType} -securityPrincipalNames "${securityPrincipalNames}" -smbServerLocation ${smbServerLocation} -storageSolution ${storageSolution}'
+    location: location
+    managementVirtualMachineName: managementVirtualMachineName
+    tagsVirtualMachines: tagsVirtualMachines
+    timeStamp: timeStamp
   }
   dependsOn: [
     volumes
   ]
 }
 
-output fileShares array = contains(FslogixSolution, 'Office') ? [
+output fileShares array = contains(fslogixContainerType, 'Office') ? [
   volumes[0].properties.mountTargets[0].smbServerFqdn
   volumes[1].properties.mountTargets[0].smbServerFqdn
 ] : [

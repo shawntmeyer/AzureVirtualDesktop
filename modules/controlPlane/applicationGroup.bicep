@@ -1,31 +1,33 @@
-param DesktopApplicationGroupName string
-param HostPoolResourceId string
-param Location string
-param RoleDefinitions object
-param SecurityPrincipalObjectIds array
-param TagsApplicationGroup object
+param desktopApplicationGroupName string
+param hostPoolResourceId string
+param location string
+param roleDefinitions object
+param securityPrincipalObjectIds array
+param tags object
 
 resource applicationGroup 'Microsoft.DesktopVirtualization/applicationGroups@2021-03-09-preview' = {
-  name: DesktopApplicationGroupName
-  location: Location
-  tags: TagsApplicationGroup
+  name: desktopApplicationGroupName
+  location: location
+  tags: union({
+    'cm-resource-parent': hostPoolResourceId
+  }, contains(tags, 'Microsoft.DesktopVirtualization/applicationGroups') ? tags['Microsoft.DesktopVirtualization/applicationGroups'] : {})
   properties: {
-    hostPoolArmPath: HostPoolResourceId
+    hostPoolArmPath: hostPoolResourceId
     applicationGroupType: 'Desktop'
   }
 }
 
-resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for i in range(0, length(SecurityPrincipalObjectIds)): {
+resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for i in range(0, length(securityPrincipalObjectIds)): {
   scope: applicationGroup
-  name: guid(SecurityPrincipalObjectIds[i], RoleDefinitions.DesktopVirtualizationUser, DesktopApplicationGroupName)
+  name: guid(securityPrincipalObjectIds[i], roleDefinitions.DesktopVirtualizationUser, desktopApplicationGroupName)
   properties: {
-    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', RoleDefinitions.DesktopVirtualizationUser)
-    principalId: SecurityPrincipalObjectIds[i]
+    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', roleDefinitions.DesktopVirtualizationUser)
+    principalId: securityPrincipalObjectIds[i]
   }
 }]
-
 
 output ApplicationGroupReference array = [
   applicationGroup.id
 ]
+output Name string = applicationGroup.name
 output ResourceId string = applicationGroup.id

@@ -1,22 +1,22 @@
-param AutomationAccountName string
-param Environment string
-param FslogixSolution string
+param automationAccountName string
+param environmentShortName string
+param fslogixContainerType string
 param ResourceGroupName string
 param RunbookName string
 param StorageAccountName string
 param SubscriptionId string
-param Timestamp string
+param timeStamp string
 
 resource automationAccount 'Microsoft.Automation/automationAccounts@2022-08-08' existing = {
-  name: AutomationAccountName
+  name: automationAccountName
 }
 
 resource jobSchedules_ProfileContainers 'Microsoft.Automation/automationAccounts/jobSchedules@2022-08-08' = [for i in range(0, 4): {
   parent: automationAccount
-  name: guid(Timestamp, RunbookName, StorageAccountName, 'ProfileContainers', string(i))
+  name: guid(timeStamp, RunbookName, StorageAccountName, 'ProfileContainers', string(i))
   properties: {
     parameters: {
-      Environment: Environment
+      environmentShortName: environmentShortName
       FileShareName: 'profile-containers'
       ResourceGroupName: ResourceGroupName
       StorageAccountName: StorageAccountName
@@ -32,12 +32,12 @@ resource jobSchedules_ProfileContainers 'Microsoft.Automation/automationAccounts
   }
 }]
 
-resource jobSchedules_OfficeContainers 'Microsoft.Automation/automationAccounts/jobSchedules@2022-08-08' = [for i in range(0, 4): if (contains(FslogixSolution, 'Office')) {
+resource jobSchedules_OfficeContainers 'Microsoft.Automation/automationAccounts/jobSchedules@2022-08-08' = [for i in range(0, 4): if (contains(fslogixContainerType, 'Office')) {
   parent: automationAccount
-  name: guid(Timestamp, RunbookName, StorageAccountName, 'OfficeContainers', string(i))
+  name: guid(timeStamp, RunbookName, StorageAccountName, 'OfficeContainers', string(i))
   properties: {
     parameters: {
-      Environment: Environment
+      environmentShortName: environmentShortName
       FileShareName: 'office-containers'
       ResourceGroupName: ResourceGroupName
       StorageAccountName: StorageAccountName

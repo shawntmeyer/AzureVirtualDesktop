@@ -1,21 +1,21 @@
-param Location string
-param UserAssignedIdentityClientId string
-param VirtualMachineName string
+param location string
+param userAssignedIdentityClientId string
+param virtualMachineName string
 
 resource virtualMachine 'Microsoft.Compute/virtualMachines@2022-03-01' existing = {
-  name: VirtualMachineName
+  name: virtualMachineName
 }
 
 resource removeVirtualMachine 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
   parent: virtualMachine
   name: 'RunCommand'
-  location: Location
+  location: location
   properties: {
     treatFailureAsDeploymentFailure: false
     asyncExecution: true
     parameters: [
       {
-        name: 'Environment'
+        name: 'environmentShortName'
         value: environment().name
       }
       {
@@ -31,29 +31,29 @@ resource removeVirtualMachine 'Microsoft.Compute/virtualMachines/runCommands@202
         value: tenant().tenantId
       }
       {
-        name: 'UserAssignedIdentityClientId'
-        value: UserAssignedIdentityClientId
+        name: 'userAssignedIdentityClientId'
+        value: userAssignedIdentityClientId
       }
       {
-        name: 'VirtualMachineName'
-        value: VirtualMachineName
+        name: 'virtualMachineName'
+        value: virtualMachineName
       }
 
     ]
     source: {
       script: '''
         param(
-          [string]$Environment,
+          [string]$environmentShortName,
           [string]$ResourceGroupName,
           [string]$SubscriptionId,
           [string]$TenantId,
-          [string]$UserAssignedIdentityClientId,
-          [string]$VirtualMachineName
+          [string]$userAssignedIdentityClientId,
+          [string]$virtualMachineName
         )
-        Connect-AzAccount -Environment $Environment -Tenant $TenantId -Subscription $SubscriptionId -Identity -AccountId $UserAssignedIdentityClientId
-        #introduce small delay since all RunCommands require minimum of 20 seconds to process.
-        Start-Sleep -seconds 20
-        Remove-AzVM -ResourceGroupName $ResourceGroupName -Name $VirtualMachineName -NoWait -Force
+        Connect-AzAccount -environmentShortName $environmentShortName -Tenant $TenantId -Subscription $SubscriptionId -Identity -AccountId $userAssignedIdentityClientId
+        ## Introduce a wait here because every Run Command will require at least 20 seconds to complete. This avoids a condition where the VM gets deleted before the output of this command is returned to the deployment.
+        Start-Sleep -Seconds 20
+        Remove-AzVM -ResourceGroupName $ResourceGroupName -Name $virtualMachineName -NoWait -Force
       '''
     }
   }

@@ -1,59 +1,59 @@
-param ArtifactsLocation string
-param AutomationAccountName string
-param FslogixSolution string
-param Location string
-param StorageAccountNamePrefix string
-param StorageCount int
-param StorageIndex int
+param artifactsUri string
+param automationAccountName string
+param fslogixContainerType string
+param location string
+param storageAccountNamePrefix string
+param storageCount int
+param storageIndex int
 param StorageResourceGroupName string
-param Tags object
-param Timestamp string
-param TimeZone string
+param tags object
+param timeStamp string
+param timeZone string
 
 var RunbookName = 'Auto-Increase-Premium-File-Share-Quota'
 var SubscriptionId = subscription().subscriptionId
 
 resource automationAccount 'Microsoft.Automation/automationAccounts@2022-08-08' existing = {
-  name: AutomationAccountName
+  name: automationAccountName
 }
 
 resource runbook 'Microsoft.Automation/automationAccounts/runbooks@2019-06-01' = {
   parent: automationAccount
   name: RunbookName
-  location: Location
-  tags: Tags
+  location: location
+  tags: tags
   properties: {
     runbookType: 'PowerShell'
     logProgress: false
     logVerbose: false
     publishContentLink: {
-      uri: '${ArtifactsLocation}Set-FileShareScaling.ps1'
+      uri: '${artifactsUri}Set-FileShareScaling.ps1'
       version: '1.0.0.0'
     }
   }
 }
 
-module schedules 'schedules.bicep' = [for i in range(StorageIndex, StorageCount): {
-  name: 'Schedules_${i}_${Timestamp}'
+module schedules 'schedules.bicep' = [for i in range(storageIndex, storageCount): {
+  name: 'Schedules_${i}_${timeStamp}'
   params: {
-    AutomationAccountName: automationAccount.name
-    FslogixSolution: FslogixSolution
-    StorageAccountName: '${StorageAccountNamePrefix}${padLeft(i, 2, '0')}'
-    TimeZone: TimeZone
+    automationAccountName: automationAccount.name
+    fslogixContainerType: fslogixContainerType
+    StorageAccountName: '${storageAccountNamePrefix}${padLeft(i, 2, '0')}'
+    timeZone: timeZone
   }
 }]
 
-module jobSchedules 'jobSchedules.bicep' = [for i in range(StorageIndex, StorageCount): {
-  name: 'JobSchedules_${i}_${Timestamp}'
+module jobSchedules 'jobSchedules.bicep' = [for i in range(storageIndex, storageCount): {
+  name: 'JobSchedules_${i}_${timeStamp}'
   params: {
-    AutomationAccountName: automationAccount.name
-    Environment: environment().name
-    FslogixSolution: FslogixSolution
+    automationAccountName: automationAccount.name
+    environmentShortName: environment().name
+    fslogixContainerType: fslogixContainerType
     RunbookName: RunbookName
     ResourceGroupName: StorageResourceGroupName
-    StorageAccountName: '${StorageAccountNamePrefix}${padLeft(i, 2, '0')}'
+    StorageAccountName: '${storageAccountNamePrefix}${padLeft(i, 2, '0')}'
     SubscriptionId: SubscriptionId
-    Timestamp: Timestamp
+    timeStamp: timeStamp
   }
   dependsOn: [
     runbook
@@ -62,7 +62,7 @@ module jobSchedules 'jobSchedules.bicep' = [for i in range(StorageIndex, Storage
 }]
 
 module roleAssignment '../roleAssignment.bicep' = {
-  name: 'RoleAssignment_${StorageResourceGroupName}_${Timestamp}'
+  name: 'RoleAssignment_${StorageResourceGroupName}_${timeStamp}'
   scope: resourceGroup(StorageResourceGroupName)
   params: {
     PrincipalId: automationAccount.identity.principalId

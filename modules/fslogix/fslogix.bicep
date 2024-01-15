@@ -1,135 +1,137 @@
 targetScope = 'subscription'
 
-param ActiveDirectoryConnection string
-param ActiveDirectorySolution string
-param ArtifactsLocation string
-param ArtifactsUserAssignedIdentityClientId string
-param AutomationAccountName string
-param Availability string
-param AzureFilesPrivateDnsZoneResourceId string
-param AzureFilesUserAssignedIdentityClientId string
-param DelegatedSubnetId string
-param DnsServers string
+param activeDirectoryConnection string
+param activeDirectorySolution string
+param artifactsUri string
+param artifactsUserAssignedIdentityClientId string
+param automationAccountName string
+param availability string
+param azureFilesPrivateDnsZoneResourceId string
+param azureFilesUserAssignedIdentityClientId string
+param delegatedSubnetId string
+param dnsServers string
 @secure()
-param DomainJoinUserPassword string
+param domainJoinUserPassword string
 @secure()
-param DomainJoinUserPrincipalName string
-param DomainName string
-param FileShares array
-param FslogixShareSizeInGB int
-param FslogixSolution string
-param FslogixStorage string
-param KerberosEncryption string
-param Location string
-param ManagementVmName string
-param NetAppAccountName string
-param NetAppCapacityPoolName string
-param Netbios string
-param OuPath string
-param PrivateEndpoint bool
-param RecoveryServices bool
-param RecoveryServicesVaultName string
-param ResourceGroupManagement string
-param ResourceGroupStorage string
-param SecurityPrincipalObjectIds array
-param SecurityPrincipalNames array
-param SmbServerLocation string
-param StorageAccountNamePrefix string
-param StorageCount int
-param StorageIndex int
-param StorageSku string
-param StorageSolution string
-param Subnet string
-param TagsAutomationAccounts object
-param TagsNetAppAccount object
-param TagsPrivateEndpoints object
-param TagsRecoveryServicesVault object
-param TagsStorageAccounts object
-param TagsVirtualMachines object
-param Timestamp string
-param TimeZone string
-param VirtualNetwork string
-param VirtualNetworkResourceGroup string
+param domainJoinUserPrincipalName string
+param domainName string
+param fileShares array
+param fslogixShareSizeInGB int
+param fslogixContainerType string
+param fslogixStorageService string
+param kerberosEncryption string
+param location string
+param managementVirtualMachineName string
+param netAppAccountName string
+param netAppCapacityPoolName string
+param netbios string
+param ouPath string
+param privateEndpoint bool
+param privateEndpointNameConv string
+param recoveryServices bool
+param recoveryServicesVaultName string
+param resourceGroupManagement string
+param resourceGroupStorage string
+param securityPrincipalObjectIds array
+param securityPrincipalNames array
+param smbServerLocation string
+param storageAccountNamePrefix string
+param storageCount int
+param storageIndex int
+param storageSku string
+param storageSolution string
+param subnet string
+param tagsAutomationAccounts object
+param tagsNetAppAccount object
+param tagsPrivateEndpoints object
+param tagsRecoveryServicesVault object
+param tagsStorageAccounts object
+param tagsVirtualMachines object
+param timeStamp string
+param timeZone string
+param virtualNetwork string
+param virtualNetworkResourceGroup string
 
-// Azure NetApp Files for Fslogix
-module azureNetAppFiles 'azureNetAppFiles.bicep' = if (StorageSolution == 'AzureNetAppFiles' && contains(ActiveDirectorySolution, 'DomainServices')) {
-  name: 'AzureNetAppFiles_${Timestamp}'
-  scope: resourceGroup(ResourceGroupStorage)
+// Azure NetApp files for fslogix
+module azureNetAppFiles 'azureNetAppFiles.bicep' = if (storageSolution == 'AzureNetAppFiles' && contains(activeDirectorySolution, 'DomainServices')) {
+  name: 'AzureNetAppFiles_${timeStamp}'
+  scope: resourceGroup(resourceGroupStorage)
   params: {
-    ActiveDirectoryConnection: ActiveDirectoryConnection
-    ArtifactsLocation: ArtifactsLocation
-    ArtifactsUserAssignedIdentityClientId: ArtifactsUserAssignedIdentityClientId
-    DelegatedSubnetId: DelegatedSubnetId
-    DnsServers: DnsServers
-    DomainJoinUserPassword: DomainJoinUserPassword
-    DomainJoinUserPrincipalName: DomainJoinUserPrincipalName
-    DomainName: DomainName
-    FileShares: FileShares
-    FslogixSolution: FslogixSolution
-    Location: Location
-    ManagementVmName: ManagementVmName
-    NetAppAccountName: NetAppAccountName
-    NetAppCapacityPoolName: NetAppCapacityPoolName
-    OuPath: OuPath
-    ResourceGroupManagement: ResourceGroupManagement
-    SecurityPrincipalNames: SecurityPrincipalNames
-    SmbServerLocation: SmbServerLocation
-    StorageSku: StorageSku
-    StorageSolution: StorageSolution
-    TagsNetAppAccount: TagsNetAppAccount
-    TagsVirtualMachines: TagsVirtualMachines
-    Timestamp: Timestamp
+    activeDirectoryConnection: activeDirectoryConnection
+    artifactsUri: artifactsUri
+    artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
+    delegatedSubnetId: delegatedSubnetId
+    dnsServers: dnsServers
+    domainJoinUserPassword: domainJoinUserPassword
+    domainJoinUserPrincipalName: domainJoinUserPrincipalName
+    domainName: domainName
+    fileShares: fileShares
+    fslogixContainerType: fslogixContainerType
+    location: location
+    managementVirtualMachineName: managementVirtualMachineName
+    netAppAccountName: netAppAccountName
+    netAppCapacityPoolName: netAppCapacityPoolName
+    ouPath: ouPath
+    resourceGroupManagement: resourceGroupManagement
+    securityPrincipalNames: securityPrincipalNames
+    smbServerLocation: smbServerLocation
+    storageSku: storageSku
+    storageSolution: storageSolution
+    tagsNetAppAccount: tagsNetAppAccount
+    tagsVirtualMachines: tagsVirtualMachines
+    timeStamp: timeStamp
   }
 }
 
-// Azure Files for FSLogix
-module azureFiles 'azureFiles/azureFiles.bicep' = if (StorageSolution == 'AzureFiles') {
-  name: 'AzureFiles_${Timestamp}'
-  scope: resourceGroup(ResourceGroupStorage)
+// Azure files for FSLogix
+module azureFiles 'azureFiles/azureFiles.bicep' = if (storageSolution == 'AzureFiles') {
+  name: 'AzureFiles_${timeStamp}'
+  scope: resourceGroup(resourceGroupStorage)
   params: {
-    ActiveDirectorySolution: ActiveDirectorySolution
-    ArtifactsLocation: ArtifactsLocation
-    ArtifactsUserAssignedIdentityClientId: ArtifactsUserAssignedIdentityClientId
-    AutomationAccountName: AutomationAccountName
-    Availability: Availability
-    AzureFilesPrivateDnsZoneResourceId: AzureFilesPrivateDnsZoneResourceId
-    AzureFilesUserAssignedIdentityClientId: AzureFilesUserAssignedIdentityClientId
-    DomainJoinUserPassword: DomainJoinUserPassword
-    DomainJoinUserPrincipalName: DomainJoinUserPrincipalName
-    FileShares: FileShares
-    FslogixShareSizeInGB: FslogixShareSizeInGB
-    FslogixSolution: FslogixSolution
-    FslogixStorage: FslogixStorage
-    KerberosEncryption: KerberosEncryption
-    Location: Location
-    ManagementVmName: ManagementVmName
-    Netbios: Netbios
-    OuPath: OuPath
-    PrivateEndpoint: PrivateEndpoint
-    RecoveryServices: RecoveryServices
-    RecoveryServicesVaultName: RecoveryServicesVaultName
-    ResourceGroupManagement: ResourceGroupManagement
-    ResourceGroupStorage: ResourceGroupStorage
-    SecurityPrincipalObjectIds: SecurityPrincipalObjectIds
-    SecurityPrincipalNames: SecurityPrincipalNames
-    StorageAccountNamePrefix: StorageAccountNamePrefix
-    StorageCount: StorageCount
-    StorageIndex: StorageIndex
-    StorageSku: StorageSku
-    StorageSolution: StorageSolution
-    Subnet: Subnet
-    TagsAutomationAccounts: TagsAutomationAccounts
-    TagsPrivateEndpoints: TagsPrivateEndpoints
-    TagsRecoveryServicesVault: TagsRecoveryServicesVault
-    TagsStorageAccounts: TagsStorageAccounts
-    TagsVirtualMachines: TagsVirtualMachines
-    Timestamp: Timestamp
-    TimeZone: TimeZone
-    VirtualNetwork: VirtualNetwork
-    VirtualNetworkResourceGroup: VirtualNetworkResourceGroup
+    activeDirectorySolution: activeDirectorySolution
+    artifactsUri: artifactsUri
+    artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
+    automationAccountName: automationAccountName
+    availability: availability
+    azureFilesPrivateDnsZoneResourceId: azureFilesPrivateDnsZoneResourceId
+    azureFilesUserAssignedIdentityClientId: azureFilesUserAssignedIdentityClientId
+    domainJoinUserPassword: domainJoinUserPassword
+    domainJoinUserPrincipalName: domainJoinUserPrincipalName
+    fileShares: fileShares
+    fslogixShareSizeInGB: fslogixShareSizeInGB
+    fslogixContainerType: fslogixContainerType
+    fslogixStorageService: fslogixStorageService
+    kerberosEncryption: kerberosEncryption
+    location: location
+    managementVirtualMachineName: managementVirtualMachineName
+    netbios: netbios
+    ouPath: ouPath
+    privateEndpoint: privateEndpoint
+    privateEndpointNameConv: privateEndpointNameConv
+    recoveryServices: recoveryServices
+    recoveryServicesVaultName: recoveryServicesVaultName
+    resourceGroupManagement: resourceGroupManagement
+    resourceGroupStorage: resourceGroupStorage
+    securityPrincipalObjectIds: securityPrincipalObjectIds
+    securityPrincipalNames: securityPrincipalNames
+    storageAccountNamePrefix: storageAccountNamePrefix
+    storageCount: storageCount
+    storageIndex: storageIndex
+    storageSku: storageSku
+    storageSolution: storageSolution
+    subnet: subnet
+    tagsAutomationAccounts: tagsAutomationAccounts
+    tagsPrivateEndpoints: tagsPrivateEndpoints
+    tagsRecoveryServicesVault: tagsRecoveryServicesVault
+    tagsStorageAccounts: tagsStorageAccounts
+    tagsVirtualMachines: tagsVirtualMachines
+    timeStamp: timeStamp
+    timeZone: timeZone
+    virtualNetwork: virtualNetwork
+    virtualNetworkResourceGroup: virtualNetworkResourceGroup
   }
 }
 
-output netAppShares array = StorageSolution == 'AzureNetAppFiles' ? azureNetAppFiles.outputs.fileShares : [
+output netAppShares array = storageSolution == 'AzureNetAppFiles' ? azureNetAppFiles.outputs.fileShares : [
   'None'
 ]

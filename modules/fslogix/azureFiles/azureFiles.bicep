@@ -1,47 +1,48 @@
-param ArtifactsLocation string
-param ArtifactsUserAssignedIdentityClientId string
-param AutomationAccountName string
-param Availability string
-param AzureFilesPrivateDnsZoneResourceId string
-param AzureFilesUserAssignedIdentityClientId string
+param artifactsUri string
+param artifactsUserAssignedIdentityClientId string
+param automationAccountName string
+param availability string
+param azureFilesPrivateDnsZoneResourceId string
+param azureFilesUserAssignedIdentityClientId string
 @secure()
-param DomainJoinUserPassword string
-param DomainJoinUserPrincipalName string
-param ActiveDirectorySolution string
-param FileShares array
-param FslogixShareSizeInGB int
-param FslogixSolution string
-param FslogixStorage string
-param KerberosEncryption string
-param Location string
-param ManagementVmName string
-param Netbios string
-param OuPath string
-param PrivateEndpoint bool
-param RecoveryServices bool
-param RecoveryServicesVaultName string
-param ResourceGroupManagement string
-param ResourceGroupStorage string
-param SecurityPrincipalObjectIds array
-param SecurityPrincipalNames array
+param domainJoinUserPassword string
+param domainJoinUserPrincipalName string
+param activeDirectorySolution string
+param fileShares array
+param fslogixShareSizeInGB int
+param fslogixContainerType string
+param fslogixStorageService string
+param kerberosEncryption string
+param location string
+param managementVirtualMachineName string
+param netbios string
+param ouPath string
+param privateEndpoint bool
+param privateEndpointNameConv string
+param recoveryServices bool
+param recoveryServicesVaultName string
+param resourceGroupManagement string
+param resourceGroupStorage string
+param securityPrincipalObjectIds array
+param securityPrincipalNames array
 @minLength(1)
-param StorageAccountNamePrefix string
-param StorageCount int
-param StorageIndex int
-param StorageSku string
-param StorageSolution string
-param Subnet string
-param TagsAutomationAccounts object
-param TagsPrivateEndpoints object
-param TagsRecoveryServicesVault object
-param TagsStorageAccounts object
-param TagsVirtualMachines object
-param Timestamp string
-param TimeZone string
-param VirtualNetwork string
-param VirtualNetworkResourceGroup string
+param storageAccountNamePrefix string
+param storageCount int
+param storageIndex int
+param storageSku string
+param storageSolution string
+param subnet string
+param tagsAutomationAccounts object
+param tagsPrivateEndpoints object
+param tagsRecoveryServicesVault object
+param tagsStorageAccounts object
+param tagsVirtualMachines object
+param timeStamp string
+param timeZone string
+param virtualNetwork string
+param virtualNetworkResourceGroup string
 
-var Endpoint = split(FslogixStorage, ' ')[2]
+var Endpoint = split(fslogixStorageService, ' ')[2]
 var RoleDefinitionId = '0c867c2a-1d8c-454a-a3db-ab2ea1bdc8bb' // Storage File Data SMB Share Contributor  
 var SmbMultiChannel = {
   multichannel: {
@@ -51,30 +52,30 @@ var SmbMultiChannel = {
 var SmbSettings = {
   versions: 'SMB3.0;SMB3.1.1;'
   authenticationMethods: 'NTLMv2;Kerberos;'
-  kerberosTicketEncryption: KerberosEncryption == 'RC4' ? 'RC4-HMAC;' : 'AES-256;'
+  kerberosTicketEncryption: kerberosEncryption == 'RC4' ? 'RC4-HMAC;' : 'AES-256;'
   channelEncryption: 'AES-128-CCM;AES-128-GCM;AES-256-GCM;'
 }
-var StorageRedundancy = Availability == 'AvailabilityZones' ? '_ZRS' : '_LRS'
-var SubnetId = resourceId(VirtualNetworkResourceGroup, 'Microsoft.Network/virtualNetworks/subnets', VirtualNetwork, Subnet)
+var StorageRedundancy = availability == 'availabilityZones' ? '_ZRS' : '_LRS'
+var privateEndpointSubnetId = resourceId(virtualNetworkResourceGroup, 'Microsoft.Network/virtualNetworks/subnets', virtualNetwork, subnet)
 var VirtualNetworkRules = {
-  PrivateEndpoint: []
+  privateEndpoint: []
   PublicEndpoint: []
   ServiceEndpoint: [
     {
-      id: SubnetId
+      id: privateEndpointSubnetId
       action: 'Allow'
     }
   ]
 }
 
-resource storageAccounts 'Microsoft.Storage/storageAccounts@2022-09-01' = [for i in range(0, StorageCount): {
-  name: '${StorageAccountNamePrefix}${padLeft(i + StorageIndex, 2, '0')}'
-  location: Location
-  tags: TagsStorageAccounts
+resource storageAccounts 'Microsoft.Storage/storageAccounts@2022-09-01' = [for i in range(0, storageCount): {
+  name: '${storageAccountNamePrefix}${padLeft(i + storageIndex, 2, '0')}'
+  location: location
+  tags: tagsStorageAccounts
   sku: {
-    name: '${StorageSku}${StorageRedundancy}'
+    name: '${storageSku}${StorageRedundancy}'
   }
-  kind: StorageSku == 'Standard' ? 'StorageV2' : 'FileStorage'
+  kind: storageSku == 'Standard' ? 'StorageV2' : 'FileStorage'
   properties: {
     minimumTlsVersion: 'TLS1_2'
     networkAcls: {
@@ -83,7 +84,7 @@ resource storageAccounts 'Microsoft.Storage/storageAccounts@2022-09-01' = [for i
       ipRules: []
       defaultAction: Endpoint == 'PublicEndpoint' ? 'Allow' : 'Deny'
     }
-    publicNetworkAccess: Endpoint == 'PrivateEndpoint' ? 'Disabled' : 'Enabled'
+    publicNetworkAccess: Endpoint == 'privateEndpoint' ? 'Disabled' : 'Enabled'
     supportsHttpsTrafficOnly: true
     encryption: {
       services: {
@@ -95,28 +96,28 @@ resource storageAccounts 'Microsoft.Storage/storageAccounts@2022-09-01' = [for i
       keySource: 'Microsoft.Storage'
     }
     azureFilesIdentityBasedAuthentication: {
-      directoryServiceOptions: ActiveDirectorySolution == 'AzureActiveDirectoryDomainServices' ? 'AADDS' : 'None'
+      directoryServiceOptions: activeDirectorySolution == 'AzureActiveDirectoryDomainServices' ? 'AADDS' : 'None'
     }
-    largeFileSharesState: StorageSku == 'Standard' ? 'Enabled' : null
+    largeFileSharesState: storageSku == 'Standard' ? 'Enabled' : null
   }
 }]
 
 // Assigns the SMB Contributor role to the Storage Account so users can save their profiles to the file share using FSLogix
-resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for i in range(0, StorageCount): {
+resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for i in range(0, storageCount): {
   scope: storageAccounts[i]
-  name: guid(SecurityPrincipalObjectIds[i], RoleDefinitionId, storageAccounts[i].id)
+  name: guid(securityPrincipalObjectIds[i], RoleDefinitionId, storageAccounts[i].id)
   properties: {
     roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', RoleDefinitionId)
-    principalId: SecurityPrincipalObjectIds[i]
+    principalId: securityPrincipalObjectIds[i]
   }
 }]
 
-resource fileServices 'Microsoft.Storage/storageAccounts/fileServices@2022-09-01' = [for i in range(0, StorageCount): {
+resource fileServices 'Microsoft.Storage/storageAccounts/fileServices@2022-09-01' = [for i in range(0, storageCount): {
   parent: storageAccounts[i]
   name: 'default'
   properties: {
     protocolSettings: {
-      smb: StorageSku == 'Standard' ? SmbSettings : union(SmbSettings, SmbMultiChannel)
+      smb: storageSku == 'Standard' ? SmbSettings : union(SmbSettings, SmbMultiChannel)
     }
     shareDeleteRetentionPolicy: {
       enabled: false
@@ -124,26 +125,26 @@ resource fileServices 'Microsoft.Storage/storageAccounts/fileServices@2022-09-01
   }
 }]
 
-module shares 'shares.bicep' = [for i in range(0, StorageCount): {
-  name: 'FileShares_${i}_${Timestamp}'
+module shares 'shares.bicep' = [for i in range(0, storageCount): {
+  name: 'FileShares_${i}_${timeStamp}'
   params: {
-    FileShares: FileShares
-    FslogixShareSizeInGB: FslogixShareSizeInGB
+    fileShares: fileShares
+    fslogixShareSizeInGB: fslogixShareSizeInGB
     StorageAccountName: storageAccounts[i].name
-    StorageSku: StorageSku
+    storageSku: storageSku
   }
   dependsOn: [
     roleAssignment
   ]
 }]
 
-resource privateEndpoints 'Microsoft.Network/privateEndpoints@2020-05-01' = [for i in range(0, StorageCount): if (PrivateEndpoint) {
-  name: 'pe-${StorageAccountNamePrefix}${padLeft(i + StorageIndex, 2, '0')}'
-  location: Location
-  tags: TagsPrivateEndpoints
+resource privateEndpoints 'Microsoft.Network/privateEndpoints@2020-05-01' = [for i in range(0, storageCount): if (privateEndpoint) {
+  name: replace(replace(privateEndpointNameConv, 'subresource', 'file'), 'resource', '${storageAccountNamePrefix}${padLeft(i + storageIndex, 2, '0')}')
+  location: location
+  tags: tagsPrivateEndpoints
   properties: {
     subnet: {
-      id: SubnetId
+      id: privateEndpointSubnetId
     }
     privateLinkServiceConnections: [
       {
@@ -159,15 +160,15 @@ resource privateEndpoints 'Microsoft.Network/privateEndpoints@2020-05-01' = [for
   }
 }]
 
-resource privateDnsZoneGroups 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2021-08-01' = [for i in range(0, StorageCount): if (PrivateEndpoint || !empty(AzureFilesPrivateDnsZoneResourceId)) {
+resource privateDnsZoneGroups 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2021-08-01' = [for i in range(0, storageCount): if (privateEndpoint || !empty(azureFilesPrivateDnsZoneResourceId)) {
   parent: privateEndpoints[i]
-  name: '${StorageAccountNamePrefix}${padLeft(i + StorageIndex, 2, '0')}'
+  name: '${storageAccountNamePrefix}${padLeft(i + storageIndex, 2, '0')}'
   properties: {
     privateDnsZoneConfigs: [
       {
         name: 'ipconfig1'
         properties: {
-          privateDnsZoneId: AzureFilesPrivateDnsZoneResourceId
+          privateDnsZoneId: azureFilesPrivateDnsZoneResourceId
         }
       }
     ]
@@ -177,17 +178,17 @@ resource privateDnsZoneGroups 'Microsoft.Network/privateEndpoints/privateDnsZone
   ]
 }]
 
-module ntfsPermissions '../ntfsPermissions.bicep' = if (!contains(ActiveDirectorySolution, 'AzureActiveDirectory')) {
-  name: 'FslogixNtfsPermissions_${Timestamp}'
-  scope: resourceGroup(ResourceGroupManagement)
+module ntfsPermissions '../ntfsPermissions.bicep' = if (!contains(activeDirectorySolution, 'AzureActiveDirectory')) {
+  name: 'FslogixNtfsPermissions_${timeStamp}'
+  scope: resourceGroup(resourceGroupManagement)
   params: {
-    ArtifactsLocation: ArtifactsLocation
-    UserAssignedIdentityClientId: ArtifactsUserAssignedIdentityClientId
-    CommandToExecute: 'powershell -ExecutionPolicy Unrestricted -File Set-NtfsPermissions.ps1 -ClientId ${AzureFilesUserAssignedIdentityClientId} -DomainJoinUserPassword "${DomainJoinUserPassword}" -DomainJoinUserPrincipalName ${DomainJoinUserPrincipalName} -ActiveDirectorySolution ${ActiveDirectorySolution} -Environment ${environment().name} -FslogixSolution ${FslogixSolution} -KerberosEncryptionType ${KerberosEncryption} -Netbios ${Netbios} -OuPath "${OuPath}" -SecurityPrincipalNames "${SecurityPrincipalNames}" -StorageAccountPrefix ${StorageAccountNamePrefix} -StorageAccountResourceGroupName ${ResourceGroupStorage} -StorageCount ${StorageCount} -StorageIndex ${StorageIndex} -StorageSolution ${StorageSolution} -StorageSuffix ${environment().suffixes.storage} -SubscriptionId ${subscription().subscriptionId} -TenantId ${subscription().tenantId}'
-    Location: Location
-    ManagementVmName: ManagementVmName
-    TagsVirtualMachines: TagsVirtualMachines
-    Timestamp: Timestamp
+    artifactsUri: artifactsUri
+    userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
+    CommandToExecute: 'powershell -ExecutionPolicy Unrestricted -File Set-NtfsPermissions.ps1 -ClientId ${azureFilesUserAssignedIdentityClientId} -domainJoinUserPassword "${domainJoinUserPassword}" -domainJoinUserPrincipalName ${domainJoinUserPrincipalName} -activeDirectorySolution ${activeDirectorySolution} -environmentShortName ${environment().name} -fslogixContainerType ${fslogixContainerType} -KerberosEncryptionType ${kerberosEncryption} -netbios ${netbios} -ouPath "${ouPath}" -securityPrincipalNames "${securityPrincipalNames}" -storageAccountPrefix ${storageAccountNamePrefix} -StorageAccountResourceGroupName ${resourceGroupStorage} -storageCount ${storageCount} -storageIndex ${storageIndex} -storageSolution ${storageSolution} -storageSuffix ${environment().suffixes.storage} -SubscriptionId ${subscription().subscriptionId} -TenantId ${subscription().tenantId}'
+    location: location
+    managementVirtualMachineName: managementVirtualMachineName
+    tagsVirtualMachines: tagsVirtualMachines
+    timeStamp: timeStamp
   }
   dependsOn: [
     privateDnsZoneGroups
@@ -196,36 +197,36 @@ module ntfsPermissions '../ntfsPermissions.bicep' = if (!contains(ActiveDirector
   ]
 }
 
-module recoveryServices 'recoveryServices.bicep' = if (RecoveryServices) {
-  name: 'RecoveryServices_AzureFiles_${Timestamp}'
-  scope: resourceGroup(ResourceGroupManagement)
+module recServices 'recoveryServices.bicep' = if (recoveryServices) {
+  name: 'RecoveryServices_AzureFiles_${timeStamp}'
+  scope: resourceGroup(resourceGroupManagement)
   params: {
-    FileShares: FileShares
-    Location: Location
-    RecoveryServicesVaultName: RecoveryServicesVaultName
-    ResourceGroupStorage: ResourceGroupStorage
-    StorageAccountNamePrefix: StorageAccountNamePrefix
-    StorageCount: StorageCount
-    StorageIndex: StorageIndex
-    TagsRecoveryServicesVault: TagsRecoveryServicesVault
-    Timestamp: Timestamp
+    fileShares: fileShares
+    location: location
+    recoveryServicesVaultName: recoveryServicesVaultName
+    resourceGroupStorage: resourceGroupStorage
+    storageAccountNamePrefix: storageAccountNamePrefix
+    storageCount: storageCount
+    storageIndex: storageIndex
+    tagsRecoveryServicesVault: tagsRecoveryServicesVault
+    timeStamp: timeStamp
   }
 }
 
-module autoIncreasePremiumFileShareQuota '../../management/autoIncreasePremiumFileShareQuota.bicep' = if (contains(FslogixStorage, 'AzureFiles Premium') && StorageCount > 0) {
-  name: 'AutoIncreasePremiumFileShareQuota_${Timestamp}'
-  scope: resourceGroup(ResourceGroupManagement)
+module autoIncreasePremiumFileShareQuota '../../management/autoIncreasePremiumFileShareQuota.bicep' = if (contains(fslogixStorageService, 'AzureFiles Premium') && storageCount > 0) {
+  name: 'AutoIncreasePremiumFileShareQuota_${timeStamp}'
+  scope: resourceGroup(resourceGroupManagement)
   params: {
-    ArtifactsLocation: ArtifactsLocation
-    AutomationAccountName: AutomationAccountName
-    FslogixSolution: FslogixSolution
-    Location: Location
-    StorageAccountNamePrefix: StorageAccountNamePrefix
-    StorageCount: StorageCount
-    StorageIndex: StorageIndex
-    StorageResourceGroupName: ResourceGroupStorage
-    Tags: TagsAutomationAccounts
-    Timestamp: Timestamp
-    TimeZone: TimeZone
+    artifactsUri: artifactsUri
+    automationAccountName: automationAccountName
+    fslogixContainerType: fslogixContainerType
+    location: location
+    storageAccountNamePrefix: storageAccountNamePrefix
+    storageCount: storageCount
+    storageIndex: storageIndex
+    StorageResourceGroupName: resourceGroupStorage
+    tags: tagsAutomationAccounts
+    timeStamp: timeStamp
+    timeZone: timeZone
   }
 }

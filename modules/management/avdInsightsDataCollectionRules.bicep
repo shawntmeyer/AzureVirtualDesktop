@@ -1,12 +1,12 @@
 param Name string
-param Location string
+param location string
 param LogAWorkspaceId string
-param Tags object
+param tags object
 
 resource dcr 'Microsoft.Insights/dataCollectionRules@2021-04-01' = {
   name: Name
-  location: Location
-  tags: Tags
+  location: location
+  tags: tags
   kind: 'Windows'
   properties: {
     dataSources: {

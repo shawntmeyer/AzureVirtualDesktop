@@ -1,140 +1,119 @@
-param DiskEncryptionOptions object
-param DiskEncryptionKeyExpirationInDays int = 30
-param DiskEncryptionSetName string
-param DomainJoinUserPrincipalName string
 @secure()
-param DomainJoinUserPassword string
-param Environment string
-param KeyVaultName string
-param Location string
-param TagsDiskEncryptionSet object
-param TagsKeyVault object
-param Timestamp string
-param VirtualMachineAdminUserName string
+param domainJoinUserPrincipalName string
 @secure()
-param VirtualMachineAdminPassword string
+param domainJoinUserPassword string
+param environmentShortName string
+param keyVaultName string
+param keyVaultPrivateDnsZoneResourceId string
+param location string
+param privateEndpoint bool
+param privateEndpointNameConv string
+param privateEndpointSubnetId string
+param tagsKeyVault object
+param tagsPrivateEndpoints object
+param virtualMachineAdminUserName string
+@secure()
+param virtualMachineAdminPassword string
 
-resource vault 'Microsoft.KeyVault/vaults@2022-07-01' = {
-  name: KeyVaultName
-  location: Location
-  tags: TagsKeyVault
+resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' = {
+  name: keyVaultName
+  location: location
+  tags: tagsKeyVault
   properties: {
-    enabledForDeployment: false
+    enabledForDeployment: true
     enabledForDiskEncryption: true
     enabledForTemplateDeployment: true
     enablePurgeProtection: true
     enableRbacAuthorization: true
     enableSoftDelete: true
+    networkAcls: {
+      bypass: 'AzureServices'
+      defaultAction: 'Deny'
+      ipRules: []
+      virtualNetworkRules: []
+    }
+    publicNetworkAccess: 'Disabled'
     sku: {
       family: 'A'
       name: 'standard'
     }
-    softDeleteRetentionInDays: Environment == 'd' || Environment == 't' ? 7 : 90
+    softDeleteRetentionInDays: environmentShortName == 'd' || environmentShortName == 't' ? 7 : 90
     tenantId: subscription().tenantId
   }
 }
 
-resource key 'Microsoft.KeyVault/vaults/keys@2022-07-01' = if(DiskEncryptionOptions.KeyEncryptionKey || DiskEncryptionOptions.DiskEncryptionSet) {
-  parent: vault
-  name: DiskEncryptionOptions.DiskEncryptionSet ? 'DiskEncryptionKey' : 'ADEKeyEncryptionKey'
+resource vaultPrivateEndpoint 'Microsoft.Network/privateEndpoints@2020-05-01' = {
+  name: replace(replace(privateEndpointNameConv, 'subresource', 'vault'), 'resource', keyVaultName)
+  location: location
+  tags: tagsPrivateEndpoints
   properties: {
-    attributes: {
-      enabled: true
+    subnet: {
+      id: privateEndpointSubnetId
     }
-    keySize: 4096
-    kty: 'RSA'
-    rotationPolicy: {
-      attributes: {
-        expiryTime: 'P${string(DiskEncryptionKeyExpirationInDays)}D'
-      }
-      lifetimeActions: [
-        {
-          action: {
-            type: 'Notify'
-          }
-          trigger: {
-            timeBeforeExpiry: 'P10D'
-          }
+    privateLinkServiceConnections: [
+      {
+        name: 'pe-${keyVaultName}_${guid(keyVaultName)}'
+        properties: {
+          privateLinkServiceId: keyVault.id
+          groupIds: [
+            'vault'
+          ]
         }
-        {
-          action: {
-            type: 'Rotate'
-          }
-          trigger: {
-            timeAfterCreate: 'P${string(DiskEncryptionKeyExpirationInDays - 7)}D'
-          }
-        }
-      ]
-    }
-  }
-}
-
-resource diskEncryptionSet 'Microsoft.Compute/diskEncryptionSets@2022-07-02' = if(DiskEncryptionOptions.DiskEncryptionSet) {
-  name: DiskEncryptionSetName
-  location: Location
-  tags: TagsDiskEncryptionSet
-  identity: {
-    type: 'SystemAssigned'
-  }
-  properties: {
-    activeKey: {
-      sourceVault: {
-        id: vault.id
       }
-      keyUrl: key.properties.keyUriWithVersion
-    }
-    encryptionType: 'EncryptionAtRestWithPlatformAndCustomerKeys'
-    rotationToLatestKeyVersionEnabled: true
+    ]
   }
 }
 
-module roleAssignment '../roleAssignment.bicep' = if(DiskEncryptionOptions.DiskEncryptionSet) {
-  name: 'RoleAssignment_${Timestamp}'
-  params: {
-    PrincipalId: diskEncryptionSet.identity.principalId
-    PrincipalType: 'ServicePrincipal'
-    RoleDefinitionId: 'e147488a-f6f5-4113-8e2d-b22465e65bf6' // Key Vault Crypto Service Encryption User
+resource privateDnsZoneGroups 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2021-08-01' = if (privateEndpoint && !empty(keyVaultPrivateDnsZoneResourceId)) {
+  parent: vaultPrivateEndpoint
+  name: keyVaultName
+  properties: {
+    privateDnsZoneConfigs: [
+      {
+        name: 'ipconfig1'
+        properties: {
+          privateDnsZoneId: keyVaultPrivateDnsZoneResourceId
+        }
+      }
+    ]
   }
 }
 
-resource secretDomainJoinUPN 'Microsoft.KeyVault/vaults/secrets@2022-07-01' = if(!empty(DomainJoinUserPrincipalName)) {
-  parent: vault
-  name: 'DomainJoinUserPrincipalName'
+resource secretDomainJoinUPN 'Microsoft.KeyVault/vaults/secrets@2022-07-01' = if(!empty(domainJoinUserPrincipalName)) {
+  parent: keyVault
+  name: 'domainJoinUserPrincipalName'
   properties: {
     contentType: 'text/plain'
-    value: DomainJoinUserPrincipalName
+    value: domainJoinUserPrincipalName
   }
 }
 
-resource secretDomainJoinUserPassword 'Microsoft.KeyVault/vaults/secrets@2022-07-01' = if(!empty(DomainJoinUserPassword)) {
-  parent: vault
-  name: 'DomainJoinUserPassword'
+resource secretdomainJoinUserPassword 'Microsoft.KeyVault/vaults/secrets@2022-07-01' = if(!empty(domainJoinUserPassword)) {
+  parent: keyVault
+  name: 'domainJoinUserPassword'
   properties: {
     contentType: 'text/plain'
-    value: DomainJoinUserPassword
+    value: domainJoinUserPassword
   }
 }
 
-resource secretVirtualMachineAdminUserName 'Microsoft.KeyVault/vaults/secrets@2022-07-01' = if(!empty(VirtualMachineAdminUserName)) {
-  parent: vault
-  name: 'VirtualMachineAdminUserName'
+resource secretVirtualMachineAdminUserName 'Microsoft.KeyVault/vaults/secrets@2022-07-01' = if(!empty(virtualMachineAdminUserName)) {
+  parent: keyVault
+  name: 'virtualMachineAdminUserName'
   properties: {
     contentType: 'text/plain'
-    value: VirtualMachineAdminUserName
+    value: virtualMachineAdminUserName
   }
 }
 
-resource secretVirtualMachineAdminPassword 'Microsoft.KeyVault/vaults/secrets@2022-07-01' = if(!empty(VirtualMachineAdminPassword)) {
-  parent: vault
-  name: 'VirtualMachineAdminPassword'
+resource secretVirtualMachineAdminPassword 'Microsoft.KeyVault/vaults/secrets@2022-07-01' = if(!empty(virtualMachineAdminPassword)) {
+  parent: keyVault
+  name: 'virtualMachineAdminPassword'
   properties: {
     contentType: 'text/plain'
-    value: VirtualMachineAdminPassword
+    value: virtualMachineAdminPassword
   }
 }
 
-output diskEncryptionSetResourceId string = DiskEncryptionOptions.DiskEncryptionSet ? diskEncryptionSet.id : ''
-output keyVaultResourceId string = vault.id
-output keyVaultUrl string = vault.properties.vaultUri
-output keyId string = DiskEncryptionOptions.DiskEncryptionSet || DiskEncryptionOptions.KeyEncryptionKey ? key.id : ''
-output keyUrl string = DiskEncryptionOptions.KeyEncryptionKey ? key.properties.keyUri : ''
+output keyVaultResourceId string = keyVault.id
+output keyVaultUrl string = keyVault.properties.vaultUri

@@ -1,19 +1,19 @@
 targetScope = 'subscription'
 
-param Environment string
-param BusinessUnitIdentifier string
-param CentralizedAVDManagement bool
-param FslogixStorageCustomPrefix string
-param HostpoolIdentifier string
-param LocationControlPlane string
-param LocationVirtualMachines string
-param NameConvResTypeAtEnd bool
-param VirtualMachineNamePrefix string
+param environmentShortName string
+param businessUnitIdentifier string
+param centralizedAVDManagement bool
+param fslogixStorageCustomPrefix string
+param hostPoolIdentifier string
+param locationControlPlane string
+param locationVirtualMachines string
+param nameConvResTypeAtEnd bool
+param virtualMachineNamePrefix string
 
 // Ensure that Centralized AVD Managment resource group and resources are created appropriately
-var CentralAVDManagement = !empty(BusinessUnitIdentifier) ? CentralizedAVDManagement : true
+var centralAVDManagement = !empty(businessUnitIdentifier) ? centralizedAVDManagement : true
 
-var FileShareNames = {
+var fileShareNames = {
   CloudCacheProfileContainer: [
     'profile-containers'
   ]
@@ -30,72 +30,81 @@ var FileShareNames = {
   ]
 }
 
-var Locations = loadJsonContent('../data/locations.json')
-var ResourceAbbreviations = loadJsonContent('../data/resourceAbbreviations.json')
+var locations = loadJsonContent('../data/locations.json')
+var resourceAbbreviations = loadJsonContent('../data/resourceAbbreviations.json')
 // automatically add 'avd-' prefix to the prefix if it isn't already listed.
-var BusinessUnitFinal = contains(BusinessUnitIdentifier, 'avd') ? BusinessUnitIdentifier : 'avd-${BusinessUnitIdentifier}'
-var HostpoolFinal = !empty(BusinessUnitIdentifier) ? HostpoolIdentifier : ( contains(HostpoolIdentifier, 'avd') ? HostpoolIdentifier : 'avd-${HostpoolIdentifier}' )
+var businessUnitId = !empty(businessUnitIdentifier) ? contains(businessUnitIdentifier, 'avd') ? businessUnitIdentifier : '${businessUnitIdentifier}-avd' : ''
+var hostPoolId = !empty(businessUnitIdentifier) ? hostPoolIdentifier : ( contains(hostPoolIdentifier, 'avd') ? hostPoolIdentifier : 'avd-${hostPoolIdentifier}' )
 
-var NameConv_Prefix_withoutResType = !empty(BusinessUnitIdentifier) ? '${BusinessUnitFinal}-${HostpoolFinal}' : HostpoolFinal
-var NameConvPrefix = NameConvResTypeAtEnd ? NameConv_Prefix_withoutResType : 'resourceType-${NameConv_Prefix_withoutResType}' 
+var hostPoolBaseName = !empty(businessUnitIdentifier) ? '${businessUnitId}-${hostPoolId}' : hostPoolId
+var hostPoolPrefix = nameConvResTypeAtEnd ? hostPoolBaseName : 'resourceType-${hostPoolBaseName}'
 
-var NameConv_Suffix_withoutResType = !empty(Environment) ? '${Environment}-location' : 'location'
-var NameConvSuffix = NameConvResTypeAtEnd ? '${NameConv_Suffix_withoutResType}-resourceType' : NameConv_Suffix_withoutResType
+var nameConv_Suffix_withoutResType = !empty(environmentShortName) ? '${environmentShortName}-location' : 'location'
+var nameConvSuffix = nameConvResTypeAtEnd ? '${nameConv_Suffix_withoutResType}-resourceType' : nameConv_Suffix_withoutResType
 
-var NameConv_ResGroups = '${NameConvPrefix}-resGroupPurpose-${NameConvSuffix}'
-var NameConv_Resources = '${NameConvPrefix}-${NameConvSuffix}'
+var nameConv_HP_ResGroups = '${hostPoolPrefix}-resGroupPurpose-${nameConvSuffix}'
+var nameConv_HP_Resources = '${hostPoolPrefix}-${nameConvSuffix}'
 
-var NameConv_Shared_ResGroups = NameConvResTypeAtEnd ? ( !empty(BusinessUnitIdentifier) ? '${BusinessUnitFinal}-resGroupPurpose-${NameConvSuffix}' : 'resGroupPurpose-${NameConvSuffix}' ) : ( !empty(BusinessUnitIdentifier) ? 'resourceType-${BusinessUnitFinal}-resGroupPurpose-${NameConvSuffix}' : 'resourceType-resGroupPurpose-${NameConvSuffix}' )
-var NameConv_Shared_Resources = NameConvResTypeAtEnd ? ( !empty(BusinessUnitIdentifier) ? '${BusinessUnitFinal}-${NameConvSuffix}' : '${NameConvSuffix}' ) : (!empty(BusinessUnitFinal) ? 'resourceType-${BusinessUnitFinal}-${NameConvSuffix}' : 'resourceType-${NameConvSuffix}' )
+var nameConv_Shared_ResGroups = nameConvResTypeAtEnd ? ( !empty(businessUnitIdentifier) ? '${businessUnitId}-resGroupPurpose-${nameConvSuffix}' : 'resGroupPurpose-${nameConvSuffix}' ) : ( !empty(businessUnitIdentifier) ? 'resourceType-${businessUnitId}-resGroupPurpose-${nameConvSuffix}' : 'resourceType-resGroupPurpose-${nameConvSuffix}' )
+var nameConv_Shared_Resources = nameConvResTypeAtEnd ? ( !empty(businessUnitIdentifier) ? '${businessUnitId}-${nameConvSuffix}' : '${nameConvSuffix}' ) : (!empty(businessUnitId) ? 'resourceType-${businessUnitId}-${nameConvSuffix}' : 'resourceType-${nameConvSuffix}' )
 
-var NameConv_Mgmt_ResGroup = CentralAVDManagement ? ( NameConvResTypeAtEnd ? 'avd-resGroupPurpose-${NameConvSuffix}' : 'resourceType-avd-resGroupPurpose-${NameConvSuffix}' ) : NameConv_Shared_ResGroups
-var NameConv_Mgmt_Resources = CentralAVDManagement ? ( NameConvResTypeAtEnd ? 'avd-${NameConvSuffix}' : 'resourceType-avd-${NameConvSuffix}' ) : NameConv_Shared_Resources
+var nameConv_Mgmt_ResGroup = centralAVDManagement ? ( nameConvResTypeAtEnd ? 'avd-resGroupPurpose-${nameConvSuffix}' : 'resourceType-avd-resGroupPurpose-${nameConvSuffix}' ) : nameConv_Shared_ResGroups
+var nameConv_Mgmt_Resources = centralAVDManagement ? ( nameConvResTypeAtEnd ? 'avd-${nameConvSuffix}' : 'resourceType-avd-${nameConvSuffix}' ) : nameConv_Shared_Resources
 
 // Control Plane Resources
-var ResourceGroupControlPlane = replace(replace(replace(NameConv_Shared_ResGroups, 'resGroupPurpose', 'controlplane'), 'location', '${Locations[LocationControlPlane].abbreviation}'), 'resourceType', '${ResourceAbbreviations.resourceGroups}')
-var DesktopApplicationGroupName = replace(replace(NameConv_Resources, 'resourceType', ResourceAbbreviations.desktopApplicationGroups), 'location', Locations[LocationControlPlane].abbreviation)
-var HostPoolName = replace(replace(NameConv_Resources, 'resourceType', ResourceAbbreviations.hostPools), 'location', Locations[LocationControlPlane].abbreviation)
+var resourceGroupControlPlane = replace(replace(replace(nameConv_Shared_ResGroups, 'resGroupPurpose', 'controlplane'), 'location', '${locations[locationControlPlane].abbreviation}'), 'resourceType', '${resourceAbbreviations.resourceGroups}')
+var workspaceName = replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.workspaces), 'location', locations[locationControlPlane].abbreviation)
+var desktopApplicationGroupName = replace(replace(nameConv_HP_Resources, 'resourceType', resourceAbbreviations.desktopApplicationGroups), 'location', locations[locationControlPlane].abbreviation)
+var hostPoolName = replace(replace(nameConv_HP_Resources, 'resourceType', resourceAbbreviations.hostPools), 'location', locations[locationControlPlane].abbreviation)
+var globalFeedResourceGroupName = replace(replace(replace(nameConv_Mgmt_ResGroup, 'resGroupPurpose', 'global-feed'), 'location', '${locations[locationVirtualMachines].abbreviation}'), 'resourceType', '${resourceAbbreviations.resourceGroups}')
+var globalFeedWorkspaceName = replace((nameConvResTypeAtEnd ? 'avd-feed-global-resourceType' : 'resourceType-avd-feed-global'), 'resourceType', resourceAbbreviations.workspaces)
 // Compute Resources
-var ResourceGroupHosts = replace(replace(replace(NameConv_ResGroups, 'resGroupPurpose', 'hosts'), 'location', '${Locations[LocationControlPlane].abbreviation}'), 'resourceType', '${ResourceAbbreviations.resourceGroups}')
-var AvailabilitySetNamePrefix = '${replace(replace(NameConv_Resources, 'resourceType', ResourceAbbreviations.availabilitySets), 'location', Locations[LocationVirtualMachines].abbreviation)}-'
-var DiskNamePrefix = VirtualMachineNamePrefix
-var NetworkInterfaceNamePrefix = VirtualMachineNamePrefix
+var resourceGroupHosts = replace(replace(replace(nameConv_HP_ResGroups, 'resGroupPurpose', 'hosts'), 'location', '${locations[locationControlPlane].abbreviation}'), 'resourceType', '${resourceAbbreviations.resourceGroups}')
+var availabilitySetNamePrefix = '${replace(replace(nameConv_HP_Resources, 'resourceType', resourceAbbreviations.availabilitySets), 'location', locations[locationVirtualMachines].abbreviation)}-'
+var diskNamePrefix = virtualMachineNamePrefix
+var networkInterfaceNamePrefix = virtualMachineNamePrefix
 // Management Resources
-var ResourceGroupManagement = replace(replace(replace(NameConv_Mgmt_ResGroup, 'resGroupPurpose', 'management'), 'location', '${Locations[LocationVirtualMachines].abbreviation}'), 'resourceType', '${ResourceAbbreviations.resourceGroups}')
-var AutomationAccountName = replace(replace(NameConv_Mgmt_Resources, 'resourceType', ResourceAbbreviations.automationAccounts), 'location', Locations[LocationVirtualMachines].abbreviation)
+var resourceGroupManagement = replace(replace(replace(nameConv_Mgmt_ResGroup, 'resGroupPurpose', 'management'), 'location', '${locations[locationVirtualMachines].abbreviation}'), 'resourceType', '${resourceAbbreviations.resourceGroups}')
+var automationAccountName = replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.automationAccounts), 'location', locations[locationVirtualMachines].abbreviation)
 // the AVD Insights data collection rule must start with 'microsoft-avdi-'
-var DataCollectionRulesName = 'microsoft-avdi-${replace(replace(replace(NameConv_Mgmt_Resources, 'resourceType', ResourceAbbreviations.dataCollectionRules), 'location', Locations[LocationVirtualMachines].abbreviation), 'avd-', '')}'
-var DiskEncryptionSetName = replace(replace(NameConv_Mgmt_Resources, 'resourceType', ResourceAbbreviations.diskEncryptionSets), 'location', Locations[LocationVirtualMachines].abbreviation)
-var KeyVaultName = replace(replace(NameConv_Mgmt_Resources, 'resourceType', ResourceAbbreviations.keyVaults), 'location', Locations[LocationVirtualMachines].abbreviation)
-var LogAnalyticsWorkspaceName = replace(replace(NameConv_Mgmt_Resources, 'resourceType', ResourceAbbreviations.logAnalyticsWorkspaces), 'location', Locations[LocationControlPlane].abbreviation)
-var RecoveryServicesVaultName = replace(replace(NameConv_Mgmt_Resources, 'resourceType', ResourceAbbreviations.recoveryServicesVaults), 'location', Locations[LocationVirtualMachines].abbreviation)
-var UserAssignedIdentityName = replace(replace(NameConv_Mgmt_Resources, 'resourceType', ResourceAbbreviations.userAssignedIdentities), 'location', Locations[LocationVirtualMachines].abbreviation)
-var WorkspaceName = replace(replace(NameConv_Mgmt_Resources, 'resourceType', ResourceAbbreviations.workspaces), 'location', Locations[LocationControlPlane].abbreviation)
-// Storage Resources
-var ResourceGroupStorage = replace(replace(replace(NameConv_ResGroups, 'resGroupPurpose', 'storage'), 'location', '${Locations[LocationVirtualMachines].abbreviation}'), 'resourceType', '${ResourceAbbreviations.resourceGroups}')
-var NetAppAccountName = replace(replace(NameConv_Resources, 'resourceType', ResourceAbbreviations.netAppAccounts), 'location', Locations[LocationVirtualMachines].abbreviation)
-var NetAppCapacityPoolName = replace(replace(NameConv_Resources, 'resourceType', ResourceAbbreviations.netAppCapacityPools), 'location', Locations[LocationVirtualMachines].abbreviation)
-var StorageAccountNamePrefix = empty(FslogixStorageCustomPrefix) ? toLower('fsl${replace(replace(replace(replace(NameConv_Resources, 'resourceType', ''), 'location', Locations[LocationVirtualMachines].abbreviation), 'avd-', ''), '-', '')}') : FslogixStorageCustomPrefix
+var dataCollectionRulesName = 'microsoft-avdi-${replace(replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.dataCollectionRules), 'location', locations[locationVirtualMachines].abbreviation), 'avd-', '')}'
+var diskEncryptionSetName = replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.diskEncryptionSets), 'location', locations[locationVirtualMachines].abbreviation)
+var keyVaultName = replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.keyVaults), 'location', locations[locationVirtualMachines].abbreviation)
+var KeyVaultUniqueString = take(uniqueString(keyVaultName,resourceGroupManagement, subscription().subscriptionId), 24 - (length(keyVaultName)+1))
+var keyVaultUniqueName = nameConvResTypeAtEnd ? replace(keyVaultName, '-${resourceAbbreviations.keyVaults}', '-${KeyVaultUniqueString}-${resourceAbbreviations.keyVaults}') : '${keyVaultName}-${KeyVaultUniqueString}' 
+var logAnalyticsWorkspaceName = replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.logAnalyticsWorkspaces), 'location', locations[locationControlPlane].abbreviation)
+var recoveryServicesVaultName = replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.recoveryServicesVaults), 'location', locations[locationVirtualMachines].abbreviation)
+var userAssignedIdentityNameConv = replace(replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.recoveryServicesVaults), 'location', locations[locationVirtualMachines].abbreviation), 'avd-', 'avd-uaiPurpose')
 
-output AvailabilitySetNamePrefix string = AvailabilitySetNamePrefix
-output AutomationAccountName string = AutomationAccountName
-output DataCollectionRulesName string = DataCollectionRulesName
-output DesktopApplicationGroupName string = DesktopApplicationGroupName
-output DiskEncryptionSetName string = DiskEncryptionSetName
-output DiskNamePrefix string = DiskNamePrefix
-output FileShareNames object = FileShareNames
-output HostPoolName string = HostPoolName
-output KeyVaultName string = KeyVaultName
-output Locations object = Locations
-output LogAnalyticsWorkspaceName string = LogAnalyticsWorkspaceName
-output NetAppAccountName string = NetAppAccountName
-output NetAppCapacityPoolName string = NetAppCapacityPoolName
-output NetworkInterfaceNamePrefix string = NetworkInterfaceNamePrefix
-output RecoveryServicesVaultName string = RecoveryServicesVaultName
-output ResourceGroupControlPlane string = ResourceGroupControlPlane
-output ResourceGroupHosts string = ResourceGroupHosts
-output ResourceGroupManagement string = ResourceGroupManagement
-output ResourceGroupStorage string = ResourceGroupStorage
-output StorageAccountNamePrefix string = StorageAccountNamePrefix
-output UserAssignedIdentityName string = UserAssignedIdentityName
-output WorkspaceName string = WorkspaceName
+// Storage Resources
+var resourceGroupStorage = replace(replace(replace(nameConv_HP_ResGroups, 'resGroupPurpose', 'storage'), 'location', '${locations[locationVirtualMachines].abbreviation}'), 'resourceType', '${resourceAbbreviations.resourceGroups}')
+var netAppAccountName = replace(replace(nameConv_HP_Resources, 'resourceType', resourceAbbreviations.netAppAccounts), 'location', locations[locationVirtualMachines].abbreviation)
+var netAppCapacityPoolName = replace(replace(nameConv_HP_Resources, 'resourceType', resourceAbbreviations.netAppCapacityPools), 'location', locations[locationVirtualMachines].abbreviation)
+var storageAccountNamePrefix = empty(fslogixStorageCustomPrefix) ? toLower('${replace(replace(replace(replace(replace(nameConv_HP_Resources, 'resourceType', resourceAbbreviations.storageAccounts), hostPoolBaseName, '${hostPoolBaseName}fsl'), 'location', locations[locationVirtualMachines].abbreviation), 'avd-', ''), '-', '')}') : fslogixStorageCustomPrefix
+var privateEndpointNameConv = replace('${nameConvResTypeAtEnd ? 'resource-subresource-resourceType' : 'ressourceType-resource-subresource'}', 'resourceType', resourceAbbreviations.privateEndpoints)
+
+output availabilitySetNamePrefix string = availabilitySetNamePrefix
+output automationAccountName string = automationAccountName
+output dataCollectionRulesName string = dataCollectionRulesName
+output desktopApplicationGroupName string = desktopApplicationGroupName
+output diskEncryptionSetName string = diskEncryptionSetName
+output diskNamePrefix string = diskNamePrefix
+output globalFeedWorkspaceName string = globalFeedWorkspaceName
+output fileShareNames object = fileShareNames
+output hostPoolName string = hostPoolName
+output keyVaultName string = keyVaultUniqueName
+output locations object = locations
+output logAnalyticsWorkspaceName string = logAnalyticsWorkspaceName
+output netAppAccountName string = netAppAccountName
+output netAppCapacityPoolName string = netAppCapacityPoolName
+output networkInterfaceNamePrefix string = networkInterfaceNamePrefix
+output privateEndpointNameConv string = privateEndpointNameConv
+output recoveryServicesVaultName string = recoveryServicesVaultName
+output resourceGroupControlPlane string = resourceGroupControlPlane
+output resourceGroupGlobalFeed string = globalFeedResourceGroupName
+output resourceGroupHosts string = resourceGroupHosts
+output resourceGroupManagement string = resourceGroupManagement
+output resourceGroupStorage string = resourceGroupStorage
+output storageAccountNamePrefix string = storageAccountNamePrefix
+output userAssignedIdentityNameConv string = userAssignedIdentityNameConv
+output workspaceName string = workspaceName

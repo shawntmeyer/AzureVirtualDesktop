@@ -1,21 +1,21 @@
-param AutomationAccountName string
-param Location string
+param automationAccountName string
+param location string
 param Name string
 param Script string
 @secure()
 param ScriptContainerSasToken string
 param ScriptContainerUri string
-param Tags object
+param tags object
 
 resource automationAccount 'Microsoft.Automation/automationAccounts@2019-06-01' existing = {
-  name: AutomationAccountName
+  name: automationAccountName
 }
 
 resource runbooks 'Microsoft.Automation/automationAccounts/runbooks@2019-06-01' = {
   parent: automationAccount
   name: Name
-  location: Location
-  tags: Tags
+  location: location
+  tags: tags
   properties: {
     runbookType: 'PowerShell'
     logProgress: false

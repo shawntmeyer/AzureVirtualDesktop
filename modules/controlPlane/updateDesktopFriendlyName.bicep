@@ -1,57 +1,57 @@
-param DesktopFriendlyName string
-param DesktopAppGroupName string
-param DesktopAppGroupResourceGroup string
+param desktopFriendlyName string
+param desktopAppGroupName string
+param desktopAppGroupResourceGroup string
 param Cloud string = environment().name
-param Location string
-param ManagementVmName string
-param UserAssignedIdentityClientId string
+param location string
+param managementVirtualMachineName string
+param userAssignedIdentityClientId string
 
 resource managementVm 'Microsoft.Compute/virtualMachines@2023-07-01' existing = {
-  name: ManagementVmName
+  name: managementVirtualMachineName
 }
 
-resource updateDesktopFriendlyName 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
+resource updatedesktopFriendlyName 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
   name: 'Update-Desktop-Friendly-Name'
-  location: Location
+  location: location
   parent: managementVm
   properties: {
     treatFailureAsDeploymentFailure: true
     parameters: [
       {
-        name: 'DesktopFriendlyName'
-        value: DesktopFriendlyName
+        name: 'desktopFriendlyName'
+        value: desktopFriendlyName
       }
       {
-        name: 'DesktopAppGroupName'
-        value: DesktopAppGroupName
+        name: 'desktopAppGroupName'
+        value: desktopAppGroupName
       }
       {
-        name: 'DesktopAppGroupResourceGroup'
-        value: DesktopAppGroupResourceGroup
+        name: 'desktopAppGroupResourceGroup'
+        value: desktopAppGroupResourceGroup
       }
       {
-        name: 'Environment'
+        name: 'environmentShortName'
         value: Cloud
       }
       {
-        name: 'UserAssignedIdentityClientId'
-        value: UserAssignedIdentityClientId
+        name: 'userAssignedIdentityClientId'
+        value: userAssignedIdentityClientId
       }
     ]
     source: {
       script: '''
         param(
-          [string]$DesktopFriendlyName,
-          [string]$DesktopAppGroupName,
-          [string]$DesktopAppGroupResourceGroup,
-          [string]$Environment,
-          [string]$UserAssignedIdentityClientId
+          [string]$desktopFriendlyName,
+          [string]$desktopAppGroupName,
+          [string]$desktopAppGroupResourceGroup,
+          [string]$environmentShortName,
+          [string]$userAssignedIdentityClientId
         )
         # Connect to Azure
-        Connect-AzAccount -Identity -AccountId $UserAssignedIdentityClientId -Environment $Environment # Run on the virtual machine
-        $Desktop = Get-AzWvdDesktop -ApplicationGroupName $DesktopAppGroupName -ResourceGroupName $DesktopAppGroupResourceGroup
-        If ($($Desktop.FriendlyName) -ne $DesktopFriendlyName) {
-          $Desktop | Update-AzWvdDesktop -FriendlyName $DesktopFriendlyName
+        Connect-AzAccount -Identity -AccountId $userAssignedIdentityClientId -environmentShortName $environmentShortName # Run on the virtual machine
+        $Desktop = Get-AzWvdDesktop -ApplicationGroupName $desktopAppGroupName -ResourceGroupName $desktopAppGroupResourceGroup
+        If ($($Desktop.friendlyName) -ne $desktopFriendlyName) {
+          $Desktop | Update-AzWvdDesktop -friendlyName $desktopFriendlyName
         }
         Disconnect-AzAccount
       '''

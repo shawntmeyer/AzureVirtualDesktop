@@ -1,74 +1,74 @@
-param ActiveDirectorySolution string
-param ArtifactsLocation string
-param ArtifactsUserAssignedIdentityClientId string
-param ArtifactsUserAssignedIdentityResourceId string
+param activeDirectorySolution string
+param artifactsUri string
+param artifactsUserAssignedIdentityClientId string
+param artifactsUserAssignedIdentityResourceId string
 param AcceleratedNetworking string
-param Availability string
-param AvailabilitySetNamePrefix string
-param AvailabilityZones array
+param availability string
+param availabilitySetNamePrefix string
+param availabilityZones array
 param BatchCount int
-param CSEMasterScript string
-param CSEUris array
-param CSEScriptAddDynParameters string
-param DataCollectionRulesResourceId string
-param DiskEncryptionOptions object
+param cseMasterScript string
+param cseUris array
+param cseScriptAddDynParameters string
+param dataCollectionRulesResourceId string
+param diskEncryptionOptions object
 param DiskEncryptionSetResourceId string
-param DiskNamePrefix string
-param DiskSku string
+param diskNamePrefix string
+param diskSku string
 @secure()
-param DomainJoinUserPassword string
+param domainJoinUserPassword string
 @secure()
-param DomainJoinUserPrincipalName string
-param DomainName string
-param DrainMode bool
-param DrainModeUserAssignedIdentityClientId string
-param FslogixConfigureSessionHosts bool
-param FslogixSolution string
-param FslogixExistingStorageAccountResourceIds array
-param HostPoolName string
-param ImageOffer string
-param ImagePublisher string
-param ImageSku string
-param ImageVersionResourceId string
-param KeyVaultResourceId string
-param KeyVaultUrl string
-param ADEKEKUrl string
-param Location string
+param domainJoinUserPrincipalName string
+param domainName string
+param drainMode bool
+param drainModeUserAssignedIdentityClientId string
+param fslogixConfigureSessionHosts bool
+param fslogixContainerType string
+param fslogixExistingStorageAccountResourceIds array
+param hostPoolName string
+param imageOffer string
+param imagePublisher string
+param imageSku string
+param customImageResourceId string
+param keyVaultResourceId string
+param keyVaultUrl string
+param adeKEKUrl string
+param location string
 param AVDInsightsLogAnalyticsWorkspaceResourceId string
-param ManagementVMName string
-param Monitoring bool
-param NetAppFileShares array
-param NetworkInterfaceNamePrefix string
-param OuPath string
-param ResourceGroupControlPlane string
-param ResourceGroupManagement string
-param ResourceGroupStorage string
-param SecurityDataCollectionRulesResourceId string
-param SecurityLogAnalyticsWorkspaceResourceId string
-param SessionHostCount int
-param SessionHostIndex int
+param managementVMName string
+param monitoring bool
+param netAppFileShares array
+param networkInterfaceNamePrefix string
+param ouPath string
+param resourceGroupControlPlane string
+param resourceGroupManagement string
+param resourceGroupStorage string
+param securityDataCollectionRulesResourceId string
+param securityLogAnalyticsWorkspaceResourceId string
+param sessionHostCount int
+param sessionHostIndex int
 @minLength(1)
-param StorageAccountPrefix string
-param StorageCount int
-param StorageIndex int
-param StorageSolution string
-param StorageSuffix string
-param Subnet string
-param TagsNetworkInterfaces object
-param TagsVirtualMachines object
-param Timestamp string
-param TrustedLaunch string
-param VirtualMachineMonitoringAgent string
-param VirtualMachineNamePrefix string
+param storageAccountPrefix string
+param storageCount int
+param storageIndex int
+param storageSolution string
+param storageSuffix string
+param subnet string
+param tagsNetworkInterfaces object
+param tagsVirtualMachines object
+param timeStamp string
+param trustedLaunch string
+param virtualMachineMonitoringAgent string
+param virtualMachineNamePrefix string
 @secure()
-param VirtualMachineAdminPassword string
-param VirtualMachineSize string
+param virtualMachineAdminPassword string
+param virtualMachineSize string
 @secure()
-param VirtualMachineAdminUserName string
-param VirtualNetwork string
-param VirtualNetworkResourceGroup string
+param virtualMachineAdminUserName string
+param virtualNetwork string
+param virtualNetworkResourceGroup string
 
-var AmdVmSize = contains(AmdVmSizes, VirtualMachineSize)
+var AmdVmSize = contains(AmdVmSizes, virtualMachineSize)
 var AmdVmSizes = [
   'Standard_NV4as_v4'
   'Standard_NV8as_v4'
@@ -77,54 +77,60 @@ var AmdVmSizes = [
 ]
 
 var FslogixExclusions = '"%TEMP%\\*\\*.VHDX";"%Windir%\\TEMP\\*\\*.VHDX"${FslogixExclusionsCloudCache}${FslogixExclusionsProfileContainers}${FslogixExclusionsOfficeContainers}'
-var FslogixExclusionsCloudCache = contains(FslogixSolution, 'CloudCache') ? ';"%ProgramData%\\FSLogix\\Cache\\*";"%ProgramData%\\FSLogix\\Proxy\\*"' : ''
-var FslogixOfficeShare = '\\\\${StorageAccountPrefix}??.file.${StorageSuffix}\\office-containers\\*\\*.VHDX'
-var FslogixProfileShare = '\\\\${StorageAccountPrefix}??.file.${StorageSuffix}\\profile-containers\\*\\*.VHDX'
-var FslogixExclusionsOfficeContainers = contains(FslogixSolution, 'Office') ? ';"${FslogixOfficeShare}";"${FslogixOfficeShare}.lock";"${FslogixOfficeShare}.meta";"${FslogixOfficeShare}.metadata"' : ''
+var FslogixExclusionsCloudCache = contains(fslogixContainerType, 'CloudCache') ? ';"%ProgramData%\\FSLogix\\Cache\\*";"%ProgramData%\\FSLogix\\Proxy\\*"' : ''
+var FslogixOfficeShare = '\\\\${storageAccountPrefix}??.file.${storageSuffix}\\office-containers\\*\\*.VHDX'
+var FslogixProfileShare = '\\\\${storageAccountPrefix}??.file.${storageSuffix}\\profile-containers\\*\\*.VHDX'
+var FslogixExclusionsOfficeContainers = contains(fslogixContainerType, 'Office') ? ';"${FslogixOfficeShare}";"${FslogixOfficeShare}.lock";"${FslogixOfficeShare}.meta";"${FslogixOfficeShare}.metadata"' : ''
 var FslogixExclusionsProfileContainers = ';"${FslogixProfileShare}";"${FslogixProfileShare}.lock";"${FslogixProfileShare}.meta";"${FslogixProfileShare}.metadata"'
 
-// Dynamic Parameters for Configure-FSLogix Script
-//  cloudcache determined from FslogixSolution parameter
-var FslogixCloudCacheString = contains(FslogixSolution, 'CloudCache') ? 'cloudCache=$true' : 'cloudCache=$false'
-//  convert long ActiveDirectorySolution parameter values to short and SMB authentication specific values for script.
-var FslogixIdP = contains(ActiveDirectorySolution, 'Kerberos') ? 'AADKERB' : !contains(ActiveDirectorySolution, 'DomainServices') ? 'AAD' : 'DomainServices'
+// Dynamic parameters for Configure-FSLogix Script
+//  cloudcache determined from fslogixContainerType parameter
+var FslogixCloudCacheString = contains(fslogixContainerType, 'CloudCache') ? 'cloudCache=$true' : 'cloudCache=$false'
+//  convert long activeDirectorySolution parameter values to short and SMB authentication specific values for script.
+var FslogixIdP = contains(activeDirectorySolution, 'Kerberos') ? 'AADKERB' : !contains(activeDirectorySolution, 'DomainServices') ? 'AAD' : 'DomainServices'
 var FslogixIdpString = 'idp=\'${FslogixIdP}\''
-var FslogixStorageSolutionString = 'storageSolution=\'${StorageSolution}\''
-var FslogixNetAppSharesString = StorageSolution == 'AzureNetAppFiles' && NetAppFileShares != 'None' ? 'NetAppFileShares=\'${replace(join(NetAppFileShares, ','), ',', '\',\'')}\'' : ''
-var FslogixSASuffixString = StorageSolution == 'AzureFiles' ? 'saSuffix=\'${StorageSuffix}\'' : ''
+var FslogixStorageSolutionString = 'storageSolution=\'${storageSolution}\''
+var FslogixNetAppSharesString = storageSolution == 'AzureNetAppFiles' && netAppFileShares != 'None' ? 'netAppFileShares=\'${replace(join(netAppFileShares, ','), ',', '\',\'')}\'' : ''
+var FslogixSASuffixString = storageSolution == 'AzureFiles' ? 'saSuffix=\'${storageSuffix}\'' : ''
 //  build storage account names from Storage Account parameters.
-var FslogixNewSANames = [for i in range(0, StorageCount): '${StorageAccountPrefix}${padLeft(i + StorageIndex, 2, '0')}']
+var FslogixNewSANames = [for i in range(0, storageCount): '${storageAccountPrefix}${padLeft(i + storageIndex, 2, '0')}']
 //  use only first storage account per region with AAD and Storage Key. No sharding possible.
 var FslogixNewStorageNames = FslogixIdP == 'AAD' ? [FslogixNewSANames[0]] : FslogixNewSANames
-var FslogixExistingSANames = [for resourceId in FslogixExistingStorageAccountResourceIds: last(split(resourceId, '/')) ]
-var FslogixExistingStorageNames  = FslogixIdP == 'AAD' && !empty(FslogixExistingStorageAccountResourceIds) ? [FslogixExistingSANames[0]] : FslogixExistingSANames
-var FslogixSANamesString = StorageSolution == 'AzureFiles' ? 'saNames=\'${replace(join(union(FslogixNewStorageNames, FslogixExistingStorageNames), ','), ',', '\',\'')}\'' : ''
+var FslogixExistingSANames = [for resourceId in fslogixExistingStorageAccountResourceIds: last(split(resourceId, '/')) ]
+var FslogixExistingStorageNames  = FslogixIdP == 'AAD' && !empty(fslogixExistingStorageAccountResourceIds) ? [FslogixExistingSANames[0]] : FslogixExistingSANames
+var FslogixSANamesString = storageSolution == 'AzureFiles' ? 'saNames=\'${replace(join(union(FslogixNewStorageNames, FslogixExistingStorageNames), ','), ',', '\',\'')}\'' : ''
 //  get only the first storage account key per region with AAD and Storage Key. No sharding possible.
 var FslogixSAKey = FslogixIdP == 'AAD' ? [ storageAccounts[0].listKeys().keys[0].value ] : []
-var FslogixHASAKey = FslogixIdP == 'AAD' && !empty(FslogixExistingStorageAccountResourceIds) ? [ existingStorageAccountsforHA.listKeys().keys[0].value ] : []
+var FslogixHASAKey = FslogixIdP == 'AAD' && !empty(fslogixExistingStorageAccountResourceIds) ? [ existingStorageAccountsforHA.listKeys().keys[0].value ] : []
 var FslogixSAKeysString = FslogixIdP == 'AAD' ? 'saKeys=\'${replace(join(union(FslogixSAKey, FslogixHASAKey), ','), ',', '\',\'')}\'' : ''
-var FslogixSharesString = StorageSolution != 'AzureNetAppFiles' ? contains(FslogixSolution, 'Office') ? 'shareNames=\'profile-containers\',\'office-containers\'' : 'shareNames=\'profile-containers\'' : ''
+var FslogixSharesString = storageSolution != 'AzureNetAppFiles' ? contains(fslogixContainerType, 'Office') ? 'shareNames=\'profile-containers\',\'office-containers\'' : 'shareNames=\'profile-containers\'' : ''
 var FslogixCommon = '${FslogixIdpString};${FslogixStorageSolutionString};${FslogixCloudCacheString}'
-var FslogixString = StorageSolution == 'AzureNetAppFiles' ? '${FslogixCommon};${FslogixNetAppSharesString}' : FslogixIdP == 'AAD' ? '${FslogixCommon};${FslogixSASuffixString};${FslogixSANamesString};${FslogixSAKeysString};${FslogixSharesString}' : '${FslogixCommon};${FslogixSASuffixString};${FslogixSANamesString};${FslogixSharesString}'
+var FslogixString = storageSolution == 'AzureNetAppFiles' ? '${FslogixCommon};${FslogixNetAppSharesString}' : FslogixIdP == 'AAD' ? '${FslogixCommon};${FslogixSASuffixString};${FslogixSANamesString};${FslogixSAKeysString};${FslogixSharesString}' : '${FslogixCommon};${FslogixSASuffixString};${FslogixSANamesString};${FslogixSharesString}'
 var FslogixCustomObject = 'FSLogix=@([pscustomobject]@{${FslogixString}})'
 
-// Dynamic Parameters for Set-SessionHostConfiguration.ps1
+// Dynamic parameters for Set-SessionHostConfiguration.ps1
 //var HostPoolToken = hostPool.properties.registrationInfo.token
-var HostPoolToken = reference(resourceId(ResourceGroupControlPlane, 'Microsoft.DesktopVirtualization/hostpools', HostPoolName), '2019-12-10-preview').registrationInfo.token
+var HostPoolToken = reference(resourceId(resourceGroupControlPlane, 'Microsoft.DesktopVirtualization/hostPools', hostPoolName), '2019-12-10-preview').registrationInfo.token
 var SHCCommon = 'AmdVmSize=\'${AmdVmSize}\';NvidiaVmSize=\'${NvidiaVmSize}\';HostPoolRegistrationToken=\'${HostPoolToken}\''
-var SHCString = !empty(SecurityLogAnalyticsWorkspaceResourceId) && VirtualMachineMonitoringAgent == 'LogAnalyticsAgent' ? '${SHCCommon};SecurityWorkspaceId=\'${reference(SecurityLogAnalyticsWorkspaceResourceId).customerId}\';SecurityWorkspaceKey=\'${listKeys(SecurityLogAnalyticsWorkspaceResourceId, '2015-03-20').primarySharedKey}\'' : SHCCommon
+var SHCString = !empty(securityLogAnalyticsWorkspaceResourceId) && virtualMachineMonitoringAgent == 'LogAnalyticsAgent' ? '${SHCCommon};SecurityWorkspaceId=\'${reference(securityLogAnalyticsWorkspaceResourceId).customerId}\';SecurityWorkspaceKey=\'${listKeys(securityLogAnalyticsWorkspaceResourceId, '2015-03-20').primarySharedKey}\'' : SHCCommon
 var SHCCustomObject = 'SHConfiguration=@([pscustomobject]@{${SHCString}})'
 
-// CSE Master Script Dynamic Parameters - Built from any custom parameters provided via parameter and the FSLogix and SessionHostConfiguration Parameters.
-var CSEScriptCalculatedParameters = FslogixConfigureSessionHosts ? '${FslogixCustomObject};${SHCCustomObject}' : '${SHCCustomObject}'
-var CSEScriptDynamicParameters = empty(CSEScriptAddDynParameters) ? '@{${CSEScriptCalculatedParameters}}': '@{${CSEScriptCalculatedParameters};${CSEScriptAddDynParameters}}'
+// CSE Master Script Dynamic parameters - Built from any custom parameters provided via parameter and the FSLogix and SessionHostConfiguration parameters.
+var CSEScriptCalculatedParameters = fslogixConfigureSessionHosts ? '${FslogixCustomObject};${SHCCustomObject}' : '${SHCCustomObject}'
+var CSEScriptDynamicParameters = empty(cseScriptAddDynParameters) ? '@{${CSEScriptCalculatedParameters}}': '@{${CSEScriptCalculatedParameters};${cseScriptAddDynParameters}}'
 // When sending a hashtable via powershell.exe you must use -command instead of -File in order for the parameter to be interpreted as a hashtable and not a string
-var CSECommandToExecute = 'powershell -ExecutionPolicy Unrestricted -Command .\\${CSEMasterScript} -DynParameters ${CSEScriptDynamicParameters}'
+var CSECommandToExecute = 'powershell -ExecutionPolicy Unrestricted -Command .\\${cseMasterScript} -DynParameters ${CSEScriptDynamicParameters}'
 
-var IdentityType = (!contains(ActiveDirectorySolution, 'DomainServices') || VirtualMachineMonitoringAgent == 'AzureMonitorAgent' ? true : false) ? (!empty(ArtifactsUserAssignedIdentityResourceId) ? 'SystemAssigned,UserAssigned' : 'SystemAssigned') : (!empty(ArtifactsUserAssignedIdentityResourceId) ? 'UserAssigned' : 'None')
+var AzureDiskEncryption = bool(diskEncryptionOptions.AzureDiskEncryption)
+var diskEncryptionSet = bool(diskEncryptionOptions.diskEncryptionSet)
+var encryptionAtHost = bool(diskEncryptionOptions.encryptionAtHost)
+var keyEncryptionKey = bool(diskEncryptionOptions.keyEncryptionKey)
 
-var UserAssignedIdentities = !empty(ArtifactsUserAssignedIdentityResourceId) ? {
-  '${ArtifactsUserAssignedIdentityResourceId}': {}
+
+var IdentityType = (!contains(activeDirectorySolution, 'DomainServices') || virtualMachineMonitoringAgent == 'AzureMonitorAgent' ? true : false) ? (!empty(artifactsUserAssignedIdentityResourceId) ? 'SystemAssigned,UserAssigned' : 'SystemAssigned') : (!empty(artifactsUserAssignedIdentityResourceId) ? 'UserAssigned' : 'None')
+
+var UserAssignedIdentities = !empty(artifactsUserAssignedIdentityResourceId) ? {
+  '${artifactsUserAssignedIdentityResourceId}': {}
 } : {}
 
 var Identity = IdentityType != 'None' ? {
@@ -132,16 +138,16 @@ var Identity = IdentityType != 'None' ? {
   userAssignedIdentities: !empty(UserAssignedIdentities) ? UserAssignedIdentities : null
 } : null
 
-var ImageReference = empty(ImageVersionResourceId) ? {
-  publisher: ImagePublisher
-  offer: ImageOffer
-  sku: ImageSku
+var ImageReference = empty(customImageResourceId) ? {
+  publisher: imagePublisher
+  offer: imageOffer
+  sku: imageSku
   version: 'latest'
 } : {
-  id: ImageVersionResourceId
+  id: customImageResourceId
 }
-var Intune = contains(ActiveDirectorySolution, 'IntuneEnrollment')
-var NvidiaVmSize = contains(NvidiaVmSizes, VirtualMachineSize)
+var Intune = contains(activeDirectorySolution, 'IntuneEnrollment')
+var NvidiaVmSize = contains(NvidiaVmSizes, virtualMachineSize)
 var NvidiaVmSizes = [
   'Standard_NV6'
   'Standard_NV12'
@@ -162,20 +168,20 @@ var NvidiaVmSizes = [
 ]
 
 // call on new storage accounts only if we need the Storage Key(s)
-resource storageAccounts 'Microsoft.Storage/storageAccounts@2023-01-01' existing = [for i in range(0, StorageCount): if (StorageSolution == 'AzureFiles' && !contains(ActiveDirectorySolution, 'Kerberos') && !contains(ActiveDirectorySolution, 'DomainServices')) {
-  name: '${StorageAccountPrefix}${padLeft(i + StorageIndex, 2, '0')}'
-  scope: resourceGroup(ResourceGroupStorage)
+resource storageAccounts 'Microsoft.Storage/storageAccounts@2023-01-01' existing = [for i in range(0, storageCount): if (storageSolution == 'AzureFiles' && !contains(activeDirectorySolution, 'Kerberos') && !contains(activeDirectorySolution, 'DomainServices')) {
+  name: '${storageAccountPrefix}${padLeft(i + storageIndex, 2, '0')}'
+  scope: resourceGroup(resourceGroupStorage)
 }]
 
-resource existingStorageAccountsforHA 'Microsoft.Storage/storageAccounts@2023-01-01' existing = if (StorageSolution == 'AzureFiles' && !contains(ActiveDirectorySolution, 'Kerberos') && !contains(ActiveDirectorySolution, 'DomainServices')){
-  name: last(split(FslogixExistingStorageAccountResourceIds[0], '/'))
-  scope: resourceGroup(split(FslogixExistingStorageAccountResourceIds[0], '/')[2], split(FslogixExistingStorageAccountResourceIds[0], '/')[4])
+resource existingStorageAccountsforHA 'Microsoft.Storage/storageAccounts@2023-01-01' existing = if (storageSolution == 'AzureFiles' && !contains(activeDirectorySolution, 'Kerberos') && !contains(activeDirectorySolution, 'DomainServices')){
+  name: last(split(fslogixExistingStorageAccountResourceIds[0], '/'))
+  scope: resourceGroup(split(fslogixExistingStorageAccountResourceIds[0], '/')[2], split(fslogixExistingStorageAccountResourceIds[0], '/')[4])
 }
 
-resource networkInterface 'Microsoft.Network/networkInterfaces@2020-05-01' = [for i in range(0, SessionHostCount): {
-  name: '${NetworkInterfaceNamePrefix}${padLeft((i + SessionHostIndex), 3, '0')}'
-  location: Location
-  tags: TagsNetworkInterfaces
+resource networkInterface 'Microsoft.Network/networkInterfaces@2020-05-01' = [for i in range(0, sessionHostCount): {
+  name: '${networkInterfaceNamePrefix}${padLeft((i + sessionHostIndex), 3, '0')}'
+  location: location
+  tags: tagsNetworkInterfaces
   properties: {
     ipConfigurations: [
       {
@@ -183,7 +189,7 @@ resource networkInterface 'Microsoft.Network/networkInterfaces@2020-05-01' = [fo
         properties: {
           privateIPAllocationMethod: 'Dynamic'
           subnet: {
-            id: resourceId(subscription().subscriptionId, VirtualNetworkResourceGroup, 'Microsoft.Network/virtualNetworks/subnets', VirtualNetwork, Subnet)
+            id: resourceId(subscription().subscriptionId, virtualNetworkResourceGroup, 'Microsoft.Network/virtualNetworks/subnets', virtualNetwork, subnet)
           }
           primary: true
           privateIPAddressVersion: 'IPv4'
@@ -195,42 +201,42 @@ resource networkInterface 'Microsoft.Network/networkInterfaces@2020-05-01' = [fo
   }
 }]
 
-resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-03-01' = [for i in range(0, SessionHostCount): {
-  name: '${VirtualMachineNamePrefix}${padLeft((i + SessionHostIndex), 3, '0')}'
-  location: Location
-  tags: TagsVirtualMachines
-  zones: Availability == 'AvailabilityZones' ? [
-    AvailabilityZones[i % length(AvailabilityZones)]
+resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-03-01' = [for i in range(0, sessionHostCount): {
+  name: '${virtualMachineNamePrefix}${padLeft((i + sessionHostIndex), 3, '0')}'
+  location: location
+  tags: tagsVirtualMachines
+  zones: availability == 'availabilityZones' ? [
+    availabilityZones[i % length(availabilityZones)]
   ] : null
   identity: Identity
   properties: {
-    availabilitySet: Availability == 'AvailabilitySets' ? {
-      id: resourceId('Microsoft.Compute/availabilitySets', '${AvailabilitySetNamePrefix}-${(i + SessionHostIndex) / 200}')
+    availabilitySet: availability == 'AvailabilitySets' ? {
+      id: resourceId('Microsoft.Compute/availabilitySets', '${availabilitySetNamePrefix}-${(i + sessionHostIndex) / 200}')
     } : null
     hardwareProfile: {
-      vmSize: VirtualMachineSize
+      vmSize: virtualMachineSize
     }
     storageProfile: {
       imageReference: ImageReference
       osDisk: {
-        name: '${DiskNamePrefix}${padLeft((i + SessionHostIndex), 3, '0')}'
+        name: '${diskNamePrefix}${padLeft((i + sessionHostIndex), 3, '0')}'
         osType: 'Windows'
         createOption: 'FromImage'
         caching: 'ReadWrite'
         deleteOption: 'Delete'
         managedDisk: {
-          diskEncryptionSet: DiskEncryptionOptions.DiskEncryptionSet ? {
+          diskEncryptionSet: diskEncryptionSet ? {
             id: DiskEncryptionSetResourceId
           } : null
-          storageAccountType: DiskSku
+          storageAccountType: diskSku
         }
       }
       dataDisks: []
     }
     osProfile: {
-      computerName: '${VirtualMachineNamePrefix}${padLeft((i + SessionHostIndex), 3, '0')}'
-      adminUsername: VirtualMachineAdminUserName
-      adminPassword: VirtualMachineAdminPassword
+      computerName: '${virtualMachineNamePrefix}${padLeft((i + sessionHostIndex), 3, '0')}'
+      adminUsername: virtualMachineAdminUserName
+      adminPassword: virtualMachineAdminPassword
       windowsConfiguration: {
         provisionVMAgent: true
         enableAutomaticUpdates: false
@@ -241,7 +247,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-03-01' = [for i 
     networkProfile: {
       networkInterfaces: [
         {
-          id: resourceId('Microsoft.Network/networkInterfaces', '${NetworkInterfaceNamePrefix}${padLeft((i + SessionHostIndex), 3, '0')}')
+          id: resourceId('Microsoft.Network/networkInterfaces', '${networkInterfaceNamePrefix}${padLeft((i + sessionHostIndex), 3, '0')}')
           properties: {
             deleteOption: 'Delete'
           }
@@ -249,30 +255,30 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-03-01' = [for i 
       ]
     }
     securityProfile: {
-      uefiSettings: TrustedLaunch == 'true' ? {
+      uefiSettings: trustedLaunch == 'true' ? {
         secureBootEnabled: true
         vTpmEnabled: true
       } : null
-      securityType: TrustedLaunch == 'true' ? 'TrustedLaunch' : null
-      encryptionAtHost: DiskEncryptionOptions.EncryptionAtHost
+      securityType: trustedLaunch == 'true' ? 'trustedLaunch' : null
+      encryptionAtHost: encryptionAtHost
     }
     diagnosticsProfile: {
       bootDiagnostics: {
         enabled: false
       }
     }
-    licenseType: ((ImagePublisher == 'MicrosoftWindowsDesktop') ? 'Windows_Client' : 'Windows_Server')
+    licenseType: ((imagePublisher == 'MicrosoftWindowsDesktop' || !empty(customImageResourceId)) ? 'Windows_Client' : 'Windows_Server')
   }
   dependsOn: [
     networkInterface
   ]
 }]
 
-resource extension_IaasAntimalware 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, SessionHostCount): {
+resource extension_IaasAntimalware 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): {
   parent: virtualMachine[i]
   name: 'IaaSAntimalware'
-  location: Location
-  tags: TagsVirtualMachines
+  location: location
+  tags: tagsVirtualMachines
   properties: {
     publisher: 'Microsoft.Azure.Security'
     type: 'IaaSAntimalware'
@@ -287,18 +293,18 @@ resource extension_IaasAntimalware 'Microsoft.Compute/virtualMachines/extensions
         time: '120' // When to perform the scheduled scan, measured in minutes from midnight (0-1440). For example: 0 = 12AM, 60 = 1AM, 120 = 2AM.
         scanType: 'Quick' //Indicates whether scheduled scan setting type is set to Quick or Full (default is Quick)
       }
-      Exclusions: FslogixConfigureSessionHosts ? {
+      Exclusions: fslogixConfigureSessionHosts ? {
         Paths: FslogixExclusions
       } : {}
     }
   }
 }]
 
-resource extension_AzureMonitorWindowsAgent 'Microsoft.Compute/virtualMachines/extensions@2023-03-01' = [for i in range(0, SessionHostCount): if ((Monitoring && VirtualMachineMonitoringAgent == 'AzureMonitorAgent') || !empty(SecurityDataCollectionRulesResourceId)) {
+resource extension_AzureMonitorWindowsAgent 'Microsoft.Compute/virtualMachines/extensions@2023-03-01' = [for i in range(0, sessionHostCount): if ((monitoring && virtualMachineMonitoringAgent == 'AzureMonitorAgent') || !empty(securityDataCollectionRulesResourceId)) {
   parent: virtualMachine[i]
   name: 'AzureMonitorAgent'
-  location: Location
-  tags: TagsVirtualMachines
+  location: location
+  tags: tagsVirtualMachines
   properties: {
     publisher: 'Microsoft.Azure.Monitor'
     type: 'AzureMonitorWindowsAgent'
@@ -311,11 +317,11 @@ resource extension_AzureMonitorWindowsAgent 'Microsoft.Compute/virtualMachines/e
   ]
 }]
 
-resource avdInsightsDataCollectionRuleAssociation 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = [for i in range(0, SessionHostCount): if (Monitoring && VirtualMachineMonitoringAgent == 'AzureMonitorAgent') {
+resource avdInsightsDataCollectionRuleAssociation 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = [for i in range(0, sessionHostCount): if (monitoring && virtualMachineMonitoringAgent == 'AzureMonitorAgent') {
   scope: virtualMachine[i]
   name: 'avdinsights-${virtualMachine[i].name}-dcra'
   properties: {
-    dataCollectionRuleId: DataCollectionRulesResourceId
+    dataCollectionRuleId: dataCollectionRulesResourceId
     description: 'AVD Insights data collection rule association'
   }
   dependsOn: [
@@ -323,11 +329,11 @@ resource avdInsightsDataCollectionRuleAssociation 'Microsoft.Insights/dataCollec
   ]
 }]
 
-resource securityDataCollectionRuleAssociation 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = [for i in range(0, SessionHostCount): if (!empty(SecurityDataCollectionRulesResourceId)) {
+resource securityDataCollectionRuleAssociation 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = [for i in range(0, sessionHostCount): if (!empty(securityDataCollectionRulesResourceId)) {
   scope: virtualMachine[i]
   name: 'security-${virtualMachine[i].name}-dcra'
   properties: {
-    dataCollectionRuleId: SecurityDataCollectionRulesResourceId
+    dataCollectionRuleId: securityDataCollectionRulesResourceId
     description: 'Security Events data collection rule association'
   }
   dependsOn: [
@@ -335,21 +341,21 @@ resource securityDataCollectionRuleAssociation 'Microsoft.Insights/dataCollectio
   ]
 }]
 
-resource extension_MicrosoftMonitoringAgent 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, SessionHostCount): if ((Monitoring && VirtualMachineMonitoringAgent == 'LogAnalyticsAgent') || !empty(SecurityLogAnalyticsWorkspaceResourceId)) {
+resource extension_MicrosoftMonitoringAgent 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): if ((monitoring && virtualMachineMonitoringAgent == 'LogAnalyticsAgent') || !empty(securityLogAnalyticsWorkspaceResourceId)) {
   parent: virtualMachine[i]
   name: 'MicrosoftMonitoringAgent'
-  location: Location
-  tags: TagsVirtualMachines
+  location: location
+  tags: tagsVirtualMachines
   properties: {
-    publisher: 'Microsoft.EnterpriseCloud.Monitoring'
+    publisher: 'Microsoft.EnterpriseCloud.monitoring'
     type: 'MicrosoftMonitoringAgent'
     typeHandlerVersion: '1.0'
     autoUpgradeMinorVersion: true
     settings: {
-      workspaceId: Monitoring && VirtualMachineMonitoringAgent == 'LogAnalyticsAgent' ? reference(AVDInsightsLogAnalyticsWorkspaceResourceId).customerId : (!empty(SecurityLogAnalyticsWorkspaceResourceId) ? reference(SecurityLogAnalyticsWorkspaceResourceId).customerId : null)
+      workspaceId: monitoring && virtualMachineMonitoringAgent == 'LogAnalyticsAgent' ? reference(AVDInsightsLogAnalyticsWorkspaceResourceId).customerId : (!empty(securityLogAnalyticsWorkspaceResourceId) ? reference(securityLogAnalyticsWorkspaceResourceId).customerId : null)
     }
     protectedSettings: {
-      workspaceKey: Monitoring && VirtualMachineMonitoringAgent == 'LogAnalyticsAgent' ? listKeys(AVDInsightsLogAnalyticsWorkspaceResourceId, '2022-10-01').primarySharedKey : (!empty(SecurityLogAnalyticsWorkspaceResourceId) ? listKeys(SecurityLogAnalyticsWorkspaceResourceId, '2022-10-01').primarySharedKey : null)
+      workspaceKey: monitoring && virtualMachineMonitoringAgent == 'LogAnalyticsAgent' ? listKeys(AVDInsightsLogAnalyticsWorkspaceResourceId, '2022-10-01').primarySharedKey : (!empty(securityLogAnalyticsWorkspaceResourceId) ? listKeys(securityLogAnalyticsWorkspaceResourceId, '2022-10-01').primarySharedKey : null)
     }
   }
   dependsOn: [
@@ -357,23 +363,23 @@ resource extension_MicrosoftMonitoringAgent 'Microsoft.Compute/virtualMachines/e
   ]
 }]
 
-resource extension_CustomScriptExtension 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, SessionHostCount): {
+resource extension_CustomScriptExtension 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): {
   parent: virtualMachine[i]
   name: 'CustomScriptExtension'
-  location: Location
-  tags: TagsVirtualMachines
+  location: location
+  tags: tagsVirtualMachines
   properties: {
     publisher: 'Microsoft.Compute'
     type: 'CustomScriptExtension'
     typeHandlerVersion: '1.10'
     autoUpgradeMinorVersion: true
     settings: {
-      fileUris: CSEUris
-      timestamp: Timestamp
+      fileUris: cseUris
+      timeStamp: timeStamp
     }    
-    protectedSettings: contains(ArtifactsLocation, environment().suffixes.storage) ? {
+    protectedSettings: contains(artifactsUri, environment().suffixes.storage) ? {
       commandToExecute: CSECommandToExecute
-      managedIdentity: { clientId: ArtifactsUserAssignedIdentityClientId }
+      managedIdentity: { clientId: artifactsUserAssignedIdentityClientId }
     } : {
       commandToExecute: CSECommandToExecute
     }
@@ -385,29 +391,29 @@ resource extension_CustomScriptExtension 'Microsoft.Compute/virtualMachines/exte
 }]
 
 // Enables drain mode on the session hosts so users cannot login to hosts immediately after the deployment
-module drainMode '../management/customScriptExtensions.bicep' = if (DrainMode) {
-  name: 'CSE_DrainMode_${BatchCount}_${Timestamp}'
-  scope: resourceGroup(ResourceGroupManagement)
+module setDrainMode '../management/customScriptExtensions.bicep' = if (drainMode) {
+  name: 'CSE_DrainMode_${BatchCount}_${timeStamp}'
+  scope: resourceGroup(resourceGroupManagement)
   params: {
-    ArtifactsLocation: ArtifactsLocation
-    Files: ['Set-AvdDrainMode.ps1']
-    ExecuteScript: 'Set-AvdDrainMode.ps1'
-    Location: Location
-    Parameters: '-Environment ${environment().name} -HostPoolName ${HostPoolName} -HostPoolResourceGroupName ${ResourceGroupControlPlane} -SessionHostCount ${SessionHostCount} -SessionHostIndex ${SessionHostIndex} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${DrainModeUserAssignedIdentityClientId} -VirtualMachineNamePrefix ${VirtualMachineNamePrefix}'
-    Tags: TagsVirtualMachines
-    UserAssignedIdentityClientId: ArtifactsUserAssignedIdentityClientId
-    VirtualMachineName: ManagementVMName
+    artifactsUri: artifactsUri
+    files: ['Set-AvdDrainMode.ps1']
+    executeScript: 'Set-AvdDrainMode.ps1'
+    location: location
+    parameters: '-environmentShortName ${environment().name} -hostPoolName ${hostPoolName} -HostPoolResourceGroupName ${resourceGroupControlPlane} -sessionHostCount ${sessionHostCount} -sessionHostIndex ${sessionHostIndex} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -userAssignedIdentityClientId ${drainModeUserAssignedIdentityClientId} -virtualMachineNamePrefix ${virtualMachineNamePrefix}'
+    tags: tagsVirtualMachines
+    userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
+    virtualMachineName: managementVMName
   }
   dependsOn: [
     extension_CustomScriptExtension
   ]
 }
 
-resource extension_AzureDiskEncryption 'Microsoft.Compute/virtualMachines/extensions@2023-07-01' = [for i in range(0, SessionHostCount): if (DiskEncryptionOptions.AzureDiskEncryption) {
+resource extension_AzureDiskEncryption 'Microsoft.Compute/virtualMachines/extensions@2023-07-01' = [for i in range(0, sessionHostCount): if (AzureDiskEncryption) {
   parent: virtualMachine[i]
   name: 'AzureDiskEncryption'
-  location: Location
-  tags: TagsVirtualMachines
+  location: location
+  tags: tagsVirtualMachines
   properties: {
     publisher: 'Microsoft.Azure.Security'
     type: 'AzureDiskEncryption'
@@ -416,43 +422,43 @@ resource extension_AzureDiskEncryption 'Microsoft.Compute/virtualMachines/extens
     settings: {
       EncryptionOperation: 'EnableEncryption'
       KeyEncryptionAlgorith: 'RSA-OAEP-256'
-      KeyVaultURL: KeyVaultUrl
-      KeyVaultResourceId: KeyVaultResourceId
-      KeyEncryptionKeyUrl: DiskEncryptionOptions.KeyEncryptionKey ? ADEKEKUrl : null
+      KeyVaultURL: keyVaultUrl
+      keyVaultResourceId: keyVaultResourceId
+      keyEncryptionKeyUrl: keyEncryptionKey ? adeKEKUrl : null
       VolumeType: 'All'
     }
   }
 }]
 
-resource extension_JsonADDomainExtension 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, SessionHostCount): if (contains(ActiveDirectorySolution, 'DomainServices')) {
+resource extension_JsonADDomainExtension 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): if (contains(activeDirectorySolution, 'DomainServices')) {
   parent: virtualMachine[i]
   name: 'JsonADDomainExtension'
-  location: Location
-  tags: TagsVirtualMachines
+  location: location
+  tags: tagsVirtualMachines
   properties: {
-    forceUpdateTag: Timestamp
+    forceUpdateTag: timeStamp
     publisher: 'Microsoft.Compute'
     type: 'JsonADDomainExtension'
     typeHandlerVersion: '1.3'
     autoUpgradeMinorVersion: true
     settings: {
-      Name: DomainName
-      User: DomainJoinUserPrincipalName
+      Name: domainName
+      User: domainJoinUserPrincipalName
       Restart: 'true'
       Options: '3'
-      OUPath: OuPath
+      OUPath: ouPath
     }
     protectedSettings: {
-      Password: DomainJoinUserPassword
+      Password: domainJoinUserPassword
     }
   }
 }]
 
-resource extension_AADLoginForWindows 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, SessionHostCount): if (!contains(ActiveDirectorySolution, 'DomainServices')) {
+resource extension_AADLoginForWindows 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): if (!contains(activeDirectorySolution, 'DomainServices')) {
   parent: virtualMachine[i]
   name: 'AADLoginForWindows'
-  location: Location
-  tags: TagsVirtualMachines
+  location: location
+  tags: tagsVirtualMachines
   properties: {
     publisher: 'Microsoft.Azure.ActiveDirectory'
     type: 'AADLoginForWindows'
@@ -464,11 +470,11 @@ resource extension_AADLoginForWindows 'Microsoft.Compute/virtualMachines/extensi
   }
 }]
 
-resource extension_AmdGpuDriverWindows 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, SessionHostCount): if (AmdVmSize) {
+resource extension_AmdGpuDriverWindows 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): if (AmdVmSize) {
   parent: virtualMachine[i]
   name: 'AmdGpuDriverWindows'
-  location: Location
-  tags: TagsVirtualMachines
+  location: location
+  tags: tagsVirtualMachines
   properties: {
     publisher: 'Microsoft.HpcCompute'
     type: 'AmdGpuDriverWindows'
@@ -482,11 +488,11 @@ resource extension_AmdGpuDriverWindows 'Microsoft.Compute/virtualMachines/extens
   ]
 }]
 
-resource extension_NvidiaGpuDriverWindows 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, SessionHostCount): if (NvidiaVmSize) {
+resource extension_NvidiaGpuDriverWindows 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): if (NvidiaVmSize) {
   parent: virtualMachine[i]
   name: 'NvidiaGpuDriverWindows'
-  location: Location
-  tags: TagsVirtualMachines
+  location: location
+  tags: tagsVirtualMachines
   properties: {
     publisher: 'Microsoft.HpcCompute'
     type: 'NvidiaGpuDriverWindows'
@@ -499,5 +505,3 @@ resource extension_NvidiaGpuDriverWindows 'Microsoft.Compute/virtualMachines/ext
     extension_JsonADDomainExtension
   ]
 }]
-
-output cseScriptDynamicParameters string = CSEScriptDynamicParameters

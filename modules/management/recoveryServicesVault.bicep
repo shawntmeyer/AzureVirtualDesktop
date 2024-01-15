@@ -1,9 +1,9 @@
-param Fslogix bool
-param Location string
-param RecoveryServicesVaultName string
-param StorageSolution string
-param Tags object
-param TimeZone string
+param fslogix bool
+param location string
+param recoveryServicesVaultName string
+param storageSolution string
+param tags object
+param timeZone string
 
 var BackupSchedulePolicy = {
   scheduleRunFrequency: 'Daily'
@@ -25,10 +25,10 @@ var BackupRetentionPolicy = {
   }
 }
 
-resource vault 'Microsoft.RecoveryServices/vaults@2022-03-01' = {
-  name: RecoveryServicesVaultName
-  location: Location
-  tags: Tags
+resource vault 'Microsoft.recoveryServices/vaults@2022-03-01' = {
+  name: recoveryServicesVaultName
+  location: location
+  tags: tags
   sku: {
     name: 'RS0'
     tier: 'Standard'
@@ -36,30 +36,30 @@ resource vault 'Microsoft.RecoveryServices/vaults@2022-03-01' = {
   properties: {}
 }
 
-resource backupPolicy_Storage 'Microsoft.RecoveryServices/vaults/backupPolicies@2022-03-01' = if (Fslogix && StorageSolution == 'AzureFiles') {
+resource backupPolicy_Storage 'Microsoft.recoveryServices/vaults/backupPolicies@2022-03-01' = if (fslogix && storageSolution == 'AzureFiles') {
   parent: vault
   name: 'AvdPolicyStorage'
-  location: Location
-  tags: Tags
+  location: location
+  tags: tags
   properties: {
     backupManagementType: 'AzureStorage'
     schedulePolicy: BackupSchedulePolicy
     retentionPolicy: BackupRetentionPolicy
-    timeZone: TimeZone
+    timeZone: timeZone
     workLoadType: 'AzureFileShare'
   }
 }
 
-resource backupPolicy_Vm 'Microsoft.RecoveryServices/vaults/backupPolicies@2022-03-01' = if (!Fslogix) {
+resource backupPolicy_Vm 'Microsoft.recoveryServices/vaults/backupPolicies@2022-03-01' = if (!fslogix) {
   parent: vault
   name: 'AvdPolicyVm'
-  location: Location
-  tags: Tags
+  location: location
+  tags: tags
   properties: {
     backupManagementType: 'AzureIaasVM'
     schedulePolicy: BackupSchedulePolicy
     retentionPolicy: BackupRetentionPolicy
-    timeZone: TimeZone
+    timeZone: timeZone
     instantRpRetentionRangeInDays: 2
   }
 }
