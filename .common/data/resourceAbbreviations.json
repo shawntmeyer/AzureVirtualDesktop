@@ -1,0 +1,23 @@
+{
+    "automationAccounts": "aa",
+    "availabilitySets": "as",
+    "computeGalleries": "gal",
+    "dataCollectionRules": "dcr",
+    "desktopApplicationGroups": "dag",
+    "remoteApplicationGroups": "rag",
+    "disks": "disk",
+    "diskEncryptionSets": "des",
+    "hostPools": "hp",
+    "keyVaults": "kv",
+    "logAnalyticsWorkspaces": "law",
+    "netAppAccounts": "naa",
+    "netAppCapacityPools": "nacp",
+    "networkInterfaces": "nic",
+    "privateEndpoints": "pe",
+    "recoveryServicesVaults": "rsv",
+    "resourceGroups": "rg",
+    "storageAccounts": "sa",
+    "userAssignedIdentities": "uai",
+    "virtualMachines": "vm",
+    "workspaces": "ws"
+}
