@@ -361,7 +361,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     cseUris: logic.outputs.cseUris
     dataCollectionRulesResourceId: !empty(dataCollectionRulesResourceId) ? dataCollectionRulesResourceId : ''
     diskEncryptionOptions: logic.outputs.diskEncryptionOptions
-    DiskEncryptionSetResourceId: contains(diskEncryptionSolution, 'CMK') ? diskEncryptionSetResourceId : ''
+    diskEncryptionSetResourceId: contains(diskEncryptionSolution, 'CMK') ? diskEncryptionSetResourceId : ''
     diskNamePrefix: resourceNames.outputs.diskNamePrefix
     diskSku: diskSku
     divisionRemainderValue: logic.outputs.divisionRemainderValue

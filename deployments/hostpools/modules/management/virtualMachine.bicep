@@ -1,7 +1,7 @@
 param activeDirectorySolution string
 param artifactsUri string
 param diskEncryptionOptions object
-param DiskEncryptionSetResourceId string
+param diskEncryptionSetResourceId string
 param diskNamePrefix string
 param diskSku string
 @secure()
@@ -75,7 +75,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-11-01' = {
         caching: 'None'
         managedDisk: {
           diskEncryptionSet: diskEncryptionSet ? {
-            id: DiskEncryptionSetResourceId
+            id: diskEncryptionSetResourceId
           } : null
           storageAccountType: diskSku
         }

@@ -652,7 +652,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     cseUris: logic.outputs.cseUris
     dataCollectionRulesResourceId: management.outputs.dataCollectionRulesResourceId
     diskEncryptionOptions: logic.outputs.diskEncryptionOptions
-    DiskEncryptionSetResourceId: management.outputs.DiskEncryptionSetResourceId
+    diskEncryptionSetResourceId: management.outputs.diskEncryptionSetResourceId
     adeKeyVaultResourceId: management.outputs.keyVaultResourceId
     adeKeyVaultUrl: management.outputs.keyVaultUrl
     diskNamePrefix: resourceNames.outputs.diskNamePrefix

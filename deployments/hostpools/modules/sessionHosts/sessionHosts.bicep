@@ -20,7 +20,7 @@ param cseScriptAddDynParameters string
 param cseUris array
 param dataCollectionRulesResourceId string
 param diskEncryptionOptions object
-param DiskEncryptionSetResourceId string
+param diskEncryptionSetResourceId string
 param diskNamePrefix string
 param diskSku string
 param divisionRemainderValue int
@@ -138,7 +138,7 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     customImageResourceId: customImageResourceId
     dataCollectionRulesResourceId: dataCollectionRulesResourceId
     diskEncryptionOptions: diskEncryptionOptions
-    diskEncryptionSetResourceId: DiskEncryptionSetResourceId
+    diskEncryptionSetResourceId: diskEncryptionSetResourceId
     diskNamePrefix: diskNamePrefix
     diskSku: diskSku
     domainJoinUserPassword: domainJoinUserPassword

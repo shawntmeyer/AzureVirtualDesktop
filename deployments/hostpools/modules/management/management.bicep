@@ -238,7 +238,7 @@ module virtualMachine 'virtualMachine.bicep' = {
     activeDirectorySolution: activeDirectorySolution
     artifactsUri: artifactsUri
     diskEncryptionOptions: diskEncryptionOptions
-    DiskEncryptionSetResourceId: diskEncryptionOptions.diskEncryptionSet ? diskEncryptionSet.outputs.resourceId : ''
+    diskEncryptionSetResourceId: diskEncryptionOptions.diskEncryptionSet ? diskEncryptionSet.outputs.resourceId : ''
     diskNamePrefix: diskNamePrefix
     diskSku: diskSku
     domainJoinUserPassword: !empty(domainJoinUserPassword) ? domainJoinUserPassword : contains(activeDirectorySolution, 'DomainServices') ? keyVault_Ref.getSecret('domainJoinUserPassword') : ''
@@ -369,7 +369,7 @@ output existingGlobalWorkspace bool = validations.outputs.value.existingGlobalWo
 output keyVaultResourceId string = keyVault.outputs.keyVaultResourceId
 output keyVaultUrl string = keyVault.outputs.keyVaultUrl
 output dataCollectionRulesResourceId string = virtualMachineMonitoringAgent == 'AzureMonitorAgent' ? dataCollectionRules.outputs.dataCollectionRulesId : ''
-output DiskEncryptionSetResourceId string = diskEncryptionOptions.diskEncryptionSet ? diskEncryptionSet.outputs.resourceId : ''
+output diskEncryptionSetResourceId string = diskEncryptionOptions.diskEncryptionSet ? diskEncryptionSet.outputs.resourceId : ''
 output logAnalyticsWorkspaceResourceId string = monitoring ? logAnalyticsWorkspace.outputs.ResourceId : ''
 output deploymentUserAssignedIdentityClientId string = deploymentUserAssignedIdentity.outputs.clientId
 output deploymentUserAssignedIdentityResourceId string = deploymentUserAssignedIdentity.outputs.resourceId
