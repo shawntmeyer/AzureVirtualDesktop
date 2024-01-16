@@ -18,6 +18,10 @@ If the "businessUnitIdentifier" parameter is left empty ("") then this value has
 ''')
 param centralizedAVDManagement bool = false
 
+@maxLength(10)
+@description('An identifier used to distinquish each host pool. This can represent the user or use case.')
+param hostPoolIdentifier string
+
 @allowed([
   'd' // Development
   'p' // Production
@@ -283,7 +287,7 @@ module resourceNames 'modules/resourceNames.bicep' = {
     businessUnitIdentifier: businessUnitIdentifier
     centralizedAVDManagement: centralizedAVDManagement
     fslogixStorageCustomPrefix: fslogixStorageCustomPrefix
-    hostPoolIdentifier: ''
+    hostPoolIdentifier: hostPoolIdentifier
     locationControlPlane: locationControlPlane
     locationVirtualMachines: vmVirtualNetwork.location
     nameConvResTypeAtEnd: nameConvResTypeAtEnd
