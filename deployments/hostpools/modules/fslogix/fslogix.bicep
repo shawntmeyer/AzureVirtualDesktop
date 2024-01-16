@@ -39,7 +39,7 @@ param storageAccountNamePrefix string
 param storageCount int
 param storageIndex int
 param storageSku string
-param storageSolution string
+param fslogixStorageSolution string
 param subnet string
 param tagsAutomationAccounts object
 param tagsNetAppAccount object
@@ -53,7 +53,7 @@ param virtualNetwork string
 param virtualNetworkResourceGroup string
 
 // Azure NetApp files for fslogix
-module azureNetAppFiles 'azureNetAppFiles.bicep' = if (storageSolution == 'AzureNetAppFiles' && contains(activeDirectorySolution, 'DomainServices')) {
+module azureNetAppFiles 'azureNetAppFiles.bicep' = if (fslogixStorageSolution == 'AzureNetAppFiles' && contains(activeDirectorySolution, 'DomainServices')) {
   name: 'AzureNetAppFiles_${timeStamp}'
   scope: resourceGroup(resourceGroupStorage)
   params: {
@@ -76,7 +76,7 @@ module azureNetAppFiles 'azureNetAppFiles.bicep' = if (storageSolution == 'Azure
     securityPrincipalNames: securityPrincipalNames
     smbServerLocation: smbServerLocation
     storageSku: storageSku
-    storageSolution: storageSolution
+    fslogixStorageSolution: fslogixStorageSolution
     tagsNetAppAccount: tagsNetAppAccount
     tagsVirtualMachines: tagsVirtualMachines
     timeStamp: timeStamp
@@ -84,7 +84,7 @@ module azureNetAppFiles 'azureNetAppFiles.bicep' = if (storageSolution == 'Azure
 }
 
 // Azure files for FSLogix
-module azureFiles 'azureFiles/azureFiles.bicep' = if (storageSolution == 'AzureFiles') {
+module azureFiles 'azureFiles/azureFiles.bicep' = if (fslogixStorageSolution == 'AzureFiles') {
   name: 'AzureFiles_${timeStamp}'
   scope: resourceGroup(resourceGroupStorage)
   params: {
@@ -118,7 +118,7 @@ module azureFiles 'azureFiles/azureFiles.bicep' = if (storageSolution == 'AzureF
     storageCount: storageCount
     storageIndex: storageIndex
     storageSku: storageSku
-    storageSolution: storageSolution
+    fslogixStorageSolution: fslogixStorageSolution
     subnet: subnet
     tagsAutomationAccounts: tagsAutomationAccounts
     tagsPrivateEndpoints: tagsPrivateEndpoints
@@ -132,6 +132,7 @@ module azureFiles 'azureFiles/azureFiles.bicep' = if (storageSolution == 'AzureF
   }
 }
 
-output netAppShares array = storageSolution == 'AzureNetAppFiles' ? azureNetAppFiles.outputs.fileShares : [
+output netAppShares array = fslogixStorageSolution == 'AzureNetAppFiles' ? azureNetAppFiles.outputs.fileShares : [
   'None'
 ]
+output storageAccountResourceIds array = fslogixStorageSolution == 'AzureFiles' ? azureFiles.outputs.storageAccountResourceIds : []

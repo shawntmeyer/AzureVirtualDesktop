@@ -18,7 +18,7 @@ param resourceGroupManagement string
 param securityPrincipalNames array
 param smbServerLocation string
 param storageSku string
-param storageSolution string
+param fslogixStorageSolution string
 param tagsNetAppAccount object
 param tagsVirtualMachines object
 param timeStamp string
@@ -137,7 +137,7 @@ module ntfsPermissions 'ntfsPermissions.bicep' = {
   params: {
     artifactsUri: artifactsUri
     userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
-    CommandToExecute: 'powershell -ExecutionPolicy Unrestricted -File Set-NtfsPermissions.ps1 -domainJoinUserPassword "${domainJoinUserPassword}" -domainJoinUserPrincipalName ${domainJoinUserPrincipalName} -fslogixContainerType ${fslogixContainerType} -securityPrincipalNames "${securityPrincipalNames}" -smbServerLocation ${smbServerLocation} -storageSolution ${storageSolution}'
+    CommandToExecute: 'powershell -ExecutionPolicy Unrestricted -File Set-NtfsPermissions.ps1 -domainJoinUserPassword "${domainJoinUserPassword}" -domainJoinUserPrincipalName ${domainJoinUserPrincipalName} -fslogixContainerType ${fslogixContainerType} -securityPrincipalNames "${securityPrincipalNames}" -smbServerLocation ${smbServerLocation} -storageSolution ${fslogixStorageSolution}'
     location: location
     managementVirtualMachineName: managementVirtualMachineName
     tagsVirtualMachines: tagsVirtualMachines

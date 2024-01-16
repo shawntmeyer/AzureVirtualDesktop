@@ -14,7 +14,8 @@ param fslogixConfigureSessionHosts bool
 param fslogixConfigurationBlobName string
 param fslogixContainerType string
 param fslogixStorageService string
-param hostPoolType string
+param hostPoolOnly bool = false
+param hostPoolType string = 'Pooled DepthFirst'
 param imageOffer string
 param imagePublisher string
 param imageSku string
@@ -53,7 +54,7 @@ var cseArtifacts = fslogixConfigureSessionHosts ? union(['${cseMasterScript}'], 
 var cseUris = [ for artifact in cseArtifacts : contains(toLower(artifact), 'http') ? artifact : '${artifactsUri}${artifact}' ]
 // Disk Encryption Options
 var diskEncryptionOptions = {
-  AzureDiskEncryption: contains(diskEncryptionSolution, 'ADE')
+  azureDiskEncryption: contains(diskEncryptionSolution, 'ADE')
   encryptionAtHost: contains(diskEncryptionSolution, 'EAH')
   diskEncryptionSet: contains(diskEncryptionSolution, 'CMK')
   keyEncryptionKey: contains(diskEncryptionSolution, 'CMK') || contains(diskEncryptionSolution, 'KEK')
@@ -65,7 +66,12 @@ var countStorage = activeDirectorySolution == 'AzureActiveDirectory' || activeDi
 var netbios = split(domainName, '.')[0]
 var pooledHostPool = split(hostPoolType, ' ')[0] == 'Pooled' ? true : false
 
-var resGroupNames = fslogix ? [
+var resGroupHostPools = [
+  resourceGroupControlPlane
+  resourceGroupHosts
+]
+
+var resGroupBase = fslogix ? [
   resourceGroupControlPlane
   resourceGroupHosts
   resourceGroupManagement
@@ -76,7 +82,7 @@ var resGroupNames = fslogix ? [
   resourceGroupManagement
 ]
 
-var resourceGroupNames = avdPrivateLink ? union([resourceGroupGlobalFeed], resGroupNames) : resGroupNames
+var resourceGroupNames = hostPoolOnly ? resGroupHostPools : ( avdPrivateLink ? union([resourceGroupGlobalFeed], resGroupBase) : resGroupBase )
 
 var roleDefinitions = {
   AutomationContributor: 'f353d9bd-d4a6-484e-a77a-8050b599b867'
@@ -94,7 +100,7 @@ var roleDefinitions = {
 var SecurityPrincipalsCount = length(securityPrincipals)
 var smbServerLocation = locations[locationVirtualMachines].abbreviation
 var storageSku = fslogixStorageService == 'None' ? 'None' : split(fslogixStorageService, ' ')[1]
-var storageSolution = split(fslogixStorageService, ' ')[0]
+var fslogixStorageSolution = split(fslogixStorageService, ' ')[0]
 var storageSuffix = environment().suffixes.storage
 var timeDifference = locations[locationVirtualMachines].timeDifference
 var timeZone = locations[locationVirtualMachines].timeZone
@@ -116,7 +122,7 @@ output sessionHostBatchCount int = sessionHostBatchCount
 output SecurityPrincipalsCount int = SecurityPrincipalsCount
 output smbServerLocation string = smbServerLocation
 output storageSku string = storageSku
-output storageSolution string = storageSolution
+output fslogixStorageSolution string = fslogixStorageSolution
 output storageSuffix string = storageSuffix
 output storageCount int = countStorage
 output timeDifference string = timeDifference

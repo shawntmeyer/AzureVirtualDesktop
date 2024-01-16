@@ -499,7 +499,7 @@ module management 'modules/management/management.bicep' = {
     roleDefinitions: logic.outputs.roleDefinitions
     scalingTool: scalingTool
     sessionHostCount: sessionHostCount
-    storageSolution: logic.outputs.storageSolution
+    fslogixStorageSolution: logic.outputs.fslogixStorageSolution
     tags: tags
     timeStamp: timeStamp
     timeZone: logic.outputs.timeZone
@@ -604,7 +604,7 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (fslogixStorageService != 'N
     storageCount: logic.outputs.storageCount
     storageIndex: storageIndex
     storageSku: logic.outputs.storageSku
-    storageSolution: logic.outputs.storageSolution
+    fslogixStorageSolution: logic.outputs.fslogixStorageSolution
     subnet: split(storagePrivateEndpointSubnetResourceId, '/')[10]
     tagsAutomationAccounts: union({
         'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceNames.outputs.resourceGroupManagement}/providers/Microsoft.DesktopVirtualization/workspaces/${resourceNames.outputs.workspaceName}'
@@ -634,7 +634,7 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (fslogixStorageService != 'N
 module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
   name: 'SessionHosts_${timeStamp}'
   params: {
-    AcceleratedNetworking: management.outputs.validateAcceleratedNetworking
+    acceleratedNetworking: management.outputs.validateAcceleratedNetworking
     activeDirectorySolution: activeDirectorySolution
     adeKEKUrl: management.outputs.encryptionKeyUrl
     artifactsUri: artifactsUri
@@ -646,15 +646,15 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     availabilitySetsCount: logic.outputs.availabilitySetsCount
     availabilitySetsIndex: logic.outputs.beginAvSetRange
     availabilityZones: management.outputs.validateavailabilityZones
-    AVDInsightsLogAnalyticsWorkspaceResourceId: management.outputs.logAnalyticsWorkspaceResourceId
+    avdInsightsLogAnalyticsWorkspaceResourceId: management.outputs.logAnalyticsWorkspaceResourceId
     cseMasterScript: cseMasterScript
     cseScriptAddDynParameters: cseScriptAddDynParameters
     cseUris: logic.outputs.cseUris
     dataCollectionRulesResourceId: management.outputs.dataCollectionRulesResourceId
     diskEncryptionOptions: logic.outputs.diskEncryptionOptions
     DiskEncryptionSetResourceId: management.outputs.DiskEncryptionSetResourceId
-    keyVaultResourceId: management.outputs.keyVaultResourceId
-    keyVaultUrl: management.outputs.keyVaultUrl
+    adeKeyVaultResourceId: management.outputs.keyVaultResourceId
+    adeKeyVaultUrl: management.outputs.keyVaultUrl
     diskNamePrefix: resourceNames.outputs.diskNamePrefix
     diskSku: diskSku
     divisionRemainderValue: logic.outputs.divisionRemainderValue
@@ -666,7 +666,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     fslogixContainerType: fslogixContainerType
     fslogixExistingStorageAccountResourceIds: fslogixExistingStorageAccountResourceIds
     fslogixConfigureSessionHosts: fslogixConfigureSessionHosts
-    FslogixDeployed: logic.outputs.fslogix
+    fslogixDeployed: logic.outputs.fslogix
     hostPoolName: resourceNames.outputs.hostPoolName
     imageOffer: imageOffer
     imagePublisher: imagePublisher
@@ -701,10 +701,10 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     securityLogAnalyticsWorkspaceResourceId: securityLogAnalyticsWorkspaceResourceId
     sessionHostBatchCount: logic.outputs.sessionHostBatchCount
     sessionHostIndex: sessionHostIndex
-    storageAccountPrefix: resourceNames.outputs.storageAccountNamePrefix
+    fslogixStorageAccountPrefix: resourceNames.outputs.storageAccountNamePrefix
     storageCount: logic.outputs.storageCount
     storageIndex: storageIndex
-    storageSolution: logic.outputs.storageSolution
+    fslogixStorageSolution: logic.outputs.fslogixStorageSolution
     storageSuffix: logic.outputs.storageSuffix
     subnet: split(virtualMachineSubnetResourceId, '/')[10]
     tags: tags

@@ -30,7 +30,7 @@ param storageAccountNamePrefix string
 param storageCount int
 param storageIndex int
 param storageSku string
-param storageSolution string
+param fslogixStorageSolution string
 param subnet string
 param tagsAutomationAccounts object
 param tagsPrivateEndpoints object
@@ -184,7 +184,7 @@ module ntfsPermissions '../ntfsPermissions.bicep' = if (!contains(activeDirector
   params: {
     artifactsUri: artifactsUri
     userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
-    CommandToExecute: 'powershell -ExecutionPolicy Unrestricted -File Set-NtfsPermissions.ps1 -ClientId ${azureFilesUserAssignedIdentityClientId} -domainJoinUserPassword "${domainJoinUserPassword}" -domainJoinUserPrincipalName ${domainJoinUserPrincipalName} -activeDirectorySolution ${activeDirectorySolution} -environmentShortName ${environment().name} -fslogixContainerType ${fslogixContainerType} -KerberosEncryptionType ${kerberosEncryption} -netbios ${netbios} -ouPath "${ouPath}" -securityPrincipalNames "${securityPrincipalNames}" -storageAccountPrefix ${storageAccountNamePrefix} -StorageAccountResourceGroupName ${resourceGroupStorage} -storageCount ${storageCount} -storageIndex ${storageIndex} -storageSolution ${storageSolution} -storageSuffix ${environment().suffixes.storage} -SubscriptionId ${subscription().subscriptionId} -TenantId ${subscription().tenantId}'
+    CommandToExecute: 'powershell -ExecutionPolicy Unrestricted -File Set-NtfsPermissions.ps1 -ClientId ${azureFilesUserAssignedIdentityClientId} -domainJoinUserPassword "${domainJoinUserPassword}" -domainJoinUserPrincipalName ${domainJoinUserPrincipalName} -activeDirectorySolution ${activeDirectorySolution} -environmentShortName ${environment().name} -fslogixContainerType ${fslogixContainerType} -KerberosEncryptionType ${kerberosEncryption} -netbios ${netbios} -ouPath "${ouPath}" -securityPrincipalNames "${securityPrincipalNames}" -storageAccountPrefix ${storageAccountNamePrefix} -StorageAccountResourceGroupName ${resourceGroupStorage} -storageCount ${storageCount} -storageIndex ${storageIndex} -storageSolution ${fslogixStorageSolution} -storageSuffix ${environment().suffixes.storage} -SubscriptionId ${subscription().subscriptionId} -TenantId ${subscription().tenantId}'
     location: location
     managementVirtualMachineName: managementVirtualMachineName
     tagsVirtualMachines: tagsVirtualMachines
@@ -230,3 +230,5 @@ module autoIncreasePremiumFileShareQuota '../../management/autoIncreasePremiumFi
     timeZone: timeZone
   }
 }
+
+output storageAccountResourceIds array = [for i in range(0, storageCount): storageAccounts[i].id]

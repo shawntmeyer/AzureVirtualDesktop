@@ -1,7 +1,7 @@
 param fslogix bool
 param location string
 param recoveryServicesVaultName string
-param storageSolution string
+param fslogixStorageSolution string
 param tags object
 param timeZone string
 
@@ -36,7 +36,7 @@ resource vault 'Microsoft.recoveryServices/vaults@2022-03-01' = {
   properties: {}
 }
 
-resource backupPolicy_Storage 'Microsoft.recoveryServices/vaults/backupPolicies@2022-03-01' = if (fslogix && storageSolution == 'AzureFiles') {
+resource backupPolicy_Storage 'Microsoft.recoveryServices/vaults/backupPolicies@2022-03-01' = if (fslogix && fslogixStorageSolution == 'AzureFiles') {
   parent: vault
   name: 'AvdPolicyStorage'
   location: location

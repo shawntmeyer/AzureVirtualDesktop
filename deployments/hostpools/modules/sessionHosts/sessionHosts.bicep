@@ -1,8 +1,10 @@
 targetScope = 'subscription'
 
-param AcceleratedNetworking string
+param acceleratedNetworking string
 param activeDirectorySolution string
 param adeKEKUrl string
+param adeKeyVaultResourceId string
+param adeKeyVaultUrl string
 param artifactsUri string
 param artifactsUserAssignedIdentityClientId string
 param artifactsUserAssignedIdentityResourceId string
@@ -12,7 +14,7 @@ param availabilitySetNamePrefix string
 param availabilitySetsCount int
 param availabilitySetsIndex int
 param availabilityZones array
-param AVDInsightsLogAnalyticsWorkspaceResourceId string
+param avdInsightsLogAnalyticsWorkspaceResourceId string
 param cseMasterScript string
 param cseScriptAddDynParameters string
 param cseUris array
@@ -29,17 +31,17 @@ param domainJoinUserPrincipalName string
 param domainName string
 param drainMode bool
 param drainModeUserAssignedIdentityClientId string
-param FslogixDeployed bool
+param fslogixDeployed bool
 param fslogixConfigureSessionHosts bool
 param fslogixExistingStorageAccountResourceIds array
 param fslogixContainerType string
+param fslogixStorageAccountPrefix string
+param fslogixStorageAccountResourceIds array
 param hostPoolName string
 param imageOffer string
 param imagePublisher string
 param imageSku string
 param customImageResourceId string
-param keyVaultResourceId string
-param keyVaultUrl string
 param location string
 param managementVMName string
 param maxResourcesPerTemplateDeployment int
@@ -53,7 +55,6 @@ param recoveryServicesVaultName string
 param resourceGroupControlPlane string
 param resourceGroupHosts string
 param resourceGroupManagement string
-param resourceGroupStorage string
 param roleDefinitions object
 param runBookUpdateUserAssignedIdentityClientId string
 param scalingBeginPeakTime string
@@ -67,12 +68,9 @@ param securityPrincipalObjectIds array
 param securityLogAnalyticsWorkspaceResourceId string
 param sessionHostBatchCount int
 param sessionHostIndex int
-param storageAccountPrefix string
-param storageCount int
-param storageIndex int
-param storageSolution string
+param fslogixStorageSolution string
 param storageSuffix string
-param subnet string
+param subnetResourceId string
 param tags object
 param timeDifference string
 param timeStamp string
@@ -85,8 +83,6 @@ param virtualMachineAdminPassword string
 param virtualMachineSize string
 @secure()
 param virtualMachineAdminUserName string
-param virtualNetwork string
-param virtualNetworkResourceGroup string
 
 var tagsAutomationAccounts = union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroupControlPlane}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'}, contains(tags, 'Microsoft.Automation/automationAccounts') ? tags['Microsoft.Automation/automationAccounts'] : {})
 var tagsAvailabilitySets = union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroupControlPlane}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'}, contains(tags, 'Microsoft.Compute/availabilitySets') ? tags['Microsoft.Compute/availabilitySets'] : {})
@@ -123,23 +119,26 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
   name: 'VirtualMachines_${i - 1}_${timeStamp}'
   scope: resourceGroup(resourceGroupHosts)
   params: {
-    AcceleratedNetworking: AcceleratedNetworking
+    acceleratedNetworking: acceleratedNetworking
     activeDirectorySolution: activeDirectorySolution
     adeKEKUrl: adeKEKUrl
+    adeKeyVaultResourceId: adeKeyVaultResourceId
+    adeKeyVaultUrl: adeKeyVaultUrl
     artifactsUri: artifactsUri
     artifactsUserAssignedIdentityResourceId: artifactsUserAssignedIdentityResourceId
     artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
     availability: availability
     availabilityZones: availabilityZones
     availabilitySetNamePrefix: availabilitySetNamePrefix
-    AVDInsightsLogAnalyticsWorkspaceResourceId: AVDInsightsLogAnalyticsWorkspaceResourceId
-    BatchCount: i
+    avdInsightsLogAnalyticsWorkspaceResourceId: avdInsightsLogAnalyticsWorkspaceResourceId
+    batchCount: i
     cseMasterScript: cseMasterScript
     cseScriptAddDynParameters: cseScriptAddDynParameters
     cseUris: cseUris
+    customImageResourceId: customImageResourceId
     dataCollectionRulesResourceId: dataCollectionRulesResourceId
     diskEncryptionOptions: diskEncryptionOptions
-    DiskEncryptionSetResourceId: DiskEncryptionSetResourceId
+    diskEncryptionSetResourceId: DiskEncryptionSetResourceId
     diskNamePrefix: diskNamePrefix
     diskSku: diskSku
     domainJoinUserPassword: domainJoinUserPassword
@@ -154,9 +153,6 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     imageOffer: imageOffer
     imagePublisher: imagePublisher
     imageSku: imageSku
-    customImageResourceId: customImageResourceId
-    keyVaultResourceId: keyVaultResourceId
-    keyVaultUrl: keyVaultUrl
     location: location
     managementVMName: managementVMName
     monitoring: monitoring
@@ -165,17 +161,15 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     ouPath: ouPath
     resourceGroupControlPlane: resourceGroupControlPlane
     resourceGroupManagement: resourceGroupManagement
-    resourceGroupStorage: resourceGroupStorage
     securityDataCollectionRulesResourceId: securityDataCollectionRulesResourceId
     securityLogAnalyticsWorkspaceResourceId: securityLogAnalyticsWorkspaceResourceId
     sessionHostCount: i == sessionHostBatchCount && divisionRemainderValue > 0 ? divisionRemainderValue : maxResourcesPerTemplateDeployment
     sessionHostIndex: i == 1 ? sessionHostIndex : ((i - 1) * maxResourcesPerTemplateDeployment) + sessionHostIndex
-    storageAccountPrefix: storageAccountPrefix
-    storageCount: storageCount
-    storageIndex: storageIndex
-    storageSolution: storageSolution
+    fslogixStorageAccountPrefix: fslogixStorageAccountPrefix
+    fslogixStorageAccountResourceIds: fslogixStorageAccountResourceIds
+    fslogixStorageSolution: fslogixStorageSolution
     storageSuffix: storageSuffix
-    subnet: subnet
+    subnetResourceId: subnetResourceId
     tagsNetworkInterfaces: tagsNetworkInterfaces
     tagsVirtualMachines: tagsVirtualMachines
     timeStamp: timeStamp
@@ -185,8 +179,6 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     virtualMachineAdminPassword: virtualMachineAdminPassword
     virtualMachineSize: virtualMachineSize
     virtualMachineAdminUserName: virtualMachineAdminUserName
-    virtualNetwork: virtualNetwork
-    virtualNetworkResourceGroup: virtualNetworkResourceGroup
   }
   dependsOn: [
     availabilitySets
@@ -198,7 +190,7 @@ module recServices 'recoveryServices.bicep' = if (recoveryServices) {
   scope: resourceGroup(resourceGroupManagement)
   params: {
     divisionRemainderValue: divisionRemainderValue
-    FslogixDeployed: FslogixDeployed
+    fslogixDeployed: fslogixDeployed
     location: location
     maxResourcesPerTemplateDeployment: maxResourcesPerTemplateDeployment
     recoveryServicesVaultName: recoveryServicesVaultName

@@ -43,7 +43,7 @@ param resourceGroupStorage string
 param roleDefinitions object
 param scalingTool bool
 param sessionHostCount int
-param storageSolution string
+param fslogixStorageSolution string
 param tags object
 param timeStamp string
 param timeZone string
@@ -67,7 +67,7 @@ var deploymentUserAssignedIdentityName = replace(userAssignedIdentityNameConv, '
 var virtualNetworkName = split(virtualMachineSubnetResourceId, '/')[8]
 var virtualNetworkResourceGroupName = split(virtualMachineSubnetResourceId, '/')[4]
 
-var defaultValidationParameters = '-cpuCountMax ${cpuCountMax} -cpuCountMin ${cpuCountMin} -environmentShortName ${environment().name} -globalWorkspaceName ${globalFeedWorkspaceName} -globalWorkspaceResourceName ${globalFeedWorkspaceResourceGroupName} -location ${locationVirtualMachines} -sessionHostCount ${sessionHostCount} -storageSolution ${storageSolution} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -userAssignedIdentityClientId ${deploymentUserAssignedIdentity.outputs.clientId} -virtualMachineSize ${virtualMachineSize} -virtualNetworkName ${virtualNetworkName} -virtualNetworkResourceGroupName ${virtualNetworkResourceGroupName} -workspaceName ${workspaceName} -WorkspaceResourceGroupName ${resourceGroupManagement}'
+var defaultValidationParameters = '-cpuCountMax ${cpuCountMax} -cpuCountMin ${cpuCountMin} -environmentShortName ${environment().name} -globalWorkspaceName ${globalFeedWorkspaceName} -globalWorkspaceResourceName ${globalFeedWorkspaceResourceGroupName} -location ${locationVirtualMachines} -sessionHostCount ${sessionHostCount} -fslogixStorageSolution ${fslogixStorageSolution} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -userAssignedIdentityClientId ${deploymentUserAssignedIdentity.outputs.clientId} -virtualMachineSize ${virtualMachineSize} -virtualNetworkName ${virtualNetworkName} -virtualNetworkResourceGroupName ${virtualNetworkResourceGroupName} -workspaceName ${workspaceName} -WorkspaceResourceGroupName ${resourceGroupManagement}'
 var validationScriptParameters = activeDirectorySolution == 'AzureActiveDirectoryDomainServices' ? '-domainName ${domainName} -kerberosEncryption ${kerberosEncryption} ${defaultValidationParameters}' : defaultValidationParameters
 
 var roleAssignmentsCommon = [
@@ -337,7 +337,7 @@ module recoveryServicesVault 'recoveryServicesVault.bicep' = if (recoveryService
     fslogix: fslogix
     location: locationVirtualMachines
     recoveryServicesVaultName: recoveryServicesVaultName
-    storageSolution: storageSolution
+    fslogixStorageSolution: fslogixStorageSolution
     tags: contains(tags, 'Microsoft.recoveryServices/vaults') ? tags['Microsoft.recoveryServices/vaults'] : {}
     timeZone: timeZone
   }
