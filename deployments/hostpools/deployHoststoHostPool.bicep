@@ -23,7 +23,7 @@ param centralizedAVDManagement bool = false
 param hostPoolIdentifier string
 
 @description('The resource ID of the resource group to update.  If not specified, a new resource group will be created.')
-param computeResourceGroupResourceId string = ''
+param existingComputeResourceGroupName string = ''
 
 @allowed([
   'd' // Development
@@ -336,7 +336,7 @@ module logic 'modules/logic.bicep' = {
 }
 
 // Resource Groups
-module resGroup 'modules/resourceGroups.bicep' =  if(empty(computeResourceGroupResourceId)) {
+module resGroup 'modules/resourceGroups.bicep' =  if(empty(existingComputeResourceGroupName)) {
   name: 'ResourceGroup_Hosts_${timeStamp}'
   params: {
     location: locationVirtualMachines
@@ -398,7 +398,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     recoveryServices: recoveryServices
     recoveryServicesVaultName: resourceNames.outputs.recoveryServicesVaultName
     resourceGroupControlPlane: split(hostPoolResourceId, '/')[4]
-    resourceGroupHosts: empty(computeResourceGroupResourceId) ? resourceNames.outputs.resourceGroupHosts : computeResourceGroupResourceId
+    resourceGroupHosts: empty(existingComputeResourceGroupName) ? resourceNames.outputs.resourceGroupHosts : existingComputeResourceGroupName
     resourceGroupManagement: ''
     roleDefinitions: logic.outputs.roleDefinitions
     runBookUpdateUserAssignedIdentityClientId: ''
