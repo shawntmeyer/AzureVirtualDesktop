@@ -667,6 +667,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     fslogixExistingStorageAccountResourceIds: fslogixExistingStorageAccountResourceIds
     fslogixConfigureSessionHosts: fslogixConfigureSessionHosts
     fslogixDeployed: logic.outputs.fslogix
+    fslogixStorageAccountResourceIds: fslogix.outputs.storageAccountResourceIds
     hostPoolName: resourceNames.outputs.hostPoolName
     imageOffer: imageOffer
     imagePublisher: imagePublisher
@@ -687,7 +688,6 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     resourceGroupControlPlane: resourceNames.outputs.resourceGroupControlPlane
     resourceGroupHosts: resourceNames.outputs.resourceGroupHosts
     resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
-    resourceGroupStorage: resourceNames.outputs.resourceGroupStorage
     roleDefinitions: logic.outputs.roleDefinitions
     runBookUpdateUserAssignedIdentityClientId: management.outputs.deploymentUserAssignedIdentityClientId
     scalingBeginPeakTime: scalingBeginPeakTime
@@ -702,11 +702,9 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     sessionHostBatchCount: logic.outputs.sessionHostBatchCount
     sessionHostIndex: sessionHostIndex
     fslogixStorageAccountPrefix: resourceNames.outputs.storageAccountNamePrefix
-    storageCount: logic.outputs.storageCount
-    storageIndex: storageIndex
     fslogixStorageSolution: logic.outputs.fslogixStorageSolution
     storageSuffix: logic.outputs.storageSuffix
-    subnet: split(virtualMachineSubnetResourceId, '/')[10]
+    subnetResourceId: virtualMachineSubnetResourceId
     tags: tags
     timeDifference: logic.outputs.timeDifference
     timeStamp: timeStamp
@@ -717,8 +715,6 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     virtualMachineAdminPassword: empty(virtualMachineAdminPassword) ? keyVault_Reference.getSecret(virtualMachineAdminPassword) : virtualMachineAdminPassword
     virtualMachineSize: virtualMachineSize
     virtualMachineAdminUserName: empty(virtualMachineAdminUserName) ? keyVault_Reference.getSecret(virtualMachineAdminUserName) : virtualMachineAdminUserName
-    virtualNetwork: split(virtualMachineSubnetResourceId, '/')[8]
-    virtualNetworkResourceGroup: split(virtualMachineSubnetResourceId, '/')[4]
   }
   dependsOn: [
     rgs
