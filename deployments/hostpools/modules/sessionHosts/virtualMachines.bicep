@@ -139,13 +139,13 @@ var keyEncryptionKey = bool(diskEncryptionOptions.keyEncryptionKey)
 
 var identityType = (!contains(activeDirectorySolution, 'DomainServices') || virtualMachineMonitoringAgent == 'AzureMonitorAgent' ? true : false) ? (!empty(artifactsUserAssignedIdentityResourceId) ? 'SystemAssigned,UserAssigned' : 'SystemAssigned') : (!empty(artifactsUserAssignedIdentityResourceId) ? 'UserAssigned' : 'None')
 
-var UserAssignedIdentities = !empty(artifactsUserAssignedIdentityResourceId) ? {
+var userAssignedIdentities = !empty(artifactsUserAssignedIdentityResourceId) ? {
   '${artifactsUserAssignedIdentityResourceId}': {}
 } : {}
 
 var identity = identityType != 'None' ? {
   type: identityType
-  userAssignedIdentities: !empty(UserAssignedIdentities) ? UserAssignedIdentities : null
+  userAssignedIdentities: !empty(userAssignedIdentities) ? userAssignedIdentities : null
 } : null
 
 var ImageReference = empty(customImageResourceId) ? {
