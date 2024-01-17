@@ -6,15 +6,11 @@ param (
 [string]$Script:LogDir = "C:\WindowsAzure\Logs\Plugins\Microsoft.Compute.CustomScriptExtension"
 [string]$Script:Name = [System.IO.Path]::GetFileNameWithoutExtension($PSCommandPath)
 $SHKeys = $DynParameters.SHConfiguration
-$ActiveDirectorySolution = $SHKeys.activeDirectorySolution
 $AmdVmSize = $SHKeys.AmdVmSize
 $NvidiaVmSize = $SHKeys.NvidiaVmSize
 $HostPoolRegistrationToken = $SHKeys.HostPoolRegistrationToken
 $SecurityWorkspaceId = $SHKeys.SecurityWorkspaceId
-If ($SecurityWorkspaceId) {
-    $SecurityMonitoring = $true
-    $SecurityWorkspaceKey = $SHKeys.SecurityWorkspaceKey
-}
+$SecurityWorkspaceKey = $SHKeys.SecurityWorkspaceKey
 
 $TempDir = Join-Path -Path $env:Temp -ChildPath $Script:Name
 If (Test-Path -Path $TempDir) {Remove-Item -Path $TempDir -Recurse -Force}
@@ -389,8 +385,10 @@ try
     }
 
     If (Test-Path -Path "$env:SystemRoot\System32\lgpo.exe") {
+        <#
         # Disable Automatic Updates: https://learn.microsoft.com/azure/virtual-desktop/set-up-customize-master-image#disable-automatic-updates
         Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath 'SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU' -RegistryValue 'NoAutoUpdate' -RegistryType DWORD -RegistryData 1
+        #>
         # Enable Time Zone Redirection: https://learn.microsoft.com/azure/virtual-desktop/set-up-customize-master-image#set-up-time-zone-redirection
         Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath 'SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services' -RegistryValue 'fEnableTimeZoneRedirection' -RegistryType DWORD -RegistryData 1
     
@@ -423,40 +421,53 @@ try
     $BootInstaller = (Get-ChildItem $PSScriptRoot -Filter '*Bootloader.msi' -Recurse).FullName
     If (!$BootInstaller) {
         $url = 'https://query.prod.cms.rt.microsoft.com/cms/api/am/binary/RWrxrH'
-        $BootInstallerMSI = Get-InternetFile -Url $urlLGPO -OutputDirectory $TempDir -OutputFileName $BootInstallerMSI -ErrorAction SilentlyContinue
+        $BootInstaller = Get-InternetFile -Url $url -OutputDirectory $TempDir -ErrorAction SilentlyContinue
     }
-    $Install = Start-Process -FilePath 'msiexec.exe' -ArgumentList "/i $BootInstaller /quiet /norestart" -Wait -Passthru
-    If ($($Install.ExitCode) -eq 0) {
-        Write-Log -category Info -message "'AVD Boot loader' installed successfully."
-    }
-    Else {
-        Write-Log -category Warning -message "The Installer exit code is $($Installer.ExitCode)"
-    }
+    If ($BootInstaller) {
+        $Install = Start-Process -FilePath 'msiexec.exe' -ArgumentList "/i $BootInstaller /quiet /norestart" -Wait -Passthru
+        If ($($Install.ExitCode) -eq 0) {
+            Write-Log -category Info -message "'AVD Boot loader' installed successfully."
+        }
+        Else {
+            Write-Log -category Warning -message "The Installer exit code is $($Installer.ExitCode)"
+        }
+    } Else {
+        Write-Error -Message "The AVD Bootloader installer could not be found."
+        Exit 1
+    }    
+
     Start-Sleep -Seconds 5 | Out-Null
 
     $AgentInstaller = (Get-ChildItem $PSScriptRoot -Filter '*Agent.msi' -Recurse).FullName
     If (!$AgentInstaller) {
-        $url = 'https://query.prod.cms.rt.microsoft.com/cms/api/am/binary/RWrxrH'
-        $AgentInstallerMSI = Get-InternetFile -Url $urlLGPO -OutputDirectory $TempDir -OutputFileName $AgentInstallerMSI -ErrorAction SilentlyContinue
+        $url = 'https://query.prod.cms.rt.microsoft.com/cms/api/am/binary/RWrmXv'
+        $AgentInstaller = Get-InternetFile -Url $url -OutputDirectory $TempDir -ErrorAction SilentlyContinue
     }
-    $Install = Start-Process -FilePath 'msiexec.exe' -ArgumentList "/i $AgentInstaller /quiet /norestart REGISTRATIONTOKEN=$HostPoolRegistrationToken" -Wait -Passthru
-    If ($($Install.ExitCode) -eq 0) {
-        Write-Log -category Info -message "'AVD Boot loader' installed successfully."
+    If ($AgentInstaller) {
+        $Install = Start-Process -FilePath 'msiexec.exe' -ArgumentList "/i $AgentInstaller /quiet /norestart REGISTRATIONTOKEN=$HostPoolRegistrationToken" -Wait -Passthru
+        If ($($Install.ExitCode) -eq 0) {
+            Write-Log -category Info -message "'AVD Agent' installed successfully."
+        }
+        Else {
+            Write-Log -category Warning -message "The Installer exit code is $($Installer.ExitCode)"
+        }
+    } Else {
+        Write-Error -Message "The AVD Agent installer could not be found."
+        Exit 2
     }
-    Else {
-        Write-Log -category Warning -message "The Installer exit code is $($Installer.ExitCode)"
-    }
+
     Start-Sleep -Seconds 5 | Out-Null
 
     ##############################################################
     #  Dual-home Microsoft Monitoring Agent for Azure Sentinel or Defender for Cloud
     ##############################################################
-    if($SecurityMonitoring -eq 'true')
+    if($SecurityWorkspaceId -and $SecurityWorkspaceKey)
     {
         $mma = New-Object -ComObject 'AgentConfigManager.MgmtSvcCfg'
         $mma.AddCloudWorkspace($SecurityWorkspaceId, $SecurityWorkspaceKey)
         $mma.ReloadConfiguration() | Out-Null
     }
+
     Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue
 }
 catch 

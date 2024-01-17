@@ -48,13 +48,13 @@ Param(
     [string]
     $VirtualMachineSize,
 
-    [parameter(Mandatory)]
+    [parameter()]
     [string]
-    $VirtualNetworkName,
+    $NetAppVirtualNetworkName,
 
-    [parameter(Mandatory)]
+    [parameter()]
     [string]
-    $VirtualNetworkResourceGroupName,
+    $NetAppVirtualNetworkResourceGroupName,
 
     [parameter(Mandatory)]
     [string]
@@ -62,7 +62,15 @@ Param(
 
     [parameter(Mandatory)]
     [string]
-    $WorkspaceResourceGroupName
+    $WorkspaceResourceGroupName,
+
+    [parameter(Mandatory)]
+    [string]
+    $GlobalWorkspaceName,
+
+    [parameter(Mandatory)]
+    [string]
+    $GlobalWorkspaceResourceGroupName
 )
 
 function Write-Log
@@ -108,7 +116,7 @@ try
     # Azure NetApp Files Validation
     ##############################################################
     If ($StorageSolution -eq 'AzureNetAppFiles') {
-        $Vnet = Get-AzVirtualNetwork -Name $VirtualNetworkName -ResourceGroupName $VirtualNetworkResourceGroupName
+        $Vnet = Get-AzVirtualNetwork -Name $NetAppVirtualNetworkName -ResourceGroupName $NetAppVirtualNetworkResourceGroupName
         If ($null -ne $Vnet.DhcpOptions.DnsServers) {
             $DnsServers = "$($Vnet.DhcpOptions.DnsServers[0]),$($Vnet.DhcpOptions.DnsServers[1])"
         }
@@ -200,11 +208,12 @@ try
     Write-Log -Message "vCPU Quota Validation Succeeded" -Type 'INFO'
 
     ##############################################################
-    # vCPU Quota Validation
+    # AVD Workspace Validation
     ##############################################################
+
+    If (Get-AzResourceGroup | Where-Object {$_.ResourceGroupName -eq $GlobalWorkspaceResourceGroupName}) {$GlobalWorkspace = Get-AzResource -ResourceGroupName $GlobalWorkspaceResourceGroupName -ResourceName $GlobalWorkspaceName}
     $Workspace = Get-AzResource -ResourceGroupName $WorkspaceResourceGroupName -ResourceName $WorkspaceName
     Write-Log -Message "Existing Workspace Validation Succeeded" -Type 'INFO'
-
 
     Disconnect-AzAccount | Out-Null
 
@@ -215,6 +224,7 @@ try
         anfActiveDirectory = if($StorageSolution -eq "AzureNetAppFiles"){$DeployAnfAd}else{"false"}
         availabilityZones = $AvailabilityZones
         existingWorkspace = if($Workspace){"true"}else{"false"}
+        existingGlobalWorkspace = if($GlobalWorkspace){"true"}else{"false"}
         trustedLaunch = $TrustedLaunch
     }
     $JsonOutput = $Output | ConvertTo-Json
