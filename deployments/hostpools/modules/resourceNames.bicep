@@ -30,8 +30,8 @@ var fileShareNames = {
   ]
 }
 
-var locations = loadJsonContent('../../../../Common/data/locations.json')
-var resourceAbbreviations = loadJsonContent('../../../../Common/data/resourceAbbreviations.json')
+var locations = loadJsonContent('../../../.common/data/locations.json')
+var resourceAbbreviations = loadJsonContent('../../../.common/data/resourceAbbreviations.json')
 // automatically add 'avd-' prefix to the prefix if it isn't already listed.
 var businessUnitId = !empty(businessUnitIdentifier) ? contains(businessUnitIdentifier, 'avd') ? businessUnitIdentifier : '${businessUnitIdentifier}-avd' : ''
 var hostPoolId = !empty(businessUnitIdentifier) ? hostPoolIdentifier : ( contains(hostPoolIdentifier, 'avd') ? hostPoolIdentifier : 'avd-${hostPoolIdentifier}' )
