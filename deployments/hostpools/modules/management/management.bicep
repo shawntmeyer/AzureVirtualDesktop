@@ -33,22 +33,23 @@ param logAnalyticsWorkspaceName string
 param logAnalyticsWorkspaceRetention int
 param logAnalyticsWorkspaceSku string
 param monitoring bool
+param netAppVnetResourceId string
 param networkInterfaceNamePrefix string
 param privateEndpoint bool
 param privateEndpointNameConv string
 param recoveryServices bool
 param recoveryServicesVaultName string
+param resourceGroupControlPlane string
 param resourceGroupManagement string
 param resourceGroupStorage string
 param roleDefinitions object
-param scalingTool bool
 param sessionHostCount int
 param fslogixStorageSolution string
 param tags object
 param timeStamp string
 param timeZone string
 param userAssignedIdentityNameConv string
-param virtualMachineMonitoringAgent string
+param avdInsightsMonitoringAgent string
 param virtualMachineNamePrefix string
 @secure()
 param virtualMachineAdminPassword string
@@ -64,11 +65,14 @@ var cpuCountMin = contains(hostPoolType, 'Pooled') ? 4 : 2
 var artifactsUserAssignedIdentityName = replace(userAssignedIdentityNameConv, 'uaiPurpose', 'artifacts')
 var deploymentUserAssignedIdentityName = replace(userAssignedIdentityNameConv, 'uaiPurpose', 'deployment')
 
-var virtualNetworkName = split(virtualMachineSubnetResourceId, '/')[8]
-var virtualNetworkResourceGroupName = split(virtualMachineSubnetResourceId, '/')[4]
+var netAppVirtualNetworkName = !empty(netAppVnetResourceId) ? (split(netAppVnetResourceId, '/')) : ''
+var netAppVirtualNetworkResourceGroupName = !empty(netAppVnetResourceId) ? split(netAppVnetResourceId, '/')[4] : ''
 
-var defaultValidationParameters = '-cpuCountMax ${cpuCountMax} -cpuCountMin ${cpuCountMin} -environmentShortName ${environment().name} -globalWorkspaceName ${globalFeedWorkspaceName} -globalWorkspaceResourceName ${globalFeedWorkspaceResourceGroupName} -location ${locationVirtualMachines} -sessionHostCount ${sessionHostCount} -fslogixStorageSolution ${fslogixStorageSolution} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -userAssignedIdentityClientId ${deploymentUserAssignedIdentity.outputs.clientId} -virtualMachineSize ${virtualMachineSize} -virtualNetworkName ${virtualNetworkName} -virtualNetworkResourceGroupName ${virtualNetworkResourceGroupName} -workspaceName ${workspaceName} -WorkspaceResourceGroupName ${resourceGroupManagement}'
-var validationScriptParameters = activeDirectorySolution == 'AzureActiveDirectoryDomainServices' ? '-domainName ${domainName} -kerberosEncryption ${kerberosEncryption} ${defaultValidationParameters}' : defaultValidationParameters
+var requiredValidationScriptParameters = '-CpuCountMax ${cpuCountMax} -CpuCountMin ${cpuCountMin} -Environment ${environment().name} -GlobalWorkspaceName ${globalFeedWorkspaceName} -GlobalWorkspaceResourceGroupName ${globalFeedWorkspaceResourceGroupName} -Location ${locationVirtualMachines} -SessionHostCount ${sessionHostCount} -StorageSolution ${fslogixStorageSolution} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentity.outputs.clientId} -VirtualMachineSize ${virtualMachineSize} -WorkspaceName ${workspaceName} -WorkspaceResourceGroupName ${resourceGroupControlPlane}'
+var netAppValidationScriptParameters = '-NetAppVirtualNetworkName ${netAppVirtualNetworkName} -NetAppVirtualNetworkResourceGroupName ${netAppVirtualNetworkResourceGroupName}'
+var domainServicesValidationScriptParameters = '-DomainName ${domainName} -KerberosEncryption ${kerberosEncryption}'
+var optionalValidationScriptParameters = activeDirectorySolution == 'AzureActiveDirectoryDomainServices' ? ( contains(fslogixStorageSolution, 'NetApp') ? '${domainServicesValidationScriptParameters} ${netAppValidationScriptParameters}' : domainServicesValidationScriptParameters ) : ( contains(fslogixStorageSolution, 'NetApp') ? netAppValidationScriptParameters : '' )
+var validationScriptParameters = '${requiredValidationScriptParameters} ${optionalValidationScriptParameters}'
 
 var roleAssignmentsCommon = [
   {
@@ -80,19 +84,19 @@ var roleAssignmentsCommon = [
   {
     roleDefinitionId: roleDefinitions.DesktopVirtualizationApplicationGroupContributor // (Purpose: updates the friendly name for the desktop)
     roleShortName: 'AVDAppGroupContributor' 
-    resourceGroup: resourceGroupManagement
+    resourceGroup: resourceGroupControlPlane
     subscription: subscription().subscriptionId
   }
   {
     roleDefinitionId: roleDefinitions.DesktopVirtualizationSessionHostOperator // (Purpose: sets drain mode on the AVD session hosts)
     roleShortName: 'AVDSessionHostOperator'
-    resourceGroup: resourceGroupManagement
+    resourceGroup: resourceGroupControlPlane
     subscription: subscription().subscriptionId
   }
   {
     roleDefinitionId: roleDefinitions.DesktopVirtualizationWorkspaceContributor // (Purpose: update the app group references on an existing feed workspace)
     roleShortName: 'AVDWorkspaceContributor'
-    resourceGroup: resourceGroupManagement
+    resourceGroup: resourceGroupControlPlane
     subscription: subscription().subscriptionId
   }
   {
@@ -174,7 +178,7 @@ module artifactsRoleAssignment 'artifactsRoleAssignment.bicep' = if(empty(artifa
     roleDefinitionId: roleDefinitions.StorageBlobDataReader
     storageName: last(split(artifactsStorageAccountResourceId, '/'))
     userAssignedIdentityName: artifactsUserAssignedIdentityName
-    userAssignedIdentityPrincipalId: artifactsUserAssignedIdentity.outputs.principalId
+    userAssignedIdentityPrincipalId: empty(artifactsUserAssignedIdentityResourceId)? artifactsUserAssignedIdentity.outputs.principalId : ''
   }
 }
 
@@ -221,11 +225,11 @@ module diskEncryptionSet 'diskEncryptionSet.bicep' = if(diskEncryptionOptions.di
   scope: resourceGroup(resourceGroupManagement)
   params: {
     diskEncryptionSetName: diskEncryptionSetName
-    keyUrl: customerManagedKeys.outputs.keyUriWithVersion
+    keyUrl: (diskEncryptionOptions.diskEncryptionSet || diskEncryptionOptions.keyEncryptionKey) ? customerManagedKeys.outputs.diskKeyUriWithVersion : ''
     keyVaultResourceId: keyVault.outputs.keyVaultResourceId
     location: locationVirtualMachines
     tags: contains(tags, 'Microsoft.Compute/diskEncryptionSets') ? tags['Microsoft.Compute/diskEncryptionSets'] : {}    
-    userAssignedIdentityResourceId: customerManagedKeys.outputs.encryptionUserAssignedIdentityResourceId
+    userAssignedIdentityResourceId: (diskEncryptionOptions.diskEncryptionSet || diskEncryptionOptions.keyEncryptionKey) ? customerManagedKeys.outputs.encryptionUserAssignedIdentityResourceId : ''
   }
 }
 
@@ -237,6 +241,7 @@ module virtualMachine 'virtualMachine.bicep' = {
   params: {
     activeDirectorySolution: activeDirectorySolution
     artifactsUri: artifactsUri
+    artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
     diskEncryptionOptions: diskEncryptionOptions
     diskEncryptionSetResourceId: diskEncryptionOptions.diskEncryptionSet ? diskEncryptionSet.outputs.resourceId : ''
     diskNamePrefix: diskNamePrefix
@@ -246,19 +251,16 @@ module virtualMachine 'virtualMachine.bicep' = {
     domainName: domainName
     location: locationVirtualMachines
     networkInterfaceNamePrefix: networkInterfaceNamePrefix
-    subnet: split(virtualMachineSubnetResourceId, '/')[10]
+    subnetResourceId: virtualMachineSubnetResourceId
     tagsNetworkInterfaces: contains(tags, 'Microsoft.Network/networkInterfaces') ? tags['Microsoft.Network/networkInterfaces'] : {}
     tagsVirtualMachines: contains(tags, 'Microsoft.Compute/virtualMachines') ? tags['Microsoft.Compute/virtualMachines'] : {}
-    userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
-    UserAssignedIdentityResourceIds: empty(artifactsUserAssignedIdentityResourceId) ? {
+    userAssignedIdentitiesResourceIds: empty(artifactsUserAssignedIdentityResourceId) ? {
       '${artifactsUserAssignedIdentity.outputs.resourceId}' : {}
       '${deploymentUserAssignedIdentity.outputs.resourceId}' : {}
      } : {
       '${existingArtifactsUserAssignedIdentity.id}': {}
       '${deploymentUserAssignedIdentity.outputs.resourceId}' : {}
      }
-    virtualNetwork: virtualNetworkName
-    virtualNetworkResourceGroup: virtualNetworkResourceGroupName
     virtualMachineNamePrefix: virtualMachineNamePrefix
     virtualMachineAdminPassword: virtualMachineAdminPassword
     virtualMachineAdminUserName: virtualMachineAdminUserName
@@ -271,11 +273,11 @@ module validations 'customScriptExtensions.bicep' = {
   scope: resourceGroup(resourceGroupManagement)
   name: 'Validations_${timeStamp}'
   params: {
-    artifactsUri: artifactsUri
-    executeScript: 'Get-Validations.ps1'
-    files: ['Get-Validations.ps1']
+    fileUris: [
+      '${artifactsUri}Get-Validations.ps1'
+    ]
+    scriptFileName: 'Get-Validations.ps1'
     location: locationVirtualMachines
-    output: true
     parameters: validationScriptParameters
     tags: contains(tags, 'Microsoft.Compute/virtualMachines') ? tags['Microsoft.Compute/virtualMachines'] : {}
     userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
@@ -294,12 +296,12 @@ module logAnalyticsWorkspace 'logAnalyticsWorkspace.bicep' = if (monitoring) {
     logAnalyticsWorkspaceSku: logAnalyticsWorkspaceSku
     location: locationControlPlane
     tags: contains(tags, 'Microsoft.OperationalInsights/workspaces') ? tags['Microsoft.OperationalInsights/workspaces'] : {}
-    virtualMachineMonitoringAgent: virtualMachineMonitoringAgent
+    avdInsightsMonitoringAgent: avdInsightsMonitoringAgent
   }
 }
 
 // Data Collection Rule for AVD Insights required for the Azure Monitor Agent
-module dataCollectionRules 'avdInsightsDataCollectionRules.bicep' = if (virtualMachineMonitoringAgent == 'AzureMonitorAgent') {
+module dataCollectionRules 'avdInsightsDataCollectionRules.bicep' = if (monitoring && avdInsightsMonitoringAgent == 'AzureMonitorAgent') {
   name: 'DataCollectionRule_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
@@ -310,8 +312,8 @@ module dataCollectionRules 'avdInsightsDataCollectionRules.bicep' = if (virtualM
   }
 }
 
-// Automation Account required for the AVD Scaling Tool and the Auto Increase Premium File Share Quota solution
-module automationAccount 'automationAccount.bicep' = if (scalingTool || fslogixStorageService == 'AzureFiles Premium') {
+// Automation Account required for the Auto Increase Premium File Share Quota solution
+module automationAccount 'automationAccount.bicep' = if (fslogixStorageService == 'AzureFiles Premium') {
   name: 'AutomationAccount_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
@@ -319,7 +321,7 @@ module automationAccount 'automationAccount.bicep' = if (scalingTool || fslogixS
     location: locationVirtualMachines
     logAnalyticsWorkspaceResourceId: monitoring ? logAnalyticsWorkspace.outputs.ResourceId : ''
     monitoring: monitoring
-    tags: contains(tags, 'Microsoft.Automation/automationAccounts') ? tags['Microsoft.Automation/automationAccounts'] : {}
+    tags: tags
     automationAccountPrivateDnsZoneResourceId: automationAccountPrivateDnsZoneResourceId
     privateEndpoint: privateEndpoint
     privateEndpointNameConv: privateEndpointNameConv
@@ -343,36 +345,20 @@ module recoveryServicesVault 'recoveryServicesVault.bicep' = if (recoveryService
   }
 }
 
-/*
-module workspace 'workspace.bicep' = {
-  name: 'Workspace_Create_${timeStamp}'
-  scope: resourceGroup(resourceGroupManagement)
-  params: {
-    applicationGroupReferences: []
-    Existing: validations.outputs.value.existingWorkspace == 'true' ? true : false
-    friendlyName: workspaceFriendlyName
-    location: locationControlPlane
-    logAnalyticsWorkspaceResourceId: monitoring ? logAnalyticsWorkspace.outputs.ResourceId : ''
-    monitoring: monitoring
-    tags: contains(tags, 'Microsoft.DesktopVirtualization/workspaces') ? tags['Microsoft.DesktopVirtualization/workspaces'] : {}
-    timeStamp: timeStamp
-    workspaceName: workspaceName
-  }
-}
-*/
-
 output artifactsUserAssignedIdentityClientId string = artifactsUserAssignedIdentityClientId
 output artifactsUserAssignedIdentityResourceId string = empty(artifactsUserAssignedIdentityResourceId) ? artifactsUserAssignedIdentity.outputs.resourceId : existingArtifactsUserAssignedIdentity.id
-output encryptionKeyUrl string = customerManagedKeys.outputs.keyUri
+output diskEncryptionKeyUrl string = (diskEncryptionOptions.diskEncryptionSet || diskEncryptionOptions.keyEncryptionKey) ? customerManagedKeys.outputs.diskKeyUri : ''
+output encryptionUserAssignedIdentityResourceId string = (diskEncryptionOptions.diskEncryptionSet || diskEncryptionOptions.keyEncryptionKey) ? customerManagedKeys.outputs.encryptionUserAssignedIdentityResourceId : ''
 output existingWorkspace bool = validations.outputs.value.existingWorkspace == 'true' ? true : false
 output existingGlobalWorkspace bool = validations.outputs.value.existingGlobalWorkspace == 'true' ? true : false
 output keyVaultResourceId string = keyVault.outputs.keyVaultResourceId
 output keyVaultUrl string = keyVault.outputs.keyVaultUrl
-output dataCollectionRulesResourceId string = virtualMachineMonitoringAgent == 'AzureMonitorAgent' ? dataCollectionRules.outputs.dataCollectionRulesId : ''
+output dataCollectionRulesResourceId string = avdInsightsMonitoringAgent == 'AzureMonitorAgent' ? dataCollectionRules.outputs.dataCollectionRulesId : ''
 output diskEncryptionSetResourceId string = diskEncryptionOptions.diskEncryptionSet ? diskEncryptionSet.outputs.resourceId : ''
 output logAnalyticsWorkspaceResourceId string = monitoring ? logAnalyticsWorkspace.outputs.ResourceId : ''
 output deploymentUserAssignedIdentityClientId string = deploymentUserAssignedIdentity.outputs.clientId
 output deploymentUserAssignedIdentityResourceId string = deploymentUserAssignedIdentity.outputs.resourceId
+output storageAccountEncryptionKeyName string = diskEncryptionOptions.storageEncryptionKey ? customerManagedKeys.outputs.storageKeyName : ''
 output validateAcceleratedNetworking string = validations.outputs.value.acceleratedNetworking
 output validateANFfActiveDirectory string = validations.outputs.value.anfActiveDirectory
 output validateANFDnsServers string = validations.outputs.value.anfDnsServers

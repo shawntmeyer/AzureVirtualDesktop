@@ -7,19 +7,22 @@ param artifactsUserAssignedIdentityClientId string
 param automationAccountName string
 param availability string
 param azureFilesPrivateDnsZoneResourceId string
-param azureFilesUserAssignedIdentityClientId string
+param deploymentUserAssignedIdentityClientId string
 param delegatedSubnetId string
+param diskEncryptionOptions object
 param dnsServers string
 @secure()
 param domainJoinUserPassword string
 @secure()
 param domainJoinUserPrincipalName string
 param domainName string
+param encryptionUserAssignedIdentityResourceId string
 param fileShares array
 param fslogixShareSizeInGB int
 param fslogixContainerType string
 param fslogixStorageService string
 param kerberosEncryption string
+param keyVaultUri string
 param location string
 param managementVirtualMachineName string
 param netAppAccountName string
@@ -37,6 +40,7 @@ param securityPrincipalNames array
 param smbServerLocation string
 param storageAccountNamePrefix string
 param storageCount int
+param storageEncryptionKeyName string
 param storageIndex int
 param storageSku string
 param fslogixStorageSolution string
@@ -94,14 +98,17 @@ module azureFiles 'azureFiles/azureFiles.bicep' = if (fslogixStorageSolution == 
     automationAccountName: automationAccountName
     availability: availability
     azureFilesPrivateDnsZoneResourceId: azureFilesPrivateDnsZoneResourceId
-    azureFilesUserAssignedIdentityClientId: azureFilesUserAssignedIdentityClientId
+    deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
+    customerManagedKeysEnabled: diskEncryptionOptions.storageEncryptionKey
     domainJoinUserPassword: domainJoinUserPassword
     domainJoinUserPrincipalName: domainJoinUserPrincipalName
+    encryptionUserAssignedIdentityResourceId: encryptionUserAssignedIdentityResourceId
     fileShares: fileShares
     fslogixShareSizeInGB: fslogixShareSizeInGB
     fslogixContainerType: fslogixContainerType
     fslogixStorageService: fslogixStorageService
     kerberosEncryption: kerberosEncryption
+    keyVaultUri: keyVaultUri
     location: location
     managementVirtualMachineName: managementVirtualMachineName
     netbios: netbios
@@ -116,6 +123,7 @@ module azureFiles 'azureFiles/azureFiles.bicep' = if (fslogixStorageSolution == 
     securityPrincipalNames: securityPrincipalNames
     storageAccountNamePrefix: storageAccountNamePrefix
     storageCount: storageCount
+    storageEncryptionKeyName: storageEncryptionKeyName
     storageIndex: storageIndex
     storageSku: storageSku
     fslogixStorageSolution: fslogixStorageSolution

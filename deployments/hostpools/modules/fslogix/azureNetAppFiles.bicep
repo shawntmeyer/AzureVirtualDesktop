@@ -137,7 +137,7 @@ module ntfsPermissions 'ntfsPermissions.bicep' = {
   params: {
     artifactsUri: artifactsUri
     userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
-    CommandToExecute: 'powershell -ExecutionPolicy Unrestricted -File Set-NtfsPermissions.ps1 -domainJoinUserPassword "${domainJoinUserPassword}" -domainJoinUserPrincipalName ${domainJoinUserPrincipalName} -fslogixContainerType ${fslogixContainerType} -securityPrincipalNames "${securityPrincipalNames}" -smbServerLocation ${smbServerLocation} -storageSolution ${fslogixStorageSolution}'
+    commandToExecute: 'powershell -ExecutionPolicy Unrestricted -File Set-NtfsPermissions.ps1 -domainJoinUserPassword "${domainJoinUserPassword}" -domainJoinUserPrincipalName ${domainJoinUserPrincipalName} -fslogixContainerType ${fslogixContainerType} -securityPrincipalNames "${securityPrincipalNames}" -smbServerLocation ${smbServerLocation} -storageSolution ${fslogixStorageSolution}'
     location: location
     managementVirtualMachineName: managementVirtualMachineName
     tagsVirtualMachines: tagsVirtualMachines

@@ -1,10 +1,10 @@
 param automationAccountName string
-param environmentShortName string
+param environment string
 param fslogixContainerType string
-param ResourceGroupName string
-param RunbookName string
-param StorageAccountName string
-param SubscriptionId string
+param resourceGroupName string
+param runbookName string
+param storageAccountName string
+param subscriptionId string
 param timeStamp string
 
 resource automationAccount 'Microsoft.Automation/automationAccounts@2022-08-08' existing = {
@@ -13,42 +13,42 @@ resource automationAccount 'Microsoft.Automation/automationAccounts@2022-08-08' 
 
 resource jobSchedules_ProfileContainers 'Microsoft.Automation/automationAccounts/jobSchedules@2022-08-08' = [for i in range(0, 4): {
   parent: automationAccount
-  name: guid(timeStamp, RunbookName, StorageAccountName, 'ProfileContainers', string(i))
+  name: guid(timeStamp, runbookName, storageAccountName, 'ProfileContainers', string(i))
   properties: {
     parameters: {
-      environmentShortName: environmentShortName
+      environment: environment
       FileShareName: 'profile-containers'
-      ResourceGroupName: ResourceGroupName
-      StorageAccountName: StorageAccountName
-      SubscriptionId: SubscriptionId
+      resourceGroupName: resourceGroupName
+      storageAccountName: storageAccountName
+      subscriptionId: subscriptionId
     }
     runbook: {
-      name: RunbookName
+      name: runbookName
     }
     runOn: null
     schedule: {
-      name: '${StorageAccountName}_ProfileContainers_${(i + 1) * 15}min'
+      name: '${storageAccountName}_ProfileContainers_${(i + 1) * 15}min'
     }
   }
 }]
 
 resource jobSchedules_OfficeContainers 'Microsoft.Automation/automationAccounts/jobSchedules@2022-08-08' = [for i in range(0, 4): if (contains(fslogixContainerType, 'Office')) {
   parent: automationAccount
-  name: guid(timeStamp, RunbookName, StorageAccountName, 'OfficeContainers', string(i))
+  name: guid(timeStamp, runbookName, storageAccountName, 'OfficeContainers', string(i))
   properties: {
     parameters: {
-      environmentShortName: environmentShortName
+      environment: environment
       FileShareName: 'office-containers'
-      ResourceGroupName: ResourceGroupName
-      StorageAccountName: StorageAccountName
-      SubscriptionId: SubscriptionId
+      resourceGroupName: resourceGroupName
+      storageAccountName: storageAccountName
+      subscriptionId: subscriptionId
     }
     runbook: {
-      name: RunbookName
+      name: runbookName
     }
     runOn: null
     schedule: {
-      name: '${StorageAccountName}_OfficeContainers_${(i + 1) * 15}min'
+      name: '${storageAccountName}_OfficeContainers_${(i + 1) * 15}min'
     }
   }
 }]

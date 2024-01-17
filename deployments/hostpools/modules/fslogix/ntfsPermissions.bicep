@@ -1,6 +1,6 @@
 param artifactsUri string
 @secure()
-param CommandToExecute string
+param commandToExecute string
 param location string
 param managementVirtualMachineName string
 param tagsVirtualMachines object
@@ -26,9 +26,9 @@ resource customScriptExtension 'Microsoft.Compute/virtualMachines/extensions@202
       managedIdentity: {
         clientId: userAssignedIdentityClientId
       }
-      commandToExecute: CommandToExecute
+      commandToExecute: commandToExecute
     } : {
-      commandToExecute: CommandToExecute
+      commandToExecute: commandToExecute
     }
   }
 }

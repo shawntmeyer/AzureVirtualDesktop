@@ -1,5 +1,6 @@
 param activeDirectorySolution string
 param artifactsUri string
+param artifactsUserAssignedIdentityClientId string
 param diskEncryptionOptions object
 param diskEncryptionSetResourceId string
 param diskNamePrefix string
@@ -11,14 +12,11 @@ param domainJoinUserPrincipalName string
 param domainName string
 param location string
 param networkInterfaceNamePrefix string
-param subnet string
+param subnetResourceId string
 param tagsNetworkInterfaces object
 param tagsVirtualMachines object
 param timeStamp string = utcNow('yyyyMMddhhmmss')
-param userAssignedIdentityClientId string
-param UserAssignedIdentityResourceIds object
-param virtualNetwork string
-param virtualNetworkResourceGroup string
+param userAssignedIdentitiesResourceIds object
 param virtualMachineNamePrefix string
 @secure()
 param virtualMachineAdminPassword string
@@ -37,11 +35,11 @@ resource networkInterface 'Microsoft.Network/networkInterfaces@2020-05-01' = {
   properties: {
     ipConfigurations: [
       {
-        name: 'ipconfig'
+        name: 'Ipv4config'
         properties: {
           privateIPAllocationMethod: 'Dynamic'
           subnet: {
-            id: resourceId(virtualNetworkResourceGroup, 'Microsoft.Network/virtualNetworks/subnets', virtualNetwork, subnet)
+            id: subnetResourceId
           }
           primary: true
           privateIPAddressVersion: 'IPv4'
@@ -121,7 +119,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-11-01' = {
   }
   identity: {
     type: 'UserAssigned'
-    userAssignedIdentities: UserAssignedIdentityResourceIds
+    userAssignedIdentities: userAssignedIdentitiesResourceIds
   }
 }
 
@@ -148,17 +146,27 @@ resource extension_JsonADDomainExtension 'Microsoft.Compute/virtualMachines/exte
   }
 }
 
-module extension_CustomScriptExtension 'customScriptExtensions.bicep' = {
-  name: 'CSE_InstallAzurePowerShellAzModule_${timeStamp}'
-  params: {
-    artifactsUri: artifactsUri
-    executeScript: ''
-    files: ['PowerShell-Az-Module.zip']
-    location: location
-    parameters: ''
-    tags: tagsVirtualMachines
-    virtualMachineName: virtualMachine.name
-    userAssignedIdentityClientId: userAssignedIdentityClientId
+resource extension_CustomScriptExtension 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = {
+  parent: virtualMachine
+  name: 'CustomScriptExtension'
+  location: location
+  tags: tagsVirtualMachines
+  properties: {
+    publisher: 'Microsoft.Compute'
+    type: 'CustomScriptExtension'
+    typeHandlerVersion: '1.10'
+    autoUpgradeMinorVersion: true
+    settings: {
+      timeStamp: timeStamp
+    }    
+    protectedSettings: {
+      commandToExecute: 'powershell.exe -ExecutionPolicy Unrestricted -File cse_master_script.ps1'
+      fileUris: [
+        '${artifactsUri}PowerShell-Az-Module.zip'
+        '${artifactsUri}cse_master_script.ps1'
+      ]
+      managedIdentity: { clientId: artifactsUserAssignedIdentityClientId }
+    }
   }
 }
 

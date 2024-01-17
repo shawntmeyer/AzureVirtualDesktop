@@ -1,9 +1,17 @@
+param artifactsUri string
+param artifactsUserAssignedIdentityClientId string
+param deploymentUserAssignedIdentityClientId string
 param desktopApplicationGroupName string
+param desktopFriendlyName string
 param hostPoolResourceId string
 param location string
+param locationVirtualMachines string
+param managementVirtualMachineName string
 param roleDefinitions object
+param resourceGroupManagement string
 param securityPrincipalObjectIds array
 param tags object
+param timeStamp string
 
 resource applicationGroup 'Microsoft.DesktopVirtualization/applicationGroups@2021-03-09-preview' = {
   name: desktopApplicationGroupName
@@ -14,6 +22,25 @@ resource applicationGroup 'Microsoft.DesktopVirtualization/applicationGroups@202
   properties: {
     hostPoolArmPath: hostPoolResourceId
     applicationGroupType: 'Desktop'
+  }
+}
+
+// Adds a friendly name to the SessionDesktop application for the desktop application group
+module applicationFriendlyName '../management/customScriptExtensions.bicep' = if (!empty(desktopFriendlyName)) {
+  scope: resourceGroup(resourceGroupManagement)
+  name: 'ApplicationFriendlyName_${timeStamp}'
+  params : {
+    fileUris: [
+      '${artifactsUri}Update-AvdDesktop.ps1'
+    ]
+    location: locationVirtualMachines
+    parameters: '-ApplicationGroupName ${applicationGroup.name} -Environment ${environment().name} -FriendlyName "${desktopFriendlyName}" -ResourceGroupName ${resourceGroup().name} -SubscriptionId ${subscription().subscriptionId} -Tenant ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentityClientId}'
+    scriptFileName: 'Update-AvdDesktop.ps1'
+    tags: union({
+      'cm-resource-parent': hostPoolResourceId
+    }, contains(tags, 'Microsoft.Compute/virtualMachines') ? tags['Microsoft.Compute/virtualMachines'] : {})
+    userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
+    virtualMachineName: managementVirtualMachineName
   }
 }
 

@@ -1,6 +1,8 @@
 targetScope = 'subscription'
 
 param activeDirectorySolution string
+param artifactsUri string
+param artifactsUserAssignedIdentityClientId string
 param avdGlobalFeedPrivateDnsZoneResourceId string
 param avdPrivateDnsZoneResourceId string
 param avdPrivateLink bool
@@ -14,7 +16,8 @@ param globalWorkspaceName string
 param globalWorkspacePublicNetworkAccess string
 param hostPoolName string
 param hostPoolType string
-param location string
+param locationControlPlane string
+param locationVirtualMachines string
 param logAnalyticsWorkspaceResourceId string
 param managementVirtualMachineName string
 param hostPoolMaxSessionLimit int
@@ -51,7 +54,7 @@ module hostPool 'hostPool.bicep' = {
     hostPoolPublicNetworkAccess: hostPoolPublicNetworkAccess
     hostPoolType: hostPoolType
     hostPoolValidationEnvironment: hostPoolValidationEnvironment
-    location: location
+    location: locationControlPlane
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
     hostPoolMaxSessionLimit: hostPoolMaxSessionLimit
     monitoring: monitoring    
@@ -68,42 +71,18 @@ module applicationGroup 'applicationGroup.bicep' = {
   params: {
     desktopApplicationGroupName: desktopApplicationGroupName
     hostPoolResourceId: hostPool.outputs.ResourceId
-    location: location
+    location: locationControlPlane
     roleDefinitions: roleDefinitions
     securityPrincipalObjectIds: securityPrincipalObjectIds
     tags: tags 
-  }
-}
-
-module updateDesktopFriendlyName 'updateDesktopFriendlyName.bicep' = {
-  name: 'Desktop_Friendly_Name_${timeStamp}'
-  scope: resourceGroup(resourceGroupManagement)
-  params: {
-    location: location
-    desktopAppGroupName: applicationGroup.outputs.Name
-    desktopAppGroupResourceGroup: split(applicationGroup.outputs.ResourceId, '/')[4]
+    artifactsUri: artifactsUri
+    artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
+    deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
     desktopFriendlyName: desktopFriendlyName
+    locationVirtualMachines: locationVirtualMachines
     managementVirtualMachineName: managementVirtualMachineName
-    userAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
-  }
-}
-
-module globalWorkspace 'workspace.bicep' = if(!existingGlobalWorkspace && avdPrivateLink && !empty(avdGlobalFeedPrivateDnsZoneResourceId)) {
-  name: 'Global_Feed_Workspace_${timeStamp}'
-  scope: resourceGroup(resourceGroupGlobalFeed)
-  params: {
-    applicationGroups: ['']
-    avdPrivateLink: avdPrivateLink
-    existing: existingGlobalWorkspace
-    friendlyName: ''
-    logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
-    monitoring: monitoring
-    privateDnsZoneResourceId: avdGlobalFeedPrivateDnsZoneResourceId
-    privateEndpointName: globalFeedPrivateEndpointName
-    privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
-    publicNetworkAccess: globalWorkspacePublicNetworkAccess
-    tags: tags
-    workspaceName: globalWorkspaceName
+    resourceGroupManagement: resourceGroupManagement
+    timeStamp: timeStamp
   }
 }
 
@@ -111,10 +90,11 @@ module feedWorkspace 'workspace.bicep' = {
   name: 'WorkspaceFeed_${timeStamp}'
   scope: resourceGroup(resourceGroupControlPlane)
   params: {
-    applicationGroups: applicationGroup.outputs.ApplicationGroupReference
+    applicationGroupReferences: applicationGroup.outputs.ApplicationGroupReference
     avdPrivateLink: avdPrivateLink
-    existing: existingWorkspace
+    existingWorkspace: existingWorkspace
     friendlyName: workspaceFriendlyName
+    location: locationControlPlane
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
     monitoring: monitoring
     privateDnsZoneResourceId: avdPrivateDnsZoneResourceId
@@ -123,5 +103,44 @@ module feedWorkspace 'workspace.bicep' = {
     publicNetworkAccess: workspacePublicNetworkAccess
     tags: tags
     workspaceName: workspaceName
+    artifactsUri: artifactsUri
+    artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
+    deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
+    locationVirtualMachines: locationVirtualMachines
+    managementVirtualMachineName: managementVirtualMachineName
+    resourceGroupManagement: resourceGroupManagement
+    timeStamp: timeStamp
   }
 }
+
+module globalWorkspace 'workspace.bicep' = if(!existingGlobalWorkspace && avdPrivateLink && !empty(avdGlobalFeedPrivateDnsZoneResourceId)) {
+  name: 'Global_Feed_Workspace_${timeStamp}'
+  scope: resourceGroup(resourceGroupGlobalFeed)
+  params: {
+    applicationGroupReferences: ['']
+    avdPrivateLink: avdPrivateLink
+    existingWorkspace: existingGlobalWorkspace
+    friendlyName: ''
+    location: locationControlPlane
+    logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
+    monitoring: monitoring
+    privateDnsZoneResourceId: avdGlobalFeedPrivateDnsZoneResourceId
+    privateEndpointName: globalFeedPrivateEndpointName
+    privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
+    publicNetworkAccess: globalWorkspacePublicNetworkAccess
+    tags: tags
+    workspaceName: globalWorkspaceName
+    artifactsUri: artifactsUri
+    artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
+    deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
+    locationVirtualMachines: locationVirtualMachines
+    managementVirtualMachineName: managementVirtualMachineName
+    resourceGroupManagement: resourceGroupManagement
+    timeStamp: timeStamp
+  }
+  dependsOn: [
+    feedWorkspace
+  ]
+}
+
+output hostPoolName string = last(split(hostPool.outputs.ResourceId, '/'))

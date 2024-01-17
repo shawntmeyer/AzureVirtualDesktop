@@ -98,11 +98,11 @@ module roleAssignment '../roleAssignment.bicep' = {
   }
 }
 
-output keyUriWithVersion string = key_disks.properties.keyUriWithVersion
-output keyUri string = key_disks.properties.keyUri
+output diskKeyUriWithVersion string = diskEncryptionOptions.keyEncryptionKey || diskEncryptionOptions.diskEncryptionSet ? key_disks.properties.keyUriWithVersion : ''
+output diskKeyUri string = diskEncryptionOptions.keyEncryptionKey || diskEncryptionOptions.diskEncryptionSet ? key_disks.properties.keyUri : ''
 output keyVaultResourceId string = vault.id
 output keyVaultUri string = vault.properties.vaultUri
-output storageKeyName string = key_storageAccounts.name
+output storageKeyName string = diskEncryptionOptions.storageEncryptionKey ? key_storageAccounts.name : ''
 output encryptionUserAssignedIdentityClientId string = userAssignedIdentity.outputs.clientId
 output encryptionUserAssignedIdentityPrincipalId string = userAssignedIdentity.outputs.principalId
 output encryptionUserAssignedIdentityResourceId string = userAssignedIdentity.outputs.resourceId

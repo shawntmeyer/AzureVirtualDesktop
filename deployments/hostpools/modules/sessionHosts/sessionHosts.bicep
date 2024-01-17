@@ -8,7 +8,6 @@ param adeKeyVaultUrl string
 param artifactsUri string
 param artifactsUserAssignedIdentityClientId string
 param artifactsUserAssignedIdentityResourceId string
-param automationAccountName string
 param availability string
 param availabilitySetNamePrefix string
 param availabilitySetsCount int
@@ -43,7 +42,7 @@ param imagePublisher string
 param imageSku string
 param customImageResourceId string
 param location string
-param managementVMName string
+param managementVirtualMachineName string
 param maxResourcesPerTemplateDeployment int
 param monitoring bool
 param netAppFileShares array
@@ -56,13 +55,6 @@ param resourceGroupControlPlane string
 param resourceGroupHosts string
 param resourceGroupManagement string
 param roleDefinitions object
-param runBookUpdateUserAssignedIdentityClientId string
-param scalingBeginPeakTime string
-param scalingEndPeakTime string
-param scalingLimitSecondsToForceLogOffUser string
-param scalingMinimumNumberOfRdsh string
-param scalingSessionThresholdPerCPU string
-param scalingTool bool
 param securityDataCollectionRulesResourceId string
 param securityPrincipalObjectIds array
 param securityLogAnalyticsWorkspaceResourceId string
@@ -72,11 +64,9 @@ param fslogixStorageSolution string
 param storageSuffix string
 param subnetResourceId string
 param tags object
-param timeDifference string
 param timeStamp string
-param timeZone string
 param trustedLaunch string
-param virtualMachineMonitoringAgent string
+param avdInsightsMonitoringAgent string
 param virtualMachineNamePrefix string
 @secure()
 param virtualMachineAdminPassword string
@@ -84,7 +74,6 @@ param virtualMachineSize string
 @secure()
 param virtualMachineAdminUserName string
 
-var tagsAutomationAccounts = union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroupControlPlane}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'}, contains(tags, 'Microsoft.Automation/automationAccounts') ? tags['Microsoft.Automation/automationAccounts'] : {})
 var tagsAvailabilitySets = union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroupControlPlane}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'}, contains(tags, 'Microsoft.Compute/availabilitySets') ? tags['Microsoft.Compute/availabilitySets'] : {})
 var tagsNetworkInterfaces = union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroupControlPlane}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'}, contains(tags, 'Microsoft.Network/networkInterfaces') ? tags['Microsoft.Network/networkInterfaces'] : {})
 var tagsRecoveryServicesVault = union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroupControlPlane}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'}, contains(tags, 'Microsoft.recoveryServices/vaults') ? tags['Microsoft.recoveryServices/vaults'] : {})
@@ -154,7 +143,7 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     imagePublisher: imagePublisher
     imageSku: imageSku
     location: location
-    managementVMName: managementVMName
+    managementVirtualMachineName: managementVirtualMachineName
     monitoring: monitoring
     netAppFileShares: netAppFileShares
     networkInterfaceNamePrefix: networkInterfaceNamePrefix
@@ -174,7 +163,7 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     tagsVirtualMachines: tagsVirtualMachines
     timeStamp: timeStamp
     trustedLaunch: trustedLaunch
-    virtualMachineMonitoringAgent: virtualMachineMonitoringAgent
+    avdInsightsMonitoringAgent: avdInsightsMonitoringAgent
     virtualMachineNamePrefix: virtualMachineNamePrefix
     virtualMachineAdminPassword: virtualMachineAdminPassword
     virtualMachineSize: virtualMachineSize
@@ -204,35 +193,5 @@ module recServices 'recoveryServices.bicep' = if (recoveryServices) {
   }
   dependsOn: [
     virtualMachines
-  ]
-}
-
-module scaleTool '../management/scalingTool.bicep' = if (scalingTool && pooledHostPool) {
-  name: 'ScalingTool_${timeStamp}'
-  scope: resourceGroup(resourceGroupManagement)
-  params: {
-    artifactsUri: artifactsUri
-    //artifactsStorageAccountResourceId: artifactsStorageAccountResourceId
-    automationAccountName: automationAccountName
-    BeginPeakTime: scalingBeginPeakTime
-    EndPeakTime: scalingEndPeakTime
-    hostPoolName: hostPoolName
-    HostPoolResourceGroupName: resourceGroupManagement
-    LimitSecondsToForceLogOffUser: scalingLimitSecondsToForceLogOffUser
-    location: location
-    MinimumNumberOfRdsh: scalingMinimumNumberOfRdsh
-    resourceGroupHosts: resourceGroupHosts
-    resourceGroupManagement: resourceGroupManagement
-    runBookUpdateUserAssignedIdentityClientId: runBookUpdateUserAssignedIdentityClientId
-    SessionThresholdPerCPU: scalingSessionThresholdPerCPU
-    tags: tagsAutomationAccounts
-    timeDifference: timeDifference
-    timeZone: timeZone
-    artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
-    managementVMName: managementVMName
-    timeStamp: timeStamp
-  }
-  dependsOn: [
-    recServices
   ]
 }

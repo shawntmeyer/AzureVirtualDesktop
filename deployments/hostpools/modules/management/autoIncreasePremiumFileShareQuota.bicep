@@ -1,35 +1,36 @@
 param artifactsUri string
+param artifactsUserAssignedIdentityClientId string
 param automationAccountName string
+param deploymentUserAssignedIdentityClientId string
 param fslogixContainerType string
 param location string
+param managementVirtualMachineName string
 param storageAccountNamePrefix string
 param storageCount int
 param storageIndex int
-param StorageResourceGroupName string
+param storageResourceGroupName string
 param tags object
 param timeStamp string
 param timeZone string
 
-var RunbookName = 'Auto-Increase-Premium-File-Share-Quota'
-var SubscriptionId = subscription().subscriptionId
+var subscriptionId = subscription().subscriptionId
 
 resource automationAccount 'Microsoft.Automation/automationAccounts@2022-08-08' existing = {
   name: automationAccountName
 }
 
-resource runbook 'Microsoft.Automation/automationAccounts/runbooks@2019-06-01' = {
-  parent: automationAccount
-  name: RunbookName
-  location: location
-  tags: tags
-  properties: {
-    runbookType: 'PowerShell'
-    logProgress: false
-    logVerbose: false
-    publishContentLink: {
-      uri: '${artifactsUri}Set-FileShareScaling.ps1'
-      version: '1.0.0.0'
-    }
+module runbook 'runbook.bicep' = {
+  name: 'Runbook_QuotaScaling_${timeStamp}'
+  params: {
+    artifactsUri: artifactsUri
+    automationAccountName: automationAccountName
+    blobName: 'Set-FileShareScaling.ps1'
+    location: location
+    purpose: 'quota-scaling'
+    tags: tags
+    userAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
+    artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
+    virtualMachineName: managementVirtualMachineName
   }
 }
 
@@ -38,7 +39,7 @@ module schedules 'schedules.bicep' = [for i in range(storageIndex, storageCount)
   params: {
     automationAccountName: automationAccount.name
     fslogixContainerType: fslogixContainerType
-    StorageAccountName: '${storageAccountNamePrefix}${padLeft(i, 2, '0')}'
+    storageAccountName: '${storageAccountNamePrefix}${padLeft(i, 2, '0')}'
     timeZone: timeZone
   }
 }]
@@ -47,12 +48,12 @@ module jobSchedules 'jobSchedules.bicep' = [for i in range(storageIndex, storage
   name: 'JobSchedules_${i}_${timeStamp}'
   params: {
     automationAccountName: automationAccount.name
-    environmentShortName: environment().name
+    environment: environment().name
     fslogixContainerType: fslogixContainerType
-    RunbookName: RunbookName
-    ResourceGroupName: StorageResourceGroupName
-    StorageAccountName: '${storageAccountNamePrefix}${padLeft(i, 2, '0')}'
-    SubscriptionId: SubscriptionId
+    runbookName: 'Set-FileShareScaling'
+    resourceGroupName: storageResourceGroupName
+    storageAccountName: '${storageAccountNamePrefix}${padLeft(i, 2, '0')}'
+    subscriptionId: subscriptionId
     timeStamp: timeStamp
   }
   dependsOn: [
@@ -62,8 +63,8 @@ module jobSchedules 'jobSchedules.bicep' = [for i in range(storageIndex, storage
 }]
 
 module roleAssignment '../roleAssignment.bicep' = {
-  name: 'RoleAssignment_${StorageResourceGroupName}_${timeStamp}'
-  scope: resourceGroup(StorageResourceGroupName)
+  name: 'RoleAssignment_${storageResourceGroupName}_${timeStamp}'
+  scope: resourceGroup(storageResourceGroupName)
   params: {
     PrincipalId: automationAccount.identity.principalId
     PrincipalType: 'ServicePrincipal'

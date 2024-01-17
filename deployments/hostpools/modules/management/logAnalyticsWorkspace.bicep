@@ -3,9 +3,9 @@ param logAnalyticsWorkspaceName string
 param logAnalyticsWorkspaceRetention int
 param logAnalyticsWorkspaceSku string
 param tags object
-param virtualMachineMonitoringAgent string
+param avdInsightsMonitoringAgent string
 
-var WindowsEvents = virtualMachineMonitoringAgent == 'LogAnalyticsAgent' ? [
+var WindowsEvents = avdInsightsMonitoringAgent == 'LogAnalyticsAgent' ? [
   {
     name: 'Microsoft-FSLogix-Apps/Operational'
     types: [
@@ -85,7 +85,7 @@ var WindowsEvents = virtualMachineMonitoringAgent == 'LogAnalyticsAgent' ? [
     ]
   }
 ] : []
-var WindowsPerformanceCounters = virtualMachineMonitoringAgent == 'LogAnalyticsAgent' ? [
+var WindowsPerformanceCounters = avdInsightsMonitoringAgent == 'LogAnalyticsAgent' ? [
   {
     objectName: 'LogicalDisk'
     instanceName: '*'

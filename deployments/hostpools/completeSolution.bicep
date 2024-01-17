@@ -100,8 +100,8 @@ param workspacePublicNetworkAccess string = 'Enabled'
 ''')
 param hostPoolPublicNetworkAccess string = 'Enabled'
 
-@description('The resource ID for the subnet for the private endpoint on the AVD Global Workspace.')
-param controlPlanePrivateEndpointSubnetResourceId string
+@description('Optional. The resource ID for the subnet for the private endpoints for AVD Private Link.')
+param controlPlanePrivateEndpointSubnetResourceId string = ''
 
 // Private Endpoints
 @description('Create private endpoints for all deployed resources where applicable.')
@@ -168,6 +168,9 @@ If "activeDirectorySolution" is set to "AzureActiveDirectory" or "AzureActiveDir
 ''')
 param fslogixExistingStorageAccountResourceIds array = []
 
+@description('Optional. The resource Id of the Virtual Network delegated for NetApp Volumes. Required when fslogixStorageService = "AzureNetAppFiles Standard" or "AzureNetAppFiles Premium".')
+param netAppVnetResourceId string = ''
+
 @allowed([
   'AES256'
   'RC4'
@@ -221,24 +224,6 @@ param hostPoolType string = 'Pooled DepthFirst'
 
 @description('The value determines whether the hostPool should receive early AVD updates for testing.')
 param hostPoolValidationEnvironment bool = false
-
-@description('Deploys the required resources for the Scaling Tool. https://docs.microsoft.com/en-us/azure/virtual-desktop/scaling-automation-logic-apps')
-param scalingTool bool = true
-
-@description('Time when session hosts will scale up and continue to stay on to support peak demand; Format 24 hours e.g. 9:00 for 9am')
-param scalingBeginPeakTime string = '9:00'
-
-@description('Time when session hosts will scale down and stay off to support low demand; Format 24 hours e.g. 17:00 for 5pm')
-param scalingEndPeakTime string = '17:00'
-
-@description('The number of seconds to wait before automatically signing out users. If set to 0 any session host that has user sessions will be left untouched')
-param scalingLimitSecondsToForceLogOffUser string = '0'
-
-@description('The minimum number of session host VMs to keep running during off-peak hours. The scaling tool will not work if all virtual machines are turned off and the Start VM On Connect solution is not enabled.')
-param scalingMinimumNumberOfRdsh string = '0'
-
-@description('The maximum number of sessions per CPU that will be used as a threshold to determine when new session host VMs need to be started during peak hours')
-param scalingSessionThresholdPerCPU string = '1'
 
 @description('An array of Security Principals with their object IDs and display names to assign to the AVD Application Group and FSLogix Storage.')
 param securityPrincipals array = []
@@ -359,8 +344,8 @@ param securityDataCollectionRulesResourceId string = ''
   'AzureMonitorAgent'
   'LogAnalyticsAgent'
 ])
-@description('Input the desired monitoring agent to send events and performance counters to a log analytics workspace.')
-param virtualMachineMonitoringAgent string = 'AzureMonitorAgent'
+@description('Input the desired monitoring agent to send security data to the log analytics workspace.')
+param avdInsightsMonitoringAgent string = 'AzureMonitorAgent'
 
 // Backup Configuration
 
@@ -401,7 +386,7 @@ module resourceNames 'modules/resourceNames.bicep' = {
     fslogixStorageCustomPrefix: fslogixStorageCustomPrefix
     hostPoolIdentifier: hostPoolIdentifier
     locationControlPlane: locationControlPlane
-    locationVirtualMachines: vmVirtualNetwork.location
+    locationVirtualMachines: locationVirtualMachines
     nameConvResTypeAtEnd: nameConvResTypeAtEnd
     virtualMachineNamePrefix: virtualMachineNamePrefix
   }
@@ -430,7 +415,7 @@ module logic 'modules/logic.bicep' = {
     imagePublisher: imagePublisher
     imageSku: imageSku
     locations: resourceNames.outputs.locations
-    locationVirtualMachines: vmVirtualNetwork.location
+    locationVirtualMachines: locationVirtualMachines
     resourceGroupControlPlane: resourceNames.outputs.resourceGroupControlPlane
     resourceGroupGlobalFeed: resourceNames.outputs.resourceGroupGlobalFeed
     resourceGroupHosts: resourceNames.outputs.resourceGroupHosts
@@ -483,28 +468,29 @@ module management 'modules/management/management.bicep' = {
     kerberosEncryption: storageAccountADKerberosEncryption
     keyVaultName: resourceNames.outputs.keyVaultName
     keyVaultPrivateDnsZoneResourceId: keyVaultPrivateDnsZoneResourceId
-    locationVirtualMachines: vmVirtualNetwork.location
+    locationVirtualMachines: locationVirtualMachines
     logAnalyticsWorkspaceName: resourceNames.outputs.logAnalyticsWorkspaceName
     logAnalyticsWorkspaceRetention: logAnalyticsWorkspaceRetention
     logAnalyticsWorkspaceSku: logAnalyticsWorkspaceSku
     monitoring: monitoring
+    netAppVnetResourceId: netAppVnetResourceId
     networkInterfaceNamePrefix: resourceNames.outputs.networkInterfaceNamePrefix
     privateEndpointSubnetResourceId: managementPrivateEndpointSubnetResourceId
     privateEndpoint: privateEndpoints
     privateEndpointNameConv: resourceNames.outputs.privateEndpointNameConv
     recoveryServices: recoveryServices
     recoveryServicesVaultName: resourceNames.outputs.recoveryServicesVaultName
+    resourceGroupControlPlane: resourceNames.outputs.resourceGroupControlPlane
     resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
     resourceGroupStorage: resourceNames.outputs.resourceGroupStorage
     roleDefinitions: logic.outputs.roleDefinitions
-    scalingTool: scalingTool
     sessionHostCount: sessionHostCount
     fslogixStorageSolution: logic.outputs.fslogixStorageSolution
     tags: tags
     timeStamp: timeStamp
     timeZone: logic.outputs.timeZone
     userAssignedIdentityNameConv: resourceNames.outputs.userAssignedIdentityNameConv
-    virtualMachineMonitoringAgent: virtualMachineMonitoringAgent
+    avdInsightsMonitoringAgent: avdInsightsMonitoringAgent
     virtualMachineNamePrefix: virtualMachineNamePrefix
     virtualMachineAdminPassword: empty(virtualMachineAdminPassword) ? keyVault_Reference.getSecret(virtualMachineAdminPassword) : virtualMachineAdminPassword
     virtualMachineSize: virtualMachineSize
@@ -525,6 +511,8 @@ module controlPlane 'modules/controlPlane/controlPlane.bicep' = {
   name: 'ControlPlane_${timeStamp}'
   params: {
     activeDirectorySolution: activeDirectorySolution
+    artifactsUri: artifactsUri
+    artifactsUserAssignedIdentityClientId: management.outputs.artifactsUserAssignedIdentityClientId
     avdGlobalFeedPrivateDnsZoneResourceId: avdGlobalFeedPrivateDnsZoneResourceId
     avdPrivateDnsZoneResourceId: avdPrivateDnsZoneResourceId
     avdPrivateLink: avdPrivateLink
@@ -541,7 +529,8 @@ module controlPlane 'modules/controlPlane/controlPlane.bicep' = {
     hostPoolRDPProperties: hostPoolRDPProperties
     hostPoolType: hostPoolType
     hostPoolValidationEnvironment: hostPoolValidationEnvironment
-    location: locationControlPlane
+    locationControlPlane: locationControlPlane
+    locationVirtualMachines: locationVirtualMachines
     logAnalyticsWorkspaceResourceId: monitoring ? management.outputs.logAnalyticsWorkspaceResourceId : ''
     managementVirtualMachineName: management.outputs.virtualMachineName    
     monitoring: monitoring
@@ -574,17 +563,20 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (fslogixStorageService != 'N
     automationAccountName: resourceNames.outputs.automationAccountName
     availability: availability
     azureFilesPrivateDnsZoneResourceId: azureFilesPrivateDnsZoneResourceId
-    azureFilesUserAssignedIdentityClientId: management.outputs.deploymentUserAssignedIdentityClientId
+    deploymentUserAssignedIdentityClientId: management.outputs.deploymentUserAssignedIdentityClientId
     delegatedSubnetId: management.outputs.validateANFSubnetId
+    diskEncryptionOptions: logic.outputs.diskEncryptionOptions
     dnsServers: management.outputs.validateANFDnsServers
     domainJoinUserPassword: empty(domainJoinUserPassword) ? contains(activeDirectorySolution, 'DomainServices') ? keyVault_Reference.getSecret(domainJoinUserPassword) : '' : domainJoinUserPassword
     domainJoinUserPrincipalName: empty(domainJoinUserPrincipalName) ? contains(activeDirectorySolution, 'DomainServices') ? keyVault_Reference.getSecret(domainJoinUserPrincipalName) : '' : domainJoinUserPrincipalName
     domainName: domainName
+    encryptionUserAssignedIdentityResourceId: management.outputs.encryptionUserAssignedIdentityResourceId
     fileShares: logic.outputs.fileShares
     fslogixShareSizeInGB: fslogixShareSizeInGB
     fslogixContainerType: fslogixContainerType
     fslogixStorageService: fslogixStorageService
     kerberosEncryption: storageAccountADKerberosEncryption
+    keyVaultUri: management.outputs.keyVaultUrl
     location: locationVirtualMachines
     managementVirtualMachineName: management.outputs.virtualMachineName
     netAppAccountName: resourceNames.outputs.netAppAccountName
@@ -602,6 +594,7 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (fslogixStorageService != 'N
     smbServerLocation: logic.outputs.smbServerLocation
     storageAccountNamePrefix: resourceNames.outputs.storageAccountNamePrefix
     storageCount: logic.outputs.storageCount
+    storageEncryptionKeyName: management.outputs.storageAccountEncryptionKeyName
     storageIndex: storageIndex
     storageSku: logic.outputs.storageSku
     fslogixStorageSolution: logic.outputs.fslogixStorageSolution
@@ -636,11 +629,10 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
   params: {
     acceleratedNetworking: management.outputs.validateAcceleratedNetworking
     activeDirectorySolution: activeDirectorySolution
-    adeKEKUrl: management.outputs.encryptionKeyUrl
+    adeKEKUrl: management.outputs.diskEncryptionKeyUrl
     artifactsUri: artifactsUri
     artifactsUserAssignedIdentityClientId: management.outputs.artifactsUserAssignedIdentityClientId // ClientId that comes from Management / UserAssignedIdentity Modules is already determined.
     artifactsUserAssignedIdentityResourceId: management.outputs.artifactsUserAssignedIdentityResourceId // ResourceId that comes from Management / UserAssignedIdentity Modules is already determined.
-    automationAccountName: resourceNames.outputs.automationAccountName
     availability: availability
     availabilitySetNamePrefix: resourceNames.outputs.availabilitySetNamePrefix
     availabilitySetsCount: logic.outputs.availabilitySetsCount
@@ -668,13 +660,15 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     fslogixConfigureSessionHosts: fslogixConfigureSessionHosts
     fslogixDeployed: logic.outputs.fslogix
     fslogixStorageAccountResourceIds: fslogix.outputs.storageAccountResourceIds
-    hostPoolName: resourceNames.outputs.hostPoolName
+    fslogixStorageAccountPrefix: resourceNames.outputs.storageAccountNamePrefix
+    fslogixStorageSolution: logic.outputs.fslogixStorageSolution
+    hostPoolName: controlPlane.outputs.hostPoolName
     imageOffer: imageOffer
     imagePublisher: imagePublisher
     imageSku: imageSku
     customImageResourceId: customImageResourceId
     location: vmVirtualNetwork.location
-    managementVMName: management.outputs.virtualMachineName
+    managementVirtualMachineName: management.outputs.virtualMachineName
     maxResourcesPerTemplateDeployment: logic.outputs.maxResourcesPerTemplateDeployment
     monitoring: monitoring
     netAppFileShares: fslogixConfigureSessionHosts ? fslogix.outputs.netAppShares : [
@@ -689,28 +683,17 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     resourceGroupHosts: resourceNames.outputs.resourceGroupHosts
     resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
     roleDefinitions: logic.outputs.roleDefinitions
-    runBookUpdateUserAssignedIdentityClientId: management.outputs.deploymentUserAssignedIdentityClientId
-    scalingBeginPeakTime: scalingBeginPeakTime
-    scalingEndPeakTime: scalingEndPeakTime
-    scalingLimitSecondsToForceLogOffUser: scalingLimitSecondsToForceLogOffUser
-    scalingMinimumNumberOfRdsh: scalingMinimumNumberOfRdsh
-    scalingSessionThresholdPerCPU: scalingSessionThresholdPerCPU
-    scalingTool: scalingTool
     securityDataCollectionRulesResourceId: securityDataCollectionRulesResourceId
     securityPrincipalObjectIds: map(securityPrincipals, item => item.objectId)
     securityLogAnalyticsWorkspaceResourceId: securityLogAnalyticsWorkspaceResourceId
     sessionHostBatchCount: logic.outputs.sessionHostBatchCount
     sessionHostIndex: sessionHostIndex
-    fslogixStorageAccountPrefix: resourceNames.outputs.storageAccountNamePrefix
-    fslogixStorageSolution: logic.outputs.fslogixStorageSolution
     storageSuffix: logic.outputs.storageSuffix
     subnetResourceId: virtualMachineSubnetResourceId
     tags: tags
-    timeDifference: logic.outputs.timeDifference
     timeStamp: timeStamp
-    timeZone: logic.outputs.timeZone
     trustedLaunch: management.outputs.validateTrustedLaunch
-    virtualMachineMonitoringAgent: virtualMachineMonitoringAgent
+    avdInsightsMonitoringAgent: avdInsightsMonitoringAgent
     virtualMachineNamePrefix: virtualMachineNamePrefix
     virtualMachineAdminPassword: empty(virtualMachineAdminPassword) ? keyVault_Reference.getSecret(virtualMachineAdminPassword) : virtualMachineAdminPassword
     virtualMachineSize: virtualMachineSize
@@ -724,7 +707,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
 module cleanUp 'modules/cleanUp/cleanUp.bicep' = {
   name: 'CleanUp_${timeStamp}'
   params: {
-    location: vmVirtualNetwork.location
+    location: locationVirtualMachines
     resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
     timeStamp: timeStamp
     userAssignedIdentityClientId: management.outputs.deploymentUserAssignedIdentityClientId

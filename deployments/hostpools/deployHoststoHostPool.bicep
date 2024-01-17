@@ -243,7 +243,7 @@ param securityDataCollectionRulesResourceId string = ''
   'LogAnalyticsAgent'
 ])
 @description('Input the desired monitoring agent to send events and performance counters to a log analytics workspace.')
-param virtualMachineMonitoringAgent string = 'AzureMonitorAgent'
+param avdInsightsMonitoringAgent string = 'AzureMonitorAgent'
 
 // Backup Configuration
 
@@ -388,7 +388,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     imageSku: imageSku
     customImageResourceId: customImageResourceId
     location: vmVirtualNetwork.location
-    managementVMName: ''
+    managementVirtualMachineName: ''
     maxResourcesPerTemplateDeployment: logic.outputs.maxResourcesPerTemplateDeployment
     monitoring: monitoring
     netAppFileShares: ['None']
@@ -422,7 +422,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     timeStamp: timeStamp
     timeZone: logic.outputs.timeZone
     trustedLaunch: 'true'
-    virtualMachineMonitoringAgent: virtualMachineMonitoringAgent
+    avdInsightsMonitoringAgent: avdInsightsMonitoringAgent
     virtualMachineNamePrefix: virtualMachineNamePrefix
     virtualMachineAdminPassword: virtualMachineAdminPassword
     virtualMachineAdminUserName: virtualMachineAdminUserName

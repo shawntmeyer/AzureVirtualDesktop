@@ -1,24 +1,43 @@
-param applicationGroups array
+param applicationGroupReferences array
+param artifactsUserAssignedIdentityClientId string
 param avdPrivateLink bool
-param existing bool
+param artifactsUri string
+param deploymentUserAssignedIdentityClientId string
+param existingWorkspace bool
 param friendlyName string
+param location string
+param locationVirtualMachines string
 param logAnalyticsWorkspaceResourceId string
+param managementVirtualMachineName string
 param monitoring bool
 param privateDnsZoneResourceId string
 param privateEndpointName string
 param publicNetworkAccess string
 param privateEndpointSubnetResourceId string
+param resourceGroupManagement string
 param tags object
+param timeStamp string
 param workspaceName string
 
-var applicationGroupReferences = union(existing_Workspace.properties.applicationGroupReferences, applicationGroups)
-
-resource existing_Workspace 'Microsoft.DesktopVirtualization/workspaces@2023-09-05' = if(existing) {
-  name: workspaceName
+module addApplicationGroups '../management/customScriptExtensions.bicep' = if (existingWorkspace) {
+  scope: resourceGroup(resourceGroupManagement)
+  name: 'AddApplicationGroupReferences_${timeStamp}'
+  params: {
+    fileUris: [
+      '${artifactsUri}Update-AvdWorkspace.ps1'
+    ]
+    location: locationVirtualMachines
+    parameters: '-ApplicationGroupReferences "${applicationGroupReferences}" -Environment ${environment().name} -ResourceGroupName ${resourceGroup().name} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentityClientId} -WorkspaceName ${workspaceName}'
+    scriptFileName: 'Update-AvdWorkspace.ps1'
+    tags: contains(tags, 'Microsoft.Compute/virtualMachines') ? tags['Microsoft.Compute/virtualMachines'] : {}    
+    userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
+    virtualMachineName: managementVirtualMachineName
+  }
 }
 
-resource workspace 'Microsoft.DesktopVirtualization/workspaces@2023-09-05' = {
+resource workspace 'Microsoft.DesktopVirtualization/workspaces@2023-09-05' = if (!existingWorkspace) { 
   name: workspaceName
+  location: location
   tags: union({
     'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroup().name}/providers/Microsoft.DesktopVirtualization/Workspaces/${workspaceName}'
   }, contains(tags, 'Microsoft.DesktopVirtualization/Workspaces') ? tags['Microsoft.DesktopVirtualization/Workspaces'] : {})
@@ -29,8 +48,9 @@ resource workspace 'Microsoft.DesktopVirtualization/workspaces@2023-09-05' = {
   }
 }
 
-resource private_Endpoint 'Microsoft.Network/privateEndpoints@2023-05-01' = if (!existing && avdPrivateLink) {
+resource private_Endpoint 'Microsoft.Network/privateEndpoints@2023-05-01' = if (!existingWorkspace && avdPrivateLink) {
   name: privateEndpointName
+  location: location
   tags: union({
     'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroup().name}/providers/Microsoft.DesktopVirtualization/Workspaces/${workspaceName}'
   }, contains(tags, 'Microsoft.Network/privateEndpoints') ? tags['Microsoft.Network/privateEndpoints'] : {})
@@ -54,7 +74,7 @@ resource private_Endpoint 'Microsoft.Network/privateEndpoints@2023-05-01' = if (
   }
 }
 
-resource privateDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2023-05-01' = if (!existing && !empty(privateDnsZoneResourceId)) {
+resource privateDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2023-05-01' = if (!existingWorkspace && !empty(privateDnsZoneResourceId)) {
   parent: private_Endpoint
   name: 'default'
   properties: {
@@ -69,7 +89,7 @@ resource privateDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneG
   }
 }
 
-resource workspaceDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (monitoring) {
+resource workspaceDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (!existingWorkspace && monitoring) {
   name: 'diag-${workspaceName}'
   scope: workspace
   properties: {

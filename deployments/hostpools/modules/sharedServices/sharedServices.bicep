@@ -3,12 +3,12 @@ targetScope = 'subscription'
 param globalWorkspacePrivateDnsZoneResourceId string
 param resourceGroupName string
 param sharedServicesSubnetResourceId string
-param timestamp string
+param timeStamp string
 param workspaceNamePrefix string
 
 module virtualNetwork 'virtualNetwork.bicep' = {
   scope: resourceGroup(split(sharedServicesSubnetResourceId, '/')[4])
-  name: 'SharedServices_VirtualNetwork_${timestamp}'
+  name: 'SharedServices_VirtualNetwork_${timeStamp}'
   params: {
     name: split(sharedServicesSubnetResourceId, '/')[8]
   }
@@ -16,7 +16,7 @@ module virtualNetwork 'virtualNetwork.bicep' = {
 
 // Resource Group for the global AVD Workspace
 module rg_GlobalWorkspace '../resourceGroup.bicep' = {
-  name: 'ResourceGroup_WorkspaceGlobal_${timestamp}'
+  name: 'ResourceGroup_WorkspaceGlobal_${timeStamp}'
   scope: subscription(split(sharedServicesSubnetResourceId, '/')[2])
   params: {
     location: virtualNetwork.outputs.location
@@ -26,7 +26,7 @@ module rg_GlobalWorkspace '../resourceGroup.bicep' = {
 }
 
 module workspace 'workspace.bicep' = {
-  name: 'WorkspaceGlobal_${timestamp}'
+  name: 'WorkspaceGlobal_${timeStamp}'
   scope: resourceGroup(resourceGroupName)
   params: {
     globalWorkspacePrivateDnsZoneResourceId: globalWorkspacePrivateDnsZoneResourceId

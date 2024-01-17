@@ -13,7 +13,7 @@ var privateEndpointName = replace(replace(privateEndpointNameConv, 'subresource'
 resource automationAccount 'Microsoft.Automation/automationAccounts@2021-06-22' = {
   name: automationAccountName
   location: location
-  tags: tags
+  tags: contains(tags, 'Microsoft.Automation/automationAccounts') ? tags['Microsoft.Automation/automationAccounts'] : {}
   identity: {
     type: 'SystemAssigned'
   }
@@ -21,6 +21,7 @@ resource automationAccount 'Microsoft.Automation/automationAccounts@2021-06-22' 
     sku: {
       name: 'Free'
     }
+    publicNetworkAccess: privateEndpoint ? false : true
   }
 }
 
@@ -54,9 +55,9 @@ resource privateDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneG
   properties: {
     privateDnsZoneConfigs: [
       {
-        name: replace(split(automationAccountPrivateDnsZoneResourceId, '/')[8], '.', '-')
+        name: !empty(automationAccountPrivateDnsZoneResourceId) ? replace(last(split(automationAccountPrivateDnsZoneResourceId, '/')), '.', '-') : ''
         properties: {
-          privateDnsZoneId: automationAccountPrivateDnsZoneResourceId
+          privateDnsZoneId: !empty(automationAccountPrivateDnsZoneResourceId) ? automationAccountPrivateDnsZoneResourceId : ''
         }
       }
     ]
