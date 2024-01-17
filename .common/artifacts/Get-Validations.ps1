@@ -1,6 +1,10 @@
 [Cmdletbinding()]
 Param(
     [parameter(Mandatory)]
+    [string]
+    $ActiveDirectorySolution,
+
+    [parameter(Mandatory)]
     [int]
     $CpuCountMax,
     
@@ -55,6 +59,10 @@ Param(
     [parameter()]
     [string]
     $NetAppVirtualNetworkResourceGroupName,
+
+    [parameter()]
+    [string]
+    $StorageAccountPrefix = '',
 
     [parameter(Mandatory)]
     [string]
@@ -136,6 +144,27 @@ try
             }
         }
         Write-Log -Message "Azure NetApp Files Validation Succeeded" -Type 'INFO'
+    }
+    
+    ##############################################################
+    # Azure Files Validation
+    ##############################################################
+    $StorageNameValidated = $true
+    If ($StorageSolution -eq 'AzureFiles') {
+        If ($ActiveDirectorySolution -contains 'DomainServices') {
+            If ($StorageAccountPrefix.length -gt 13) {
+                $StorageNameValidated = $false
+                Write-Error -Exception "INVALID STORAGE ACCOUNT NAME PREFIX: The storage account name prefix is greater than 13 characters."
+            }
+        } Else {
+            If ($StorageAccountPrefix.length -gt 22) {
+                $StorageNameValidated = $false
+                Write-Error -Exception "INVALID STORAGE ACCOUNT NAME PREFIX: The storage account name prefix is greater than 22 characters."
+            }
+        }
+        If ($StorageNameValidated) {
+            Write-Log -Message "Azure Storage Account Name Prefix Validation Succeeded." -Type 'INFO'
+        }
     }
 
     ##############################################################
@@ -225,6 +254,7 @@ try
         availabilityZones = $AvailabilityZones
         existingWorkspace = if($Workspace){"true"}else{"false"}
         existingGlobalWorkspace = if($GlobalWorkspace){"true"}else{"false"}
+        storagePrefix = if($StoragePrefixValidated){"true"}else{"false"}
         trustedLaunch = $TrustedLaunch
     }
     $JsonOutput = $Output | ConvertTo-Json

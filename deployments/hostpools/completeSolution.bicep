@@ -463,6 +463,7 @@ module management 'modules/management/management.bicep' = {
     domainName: domainName
     environmentShortName: environmentShortName
     fslogix: logic.outputs.fslogix
+    fslogixStorageAccountNamePrefix: resourceNames.outputs.storageAccountNamePrefix
     fslogixStorageService: fslogixStorageService
     hostPoolType: hostPoolType
     kerberosEncryption: storageAccountADKerberosEncryption
