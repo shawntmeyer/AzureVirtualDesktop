@@ -516,9 +516,9 @@ If (Test-Path -Path $TempDir) { Remove-Item -Path $TempDir -Recurse -Force }
 New-Item -Path $TempDir -ItemType Directory -Force | Out-Null
 
 $FsLogixKeys = $DynParameters.FSLogix
-$IdentityProvider = $FSLogixKeys.idp
-$CloudCache = $FsLogixKeys.cloudCache
-$StorageSolution = $FSLogixKeys.storageSolution
+$IdentityProvider = $FSLogixKeys.IdP
+$CloudCache = $FsLogixKeys.CloudCache
+$StorageSolution = $FSLogixKeys.StorageSolution
 Write-Log -message '* Begin Script Parameters *'
 Write-Log -message 'Started Script with the following Dynamic Parameters:'
 Write-Log -message " IdentityProvider = $IdentityProvider"
@@ -537,14 +537,14 @@ switch ($StorageSolution) {
         Write-Log -message '* End Script Parameters *'
     }
     'AzureFiles' {
-        [array]$StorageAccountNames = $FSLogixKeys.saNames
+        [array]$StorageAccountNames = $FSLogixKeys.SANames
         Write-Log -message ' Azure Storage Account Names ='
         ForEach ($sa in $StorageAccountNames) { Write-Log -message "  $sa" }
-        [array]$StorageAccountKeys = $FSLogixKeys.saKeys
+        [array]$StorageAccountKeys = $FSLogixKeys.SAKeys
         if ($null -ne $StorageAccountKeys) { Write-Log -message " $($StorageAccountKeys.Count) storage account keys provided." }
-        $StorageAccountSuffix = $FSLogixKeys.saSuffix
+        $StorageAccountSuffix = $FSLogixKeys.SASuffix
         Write-Log -message " Storage Account Suffix = $StorageAccountSuffix"
-        [array]$shares = $FSlogixKeys.shareNames       
+        [array]$shares = $FSlogixKeys.ShareNames       
         $ProfileShareName = $shares[0]
         Write-Log -message " Profile Container Share Name = $ProfileShareName"
         if ($shares.Count -gt 1) {

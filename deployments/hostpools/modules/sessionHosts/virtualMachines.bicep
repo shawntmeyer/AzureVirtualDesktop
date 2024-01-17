@@ -96,25 +96,25 @@ var fslogixExclusions = '"%TEMP%\\*\\*.VHDX";"%Windir%\\TEMP\\*\\*.VHDX"${fslogi
 
 // Dynamic parameters for Configure-FSLogix Script
 //  cloudcache determined from fslogixContainerType parameter
-var fslogixCloudCacheString = contains(fslogixContainerType, 'CloudCache') ? 'cloudCache=$true' : 'cloudCache=$false'
+var fslogixCloudCacheString = contains(fslogixContainerType, 'CloudCache') ? 'CloudCache=$true' : 'CloudCache=$false'
 //  convert long activeDirectorySolution parameter values to short and SMB authentication specific values for script.
 var fslogixIdP = contains(activeDirectorySolution, 'Kerberos') ? 'AADKERB' : !contains(activeDirectorySolution, 'DomainServices') ? 'AAD' : 'DomainServices'
-var fslogixIdpString = 'idp=\'${fslogixIdP}\''
-var fslogixStorageSolutionString = 'fslogixStorageSolution=\'${fslogixStorageSolution}\''
-var fslogixNetAppSharesString = fslogixStorageSolution == 'AzureNetAppFiles' && netAppFileShares != 'None' ? 'netAppFileShares=\'${replace(join(netAppFileShares, ','), ',', '\',\'')}\'' : ''
-var fslogixSASuffixString = fslogixStorageSolution == 'AzureFiles' ? 'saSuffix=\'${storageSuffix}\'' : ''
+var fslogixIdpString = 'IdP=\'${fslogixIdP}\''
+var fslogixStorageSolutionString = 'StorageSolution=\'${fslogixStorageSolution}\''
+var fslogixNetAppSharesString = fslogixStorageSolution == 'AzureNetAppFiles' && netAppFileShares != 'None' ? 'NetAppFileShares=\'${replace(join(netAppFileShares, ','), ',', '\',\'')}\'' : ''
+var fslogixSASuffixString = fslogixStorageSolution == 'AzureFiles' ? 'SASuffix=\'${storageSuffix}\'' : ''
 //  build storage account names from Storage Account parameters.
 var fslogixNewSANames = [for resourceId in fslogixStorageAccountResourceIds: last(split(resourceId, '/'))]
 //  use only first storage account per region with AAD and Storage Key. No sharding possible.
 var fslogixNewStorageNames = fslogixIdP == 'AAD' ? [fslogixNewSANames[0]] : fslogixNewSANames
 var fslogixExistingSANames = [for resourceId in fslogixExistingStorageAccountResourceIds: last(split(resourceId, '/')) ]
 var fslogixExistingStorageNames  = fslogixIdP == 'AAD' && !empty(fslogixExistingStorageAccountResourceIds) ? [fslogixExistingSANames[0]] : fslogixExistingSANames
-var fslogixSANamesString = fslogixStorageSolution == 'AzureFiles' ? 'saNames=\'${replace(join(union(fslogixNewStorageNames, fslogixExistingStorageNames), ','), ',', '\',\'')}\'' : ''
+var fslogixSANamesString = fslogixStorageSolution == 'AzureFiles' ? 'SANames=\'${replace(join(union(fslogixNewStorageNames, fslogixExistingStorageNames), ','), ',', '\',\'')}\'' : ''
 //  get only the first storage account key per region with AAD and Storage Key. No sharding possible.
 var fslogixSAKey = fslogixIdP == 'AAD' ? [ storageAccounts[0].listKeys().keys[0].value ] : []
 var fslogixHASAKey = fslogixIdP == 'AAD' && !empty(fslogixExistingStorageAccountResourceIds) ? [ existingStorageAccountsforHA.listKeys().keys[0].value ] : []
-var fslogixSAKeysString = fslogixIdP == 'AAD' ? 'saKeys=\'${replace(join(union(fslogixSAKey, fslogixHASAKey), ','), ',', '\',\'')}\'' : ''
-var fslogixSharesString = fslogixStorageSolution != 'AzureNetAppFiles' ? contains(fslogixContainerType, 'Office') ? 'shareNames=\'profile-containers\',\'office-containers\'' : 'shareNames=\'profile-containers\'' : ''
+var fslogixSAKeysString = fslogixIdP == 'AAD' ? 'SAKeys=\'${replace(join(union(fslogixSAKey, fslogixHASAKey), ','), ',', '\',\'')}\'' : ''
+var fslogixSharesString = fslogixStorageSolution != 'AzureNetAppFiles' ? contains(fslogixContainerType, 'Office') ? 'ShareNames=\'profile-containers\',\'office-containers\'' : 'ShareNames=\'profile-containers\'' : ''
 var fslogixCommon = '${fslogixIdpString};${fslogixStorageSolutionString};${fslogixCloudCacheString}'
 var fslogixString = fslogixStorageSolution == 'AzureNetAppFiles' ? '${fslogixCommon};${fslogixNetAppSharesString}' : fslogixIdP == 'AAD' ? '${fslogixCommon};${fslogixSASuffixString};${fslogixSANamesString};${fslogixSAKeysString};${fslogixSharesString}' : '${fslogixCommon};${fslogixSASuffixString};${fslogixSANamesString};${fslogixSharesString}'
 var fslogixCustomObject = 'FSLogix=@([pscustomobject]@{${fslogixString}})'
