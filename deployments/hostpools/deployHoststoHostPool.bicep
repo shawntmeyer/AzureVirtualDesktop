@@ -22,9 +22,6 @@ param centralizedAVDManagement bool = false
 @description('An identifier used to distinquish each host pool. This can represent the user or use case.')
 param hostPoolIdentifier string
 
-@description('The resource ID of the resource group to update.  If not specified, a new resource group will be created.')
-param existingComputeResourceGroupName string = ''
-
 @allowed([
   'd' // Development
   'p' // Production
@@ -77,10 +74,69 @@ param domainName string = ''
 @description('Optional. The distinguished name for the target Organization Unit in Active Directory Domain Services.')
 param ouPath string = ''
 
+@description('The Object ID for the Windows Virtual Desktop Enterprise Application in Azure AD.  The Object ID can found by selecting Microsoft Applications using the Application type filter in the Enterprise Applications blade of Azure AD.')
+param avdObjectId string
+
+// AVD Private Link Configuration
+
+@description('Optional. Determines if Azure Private Link with Azure Virtual Desktop is enabled. Selecting "true" requires that private endpoints are created for the global feed, workspace feed, and hostpool.')
+param avdPrivateLink bool = false
+
+@description('Optional. Applicable when "avdPrivateLink" is "true". "Enabled" allows the global AVD feed to be accessed from both public and private networks, "Disabled" allows this resource to only be accessed via private endpoints.')
+param globalWorkspacePublicNetworkAccess string = 'Enabled'
+
+@description('Optional. Applicable when "avdPrivateLink" is "true". "Enabled" allows the AVD workspace to be accessed from both public and private networks, "Disabled" allows this resource to only be accessed via private endpoints.')
+param workspacePublicNetworkAccess string = 'Enabled'
+
+@allowed([  
+  'Disabled'
+  'Enabled'
+  'EnabledForClientsOnly'
+  'EnabledForSessionHostsOnly'
+])
+@description('''Optional. Applicable only when "avdPrivateLink is "true". Allow public access to the hostpool through the control plane.
+"Enabled" allows this resource to be accessed from both public and private networks.
+"Disabled" allows this resource to only be accessed via private endpoints.
+''')
+param hostPoolPublicNetworkAccess string = 'Enabled'
+
+@description('Optional. The resource ID for the subnet for the private endpoints for AVD Private Link.')
+param controlPlanePrivateEndpointSubnetResourceId string = ''
+
+// Private Endpoints
+@description('Create private endpoints for all deployed resources where applicable.')
+param privateEndpoints bool = false
+
+@description('The Resource Id of the subnet on which to create the storage account, keyvault, and other resources private link. Required when "privateEndoints" = true.')
+param managementPrivateEndpointSubnetResourceId string = ''
+
+@description('The Resource Id of the subnet on which to create the storage account, keyvault, and other resources private link. Required when "privateEndoints" = true.')
+param storagePrivateEndpointSubnetResourceId string = ''
+
+// Private DNS Zones
+
+@description('If using private endpoints with Automation Accounts, input the Resource ID for the Private DNS Zone linked to your hub virtual network.')
+param automationAccountPrivateDnsZoneResourceId string = ''
+
+@description('If using private endpoints with Azure files, input the Resource ID for the Private DNS Zone linked to your hub virtual network.')
+param azureFilesPrivateDnsZoneResourceId string = ''
+
+@description('If using private endpoints with Azure Virtual Desktop, input the Resource ID for the Private DNS Zone used for initial feed discovery.')
+param avdGlobalFeedPrivateDnsZoneResourceId string = ''
+
+@description('If using private endpoints with Azure Virtual Desktop, input the Resource ID for the Private DNS Zone used for feed download and connections to host pools.')
+param avdPrivateDnsZoneResourceId string = ''
+
+@description('If using private endpoints with Key Vaults, input the Resource ID for the Private DNS Zone linked to your hub virtual network.')
+param keyVaultPrivateDnsZoneResourceId string = ''
+
 // Profile Storage Configuration
 
 @description('The custom prefix to use for the name of the Azure files storage accounts to use for FSLogix. If not specified, the name is generated automatically.')
 param fslogixStorageCustomPrefix string = ''
+
+@description('The file share size(s) in GB for the fslogix storage solution.')
+param fslogixShareSizeInGB int = 100
 
 @allowed([
   'CloudCacheProfileContainer' // FSLogix Cloud Cache Profile Container
@@ -89,6 +145,16 @@ param fslogixStorageCustomPrefix string = ''
   'ProfileOfficeContainer' // FSLogix Profile & Office Container
 ])
 param fslogixContainerType string = 'ProfileContainer'
+
+@allowed([
+  'AzureNetAppFiles Premium' // ANF with the Premium SKU, 450,000 IOPS
+  'AzureNetAppFiles Standard' // ANF with the Standard SKU, 320,000 IOPS
+  'AzureFiles Premium' // Azure files Premium with a Service Endpoint, 100,000 IOPs
+  'AzureFiles Standard' // Azure files Standard with the Large File Share option and the default public endpoint, 20,000 IOPS
+  'None'
+])
+@description('Enable an fslogix storage option to manage user profiles for the AVD session hosts. The selected service & SKU should provide sufficient IOPS for all of your users. https://docs.microsoft.com/en-us/azure/architecture/example-scenario/wvd/windows-virtual-desktop-fslogix#performance-requirements')
+param fslogixStorageService string = 'AzureFiles Standard'
 
 @description('Configure FSLogix agent on the session hosts via local registry keys.')
 param fslogixConfigureSessionHosts bool = true
@@ -102,16 +168,62 @@ If "activeDirectorySolution" is set to "AzureActiveDirectory" or "AzureActiveDir
 ''')
 param fslogixExistingStorageAccountResourceIds array = []
 
-@description('FSLogix Storage Account Resource Ids. Only used when fslogixConfigureSessionHosts = true.')
-param fslogixStorageAccountResourceIds array = []
+@description('Optional. The resource Id of the Virtual Network delegated for NetApp Volumes. Required when fslogixStorageService = "AzureNetAppFiles Standard" or "AzureNetAppFiles Premium".')
+param netAppVnetResourceId string = ''
+
+@allowed([
+  'AES256'
+  'RC4'
+])
+@description('The Active Directory computer object Kerberos encryption type for the Azure Storage Account or Azure NetApp files Account.')
+param storageAccountADKerberosEncryption string = 'AES256'
+
+@maxValue(100)
+@minValue(0)
+@description('''
+The number of storage accounts to deploy to support the required use case for the AVD stamp. https://docs.microsoft.com/en-us/azure/architecture/patterns/sharding
+Note: Cannot utilize sharding with "activeDirectorySolution" = "AAD" so storageCount will be set to 1 in variables.
+''')
+param storageCount int = 1
+
+@maxValue(99)
+@minValue(0)
+@description('The starting number for the storage accounts to support the required use case for the AVD stamp. https://docs.microsoft.com/en-us/azure/architecture/patterns/sharding')
+param storageIndex int = 1
 
 // Control Plane Configuration
 
-@description('The resource ID of the AVD Hostpool to update.')
-param hostPoolResourceId string
-
 @description('The deployment location for the AVD management resources.')
 param locationControlPlane string = deployment().location
+
+@description('Required. The friendly name for the AVD workspace that is displayed in the client.')
+param workspaceFriendlyName string = ''
+
+@description('Optional. The friendly name for the Desktop in the AVD workspace.')
+param desktopFriendlyName string = ''
+
+@description('Enable drain mode on new sessions hosts to prevent users from accessing them until they are validated.')
+param drainMode bool = false
+
+@description('The maximum number of sessions per AVD session host.')
+param hostPoolMaxSessionLimit int
+
+@description('''Optional. Input RDP properties to add or remove RDP functionality on the AVD host pool.
+Settings reference: https://learn.microsoft.com/windows-server/remote/remote-desktop-services/clients/rdp-files
+''')
+param hostPoolRDPProperties string = 'audiocapturemode:i:1;camerastoredirect:s:*'
+
+@allowed([
+  'Pooled DepthFirst'
+  'Pooled BreadthFirst'
+  'Personal Automatic'
+  'Personal Direct'
+])
+@description('These options specify the host pool type and depending on the type provides the load balancing options and assignment types.')
+param hostPoolType string = 'Pooled DepthFirst'
+
+@description('The value determines whether the hostPool should receive early AVD updates for testing.')
+param hostPoolValidationEnvironment bool = false
 
 @description('An array of Security Principals with their object IDs and display names to assign to the AVD Application Group and FSLogix Storage.')
 param securityPrincipals array = []
@@ -136,18 +248,6 @@ param sessionHostIndex int = 1
 @description('Set the desired availability / SLA with a pooled host pool.  The best practice is to deploy to availability Zones for resilency.')
 param availability string = 'availabilityZones'
 
-@description('Optional. The availability zones to deploy the AVD session hosts.  If not specified, the session hosts will be deployed to the default zone.')
-@allowed([
-  1
-  2
-  3
-])
-param availabilityZones array = [
-  1
-  2
-  3
-]
-
 @description('Optional. The name of the blob containing the AVDAgent Agent installers and script.')
 param avdAgentInstallersBlobName string = 'Set-SessionHostConfiguration.zip'
 
@@ -169,20 +269,11 @@ param cseScriptAddDynParameters string = ''
   'SSE + CMK' // Server Side Encryption with Customer Managed Keys
   'EAH + PMK' // Encryption at Host with Platform Managed Keys
   'EAH + CMK' // Encryption at Host with Customer Managed Keys
-  'ADE'       // Azure Disk Encryption
+  'ADE' // Azure Disk Encryption
   'ADE + KEK' // Azure Disk Encryption with Key Encryption Key
 ])
 @description('Optional. The VM disk encryption configuration. (Default: "SSE + PMK")')
 param diskEncryptionSolution string = 'SSE + PMK'
-
-@description('Optional. The resource ID of the disk encryption set to use for the AVD session host disks to be used for Customer Managed Keys.')
-param diskEncryptionSetResourceId string = ''
-
-@description('Optional. The resource ID of the key vault to use for encrypting AVD session host disks to with Azure Disk Encryption.')
-param azureDiskEncryptionKeyVaultResourceId string = ''
-
-@description('Optional. The resource ID of the key encryption key to use for encrypting AVD session host disks with Azure Disk Encryption.')
-param azureDiskEncryptionKeyEncryptionKeyResourceId string = ''
 
 @allowed([
   'Standard_LRS'
@@ -226,11 +317,22 @@ param virtualMachineNamePrefix string
 @description('Deploys the required monitoring resources to enable AVD Insights and monitor features in the automation account.')
 param monitoring bool = true
 
-@description('The resource ID of the log analytics workspace used for Azure Virtual Desktop Insights.')
-param logAnalyticsWorkspaceResourceId string = ''
+@maxValue(730)
+@minValue(30)
+@description('The retention for the Log Analytics Workspace to setup the AVD monitoring solution')
+param logAnalyticsWorkspaceRetention int = 30
 
-@description('Optional. The resource ID of the data collection rule used for Azure Virtual Desktop Insights.')
-param dataCollectionRulesResourceId string = ''
+@allowed([
+  'Free'
+  'Standard'
+  'Premium'
+  'PerNode'
+  'PerGB2018'
+  'Standalone'
+  'CapacityReservation'
+])
+@description('The SKU for the Log Analytics Workspace to setup the AVD monitoring solution')
+param logAnalyticsWorkspaceSku string = 'PerGB2018'
 
 @description('The resource ID of the log analytics workspace used for Azure Sentinel and / or Defender for Cloud. When using the Microsoft monitoring Agent, this allows you to multihome the agent to reduce unnecessary log collection and reduce cost.')
 param securityLogAnalyticsWorkspaceResourceId string = ''
@@ -242,8 +344,8 @@ param securityDataCollectionRulesResourceId string = ''
   'AzureMonitorAgent'
   'LogAnalyticsAgent'
 ])
-@description('Input the desired monitoring agent to send events and performance counters to a log analytics workspace.')
-param avdInsightsMonitoringAgent string = 'AzureMonitorAgent'
+@description('Input the desired monitoring agent to send security data to the log analytics workspace.')
+param performanceMonitoringAgent string = 'AzureMonitorAgent'
 
 // Backup Configuration
 
@@ -261,25 +363,17 @@ var artifactsStorageAccountName = last(split(artifactsStorageAccountResourceId, 
 var artifactsUri = 'https://${artifactsStorageAccountName}.blob.${environment().suffixes.storage}/${artifactsContainerName}/'
 var locationVirtualMachines = vmVirtualNetwork.location
 
+var resourceGroupsCount = 3 + (fslogixStorageService == 'None' ? 0 : 1) + (avdPrivateLink ? 1 :0)
+
 // Existing Virtual Network location
 resource vmVirtualNetwork 'Microsoft.Network/virtualNetworks@2023-04-01' existing = {
   name: split(virtualMachineSubnetResourceId, '/')[8]
   scope: resourceGroup(split(virtualMachineSubnetResourceId, '/')[2], split(virtualMachineSubnetResourceId, '/')[4])
 }
 
-resource adeKeyEncryptionKey 'Microsoft.KeyVault/vaults/keys@2022-07-01' existing = if(!empty(azureDiskEncryptionKeyEncryptionKeyResourceId) && diskEncryptionSolution == 'ADE + KEK') {
-  name: last(split(azureDiskEncryptionKeyEncryptionKeyResourceId, '/'))
-  scope: resourceGroup(split(azureDiskEncryptionKeyEncryptionKeyResourceId, '/')[2], split(azureDiskEncryptionKeyEncryptionKeyResourceId, '/')[4])
-}
-
-resource adeKeyVault 'Microsoft.KeyVault/vaults@2021-06-01-preview' existing = if(!empty(azureDiskEncryptionKeyVaultResourceId) && contains(diskEncryptionSolution, 'ADE'))  {
-  name: last(split(azureDiskEncryptionKeyVaultResourceId, '/'))
-  scope: resourceGroup(split(azureDiskEncryptionKeyVaultResourceId, '/')[2], split(azureDiskEncryptionKeyVaultResourceId, '/')[4])
-}
-
-resource artifactsUserAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = {
-  name: last(split(artifactsUserAssignedIdentityResourceId, '/'))
-  scope: resourceGroup(split(artifactsUserAssignedIdentityResourceId, '/')[2], split(artifactsUserAssignedIdentityResourceId, '/')[4])
+resource keyVault_Reference 'Microsoft.KeyVault/vaults@2021-06-01-preview' existing = if(contains(activeDirectorySolution,'DomainServices') && (empty(domainJoinUserPassword) || empty(domainJoinUserPrincipalName)) || empty(virtualMachineAdminPassword) || empty(virtualMachineAdminUserName))  {
+  name: resourceNames.outputs.keyVaultName
+  scope: resourceGroup(resourceNames.outputs.resourceGroupManagement)
 }
 
 // Resource Names
@@ -292,7 +386,7 @@ module resourceNames 'modules/resourceNames.bicep' = {
     fslogixStorageCustomPrefix: fslogixStorageCustomPrefix
     hostPoolIdentifier: hostPoolIdentifier
     locationControlPlane: locationControlPlane
-    locationVirtualMachines: vmVirtualNetwork.location
+    locationVirtualMachines: locationVirtualMachines
     nameConvResTypeAtEnd: nameConvResTypeAtEnd
     virtualMachineNamePrefix: virtualMachineNamePrefix
   }
@@ -305,7 +399,7 @@ module logic 'modules/logic.bicep' = {
     activeDirectorySolution: activeDirectorySolution
     artifactsUri: artifactsUri
     avdAgentInstallersBlobName: avdAgentInstallersBlobName
-    avdPrivateLink: false
+    avdPrivateLink: avdPrivateLink
     cseMasterScript: cseMasterScript
     diskEncryptionSolution: diskEncryptionSolution
     diskSku: diskSku
@@ -315,12 +409,13 @@ module logic 'modules/logic.bicep' = {
     fslogixConfigureSessionHosts: fslogixConfigureSessionHosts
     fslogixConfigurationBlobName: fslogixConfigurationBlobName
     fslogixContainerType: fslogixContainerType
-    fslogixStorageService: 'None'
+    fslogixStorageService: fslogixStorageService
+    hostPoolType: hostPoolType
     imageOffer: imageOffer
     imagePublisher: imagePublisher
     imageSku: imageSku
     locations: resourceNames.outputs.locations
-    locationVirtualMachines: vmVirtualNetwork.location
+    locationVirtualMachines: locationVirtualMachines
     resourceGroupControlPlane: resourceNames.outputs.resourceGroupControlPlane
     resourceGroupGlobalFeed: resourceNames.outputs.resourceGroupGlobalFeed
     resourceGroupHosts: resourceNames.outputs.resourceGroupHosts
@@ -329,106 +424,297 @@ module logic 'modules/logic.bicep' = {
     securityPrincipals: securityPrincipals
     sessionHostCount: sessionHostCount
     sessionHostIndex: sessionHostIndex
-    storageCount: 0
+    storageCount: storageCount
     virtualMachineNamePrefix: virtualMachineNamePrefix
     virtualMachineSize: virtualMachineSize
   }
 }
 
 // Resource Groups
-module resGroup 'modules/resourceGroups.bicep' =  if(empty(existingComputeResourceGroupName)) {
-  name: 'ResourceGroup_Hosts_${timeStamp}'
+module rgs 'modules/resourceGroups.bicep' = [for i in range(0, resourceGroupsCount): {
+  name: 'ResourceGroup_${i}_${timeStamp}'
   params: {
-    location: locationVirtualMachines
-    resourceGroupName: resourceNames.outputs.resourceGroupHosts
+    location: contains(logic.outputs.resourceGroupNames[i], 'controlPlane') || contains(logic.outputs.resourceGroupNames[i], 'global-feed') ? locationControlPlane : locationVirtualMachines
+    resourceGroupName: logic.outputs.resourceGroupNames[i]
     tags: tags
+  }
+}]
+
+// Management Services: Logging, Automation, Keys, Encryption
+module management 'modules/management/management.bicep' = {
+  name: 'Management_${timeStamp}'
+  params: {
+    activeDirectorySolution: activeDirectorySolution
+    artifactsUri: artifactsUri
+    artifactsStorageAccountResourceId: artifactsStorageAccountResourceId
+    artifactsUserAssignedIdentityResourceId: artifactsUserAssignedIdentityResourceId
+    automationAccountName: resourceNames.outputs.automationAccountName
+    automationAccountPrivateDnsZoneResourceId: automationAccountPrivateDnsZoneResourceId
+    availability: availability
+    avdObjectId: avdObjectId
+    locationControlPlane: locationControlPlane
+    dataCollectionRulesNameConv: resourceNames.outputs.dataCollectionRulesNameConv
+    diskEncryptionOptions: logic.outputs.diskEncryptionOptions
+    diskEncryptionSetName: resourceNames.outputs.diskEncryptionSetName
+    diskNamePrefix: resourceNames.outputs.diskNamePrefix
+    diskSku: diskSku
+    domainJoinUserPassword: domainJoinUserPassword
+    domainJoinUserPrincipalName: domainJoinUserPrincipalName
+    domainName: domainName
+    environmentShortName: environmentShortName
+    fslogix: logic.outputs.fslogix
+    fslogixStorageAccountNamePrefix: resourceNames.outputs.storageAccountNamePrefix
+    fslogixStorageService: fslogixStorageService
+    hostPoolType: hostPoolType
+    kerberosEncryption: storageAccountADKerberosEncryption
+    keyVaultName: resourceNames.outputs.keyVaultName
+    keyVaultPrivateDnsZoneResourceId: keyVaultPrivateDnsZoneResourceId
+    locationVirtualMachines: locationVirtualMachines
+    logAnalyticsWorkspaceName: resourceNames.outputs.logAnalyticsWorkspaceName
+    logAnalyticsWorkspaceRetention: logAnalyticsWorkspaceRetention
+    logAnalyticsWorkspaceSku: logAnalyticsWorkspaceSku
+    monitoring: monitoring
+    netAppVnetResourceId: netAppVnetResourceId
+    networkInterfaceNamePrefix: resourceNames.outputs.networkInterfaceNamePrefix
+    privateEndpointSubnetResourceId: managementPrivateEndpointSubnetResourceId
+    privateEndpoint: privateEndpoints
+    privateEndpointNameConv: resourceNames.outputs.privateEndpointNameConv
+    recoveryServices: recoveryServices
+    recoveryServicesVaultName: resourceNames.outputs.recoveryServicesVaultName
+    resourceGroupControlPlane: resourceNames.outputs.resourceGroupControlPlane
+    resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
+    resourceGroupStorage: resourceNames.outputs.resourceGroupStorage
+    roleDefinitions: logic.outputs.roleDefinitions
+    sessionHostCount: sessionHostCount
+    fslogixStorageSolution: logic.outputs.fslogixStorageSolution
+    tags: tags
+    timeStamp: timeStamp
+    timeZone: logic.outputs.timeZone
+    userAssignedIdentityNameConv: resourceNames.outputs.userAssignedIdentityNameConv
+    performanceMonitoringAgent: performanceMonitoringAgent
+    virtualMachineNamePrefix: virtualMachineNamePrefix
+    virtualMachineAdminPassword: empty(virtualMachineAdminPassword) ? keyVault_Reference.getSecret(virtualMachineAdminPassword) : virtualMachineAdminPassword
+    virtualMachineSize: virtualMachineSize
+    virtualMachineAdminUserName: empty(virtualMachineAdminUserName) ? keyVault_Reference.getSecret(virtualMachineAdminUserName) : virtualMachineAdminUserName
+    virtualMachineSubnetResourceId: virtualMachineSubnetResourceId
+    workspaceName: resourceNames.outputs.workspaceName
+    globalFeedWorkspaceName: resourceNames.outputs.globalFeedWorkspaceName
+    globalFeedWorkspaceResourceGroupName: resourceNames.outputs.resourceGroupGlobalFeed
+  }    
+  dependsOn: [
+    rgs
+  ]
+}
+
+// AVD Control Plane Resources
+// This module deploys the host pool and desktop application group
+module controlPlane 'modules/controlPlane/controlPlane.bicep' = {
+  name: 'ControlPlane_${timeStamp}'
+  params: {
+    activeDirectorySolution: activeDirectorySolution
+    artifactsUri: artifactsUri
+    artifactsUserAssignedIdentityClientId: management.outputs.artifactsUserAssignedIdentityClientId
+    avdGlobalFeedPrivateDnsZoneResourceId: avdGlobalFeedPrivateDnsZoneResourceId
+    avdPrivateDnsZoneResourceId: avdPrivateDnsZoneResourceId
+    avdPrivateLink: avdPrivateLink
+    deploymentUserAssignedIdentityClientId: management.outputs.deploymentUserAssignedIdentityClientId
+    desktopApplicationGroupName: resourceNames.outputs.desktopApplicationGroupName
+    desktopFriendlyName: desktopFriendlyName
+    existingGlobalWorkspace: management.outputs.existingGlobalWorkspace
+    existingWorkspace: management.outputs.existingWorkspace
+    globalWorkspaceName: resourceNames.outputs.globalFeedWorkspaceName
+    globalWorkspacePublicNetworkAccess: globalWorkspacePublicNetworkAccess
+    hostPoolMaxSessionLimit: hostPoolMaxSessionLimit
+    hostPoolName: resourceNames.outputs.hostPoolName
+    hostPoolPublicNetworkAccess: hostPoolPublicNetworkAccess
+    hostPoolRDPProperties: hostPoolRDPProperties
+    hostPoolType: hostPoolType
+    hostPoolValidationEnvironment: hostPoolValidationEnvironment
+    locationControlPlane: locationControlPlane
+    locationVirtualMachines: locationVirtualMachines
+    logAnalyticsWorkspaceResourceId: monitoring ? management.outputs.logAnalyticsWorkspaceResourceId : ''
+    managementVirtualMachineName: management.outputs.virtualMachineName    
+    monitoring: monitoring
+    privateEndpointNameConv: resourceNames.outputs.privateEndpointNameConv
+    privateEndpointSubnetResourceId: controlPlanePrivateEndpointSubnetResourceId
+    resourceGroupControlPlane: resourceNames.outputs.resourceGroupControlPlane
+    resourceGroupGlobalFeed: resourceNames.outputs.resourceGroupGlobalFeed
+    resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
+    roleDefinitions: logic.outputs.roleDefinitions
+    securityPrincipalObjectIds: map(securityPrincipals, item => item.objectId)
+    tags: tags
+    timeStamp: timeStamp
+    virtualMachineTemplate: logic.outputs.virtualMachineTemplate
+    workspaceFriendlyName: workspaceFriendlyName
+    workspaceName: resourceNames.outputs.workspaceName
+    workspacePublicNetworkAccess: workspacePublicNetworkAccess
+  }
+  dependsOn: [
+    rgs
+  ]
+}
+
+module fslogix 'modules/fslogix/fslogix.bicep' = if (fslogixStorageService != 'None') {
+  name: 'FSLogix_${timeStamp}'
+  params: {
+    artifactsUri: artifactsUri
+    artifactsUserAssignedIdentityClientId: management.outputs.artifactsUserAssignedIdentityClientId
+    activeDirectoryConnection: management.outputs.validateANFfActiveDirectory
+    activeDirectorySolution: activeDirectorySolution
+    automationAccountName: resourceNames.outputs.automationAccountName
+    availability: availability
+    azureFilesPrivateDnsZoneResourceId: azureFilesPrivateDnsZoneResourceId
+    deploymentUserAssignedIdentityClientId: management.outputs.deploymentUserAssignedIdentityClientId
+    delegatedSubnetId: management.outputs.validateANFSubnetId
+    diskEncryptionOptions: logic.outputs.diskEncryptionOptions
+    dnsServers: management.outputs.validateANFDnsServers
+    domainJoinUserPassword: empty(domainJoinUserPassword) ? contains(activeDirectorySolution, 'DomainServices') ? keyVault_Reference.getSecret(domainJoinUserPassword) : '' : domainJoinUserPassword
+    domainJoinUserPrincipalName: empty(domainJoinUserPrincipalName) ? contains(activeDirectorySolution, 'DomainServices') ? keyVault_Reference.getSecret(domainJoinUserPrincipalName) : '' : domainJoinUserPrincipalName
+    domainName: domainName
+    encryptionUserAssignedIdentityResourceId: management.outputs.encryptionUserAssignedIdentityResourceId
+    fileShares: logic.outputs.fileShares
+    fslogixShareSizeInGB: fslogixShareSizeInGB
+    fslogixContainerType: fslogixContainerType
+    fslogixStorageService: fslogixStorageService
+    kerberosEncryption: storageAccountADKerberosEncryption
+    keyVaultUri: management.outputs.keyVaultUrl
+    location: locationVirtualMachines
+    managementVirtualMachineName: management.outputs.virtualMachineName
+    netAppAccountName: resourceNames.outputs.netAppAccountName
+    netAppCapacityPoolName: resourceNames.outputs.netAppCapacityPoolName
+    netbios: logic.outputs.netbios
+    ouPath: ouPath
+    privateEndpoint: privateEndpoints
+    privateEndpointNameConv: resourceNames.outputs.privateEndpointNameConv
+    recoveryServices: recoveryServices
+    recoveryServicesVaultName: resourceNames.outputs.recoveryServicesVaultName
+    resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
+    resourceGroupStorage: resourceNames.outputs.resourceGroupStorage
+    securityPrincipalObjectIds: map(securityPrincipals, item => item.objectId)
+    securityPrincipalNames: map(securityPrincipals, item => item.name)
+    smbServerLocation: logic.outputs.smbServerLocation
+    storageAccountNamePrefix: resourceNames.outputs.storageAccountNamePrefix
+    storageCount: logic.outputs.storageCount
+    storageEncryptionKeyName: management.outputs.storageAccountEncryptionKeyName
+    storageIndex: storageIndex
+    storageSku: logic.outputs.storageSku
+    fslogixStorageSolution: logic.outputs.fslogixStorageSolution
+    subnet: split(storagePrivateEndpointSubnetResourceId, '/')[10]
+    tagsAutomationAccounts: union({
+        'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceNames.outputs.resourceGroupManagement}/providers/Microsoft.DesktopVirtualization/workspaces/${resourceNames.outputs.workspaceName}'
+      }, contains(tags, 'Microsoft.Automation/automationAccounts') ? tags['Microsoft.Automation/automationAccounts'] : {})
+    tagsNetAppAccount: union({
+        'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceNames.outputs.resourceGroupManagement}/providers/Microsoft.DesktopVirtualization/hostPools/${resourceNames.outputs.hostPoolName}'
+      }, contains(tags, 'Microsoft.NetApp/netAppAccounts') ? tags['Microsoft.NetApp/netAppAccounts'] : {})
+    tagsPrivateEndpoints: union({
+        'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceNames.outputs.resourceGroupManagement}/providers/Microsoft.DesktopVirtualization/hostPools/${resourceNames.outputs.hostPoolName}'
+      }, contains(tags, 'Microsoft.Network/privateEndpoints') ? tags['Microsoft.Network/privateEndpoints'] : {})
+    tagsStorageAccounts: union({
+        'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceNames.outputs.resourceGroupManagement}/providers/Microsoft.DesktopVirtualization/hostPools/${resourceNames.outputs.hostPoolName}'
+      }, contains(tags, 'Microsoft.Storage/storageAccounts') ? tags['Microsoft.Storage/storageAccounts'] : {})
+    tagsRecoveryServicesVault: union({
+        'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceNames.outputs.resourceGroupManagement}/providers/Microsoft.DesktopVirtualization/hostPools/${resourceNames.outputs.hostPoolName}'
+      }, contains(tags, 'Microsoft.recoveryServices/vaults') ? tags['Microsoft.recoveryServices/vaults'] : {})
+    tagsVirtualMachines: union({
+        'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceNames.outputs.resourceGroupManagement}/providers/Microsoft.DesktopVirtualization/hostPools/${resourceNames.outputs.hostPoolName}'
+      }, contains(tags, 'Microsoft.Compute/virtualMachines') ? tags['Microsoft.Compute/virtualMachines'] : {})
+    timeStamp: timeStamp
+    timeZone: logic.outputs.timeZone
+    virtualNetwork: split(storagePrivateEndpointSubnetResourceId, '/')[8]
+    virtualNetworkResourceGroup: split(storagePrivateEndpointSubnetResourceId, '/')[4]
   }
 }
 
 module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
   name: 'SessionHosts_${timeStamp}'
   params: {
-    acceleratedNetworking: 'True'
+    acceleratedNetworking: management.outputs.validateAcceleratedNetworking
     activeDirectorySolution: activeDirectorySolution
-    adeKEKUrl: diskEncryptionSolution == 'ADE' ? adeKeyEncryptionKey.properties.keyUri : ''
-    adeKeyVaultResourceId: contains(diskEncryptionSolution, 'ADE') ? azureDiskEncryptionKeyVaultResourceId : ''
-    adeKeyVaultUrl: contains(diskEncryptionSolution, 'ADE') ? adeKeyVault.properties.vaultUri : ''
+    adeKEKUrl: management.outputs.diskEncryptionKeyUrl
     artifactsUri: artifactsUri
-    artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentity.properties.clientId
-    artifactsUserAssignedIdentityResourceId: artifactsUserAssignedIdentityResourceId
-    automationAccountName: resourceNames.outputs.automationAccountName
+    artifactsUserAssignedIdentityClientId: management.outputs.artifactsUserAssignedIdentityClientId // ClientId that comes from Management / UserAssignedIdentity Modules is already determined.
+    artifactsUserAssignedIdentityResourceId: management.outputs.artifactsUserAssignedIdentityResourceId // ResourceId that comes from Management / UserAssignedIdentity Modules is already determined.
     availability: availability
     availabilitySetNamePrefix: resourceNames.outputs.availabilitySetNamePrefix
     availabilitySetsCount: logic.outputs.availabilitySetsCount
     availabilitySetsIndex: logic.outputs.beginAvSetRange
-    availabilityZones: availabilityZones
-    avdInsightsLogAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
+    availabilityZones: management.outputs.validateavailabilityZones
+    avdInsightsLogAnalyticsWorkspaceResourceId: management.outputs.logAnalyticsWorkspaceResourceId
     cseMasterScript: cseMasterScript
     cseScriptAddDynParameters: cseScriptAddDynParameters
     cseUris: logic.outputs.cseUris
-    dataCollectionRulesResourceId: !empty(dataCollectionRulesResourceId) ? dataCollectionRulesResourceId : ''
+    dataCollectionRulesResourceId: management.outputs.dataCollectionRulesResourceId
     diskEncryptionOptions: logic.outputs.diskEncryptionOptions
-    diskEncryptionSetResourceId: contains(diskEncryptionSolution, 'CMK') ? diskEncryptionSetResourceId : ''
+    diskEncryptionSetResourceId: management.outputs.diskEncryptionSetResourceId
+    adeKeyVaultResourceId: management.outputs.keyVaultResourceId
+    adeKeyVaultUrl: management.outputs.keyVaultUrl
     diskNamePrefix: resourceNames.outputs.diskNamePrefix
     diskSku: diskSku
     divisionRemainderValue: logic.outputs.divisionRemainderValue
-    domainJoinUserPassword: contains(activeDirectorySolution, 'DomainServices') ? domainJoinUserPassword : ''
-    domainJoinUserPrincipalName: contains(activeDirectorySolution, 'DomainServices') ? domainJoinUserPrincipalName : ''
+    domainJoinUserPassword: empty(domainJoinUserPassword) ? contains(activeDirectorySolution, 'DomainServices') ? keyVault_Reference.getSecret(domainJoinUserPassword) : '' : domainJoinUserPassword
+    domainJoinUserPrincipalName: empty(domainJoinUserPrincipalName) ? contains(activeDirectorySolution, 'DomainServices') ? keyVault_Reference.getSecret(domainJoinUserPrincipalName) : '' : domainJoinUserPrincipalName
     domainName: domainName
-    drainMode: false
-    drainModeUserAssignedIdentityClientId: ''
+    drainMode: drainMode
+    drainModeUserAssignedIdentityClientId: management.outputs.deploymentUserAssignedIdentityClientId
     fslogixContainerType: fslogixContainerType
     fslogixExistingStorageAccountResourceIds: fslogixExistingStorageAccountResourceIds
     fslogixConfigureSessionHosts: fslogixConfigureSessionHosts
-    fslogixStorageAccountResourceIds: fslogixStorageAccountResourceIds
-    fslogixDeployed: false
-    hostPoolName: last(split(hostPoolResourceId, '/'))
+    fslogixDeployed: logic.outputs.fslogix
+    fslogixStorageAccountResourceIds: fslogix.outputs.storageAccountResourceIds
+    fslogixStorageAccountPrefix: resourceNames.outputs.storageAccountNamePrefix
+    fslogixStorageSolution: logic.outputs.fslogixStorageSolution
+    hostPoolName: controlPlane.outputs.hostPoolName
     imageOffer: imageOffer
     imagePublisher: imagePublisher
     imageSku: imageSku
     customImageResourceId: customImageResourceId
     location: vmVirtualNetwork.location
-    managementVirtualMachineName: ''
+    managementVirtualMachineName: management.outputs.virtualMachineName
     maxResourcesPerTemplateDeployment: logic.outputs.maxResourcesPerTemplateDeployment
     monitoring: monitoring
-    netAppFileShares: ['None']
+    netAppFileShares: fslogixConfigureSessionHosts ? fslogix.outputs.netAppShares : [
+      'None'
+    ]
     networkInterfaceNamePrefix: resourceNames.outputs.networkInterfaceNamePrefix
     ouPath: ouPath
     pooledHostPool: logic.outputs.pooledHostPool
     recoveryServices: recoveryServices
     recoveryServicesVaultName: resourceNames.outputs.recoveryServicesVaultName
-    resourceGroupControlPlane: split(hostPoolResourceId, '/')[4]
-    resourceGroupHosts: empty(existingComputeResourceGroupName) ? resourceNames.outputs.resourceGroupHosts : existingComputeResourceGroupName
-    resourceGroupManagement: ''
+    resourceGroupControlPlane: resourceNames.outputs.resourceGroupControlPlane
+    resourceGroupHosts: resourceNames.outputs.resourceGroupHosts
+    resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
     roleDefinitions: logic.outputs.roleDefinitions
-    runBookUpdateUserAssignedIdentityClientId: ''
-    scalingBeginPeakTime: ''
-    scalingEndPeakTime: ''
-    scalingLimitSecondsToForceLogOffUser: ''
-    scalingMinimumNumberOfRdsh: ''
-    scalingSessionThresholdPerCPU: ''
-    scalingTool: false
     securityDataCollectionRulesResourceId: securityDataCollectionRulesResourceId
     securityPrincipalObjectIds: map(securityPrincipals, item => item.objectId)
     securityLogAnalyticsWorkspaceResourceId: securityLogAnalyticsWorkspaceResourceId
     sessionHostBatchCount: logic.outputs.sessionHostBatchCount
     sessionHostIndex: sessionHostIndex
-    fslogixStorageAccountPrefix: resourceNames.outputs.storageAccountNamePrefix
-    fslogixStorageSolution: logic.outputs.fslogixStorageSolution
     storageSuffix: logic.outputs.storageSuffix
     subnetResourceId: virtualMachineSubnetResourceId
     tags: tags
-    timeDifference: logic.outputs.timeDifference
     timeStamp: timeStamp
-    timeZone: logic.outputs.timeZone
-    trustedLaunch: 'true'
-    avdInsightsMonitoringAgent: avdInsightsMonitoringAgent
+    trustedLaunch: management.outputs.validateTrustedLaunch
+    performanceMonitoringAgent: performanceMonitoringAgent
     virtualMachineNamePrefix: virtualMachineNamePrefix
-    virtualMachineAdminPassword: virtualMachineAdminPassword
-    virtualMachineAdminUserName: virtualMachineAdminUserName
+    virtualMachineAdminPassword: empty(virtualMachineAdminPassword) ? keyVault_Reference.getSecret(virtualMachineAdminPassword) : virtualMachineAdminPassword
     virtualMachineSize: virtualMachineSize
+    virtualMachineAdminUserName: empty(virtualMachineAdminUserName) ? keyVault_Reference.getSecret(virtualMachineAdminUserName) : virtualMachineAdminUserName
   }
   dependsOn: [
-    resGroup
+    rgs
+  ]
+}
+
+module cleanUp 'modules/cleanUp/cleanUp.bicep' = {
+  name: 'CleanUp_${timeStamp}'
+  params: {
+    location: locationVirtualMachines
+    resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
+    timeStamp: timeStamp
+    userAssignedIdentityClientId: management.outputs.deploymentUserAssignedIdentityClientId
+    virtualMachineName: management.outputs.virtualMachineName
+  }
+  dependsOn: [
+    sessionHosts
   ]
 }

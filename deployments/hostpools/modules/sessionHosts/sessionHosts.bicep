@@ -17,7 +17,8 @@ param avdInsightsLogAnalyticsWorkspaceResourceId string
 param cseMasterScript string
 param cseScriptAddDynParameters string
 param cseUris array
-param dataCollectionRulesResourceId string
+param perfDataCollectionEndpointResourceId string
+param perfDataCollectionRulesResourceIds array
 param diskEncryptionOptions object
 param diskEncryptionSetResourceId string
 param diskNamePrefix string
@@ -55,6 +56,7 @@ param resourceGroupControlPlane string
 param resourceGroupHosts string
 param resourceGroupManagement string
 param roleDefinitions object
+param securityDataCollectionEndpointResourceId string
 param securityDataCollectionRulesResourceId string
 param securityPrincipalObjectIds array
 param securityLogAnalyticsWorkspaceResourceId string
@@ -66,7 +68,7 @@ param subnetResourceId string
 param tags object
 param timeStamp string
 param trustedLaunch string
-param avdInsightsMonitoringAgent string
+param performanceMonitoringAgent string
 param virtualMachineNamePrefix string
 @secure()
 param virtualMachineAdminPassword string
@@ -125,7 +127,6 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     cseScriptAddDynParameters: cseScriptAddDynParameters
     cseUris: cseUris
     customImageResourceId: customImageResourceId
-    dataCollectionRulesResourceId: dataCollectionRulesResourceId
     diskEncryptionOptions: diskEncryptionOptions
     diskEncryptionSetResourceId: diskEncryptionSetResourceId
     diskNamePrefix: diskNamePrefix
@@ -148,8 +149,11 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     netAppFileShares: netAppFileShares
     networkInterfaceNamePrefix: networkInterfaceNamePrefix
     ouPath: ouPath
+    perfDataCollectionEndpointResourceId: perfDataCollectionEndpointResourceId
+    perfDataCollectionRulesResourceIds: perfDataCollectionRulesResourceIds
     resourceGroupControlPlane: resourceGroupControlPlane
     resourceGroupManagement: resourceGroupManagement
+    securityDataCollectionEndpointResourceId: securityDataCollectionEndpointResourceId
     securityDataCollectionRulesResourceId: securityDataCollectionRulesResourceId
     securityLogAnalyticsWorkspaceResourceId: securityLogAnalyticsWorkspaceResourceId
     sessionHostCount: i == sessionHostBatchCount && divisionRemainderValue > 0 ? divisionRemainderValue : maxResourcesPerTemplateDeployment
@@ -163,7 +167,7 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     tagsVirtualMachines: tagsVirtualMachines
     timeStamp: timeStamp
     trustedLaunch: trustedLaunch
-    avdInsightsMonitoringAgent: avdInsightsMonitoringAgent
+    performanceMonitoringAgent: performanceMonitoringAgent
     virtualMachineNamePrefix: virtualMachineNamePrefix
     virtualMachineAdminPassword: virtualMachineAdminPassword
     virtualMachineSize: virtualMachineSize

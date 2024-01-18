@@ -14,7 +14,6 @@ param batchCount int
 param cseMasterScript string
 param cseUris array
 param cseScriptAddDynParameters string
-param dataCollectionRulesResourceId string
 param diskEncryptionOptions object
 param diskEncryptionSetResourceId string
 param diskNamePrefix string
@@ -43,8 +42,11 @@ param monitoring bool
 param netAppFileShares array
 param networkInterfaceNamePrefix string
 param ouPath string
+param perfDataCollectionEndpointResourceId string
+param perfDataCollectionRulesResourceIds array
 param resourceGroupControlPlane string
 param resourceGroupManagement string
+param securityDataCollectionEndpointResourceId string
 param securityDataCollectionRulesResourceId string
 param securityLogAnalyticsWorkspaceResourceId string
 param sessionHostCount int
@@ -60,7 +62,7 @@ param trustedLaunch string
 param virtualMachineAdminPassword string
 @secure()
 param virtualMachineAdminUserName string
-param avdInsightsMonitoringAgent string
+param performanceMonitoringAgent string
 param virtualMachineNamePrefix string
 param virtualMachineSize string
 
@@ -123,7 +125,7 @@ var fslogixCustomObject = 'FSLogix=@([pscustomobject]@{${fslogixString}})'
 //var hostPoolToken = hostPool.properties.registrationInfo.token
 var hostPoolToken = reference(resourceId(resourceGroupControlPlane, 'Microsoft.DesktopVirtualization/hostPools', hostPoolName), '2019-12-10-preview').registrationInfo.token
 var shcCommon = 'AmdVmSize=\'${amdVmSize}\';nvidiaVmSize=\'${nvidiaVmSize}\';HostPoolRegistrationToken=\'${hostPoolToken}\''
-var shcCommonString = !empty(securityLogAnalyticsWorkspaceResourceId) && avdInsightsMonitoringAgent == 'LogAnalyticsAgent' ? '${shcCommon};SecurityWorkspaceId=\'${securityWorkspace.properties.customerId}\';SecurityWorkspaceKey=\'${securityWorkspace.listkeys().primarySharedKey}\'' : shcCommon
+var shcCommonString = !empty(securityLogAnalyticsWorkspaceResourceId) && performanceMonitoringAgent == 'LogAnalyticsAgent' ? '${shcCommon};SecurityWorkspaceId=\'${securityWorkspace.properties.customerId}\';SecurityWorkspaceKey=\'${securityWorkspace.listkeys().primarySharedKey}\'' : shcCommon
 var shcCommonCustomObject = 'SHConfiguration=@([pscustomobject]@{${shcCommonString}})'
 
 // CSE Master Script Dynamic parameters - Built from any custom parameters provided via parameter and the FSLogix and SessionHostConfiguration parameters.
@@ -137,7 +139,7 @@ var diskEncryptionSet = bool(diskEncryptionOptions.diskEncryptionSet)
 var encryptionAtHost = bool(diskEncryptionOptions.encryptionAtHost)
 var keyEncryptionKey = bool(diskEncryptionOptions.keyEncryptionKey)
 
-var identityType = (!contains(activeDirectorySolution, 'DomainServices') || avdInsightsMonitoringAgent == 'AzureMonitorAgent' ? true : false) ? (!empty(artifactsUserAssignedIdentityResourceId) ? 'SystemAssigned,UserAssigned' : 'SystemAssigned') : (!empty(artifactsUserAssignedIdentityResourceId) ? 'UserAssigned' : 'None')
+var identityType = (!contains(activeDirectorySolution, 'DomainServices') || performanceMonitoringAgent == 'AzureMonitorAgent' ? true : false) ? (!empty(artifactsUserAssignedIdentityResourceId) ? 'SystemAssigned,UserAssigned' : 'SystemAssigned') : (!empty(artifactsUserAssignedIdentityResourceId) ? 'UserAssigned' : 'None')
 
 var userAssignedIdentities = !empty(artifactsUserAssignedIdentityResourceId) ? {
   '${artifactsUserAssignedIdentityResourceId}': {}
@@ -321,7 +323,7 @@ resource extension_IaasAntimalware 'Microsoft.Compute/virtualMachines/extensions
   }
 }]
 
-resource extension_AzureMonitorWindowsAgent 'Microsoft.Compute/virtualMachines/extensions@2023-03-01' = [for i in range(0, sessionHostCount): if (monitoring && (avdInsightsMonitoringAgent == 'AzureMonitorAgent' || !empty(securityDataCollectionRulesResourceId) || !empty(dataCollectionRulesResourceId))) {
+resource extension_AzureMonitorWindowsAgent 'Microsoft.Compute/virtualMachines/extensions@2023-03-01' = [for i in range(0, sessionHostCount): if (monitoring && (performanceMonitoringAgent == 'AzureMonitorAgent' || !empty(securityDataCollectionRulesResourceId) || !empty(perfDataCollectionRulesResourceIds))) {
   parent: virtualMachine[i]
   name: 'AzureMonitorAgent'
   location: location
@@ -338,12 +340,26 @@ resource extension_AzureMonitorWindowsAgent 'Microsoft.Compute/virtualMachines/e
   ]
 }]
 
-resource avdInsightsDataCollectionRuleAssociation 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = [for i in range(0, sessionHostCount): if (monitoring && !empty(dataCollectionRulesResourceId)) {
+resource avdInsightsDataCollectionRuleAssociation 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = [for i in range(0, sessionHostCount): if (monitoring && !empty(perfDataCollectionRulesResourceIds)) {
   scope: virtualMachine[i]
   name: 'avdinsights-${virtualMachine[i].name}-dcra'
   properties: {
-    dataCollectionRuleId: dataCollectionRulesResourceId
+    dataCollectionRuleId: perfDataCollectionRulesResourceIds[0]
+    dataCollectionEndpointId: perfDataCollectionEndpointResourceId
     description: 'AVD Insights data collection rule association'
+  }
+  dependsOn: [
+    extension_AzureMonitorWindowsAgent
+  ]
+}]
+
+resource vmInsightsDataCollectionRuleAssociation 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = [for i in range(0, sessionHostCount): if (monitoring && !empty(perfDataCollectionRulesResourceIds)) {
+  scope: virtualMachine[i]
+  name: 'vmInsights-${virtualMachine[i].name}-dcra'
+  properties: {
+    dataCollectionEndpointId: perfDataCollectionEndpointResourceId
+    dataCollectionRuleId: perfDataCollectionRulesResourceIds[1]
+    description: 'VM Insights data collection rule association'
   }
   dependsOn: [
     extension_AzureMonitorWindowsAgent
@@ -354,6 +370,7 @@ resource securityDataCollectionRuleAssociation 'Microsoft.Insights/dataCollectio
   scope: virtualMachine[i]
   name: 'security-${virtualMachine[i].name}-dcra'
   properties: {
+    dataCollectionEndpointId: !empty(securityDataCollectionEndpointResourceId) ? securityDataCollectionEndpointResourceId : null
     dataCollectionRuleId: securityDataCollectionRulesResourceId
     description: 'Security Events data collection rule association'
   }
@@ -362,7 +379,7 @@ resource securityDataCollectionRuleAssociation 'Microsoft.Insights/dataCollectio
   ]
 }]
 
-resource extension_MicrosoftMonitoringAgent 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): if (monitoring && (avdInsightsMonitoringAgent == 'LogAnalyticsAgent' || !empty(securityLogAnalyticsWorkspaceResourceId))) {
+resource extension_MicrosoftMonitoringAgent 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): if (monitoring && (performanceMonitoringAgent == 'LogAnalyticsAgent' || !empty(securityLogAnalyticsWorkspaceResourceId))) {
   parent: virtualMachine[i]
   name: 'MicrosoftMonitoringAgent'
   location: location

@@ -334,10 +334,13 @@ param logAnalyticsWorkspaceRetention int = 30
 @description('The SKU for the Log Analytics Workspace to setup the AVD monitoring solution')
 param logAnalyticsWorkspaceSku string = 'PerGB2018'
 
-@description('The resource ID of the log analytics workspace used for Azure Sentinel and / or Defender for Cloud. When using the Microsoft monitoring Agent, this allows you to multihome the agent to reduce unnecessary log collection and reduce cost.')
+@description('The resource ID of the log analytics workspace used for Azure Sentinel and / or Defender for Cloud. When using the Microsoft Monitor Agent (Log Analytics Agent), this allows you to multihome the agent to reduce unnecessary log collection and reduce cost.')
 param securityLogAnalyticsWorkspaceResourceId string = ''
 
-@description('An array of data collection rule resource Ids used for Azure Sentinel and / or Defender for Cloud when using the Azure Monitor Agent.')
+@description('The resource ID of the data collection endpoint used for Azure Sentinel and / or Defender for Cloud. When using the Azure Monitor Agent, this allows you to multihome the agent to reduce unnecessary log collection and reduce cost.')
+param securityDataCollectionEndpointResourceId string = ''
+
+@description('The resource ID of the data collection rule used for Azure Sentinel and / or Defender for Cloud when using the Azure Monitor Agent.')
 param securityDataCollectionRulesResourceId string = ''
 
 @allowed([
@@ -345,7 +348,7 @@ param securityDataCollectionRulesResourceId string = ''
   'LogAnalyticsAgent'
 ])
 @description('Input the desired monitoring agent to send security data to the log analytics workspace.')
-param avdInsightsMonitoringAgent string = 'AzureMonitorAgent'
+param performanceMonitoringAgent string = 'AzureMonitorAgent'
 
 // Backup Configuration
 
@@ -453,7 +456,8 @@ module management 'modules/management/management.bicep' = {
     availability: availability
     avdObjectId: avdObjectId
     locationControlPlane: locationControlPlane
-    dataCollectionRulesName: resourceNames.outputs.dataCollectionRulesName
+    dataCollectionEndpointName: resourceNames.outputs.dataCollectionEndpointName
+    dataCollectionRulesNameConv: resourceNames.outputs.dataCollectionRulesNameConv
     diskEncryptionOptions: logic.outputs.diskEncryptionOptions
     diskEncryptionSetName: resourceNames.outputs.diskEncryptionSetName
     diskNamePrefix: resourceNames.outputs.diskNamePrefix
@@ -491,7 +495,7 @@ module management 'modules/management/management.bicep' = {
     timeStamp: timeStamp
     timeZone: logic.outputs.timeZone
     userAssignedIdentityNameConv: resourceNames.outputs.userAssignedIdentityNameConv
-    avdInsightsMonitoringAgent: avdInsightsMonitoringAgent
+    performanceMonitoringAgent: performanceMonitoringAgent
     virtualMachineNamePrefix: virtualMachineNamePrefix
     virtualMachineAdminPassword: empty(virtualMachineAdminPassword) ? keyVault_Reference.getSecret(virtualMachineAdminPassword) : virtualMachineAdminPassword
     virtualMachineSize: virtualMachineSize
@@ -643,7 +647,8 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     cseMasterScript: cseMasterScript
     cseScriptAddDynParameters: cseScriptAddDynParameters
     cseUris: logic.outputs.cseUris
-    dataCollectionRulesResourceId: management.outputs.dataCollectionRulesResourceId
+    perfDataCollectionEndpointResourceId: management.outputs.dataCollectionEndpointResourceId
+    perfDataCollectionRulesResourceIds: management.outputs.dataCollectionRulesResourceIds
     diskEncryptionOptions: logic.outputs.diskEncryptionOptions
     diskEncryptionSetResourceId: management.outputs.diskEncryptionSetResourceId
     adeKeyVaultResourceId: management.outputs.keyVaultResourceId
@@ -684,6 +689,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     resourceGroupHosts: resourceNames.outputs.resourceGroupHosts
     resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
     roleDefinitions: logic.outputs.roleDefinitions
+    securityDataCollectionEndpointResourceId: securityDataCollectionEndpointResourceId
     securityDataCollectionRulesResourceId: securityDataCollectionRulesResourceId
     securityPrincipalObjectIds: map(securityPrincipals, item => item.objectId)
     securityLogAnalyticsWorkspaceResourceId: securityLogAnalyticsWorkspaceResourceId
@@ -694,7 +700,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     tags: tags
     timeStamp: timeStamp
     trustedLaunch: management.outputs.validateTrustedLaunch
-    avdInsightsMonitoringAgent: avdInsightsMonitoringAgent
+    performanceMonitoringAgent: performanceMonitoringAgent
     virtualMachineNamePrefix: virtualMachineNamePrefix
     virtualMachineAdminPassword: empty(virtualMachineAdminPassword) ? keyVault_Reference.getSecret(virtualMachineAdminPassword) : virtualMachineAdminPassword
     virtualMachineSize: virtualMachineSize

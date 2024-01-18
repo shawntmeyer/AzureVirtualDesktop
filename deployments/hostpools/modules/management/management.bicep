@@ -8,7 +8,8 @@ param automationAccountPrivateDnsZoneResourceId string
 param availability string
 param avdObjectId string
 param locationControlPlane string
-param dataCollectionRulesName string
+param dataCollectionEndpointName string
+param dataCollectionRulesNameConv string
 param diskNamePrefix string
 param diskEncryptionOptions object
 param diskEncryptionSetName string
@@ -50,7 +51,7 @@ param tags object
 param timeStamp string
 param timeZone string
 param userAssignedIdentityNameConv string
-param avdInsightsMonitoringAgent string
+param performanceMonitoringAgent string
 param virtualMachineNamePrefix string
 @secure()
 param virtualMachineAdminPassword string
@@ -297,19 +298,42 @@ module logAnalyticsWorkspace 'logAnalyticsWorkspace.bicep' = if (monitoring) {
     logAnalyticsWorkspaceSku: logAnalyticsWorkspaceSku
     location: locationControlPlane
     tags: contains(tags, 'Microsoft.OperationalInsights/workspaces') ? tags['Microsoft.OperationalInsights/workspaces'] : {}
-    avdInsightsMonitoringAgent: avdInsightsMonitoringAgent
+    performanceMonitoringAgent: performanceMonitoringAgent
   }
 }
 
 // Data Collection Rule for AVD Insights required for the Azure Monitor Agent
-module dataCollectionRules 'avdInsightsDataCollectionRules.bicep' = if (monitoring && avdInsightsMonitoringAgent == 'AzureMonitorAgent') {
-  name: 'DataCollectionRule_${timeStamp}'
+module avdInsightsDataCollectionRules 'avdInsightsDataCollectionRules.bicep' = if (monitoring && performanceMonitoringAgent == 'AzureMonitorAgent') {
+  name: 'AVDInsights_DataCollectionRule_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
     LogAWorkspaceId: logAnalyticsWorkspace.outputs.ResourceId
     location: locationControlPlane
-    Name: dataCollectionRulesName
+    NameConv: dataCollectionRulesNameConv
     tags: contains(tags, 'Microsoft.Insights/dataCollectionRules') ? tags['Microsoft.Insights/dataCollectionRules'] : {}
+  }
+}
+
+// Data Collection Rule for VM Insights required for the Azure Monitor Agent
+module vmInsightsDataCollectionRules 'vmInsightsDataCollectionRules.bicep' = if (monitoring && performanceMonitoringAgent == 'AzureMonitorAgent') {
+  name: 'VMInsights_DataCollectionRule_${timeStamp}'
+  scope: resourceGroup(resourceGroupManagement)
+  params: {
+    LogAWorkspaceId: logAnalyticsWorkspace.outputs.ResourceId
+    location: locationControlPlane
+    NameConv: dataCollectionRulesNameConv
+    tags: contains(tags, 'Microsoft.Insights/dataCollectionRules') ? tags['Microsoft.Insights/dataCollectionRules'] : {}
+  }
+}
+
+module dataCollectionEndpoint 'dataCollectionEndpoint.bicep' = if (monitoring && performanceMonitoringAgent == 'AzureMonitorAgent') {
+  name: 'DataCollectionEndpoint_${timeStamp}'
+  scope: resourceGroup(resourceGroupManagement)
+  params: {
+    location: locationControlPlane
+    tags: contains(tags, 'Microsoft.Insights/dataCollectionEndpoints') ? tags['Microsoft.Insights/dataCollectionEndpoints'] : {}
+    name: dataCollectionEndpointName
+    publicNetworkAccess: 'Enabled'
   }
 }
 
@@ -348,14 +372,18 @@ module recoveryServicesVault 'recoveryServicesVault.bicep' = if (recoveryService
 
 output artifactsUserAssignedIdentityClientId string = artifactsUserAssignedIdentityClientId
 output artifactsUserAssignedIdentityResourceId string = empty(artifactsUserAssignedIdentityResourceId) ? artifactsUserAssignedIdentity.outputs.resourceId : existingArtifactsUserAssignedIdentity.id
+output dataCollectionEndpointResourceId string = monitoring && performanceMonitoringAgent == 'AzureMonitorAgent' ? dataCollectionEndpoint.outputs.resourceId : ''
+output dataCollectionRulesResourceIds array = performanceMonitoringAgent == 'AzureMonitorAgent' ? [
+  avdInsightsDataCollectionRules.outputs.dataCollectionRulesId
+  vmInsightsDataCollectionRules.outputs.dataCollectionRulesId
+] : []
 output diskEncryptionKeyUrl string = (diskEncryptionOptions.diskEncryptionSet || diskEncryptionOptions.keyEncryptionKey) ? customerManagedKeys.outputs.diskKeyUri : ''
+output diskEncryptionSetResourceId string = diskEncryptionOptions.diskEncryptionSet ? diskEncryptionSet.outputs.resourceId : ''
 output encryptionUserAssignedIdentityResourceId string = (diskEncryptionOptions.diskEncryptionSet || diskEncryptionOptions.keyEncryptionKey) ? customerManagedKeys.outputs.encryptionUserAssignedIdentityResourceId : ''
 output existingWorkspace bool = validations.outputs.value.existingWorkspace == 'true' ? true : false
 output existingGlobalWorkspace bool = validations.outputs.value.existingGlobalWorkspace == 'true' ? true : false
 output keyVaultResourceId string = keyVault.outputs.keyVaultResourceId
 output keyVaultUrl string = keyVault.outputs.keyVaultUrl
-output dataCollectionRulesResourceId string = avdInsightsMonitoringAgent == 'AzureMonitorAgent' ? dataCollectionRules.outputs.dataCollectionRulesId : ''
-output diskEncryptionSetResourceId string = diskEncryptionOptions.diskEncryptionSet ? diskEncryptionSet.outputs.resourceId : ''
 output logAnalyticsWorkspaceResourceId string = monitoring ? logAnalyticsWorkspace.outputs.ResourceId : ''
 output deploymentUserAssignedIdentityClientId string = deploymentUserAssignedIdentity.outputs.clientId
 output deploymentUserAssignedIdentityResourceId string = deploymentUserAssignedIdentity.outputs.resourceId
