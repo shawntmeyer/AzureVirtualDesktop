@@ -13,7 +13,7 @@ param availabilitySetNamePrefix string
 param availabilitySetsCount int
 param availabilitySetsIndex int
 param availabilityZones array
-param avdInsightsLogAnalyticsWorkspaceResourceId string
+param perfLogAnalyticsWorkspaceResourceId string
 param cseMasterScript string
 param cseScriptAddDynParameters string
 param cseUris array
@@ -35,8 +35,7 @@ param fslogixDeployed bool
 param fslogixConfigureSessionHosts bool
 param fslogixExistingStorageAccountResourceIds array
 param fslogixContainerType string
-param fslogixStorageAccountPrefix string
-param fslogixStorageAccountResourceIds array
+param fslogixDeployedStorageAccountResourceIds array
 param hostPoolName string
 param imageOffer string
 param imagePublisher string
@@ -46,7 +45,7 @@ param location string
 param managementVirtualMachineName string
 param maxResourcesPerTemplateDeployment int
 param monitoring bool
-param netAppFileShares array
+param fslogixNetAppFileShares array
 param networkInterfaceNamePrefix string
 param ouPath string
 param pooledHostPool bool
@@ -80,6 +79,13 @@ var tagsAvailabilitySets = union({'cm-resource-parent': '${subscription().id}}/r
 var tagsNetworkInterfaces = union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroupControlPlane}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'}, contains(tags, 'Microsoft.Network/networkInterfaces') ? tags['Microsoft.Network/networkInterfaces'] : {})
 var tagsRecoveryServicesVault = union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroupControlPlane}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'}, contains(tags, 'Microsoft.recoveryServices/vaults') ? tags['Microsoft.recoveryServices/vaults'] : {})
 var tagsVirtualMachines = union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroupControlPlane}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'}, contains(tags, 'Microsoft.Compute/virtualMachines') ? tags['Microsoft.Compute/virtualMachines'] : {})
+
+module existingFslogixStorageAccounts 'existingFslogixStorageAccounts.bicep' = if(fslogixConfigureSessionHosts && !empty(fslogixExistingStorageAccountResourceIds)) {
+  name: 'ExistingFslogixStorageAccounts_${timeStamp}'
+  params: {
+    storageResourceIds: fslogixExistingStorageAccountResourceIds
+  }
+}
 
 module availabilitySets 'availabilitySets.bicep' = if (pooledHostPool && availability == 'AvailabilitySets') {
   name: 'AvailabilitySets_${timeStamp}'
@@ -121,7 +127,7 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     availability: availability
     availabilityZones: availabilityZones
     availabilitySetNamePrefix: availabilitySetNamePrefix
-    avdInsightsLogAnalyticsWorkspaceResourceId: avdInsightsLogAnalyticsWorkspaceResourceId
+    perfLogAnalyticsWorkspaceResourceId: perfLogAnalyticsWorkspaceResourceId
     batchCount: i
     cseMasterScript: cseMasterScript
     cseScriptAddDynParameters: cseScriptAddDynParameters
@@ -138,7 +144,9 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     drainModeUserAssignedIdentityClientId: drainModeUserAssignedIdentityClientId
     fslogixConfigureSessionHosts: fslogixConfigureSessionHosts
     fslogixContainerType: fslogixContainerType
-    fslogixExistingStorageAccountResourceIds: fslogixExistingStorageAccountResourceIds
+    fslogixDeployedStorageAccountResourceIds: fslogixDeployedStorageAccountResourceIds
+    fslogixExistingStorageAccounts: existingFslogixStorageAccounts.outputs.storageAccounts
+    fslogixStorageSolution: fslogixStorageSolution
     hostPoolName: hostPoolName
     imageOffer: imageOffer
     imagePublisher: imagePublisher
@@ -146,7 +154,7 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     location: location
     managementVirtualMachineName: managementVirtualMachineName
     monitoring: monitoring
-    netAppFileShares: netAppFileShares
+    fslogixNetAppFileShares: fslogixNetAppFileShares
     networkInterfaceNamePrefix: networkInterfaceNamePrefix
     ouPath: ouPath
     perfDataCollectionEndpointResourceId: perfDataCollectionEndpointResourceId
@@ -158,9 +166,6 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     securityLogAnalyticsWorkspaceResourceId: securityLogAnalyticsWorkspaceResourceId
     sessionHostCount: i == sessionHostBatchCount && divisionRemainderValue > 0 ? divisionRemainderValue : maxResourcesPerTemplateDeployment
     sessionHostIndex: i == 1 ? sessionHostIndex : ((i - 1) * maxResourcesPerTemplateDeployment) + sessionHostIndex
-    fslogixStorageAccountPrefix: fslogixStorageAccountPrefix
-    fslogixStorageAccountResourceIds: fslogixStorageAccountResourceIds
-    fslogixStorageSolution: fslogixStorageSolution
     storageSuffix: storageSuffix
     subnetResourceId: subnetResourceId
     tagsNetworkInterfaces: tagsNetworkInterfaces

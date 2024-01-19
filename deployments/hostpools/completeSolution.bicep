@@ -643,7 +643,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     availabilitySetsCount: logic.outputs.availabilitySetsCount
     availabilitySetsIndex: logic.outputs.beginAvSetRange
     availabilityZones: management.outputs.validateavailabilityZones
-    avdInsightsLogAnalyticsWorkspaceResourceId: management.outputs.logAnalyticsWorkspaceResourceId
+    perfLogAnalyticsWorkspaceResourceId: management.outputs.logAnalyticsWorkspaceResourceId
     cseMasterScript: cseMasterScript
     cseScriptAddDynParameters: cseScriptAddDynParameters
     cseUris: logic.outputs.cseUris
@@ -661,12 +661,11 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     domainName: domainName
     drainMode: drainMode
     drainModeUserAssignedIdentityClientId: management.outputs.deploymentUserAssignedIdentityClientId
-    fslogixContainerType: fslogixContainerType
-    fslogixExistingStorageAccountResourceIds: fslogixExistingStorageAccountResourceIds
     fslogixConfigureSessionHosts: fslogixConfigureSessionHosts
+    fslogixContainerType: fslogixContainerType
     fslogixDeployed: logic.outputs.fslogix
-    fslogixStorageAccountResourceIds: fslogix.outputs.storageAccountResourceIds
-    fslogixStorageAccountPrefix: resourceNames.outputs.storageAccountNamePrefix
+    fslogixDeployedStorageAccountResourceIds: fslogix.outputs.storageAccountResourceIds
+    fslogixExistingStorageAccountResourceIds: fslogixExistingStorageAccountResourceIds
     fslogixStorageSolution: logic.outputs.fslogixStorageSolution
     hostPoolName: controlPlane.outputs.hostPoolName
     imageOffer: imageOffer
@@ -677,7 +676,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     managementVirtualMachineName: management.outputs.virtualMachineName
     maxResourcesPerTemplateDeployment: logic.outputs.maxResourcesPerTemplateDeployment
     monitoring: monitoring
-    netAppFileShares: fslogixConfigureSessionHosts ? fslogix.outputs.netAppShares : [
+    fslogixNetAppFileShares: fslogixConfigureSessionHosts ? fslogix.outputs.netAppShares : [
       'None'
     ]
     networkInterfaceNamePrefix: resourceNames.outputs.networkInterfaceNamePrefix

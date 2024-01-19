@@ -18,15 +18,15 @@ var fileShareNames = {
     'profile-containers'
   ]
   CloudCacheProfileOfficeContainer: [
-    'office-containers'
     'profile-containers'
+    'office-containers'
   ]
   ProfileContainer: [
     'profile-containers'
   ]
   ProfileOfficeContainer: [
-    'office-containers'
     'profile-containers'
+    'office-containers'
   ]
 }
 
@@ -60,7 +60,7 @@ var globalFeedResourceGroupName = replace(replace(replace(nameConv_Mgmt_ResGroup
 var globalFeedWorkspaceName = replace((nameConvResTypeAtEnd ? 'avd-feed-global-resourceType' : 'resourceType-avd-feed-global'), 'resourceType', resourceAbbreviations.workspaces)
 // Compute Resources
 var resourceGroupHosts = replace(replace(replace(nameConv_HP_ResGroups, 'resGroupPurpose', 'hosts'), 'location', '${locations[locationControlPlane].abbreviation}'), 'resourceType', '${resourceAbbreviations.resourceGroups}')
-var availabilitySetNamePrefix = '${replace(replace(nameConv_HP_Resources, 'resourceType', resourceAbbreviations.availabilitySets), 'location', locations[locationVirtualMachines].abbreviation)}-'
+var availabilitySetNamePrefix = '${replace(replace((nameConvResTypeAtEnd ? '${virtualMachineNamePrefix}-${nameConvSuffix}-resourceType' : 'resourceType-${virtualMachineNamePrefix}-${nameConvSuffix}'), 'resourceType', resourceAbbreviations.availabilitySets), 'location', locations[locationVirtualMachines].abbreviation)}-'
 var diskNamePrefix = virtualMachineNamePrefix
 var networkInterfaceNamePrefix = virtualMachineNamePrefix
 // Management Resources

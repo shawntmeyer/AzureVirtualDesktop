@@ -9,7 +9,7 @@ param acceleratedNetworking string
 param availability string
 param availabilitySetNamePrefix string
 param availabilityZones array
-param avdInsightsLogAnalyticsWorkspaceResourceId string
+param perfLogAnalyticsWorkspaceResourceId string
 param batchCount int
 param cseMasterScript string
 param cseUris array
@@ -27,10 +27,9 @@ param drainMode bool
 param drainModeUserAssignedIdentityClientId string
 param fslogixConfigureSessionHosts bool
 param fslogixContainerType string
-param fslogixExistingStorageAccountResourceIds array
-@minLength(1)
-param fslogixStorageAccountPrefix string
-param fslogixStorageAccountResourceIds array = []
+param fslogixExistingStorageAccounts array
+param fslogixDeployedStorageAccountResourceIds array = []
+param fslogixNetAppFileShares array
 param hostPoolName string
 param imageOffer string
 param imagePublisher string
@@ -39,7 +38,6 @@ param customImageResourceId string
 param location string
 param managementVirtualMachineName string
 param monitoring bool
-param netAppFileShares array
 param networkInterfaceNamePrefix string
 param ouPath string
 param perfDataCollectionEndpointResourceId string
@@ -74,19 +72,58 @@ var amdVmSizes = [
   'Standard_NV32as_v4'
 ]
 
+// Dynamic parameters for Configure-FSLogix Script
+//  cloudcache determined from fslogixContainerType parameter
+var fslogixCloudCacheString = contains(fslogixContainerType, 'CloudCache') ? 'CloudCache=$true' : 'CloudCache=$false'
+//  convert long activeDirectorySolution parameter values to short and SMB authentication specific values for script.
+var fslogixIdP = contains(activeDirectorySolution, 'Kerberos') ? 'AADKERB' : !contains(activeDirectorySolution, 'DomainServices') ? 'AAD' : 'DomainServices'
+var fslogixIdpString = 'IdP=\'${fslogixIdP}\''
+var fslogixStorageSolutionString = 'StorageSolution=\'${fslogixStorageSolution}\'' 
+var fslogixNetAppSharesString = fslogixStorageSolution == 'AzureNetAppFiles' && fslogixNetAppFileShares != ['None'] ? 'NetAppFileShares=\'${replace(join(fslogixNetAppFileShares, ','), ',', '\',\'')}\'' : ''
+var fslogixSASuffixString = fslogixStorageSolution == 'AzureFiles' ? 'SASuffix=\'${storageSuffix}\'' : ''
+
+// filter storage account resource ids for AAD because no sharding possible inside the region.
+var fslogixNewSAResIds = !empty(fslogixDeployedStorageAccountResourceIds) ? ( fslogixIdP == 'AAD' ? fslogixDeployedStorageAccountResourceIds[0] : fslogixDeployedStorageAccountResourceIds ) : []
+// get all existing storage account resource Ids from the fslogixExistingStorageAccounts object.
+var fslogixExSAResIds = [for sa in fslogixExistingStorageAccounts: sa.id]
+// filter fslogixExistingStorageAccounts object to only those that are not in the vm region.
+var fslogixExSAResIdsInOtherRegions = [for (sa, i) in fslogixExistingStorageAccounts: sa.location != location ? sa.id : '']
+// determine existing SA Resource Ids based on IdP and whether or not we deployed storage accounts. Limiting to four max storage accounts that require storage account key to allow key retrieval without loop
+var fslogixExistingSAResIds = fslogixIdP == 'AAD' ? ( !empty(fslogixDeployedStorageAccountResourceIds) ? take(intersection(fslogixExSAResIds, fslogixExSAResIdsInOtherRegions), 4) : take(fslogixExSAResIds, 4) ) : fslogixExSAResIds
+var fslogixSAResIds = union(fslogixNewSAResIds, fslogixExistingSAResIds)
+// build storage names string
+var fslogixAllSANames = [for id in fslogixSAResIds: last(split(id, '/'))]
+var fslogixSANamesString = fslogixStorageSolution == 'AzureFiles' ? 'SANames=\'${replace(join(fslogixAllSANames, ','), ',', '\',\'')}\'' : ''
+// build storage account keys string
+var fslogixSAKey1 = fslogixIdP == 'AAD' && fslogixConfigureSessionHosts && !empty(fslogixSAResIds) ? [ storageAccounts[0].listkeys().keys[0].value ] : []
+var fslogixSAKey2 = fslogixIdP == 'AAD' && fslogixConfigureSessionHosts && length(fslogixSAResIds) > 1 ? [ storageAccounts[1].listkeys().keys[0].value ] : []
+var fslogixSAKey3 = fslogixIdP == 'AAD' && fslogixConfigureSessionHosts && length(fslogixSAResIds) > 2 ? [ storageAccounts[2].listkeys().keys[0].value ] : []
+var fslogixSAKey4 = fslogixIdP == 'AAD' && fslogixConfigureSessionHosts && length(fslogixSAResIds) > 3 ? [ storageAccounts[3].listkeys().keys[0].value ] : []  
+var fslogixSAKeysString = fslogixIdP == 'AAD' ? 'SAKeys=\'${replace(join(union(fslogixSAKey1, fslogixSAKey2, fslogixSAKey3, fslogixSAKey4), ','), ',', '\',\'')}\'' : ''
+// build shares string
+var fslogixSharesString = fslogixStorageSolution != 'AzureNetAppFiles' ? contains(fslogixContainerType, 'Office') ? 'ShareNames=\'profile-containers\',\'office-containers\'' : 'ShareNames=\'profile-containers\'' : ''
+// build fslogix common string
+var fslogixCommon = '${fslogixIdpString};${fslogixStorageSolutionString};${fslogixCloudCacheString}'
+// add optional values to string
+var fslogixString = fslogixStorageSolution == 'AzureNetAppFiles' ? '${fslogixCommon};${fslogixNetAppSharesString}' : fslogixIdP == 'AAD' ? '${fslogixCommon};${fslogixSASuffixString};${fslogixSANamesString};${fslogixSAKeysString};${fslogixSharesString}' : '${fslogixCommon};${fslogixSASuffixString};${fslogixSANamesString};${fslogixSharesString}'
+// create custom object
+var fslogixCustomObject = 'FSLogix=@([pscustomobject]@{${fslogixString}})'
+
+// Dynamic parameters for the Anti-Malware Extension
 var fslogixExclusionsCloudCache = contains(fslogixContainerType, 'CloudCache') ? ';"%ProgramData%\\FSLogix\\Cache\\*";"%ProgramData%\\FSLogix\\Proxy\\*"' : ''
 
-var fslogixOfficeSharesPrefixMatch = ['\\\\${fslogixStorageAccountPrefix}??.file.${storageSuffix}\\office-containers\\*\\*.VHDX']
-var fslogixProfileSharesPrefixMatch = ['\\\\${fslogixStorageAccountPrefix}??.file.${storageSuffix}\\profile-containers\\*\\*.VHDX']
+var fslogixSANameMinus2 = [for name in fslogixAllSANames: take(name, length(name)-2)]
+var fslogixDedupedSANames = union(fslogixSANameMinus2, fslogixSANameMinus2)
+var fslogixMatchPrefix = length(fslogixDedupedSANames) == 1 ? true : false
 
-var fslogixOfficeSharesNoMatch = [for resourceId in fslogixStorageAccountResourceIds: '\\\\${last(split(resourceId, '/'))}.file.${storageSuffix}}\\office-containers\\*\\*.VHDX']
-var fslogixProfileSharesNoMatch = [for resourceId in fslogixStorageAccountResourceIds: '\\\\${last(split(resourceId, '/'))}.file.${storageSuffix}}\\profile-containers\\*\\*.VHDX']
+var fslogixOfficeSharesPrefixMatch = ['\\\\${fslogixDedupedSANames[0]}??.file.${storageSuffix}\\office-containers\\*\\*.VHDX']
+var fslogixProfileSharesPrefixMatch = ['\\\\${fslogixDedupedSANames[0]}??.file.${storageSuffix}\\profile-containers\\*\\*.VHDX']
 
-var fslogixMatchPrefix = [for resourceId in fslogixStorageAccountResourceIds: contains(resourceId, fslogixStorageAccountPrefix)]
-var storagePrefixMatch = !empty(fslogixStorageAccountResourceIds) ? !contains(fslogixMatchPrefix, false) : false
+var fslogixOfficeSharesNoMatch = [for name in fslogixAllSANames: '\\\\${name}.file.${storageSuffix}}\\office-containers\\*\\*.VHDX']
+var fslogixProfileSharesNoMatch = [for name in fslogixAllSANames: '\\\\${name}.file.${storageSuffix}}\\profile-containers\\*\\*.VHDX']
 
-var fslogixOfficeVHDXs = storagePrefixMatch ? fslogixOfficeSharesPrefixMatch : fslogixOfficeSharesNoMatch
-var fslogixProfileVHDXs = storagePrefixMatch ? fslogixProfileSharesPrefixMatch : fslogixProfileSharesNoMatch
+var fslogixOfficeVHDXs = fslogixMatchPrefix ? fslogixOfficeSharesPrefixMatch : fslogixOfficeSharesNoMatch
+var fslogixProfileVHDXs = fslogixMatchPrefix ? fslogixProfileSharesPrefixMatch : fslogixProfileSharesNoMatch
 
 var fslogixExclusionsOfficeContainers = [for Path in fslogixOfficeVHDXs: '"${Path}";"${Path}.lock";"${Path}.meta";"${Path}.metadata"']
 var fslogixExclusionProfileContainers = [for Path in fslogixProfileVHDXs: '"${Path}";"${Path}.lock";"${Path}.meta";"${Path}.metadata"']
@@ -95,31 +132,6 @@ var fslogixExclusionsOffice = contains(fslogixContainerType, 'Office') ? ';${joi
 var fslogixExclusionsProfile = ';${join(fslogixExclusionProfileContainers, ';')}'
 
 var fslogixExclusions = '"%TEMP%\\*\\*.VHDX";"%Windir%\\TEMP\\*\\*.VHDX"${fslogixExclusionsCloudCache}${fslogixExclusionsProfile}${fslogixExclusionsOffice}'
-
-// Dynamic parameters for Configure-FSLogix Script
-//  cloudcache determined from fslogixContainerType parameter
-var fslogixCloudCacheString = contains(fslogixContainerType, 'CloudCache') ? 'CloudCache=$true' : 'CloudCache=$false'
-//  convert long activeDirectorySolution parameter values to short and SMB authentication specific values for script.
-var fslogixIdP = contains(activeDirectorySolution, 'Kerberos') ? 'AADKERB' : !contains(activeDirectorySolution, 'DomainServices') ? 'AAD' : 'DomainServices'
-var fslogixIdpString = 'IdP=\'${fslogixIdP}\''
-var fslogixStorageSolutionString = 'StorageSolution=\'${fslogixStorageSolution}\''
-var fslogixNetAppSharesString = fslogixStorageSolution == 'AzureNetAppFiles' && netAppFileShares != 'None' ? 'NetAppFileShares=\'${replace(join(netAppFileShares, ','), ',', '\',\'')}\'' : ''
-var fslogixSASuffixString = fslogixStorageSolution == 'AzureFiles' ? 'SASuffix=\'${storageSuffix}\'' : ''
-//  build storage account names from Storage Account parameters.
-var fslogixNewSANames = [for resourceId in fslogixStorageAccountResourceIds: last(split(resourceId, '/'))]
-//  use only first storage account per region with AAD and Storage Key. No sharding possible.
-var fslogixNewStorageNames = fslogixIdP == 'AAD' ? [fslogixNewSANames[0]] : fslogixNewSANames
-var fslogixExistingSANames = [for resourceId in fslogixExistingStorageAccountResourceIds: last(split(resourceId, '/')) ]
-var fslogixExistingStorageNames  = fslogixIdP == 'AAD' && !empty(fslogixExistingStorageAccountResourceIds) ? [fslogixExistingSANames[0]] : fslogixExistingSANames
-var fslogixSANamesString = fslogixStorageSolution == 'AzureFiles' ? 'SANames=\'${replace(join(union(fslogixNewStorageNames, fslogixExistingStorageNames), ','), ',', '\',\'')}\'' : ''
-//  get only the first storage account key per region with AAD and Storage Key. No sharding possible.
-var fslogixSAKey = fslogixIdP == 'AAD' ? [ storageAccounts[0].listKeys().keys[0].value ] : []
-var fslogixHASAKey = fslogixIdP == 'AAD' && !empty(fslogixExistingStorageAccountResourceIds) ? [ existingStorageAccountsforHA.listKeys().keys[0].value ] : []
-var fslogixSAKeysString = fslogixIdP == 'AAD' ? 'SAKeys=\'${replace(join(union(fslogixSAKey, fslogixHASAKey), ','), ',', '\',\'')}\'' : ''
-var fslogixSharesString = fslogixStorageSolution != 'AzureNetAppFiles' ? contains(fslogixContainerType, 'Office') ? 'ShareNames=\'profile-containers\',\'office-containers\'' : 'ShareNames=\'profile-containers\'' : ''
-var fslogixCommon = '${fslogixIdpString};${fslogixStorageSolutionString};${fslogixCloudCacheString}'
-var fslogixString = fslogixStorageSolution == 'AzureNetAppFiles' ? '${fslogixCommon};${fslogixNetAppSharesString}' : fslogixIdP == 'AAD' ? '${fslogixCommon};${fslogixSASuffixString};${fslogixSANamesString};${fslogixSAKeysString};${fslogixSharesString}' : '${fslogixCommon};${fslogixSASuffixString};${fslogixSANamesString};${fslogixSharesString}'
-var fslogixCustomObject = 'FSLogix=@([pscustomobject]@{${fslogixString}})'
 
 // Dynamic parameters for Set-SessionHostConfiguration.ps1
 //var hostPoolToken = hostPool.properties.registrationInfo.token
@@ -181,19 +193,14 @@ var nvidiaVmSizes = [
 
 // call on new storage accounts only if we need the Storage Key(s)
 
-resource storageAccounts 'Microsoft.Storage/storageAccounts@2023-01-01' existing = [for resId in fslogixStorageAccountResourceIds: if (fslogixStorageSolution == 'AzureFiles' && !contains(activeDirectorySolution, 'Kerberos') && !contains(activeDirectorySolution, 'DomainServices')) {
-  name: last(split(resId, '/'))
-  scope: resourceGroup(split(resId, '/')[2], split(resId, '/')[4])
+resource storageAccounts 'Microsoft.Storage/storageAccounts@2023-01-01' existing = [for ResId in fslogixSAResIds: if(fslogixIdP == 'AAD' && fslogixConfigureSessionHosts && !empty(fslogixSAResIds)) {
+  name: last(split(ResId, '/'))
+  scope: resourceGroup(split(ResId, '/')[2], split(ResId, '/')[4])
 }]
 
-resource existingStorageAccountsforHA 'Microsoft.Storage/storageAccounts@2023-01-01' existing = if (fslogixStorageSolution == 'AzureFiles' && !contains(activeDirectorySolution, 'Kerberos') && !contains(activeDirectorySolution, 'DomainServices')){
-  name: last(split(fslogixExistingStorageAccountResourceIds[0], '/'))
-  scope: resourceGroup(split(fslogixExistingStorageAccountResourceIds[0], '/')[2], split(fslogixExistingStorageAccountResourceIds[0], '/')[4])
-}
-
-resource avdInsightsWorkspace 'Microsoft.OperationalInsights/workspaces@2022-10-01' existing = if (!empty(avdInsightsLogAnalyticsWorkspaceResourceId)) {
-  name: last(split(avdInsightsLogAnalyticsWorkspaceResourceId, '/'))
-  scope: resourceGroup(split(avdInsightsLogAnalyticsWorkspaceResourceId, '/')[2],split(avdInsightsLogAnalyticsWorkspaceResourceId, '/')[4])
+resource perfLogAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2022-10-01' existing = if (!empty(perfLogAnalyticsWorkspaceResourceId)) {
+  name: last(split(perfLogAnalyticsWorkspaceResourceId, '/'))
+  scope: resourceGroup(split(perfLogAnalyticsWorkspaceResourceId, '/')[2],split(perfLogAnalyticsWorkspaceResourceId, '/')[4])
 }
 
 resource securityWorkspace 'Microsoft.OperationalInsights/workspaces@2022-10-01' existing = if (!empty(securityLogAnalyticsWorkspaceResourceId)) {
@@ -390,10 +397,10 @@ resource extension_MicrosoftMonitoringAgent 'Microsoft.Compute/virtualMachines/e
     typeHandlerVersion: '1.0'
     autoUpgradeMinorVersion: true
     settings: {
-      workspaceId: monitoring && !empty(securityLogAnalyticsWorkspaceResourceId) ? securityWorkspace.properties.customerId : avdInsightsWorkspace.properties.customerId 
+      workspaceId: monitoring && !empty(securityLogAnalyticsWorkspaceResourceId) ? securityWorkspace.properties.customerId : perfLogAnalyticsWorkspace.properties.customerId 
     }
     protectedSettings: {
-      workspaceKey: monitoring && !empty(securityLogAnalyticsWorkspaceResourceId) ? securityWorkspace.listKeys().primarySharedKey : avdInsightsWorkspace.listKeys().primarySharedKey
+      workspaceKey: monitoring && !empty(securityLogAnalyticsWorkspaceResourceId) ? securityWorkspace.listKeys().primarySharedKey : perfLogAnalyticsWorkspace.listKeys().primarySharedKey
     }
   }
   dependsOn: [
