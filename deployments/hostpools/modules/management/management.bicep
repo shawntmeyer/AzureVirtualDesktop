@@ -138,7 +138,7 @@ module deploymentUserAssignedIdentity 'userAssignedIdentity.bicep' = {
   }
 }
 
-module roleAssignments_deployment '../roleAssignment.bicep' = [for i in range(0, length(roleAssignments)): {
+module roleAssignments_deployment '../common/roleAssignment.bicep' = [for i in range(0, length(roleAssignments)): {
   scope: resourceGroup(roleAssignments[i].subscription, roleAssignments[i].resourceGroup)
   name: 'RoleAssignment_${roleAssignments[i].roleShortName}_${timeStamp}'
   params: {
@@ -230,8 +230,8 @@ module diskEncryptionSet 'diskEncryptionSet.bicep' = if(diskEncryptionOptions.di
     keyUrl: (diskEncryptionOptions.diskEncryptionSet || diskEncryptionOptions.keyEncryptionKey) ? customerManagedKeys.outputs.diskKeyUriWithVersion : ''
     keyVaultResourceId: keyVault.outputs.keyVaultResourceId
     location: locationVirtualMachines
-    tags: contains(tags, 'Microsoft.Compute/diskEncryptionSets') ? tags['Microsoft.Compute/diskEncryptionSets'] : {}    
-    userAssignedIdentityResourceId: (diskEncryptionOptions.diskEncryptionSet || diskEncryptionOptions.keyEncryptionKey) ? customerManagedKeys.outputs.encryptionUserAssignedIdentityResourceId : ''
+    tags: contains(tags, 'Microsoft.Compute/diskEncryptionSets') ? tags['Microsoft.Compute/diskEncryptionSets'] : {}
+    timeStamp: timeStamp
   }
 }
 
@@ -271,7 +271,7 @@ module virtualMachine 'virtualMachine.bicep' = {
 
 // Deployment Validations
 // This module validates the selected parameter values and collects required data
-module validations 'customScriptExtensions.bicep' = {
+module validations '../common/customScriptExtensions.bicep' = {
   scope: resourceGroup(resourceGroupManagement)
   name: 'Validations_${timeStamp}'
   params: {

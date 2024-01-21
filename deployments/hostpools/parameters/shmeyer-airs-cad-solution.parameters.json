@@ -2,11 +2,11 @@
   "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "businessUnitIdentifier": {
-      "value": "engineer"
+    "artifactsContainerName": {
+      "value": "artifacts"
     },
-    "artifactsUri": {
-      "value": "https://saimageassetsusgvaa4a449.blob.core.usgovcloudapi.net/artifacts/"
+    "artifactsStorageAccountResourceId": {
+      "value": "/subscriptions/70c1bb3a-115f-4300-becd-5f74200999bb/resourceGroups/avd-image-management-usgva-rg/providers/Microsoft.Storage/storageAccounts/saimageassetsusgvaa4a449"
     },
     "artifactsUserAssignedIdentityResourceId" :{
       "value": "/subscriptions/70c1bb3a-115f-4300-becd-5f74200999bb/resourceGroups/avd-image-management-usgva-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/avd-image-management-usgva-uai"
@@ -37,25 +37,37 @@
       "value": "targetisaadjoined:i:1;enablerdsaadauth:i:1"
     },
     "desktopFriendlyName": {
-      "value": "Engineer Desktop"
+      "value": "CAD Desktop"
     },
     "diskEncryptionSolution" : {
       "value": "EAH + CMK"
     },
-    "FsLogixSolution": {
+    "fslogixContainerType": {
       "value": "ProfileContainer"
     },
-    "FsLogixStorage": {
-      "value": "AzureFiles Standard privateEndpoint"
+    "fslogixStorageService": {
+      "value": "AzureFiles Standard"
     },
     "fslogixConfigureSessionHosts": {
       "value": true
     },
-    "privateEndpointSubnetResourceId": {
+    "fslogixConfigurationBlobName": {
+      "value": "FSLogix-Configure.zip"
+    },
+    "privateEndpoints": {
+      "value": true
+    },
+    "managementPrivateEndpointSubnetResourceId": {
+      "value": "/subscriptions/70c1bb3a-115f-4300-becd-5f74200999bb/resourceGroups/rg-avd-networking-lab-va/providers/Microsoft.Network/virtualNetworks/vnet-avd-lab-va/subnets/sn-avd-privateendppoints-lab-va"
+    },
+    "storagePrivateEndpointSubnetResourceId": {
       "value": "/subscriptions/70c1bb3a-115f-4300-becd-5f74200999bb/resourceGroups/rg-avd-networking-lab-va/providers/Microsoft.Network/virtualNetworks/vnet-avd-lab-va/subnets/sn-avd-privateendppoints-lab-va"
     },
     "azureFilesPrivateDnsZoneResourceId": {
       "value": "/subscriptions/70c1bb3a-115f-4300-becd-5f74200999bb/resourceGroups/rg-networking-lab-va/providers/Microsoft.Network/privateDnsZones/privatelink.file.core.usgovcloudapi.net"
+    },
+    "keyVaultPrivateDnsZoneResourceId": {
+      "value": "/subscriptions/70c1bb3a-115f-4300-becd-5f74200999bb/resourceGroups/rg-networking-lab-va/providers/Microsoft.Network/privateDnsZones/privatelink.vaultcore.usgovcloudapi.net"
     },
     "hostPoolMaxSessionLimit": {
       "value": 2
@@ -80,23 +92,20 @@
     "sessionHostIndex": {
       "value": 1
     },
-    "virtualMachineMonitoringAgent": {
+    "performanceMonitoringAgent": {
       "value": "AzureMonitorAgent"
     },
     "virtualMachineNamePrefix": {
-      "value": "engcad-va-"
+      "value": "cad-va-"
     },
-    "VirtualMachinePassword": {
+    "VirtualMachineAdminPassword": {
       "value": "1qaz@WSX1qaz@WSX"
     },
-    "VirtualMachineUsername": {
+    "VirtualMachineAdminUsername": {
       "value": "x_admin"
     },
     "workspaceFriendlyName": {
       "value": "Test AVD Workspace"
-    },
-    "scalingTool": {
-      "value": false
     },
     "securityDataCollectionRulesResourceId": {
       "value": "/subscriptions/70c1bb3a-115f-4300-becd-5f74200999bb/resourcegroups/rg-securitymonitoring/providers/microsoft.insights/datacollectionrules/security-events-dcr"

@@ -19,7 +19,7 @@ param tags object
 param timeStamp string
 param workspaceName string
 
-module addApplicationGroups '../management/customScriptExtensions.bicep' = if (existingWorkspace) {
+module addApplicationGroups '../common/customScriptExtensions.bicep' = if (existingWorkspace) {
   scope: resourceGroup(resourceGroupManagement)
   name: 'AddApplicationGroupReferences_${timeStamp}'
   params: {

@@ -60,7 +60,9 @@ var globalFeedResourceGroupName = replace(replace(replace(nameConv_Mgmt_ResGroup
 var globalFeedWorkspaceName = replace((nameConvResTypeAtEnd ? 'avd-feed-global-resourceType' : 'resourceType-avd-feed-global'), 'resourceType', resourceAbbreviations.workspaces)
 // Compute Resources
 var resourceGroupHosts = replace(replace(replace(nameConv_HP_ResGroups, 'resGroupPurpose', 'hosts'), 'location', '${locations[locationControlPlane].abbreviation}'), 'resourceType', '${resourceAbbreviations.resourceGroups}')
-var availabilitySetNamePrefix = '${replace(replace((nameConvResTypeAtEnd ? '${virtualMachineNamePrefix}-${nameConvSuffix}-resourceType' : 'resourceType-${virtualMachineNamePrefix}-${nameConvSuffix}'), 'resourceType', resourceAbbreviations.availabilitySets), 'location', locations[locationVirtualMachines].abbreviation)}-'
+var availabilitySetPrefix = last(virtualMachineNamePrefix) == '-' ? take(virtualMachineNamePrefix, length(virtualMachineNamePrefix)-1) : virtualMachineNamePrefix
+var availabilitySetNamePrefix = '${replace(replace((nameConvResTypeAtEnd ? '${availabilitySetPrefix}-${nameConvSuffix}-resourceType' : 'resourceType-${availabilitySetPrefix}-${nameConvSuffix}'), 'resourceType', resourceAbbreviations.availabilitySets), 'location', locations[locationVirtualMachines].abbreviation)}-'
+
 var diskNamePrefix = virtualMachineNamePrefix
 var networkInterfaceNamePrefix = virtualMachineNamePrefix
 // Management Resources

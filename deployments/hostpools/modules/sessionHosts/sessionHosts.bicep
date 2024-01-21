@@ -101,7 +101,7 @@ module availabilitySets 'availabilitySets.bicep' = if (pooledHostPool && availab
 
 // Role Assignment for Virtual Machine Login User
 // This module deploys the role assignments to login to Azure AD joined session hosts
-module roleAssignments '../roleAssignment.bicep' = [for i in range(0, length(securityPrincipalObjectIds)): if (!contains(activeDirectorySolution, 'DomainServices')) {
+module roleAssignments '../common/roleAssignment.bicep' = [for i in range(0, length(securityPrincipalObjectIds)): if (!contains(activeDirectorySolution, 'DomainServices')) {
   name: 'RoleAssignments_${i}_${timeStamp}'
   scope: resourceGroup(resourceGroupHosts)
   params: {

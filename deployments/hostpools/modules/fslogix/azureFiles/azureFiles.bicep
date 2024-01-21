@@ -211,7 +211,7 @@ resource privateDnsZoneGroups 'Microsoft.Network/privateEndpoints/privateDnsZone
   ]
 }]
 
-module ntfsPermissions '../../management/customScriptExtensions.bicep' = if (!contains(activeDirectorySolution, 'AzureActiveDirectory')) {
+module ntfsPermissions '../../common/customScriptExtensions.bicep' = if (!contains(activeDirectorySolution, 'AzureActiveDirectory')) {
   name: 'FslogixNtfsPermissions_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {

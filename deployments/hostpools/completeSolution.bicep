@@ -290,7 +290,7 @@ param imageOffer string = 'office-365'
 param imagePublisher string = 'MicrosoftWindowsDesktop'
 
 @description('SKU for the virtual machine image')
-param imageSku string = 'win11-22h2-avd-m365'
+param imageSku string = 'win11-23h2-avd-m365'
 
 @description('The resource ID for the Compute Gallery Image Version. Do not set this value if using a marketplace image.')
 param customImageResourceId string = ''

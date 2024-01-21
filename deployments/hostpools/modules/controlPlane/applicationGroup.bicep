@@ -26,7 +26,7 @@ resource applicationGroup 'Microsoft.DesktopVirtualization/applicationGroups@202
 }
 
 // Adds a friendly name to the SessionDesktop application for the desktop application group
-module applicationFriendlyName '../management/customScriptExtensions.bicep' = if (!empty(desktopFriendlyName)) {
+module applicationFriendlyName '../common/customScriptExtensions.bicep' = if (!empty(desktopFriendlyName)) {
   scope: resourceGroup(resourceGroupManagement)
   name: 'ApplicationFriendlyName_${timeStamp}'
   params : {

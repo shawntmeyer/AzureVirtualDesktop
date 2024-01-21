@@ -89,7 +89,7 @@ module userAssignedIdentity 'userAssignedIdentity.bicep' = {
   }
 }
 
-module roleAssignment '../roleAssignment.bicep' = {
+module roleAssignment '../common/roleAssignment.bicep' = {
   name: 'RoleAssignment_Encryption_${timeStamp}'
   params: {
     PrincipalId: userAssignedIdentity.outputs.principalId

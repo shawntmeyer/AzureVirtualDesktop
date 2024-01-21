@@ -436,7 +436,7 @@ resource extension_CustomScriptExtension 'Microsoft.Compute/virtualMachines/exte
 }]
 
 // Enables drain mode on the session hosts so users cannot login to hosts immediately after the deployment
-module setDrainMode '../management/customScriptExtensions.bicep' = if (drainMode) {
+module setDrainMode '../common/customScriptExtensions.bicep' = if (drainMode) {
   name: 'CSE_DrainMode_${batchCount}_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {

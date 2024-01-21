@@ -62,7 +62,7 @@ module jobSchedules 'jobSchedules.bicep' = [for i in range(storageIndex, storage
   ]
 }]
 
-module roleAssignment '../roleAssignment.bicep' = {
+module roleAssignment '../common/roleAssignment.bicep' = {
   name: 'RoleAssignment_${storageResourceGroupName}_${timeStamp}'
   scope: resourceGroup(storageResourceGroupName)
   params: {
