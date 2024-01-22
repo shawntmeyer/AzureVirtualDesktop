@@ -37,14 +37,12 @@ param artifactsUserAssignedIdentityResourceId string = ''
 
 @allowed([
   'ActiveDirectoryDomainServices' // User accounts are sourced from and Session Hosts are joined to same Active Directory domain.
-  'AzureActiveDirectoryDomainServices' // User accounts are sourced from either Azure Active Directory or Active Directory Domain Services and Session Hosts are joined to Azure Active Directory Domain Services.
-  'AzureActiveDirectory' // User accounts and Session Hosts are located in Azure Active Directory Only (Cloud Only Scenario)
-  'AzureActiveDirectoryIntuneEnrollment' // User accounts and Session Hosts are located in Azure Active Directory Only. Session Hosts are automatically enrolled in Intune. (Cloud Only Scenario)
-  'AzureActiveDirectoryAndKerberos' // User accounts are sourced from Active Directory domain and session hosts are joined to Azure Active Directory natively.
-  'AzureActiveDirectoryAndKerberosIntuneEnrollment' // User accounts are sourced from Active Directory domain and session hosts are joined to Azure Active Directory natively with Intune Enrollment.
+  'EntraDomainServices' // User accounts are sourced from either Azure Active Directory or Active Directory Domain Services and Session Hosts are joined to Azure Active Directory Domain Services.
+  'EntraId' // User accounts and Session Hosts are located in Azure Active Directory Only (Cloud Only Scenario)
+  'EntraIdIntuneEnrollment' // User accounts and Session Hosts are located in Azure Active Directory Only. Session Hosts are automatically enrolled in Intune. (Cloud Only Scenario)
 ])
 @description('The service providing domain services for Azure Virtual Desktop.  This is needed to properly configure the session hosts and if applicable, the Azure Storage Account.')
-param activeDirectorySolution string
+param identitySolution string
 
 @secure()
 @description('Optional. The password of the privileged account to domain join the AVD session hosts to your domain')
@@ -95,7 +93,7 @@ param fslogixConfigurationBlobName string = 'FSLogix-Configure.zip'
 
 @description('''Existing FSLogix Storage Account Resource Ids. Only used when fslogixConfigureSessionHosts = "true".
 This list will be added to any storage accounts created when setting "fslogixStorageService" to any of the AzureFiles options. 
-If "activeDirectorySolution" is set to "AzureActiveDirectory" or "AzureActiveDirectoryIntuneEnrollment" then only the first storage account listed will be used.
+If "identitySolution" is set to "EntraId" or "EntraIdIntuneEnrollment" then only the first storage account listed will be used.
 ''')
 param fslogixExistingStorageAccountResourceIds array = []
 
@@ -103,7 +101,7 @@ param fslogixExistingStorageAccountResourceIds array = []
 @minValue(0)
 @description('''
 The number of storage accounts to deploy to support the required use case for the AVD stamp. https://docs.microsoft.com/en-us/azure/architecture/patterns/sharding
-Note: Cannot utilize sharding with "activeDirectorySolution" = "AAD" so storageCount will be set to 1 in variables.
+Note: Cannot utilize sharding with "identitySolution" = "AAD" so storageCount will be set to 1 in variables.
 ''')
 param storageCount int = 1
 
@@ -290,7 +288,7 @@ resource vmVirtualNetwork 'Microsoft.Network/virtualNetworks@2023-04-01' existin
   scope: resourceGroup(split(virtualMachineSubnetResourceId, '/')[2], split(virtualMachineSubnetResourceId, '/')[4])
 }
 
-resource keyVault_Reference 'Microsoft.KeyVault/vaults@2021-06-01-preview' existing = if(contains(activeDirectorySolution,'DomainServices') && (empty(domainJoinUserPassword) || empty(domainJoinUserPrincipalName)) || empty(virtualMachineAdminPassword) || empty(virtualMachineAdminUserName))  {
+resource keyVault_Reference 'Microsoft.KeyVault/vaults@2021-06-01-preview' existing = if(contains(identitySolution,'DomainServices') && (empty(domainJoinUserPassword) || empty(domainJoinUserPrincipalName)) || empty(virtualMachineAdminPassword) || empty(virtualMachineAdminUserName))  {
   name: resourceNames.outputs.keyVaultName
   scope: resourceGroup(resourceNames.outputs.resourceGroupManagement)
 }
@@ -325,7 +323,7 @@ module resourceNames 'modules/resourceNames.bicep' = {
 module logic 'modules/logic.bicep' = {
   name: 'Logic_${timeStamp}'
   params: {
-    activeDirectorySolution: activeDirectorySolution
+    identitySolution: identitySolution
     artifactsUri: artifactsUri
     avdAgentInstallersBlobName: avdAgentInstallersBlobName
     avdPrivateLink: false
@@ -363,7 +361,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
   name: 'SessionHosts_${timeStamp}'
   params: {
     acceleratedNetworking: acceleratedNetworking
-    activeDirectorySolution: activeDirectorySolution
+    identitySolution: identitySolution
     adeKEKUrl: diskEncryptionSolution == 'ADE + KEK' ? adeKeyEncryptionKey.properties.keyUri : ''
     artifactsUri: artifactsUri
     artifactsUserAssignedIdentityClientId: artifactsUAI.properties.clientId
@@ -383,8 +381,8 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     diskNamePrefix: resourceNames.outputs.diskNamePrefix
     diskSku: diskSku
     divisionRemainderValue: logic.outputs.divisionRemainderValue
-    domainJoinUserPassword: empty(domainJoinUserPassword) ? contains(activeDirectorySolution, 'DomainServices') ? keyVault_Reference.getSecret(domainJoinUserPassword) : '' : domainJoinUserPassword
-    domainJoinUserPrincipalName: empty(domainJoinUserPrincipalName) ? contains(activeDirectorySolution, 'DomainServices') ? keyVault_Reference.getSecret(domainJoinUserPrincipalName) : '' : domainJoinUserPrincipalName
+    domainJoinUserPassword: empty(domainJoinUserPassword) ? contains(identitySolution, 'DomainServices') ? keyVault_Reference.getSecret(domainJoinUserPassword) : '' : domainJoinUserPassword
+    domainJoinUserPrincipalName: empty(domainJoinUserPrincipalName) ? contains(identitySolution, 'DomainServices') ? keyVault_Reference.getSecret(domainJoinUserPrincipalName) : '' : domainJoinUserPrincipalName
     domainName: domainName
     drainMode: false
     drainModeUserAssignedIdentityClientId: ''

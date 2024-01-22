@@ -8,7 +8,7 @@
     "ArtifactsUserAssignedIdentityResourceId": {
       "value": "/subscriptions/6dc4ed51-16b9-4494-a406-4fb7a8330d95/resourceGroups/rg-image-management-use/providers/Microsoft.ManagedIdentity/userAssignedIdentities/uai-image-management-use"
     },
-    "activeDirectorySolution": {
+    "identitySolution": {
       "value": "ActiveDirectoryDomainServices"
     },
     "availability": {

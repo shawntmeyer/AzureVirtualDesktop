@@ -11,8 +11,8 @@
     "artifactsUserAssignedIdentityResourceId" :{
       "value": "/subscriptions/70c1bb3a-115f-4300-becd-5f74200999bb/resourceGroups/avd-image-management-usgva-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/avd-image-management-usgva-uai"
     },
-    "activeDirectorySolution": {
-      "value": "AzureActiveDirectory"
+    "identitySolution": {
+      "value": "EntraId"
     },
     "availability": {
       "value": "availabilityZones" 

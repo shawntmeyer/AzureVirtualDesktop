@@ -1,7 +1,7 @@
 targetScope = 'subscription'
 
 param activeDirectoryConnection string
-param activeDirectorySolution string
+param identitySolution string
 param artifactsUri string
 param artifactsUserAssignedIdentityClientId string
 param automationAccountName string
@@ -57,7 +57,7 @@ param virtualNetwork string
 param virtualNetworkResourceGroup string
 
 // Azure NetApp files for fslogix
-module azureNetAppFiles 'azureNetAppFiles.bicep' = if (fslogixStorageSolution == 'AzureNetAppFiles' && contains(activeDirectorySolution, 'DomainServices')) {
+module azureNetAppFiles 'azureNetAppFiles.bicep' = if (fslogixStorageSolution == 'AzureNetAppFiles' && contains(identitySolution, 'DomainServices')) {
   name: 'AzureNetAppFiles_${timeStamp}'
   scope: resourceGroup(resourceGroupStorage)
   params: {
@@ -92,7 +92,6 @@ module azureFiles 'azureFiles/azureFiles.bicep' = if (fslogixStorageSolution == 
   name: 'AzureFiles_${timeStamp}'
   scope: resourceGroup(resourceGroupStorage)
   params: {
-    activeDirectorySolution: activeDirectorySolution
     artifactsUri: artifactsUri
     artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
     automationAccountName: automationAccountName
@@ -107,6 +106,7 @@ module azureFiles 'azureFiles/azureFiles.bicep' = if (fslogixStorageSolution == 
     fslogixShareSizeInGB: fslogixShareSizeInGB
     fslogixContainerType: fslogixContainerType
     fslogixStorageService: fslogixStorageService
+    identitySolution: identitySolution
     kerberosEncryption: kerberosEncryption
     keyVaultUri: keyVaultUri
     location: location

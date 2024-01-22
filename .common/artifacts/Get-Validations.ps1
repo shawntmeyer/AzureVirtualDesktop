@@ -188,7 +188,7 @@ try
     ##############################################################
     # Kerberos Encryption Validation
     ##############################################################
-    If ($ActiveDirectorySolution -eq 'AzureActiveDirectoryDomainServices') {
+    If ($ActiveDirectorySolution -eq 'EntraDomainServices') {
         $KerberosRc4Encryption = (Get-AzResource -Name $DomainName -ExpandProperties).Properties.domainSecuritySettings.kerberosRc4Encryption
         if($KerberosRc4Encryption -eq "Enabled" -and $KerberosEncryption -eq "AES256")
         {

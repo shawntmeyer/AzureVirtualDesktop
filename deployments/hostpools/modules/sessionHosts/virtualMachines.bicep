@@ -1,4 +1,4 @@
-param activeDirectorySolution string
+param identitySolution string
 param adeKeyVaultResourceId string
 param adeKeyVaultUrl string
 param adeKEKUrl string
@@ -75,15 +75,15 @@ var amdVmSizes = [
 // Dynamic parameters for Configure-FSLogix Script
 //  cloudcache determined from fslogixContainerType parameter
 var fslogixCloudCacheString = contains(fslogixContainerType, 'CloudCache') ? 'CloudCache=$true' : 'CloudCache=$false'
-//  convert long activeDirectorySolution parameter values to short and SMB authentication specific values for script.
-var fslogixIdP = contains(activeDirectorySolution, 'Kerberos') ? 'AADKERB' : !contains(activeDirectorySolution, 'DomainServices') ? 'AAD' : 'DomainServices'
+//  convert long identitySolution parameter values to short and SMB authentication specific values for script.
+var fslogixIdP = !contains(identitySolution, 'DomainServices') ? 'AAD' : 'DomainServices'
 var fslogixIdpString = 'IdP=\'${fslogixIdP}\''
 var fslogixStorageSolutionString = 'StorageSolution=\'${fslogixStorageSolution}\'' 
 var fslogixNetAppSharesString = fslogixStorageSolution == 'AzureNetAppFiles' && fslogixNetAppFileShares != ['None'] ? 'NetAppFileShares=\'${replace(join(fslogixNetAppFileShares, ','), ',', '\',\'')}\'' : ''
 var fslogixSASuffixString = fslogixStorageSolution == 'AzureFiles' ? 'SASuffix=\'${storageSuffix}\'' : ''
 
 // filter storage account resource ids for AAD because no sharding possible inside the region.
-var fslogixNewSAResIds = !empty(fslogixDeployedStorageAccountResourceIds) ? ( fslogixIdP == 'AAD' ? fslogixDeployedStorageAccountResourceIds[0] : fslogixDeployedStorageAccountResourceIds ) : []
+var fslogixNewSAResIds = !empty(fslogixDeployedStorageAccountResourceIds) ? ( fslogixIdP == 'AAD' ? [fslogixDeployedStorageAccountResourceIds[0]] : fslogixDeployedStorageAccountResourceIds ) : []
 // get all existing storage account resource Ids from the fslogixExistingStorageAccounts object.
 var fslogixExSAResIds = [for sa in fslogixExistingStorageAccounts: sa.id]
 // filter fslogixExistingStorageAccounts object to only those that are not in the vm region.
@@ -151,7 +151,7 @@ var diskEncryptionSet = bool(diskEncryptionOptions.diskEncryptionSet)
 var encryptionAtHost = bool(diskEncryptionOptions.encryptionAtHost)
 var keyEncryptionKey = bool(diskEncryptionOptions.keyEncryptionKey)
 
-var identityType = (!contains(activeDirectorySolution, 'DomainServices') || performanceMonitoringAgent == 'AzureMonitorAgent' ? true : false) ? (!empty(artifactsUserAssignedIdentityResourceId) ? 'SystemAssigned,UserAssigned' : 'SystemAssigned') : (!empty(artifactsUserAssignedIdentityResourceId) ? 'UserAssigned' : 'None')
+var identityType = (!contains(identitySolution, 'DomainServices') || performanceMonitoringAgent == 'AzureMonitorAgent' ? true : false) ? (!empty(artifactsUserAssignedIdentityResourceId) ? 'SystemAssigned,UserAssigned' : 'SystemAssigned') : (!empty(artifactsUserAssignedIdentityResourceId) ? 'UserAssigned' : 'None')
 
 var userAssignedIdentities = !empty(artifactsUserAssignedIdentityResourceId) ? {
   '${artifactsUserAssignedIdentityResourceId}': {}
@@ -170,7 +170,7 @@ var ImageReference = empty(customImageResourceId) ? {
 } : {
   id: customImageResourceId
 }
-var intune = contains(activeDirectorySolution, 'IntuneEnrollment')
+var intune = contains(identitySolution, 'IntuneEnrollment')
 var nvidiaVmSize = contains(nvidiaVmSizes, virtualMachineSize)
 var nvidiaVmSizes = [
   'Standard_NV6'
@@ -478,7 +478,7 @@ resource extension_AzureDiskEncryption 'Microsoft.Compute/virtualMachines/extens
   }
 }]
 
-resource extension_JsonADDomainExtension 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): if (contains(activeDirectorySolution, 'DomainServices')) {
+resource extension_JsonADDomainExtension 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): if (contains(identitySolution, 'DomainServices')) {
   parent: virtualMachine[i]
   name: 'JsonADDomainExtension'
   location: location
@@ -502,7 +502,7 @@ resource extension_JsonADDomainExtension 'Microsoft.Compute/virtualMachines/exte
   }
 }]
 
-resource extension_AADLoginForWindows 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): if (!contains(activeDirectorySolution, 'DomainServices')) {
+resource extension_AADLoginForWindows 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): if (!contains(identitySolution, 'DomainServices')) {
   parent: virtualMachine[i]
   name: 'AADLoginForWindows'
   location: location

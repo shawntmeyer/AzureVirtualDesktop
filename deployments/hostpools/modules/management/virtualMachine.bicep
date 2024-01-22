@@ -1,4 +1,4 @@
-param activeDirectorySolution string
+param identitySolution string
 param artifactsUri string
 param artifactsUserAssignedIdentityClientId string
 param diskEncryptionOptions object
@@ -123,7 +123,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-11-01' = {
   }
 }
 
-resource extension_JsonADDomainExtension 'Microsoft.Compute/virtualMachines/extensions@2019-07-01' = if(contains(activeDirectorySolution, 'DomainServices')) {
+resource extension_JsonADDomainExtension 'Microsoft.Compute/virtualMachines/extensions@2019-07-01' = if(contains(identitySolution, 'DomainServices')) {
   parent: virtualMachine
   name: 'JsonADDomainExtension'
   location: location

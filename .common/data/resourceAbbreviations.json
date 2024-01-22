@@ -2,6 +2,7 @@
     "automationAccounts": "aa",
     "availabilitySets": "as",
     "computeGalleries": "gal",
+    "dataCollectionEndpoints": "dce",
     "dataCollectionRules": "dcr",
     "desktopApplicationGroups": "dag",
     "remoteApplicationGroups": "rag",

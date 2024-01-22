@@ -1,6 +1,6 @@
 targetScope = 'subscription'
 
-param activeDirectorySolution string
+param identitySolution string
 param artifactsUri string
 param avdAgentInstallersBlobName string
 param avdPrivateLink bool
@@ -62,7 +62,7 @@ var diskEncryptionOptions = {
 }
 var fileShares = fileShareNames[fslogixContainerType]
 // ONLY DEPLOY 1 storage account when Cloud Only identity is used because Sharding is not possible.
-var countStorage = activeDirectorySolution == 'AzureActiveDirectory' || activeDirectorySolution == 'AzureActiveDirectoryIntuneEnrollment' ? 1 : storageCount
+var countStorage = identitySolution == 'EntraId' || identitySolution == 'EntraIdIntuneEnrollment' ? 1 : storageCount
 var netbios = split(domainName, '.')[0]
 var pooledHostPool = split(hostPoolType, ' ')[0] == 'Pooled' ? true : false
 

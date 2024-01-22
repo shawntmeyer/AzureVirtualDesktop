@@ -1,7 +1,7 @@
 targetScope = 'subscription'
 
 param acceleratedNetworking string
-param activeDirectorySolution string
+param identitySolution string
 param adeKEKUrl string
 param adeKeyVaultResourceId string
 param adeKeyVaultUrl string
@@ -101,7 +101,7 @@ module availabilitySets 'availabilitySets.bicep' = if (pooledHostPool && availab
 
 // Role Assignment for Virtual Machine Login User
 // This module deploys the role assignments to login to Azure AD joined session hosts
-module roleAssignments '../common/roleAssignment.bicep' = [for i in range(0, length(securityPrincipalObjectIds)): if (!contains(activeDirectorySolution, 'DomainServices')) {
+module roleAssignments '../common/roleAssignment.bicep' = [for i in range(0, length(securityPrincipalObjectIds)): if (!contains(identitySolution, 'DomainServices')) {
   name: 'RoleAssignments_${i}_${timeStamp}'
   scope: resourceGroup(resourceGroupHosts)
   params: {
@@ -117,7 +117,7 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
   scope: resourceGroup(resourceGroupHosts)
   params: {
     acceleratedNetworking: acceleratedNetworking
-    activeDirectorySolution: activeDirectorySolution
+    identitySolution: identitySolution
     adeKEKUrl: adeKEKUrl
     adeKeyVaultResourceId: adeKeyVaultResourceId
     adeKeyVaultUrl: adeKeyVaultUrl
@@ -145,7 +145,7 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     fslogixConfigureSessionHosts: fslogixConfigureSessionHosts
     fslogixContainerType: fslogixContainerType
     fslogixDeployedStorageAccountResourceIds: fslogixDeployedStorageAccountResourceIds
-    fslogixExistingStorageAccounts: existingFslogixStorageAccounts.outputs.storageAccounts
+    fslogixExistingStorageAccounts: fslogixConfigureSessionHosts && !empty(fslogixExistingStorageAccountResourceIds) ? existingFslogixStorageAccounts.outputs.storageAccounts : []
     fslogixStorageSolution: fslogixStorageSolution
     hostPoolName: hostPoolName
     imageOffer: imageOffer

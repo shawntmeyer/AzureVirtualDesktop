@@ -1,5 +1,5 @@
 targetScope = 'subscription'
-param activeDirectorySolution string
+param identitySolution string
 param artifactsUri string
 param artifactsStorageAccountResourceId string
 param artifactsUserAssignedIdentityResourceId string
@@ -70,10 +70,10 @@ var deploymentUserAssignedIdentityName = replace(userAssignedIdentityNameConv, '
 var netAppVirtualNetworkName = !empty(netAppVnetResourceId) ? (split(netAppVnetResourceId, '/')) : ''
 var netAppVirtualNetworkResourceGroupName = !empty(netAppVnetResourceId) ? split(netAppVnetResourceId, '/')[4] : ''
 
-var requiredValidationScriptParameters = '-ActiveDirectorySolution ${activeDirectorySolution} -CpuCountMax ${cpuCountMax} -CpuCountMin ${cpuCountMin} -Environment ${environment().name} -GlobalWorkspaceName ${globalFeedWorkspaceName} -GlobalWorkspaceResourceGroupName ${globalFeedWorkspaceResourceGroupName} -Location ${locationVirtualMachines} -SessionHostCount ${sessionHostCount} -StorageAccountPrefix ${fslogixStorageAccountNamePrefix} -StorageSolution ${fslogixStorageSolution} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentity.outputs.clientId} -VirtualMachineSize ${virtualMachineSize} -WorkspaceName ${workspaceName} -WorkspaceResourceGroupName ${resourceGroupControlPlane}'
+var requiredValidationScriptParameters = '-ActiveDirectorySolution ${identitySolution} -CpuCountMax ${cpuCountMax} -CpuCountMin ${cpuCountMin} -Environment ${environment().name} -GlobalWorkspaceName ${globalFeedWorkspaceName} -GlobalWorkspaceResourceGroupName ${globalFeedWorkspaceResourceGroupName} -Location ${locationVirtualMachines} -SessionHostCount ${sessionHostCount} -StorageAccountPrefix ${fslogixStorageAccountNamePrefix} -StorageSolution ${fslogixStorageSolution} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentity.outputs.clientId} -VirtualMachineSize ${virtualMachineSize} -WorkspaceName ${workspaceName} -WorkspaceResourceGroupName ${resourceGroupControlPlane}'
 var netAppValidationScriptParameters = '-NetAppVirtualNetworkName ${netAppVirtualNetworkName} -NetAppVirtualNetworkResourceGroupName ${netAppVirtualNetworkResourceGroupName}'
 var domainServicesValidationScriptParameters = '-DomainName ${domainName} -KerberosEncryption ${kerberosEncryption}'
-var optionalValidationScriptParameters = activeDirectorySolution == 'AzureActiveDirectoryDomainServices' ? ( contains(fslogixStorageSolution, 'NetApp') ? '${domainServicesValidationScriptParameters} ${netAppValidationScriptParameters}' : domainServicesValidationScriptParameters ) : ( contains(fslogixStorageSolution, 'NetApp') ? netAppValidationScriptParameters : '' )
+var optionalValidationScriptParameters = identitySolution == 'EntraDomainServices' ? ( contains(fslogixStorageSolution, 'NetApp') ? '${domainServicesValidationScriptParameters} ${netAppValidationScriptParameters}' : domainServicesValidationScriptParameters ) : ( contains(fslogixStorageSolution, 'NetApp') ? netAppValidationScriptParameters : '' )
 var validationScriptParameters = '${requiredValidationScriptParameters} ${optionalValidationScriptParameters}'
 
 var roleAssignmentsCommon = [
@@ -108,7 +108,7 @@ var roleAssignmentsCommon = [
     subscription: subscription().subscriptionId
   }
 ]
-var roleAssignmentStorage = fslogix ? [
+var roleAssignmentStorage = fslogix && !contains(identitySolution, 'EntraId')? [
   {
     roleDefinitionId: roleDefinitions.StorageAccountContributor // (Purpose: domain join storage account & set NTFS permissions on the file share)
     roleShortName: 'StorageAccountContributor'
@@ -204,7 +204,7 @@ module keyVault 'keyVault.bicep' =  {
   }
 }
 
-resource keyVault_Ref 'Microsoft.KeyVault/vaults@2023-07-01' existing = if(contains(activeDirectorySolution,'DomainServices') && (empty(domainJoinUserPassword) || empty(domainJoinUserPrincipalName)) || empty(virtualMachineAdminPassword) || empty(virtualMachineAdminUserName)) {
+resource keyVault_Ref 'Microsoft.KeyVault/vaults@2023-07-01' existing = if(contains(identitySolution,'DomainServices') && (empty(domainJoinUserPassword) || empty(domainJoinUserPrincipalName)) || empty(virtualMachineAdminPassword) || empty(virtualMachineAdminUserName)) {
   name: keyVaultName
   scope: resourceGroup(resourceGroupManagement)
 }
@@ -241,15 +241,15 @@ module virtualMachine 'virtualMachine.bicep' = {
   name: 'ManagementVirtualMachine_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
-    activeDirectorySolution: activeDirectorySolution
+    identitySolution: identitySolution
     artifactsUri: artifactsUri
     artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
     diskEncryptionOptions: diskEncryptionOptions
     diskEncryptionSetResourceId: diskEncryptionOptions.diskEncryptionSet ? diskEncryptionSet.outputs.resourceId : ''
     diskNamePrefix: diskNamePrefix
     diskSku: diskSku
-    domainJoinUserPassword: !empty(domainJoinUserPassword) ? domainJoinUserPassword : contains(activeDirectorySolution, 'DomainServices') ? keyVault_Ref.getSecret('domainJoinUserPassword') : ''
-    domainJoinUserPrincipalName: !empty(domainJoinUserPrincipalName) ? domainJoinUserPrincipalName : contains(activeDirectorySolution, 'DomainServices') ? keyVault_Ref.getSecret('domainJoinUserPrincipalName') : ''
+    domainJoinUserPassword: !empty(domainJoinUserPassword) ? domainJoinUserPassword : contains(identitySolution, 'DomainServices') ? keyVault_Ref.getSecret('domainJoinUserPassword') : ''
+    domainJoinUserPrincipalName: !empty(domainJoinUserPrincipalName) ? domainJoinUserPrincipalName : contains(identitySolution, 'DomainServices') ? keyVault_Ref.getSecret('domainJoinUserPrincipalName') : ''
     domainName: domainName
     location: locationVirtualMachines
     networkInterfaceNamePrefix: networkInterfaceNamePrefix

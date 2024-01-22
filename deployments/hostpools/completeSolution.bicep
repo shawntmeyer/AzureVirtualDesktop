@@ -51,14 +51,12 @@ param artifactsUserAssignedIdentityResourceId string = ''
 
 @allowed([
   'ActiveDirectoryDomainServices' // User accounts are sourced from and Session Hosts are joined to same Active Directory domain.
-  'AzureActiveDirectoryDomainServices' // User accounts are sourced from either Azure Active Directory or Active Directory Domain Services and Session Hosts are joined to Azure Active Directory Domain Services.
-  'AzureActiveDirectory' // User accounts and Session Hosts are located in Azure Active Directory Only (Cloud Only Scenario)
-  'AzureActiveDirectoryIntuneEnrollment' // User accounts and Session Hosts are located in Azure Active Directory Only. Session Hosts are automatically enrolled in Intune. (Cloud Only Scenario)
-  'AzureActiveDirectoryAndKerberos' // User accounts are sourced from Active Directory domain and session hosts are joined to Azure Active Directory natively.
-  'AzureActiveDirectoryAndKerberosIntuneEnrollment' // User accounts are sourced from Active Directory domain and session hosts are joined to Azure Active Directory natively with Intune Enrollment.
+  'EntraDomainServices' // User accounts are sourced from either Azure Active Directory or Active Directory Domain Services and Session Hosts are joined to Azure Active Directory Domain Services.
+  'EntraId' // User accounts and Session Hosts are located in Azure Active Directory Only (Cloud Only Scenario)
+  'EntraIdIntuneEnrollment' // User accounts and Session Hosts are located in Azure Active Directory Only. Session Hosts are automatically enrolled in Intune. (Cloud Only Scenario)
 ])
 @description('The service providing domain services for Azure Virtual Desktop.  This is needed to properly configure the session hosts and if applicable, the Azure Storage Account.')
-param activeDirectorySolution string
+param identitySolution string
 
 @secure()
 @description('Optional. The password of the privileged account to domain join the AVD session hosts to your domain')
@@ -164,7 +162,7 @@ param fslogixConfigurationBlobName string = 'FSLogix-Configure.zip'
 
 @description('''Existing FSLogix Storage Account Resource Ids. Only used when fslogixConfigureSessionHosts = "true".
 This list will be added to any storage accounts created when setting "fslogixStorageService" to any of the AzureFiles options. 
-If "activeDirectorySolution" is set to "AzureActiveDirectory" or "AzureActiveDirectoryIntuneEnrollment" then only the first storage account listed will be used.
+If "identitySolution" is set to "EntraId" or "EntraIdIntuneEnrollment" then only the first storage account listed will be used.
 ''')
 param fslogixExistingStorageAccountResourceIds array = []
 
@@ -182,7 +180,7 @@ param storageAccountADKerberosEncryption string = 'AES256'
 @minValue(0)
 @description('''
 The number of storage accounts to deploy to support the required use case for the AVD stamp. https://docs.microsoft.com/en-us/azure/architecture/patterns/sharding
-Note: Cannot utilize sharding with "activeDirectorySolution" = "AAD" so storageCount will be set to 1 in variables.
+Note: Cannot utilize sharding with "identitySolution" = "AAD" so storageCount will be set to 1 in variables.
 ''')
 param storageCount int = 1
 
@@ -374,7 +372,7 @@ resource vmVirtualNetwork 'Microsoft.Network/virtualNetworks@2023-04-01' existin
   scope: resourceGroup(split(virtualMachineSubnetResourceId, '/')[2], split(virtualMachineSubnetResourceId, '/')[4])
 }
 
-resource keyVault_Reference 'Microsoft.KeyVault/vaults@2021-06-01-preview' existing = if(contains(activeDirectorySolution,'DomainServices') && (empty(domainJoinUserPassword) || empty(domainJoinUserPrincipalName)) || empty(virtualMachineAdminPassword) || empty(virtualMachineAdminUserName))  {
+resource keyVault_Reference 'Microsoft.KeyVault/vaults@2021-06-01-preview' existing = if(contains(identitySolution,'DomainServices') && (empty(domainJoinUserPassword) || empty(domainJoinUserPrincipalName)) || empty(virtualMachineAdminPassword) || empty(virtualMachineAdminUserName))  {
   name: resourceNames.outputs.keyVaultName
   scope: resourceGroup(resourceNames.outputs.resourceGroupManagement)
 }
@@ -399,7 +397,6 @@ module resourceNames 'modules/resourceNames.bicep' = {
 module logic 'modules/logic.bicep' = {
   name: 'Logic_${timeStamp}'
   params: {
-    activeDirectorySolution: activeDirectorySolution
     artifactsUri: artifactsUri
     avdAgentInstallersBlobName: avdAgentInstallersBlobName
     avdPrivateLink: avdPrivateLink
@@ -414,6 +411,7 @@ module logic 'modules/logic.bicep' = {
     fslogixContainerType: fslogixContainerType
     fslogixStorageService: fslogixStorageService
     hostPoolType: hostPoolType
+    identitySolution: identitySolution
     imageOffer: imageOffer
     imagePublisher: imagePublisher
     imageSku: imageSku
@@ -447,7 +445,6 @@ module rgs 'modules/resourceGroups.bicep' = [for i in range(0, resourceGroupsCou
 module management 'modules/management/management.bicep' = {
   name: 'Management_${timeStamp}'
   params: {
-    activeDirectorySolution: activeDirectorySolution
     artifactsUri: artifactsUri
     artifactsStorageAccountResourceId: artifactsStorageAccountResourceId
     artifactsUserAssignedIdentityResourceId: artifactsUserAssignedIdentityResourceId
@@ -470,6 +467,7 @@ module management 'modules/management/management.bicep' = {
     fslogixStorageAccountNamePrefix: resourceNames.outputs.storageAccountNamePrefix
     fslogixStorageService: fslogixStorageService
     hostPoolType: hostPoolType
+    identitySolution: identitySolution
     kerberosEncryption: storageAccountADKerberosEncryption
     keyVaultName: resourceNames.outputs.keyVaultName
     keyVaultPrivateDnsZoneResourceId: keyVaultPrivateDnsZoneResourceId
@@ -515,7 +513,6 @@ module management 'modules/management/management.bicep' = {
 module controlPlane 'modules/controlPlane/controlPlane.bicep' = {
   name: 'ControlPlane_${timeStamp}'
   params: {
-    activeDirectorySolution: activeDirectorySolution
     artifactsUri: artifactsUri
     artifactsUserAssignedIdentityClientId: management.outputs.artifactsUserAssignedIdentityClientId
     avdGlobalFeedPrivateDnsZoneResourceId: avdGlobalFeedPrivateDnsZoneResourceId
@@ -534,6 +531,7 @@ module controlPlane 'modules/controlPlane/controlPlane.bicep' = {
     hostPoolRDPProperties: hostPoolRDPProperties
     hostPoolType: hostPoolType
     hostPoolValidationEnvironment: hostPoolValidationEnvironment
+    identitySolution: identitySolution
     locationControlPlane: locationControlPlane
     locationVirtualMachines: locationVirtualMachines
     logAnalyticsWorkspaceResourceId: monitoring ? management.outputs.logAnalyticsWorkspaceResourceId : ''
@@ -564,7 +562,6 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (fslogixStorageService != 'N
     artifactsUri: artifactsUri
     artifactsUserAssignedIdentityClientId: management.outputs.artifactsUserAssignedIdentityClientId
     activeDirectoryConnection: management.outputs.validateANFfActiveDirectory
-    activeDirectorySolution: activeDirectorySolution
     automationAccountName: resourceNames.outputs.automationAccountName
     availability: availability
     azureFilesPrivateDnsZoneResourceId: azureFilesPrivateDnsZoneResourceId
@@ -572,14 +569,15 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (fslogixStorageService != 'N
     delegatedSubnetId: management.outputs.validateANFSubnetId
     diskEncryptionOptions: logic.outputs.diskEncryptionOptions
     dnsServers: management.outputs.validateANFDnsServers
-    domainJoinUserPassword: empty(domainJoinUserPassword) ? contains(activeDirectorySolution, 'DomainServices') ? keyVault_Reference.getSecret(domainJoinUserPassword) : '' : domainJoinUserPassword
-    domainJoinUserPrincipalName: empty(domainJoinUserPrincipalName) ? contains(activeDirectorySolution, 'DomainServices') ? keyVault_Reference.getSecret(domainJoinUserPrincipalName) : '' : domainJoinUserPrincipalName
+    domainJoinUserPassword: empty(domainJoinUserPassword) ? contains(identitySolution, 'DomainServices') ? keyVault_Reference.getSecret(domainJoinUserPassword) : '' : domainJoinUserPassword
+    domainJoinUserPrincipalName: empty(domainJoinUserPrincipalName) ? contains(identitySolution, 'DomainServices') ? keyVault_Reference.getSecret(domainJoinUserPrincipalName) : '' : domainJoinUserPrincipalName
     domainName: domainName
     encryptionUserAssignedIdentityResourceId: management.outputs.encryptionUserAssignedIdentityResourceId
     fileShares: logic.outputs.fileShares
     fslogixShareSizeInGB: fslogixShareSizeInGB
     fslogixContainerType: fslogixContainerType
     fslogixStorageService: fslogixStorageService
+    identitySolution: identitySolution
     kerberosEncryption: storageAccountADKerberosEncryption
     keyVaultUri: management.outputs.keyVaultUrl
     location: locationVirtualMachines
@@ -633,8 +631,9 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
   name: 'SessionHosts_${timeStamp}'
   params: {
     acceleratedNetworking: management.outputs.validateAcceleratedNetworking
-    activeDirectorySolution: activeDirectorySolution
     adeKEKUrl: management.outputs.diskEncryptionKeyUrl
+    adeKeyVaultResourceId: management.outputs.keyVaultResourceId
+    adeKeyVaultUrl: management.outputs.keyVaultUrl
     artifactsUri: artifactsUri
     artifactsUserAssignedIdentityClientId: management.outputs.artifactsUserAssignedIdentityClientId // ClientId that comes from Management / UserAssignedIdentity Modules is already determined.
     artifactsUserAssignedIdentityResourceId: management.outputs.artifactsUserAssignedIdentityResourceId // ResourceId that comes from Management / UserAssignedIdentity Modules is already determined.
@@ -643,21 +642,17 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     availabilitySetsCount: logic.outputs.availabilitySetsCount
     availabilitySetsIndex: logic.outputs.beginAvSetRange
     availabilityZones: management.outputs.validateavailabilityZones
-    perfLogAnalyticsWorkspaceResourceId: management.outputs.logAnalyticsWorkspaceResourceId
     cseMasterScript: cseMasterScript
     cseScriptAddDynParameters: cseScriptAddDynParameters
     cseUris: logic.outputs.cseUris
-    perfDataCollectionEndpointResourceId: management.outputs.dataCollectionEndpointResourceId
-    perfDataCollectionRulesResourceIds: management.outputs.dataCollectionRulesResourceIds
+    customImageResourceId: customImageResourceId    
     diskEncryptionOptions: logic.outputs.diskEncryptionOptions
     diskEncryptionSetResourceId: management.outputs.diskEncryptionSetResourceId
-    adeKeyVaultResourceId: management.outputs.keyVaultResourceId
-    adeKeyVaultUrl: management.outputs.keyVaultUrl
     diskNamePrefix: resourceNames.outputs.diskNamePrefix
     diskSku: diskSku
     divisionRemainderValue: logic.outputs.divisionRemainderValue
-    domainJoinUserPassword: empty(domainJoinUserPassword) ? contains(activeDirectorySolution, 'DomainServices') ? keyVault_Reference.getSecret(domainJoinUserPassword) : '' : domainJoinUserPassword
-    domainJoinUserPrincipalName: empty(domainJoinUserPrincipalName) ? contains(activeDirectorySolution, 'DomainServices') ? keyVault_Reference.getSecret(domainJoinUserPrincipalName) : '' : domainJoinUserPrincipalName
+    domainJoinUserPassword: empty(domainJoinUserPassword) ? contains(identitySolution, 'DomainServices') ? keyVault_Reference.getSecret(domainJoinUserPassword) : '' : domainJoinUserPassword
+    domainJoinUserPrincipalName: empty(domainJoinUserPrincipalName) ? contains(identitySolution, 'DomainServices') ? keyVault_Reference.getSecret(domainJoinUserPrincipalName) : '' : domainJoinUserPrincipalName
     domainName: domainName
     drainMode: drainMode
     drainModeUserAssignedIdentityClientId: management.outputs.deploymentUserAssignedIdentityClientId
@@ -666,21 +661,24 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     fslogixDeployed: logic.outputs.fslogix
     fslogixDeployedStorageAccountResourceIds: fslogix.outputs.storageAccountResourceIds
     fslogixExistingStorageAccountResourceIds: fslogixExistingStorageAccountResourceIds
+    fslogixNetAppFileShares: fslogixConfigureSessionHosts ? fslogix.outputs.netAppShares : [
+      'None'
+    ]
     fslogixStorageSolution: logic.outputs.fslogixStorageSolution
     hostPoolName: controlPlane.outputs.hostPoolName
+    identitySolution: identitySolution
     imageOffer: imageOffer
     imagePublisher: imagePublisher
     imageSku: imageSku
-    customImageResourceId: customImageResourceId
     location: vmVirtualNetwork.location
     managementVirtualMachineName: management.outputs.virtualMachineName
     maxResourcesPerTemplateDeployment: logic.outputs.maxResourcesPerTemplateDeployment
     monitoring: monitoring
-    fslogixNetAppFileShares: fslogixConfigureSessionHosts ? fslogix.outputs.netAppShares : [
-      'None'
-    ]
     networkInterfaceNamePrefix: resourceNames.outputs.networkInterfaceNamePrefix
     ouPath: ouPath
+    perfDataCollectionEndpointResourceId: management.outputs.dataCollectionEndpointResourceId
+    perfDataCollectionRulesResourceIds: management.outputs.dataCollectionRulesResourceIds
+    perfLogAnalyticsWorkspaceResourceId: management.outputs.logAnalyticsWorkspaceResourceId
     pooledHostPool: logic.outputs.pooledHostPool
     recoveryServices: recoveryServices
     recoveryServicesVaultName: resourceNames.outputs.recoveryServicesVaultName

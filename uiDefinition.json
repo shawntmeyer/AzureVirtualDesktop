@@ -523,11 +523,11 @@
                                             },
                                             {
                                                 "label": "Azure Active Directory (AAD)",
-                                                "value": "AzureActiveDirectory"
+                                                "value": "EntraId"
                                             },
                                             {
                                                 "label": "Azure Active Directory Domain Services (AADDS)",
-                                                "value": "AzureActiveDirectoryDomainServices"
+                                                "value": "EntraDomainServices"
                                             }
                                         ]
                                     }
@@ -535,7 +535,7 @@
                                 {
                                     "name": "intune",
                                     "type": "Microsoft.Common.OptionsGroup",
-                                    "visible": "[equals(steps('hosts').identity.solution, 'AzureActiveDirectory')]",
+                                    "visible": "[equals(steps('hosts').identity.solution, 'EntraId')]",
                                     "label": "Intune Enrollment",
                                     "defaultValue": "No",
                                     "toolTip": "If Intune is configured in your Azure AD tenant, you can choose to have the VM automatically enrolled during the deployment by selecting Yes.",
@@ -556,7 +556,7 @@
                                 {
                                     "name": "domainName",
                                     "type": "Microsoft.Common.TextBox",
-                                    "visible": "[not(equals(steps('hosts').identity.solution, 'AzureActiveDirectory'))]",
+                                    "visible": "[not(equals(steps('hosts').identity.solution, 'EntraId'))]",
                                     "label": "Domain Name",
                                     "toolTip": "Provide domain name for the selected Active Directory solution.",
                                     "placeholder": "Example: contoso.com",
@@ -567,7 +567,7 @@
                                 {
                                     "name": "ouPath",
                                     "type": "Microsoft.Common.TextBox",
-                                    "visible": "[not(equals(steps('hosts').identity.solution, 'AzureActiveDirectory'))]",
+                                    "visible": "[not(equals(steps('hosts').identity.solution, 'EntraId'))]",
                                     "label": "OU Path",
                                     "toolTip": "Input the distinguished name of the desired organization unit for the AVD session hosts.",
                                     "placeholder": "Example: OU=pooled,OU=avd,DC=contoso,DC=com",
@@ -581,7 +581,7 @@
                             "name": "domainJoinCredentials",
                             "type": "Microsoft.Common.Section",
                             "label": "Domain Join Credentials",
-                            "visible": "[not(equals(steps('hosts').identity.solution, 'AzureActiveDirectory'))]",
+                            "visible": "[not(equals(steps('hosts').identity.solution, 'EntraId'))]",
                             "elements": [
                                 {
                                     "name": "userPrincipalName",
@@ -661,11 +661,11 @@
                             "type": "Microsoft.Common.DropDown",
                             "visible": true,
                             "label": "Profile Solution",
-                            "defaultValue": "[if(equals(steps('hosts').identity.solution, 'AzureActiveDirectory'), 'Local', 'FSLogix')]",
+                            "defaultValue": "[if(equals(steps('hosts').identity.solution, 'EntraId'), 'Local', 'FSLogix')]",
                             "toolTip": "Select the user profile solution for your end users.",
                             "constraints": {
                                 "required": true,
-                                "allowedValues": "[if(equals(steps('hosts').identity.solution, 'AzureActiveDirectory'), parse('[{\"label\":\"Local\",\"value\":\"local\"}]'), parse('[{\"label\":\"FSLogix\",\"value\":\"fslogix\"},{\"label\":\"Local\",\"value\":\"local\"}]'))]"
+                                "allowedValues": "[if(equals(steps('hosts').identity.solution, 'EntraId'), parse('[{\"label\":\"Local\",\"value\":\"local\"}]'), parse('[{\"label\":\"FSLogix\",\"value\":\"fslogix\"},{\"label\":\"Local\",\"value\":\"local\"}]'))]"
                             }
                         },
                         {
@@ -1058,7 +1058,7 @@
         },
         "outputs": {
             "parameters": {
-                "ActiveDirectorySolution": "[if(and(equals(steps('hosts').identity.solution, 'AzureActiveDirectory'), steps('hosts').identity.intune), 'AzureActiveDirectoryIntuneEnrollment', steps('hosts').identity.solution)]",
+                "ActiveDirectorySolution": "[if(and(equals(steps('hosts').identity.solution, 'EntraId'), steps('hosts').identity.intune), 'EntraIdIntuneEnrollment', steps('hosts').identity.solution)]",
                 "Availability": "[steps('hosts').availability]",
                 "AvdObjectId": "[first(map(steps('basics').servicePrincipalApi.value, (item) => item.id))]",
                 "AzureFilesPrivateDnsZoneResourceId": "[if(and(equals(steps('userProfiles').storageProduct, 'AzureStorageAccount'), equals(steps('userProfiles').storageEndpoint, 'PrivateEndpoint')), steps('userProfiles').privateDnsZone.resource, '')]",
@@ -1084,7 +1084,7 @@
                 "LogAnalyticsWorkspaceSku": "PerGB2018",
                 "MaxSessionLimit": "[if(equals(steps('controlPlane').hostPool.type, 'Pooled'), steps('controlPlane').hostPool.maxSessions, 1)]",
                 "Monitoring": "[steps('management').monitoring.enable]",
-                "OuPath": "[if(equals(steps('hosts').identity.solution, 'AzureActiveDirectory'), '', steps('hosts').identity.ouPath)]",
+                "OuPath": "[if(equals(steps('hosts').identity.solution, 'EntraId'), '', steps('hosts').identity.ouPath)]",
                 "RecoveryServices": "[steps('management').backup.recoveryServices]",
                 "ScalingBeginPeakTime": "[if(steps('management').scaling.enable, steps('management').scaling.beginPeakTime, '9:00')]",
                 "ScalingEndPeakTime": "[if(steps('management').scaling.enable, steps('management').scaling.endPeakTime, '17:00')]",

@@ -1,4 +1,4 @@
-param activeDirectorySolution string
+param identitySolution string
 param avdPrivateLink bool
 param hostPoolPrivateDnsZoneResourceId string
 param hostPoolRDPProperties string
@@ -16,7 +16,7 @@ param time string = utcNow('u')
 param hostPoolValidationEnvironment bool
 param virtualMachineTemplate string
 
-var customRdpProperty = contains(activeDirectorySolution, 'AzureActiveDirectory') && !contains(hostPoolRDPProperties, 'targetisaadjoined:i:1') ? '${hostPoolRDPProperties};targetisaadjoined:i:1' : hostPoolRDPProperties
+var customRdpProperty = !contains(identitySolution, 'DomainServices') && !contains(hostPoolRDPProperties, 'targetisaadjoined:i:1') ? '${hostPoolRDPProperties};targetisaadjoined:i:1' : hostPoolRDPProperties
 
 var HostPoolLogs = [
   {

@@ -1,3 +1,4 @@
+param identitySolution string
 param artifactsUri string
 param artifactsUserAssignedIdentityClientId string
 param automationAccountName string
@@ -7,7 +8,6 @@ param deploymentUserAssignedIdentityClientId string
 @secure()
 param domainJoinUserPassword string
 param domainJoinUserPrincipalName string
-param activeDirectorySolution string
 param customerManagedKeysEnabled bool
 param encryptionUserAssignedIdentityResourceId string
 param fileShares array
@@ -78,7 +78,7 @@ resource storageAccounts 'Microsoft.Storage/storageAccounts@2022-09-01' = [for i
     allowedCopyScope: 'AAD'
     allowSharedKeyAccess: true
     azureFilesIdentityBasedAuthentication: {
-      directoryServiceOptions: activeDirectorySolution == 'AzureActiveDirectoryDomainServices' ? 'AADDS' : 'None'
+      directoryServiceOptions: identitySolution == 'EntraDomainServices' ? 'AADDS' : 'None'
     }
     defaultToOAuthAuthentication: false
     dnsEndpointType: 'Standard'
@@ -136,7 +136,7 @@ resource storageAccounts 'Microsoft.Storage/storageAccounts@2022-09-01' = [for i
 }]
 
 // Assigns the SMB Contributor role to the Storage Account so users can save their profiles to the file share using FSLogix
-resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for i in range(0, storageCount): {
+resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for i in range(0, storageCount): if(!contains(identitySolution,'EntraId')) {
   scope: storageAccounts[i]
   name: guid(securityPrincipalObjectIds[i], roleDefinitionId, storageAccounts[i].id)
   properties: {
@@ -211,13 +211,13 @@ resource privateDnsZoneGroups 'Microsoft.Network/privateEndpoints/privateDnsZone
   ]
 }]
 
-module ntfsPermissions '../../common/customScriptExtensions.bicep' = if (!contains(activeDirectorySolution, 'AzureActiveDirectory')) {
+module ntfsPermissions '../../common/customScriptExtensions.bicep' = if (!contains(identitySolution, 'EntraId')) {
   name: 'FslogixNtfsPermissions_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
     location: location
     fileUris: ['${artifactsUri}Set-NtfsPermissions.ps1']
-    parameters: '-ClientId ${deploymentUserAssignedIdentityClientId} -DomainJoinUserPassword "${domainJoinUserPassword}" -DomainJoinUserPrincipalName ${domainJoinUserPrincipalName} -ActiveDirectorySolution ${activeDirectorySolution} -Environment ${environment().name} -FslogixContainerType ${fslogixContainerType} -KerberosEncryptionType ${kerberosEncryption} -Netbios ${netbios} -OUPath "${ouPath}" -SecurityPrincipalNames "${securityPrincipalNames}" -StorageAccountPrefix ${storageAccountNamePrefix} -StorageAccountResourceGroupName ${resourceGroupStorage} -StorageCount ${storageCount} -StorageIndex ${storageIndex} -StorageSolution ${fslogixStorageSolution} -StorageSuffix ${environment().suffixes.storage} -SubscriptionId ${subscription().subscriptionId} -TenantId ${subscription().tenantId}'
+    parameters: '-ClientId ${deploymentUserAssignedIdentityClientId} -DomainJoinUserPassword "${domainJoinUserPassword}" -DomainJoinUserPrincipalName ${domainJoinUserPrincipalName} -ActiveDirectorySolution ${identitySolution} -Environment ${environment().name} -FslogixContainerType ${fslogixContainerType} -KerberosEncryptionType ${kerberosEncryption} -Netbios ${netbios} -OUPath "${ouPath}" -SecurityPrincipalNames "${securityPrincipalNames}" -StorageAccountPrefix ${storageAccountNamePrefix} -StorageAccountResourceGroupName ${resourceGroupStorage} -StorageCount ${storageCount} -StorageIndex ${storageIndex} -StorageSolution ${fslogixStorageSolution} -StorageSuffix ${environment().suffixes.storage} -SubscriptionId ${subscription().subscriptionId} -TenantId ${subscription().tenantId}'
     scriptFileName: 'Set-NtfsPermissions.ps1'
     tags: tagsVirtualMachines
     userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId

@@ -68,7 +68,7 @@ var networkInterfaceNamePrefix = virtualMachineNamePrefix
 // Management Resources
 var resourceGroupManagement = replace(replace(replace(nameConv_Mgmt_ResGroup, 'resGroupPurpose', 'management'), 'location', '${locations[locationVirtualMachines].abbreviation}'), 'resourceType', '${resourceAbbreviations.resourceGroups}')
 var automationAccountName = replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.automationAccounts), 'location', locations[locationVirtualMachines].abbreviation)
-var dataCollectionEndpointName = replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.automationAccounts), 'location', locations[locationVirtualMachines].abbreviation)
+var dataCollectionEndpointName = replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.dataCollectionEndpoints), 'location', locations[locationVirtualMachines].abbreviation)
 // the AVD Insights data collection rule must start with 'microsoft-avdi-'
 var dataCollectionRulesNameConv = replace(replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.dataCollectionRules), 'location', locations[locationVirtualMachines].abbreviation), 'avd-', '')
 var diskEncryptionSetName = replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.diskEncryptionSets), 'location', locations[locationVirtualMachines].abbreviation)

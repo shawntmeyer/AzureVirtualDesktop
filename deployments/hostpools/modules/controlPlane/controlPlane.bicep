@@ -1,6 +1,6 @@
 targetScope = 'subscription'
 
-param activeDirectorySolution string
+param identitySolution string
 param artifactsUri string
 param artifactsUserAssignedIdentityClientId string
 param avdGlobalFeedPrivateDnsZoneResourceId string
@@ -46,7 +46,7 @@ module hostPool 'hostPool.bicep' = {
   name: 'HostPool_${timeStamp}'
   scope: resourceGroup(resourceGroupControlPlane)
   params: {
-    activeDirectorySolution: activeDirectorySolution
+    identitySolution: identitySolution
     avdPrivateLink: avdPrivateLink
     hostPoolRDPProperties: hostPoolRDPProperties
     hostPoolName: hostPoolName
