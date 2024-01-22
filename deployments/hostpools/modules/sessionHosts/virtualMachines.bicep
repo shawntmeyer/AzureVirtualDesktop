@@ -347,12 +347,23 @@ resource extension_AzureMonitorWindowsAgent 'Microsoft.Compute/virtualMachines/e
   ]
 }]
 
+resource dataCollectionEndpointAssociation 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = [for i in range(0, sessionHostCount): if (monitoring && !empty(perfDataCollectionEndpointResourceId)) {
+  scope: virtualMachine[i]
+  name: 'configurationAccessEndpoint'
+  properties: {
+    dataCollectionEndpointId: perfDataCollectionEndpointResourceId
+    description: 'Data Collection Endpoint Association'
+  }
+  dependsOn: [
+    extension_AzureMonitorWindowsAgent
+  ]
+}]
+
 resource avdInsightsDataCollectionRuleAssociation 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = [for i in range(0, sessionHostCount): if (monitoring && !empty(perfDataCollectionRulesResourceIds)) {
   scope: virtualMachine[i]
   name: 'avdinsights-${virtualMachine[i].name}-dcra'
   properties: {
     dataCollectionRuleId: perfDataCollectionRulesResourceIds[0]
-    dataCollectionEndpointId: perfDataCollectionEndpointResourceId
     description: 'AVD Insights data collection rule association'
   }
   dependsOn: [
@@ -364,7 +375,6 @@ resource vmInsightsDataCollectionRuleAssociation 'Microsoft.Insights/dataCollect
   scope: virtualMachine[i]
   name: 'vmInsights-${virtualMachine[i].name}-dcra'
   properties: {
-    dataCollectionEndpointId: perfDataCollectionEndpointResourceId
     dataCollectionRuleId: perfDataCollectionRulesResourceIds[1]
     description: 'VM Insights data collection rule association'
   }
@@ -377,7 +387,6 @@ resource securityDataCollectionRuleAssociation 'Microsoft.Insights/dataCollectio
   scope: virtualMachine[i]
   name: 'security-${virtualMachine[i].name}-dcra'
   properties: {
-    dataCollectionEndpointId: !empty(securityDataCollectionEndpointResourceId) ? securityDataCollectionEndpointResourceId : null
     dataCollectionRuleId: securityDataCollectionRulesResourceId
     description: 'Security Events data collection rule association'
   }
