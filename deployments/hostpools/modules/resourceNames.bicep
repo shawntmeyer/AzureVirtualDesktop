@@ -62,9 +62,10 @@ var globalFeedWorkspaceName = replace((nameConvResTypeAtEnd ? 'avd-feed-global-r
 var resourceGroupHosts = replace(replace(replace(nameConv_HP_ResGroups, 'resGroupPurpose', 'hosts'), 'location', '${locations[locationControlPlane].abbreviation}'), 'resourceType', '${resourceAbbreviations.resourceGroups}')
 var availabilitySetPrefix = last(virtualMachineNamePrefix) == '-' ? take(virtualMachineNamePrefix, length(virtualMachineNamePrefix)-1) : virtualMachineNamePrefix
 var availabilitySetNamePrefix = '${replace(replace((nameConvResTypeAtEnd ? '${availabilitySetPrefix}-${nameConvSuffix}-resourceType' : 'resourceType-${availabilitySetPrefix}-${nameConvSuffix}'), 'resourceType', resourceAbbreviations.availabilitySets), 'location', locations[locationVirtualMachines].abbreviation)}-'
-
-var diskNamePrefix = virtualMachineNamePrefix
-var networkInterfaceNamePrefix = virtualMachineNamePrefix
+var vmNamePrefix = empty(virtualMachineNamePrefix) ? replace(replace(replace(nameConv_HP_Resources, 'resourceType', resourceAbbreviations.virtualMachines), 'location', locations[locationVirtualMachines].abbreviation), '-', '') : virtualMachineNamePrefix
+var vmCustomNamePrefixWithoutDash = !empty(virtualMachineNamePrefix) ? last(virtualMachineNamePrefix) == '-' ? take(virtualMachineNamePrefix, length(virtualMachineNamePrefix) - 1) : virtualMachineNamePrefix : ''
+var diskNamePrefix = empty(vmCustomNamePrefixWithoutDash) ? replace(replace(replace(nameConv_HP_Resources, 'resourceType', resourceAbbreviations.disks), 'location', locations[locationVirtualMachines].abbreviation), '-', '') : nameConvResTypeAtEnd ? '${vmCustomNamePrefixWithoutDash}-${resourceAbbreviations.disks}-' : '${resourceAbbreviations.disks}-${vmCustomNamePrefixWithoutDash}-' 
+var networkInterfaceNamePrefix = empty(vmCustomNamePrefixWithoutDash) ? replace(replace(replace(nameConv_HP_Resources, 'resourceType', resourceAbbreviations.networkInterfaces), 'location', locations[locationVirtualMachines].abbreviation), '-', '') : nameConvResTypeAtEnd ? '${vmCustomNamePrefixWithoutDash}-${resourceAbbreviations.networkInterfaces}-' : '${resourceAbbreviations.networkInterfaces}-${vmCustomNamePrefixWithoutDash}-'
 // Management Resources
 var resourceGroupManagement = replace(replace(replace(nameConv_Mgmt_ResGroup, 'resGroupPurpose', 'management'), 'location', '${locations[locationVirtualMachines].abbreviation}'), 'resourceType', '${resourceAbbreviations.resourceGroups}')
 var automationAccountName = replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.automationAccounts), 'location', locations[locationVirtualMachines].abbreviation)
@@ -111,4 +112,5 @@ output resourceGroupManagement string = resourceGroupManagement
 output resourceGroupStorage string = resourceGroupStorage
 output storageAccountNamePrefix string = storageAccountNamePrefix
 output userAssignedIdentityNameConv string = userAssignedIdentityNameConv
+output vmNamePrefix string = vmNamePrefix
 output workspaceName string = workspaceName

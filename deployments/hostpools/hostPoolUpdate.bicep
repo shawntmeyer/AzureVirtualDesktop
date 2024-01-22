@@ -230,8 +230,8 @@ param virtualMachineNamePrefix string
 @description('Deploys the required monitoring resources to enable AVD Insights and monitor features in the automation account.')
 param monitoring bool = true
 
-@description('Optional. The resource ID of the Data Collection Endpoint used for performance data with Azure Monitor.')
-param perfDataCollectionEndpointResourceId string = ''
+@description('Optional. The resource ID of the Data Collection Endpoint located in the same region as the Virtual Machines.')
+param dataCollectionEndpointResourceId string = ''
 
 @description('Optional. The resource IDs of the Data Collection Rules used for performance data with Azure Monitor.')
 param perfDataCollectionRulesResourceIds array = []
@@ -241,9 +241,6 @@ param perfLogAnalyticsWorkspaceResourceId string = ''
 
 @description('The resource ID of the log analytics workspace used for Azure Sentinel and / or Defender for Cloud. When using the Microsoft Monitor Agent (Log Analytics Agent), this allows you to multihome the agent to reduce unnecessary log collection and reduce cost.')
 param securityLogAnalyticsWorkspaceResourceId string = ''
-
-@description('The resource ID of the data collection endpoint used for Azure Sentinel and / or Defender for Cloud. When using the Azure Monitor Agent, this allows you to multihome the agent to reduce unnecessary log collection and reduce cost.')
-param securityDataCollectionEndpointResourceId string = ''
 
 @description('The resource ID of the data collection rule used for Azure Sentinel and / or Defender for Cloud when using the Azure Monitor Agent.')
 param securityDataCollectionRulesResourceId string = ''
@@ -374,6 +371,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     cseMasterScript: cseMasterScript
     cseScriptAddDynParameters: cseScriptAddDynParameters
     cseUris: logic.outputs.cseUris
+    dataCollectionEndpointResourceId: dataCollectionEndpointResourceId
     diskEncryptionOptions: logic.outputs.diskEncryptionOptions
     diskEncryptionSetResourceId: diskEncryptionSetResourceId
     adeKeyVaultResourceId: adeKeyVaultResourceId
@@ -404,7 +402,6 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     monitoring: monitoring
     networkInterfaceNamePrefix: resourceNames.outputs.networkInterfaceNamePrefix
     ouPath: ouPath
-    perfDataCollectionEndpointResourceId: perfDataCollectionEndpointResourceId
     perfDataCollectionRulesResourceIds: perfDataCollectionRulesResourceIds
     perfLogAnalyticsWorkspaceResourceId: perfLogAnalyticsWorkspaceResourceId
     pooledHostPool: logic.outputs.pooledHostPool
@@ -414,7 +411,6 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     resourceGroupHosts: resourceNames.outputs.resourceGroupHosts
     resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
     roleDefinitions: logic.outputs.roleDefinitions
-    securityDataCollectionEndpointResourceId: securityDataCollectionEndpointResourceId
     securityDataCollectionRulesResourceId: securityDataCollectionRulesResourceId
     securityLogAnalyticsWorkspaceResourceId: securityLogAnalyticsWorkspaceResourceId
     securityPrincipalObjectIds: map(securityPrincipals, item => item.objectId)

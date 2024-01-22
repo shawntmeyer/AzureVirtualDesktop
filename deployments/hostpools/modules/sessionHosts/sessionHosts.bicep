@@ -17,7 +17,7 @@ param perfLogAnalyticsWorkspaceResourceId string
 param cseMasterScript string
 param cseScriptAddDynParameters string
 param cseUris array
-param perfDataCollectionEndpointResourceId string
+param dataCollectionEndpointResourceId string
 param perfDataCollectionRulesResourceIds array
 param diskEncryptionOptions object
 param diskEncryptionSetResourceId string
@@ -55,7 +55,6 @@ param resourceGroupControlPlane string
 param resourceGroupHosts string
 param resourceGroupManagement string
 param roleDefinitions object
-param securityDataCollectionEndpointResourceId string
 param securityDataCollectionRulesResourceId string
 param securityPrincipalObjectIds array
 param securityLogAnalyticsWorkspaceResourceId string
@@ -133,6 +132,7 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     cseScriptAddDynParameters: cseScriptAddDynParameters
     cseUris: cseUris
     customImageResourceId: customImageResourceId
+    dataCollectionEndpointResourceId: dataCollectionEndpointResourceId
     diskEncryptionOptions: diskEncryptionOptions
     diskEncryptionSetResourceId: diskEncryptionSetResourceId
     diskNamePrefix: diskNamePrefix
@@ -157,11 +157,9 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     fslogixNetAppFileShares: fslogixNetAppFileShares
     networkInterfaceNamePrefix: networkInterfaceNamePrefix
     ouPath: ouPath
-    perfDataCollectionEndpointResourceId: perfDataCollectionEndpointResourceId
     perfDataCollectionRulesResourceIds: perfDataCollectionRulesResourceIds
     resourceGroupControlPlane: resourceGroupControlPlane
     resourceGroupManagement: resourceGroupManagement
-    securityDataCollectionEndpointResourceId: securityDataCollectionEndpointResourceId
     securityDataCollectionRulesResourceId: securityDataCollectionRulesResourceId
     securityLogAnalyticsWorkspaceResourceId: securityLogAnalyticsWorkspaceResourceId
     sessionHostCount: i == sessionHostBatchCount && divisionRemainderValue > 0 ? divisionRemainderValue : maxResourcesPerTemplateDeployment

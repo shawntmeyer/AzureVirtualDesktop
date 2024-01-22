@@ -14,6 +14,7 @@ param batchCount int
 param cseMasterScript string
 param cseUris array
 param cseScriptAddDynParameters string
+param dataCollectionEndpointResourceId string
 param diskEncryptionOptions object
 param diskEncryptionSetResourceId string
 param diskNamePrefix string
@@ -40,11 +41,9 @@ param managementVirtualMachineName string
 param monitoring bool
 param networkInterfaceNamePrefix string
 param ouPath string
-param perfDataCollectionEndpointResourceId string
 param perfDataCollectionRulesResourceIds array
 param resourceGroupControlPlane string
 param resourceGroupManagement string
-param securityDataCollectionEndpointResourceId string
 param securityDataCollectionRulesResourceId string
 param securityLogAnalyticsWorkspaceResourceId string
 param sessionHostCount int
@@ -347,11 +346,11 @@ resource extension_AzureMonitorWindowsAgent 'Microsoft.Compute/virtualMachines/e
   ]
 }]
 
-resource dataCollectionEndpointAssociation 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = [for i in range(0, sessionHostCount): if (monitoring && !empty(perfDataCollectionEndpointResourceId)) {
+resource dataCollectionEndpointAssociation 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = [for i in range(0, sessionHostCount): if (monitoring && !empty(dataCollectionEndpointResourceId)) {
   scope: virtualMachine[i]
   name: 'configurationAccessEndpoint'
   properties: {
-    dataCollectionEndpointId: perfDataCollectionEndpointResourceId
+    dataCollectionEndpointId: dataCollectionEndpointResourceId
     description: 'Data Collection Endpoint Association'
   }
   dependsOn: [

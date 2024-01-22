@@ -44,6 +44,7 @@ param resourceGroupControlPlane string
 param resourceGroupManagement string
 param resourceGroupStorage string
 param roleDefinitions object
+param securityDataCollectionRulesResourceId string
 param sessionHostCount int
 param fslogixStorageAccountNamePrefix string
 param fslogixStorageSolution string
@@ -326,7 +327,7 @@ module vmInsightsDataCollectionRules 'vmInsightsDataCollectionRules.bicep' = if 
   }
 }
 
-module dataCollectionEndpoint 'dataCollectionEndpoint.bicep' = if (monitoring && performanceMonitoringAgent == 'AzureMonitorAgent') {
+module dataCollectionEndpoint 'dataCollectionEndpoint.bicep' = if (monitoring && performanceMonitoringAgent == 'AzureMonitorAgent' || !empty(securityDataCollectionRulesResourceId)) {
   name: 'DataCollectionEndpoint_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {

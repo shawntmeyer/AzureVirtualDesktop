@@ -308,8 +308,8 @@ param virtualMachineAdminUserName string
 param virtualMachineSize string = 'Standard_D4ads_v5'
 
 @maxLength(12)
-@description('Required. The Virtual Machine Name prefix.')
-param virtualMachineNamePrefix string
+@description('Optional. The custom Virtual Machine Name prefix. If not specified, then the name is generated automatically.')
+param virtualMachineNamePrefix string = ''
 
 // Monitoring Configuration
 @description('Deploys the required monitoring resources to enable AVD Insights and monitor features in the automation account.')
@@ -334,9 +334,6 @@ param logAnalyticsWorkspaceSku string = 'PerGB2018'
 
 @description('The resource ID of the log analytics workspace used for Azure Sentinel and / or Defender for Cloud. When using the Microsoft Monitor Agent (Log Analytics Agent), this allows you to multihome the agent to reduce unnecessary log collection and reduce cost.')
 param securityLogAnalyticsWorkspaceResourceId string = ''
-
-@description('The resource ID of the data collection endpoint used for Azure Sentinel and / or Defender for Cloud. When using the Azure Monitor Agent, this allows you to multihome the agent to reduce unnecessary log collection and reduce cost.')
-param securityDataCollectionEndpointResourceId string = ''
 
 @description('The resource ID of the data collection rule used for Azure Sentinel and / or Defender for Cloud when using the Azure Monitor Agent.')
 param securityDataCollectionRulesResourceId string = ''
@@ -426,7 +423,7 @@ module logic 'modules/logic.bicep' = {
     sessionHostCount: sessionHostCount
     sessionHostIndex: sessionHostIndex
     storageCount: storageCount
-    virtualMachineNamePrefix: virtualMachineNamePrefix
+    virtualMachineNamePrefix: resourceNames.outputs.vmNamePrefix
     virtualMachineSize: virtualMachineSize
   }
 }
@@ -487,6 +484,7 @@ module management 'modules/management/management.bicep' = {
     resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
     resourceGroupStorage: resourceNames.outputs.resourceGroupStorage
     roleDefinitions: logic.outputs.roleDefinitions
+    securityDataCollectionRulesResourceId: securityDataCollectionRulesResourceId
     sessionHostCount: sessionHostCount
     fslogixStorageSolution: logic.outputs.fslogixStorageSolution
     tags: tags
@@ -494,7 +492,7 @@ module management 'modules/management/management.bicep' = {
     timeZone: logic.outputs.timeZone
     userAssignedIdentityNameConv: resourceNames.outputs.userAssignedIdentityNameConv
     performanceMonitoringAgent: performanceMonitoringAgent
-    virtualMachineNamePrefix: virtualMachineNamePrefix
+    virtualMachineNamePrefix: resourceNames.outputs.vmNamePrefix
     virtualMachineAdminPassword: empty(virtualMachineAdminPassword) ? keyVault_Reference.getSecret(virtualMachineAdminPassword) : virtualMachineAdminPassword
     virtualMachineSize: virtualMachineSize
     virtualMachineAdminUserName: empty(virtualMachineAdminUserName) ? keyVault_Reference.getSecret(virtualMachineAdminUserName) : virtualMachineAdminUserName
@@ -645,7 +643,8 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     cseMasterScript: cseMasterScript
     cseScriptAddDynParameters: cseScriptAddDynParameters
     cseUris: logic.outputs.cseUris
-    customImageResourceId: customImageResourceId    
+    customImageResourceId: customImageResourceId
+    dataCollectionEndpointResourceId: management.outputs.dataCollectionEndpointResourceId    
     diskEncryptionOptions: logic.outputs.diskEncryptionOptions
     diskEncryptionSetResourceId: management.outputs.diskEncryptionSetResourceId
     diskNamePrefix: resourceNames.outputs.diskNamePrefix
@@ -676,7 +675,6 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     monitoring: monitoring
     networkInterfaceNamePrefix: resourceNames.outputs.networkInterfaceNamePrefix
     ouPath: ouPath
-    perfDataCollectionEndpointResourceId: management.outputs.dataCollectionEndpointResourceId
     perfDataCollectionRulesResourceIds: management.outputs.dataCollectionRulesResourceIds
     perfLogAnalyticsWorkspaceResourceId: management.outputs.logAnalyticsWorkspaceResourceId
     pooledHostPool: logic.outputs.pooledHostPool
@@ -686,7 +684,6 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     resourceGroupHosts: resourceNames.outputs.resourceGroupHosts
     resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
     roleDefinitions: logic.outputs.roleDefinitions
-    securityDataCollectionEndpointResourceId: securityDataCollectionEndpointResourceId
     securityDataCollectionRulesResourceId: securityDataCollectionRulesResourceId
     securityPrincipalObjectIds: map(securityPrincipals, item => item.objectId)
     securityLogAnalyticsWorkspaceResourceId: securityLogAnalyticsWorkspaceResourceId
@@ -698,7 +695,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     timeStamp: timeStamp
     trustedLaunch: management.outputs.validateTrustedLaunch
     performanceMonitoringAgent: performanceMonitoringAgent
-    virtualMachineNamePrefix: virtualMachineNamePrefix
+    virtualMachineNamePrefix: resourceNames.outputs.vmNamePrefix
     virtualMachineAdminPassword: empty(virtualMachineAdminPassword) ? keyVault_Reference.getSecret(virtualMachineAdminPassword) : virtualMachineAdminPassword
     virtualMachineSize: virtualMachineSize
     virtualMachineAdminUserName: empty(virtualMachineAdminUserName) ? keyVault_Reference.getSecret(virtualMachineAdminUserName) : virtualMachineAdminUserName
