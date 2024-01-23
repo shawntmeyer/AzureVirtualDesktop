@@ -1156,7 +1156,7 @@
                             "type": "Microsoft.Common.DropDown",
                             "visible": "[and(equals(steps('userProfiles').profileSolution, 'fslogix'), equals(steps('userProfiles').storageProduct, 'AzureStorageAccount'))]",
                             "label": "Storage Endpoint",
-                            "defaultValue": "Service",
+                            "defaultValue": "Private",
                             "toolTip": "Select the storage endpoint for the SMB file shares to support the use of FSLogix.",
                             "constraints": {
                                 "required": true,
@@ -1168,10 +1168,6 @@
                                     {
                                         "label": "Public",
                                         "value": "PublicEndpoint"
-                                    },
-                                    {
-                                        "label": "Service",
-                                        "value": "ServiceEndpoint"
                                     }
                                 ]
                             }
@@ -1454,6 +1450,7 @@
                 "sessionHostCount": "[steps('hosts').count]",
                 "sessionHostIndex": "[steps('hosts').index]",
                 "storageCount": "[if(or(equals(steps('userProfiles').profileSolution, 'local'), equals(steps('userProfiles').storageProduct, 'AzureNetAppFiles')), 0, steps('userProfiles').storageCount)]",
+				"storagePrivateEndpoints": "[if(equals(steps('userProfiles').storageEndpoint, 'PrivateEndpoint'), true, false)]",
                 "storageIndex": 0,
                 "SubnetResourceId": "[steps('hosts').network.subnet]",
                 "Tags": "[steps('tags').tags]",
