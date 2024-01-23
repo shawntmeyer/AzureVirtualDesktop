@@ -103,7 +103,10 @@ param controlPlanePrivateEndpointSubnetResourceId string = ''
 
 // Private Endpoints
 @description('Create private endpoints for all deployed resources where applicable.')
-param privateEndpoints bool = false
+param managementPrivateEndpoints bool = false
+
+@description('Create private endpoints for all deployed resources where applicable.')
+param storagePrivateEndpoints bool = false
 
 @description('The Resource Id of the subnet on which to create the storage account, keyvault, and other resources private link. Required when "privateEndoints" = true.')
 param managementPrivateEndpointSubnetResourceId string = ''
@@ -476,7 +479,7 @@ module management 'modules/management/management.bicep' = {
     netAppVnetResourceId: netAppVnetResourceId
     networkInterfaceNamePrefix: resourceNames.outputs.networkInterfaceNamePrefix
     privateEndpointSubnetResourceId: managementPrivateEndpointSubnetResourceId
-    privateEndpoint: privateEndpoints
+    privateEndpoint: managementPrivateEndpoints
     privateEndpointNameConv: resourceNames.outputs.privateEndpointNameConv
     recoveryServices: recoveryServices
     recoveryServicesVaultName: resourceNames.outputs.recoveryServicesVaultName
@@ -584,7 +587,7 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (fslogixStorageService != 'N
     netAppCapacityPoolName: resourceNames.outputs.netAppCapacityPoolName
     netbios: logic.outputs.netbios
     ouPath: ouPath
-    privateEndpoint: privateEndpoints
+    privateEndpoint: storagePrivateEndpoints
     privateEndpointNameConv: resourceNames.outputs.privateEndpointNameConv
     recoveryServices: recoveryServices
     recoveryServicesVaultName: resourceNames.outputs.recoveryServicesVaultName
