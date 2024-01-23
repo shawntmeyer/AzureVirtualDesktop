@@ -22,7 +22,7 @@ param logAnalyticsWorkspaceResourceId string
 param managementVirtualMachineName string
 param hostPoolMaxSessionLimit int
 param hostPoolPublicNetworkAccess string
-param monitoring bool
+param enableInsights bool
 param privateEndpointNameConv string
 param privateEndpointSubnetResourceId string
 param resourceGroupControlPlane string
@@ -57,7 +57,7 @@ module hostPool 'hostPool.bicep' = {
     location: locationControlPlane
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
     hostPoolMaxSessionLimit: hostPoolMaxSessionLimit
-    monitoring: monitoring    
+    enableInsights: enableInsights    
     privateEndpointName: hostPoolPrivateEndpointName
     privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
     tags: tags
@@ -96,7 +96,7 @@ module feedWorkspace 'workspace.bicep' = {
     friendlyName: workspaceFriendlyName
     location: locationControlPlane
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
-    monitoring: monitoring
+    enableInsights: enableInsights
     privateDnsZoneResourceId: avdPrivateDnsZoneResourceId
     privateEndpointName: feedPrivateEndpointName
     privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
@@ -123,7 +123,7 @@ module globalWorkspace 'workspace.bicep' = if(!existingGlobalWorkspace && avdPri
     friendlyName: ''
     location: locationControlPlane
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
-    monitoring: monitoring
+    enableInsights: enableInsights
     privateDnsZoneResourceId: avdGlobalFeedPrivateDnsZoneResourceId
     privateEndpointName: globalFeedPrivateEndpointName
     privateEndpointSubnetResourceId: privateEndpointSubnetResourceId

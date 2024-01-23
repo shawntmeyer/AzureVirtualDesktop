@@ -8,6 +8,9 @@ param nameConvResTypeAtEnd bool = false
 @description('The resource ID of the AVD hostpool to update.')
 param hostPoolResourceId string
 
+@description('The name of the Resource Group to where the AVD Session Hosts are to be deployed.')
+param resourceGroupHosts string = ''
+
 @allowed([
   'd' // Development
   'p' // Production
@@ -72,18 +75,7 @@ param fslogixContainerType string = 'ProfileContainer'
 Only required when "fslogixConfigureSessionHosts" is true and "fslogixStorageService" is AzureNetAppFiles Premium or Standard.
 If an office container path is specified, then ensure that the profile path is first.
 Do NOT include the trailing "\".''')
-param fslogixNetAppFileShares array = ['None']
-
-@allowed([
-  'AzureNetAppFiles Premium' // ANF with the Premium SKU, 450,000 IOPS
-  'AzureNetAppFiles Standard' // ANF with the Standard SKU, 320,000 IOPS
-  'AzureFiles Premium' // Azure files Premium with a Service Endpoint, 100,000 IOPs
-  'AzureFiles Standard' // Azure files Standard with the Large File Share option and the default public endpoint, 20,000 IOPS
-  'None'
-])
-@description('''Enable an fslogix storage option to manage user profiles for the AVD session hosts. The selected service & SKU should provide sufficient IOPS for all of your users.
-https://docs.microsoft.com/en-us/azure/architecture/example-scenario/wvd/windows-virtual-desktop-fslogix#performance-requirements''')
-param fslogixStorageService string = 'AzureFiles Standard'
+param fslogixNetAppFileShares array = []
 
 @description('Configure FSLogix agent on the session hosts via local registry keys.')
 param fslogixConfigureSessionHosts bool = true
@@ -97,27 +89,7 @@ If "identitySolution" is set to "EntraId" or "EntraIdIntuneEnrollment" then only
 ''')
 param fslogixExistingStorageAccountResourceIds array = []
 
-@maxValue(100)
-@minValue(0)
-@description('''
-The number of storage accounts to deploy to support the required use case for the AVD stamp. https://docs.microsoft.com/en-us/azure/architecture/patterns/sharding
-Note: Cannot utilize sharding with "identitySolution" = "AAD" so storageCount will be set to 1 in variables.
-''')
-param storageCount int = 1
-
 // Control Plane Configuration
-
-@allowed([
-  'Pooled DepthFirst'
-  'Pooled BreadthFirst'
-  'Personal Automatic'
-  'Personal Direct'
-])
-@description('These options specify the host pool type and depending on the type provides the load balancing options and assignment types.')
-param hostPoolType string = 'Pooled DepthFirst'
-
-@description('An array of Security Principals with their object IDs and display names to assign to the AVD Application Group and FSLogix Storage.')
-param securityPrincipals array = []
 
 @maxValue(5000)
 @minValue(0)
@@ -227,17 +199,14 @@ param virtualMachineSize string = 'Standard_D4ads_v5'
 param virtualMachineNamePrefix string
 
 // Monitoring Configuration
-@description('Deploys the required monitoring resources to enable AVD Insights and monitor features in the automation account.')
-param monitoring bool = true
+@description('Deploys the required enableInsights resources to enable AVD Insights and monitor features in the automation account.')
+param enableInsights bool = true
 
 @description('Optional. The resource ID of the Data Collection Endpoint located in the same region as the Virtual Machines.')
 param dataCollectionEndpointResourceId string = ''
 
 @description('Optional. The resource IDs of the Data Collection Rules used for performance data with Azure Monitor.')
-param perfDataCollectionRulesResourceIds array = []
-
-@description('The resource ID of the log analytics workspace used for performance data with Azure Monitor.')
-param perfLogAnalyticsWorkspaceResourceId string = ''
+param insightsDataCollectionRulesResourceIds array = []
 
 @description('The resource ID of the log analytics workspace used for Azure Sentinel and / or Defender for Cloud. When using the Microsoft Monitor Agent (Log Analytics Agent), this allows you to multihome the agent to reduce unnecessary log collection and reduce cost.')
 param securityLogAnalyticsWorkspaceResourceId string = ''
@@ -245,17 +214,13 @@ param securityLogAnalyticsWorkspaceResourceId string = ''
 @description('The resource ID of the data collection rule used for Azure Sentinel and / or Defender for Cloud when using the Azure Monitor Agent.')
 param securityDataCollectionRulesResourceId string = ''
 
-@allowed([
-  'AzureMonitorAgent'
-  'LogAnalyticsAgent'
-])
-@description('Input the desired monitoring agent to send security data to the log analytics workspace.')
-param performanceMonitoringAgent string = 'AzureMonitorAgent'
-
 // Backup Configuration
 
 @description('Enable backups to an Azure Recovery Services vault.  For a pooled host pool this will enable backups on the Azure file share.  For a personal host pool this will enable backups on the AVD sessions hosts.')
 param recoveryServices bool = false
+
+@description('The resource ID of the Recovery Services Vault to use for backups.')
+param recoveryServicesVaultResourceId string = ''
 
 // Tags
 @description('Key / value pairs of metadata for the Azure resource groups and resources.')
@@ -263,6 +228,14 @@ param tags object = {}
 
 @description('DO NOT MODIFY THIS VALUE! The timeStamp is needed to differentiate deployments for certain Azure resources and must be set using a parameter.')
 param timeStamp string = utcNow('yyyyMMddhhmmss')
+
+var locations = loadJsonContent('../../.common/data/locations.json')
+var resourceAbbreviations = loadJsonContent('../../.common/data/resourceAbbreviations.json')
+
+var vmCustomNamePrefixWithoutDash = last(virtualMachineNamePrefix) == '-' ? take(virtualMachineNamePrefix, length(virtualMachineNamePrefix) - 1) : virtualMachineNamePrefix
+var diskNamePrefix = nameConvResTypeAtEnd ? '${vmCustomNamePrefixWithoutDash}-${resourceAbbreviations.disks}-' : '${resourceAbbreviations.disks}-${vmCustomNamePrefixWithoutDash}-' 
+var networkInterfaceNamePrefix = nameConvResTypeAtEnd ? '${vmCustomNamePrefixWithoutDash}-${resourceAbbreviations.networkInterfaces}-' : '${resourceAbbreviations.networkInterfaces}-${vmCustomNamePrefixWithoutDash}-'
+
 
 var artifactsStorageAccountName = last(split(artifactsStorageAccountResourceId, '/'))
 var artifactsUri = 'https://${artifactsStorageAccountName}.blob.${environment().suffixes.storage}/${artifactsContainerName}/'
@@ -272,7 +245,10 @@ var availabilityZones = availability == 'availabilityZones' ? [
   '3'
 ] : []
 var locationVirtualMachines = vmVirtualNetwork.location
+var recoveryServicesVaultName = !empty(recoveryServicesVaultResourceId) ? last(split(recoveryServicesVaultResourceId, '/')) : ''
 var resourceGroupControlPlane = split(hostPoolResourceId, '/')[4]
+var resourceGroupManagement = !empty(recoveryServicesVaultResourceId) ? split(recoveryServicesVaultResourceId, '/')[4] : ''
+
 var hostPoolName = last(split(hostPoolResourceId, '/'))
 
 resource artifactsUAI 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = {
@@ -298,6 +274,11 @@ resource adeKeyVault 'Microsoft.KeyVault/vaults@2021-06-01-preview' existing = i
 resource adeKeyEncryptionKey 'Microsoft.KeyVault/vaults/keys@2023-07-01' existing = if(diskEncryptionSolution == 'ADE + KEK') {
   name: last(split(adeKeyEncryptionKeyResourceId, '/'))
   scope: resourceGroup(split(adeKeyEncryptionKeyResourceId, '/')[4], split(adeKeyEncryptionKeyResourceId, '/')[8])
+}
+
+resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' existing = {
+  name: last(split(hostPoolResourceId, '/'))
+  scope: resourceGroup(split(hostPoolResourceId, '/')[2], split(hostPoolResourceId, '/')[4])
 }
 
 // Resource Names
@@ -333,8 +314,8 @@ module logic 'modules/logic.bicep' = {
     fslogixConfigureSessionHosts: fslogixConfigureSessionHosts
     fslogixConfigurationBlobName: fslogixConfigurationBlobName
     fslogixContainerType: fslogixContainerType
-    fslogixStorageService: fslogixStorageService
-    hostPoolType: hostPoolType
+    fslogixStorageService: 'None'
+    hostPoolType: 'Pooled DepthFirst'
     imageOffer: imageOffer
     imagePublisher: imagePublisher
     imageSku: imageSku
@@ -342,13 +323,13 @@ module logic 'modules/logic.bicep' = {
     locationVirtualMachines: locationVirtualMachines
     resourceGroupControlPlane: resourceGroupControlPlane
     resourceGroupGlobalFeed: resourceNames.outputs.resourceGroupGlobalFeed
-    resourceGroupHosts: resourceNames.outputs.resourceGroupHosts
-    resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
+    resourceGroupHosts: resourceGroupHosts
+    resourceGroupManagement: resourceGroupManagement
     resourceGroupStorage: resourceNames.outputs.resourceGroupStorage
-    securityPrincipals: securityPrincipals
+    securityPrincipals: []
     sessionHostCount: sessionHostCount
     sessionHostIndex: sessionHostIndex
-    storageCount: storageCount
+    fslogixStorageCount: 1
     virtualMachineNamePrefix: virtualMachineNamePrefix
     virtualMachineSize: virtualMachineSize
   }
@@ -386,11 +367,9 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     drainModeUserAssignedIdentityClientId: ''
     fslogixConfigureSessionHosts: fslogixConfigureSessionHosts
     fslogixContainerType: fslogixContainerType
-    fslogixDeployed: logic.outputs.fslogix
     fslogixDeployedStorageAccountResourceIds: []
     fslogixExistingStorageAccountResourceIds: fslogixExistingStorageAccountResourceIds
     fslogixNetAppFileShares: fslogixNetAppFileShares
-    fslogixStorageSolution: logic.outputs.fslogixStorageSolution
     hostPoolName: hostPoolName
     imageOffer: imageOffer
     imagePublisher: imagePublisher
@@ -399,21 +378,20 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     location: vmVirtualNetwork.location
     managementVirtualMachineName: ''
     maxResourcesPerTemplateDeployment: logic.outputs.maxResourcesPerTemplateDeployment
-    monitoring: monitoring
+    enableInsights: enableInsights
     networkInterfaceNamePrefix: resourceNames.outputs.networkInterfaceNamePrefix
     ouPath: ouPath
-    perfDataCollectionRulesResourceIds: perfDataCollectionRulesResourceIds
-    perfLogAnalyticsWorkspaceResourceId: perfLogAnalyticsWorkspaceResourceId
-    pooledHostPool: logic.outputs.pooledHostPool
+    insightsDataCollectionRulesResourceIds: insightsDataCollectionRulesResourceIds
+    pooledHostPool: hostPool.properties.hostPoolType == 'Pooled' ? true : false
     recoveryServices: recoveryServices
-    recoveryServicesVaultName: resourceNames.outputs.recoveryServicesVaultName
+    recoveryServicesVaultName: recoveryServicesVaultName
     resourceGroupControlPlane: resourceGroupControlPlane
     resourceGroupHosts: resourceNames.outputs.resourceGroupHosts
-    resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
+    resourceGroupManagement: resourceGroupManagement
     roleDefinitions: logic.outputs.roleDefinitions
     securityDataCollectionRulesResourceId: securityDataCollectionRulesResourceId
     securityLogAnalyticsWorkspaceResourceId: securityLogAnalyticsWorkspaceResourceId
-    securityPrincipalObjectIds: map(securityPrincipals, item => item.objectId)
+    securityPrincipalObjectIds: []
     sessionHostBatchCount: logic.outputs.sessionHostBatchCount
     sessionHostIndex: sessionHostIndex
     storageSuffix: logic.outputs.storageSuffix
@@ -421,7 +399,6 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     tags: tags
     timeStamp: timeStamp
     trustedLaunch: trustedLaunch
-    performanceMonitoringAgent: performanceMonitoringAgent
     virtualMachineNamePrefix: virtualMachineNamePrefix
     virtualMachineAdminPassword: empty(virtualMachineAdminPassword) ? keyVault_Reference.getSecret(virtualMachineAdminPassword) : virtualMachineAdminPassword
     virtualMachineSize: virtualMachineSize

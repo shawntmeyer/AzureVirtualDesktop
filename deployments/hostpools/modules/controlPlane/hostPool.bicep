@@ -10,7 +10,7 @@ param logAnalyticsWorkspaceResourceId string
 param privateEndpointName string
 param privateEndpointSubnetResourceId string
 param hostPoolMaxSessionLimit int
-param monitoring bool
+param enableInsights bool
 param tags object
 param time string = utcNow('u')
 param hostPoolValidationEnvironment bool
@@ -110,7 +110,7 @@ resource privateDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneG
   }
 }
 
-resource hostPoolDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (monitoring) {
+resource hostPoolDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (enableInsights) {
   name: 'diag-${hostPoolName}'
   scope: hostPool
   properties: {

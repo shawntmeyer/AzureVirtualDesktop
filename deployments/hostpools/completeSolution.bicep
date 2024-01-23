@@ -170,27 +170,27 @@ If "identitySolution" is set to "EntraId" or "EntraIdIntuneEnrollment" then only
 param fslogixExistingStorageAccountResourceIds array = []
 
 @description('Optional. The resource Id of the Virtual Network delegated for NetApp Volumes. Required when fslogixStorageService = "AzureNetAppFiles Standard" or "AzureNetAppFiles Premium".')
-param netAppVnetResourceId string = ''
+param fslogixNetAppVnetResourceId string = ''
 
 @allowed([
   'AES256'
   'RC4'
 ])
 @description('The Active Directory computer object Kerberos encryption type for the Azure Storage Account or Azure NetApp files Account.')
-param storageAccountADKerberosEncryption string = 'AES256'
+param fslogixStorageAccountADKerberosEncryption string = 'AES256'
 
 @maxValue(100)
 @minValue(0)
 @description('''
 The number of storage accounts to deploy to support the required use case for the AVD stamp. https://docs.microsoft.com/en-us/azure/architecture/patterns/sharding
-Note: Cannot utilize sharding with "identitySolution" = "AAD" so storageCount will be set to 1 in variables.
+Note: Cannot utilize sharding with "identitySolution" = "AAD" so fslogixStorageCount will be set to 1 in variables.
 ''')
-param storageCount int = 1
+param fslogixStorageCount int = 1
 
 @maxValue(99)
 @minValue(0)
 @description('The starting number for the storage accounts to support the required use case for the AVD stamp. https://docs.microsoft.com/en-us/azure/architecture/patterns/sharding')
-param storageIndex int = 1
+param fslogixStorageIndex int = 1
 
 // Control Plane Configuration
 
@@ -316,7 +316,7 @@ param virtualMachineNamePrefix string = ''
 
 // Monitoring Configuration
 @description('Deploys the required monitoring resources to enable AVD Insights and monitor features in the automation account.')
-param monitoring bool = true
+param enableInsights bool = true
 
 @maxValue(730)
 @minValue(30)
@@ -340,13 +340,6 @@ param securityLogAnalyticsWorkspaceResourceId string = ''
 
 @description('The resource ID of the data collection rule used for Azure Sentinel and / or Defender for Cloud when using the Azure Monitor Agent.')
 param securityDataCollectionRulesResourceId string = ''
-
-@allowed([
-  'AzureMonitorAgent'
-  'LogAnalyticsAgent'
-])
-@description('Input the desired monitoring agent to send security data to the log analytics workspace.')
-param performanceMonitoringAgent string = 'AzureMonitorAgent'
 
 // Backup Configuration
 
@@ -425,7 +418,7 @@ module logic 'modules/logic.bicep' = {
     securityPrincipals: securityPrincipals
     sessionHostCount: sessionHostCount
     sessionHostIndex: sessionHostIndex
-    storageCount: storageCount
+    fslogixStorageCount: fslogixStorageCount
     virtualMachineNamePrefix: resourceNames.outputs.vmNamePrefix
     virtualMachineSize: virtualMachineSize
   }
@@ -468,15 +461,15 @@ module management 'modules/management/management.bicep' = {
     fslogixStorageService: fslogixStorageService
     hostPoolType: hostPoolType
     identitySolution: identitySolution
-    kerberosEncryption: storageAccountADKerberosEncryption
+    kerberosEncryption: fslogixStorageAccountADKerberosEncryption
     keyVaultName: resourceNames.outputs.keyVaultName
     keyVaultPrivateDnsZoneResourceId: keyVaultPrivateDnsZoneResourceId
     locationVirtualMachines: locationVirtualMachines
     logAnalyticsWorkspaceName: resourceNames.outputs.logAnalyticsWorkspaceName
     logAnalyticsWorkspaceRetention: logAnalyticsWorkspaceRetention
     logAnalyticsWorkspaceSku: logAnalyticsWorkspaceSku
-    monitoring: monitoring
-    netAppVnetResourceId: netAppVnetResourceId
+    enableInsights: enableInsights
+    netAppVnetResourceId: fslogixNetAppVnetResourceId
     networkInterfaceNamePrefix: resourceNames.outputs.networkInterfaceNamePrefix
     privateEndpointSubnetResourceId: managementPrivateEndpointSubnetResourceId
     privateEndpoint: managementPrivateEndpoints
@@ -494,7 +487,6 @@ module management 'modules/management/management.bicep' = {
     timeStamp: timeStamp
     timeZone: logic.outputs.timeZone
     userAssignedIdentityNameConv: resourceNames.outputs.userAssignedIdentityNameConv
-    performanceMonitoringAgent: performanceMonitoringAgent
     virtualMachineNamePrefix: resourceNames.outputs.vmNamePrefix
     virtualMachineAdminPassword: empty(virtualMachineAdminPassword) ? keyVault_Reference.getSecret(virtualMachineAdminPassword) : virtualMachineAdminPassword
     virtualMachineSize: virtualMachineSize
@@ -535,9 +527,9 @@ module controlPlane 'modules/controlPlane/controlPlane.bicep' = {
     identitySolution: identitySolution
     locationControlPlane: locationControlPlane
     locationVirtualMachines: locationVirtualMachines
-    logAnalyticsWorkspaceResourceId: monitoring ? management.outputs.logAnalyticsWorkspaceResourceId : ''
+    logAnalyticsWorkspaceResourceId: enableInsights ? management.outputs.logAnalyticsWorkspaceResourceId : ''
     managementVirtualMachineName: management.outputs.virtualMachineName    
-    monitoring: monitoring
+    enableInsights: enableInsights
     privateEndpointNameConv: resourceNames.outputs.privateEndpointNameConv
     privateEndpointSubnetResourceId: controlPlanePrivateEndpointSubnetResourceId
     resourceGroupControlPlane: resourceNames.outputs.resourceGroupControlPlane
@@ -575,11 +567,11 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (fslogixStorageService != 'N
     domainName: domainName
     encryptionUserAssignedIdentityResourceId: management.outputs.encryptionUserAssignedIdentityResourceId
     fileShares: logic.outputs.fileShares
-    fslogixShareSizeInGB: fslogixShareSizeInGB
-    fslogixContainerType: fslogixContainerType
-    fslogixStorageService: fslogixStorageService
+    shareSizeInGB: fslogixShareSizeInGB
+    containerType: fslogixContainerType
+    storageService: fslogixStorageService
     identitySolution: identitySolution
-    kerberosEncryption: storageAccountADKerberosEncryption
+    kerberosEncryption: fslogixStorageAccountADKerberosEncryption
     keyVaultUri: management.outputs.keyVaultUrl
     location: locationVirtualMachines
     managementVirtualMachineName: management.outputs.virtualMachineName
@@ -597,11 +589,11 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (fslogixStorageService != 'N
     securityPrincipalNames: map(securityPrincipals, item => item.name)
     smbServerLocation: logic.outputs.smbServerLocation
     storageAccountNamePrefix: resourceNames.outputs.storageAccountNamePrefix
-    storageCount: logic.outputs.storageCount
+    storageCount: logic.outputs.fslogixStorageCount
     storageEncryptionKeyName: management.outputs.storageAccountEncryptionKeyName
-    storageIndex: storageIndex
-    storageSku: logic.outputs.storageSku
-    fslogixStorageSolution: logic.outputs.fslogixStorageSolution
+    storageIndex: fslogixStorageIndex
+    storageSku: logic.outputs.fslogixStorageSku
+    storageSolution: logic.outputs.fslogixStorageSolution
     subnet: split(storagePrivateEndpointSubnetResourceId, '/')[10]
     tagsAutomationAccounts: union({
         'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceNames.outputs.resourceGroupManagement}/providers/Microsoft.DesktopVirtualization/workspaces/${resourceNames.outputs.workspaceName}'
@@ -675,11 +667,10 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     location: vmVirtualNetwork.location
     managementVirtualMachineName: management.outputs.virtualMachineName
     maxResourcesPerTemplateDeployment: logic.outputs.maxResourcesPerTemplateDeployment
-    monitoring: monitoring
+    enableInsights: enableInsights
     networkInterfaceNamePrefix: resourceNames.outputs.networkInterfaceNamePrefix
     ouPath: ouPath
-    perfDataCollectionRulesResourceIds: management.outputs.dataCollectionRulesResourceIds
-    perfLogAnalyticsWorkspaceResourceId: management.outputs.logAnalyticsWorkspaceResourceId
+    insightsDataCollectionRulesResourceIds: management.outputs.dataCollectionRulesResourceIds
     pooledHostPool: logic.outputs.pooledHostPool
     recoveryServices: recoveryServices
     recoveryServicesVaultName: resourceNames.outputs.recoveryServicesVaultName
@@ -697,7 +688,6 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     tags: tags
     timeStamp: timeStamp
     trustedLaunch: management.outputs.validateTrustedLaunch
-    performanceMonitoringAgent: performanceMonitoringAgent
     virtualMachineNamePrefix: resourceNames.outputs.vmNamePrefix
     virtualMachineAdminPassword: empty(virtualMachineAdminPassword) ? keyVault_Reference.getSecret(virtualMachineAdminPassword) : virtualMachineAdminPassword
     virtualMachineSize: virtualMachineSize

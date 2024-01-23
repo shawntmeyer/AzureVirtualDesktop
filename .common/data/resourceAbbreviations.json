@@ -4,11 +4,11 @@
     "computeGalleries": "gal",
     "dataCollectionEndpoints": "dce",
     "dataCollectionRules": "dcr",
-    "desktopApplicationGroups": "dag",
-    "remoteApplicationGroups": "rag",
+    "desktopApplicationGroups": "vddag",
+    "remoteApplicationGroups": "vdrag",
     "disks": "disk",
     "diskEncryptionSets": "des",
-    "hostPools": "hp",
+    "hostPools": "vdpool",
     "keyVaults": "kv",
     "logAnalyticsWorkspaces": "law",
     "netAppAccounts": "naa",
@@ -20,5 +20,5 @@
     "storageAccounts": "sa",
     "userAssignedIdentities": "uai",
     "virtualMachines": "vm",
-    "workspaces": "ws"
+    "workspaces": "vdws"
 }

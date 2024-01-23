@@ -29,7 +29,7 @@ param resourceGroupStorage string
 param securityPrincipals array
 param sessionHostCount int
 param sessionHostIndex int
-param storageCount int
+param fslogixStorageCount int
 param virtualMachineNamePrefix string
 param virtualMachineSize string
 
@@ -62,7 +62,7 @@ var diskEncryptionOptions = {
 }
 var fileShares = fileShareNames[fslogixContainerType]
 // ONLY DEPLOY 1 storage account when Cloud Only identity is used because Sharding is not possible.
-var countStorage = identitySolution == 'EntraId' || identitySolution == 'EntraIdIntuneEnrollment' ? 1 : storageCount
+var countStorage = identitySolution == 'EntraId' || identitySolution == 'EntraIdIntuneEnrollment' ? 1 : fslogixStorageCount
 var netbios = split(domainName, '.')[0]
 var pooledHostPool = split(hostPoolType, ' ')[0] == 'Pooled' ? true : false
 
@@ -99,7 +99,7 @@ var roleDefinitions = {
 }
 var SecurityPrincipalsCount = length(securityPrincipals)
 var smbServerLocation = locations[locationVirtualMachines].abbreviation
-var storageSku = fslogixStorageService == 'None' ? 'None' : split(fslogixStorageService, ' ')[1]
+var fslogixStorageSku = fslogixStorageService == 'None' ? 'None' : split(fslogixStorageService, ' ')[1]
 var fslogixStorageSolution = split(fslogixStorageService, ' ')[0]
 var storageSuffix = environment().suffixes.storage
 var timeDifference = locations[locationVirtualMachines].timeDifference
@@ -121,10 +121,10 @@ output roleDefinitions object = roleDefinitions
 output sessionHostBatchCount int = sessionHostBatchCount
 output SecurityPrincipalsCount int = SecurityPrincipalsCount
 output smbServerLocation string = smbServerLocation
-output storageSku string = storageSku
+output fslogixStorageSku string = fslogixStorageSku
 output fslogixStorageSolution string = fslogixStorageSolution
 output storageSuffix string = storageSuffix
-output storageCount int = countStorage
+output fslogixStorageCount int = countStorage
 output timeDifference string = timeDifference
 output timeZone string = timeZone
 output virtualMachineTemplate string = virtualMachineTemplate

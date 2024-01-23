@@ -33,7 +33,7 @@ param locationVirtualMachines string
 param logAnalyticsWorkspaceName string
 param logAnalyticsWorkspaceRetention int
 param logAnalyticsWorkspaceSku string
-param monitoring bool
+param enableInsights bool
 param netAppVnetResourceId string
 param networkInterfaceNamePrefix string
 param privateEndpoint bool
@@ -52,7 +52,6 @@ param tags object
 param timeStamp string
 param timeZone string
 param userAssignedIdentityNameConv string
-param performanceMonitoringAgent string
 param virtualMachineNamePrefix string
 @secure()
 param virtualMachineAdminPassword string
@@ -288,9 +287,9 @@ module validations '../common/customScriptExtensions.bicep' = {
   }
 }
 
-// monitoring Resources for AVD Insights
-// This module deploys a Log Analytics Workspace and if monitoring agent is the legacy Log Analytics Agent then the Windows Events & Windows Performance Counters plus diagnostic settings on the required resources 
-module logAnalyticsWorkspace 'logAnalyticsWorkspace.bicep' = if (monitoring) {
+// enableInsights Resources for AVD Insights
+
+module logAnalyticsWorkspace 'logAnalyticsWorkspace.bicep' = if (enableInsights) {
   name: 'LogAnalytics_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
@@ -299,12 +298,11 @@ module logAnalyticsWorkspace 'logAnalyticsWorkspace.bicep' = if (monitoring) {
     logAnalyticsWorkspaceSku: logAnalyticsWorkspaceSku
     location: locationControlPlane
     tags: contains(tags, 'Microsoft.OperationalInsights/workspaces') ? tags['Microsoft.OperationalInsights/workspaces'] : {}
-    performanceMonitoringAgent: performanceMonitoringAgent
   }
 }
 
 // Data Collection Rule for AVD Insights required for the Azure Monitor Agent
-module avdInsightsDataCollectionRules 'avdInsightsDataCollectionRules.bicep' = if (monitoring && performanceMonitoringAgent == 'AzureMonitorAgent') {
+module avdInsightsDataCollectionRules 'avdInsightsDataCollectionRules.bicep' = if (enableInsights) {
   name: 'AVDInsights_DataCollectionRule_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
@@ -316,7 +314,7 @@ module avdInsightsDataCollectionRules 'avdInsightsDataCollectionRules.bicep' = i
 }
 
 // Data Collection Rule for VM Insights required for the Azure Monitor Agent
-module vmInsightsDataCollectionRules 'vmInsightsDataCollectionRules.bicep' = if (monitoring && performanceMonitoringAgent == 'AzureMonitorAgent') {
+module vmInsightsDataCollectionRules 'vmInsightsDataCollectionRules.bicep' = if (enableInsights) {
   name: 'VMInsights_DataCollectionRule_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
@@ -327,7 +325,7 @@ module vmInsightsDataCollectionRules 'vmInsightsDataCollectionRules.bicep' = if 
   }
 }
 
-module dataCollectionEndpoint 'dataCollectionEndpoint.bicep' = if (monitoring && performanceMonitoringAgent == 'AzureMonitorAgent' || !empty(securityDataCollectionRulesResourceId)) {
+module dataCollectionEndpoint 'dataCollectionEndpoint.bicep' = if (enableInsights || !empty(securityDataCollectionRulesResourceId)) {
   name: 'DataCollectionEndpoint_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
@@ -345,8 +343,8 @@ module automationAccount 'automationAccount.bicep' = if (fslogixStorageService =
   params: {
     automationAccountName: automationAccountName
     location: locationVirtualMachines
-    logAnalyticsWorkspaceResourceId: monitoring ? logAnalyticsWorkspace.outputs.ResourceId : ''
-    monitoring: monitoring
+    logAnalyticsWorkspaceResourceId: enableInsights ? logAnalyticsWorkspace.outputs.ResourceId : ''
+    enableInsights: enableInsights
     tags: tags
     automationAccountPrivateDnsZoneResourceId: automationAccountPrivateDnsZoneResourceId
     privateEndpoint: privateEndpoint
@@ -373,11 +371,11 @@ module recoveryServicesVault 'recoveryServicesVault.bicep' = if (recoveryService
 
 output artifactsUserAssignedIdentityClientId string = artifactsUserAssignedIdentityClientId
 output artifactsUserAssignedIdentityResourceId string = empty(artifactsUserAssignedIdentityResourceId) ? artifactsUserAssignedIdentity.outputs.resourceId : existingArtifactsUserAssignedIdentity.id
-output dataCollectionEndpointResourceId string = monitoring && performanceMonitoringAgent == 'AzureMonitorAgent' ? dataCollectionEndpoint.outputs.resourceId : ''
-output dataCollectionRulesResourceIds array = performanceMonitoringAgent == 'AzureMonitorAgent' ? [
+output dataCollectionEndpointResourceId string = enableInsights ? dataCollectionEndpoint.outputs.resourceId : ''
+output dataCollectionRulesResourceIds array = [
   avdInsightsDataCollectionRules.outputs.dataCollectionRulesId
   vmInsightsDataCollectionRules.outputs.dataCollectionRulesId
-] : []
+]
 output diskEncryptionKeyUrl string = (diskEncryptionOptions.diskEncryptionSet || diskEncryptionOptions.keyEncryptionKey) ? customerManagedKeys.outputs.diskKeyUri : ''
 output diskEncryptionSetResourceId string = diskEncryptionOptions.diskEncryptionSet ? diskEncryptionSet.outputs.resourceId : ''
 output encryptionUserAssignedIdentityResourceId string = (diskEncryptionOptions.diskEncryptionSet || diskEncryptionOptions.keyEncryptionKey) ? customerManagedKeys.outputs.encryptionUserAssignedIdentityResourceId : ''
@@ -385,7 +383,7 @@ output existingWorkspace bool = validations.outputs.value.existingWorkspace == '
 output existingGlobalWorkspace bool = validations.outputs.value.existingGlobalWorkspace == 'true' ? true : false
 output keyVaultResourceId string = keyVault.outputs.keyVaultResourceId
 output keyVaultUrl string = keyVault.outputs.keyVaultUrl
-output logAnalyticsWorkspaceResourceId string = monitoring ? logAnalyticsWorkspace.outputs.ResourceId : ''
+output logAnalyticsWorkspaceResourceId string = enableInsights ? logAnalyticsWorkspace.outputs.ResourceId : ''
 output deploymentUserAssignedIdentityClientId string = deploymentUserAssignedIdentity.outputs.clientId
 output deploymentUserAssignedIdentityResourceId string = deploymentUserAssignedIdentity.outputs.resourceId
 output storageAccountEncryptionKeyName string = diskEncryptionOptions.storageEncryptionKey ? customerManagedKeys.outputs.storageKeyName : ''

@@ -1,5 +1,5 @@
 param fileShares array
-param fslogixShareSizeInGB int
+param shareSizeInGB int
 param StorageAccountName string
 param storageSku string
 
@@ -7,7 +7,7 @@ resource shares 'Microsoft.Storage/storageAccounts/fileServices/shares@2022-09-0
   name: '${StorageAccountName}/default/${fileShares[i]}'
   properties: {
     accessTier: storageSku == 'Premium' ? 'Premium' : 'TransactionOptimized'
-    shareQuota: fslogixShareSizeInGB
+    shareQuota: shareSizeInGB
     enabledProtocols: 'SMB'
   }
 }]

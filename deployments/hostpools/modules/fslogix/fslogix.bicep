@@ -18,9 +18,9 @@ param domainJoinUserPrincipalName string
 param domainName string
 param encryptionUserAssignedIdentityResourceId string
 param fileShares array
-param fslogixShareSizeInGB int
-param fslogixContainerType string
-param fslogixStorageService string
+param shareSizeInGB int
+param containerType string
+param storageService string
 param kerberosEncryption string
 param keyVaultUri string
 param location string
@@ -43,7 +43,7 @@ param storageCount int
 param storageEncryptionKeyName string
 param storageIndex int
 param storageSku string
-param fslogixStorageSolution string
+param storageSolution string
 param subnet string
 param tagsAutomationAccounts object
 param tagsNetAppAccount object
@@ -57,7 +57,7 @@ param virtualNetwork string
 param virtualNetworkResourceGroup string
 
 // Azure NetApp files for fslogix
-module azureNetAppFiles 'azureNetAppFiles.bicep' = if (fslogixStorageSolution == 'AzureNetAppFiles' && contains(identitySolution, 'DomainServices')) {
+module azureNetAppFiles 'azureNetAppFiles.bicep' = if (storageSolution == 'AzureNetAppFiles' && contains(identitySolution, 'DomainServices')) {
   name: 'AzureNetAppFiles_${timeStamp}'
   scope: resourceGroup(resourceGroupStorage)
   params: {
@@ -70,7 +70,7 @@ module azureNetAppFiles 'azureNetAppFiles.bicep' = if (fslogixStorageSolution ==
     domainJoinUserPrincipalName: domainJoinUserPrincipalName
     domainName: domainName
     fileShares: fileShares
-    fslogixContainerType: fslogixContainerType
+    fslogixContainerType: containerType
     location: location
     managementVirtualMachineName: managementVirtualMachineName
     netAppAccountName: netAppAccountName
@@ -80,7 +80,7 @@ module azureNetAppFiles 'azureNetAppFiles.bicep' = if (fslogixStorageSolution ==
     securityPrincipalNames: securityPrincipalNames
     smbServerLocation: smbServerLocation
     storageSku: storageSku
-    fslogixStorageSolution: fslogixStorageSolution
+    fslogixStorageSolution: storageSolution
     tagsNetAppAccount: tagsNetAppAccount
     tagsVirtualMachines: tagsVirtualMachines
     timeStamp: timeStamp
@@ -88,7 +88,7 @@ module azureNetAppFiles 'azureNetAppFiles.bicep' = if (fslogixStorageSolution ==
 }
 
 // Azure files for FSLogix
-module azureFiles 'azureFiles/azureFiles.bicep' = if (fslogixStorageSolution == 'AzureFiles') {
+module azureFiles 'azureFiles/azureFiles.bicep' = if (storageSolution == 'AzureFiles') {
   name: 'AzureFiles_${timeStamp}'
   scope: resourceGroup(resourceGroupStorage)
   params: {
@@ -103,9 +103,9 @@ module azureFiles 'azureFiles/azureFiles.bicep' = if (fslogixStorageSolution == 
     domainJoinUserPrincipalName: domainJoinUserPrincipalName
     encryptionUserAssignedIdentityResourceId: encryptionUserAssignedIdentityResourceId
     fileShares: fileShares
-    fslogixShareSizeInGB: fslogixShareSizeInGB
-    fslogixContainerType: fslogixContainerType
-    fslogixStorageService: fslogixStorageService
+    fslogixShareSizeInGB: shareSizeInGB
+    fslogixContainerType: containerType
+    fslogixStorageService: storageService
     identitySolution: identitySolution
     kerberosEncryption: kerberosEncryption
     keyVaultUri: keyVaultUri
@@ -126,7 +126,7 @@ module azureFiles 'azureFiles/azureFiles.bicep' = if (fslogixStorageSolution == 
     storageEncryptionKeyName: storageEncryptionKeyName
     storageIndex: storageIndex
     storageSku: storageSku
-    fslogixStorageSolution: fslogixStorageSolution
+    storageSolution: storageSolution
     subnet: subnet
     tagsAutomationAccounts: tagsAutomationAccounts
     tagsPrivateEndpoints: tagsPrivateEndpoints
@@ -140,7 +140,5 @@ module azureFiles 'azureFiles/azureFiles.bicep' = if (fslogixStorageSolution == 
   }
 }
 
-output netAppShares array = fslogixStorageSolution == 'AzureNetAppFiles' ? azureNetAppFiles.outputs.fileShares : [
-  'None'
-]
-output storageAccountResourceIds array = fslogixStorageSolution == 'AzureFiles' ? azureFiles.outputs.storageAccountResourceIds : []
+output netAppShares array = storageSolution == 'AzureNetAppFiles' ? azureNetAppFiles.outputs.fileShares : []
+output storageAccountResourceIds array = storageSolution == 'AzureFiles' ? azureFiles.outputs.storageAccountResourceIds : []

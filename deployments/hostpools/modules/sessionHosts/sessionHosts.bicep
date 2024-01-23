@@ -13,12 +13,11 @@ param availabilitySetNamePrefix string
 param availabilitySetsCount int
 param availabilitySetsIndex int
 param availabilityZones array
-param perfLogAnalyticsWorkspaceResourceId string
 param cseMasterScript string
 param cseScriptAddDynParameters string
 param cseUris array
 param dataCollectionEndpointResourceId string
-param perfDataCollectionRulesResourceIds array
+param insightsDataCollectionRulesResourceIds array
 param diskEncryptionOptions object
 param diskEncryptionSetResourceId string
 param diskNamePrefix string
@@ -31,7 +30,6 @@ param domainJoinUserPrincipalName string
 param domainName string
 param drainMode bool
 param drainModeUserAssignedIdentityClientId string
-param fslogixDeployed bool
 param fslogixConfigureSessionHosts bool
 param fslogixExistingStorageAccountResourceIds array
 param fslogixContainerType string
@@ -44,7 +42,7 @@ param customImageResourceId string
 param location string
 param managementVirtualMachineName string
 param maxResourcesPerTemplateDeployment int
-param monitoring bool
+param enableInsights bool
 param fslogixNetAppFileShares array
 param networkInterfaceNamePrefix string
 param ouPath string
@@ -60,13 +58,11 @@ param securityPrincipalObjectIds array
 param securityLogAnalyticsWorkspaceResourceId string
 param sessionHostBatchCount int
 param sessionHostIndex int
-param fslogixStorageSolution string
 param storageSuffix string
 param subnetResourceId string
 param tags object
 param timeStamp string
 param trustedLaunch string
-param performanceMonitoringAgent string
 param virtualMachineNamePrefix string
 @secure()
 param virtualMachineAdminPassword string
@@ -126,7 +122,6 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     availability: availability
     availabilityZones: availabilityZones
     availabilitySetNamePrefix: availabilitySetNamePrefix
-    perfLogAnalyticsWorkspaceResourceId: perfLogAnalyticsWorkspaceResourceId
     batchCount: i
     cseMasterScript: cseMasterScript
     cseScriptAddDynParameters: cseScriptAddDynParameters
@@ -146,18 +141,17 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     fslogixContainerType: fslogixContainerType
     fslogixDeployedStorageAccountResourceIds: fslogixDeployedStorageAccountResourceIds
     fslogixExistingStorageAccounts: fslogixConfigureSessionHosts && !empty(fslogixExistingStorageAccountResourceIds) ? existingFslogixStorageAccounts.outputs.storageAccounts : []
-    fslogixStorageSolution: fslogixStorageSolution
     hostPoolName: hostPoolName
     imageOffer: imageOffer
     imagePublisher: imagePublisher
     imageSku: imageSku
     location: location
     managementVirtualMachineName: managementVirtualMachineName
-    monitoring: monitoring
+    enableInsights: enableInsights
     fslogixNetAppFileShares: fslogixNetAppFileShares
     networkInterfaceNamePrefix: networkInterfaceNamePrefix
     ouPath: ouPath
-    perfDataCollectionRulesResourceIds: perfDataCollectionRulesResourceIds
+    insightsDataCollectionRulesResourceIds: insightsDataCollectionRulesResourceIds 
     resourceGroupControlPlane: resourceGroupControlPlane
     resourceGroupManagement: resourceGroupManagement
     securityDataCollectionRulesResourceId: securityDataCollectionRulesResourceId
@@ -170,7 +164,6 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     tagsVirtualMachines: tagsVirtualMachines
     timeStamp: timeStamp
     trustedLaunch: trustedLaunch
-    performanceMonitoringAgent: performanceMonitoringAgent
     virtualMachineNamePrefix: virtualMachineNamePrefix
     virtualMachineAdminPassword: virtualMachineAdminPassword
     virtualMachineSize: virtualMachineSize
@@ -186,7 +179,7 @@ module recServices 'recoveryServices.bicep' = if (recoveryServices) {
   scope: resourceGroup(resourceGroupManagement)
   params: {
     divisionRemainderValue: divisionRemainderValue
-    fslogixDeployed: fslogixDeployed
+    pooledHostPool: pooledHostPool
     location: location
     maxResourcesPerTemplateDeployment: maxResourcesPerTemplateDeployment
     recoveryServicesVaultName: recoveryServicesVaultName

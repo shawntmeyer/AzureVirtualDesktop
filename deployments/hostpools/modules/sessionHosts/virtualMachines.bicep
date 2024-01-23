@@ -9,7 +9,6 @@ param acceleratedNetworking string
 param availability string
 param availabilitySetNamePrefix string
 param availabilityZones array
-param perfLogAnalyticsWorkspaceResourceId string
 param batchCount int
 param cseMasterScript string
 param cseUris array
@@ -38,17 +37,16 @@ param imageSku string
 param customImageResourceId string
 param location string
 param managementVirtualMachineName string
-param monitoring bool
+param enableInsights bool
 param networkInterfaceNamePrefix string
 param ouPath string
-param perfDataCollectionRulesResourceIds array
+param insightsDataCollectionRulesResourceIds array
 param resourceGroupControlPlane string
 param resourceGroupManagement string
 param securityDataCollectionRulesResourceId string
 param securityLogAnalyticsWorkspaceResourceId string
 param sessionHostCount int
 param sessionHostIndex int
-param fslogixStorageSolution string
 param storageSuffix string
 param subnetResourceId string
 param tagsNetworkInterfaces object
@@ -59,7 +57,6 @@ param trustedLaunch string
 param virtualMachineAdminPassword string
 @secure()
 param virtualMachineAdminUserName string
-param performanceMonitoringAgent string
 param virtualMachineNamePrefix string
 param virtualMachineSize string
 
@@ -77,8 +74,9 @@ var fslogixCloudCacheString = contains(fslogixContainerType, 'CloudCache') ? 'Cl
 //  convert long identitySolution parameter values to short and SMB authentication specific values for script.
 var fslogixIdP = !contains(identitySolution, 'DomainServices') ? 'AAD' : 'DomainServices'
 var fslogixIdpString = 'IdP=\'${fslogixIdP}\''
+var fslogixStorageSolution = !empty(fslogixNetAppFileShares) ? 'AzureNetAppFiles' : ( !empty(fslogixDeployedStorageAccountResourceIds) || !empty(fslogixExistingStorageAccounts) ? 'AzureFiles'  : 'None' )
 var fslogixStorageSolutionString = 'StorageSolution=\'${fslogixStorageSolution}\'' 
-var fslogixNetAppSharesString = fslogixStorageSolution == 'AzureNetAppFiles' && fslogixNetAppFileShares != ['None'] ? 'NetAppFileShares=\'${replace(join(fslogixNetAppFileShares, ','), ',', '\',\'')}\'' : ''
+var fslogixNetAppSharesString = fslogixStorageSolution == 'AzureNetAppFiles' ? 'NetAppFileShares=\'${replace(join(fslogixNetAppFileShares, ','), ',', '\',\'')}\'' : ''
 var fslogixSASuffixString = fslogixStorageSolution == 'AzureFiles' ? 'SASuffix=\'${storageSuffix}\'' : ''
 
 // filter storage account resource ids for AAD because no sharding possible inside the region.
@@ -135,8 +133,7 @@ var fslogixExclusions = '"%TEMP%\\*\\*.VHDX";"%Windir%\\TEMP\\*\\*.VHDX"${fslogi
 // Dynamic parameters for Set-SessionHostConfiguration.ps1
 //var hostPoolToken = hostPool.properties.registrationInfo.token
 var hostPoolToken = reference(resourceId(resourceGroupControlPlane, 'Microsoft.DesktopVirtualization/hostPools', hostPoolName), '2019-12-10-preview').registrationInfo.token
-var shcCommon = 'AmdVmSize=\'${amdVmSize}\';nvidiaVmSize=\'${nvidiaVmSize}\';HostPoolRegistrationToken=\'${hostPoolToken}\''
-var shcCommonString = !empty(securityLogAnalyticsWorkspaceResourceId) && performanceMonitoringAgent == 'LogAnalyticsAgent' ? '${shcCommon};SecurityWorkspaceId=\'${securityWorkspace.properties.customerId}\';SecurityWorkspaceKey=\'${securityWorkspace.listkeys().primarySharedKey}\'' : shcCommon
+var shcCommonString = 'AmdVmSize=\'${amdVmSize}\';nvidiaVmSize=\'${nvidiaVmSize}\';HostPoolRegistrationToken=\'${hostPoolToken}\''
 var shcCommonCustomObject = 'SHConfiguration=@([pscustomobject]@{${shcCommonString}})'
 
 // CSE Master Script Dynamic parameters - Built from any custom parameters provided via parameter and the FSLogix and SessionHostConfiguration parameters.
@@ -150,7 +147,7 @@ var diskEncryptionSet = bool(diskEncryptionOptions.diskEncryptionSet)
 var encryptionAtHost = bool(diskEncryptionOptions.encryptionAtHost)
 var keyEncryptionKey = bool(diskEncryptionOptions.keyEncryptionKey)
 
-var identityType = (!contains(identitySolution, 'DomainServices') || performanceMonitoringAgent == 'AzureMonitorAgent' ? true : false) ? (!empty(artifactsUserAssignedIdentityResourceId) ? 'SystemAssigned,UserAssigned' : 'SystemAssigned') : (!empty(artifactsUserAssignedIdentityResourceId) ? 'UserAssigned' : 'None')
+var identityType = (!contains(identitySolution, 'DomainServices') || enableInsights ? true : false) ? (!empty(artifactsUserAssignedIdentityResourceId) ? 'SystemAssigned,UserAssigned' : 'SystemAssigned') : (!empty(artifactsUserAssignedIdentityResourceId) ? 'UserAssigned' : 'None')
 
 var userAssignedIdentities = !empty(artifactsUserAssignedIdentityResourceId) ? {
   '${artifactsUserAssignedIdentityResourceId}': {}
@@ -196,11 +193,6 @@ resource storageAccounts 'Microsoft.Storage/storageAccounts@2023-01-01' existing
   name: last(split(ResId, '/'))
   scope: resourceGroup(split(ResId, '/')[2], split(ResId, '/')[4])
 }]
-
-resource perfLogAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2022-10-01' existing = if (!empty(perfLogAnalyticsWorkspaceResourceId)) {
-  name: last(split(perfLogAnalyticsWorkspaceResourceId, '/'))
-  scope: resourceGroup(split(perfLogAnalyticsWorkspaceResourceId, '/')[2],split(perfLogAnalyticsWorkspaceResourceId, '/')[4])
-}
 
 resource securityWorkspace 'Microsoft.OperationalInsights/workspaces@2022-10-01' existing = if (!empty(securityLogAnalyticsWorkspaceResourceId)) {
   name: last(split(securityLogAnalyticsWorkspaceResourceId, '/'))
@@ -329,7 +321,7 @@ resource extension_IaasAntimalware 'Microsoft.Compute/virtualMachines/extensions
   }
 }]
 
-resource extension_AzureMonitorWindowsAgent 'Microsoft.Compute/virtualMachines/extensions@2023-03-01' = [for i in range(0, sessionHostCount): if (monitoring && (performanceMonitoringAgent == 'AzureMonitorAgent' || !empty(securityDataCollectionRulesResourceId) || !empty(perfDataCollectionRulesResourceIds))) {
+resource extension_AzureMonitorWindowsAgent 'Microsoft.Compute/virtualMachines/extensions@2023-03-01' = [for i in range(0, sessionHostCount): if (enableInsights) {
   parent: virtualMachine[i]
   name: 'AzureMonitorAgent'
   location: location
@@ -346,7 +338,7 @@ resource extension_AzureMonitorWindowsAgent 'Microsoft.Compute/virtualMachines/e
   ]
 }]
 
-resource dataCollectionEndpointAssociation 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = [for i in range(0, sessionHostCount): if (monitoring && !empty(dataCollectionEndpointResourceId)) {
+resource dataCollectionEndpointAssociation 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = [for i in range(0, sessionHostCount): if (enableInsights && !empty(dataCollectionEndpointResourceId)) {
   scope: virtualMachine[i]
   name: 'configurationAccessEndpoint'
   properties: {
@@ -358,11 +350,11 @@ resource dataCollectionEndpointAssociation 'Microsoft.Insights/dataCollectionRul
   ]
 }]
 
-resource avdInsightsDataCollectionRuleAssociation 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = [for i in range(0, sessionHostCount): if (monitoring && !empty(perfDataCollectionRulesResourceIds)) {
+resource avdInsightsDataCollectionRuleAssociation 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = [for i in range(0, sessionHostCount): if (enableInsights && !empty(insightsDataCollectionRulesResourceIds)) {
   scope: virtualMachine[i]
   name: 'avdinsights-${virtualMachine[i].name}-dcra'
   properties: {
-    dataCollectionRuleId: perfDataCollectionRulesResourceIds[0]
+    dataCollectionRuleId: insightsDataCollectionRulesResourceIds[0]
     description: 'AVD Insights data collection rule association'
   }
   dependsOn: [
@@ -370,11 +362,11 @@ resource avdInsightsDataCollectionRuleAssociation 'Microsoft.Insights/dataCollec
   ]
 }]
 
-resource vmInsightsDataCollectionRuleAssociation 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = [for i in range(0, sessionHostCount): if (monitoring && !empty(perfDataCollectionRulesResourceIds)) {
+resource vmInsightsDataCollectionRuleAssociation 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = [for i in range(0, sessionHostCount): if (enableInsights && !empty(insightsDataCollectionRulesResourceIds)) {
   scope: virtualMachine[i]
   name: 'vmInsights-${virtualMachine[i].name}-dcra'
   properties: {
-    dataCollectionRuleId: perfDataCollectionRulesResourceIds[1]
+    dataCollectionRuleId: insightsDataCollectionRulesResourceIds[1]
     description: 'VM Insights data collection rule association'
   }
   dependsOn: [
@@ -382,7 +374,7 @@ resource vmInsightsDataCollectionRuleAssociation 'Microsoft.Insights/dataCollect
   ]
 }]
 
-resource securityDataCollectionRuleAssociation 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = [for i in range(0, sessionHostCount): if (monitoring && !empty(securityDataCollectionRulesResourceId)) {
+resource securityDataCollectionRuleAssociation 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = [for i in range(0, sessionHostCount): if (!empty(securityDataCollectionRulesResourceId)) {
   scope: virtualMachine[i]
   name: 'security-${virtualMachine[i].name}-dcra'
   properties: {
@@ -394,7 +386,7 @@ resource securityDataCollectionRuleAssociation 'Microsoft.Insights/dataCollectio
   ]
 }]
 
-resource extension_MicrosoftMonitoringAgent 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): if (monitoring && (performanceMonitoringAgent == 'LogAnalyticsAgent' || !empty(securityLogAnalyticsWorkspaceResourceId))) {
+resource extension_MicrosoftMonitoringAgent 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): if (!empty(securityLogAnalyticsWorkspaceResourceId)) {
   parent: virtualMachine[i]
   name: 'MicrosoftMonitoringAgent'
   location: location
@@ -405,10 +397,10 @@ resource extension_MicrosoftMonitoringAgent 'Microsoft.Compute/virtualMachines/e
     typeHandlerVersion: '1.0'
     autoUpgradeMinorVersion: true
     settings: {
-      workspaceId: monitoring && !empty(securityLogAnalyticsWorkspaceResourceId) ? securityWorkspace.properties.customerId : perfLogAnalyticsWorkspace.properties.customerId 
+      workspaceId: !empty(securityLogAnalyticsWorkspaceResourceId) ? securityWorkspace.properties.customerId : ''
     }
     protectedSettings: {
-      workspaceKey: monitoring && !empty(securityLogAnalyticsWorkspaceResourceId) ? securityWorkspace.listKeys().primarySharedKey : perfLogAnalyticsWorkspace.listKeys().primarySharedKey
+      workspaceKey: !empty(securityLogAnalyticsWorkspaceResourceId) ? securityWorkspace.listKeys().primarySharedKey : ''
     }
   }
   dependsOn: [

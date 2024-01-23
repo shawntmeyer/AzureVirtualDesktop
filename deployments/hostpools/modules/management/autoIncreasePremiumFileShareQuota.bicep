@@ -6,8 +6,8 @@ param fslogixContainerType string
 param location string
 param managementVirtualMachineName string
 param storageAccountNamePrefix string
-param storageCount int
-param storageIndex int
+param fslogixStorageCount int
+param fslogixStorageIndex int
 param storageResourceGroupName string
 param tags object
 param timeStamp string
@@ -34,7 +34,7 @@ module runbook 'runbook.bicep' = {
   }
 }
 
-module schedules 'schedules.bicep' = [for i in range(storageIndex, storageCount): {
+module schedules 'schedules.bicep' = [for i in range(fslogixStorageIndex, fslogixStorageCount): {
   name: 'Schedules_${i}_${timeStamp}'
   params: {
     automationAccountName: automationAccount.name
@@ -44,7 +44,7 @@ module schedules 'schedules.bicep' = [for i in range(storageIndex, storageCount)
   }
 }]
 
-module jobSchedules 'jobSchedules.bicep' = [for i in range(storageIndex, storageCount): {
+module jobSchedules 'jobSchedules.bicep' = [for i in range(fslogixStorageIndex, fslogixStorageCount): {
   name: 'JobSchedules_${i}_${timeStamp}'
   params: {
     automationAccountName: automationAccount.name

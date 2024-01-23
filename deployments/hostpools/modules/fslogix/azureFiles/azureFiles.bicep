@@ -34,7 +34,7 @@ param storageEncryptionKeyName string = ''
 param storageCount int
 param storageIndex int
 param storageSku string
-param fslogixStorageSolution string
+param storageSolution string
 param subnet string
 param tagsAutomationAccounts object
 param tagsPrivateEndpoints object
@@ -162,7 +162,7 @@ module shares 'shares.bicep' = [for i in range(0, storageCount): {
   name: 'FileShares_${i}_${timeStamp}'
   params: {
     fileShares: fileShares
-    fslogixShareSizeInGB: fslogixShareSizeInGB
+    shareSizeInGB: fslogixShareSizeInGB
     StorageAccountName: storageAccounts[i].name
     storageSku: storageSku
   }
@@ -217,7 +217,7 @@ module ntfsPermissions '../../common/customScriptExtensions.bicep' = if (!contai
   params: {
     location: location
     fileUris: ['${artifactsUri}Set-NtfsPermissions.ps1']
-    parameters: '-ClientId ${deploymentUserAssignedIdentityClientId} -DomainJoinUserPassword "${domainJoinUserPassword}" -DomainJoinUserPrincipalName ${domainJoinUserPrincipalName} -ActiveDirectorySolution ${identitySolution} -Environment ${environment().name} -FslogixContainerType ${fslogixContainerType} -KerberosEncryptionType ${kerberosEncryption} -Netbios ${netbios} -OUPath "${ouPath}" -SecurityPrincipalNames "${securityPrincipalNames}" -StorageAccountPrefix ${storageAccountNamePrefix} -StorageAccountResourceGroupName ${resourceGroupStorage} -StorageCount ${storageCount} -StorageIndex ${storageIndex} -StorageSolution ${fslogixStorageSolution} -StorageSuffix ${environment().suffixes.storage} -SubscriptionId ${subscription().subscriptionId} -TenantId ${subscription().tenantId}'
+    parameters: '-ClientId ${deploymentUserAssignedIdentityClientId} -DomainJoinUserPassword "${domainJoinUserPassword}" -DomainJoinUserPrincipalName ${domainJoinUserPrincipalName} -ActiveDirectorySolution ${identitySolution} -Environment ${environment().name} -FslogixContainerType ${fslogixContainerType} -KerberosEncryptionType ${kerberosEncryption} -Netbios ${netbios} -OUPath "${ouPath}" -SecurityPrincipalNames "${securityPrincipalNames}" -StorageAccountPrefix ${storageAccountNamePrefix} -StorageAccountResourceGroupName ${resourceGroupStorage} -StorageCount ${storageCount} -StorageIndex ${storageIndex} -StorageSolution ${storageSolution} -StorageSuffix ${environment().suffixes.storage} -SubscriptionId ${subscription().subscriptionId} -TenantId ${subscription().tenantId}'
     scriptFileName: 'Set-NtfsPermissions.ps1'
     tags: tagsVirtualMachines
     userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
@@ -239,8 +239,8 @@ module recServices 'recoveryServices.bicep' = if (recoveryServices) {
     recoveryServicesVaultName: recoveryServicesVaultName
     resourceGroupStorage: resourceGroupStorage
     storageAccountNamePrefix: storageAccountNamePrefix
-    storageCount: storageCount
-    storageIndex: storageIndex
+    fslogixStorageCount: storageCount
+    fslogixStorageIndex: storageIndex
     tagsRecoveryServicesVault: tagsRecoveryServicesVault
     timeStamp: timeStamp
   }
@@ -255,8 +255,8 @@ module autoIncreasePremiumFileShareQuota '../../management/autoIncreasePremiumFi
     fslogixContainerType: fslogixContainerType
     location: location
     storageAccountNamePrefix: storageAccountNamePrefix
-    storageCount: storageCount
-    storageIndex: storageIndex
+    fslogixStorageCount: storageCount
+    fslogixStorageIndex: storageIndex
     storageResourceGroupName: resourceGroupStorage
     tags: tagsAutomationAccounts
     timeStamp: timeStamp

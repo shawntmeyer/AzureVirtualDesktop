@@ -3,7 +3,7 @@ param avdPrivateLink bool
 param existing bool
 param friendlyName string
 param logAnalyticsWorkspaceResourceId string
-param monitoring bool
+param enableInsights bool
 param privateDnsZoneResourceId string
 param privateEndpointName string
 param publicNetworkAccess string
@@ -69,7 +69,7 @@ resource privateDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneG
   }
 }
 
-resource workspaceDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (monitoring) {
+resource workspaceDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (enableInsights) {
   name: 'diag-${workspaceName}'
   scope: workspace
   properties: {
