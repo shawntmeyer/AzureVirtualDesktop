@@ -310,9 +310,10 @@ param virtualMachineAdminUserName string
 @description('The VM SKU for the AVD session hosts.')
 param virtualMachineSize string = 'Standard_D4ads_v5'
 
+@minLength(2)
 @maxLength(12)
-@description('Optional. The custom Virtual Machine Name prefix. If not specified, then the name is generated automatically.')
-param virtualMachineNamePrefix string = ''
+@description('The Virtual Machine Name prefix.')
+param virtualMachineNamePrefix string
 
 // Monitoring Configuration
 @description('Deploys the required monitoring resources to enable AVD Insights and monitor features in the automation account.')
@@ -419,7 +420,7 @@ module logic 'modules/logic.bicep' = {
     sessionHostCount: sessionHostCount
     sessionHostIndex: sessionHostIndex
     fslogixStorageCount: fslogixStorageCount
-    virtualMachineNamePrefix: resourceNames.outputs.vmNamePrefix
+    virtualMachineNamePrefix: resourceNames.outputs.virtualMachineNamePrefix
     virtualMachineSize: virtualMachineSize
   }
 }
@@ -487,7 +488,7 @@ module management 'modules/management/management.bicep' = {
     timeStamp: timeStamp
     timeZone: logic.outputs.timeZone
     userAssignedIdentityNameConv: resourceNames.outputs.userAssignedIdentityNameConv
-    virtualMachineNamePrefix: resourceNames.outputs.vmNamePrefix
+    virtualMachineNamePrefix: resourceNames.outputs.virtualMachineNamePrefix
     virtualMachineAdminPassword: empty(virtualMachineAdminPassword) ? keyVault_Reference.getSecret(virtualMachineAdminPassword) : virtualMachineAdminPassword
     virtualMachineSize: virtualMachineSize
     virtualMachineAdminUserName: empty(virtualMachineAdminUserName) ? keyVault_Reference.getSecret(virtualMachineAdminUserName) : virtualMachineAdminUserName
@@ -652,13 +653,9 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     drainModeUserAssignedIdentityClientId: management.outputs.deploymentUserAssignedIdentityClientId
     fslogixConfigureSessionHosts: fslogixConfigureSessionHosts
     fslogixContainerType: fslogixContainerType
-    fslogixDeployed: logic.outputs.fslogix
     fslogixDeployedStorageAccountResourceIds: fslogix.outputs.storageAccountResourceIds
     fslogixExistingStorageAccountResourceIds: fslogixExistingStorageAccountResourceIds
-    fslogixNetAppFileShares: fslogixConfigureSessionHosts ? fslogix.outputs.netAppShares : [
-      'None'
-    ]
-    fslogixStorageSolution: logic.outputs.fslogixStorageSolution
+    fslogixNetAppFileShares: fslogixConfigureSessionHosts ? fslogix.outputs.netAppShares : []
     hostPoolName: controlPlane.outputs.hostPoolName
     identitySolution: identitySolution
     imageOffer: imageOffer
@@ -670,7 +667,8 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     enableInsights: enableInsights
     networkInterfaceNamePrefix: resourceNames.outputs.networkInterfaceNamePrefix
     ouPath: ouPath
-    insightsDataCollectionRulesResourceIds: management.outputs.dataCollectionRulesResourceIds
+    avdInsightsDataCollectionRulesResourceId: management.outputs.avdInsightsDataCollectionRulesResourceId
+    vmInsightsDataCollectionRulesResourceId: management.outputs.vmInsightsDataCollectionRulesResourceId
     pooledHostPool: logic.outputs.pooledHostPool
     recoveryServices: recoveryServices
     recoveryServicesVaultName: resourceNames.outputs.recoveryServicesVaultName
@@ -688,7 +686,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     tags: tags
     timeStamp: timeStamp
     trustedLaunch: management.outputs.validateTrustedLaunch
-    virtualMachineNamePrefix: resourceNames.outputs.vmNamePrefix
+    virtualMachineNamePrefix: resourceNames.outputs.virtualMachineNamePrefix
     virtualMachineAdminPassword: empty(virtualMachineAdminPassword) ? keyVault_Reference.getSecret(virtualMachineAdminPassword) : virtualMachineAdminPassword
     virtualMachineSize: virtualMachineSize
     virtualMachineAdminUserName: empty(virtualMachineAdminUserName) ? keyVault_Reference.getSecret(virtualMachineAdminUserName) : virtualMachineAdminUserName

@@ -102,12 +102,8 @@ param sessionHostCount int = 1
 param sessionHostIndex int = 1
 
 // Session Host/VM Configuration
-@allowed([
-  'True'
-  'False'
-])
 @description('Enable accelerated networking on the AVD session hosts.')
-param acceleratedNetworking string = 'True'
+param acceleratedNetworking bool = true
 
 @allowed([
   'availabilitySets'
@@ -150,15 +146,8 @@ param diskEncryptionSetResourceId string = ''
 @description('Optional. The resource ID of the Azure Key Vault used to store the ADE encryption keys. Only valid when diskEncryptionSolution specifies Azure Disk Encryption.')
 param adeKeyVaultResourceId string = ''
 
-@description('Optional. The resource ID of the Azure Disk Encryption Key to use to protect the ADE encryption keys. Only valid when diskEncryptionSolution = "ADE + KEK"')
-param adeKeyEncryptionKeyResourceId string = ''
-
-@allowed([
-  'true'
-  'false'
-])
 @description('Optional. Enable Trusted Launch on the AVD session hosts.  This requires the host pool to be deployed in a region that supports Trusted Launch.  https://docs.microsoft.com/en-us/azure/virtual-desktop/trusted-launch.')
-param trustedLaunch string = 'true'
+param trustedLaunch bool = true
 
 @allowed([
   'Standard_LRS'
@@ -194,6 +183,7 @@ param virtualMachineAdminUserName string
 @description('The VM SKU for the AVD session hosts.')
 param virtualMachineSize string = 'Standard_D4ads_v5'
 
+@minLength(2)
 @maxLength(12)
 @description('Required. The Virtual Machine Name prefix.')
 param virtualMachineNamePrefix string
@@ -205,8 +195,11 @@ param enableInsights bool = true
 @description('Optional. The resource ID of the Data Collection Endpoint located in the same region as the Virtual Machines.')
 param dataCollectionEndpointResourceId string = ''
 
-@description('Optional. The resource IDs of the Data Collection Rules used for performance data with Azure Monitor.')
-param insightsDataCollectionRulesResourceIds array = []
+@description('Optional. The resource ID of the Data Collection Rules used with the Azure Monitor Agent to power AVD insights.')
+param avdInsightsDataCollectionRulesResourceId string = ''
+
+@description('Optional. The resource ID of the Data Collection Rules used with the Azure Monitor Agent to power VM insights.')
+param vmInsightsDataCollectionRulesResourceId string = ''
 
 @description('The resource ID of the log analytics workspace used for Azure Sentinel and / or Defender for Cloud. When using the Microsoft Monitor Agent (Log Analytics Agent), this allows you to multihome the agent to reduce unnecessary log collection and reduce cost.')
 param securityLogAnalyticsWorkspaceResourceId string = ''
@@ -229,13 +222,16 @@ param tags object = {}
 @description('DO NOT MODIFY THIS VALUE! The timeStamp is needed to differentiate deployments for certain Azure resources and must be set using a parameter.')
 param timeStamp string = utcNow('yyyyMMddhhmmss')
 
-var locations = loadJsonContent('../../.common/data/locations.json')
+var acceleratedNetworkingString = acceleratedNetworking ? 'True' : 'False'
+var trustedLaunchString = trustedLaunch ? 'true' : 'false'
+
+
 var resourceAbbreviations = loadJsonContent('../../.common/data/resourceAbbreviations.json')
 
-var vmCustomNamePrefixWithoutDash = last(virtualMachineNamePrefix) == '-' ? take(virtualMachineNamePrefix, length(virtualMachineNamePrefix) - 1) : virtualMachineNamePrefix
-var diskNamePrefix = nameConvResTypeAtEnd ? '${vmCustomNamePrefixWithoutDash}-${resourceAbbreviations.disks}-' : '${resourceAbbreviations.disks}-${vmCustomNamePrefixWithoutDash}-' 
-var networkInterfaceNamePrefix = nameConvResTypeAtEnd ? '${vmCustomNamePrefixWithoutDash}-${resourceAbbreviations.networkInterfaces}-' : '${resourceAbbreviations.networkInterfaces}-${vmCustomNamePrefixWithoutDash}-'
-
+var availabilitySetNamePrefix = nameConvResTypeAtEnd ? '${vmNamePrefixWithoutDash}-${resourceAbbreviations.availabilitySets}-' : '${resourceAbbreviations.availabilitySets}-${vmNamePrefixWithoutDash}-'
+var vmNamePrefixWithoutDash = last(virtualMachineNamePrefix) == '-' ? take(virtualMachineNamePrefix, length(virtualMachineNamePrefix) - 1) : virtualMachineNamePrefix
+var diskNamePrefix = nameConvResTypeAtEnd ? '${vmNamePrefixWithoutDash}-${resourceAbbreviations.disks}-' : '${resourceAbbreviations.disks}-${vmNamePrefixWithoutDash}-'
+var networkInterfaceNamePrefix = nameConvResTypeAtEnd ? '${vmNamePrefixWithoutDash}-${resourceAbbreviations.networkInterfaces}-' : '${resourceAbbreviations.networkInterfaces}-${vmNamePrefixWithoutDash}-'
 
 var artifactsStorageAccountName = last(split(artifactsStorageAccountResourceId, '/'))
 var artifactsUri = 'https://${artifactsStorageAccountName}.blob.${environment().suffixes.storage}/${artifactsContainerName}/'
@@ -250,6 +246,8 @@ var resourceGroupControlPlane = split(hostPoolResourceId, '/')[4]
 var resourceGroupManagement = !empty(recoveryServicesVaultResourceId) ? split(recoveryServicesVaultResourceId, '/')[4] : ''
 
 var hostPoolName = last(split(hostPoolResourceId, '/'))
+
+var adeKeyEncryptionKeyUrl = !empty(adeKeyVaultResourceId) ? '${adeKeyVault.properties.vaultUri}/keys/ADEkeyEncryptionKey' : ''
 
 resource artifactsUAI 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = {
   name: last(split(artifactsUserAssignedIdentityResourceId, '/'))
@@ -269,11 +267,6 @@ resource keyVault_Reference 'Microsoft.KeyVault/vaults@2021-06-01-preview' exist
 resource adeKeyVault 'Microsoft.KeyVault/vaults@2021-06-01-preview' existing = if(!empty(adeKeyVaultResourceId)) {
   name: last(split(adeKeyVaultResourceId, '/'))
   scope: resourceGroup(split(adeKeyVaultResourceId, '/')[2], split(adeKeyVaultResourceId, '/')[4])
-}
-
-resource adeKeyEncryptionKey 'Microsoft.KeyVault/vaults/keys@2023-07-01' existing = if(diskEncryptionSolution == 'ADE + KEK') {
-  name: last(split(adeKeyEncryptionKeyResourceId, '/'))
-  scope: resourceGroup(split(adeKeyEncryptionKeyResourceId, '/')[4], split(adeKeyEncryptionKeyResourceId, '/')[8])
 }
 
 resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' existing = {
@@ -338,17 +331,18 @@ module logic 'modules/logic.bicep' = {
 module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
   name: 'SessionHosts_${timeStamp}'
   params: {
-    acceleratedNetworking: acceleratedNetworking
+    acceleratedNetworking: acceleratedNetworkingString
     identitySolution: identitySolution
-    adeKEKUrl: diskEncryptionSolution == 'ADE + KEK' ? adeKeyEncryptionKey.properties.keyUri : ''
+    adeKEKUrl: diskEncryptionSolution == 'ADE + KEK' ? adeKeyEncryptionKeyUrl : ''
     artifactsUri: artifactsUri
     artifactsUserAssignedIdentityClientId: artifactsUAI.properties.clientId
     artifactsUserAssignedIdentityResourceId: artifactsUserAssignedIdentityResourceId
     availability: availability
-    availabilitySetNamePrefix: resourceNames.outputs.availabilitySetNamePrefix
+    availabilitySetNamePrefix: availabilitySetNamePrefix
     availabilitySetsCount: logic.outputs.availabilitySetsCount
     availabilitySetsIndex: logic.outputs.beginAvSetRange
     availabilityZones: availabilityZones
+    avdInsightsDataCollectionRulesResourceId: avdInsightsDataCollectionRulesResourceId
     cseMasterScript: cseMasterScript
     cseScriptAddDynParameters: cseScriptAddDynParameters
     cseUris: logic.outputs.cseUris
@@ -357,7 +351,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     diskEncryptionSetResourceId: diskEncryptionSetResourceId
     adeKeyVaultResourceId: adeKeyVaultResourceId
     adeKeyVaultUrl: !empty(adeKeyVaultResourceId) ? adeKeyVault.properties.vaultUri : ''
-    diskNamePrefix: resourceNames.outputs.diskNamePrefix
+    diskNamePrefix: diskNamePrefix
     diskSku: diskSku
     divisionRemainderValue: logic.outputs.divisionRemainderValue
     domainJoinUserPassword: empty(domainJoinUserPassword) ? contains(identitySolution, 'DomainServices') ? keyVault_Reference.getSecret(domainJoinUserPassword) : '' : domainJoinUserPassword
@@ -379,9 +373,8 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     managementVirtualMachineName: ''
     maxResourcesPerTemplateDeployment: logic.outputs.maxResourcesPerTemplateDeployment
     enableInsights: enableInsights
-    networkInterfaceNamePrefix: resourceNames.outputs.networkInterfaceNamePrefix
+    networkInterfaceNamePrefix: networkInterfaceNamePrefix
     ouPath: ouPath
-    insightsDataCollectionRulesResourceIds: insightsDataCollectionRulesResourceIds
     pooledHostPool: hostPool.properties.hostPoolType == 'Pooled' ? true : false
     recoveryServices: recoveryServices
     recoveryServicesVaultName: recoveryServicesVaultName
@@ -398,10 +391,11 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     subnetResourceId: virtualMachineSubnetResourceId
     tags: tags
     timeStamp: timeStamp
-    trustedLaunch: trustedLaunch
+    trustedLaunch: trustedLaunchString
     virtualMachineNamePrefix: virtualMachineNamePrefix
     virtualMachineAdminPassword: empty(virtualMachineAdminPassword) ? keyVault_Reference.getSecret(virtualMachineAdminPassword) : virtualMachineAdminPassword
     virtualMachineSize: virtualMachineSize
     virtualMachineAdminUserName: empty(virtualMachineAdminUserName) ? keyVault_Reference.getSecret(virtualMachineAdminUserName) : virtualMachineAdminUserName
+    vmInsightsDataCollectionRulesResourceId: vmInsightsDataCollectionRulesResourceId
   }
 }

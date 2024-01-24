@@ -40,7 +40,8 @@ param managementVirtualMachineName string
 param enableInsights bool
 param networkInterfaceNamePrefix string
 param ouPath string
-param insightsDataCollectionRulesResourceIds array
+param avdInsightsDataCollectionRulesResourceId string
+param vmInsightsDataCollectionRulesResourceId string
 param resourceGroupControlPlane string
 param resourceGroupManagement string
 param securityDataCollectionRulesResourceId string
@@ -350,11 +351,11 @@ resource dataCollectionEndpointAssociation 'Microsoft.Insights/dataCollectionRul
   ]
 }]
 
-resource avdInsightsDataCollectionRuleAssociation 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = [for i in range(0, sessionHostCount): if (enableInsights && !empty(insightsDataCollectionRulesResourceIds)) {
+resource avdInsightsDataCollectionRuleAssociation 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = [for i in range(0, sessionHostCount): if (enableInsights && !empty(avdInsightsDataCollectionRulesResourceId)) {
   scope: virtualMachine[i]
   name: 'avdinsights-${virtualMachine[i].name}-dcra'
   properties: {
-    dataCollectionRuleId: insightsDataCollectionRulesResourceIds[0]
+    dataCollectionRuleId: avdInsightsDataCollectionRulesResourceId
     description: 'AVD Insights data collection rule association'
   }
   dependsOn: [
@@ -362,11 +363,11 @@ resource avdInsightsDataCollectionRuleAssociation 'Microsoft.Insights/dataCollec
   ]
 }]
 
-resource vmInsightsDataCollectionRuleAssociation 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = [for i in range(0, sessionHostCount): if (enableInsights && !empty(insightsDataCollectionRulesResourceIds)) {
+resource vmInsightsDataCollectionRuleAssociation 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = [for i in range(0, sessionHostCount): if (enableInsights && !empty(vmInsightsDataCollectionRulesResourceId)) {
   scope: virtualMachine[i]
   name: 'vmInsights-${virtualMachine[i].name}-dcra'
   properties: {
-    dataCollectionRuleId: insightsDataCollectionRulesResourceIds[1]
+    dataCollectionRuleId: vmInsightsDataCollectionRulesResourceId
     description: 'VM Insights data collection rule association'
   }
   dependsOn: [

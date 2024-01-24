@@ -34,6 +34,53 @@
                             }
                         },
 						{
+							"name": "resourceGroupsApi",
+							"type": "Microsoft.Solutions.ArmApiControl",
+							"request": {
+								"method": "GET",
+								"path": "[concat(steps('basics').scope.subscription.id, '/resourceGroups?api-version=2021-04-01')]"
+							}
+						},
+						{
+							"name": "resourceGroup",
+							"type": "Microsoft.Common.DropDown",
+							"label": "Session Host/Compute Resource Group",
+							"toolTip": "Select the name of the existing resource group where the session host virtual machines and associated resources will be created.",
+							"constraints": {
+								"allowedValues": "[map(filter(steps('basics').resourceGroupsApi.value, (item) => equals(item.location, steps('basics').scope.location.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.name, '\"}')))]",
+								"required": true
+							},
+							"visible": true
+						},
+						{
+							"name": "hostPool",
+							"type": "Microsoft.Common.Section",
+							"label": "Host Pool Details",
+							"elements": [
+								{
+									"name": "hostPoolsApi",
+									"type": "Microsoft.Solutions.ArmApiControl",
+									"request": {
+										"method": "GET",
+										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.DesktopVirtualization/hostPools?api-version=2023-09-05')]"
+									}
+								},
+								{
+									"name": "hostPool",
+									"type": "Microsoft.Common.DropDown",
+									"visible": true,
+									"label": "Host Pool",
+									"defaultValue": "",
+									"toolTip": "Select the Host Pool to update.",
+									"constraints": {
+										"required": true,
+										"allowedValues": "[map(steps('basics').hostPool.hostPoolsApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.id, '\"}')))]"
+									}
+								}
+							],
+							"visible": true
+						},
+						{
 							"name": "prereqs",
 							"type": "Microsoft.Common.Section",
 							"label": "Solution Prerequisites",
@@ -89,7 +136,22 @@
 									"constraints": {
 										"required": true
 									}
-								}
+								},
+								{
+                                    "name": "avdAgentBlob",
+                                    "type": "Microsoft.Storage.StorageBlobSelector",
+                                    "toolTip": "Select the Session Host Configuration Blob. Must contain the AVD Agent and AVD Boot Loader Binary Files.'Set-SessionHostConfiguration.zip' is used by default.",
+                                    "label": "Session Host Configuration Script Blob (.zip)",
+                                    "options": {
+                                        "text": "Select zip file"
+                                    },
+                                    "constraints": {
+                                        "allowedFileExtensions": [
+                                            "zip"
+                                        ]
+                                    },
+									"required": false
+                                }
 							],
 							"visible": true
 						}
@@ -107,6 +169,28 @@
 							"constraints": {
 								"regex": "^(?:[a-zA-Z0-9][a-zA-Z0-9-]{0,11})?$",
 								"validationMessage": "The prefix must begin with an alphanumeric character and then contain only alphanumeric characters and dashes. The value must also be less than 12 characters long."
+							},
+							"required": true,
+							"visible": true
+						},
+						{
+							"name": "nameConvResTypeAtEnd",
+							"type": "Microsoft.Common.OptionsGroup",
+							"label": "Move the Resource Type to the end of resource names",
+							"defaultValue": "No",
+							"toolTip": "",
+							"constraints": {
+								"allowedValues": [
+									{
+										"label": "Yes",
+										"value": true
+									},
+									{
+										"label": "No",
+										"value": false
+									}
+								],
+								"required": true
 							},
 							"visible": true
 						},
@@ -295,13 +379,52 @@
 							},
 							"visible": true
 						},
-                        {
-                            "name": "drainMode",
-                            "type": "Microsoft.Common.CheckBox",
-                            "label": "Drain Mode",
-                            "defaultValue": false,
-                            "toolTip": "Enables drain mode on the AVD session hosts so the virtual machines cannot be accessed until they have been validated."
-                        },
+						{
+							"name": "diskEncryptionSet",
+							"type": "Microsoft.Solutions.ResourceSelector",
+							"label": "Disk Encryption Set (for customer managed keys)",
+							"resourceType": "Microsoft.Compute/diskEncryptionSets",
+							"options": {
+								"filter": {
+								"subscription": "onBasics",
+								"location": "onBasics"
+								}
+							},
+							"required": true,
+							"visible": "[contains(steps('hosts').diskEncryptionSolution, 'CMK')]"
+						},
+						{
+							"name": "keyVault",
+							"type": "Microsoft.Solutions.ResourceSelector",
+							"label": "Azure Disk Encryption Key Vault",
+							"resourceType": "Microsoft.KeyVault/vaults",
+							"options": {
+								"filter": {
+								"subscription": "onBasics",
+								"location": "onBasics"
+								}
+							},
+							"required": true,
+							"visible": "[contains(steps('hosts').diskEncryptionSolution, 'ADE')]"
+						},							
+						{
+							"name": "acceleratedNetworking",
+							"type": "Microsoft.Common.CheckBox",
+							"label": "Accelerated Networking",
+							"defaultValue": true,
+							"constraints": {
+								"required": false
+							}
+						},
+						{
+							"name": "trustedLaunch",
+							"type": "Microsoft.Common.CheckBox",
+							"label": "Trusted Launch",
+							"defaultValue": true,
+							"constraints": {
+								"required": false
+							}
+						},
                         {
                             "name": "image",
                             "type": "Microsoft.Common.Section",
@@ -818,7 +941,12 @@
                                     "visible": "[steps('management').backup.recoveryServices]",
                                     "resourceType": "Microsoft.recoveryServices/vaults",
                                     "toolTip": "Select the recovery services vault used for storing backups of the session hosts in this pool.",
-                                    "options": {},
+                                    "options": {
+										"filter": {
+											"subscription": "onBasics",
+											"location": "onBasics"
+										}
+									},
 									"required": false
                                 }
                             ]
@@ -829,6 +957,14 @@
                             "label": "Monitoring",
                             "visible": true,
                             "elements": [
+								{
+									"name": "dataCollectionRulesApi",
+									"type": "Microsoft.Solutions.ArmApiControl",
+									"request": {
+										"method": "GET",
+										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Insights/dataCollectionRules?api-version=2021-04-01')]"
+									}
+								},
                                 {
                                     "name": "enableInsights",
                                     "type": "Microsoft.Common.CheckBox",
@@ -836,6 +972,44 @@
                                     "label": "Enable Monitoring for AVD and VM Insights",
                                     "defaultValue": false,
                                     "toolTip": "Deploy the required resources to enable AVD and VM Insights."
+                                },								
+								{
+                                    "name": "dataCollectionEndpoint",
+                                    "type": "Microsoft.Solutions.ResourceSelector",
+                                    "label": "Data Collection Endpoint",
+                                    "visible": "[or(steps('management').monitoring.enableInsights, equals(steps('management').monitoring.securityAgent, 'AMA'))]",
+                                    "resourceType": "Microsoft.Insights/dataCollectionEndpoints",
+                                    "toolTip": "Select the Data Collection Endpoint used by the Azure Monitor Agent.",
+                                    "options": {
+										"filter": {
+											"subscription": "onBasics",
+											"location": "onBasics"
+										}
+									}
+								},
+								{
+                                    "name": "avdInsightsDataCollectionRule",
+                                    "type": "Microsoft.Common.DropDown",
+                                    "label": "AVD Insights Data Collection Rule",
+                                    "defaultValue": "",
+                                    "toolTip": "Select the data collection rule that will be associated with the session hosts.",
+                                    "constraints": {
+                                        "required": true,
+                                        "allowedValues": "[map(filter(steps('management').monitoring.dataCollectionRulesApi.value, (item) => contains(item.name, 'microsoft-avdi')), (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.id, '\"}')))]"
+                                    },
+									"visible": "[steps('management').monitoring.enableInsights]"
+                                },
+								{
+                                    "name": "vmInsightsDataCollectionRule",
+                                    "type": "Microsoft.Common.DropDown",
+                                    "label": "Virtual Machine Insights Data Collection Rule",
+                                    "defaultValue": "",
+                                    "toolTip": "Select the data collection rule that will be associated with the session hosts.",
+                                    "constraints": {
+                                        "required": true,
+                                        "allowedValues": "[map(filter(steps('management').monitoring.dataCollectionRulesApi.value, (item) => contains(item.name, 'MSVMI-')), (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.id, '\"}')))]"
+                                    },
+									"visible": "[steps('management').monitoring.enableInsights]"
                                 },
                                 {
                                     "name": "enableSecurity",
@@ -868,9 +1042,9 @@
 									"visible": "[steps('management').monitoring.enableSecurity]"
 								},
 								{
-                                    "name": "dataCollectionRule",
+                                    "name": "securityDataCollectionRule",
                                     "type": "Microsoft.Solutions.ResourceSelector",
-                                    "label": "Existing Data Collection Rule for Security",
+                                    "label": "Data Collection Rule for Security",
                                     "visible": "[and(steps('management').monitoring.enableSecurity, equals(steps('management').monitoring.securityAgent, 'AMA'))]",
                                     "resourceType": "Microsoft.Insights/dataCollectionRules",
                                     "toolTip": "Select the Data Collection Rule used for collecting security data for Sentinel or Defender for Cloud. This is required to create the Data Collection Rule Association",
@@ -921,21 +1095,20 @@
         },
         "outputs": {
             "parameters": {
-				"resourceGroupHosts": "[]",
-				"hostPoolResourceId": "[]",
-				"acceleratedNetworking": "string",
+				"resourceGroupHosts": "[concat(steps('basics').scope.subscription.id, '/resourceGroups/',steps('basics').resourceGroup)]",
+				"hostPoolResourceId": "[steps('basics').hostPool.hostPool]",
+				"acceleratedNetworking": "[steps('hosts').acceleratedNetworking]",
                 "availability": "[steps('hosts').availability]",
-				"avdAgentInstallersBlobName": "",
+				"avdAgentInstallersBlobName": "[if(empty(steps('basics').prereqs.avdAgentBlob.blobName), 'Set-SessionHostConfiguration.zip', steps('basics').prereqs.avdAgentBlob.blobName)]",
 				"cseBlobNames": "[if(steps('customScriptExtension').customScripts.addCustomScripts, map(steps('customScriptExtension').customScripts.customizations, (item) => item.blobName), '')]",				
 				"artifactsStorageAccountResourceId": "[steps('basics').prereqs.storageAccount.id]",
 				"artifactsContainerName": "[first(skip(split(steps('basics').prereqs.container, '/'), 12))]",
 				"artifactsUserAssignedIdentityResourceId": "[if(not(empty(steps('basics').prereqs.managedIdentity)), steps('basics').prereqs.managedIdentity.id, parse('[]'))]",
                 "identitySolution": "[if(and(equals(steps('hosts').identity.solution, 'EntraId'), steps('hosts').identity.intune), 'EntraIdIntuneEnrollment', steps('hosts').identity.solution)]",
 				"diskEncryptionSolution": "[steps('hosts').diskEncryptionSolution]",				
-				"diskEncryptionSetResourceId": "",
-				"adeKeyVaultResourceId": "",
-				"adeKeyEncryptionKeyResourceId": "",
-				"trustedLaunch": "string",
+				"diskEncryptionSetResourceId": "[if(contains(steps('hosts').diskEncryptionSolution, 'CMK'), steps('hosts').diskEncryptionSet.id, '')]",
+				"adeKeyVaultResourceId": "[if(contains(steps('hosts').diskEncryptionSolution, 'ADE'), steps('hosts').keyVault.id, '')]",
+				"trustedLaunch": "[steps('hosts').trustedLaunch]",
 				"domainJoinUserPassword": "[steps('hosts').domainJoinCredentials.password]",
                 "domainJoinUserPrincipalName": "[steps('hosts').domainJoinCredentials.userPrincipalName]",
                 "domainName": "[steps('hosts').identity.domainName]",
@@ -957,20 +1130,16 @@
                 "virtualMachineSize": "[steps('hosts').size]",
                 "virtualMachineAdminUserName": "[steps('hosts').localAdminCredentials.username]",
                 "virtualMachineNamePrefix": "[steps('hosts').virtualMachineNamePrefix]",
+				"nameConvResTypeAtEnd": "[steps('hosts').nameConvResTypeAtEnd]",
 				"enableInsights": "[steps('management').monitoring.enableInsights]",
-				"insightsDataCollectionRulesResourceIds": "",
-				"dataCollectionEndpointResourceId": "",
-				"securityDataCollectionRulesResourceId": "[if(steps('management').monitoring.enableSecurity, steps('management').monitoring.dataCollectionRule.id, '')]",
+				"avdInsightsDataCollectionRulesResourceId": "[if(steps('management').monitoring.enableInsights, steps('management').monitoring.avdInsightsDataCollectionRule, '')]",
+				"vmInsightsDataCollectionRulesResourceId": "[if(steps('management').monitoring.enableInsights, steps('management').monitoring.vmInsightsDataCollectionRule, '')]",
+				"dataCollectionEndpointResourceId": "[if(or(steps('management').monitoring.enableInsights, equals(steps('management').monitoring.securityAgent, 'AMA')), steps('management').monitoring.dataCollectionEndpoint.id, '')]",
+				"securityDataCollectionRulesResourceId": "[if(steps('management').monitoring.enableSecurity, steps('management').monitoring.securityDataCollectionRule.id, '')]",
                 "SecurityLogAnalyticsWorkspaceResourceId": "[if(steps('management').monitoring.enableSecurity, steps('management').monitoring.logAnalyticsWorkspace.id, '')]",
 				"recoveryServices": "[steps('management').backup.recoveryServices]",
 				"recoveryServicesVaultResourceId": "[if(steps('management').backup.recoveryServices, steps('management').backup.recoveryServicesVault.id, '')]",
-				
-				
-				
-				
-
                 "tags": "[steps('tags').tags]"
-
             },
             "kind": "Subscription",
             "location": "[steps('basics').scope.location.name]",

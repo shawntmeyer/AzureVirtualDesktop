@@ -372,10 +372,8 @@ module recoveryServicesVault 'recoveryServicesVault.bicep' = if (recoveryService
 output artifactsUserAssignedIdentityClientId string = artifactsUserAssignedIdentityClientId
 output artifactsUserAssignedIdentityResourceId string = empty(artifactsUserAssignedIdentityResourceId) ? artifactsUserAssignedIdentity.outputs.resourceId : existingArtifactsUserAssignedIdentity.id
 output dataCollectionEndpointResourceId string = enableInsights ? dataCollectionEndpoint.outputs.resourceId : ''
-output dataCollectionRulesResourceIds array = [
-  avdInsightsDataCollectionRules.outputs.dataCollectionRulesId
-  vmInsightsDataCollectionRules.outputs.dataCollectionRulesId
-]
+output avdInsightsDataCollectionRulesResourceId string = enableInsights ? avdInsightsDataCollectionRules.outputs.dataCollectionRulesId : ''
+output vmInsightsDataCollectionRulesResourceId string = enableInsights ? vmInsightsDataCollectionRules.outputs.dataCollectionRulesId : ''
 output diskEncryptionKeyUrl string = (diskEncryptionOptions.diskEncryptionSet || diskEncryptionOptions.keyEncryptionKey) ? customerManagedKeys.outputs.diskKeyUri : ''
 output diskEncryptionSetResourceId string = diskEncryptionOptions.diskEncryptionSet ? diskEncryptionSet.outputs.resourceId : ''
 output encryptionUserAssignedIdentityResourceId string = (diskEncryptionOptions.diskEncryptionSet || diskEncryptionOptions.keyEncryptionKey) ? customerManagedKeys.outputs.encryptionUserAssignedIdentityResourceId : ''

@@ -17,7 +17,8 @@ param cseMasterScript string
 param cseScriptAddDynParameters string
 param cseUris array
 param dataCollectionEndpointResourceId string
-param insightsDataCollectionRulesResourceIds array
+param avdInsightsDataCollectionRulesResourceId string
+param vmInsightsDataCollectionRulesResourceId string
 param diskEncryptionOptions object
 param diskEncryptionSetResourceId string
 param diskNamePrefix string
@@ -151,7 +152,8 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     fslogixNetAppFileShares: fslogixNetAppFileShares
     networkInterfaceNamePrefix: networkInterfaceNamePrefix
     ouPath: ouPath
-    insightsDataCollectionRulesResourceIds: insightsDataCollectionRulesResourceIds 
+    avdInsightsDataCollectionRulesResourceId: avdInsightsDataCollectionRulesResourceId
+    vmInsightsDataCollectionRulesResourceId: vmInsightsDataCollectionRulesResourceId 
     resourceGroupControlPlane: resourceGroupControlPlane
     resourceGroupManagement: resourceGroupManagement
     securityDataCollectionRulesResourceId: securityDataCollectionRulesResourceId
