@@ -379,7 +379,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     recoveryServices: recoveryServices
     recoveryServicesVaultName: recoveryServicesVaultName
     resourceGroupControlPlane: resourceGroupControlPlane
-    resourceGroupHosts: resourceNames.outputs.resourceGroupHosts
+    resourceGroupHosts: resourceGroupHosts
     resourceGroupManagement: resourceGroupManagement
     roleDefinitions: logic.outputs.roleDefinitions
     securityDataCollectionRulesResourceId: securityDataCollectionRulesResourceId
