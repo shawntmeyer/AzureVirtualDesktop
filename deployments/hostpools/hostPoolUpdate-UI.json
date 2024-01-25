@@ -3,7 +3,7 @@
     "view": {
         "kind": "Form",
         "properties": {
-            "title": "Deploy AVD Session Hosts",
+            "title": "Deploy AVD Session Hosts to an existing host pool",
             "steps": [
                 {
                     "name": "basics",
@@ -14,36 +14,38 @@
                             "type": "Microsoft.Common.ResourceScope",
 							"instanceDetailsLabel": "Deployment Details",
                             "location": {
-                                "resourceTypes": []
+								"label": "Session Host/VM Region",
+     							"toolTip": "Select the region to which the Session Hosts are to be deployed.",
+                                "resourceTypes": [
+									"Microsoft.Compute/virtualMachines"
+								]
                             }
                         },
 						{
+							"name": "resourceGroupsApi",
+							"type": "Microsoft.Solutions.ArmApiControl",
+							"request": {
+								"method": "GET",
+								"path": "[concat(steps('basics').scope.subscription.id, '/resourceGroups?api-version=2021-04-01')]"
+							}
+						},
+						{
+							"name": "resourceGroupHosts",
+							"type": "Microsoft.Common.DropDown",
+							"label": "Session Host/VM Resource Group",
+							"toolTip": "Select the name of the existing resource group where the session host virtual machines and associated resources will be created.",
+							"constraints": {
+								"allowedValues": "[map(filter(steps('basics').resourceGroupsApi.value, (item) => equals(item.location, steps('basics').scope.location.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.name, '\"}')))]",
+								"required": true
+							}
+						},
+						{
 							"name": "hostPool",
-							"type": "Microsoft.Common.Section",
-							"label": "Host Pool Details",
-							"elements": [
-								{
-									"name": "hostPoolsApi",
-									"type": "Microsoft.Solutions.ArmApiControl",
-									"request": {
-										"method": "GET",
-										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.DesktopVirtualization/hostPools?api-version=2023-09-05')]"
-									}
-								},
-								{
-									"name": "hostPool",
-									"type": "Microsoft.Common.DropDown",
-									"visible": true,
-									"label": "Host Pool",
-									"defaultValue": "",
-									"toolTip": "Select the Host Pool to update.",
-									"constraints": {
-										"required": true,
-										"allowedValues": "[map(steps('basics').hostPool.hostPoolsApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.id, '\"}')))]"
-									}
-								}
-							],
-							"visible": true
+							"type": "Microsoft.Solutions.ResourceSelector",
+							"label": "Select the Host Pool to update",
+							"resourceType": "Microsoft.DesktopVirtualization/hostPools",
+							"required": true,
+							"toolTip": "Select the AVD Hostpool."
 						},
 						{
 							"name": "prereqs",
@@ -127,31 +129,6 @@
                     "name": "hosts",
                     "label": "Virtual Machines",
                     "elements": [
-                        {
-                            "name": "resourceGroup",
-                            "type": "Microsoft.Common.Section",
-                            "label": "Resource Group",
-                            "elements": [
-                                {
-                                    "name": "resourceGroupsApi",
-                                    "type": "Microsoft.Solutions.ArmApiControl",
-                                    "request": {
-                                        "method": "GET",
-                                        "path": "[concat(steps('basics').scope.subscription.id, '/resourceGroups?api-version=2021-04-01')]"
-                                    }
-                                },
-                                {
-                                    "name": "resourceGroupHosts",
-                                    "type": "Microsoft.Common.DropDown",
-                                    "label": "Session Host/Compute Resource Group",
-                                    "toolTip": "Select the name of the existing resource group where the session host virtual machines and associated resources will be created.",
-                                    "constraints": {
-                                        "allowedValues": "[map(filter(steps('hosts').resourceGroup.resourceGroupsApi.value, (item) => equals(item.location, steps('basics').scope.location.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.name, '\"}')))]",
-                                        "required": true
-                                    }
-                                }
-                            ]
-                        },
                         {
                             "name": "naming",
                             "type": "Microsoft.Common.Section",
@@ -1115,8 +1092,8 @@
         },
         "outputs": {
             "parameters": {
-				"resourceGroupHosts": "[steps('hosts').resourceGroup.resourceGroupHosts]",
-				"hostPoolResourceId": "[steps('basics').hostPool.hostPool]",
+				"hostPoolResourceId": "[steps('basics').hostPool.id]",
+				"resourceGroupHosts": "[steps('basics').resourceGroupHosts]",
 				"acceleratedNetworking": "[steps('hosts').network.acceleratedNetworking]",
                 "availability": "[steps('hosts').network.availability]",
 				"avdAgentInstallersBlobName": "[if(empty(steps('basics').prereqs.avdAgentBlob.blobName), 'Set-SessionHostConfiguration.zip', steps('basics').prereqs.avdAgentBlob.blobName)]",
