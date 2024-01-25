@@ -57,13 +57,13 @@ param roleDefinitions object
 param securityDataCollectionRulesResourceId string
 param securityPrincipalObjectIds array
 param securityLogAnalyticsWorkspaceResourceId string
+param securityType string
 param sessionHostBatchCount int
 param sessionHostIndex int
 param storageSuffix string
 param subnetResourceId string
 param tags object
 param timeStamp string
-param trustedLaunch string
 param virtualMachineNamePrefix string
 @secure()
 param virtualMachineAdminPassword string
@@ -158,6 +158,7 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     resourceGroupManagement: resourceGroupManagement
     securityDataCollectionRulesResourceId: securityDataCollectionRulesResourceId
     securityLogAnalyticsWorkspaceResourceId: securityLogAnalyticsWorkspaceResourceId
+    securityType: securityType
     sessionHostCount: i == sessionHostBatchCount && divisionRemainderValue > 0 ? divisionRemainderValue : maxResourcesPerTemplateDeployment
     sessionHostIndex: i == 1 ? sessionHostIndex : ((i - 1) * maxResourcesPerTemplateDeployment) + sessionHostIndex
     storageSuffix: storageSuffix
@@ -165,7 +166,6 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     tagsNetworkInterfaces: tagsNetworkInterfaces
     tagsVirtualMachines: tagsVirtualMachines
     timeStamp: timeStamp
-    trustedLaunch: trustedLaunch
     virtualMachineNamePrefix: virtualMachineNamePrefix
     virtualMachineAdminPassword: virtualMachineAdminPassword
     virtualMachineSize: virtualMachineSize

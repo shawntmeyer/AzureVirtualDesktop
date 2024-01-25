@@ -45,6 +45,7 @@ param resourceGroupManagement string
 param resourceGroupStorage string
 param roleDefinitions object
 param securityDataCollectionRulesResourceId string
+param securityType string
 param sessionHostCount int
 param fslogixStorageAccountNamePrefix string
 param fslogixStorageSolution string
@@ -74,7 +75,7 @@ var requiredValidationScriptParameters = '-ActiveDirectorySolution ${identitySol
 var netAppValidationScriptParameters = '-NetAppVirtualNetworkName ${netAppVirtualNetworkName} -NetAppVirtualNetworkResourceGroupName ${netAppVirtualNetworkResourceGroupName}'
 var domainServicesValidationScriptParameters = '-DomainName ${domainName} -KerberosEncryption ${kerberosEncryption}'
 var optionalValidationScriptParameters = identitySolution == 'EntraDomainServices' ? ( contains(fslogixStorageSolution, 'NetApp') ? '${domainServicesValidationScriptParameters} ${netAppValidationScriptParameters}' : domainServicesValidationScriptParameters ) : ( contains(fslogixStorageSolution, 'NetApp') ? netAppValidationScriptParameters : '' )
-var validationScriptParameters = '${requiredValidationScriptParameters} ${optionalValidationScriptParameters}'
+var validationScriptParameters = empty(securityType) ? '${requiredValidationScriptParameters} ${optionalValidationScriptParameters}' : '${requiredValidationScriptParameters} ${optionalValidationScriptParameters} -SecurityType ${securityType}'
 
 var roleAssignmentsCommon = [
   {

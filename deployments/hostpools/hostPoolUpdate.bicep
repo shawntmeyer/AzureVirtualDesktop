@@ -146,8 +146,13 @@ param diskEncryptionSetResourceId string = ''
 @description('Optional. The resource ID of the Azure Key Vault used to store the ADE encryption keys. Only valid when diskEncryptionSolution specifies Azure Disk Encryption.')
 param adeKeyVaultResourceId string = ''
 
-@description('Optional. Enable Trusted Launch on the AVD session hosts.  This requires the host pool to be deployed in a region that supports Trusted Launch.  https://docs.microsoft.com/en-us/azure/virtual-desktop/trusted-launch.')
-param trustedLaunch bool = true
+@allowed([
+  'Standard'
+  'ConfidentialVM'
+  'TrustedLaunch'
+])
+@description('Optional. The Security Type of the AVD Session Hosts.  ConfidentialVM and TrustedLaunch are only available in certain regions.')
+param virtualMachineSecurityType string = 'TrustedLaunch'
 
 @allowed([
   'Standard_LRS'
@@ -223,8 +228,8 @@ param tags object = {}
 param timeStamp string = utcNow('yyyyMMddhhmmss')
 
 var acceleratedNetworkingString = acceleratedNetworking ? 'True' : 'False'
-var trustedLaunchString = trustedLaunch ? 'true' : 'false'
 
+var securityType = virtualMachineSecurityType == 'Standard' ? '' : virtualMachineSecurityType
 
 var resourceAbbreviations = loadJsonContent('../../.common/data/resourceAbbreviations.json')
 
@@ -391,7 +396,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     subnetResourceId: virtualMachineSubnetResourceId
     tags: tags
     timeStamp: timeStamp
-    trustedLaunch: trustedLaunchString
+    securityType: securityType
     virtualMachineNamePrefix: virtualMachineNamePrefix
     virtualMachineAdminPassword: empty(virtualMachineAdminPassword) ? keyVault_Reference.getSecret(virtualMachineAdminPassword) : virtualMachineAdminPassword
     virtualMachineSize: virtualMachineSize

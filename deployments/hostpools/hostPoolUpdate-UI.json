@@ -346,15 +346,6 @@
                             "label": "Security",
                             "elements": [
                                 {
-                                    "name": "trustedLaunch",
-                                    "type": "Microsoft.Common.CheckBox",
-                                    "label": "Trusted Launch",
-                                    "defaultValue": true,
-                                    "constraints": {
-                                        "required": false
-                                    }
-                                },
-                                {
                                     "name": "diskEncryptionSolution",
                                     "type": "Microsoft.Common.DropDown",
                                     "label": "Disk Encryption Solution",
@@ -419,6 +410,32 @@
                                     },
                                     "required": true,
                                     "visible": "[contains(steps('hosts').security.diskEncryptionSolution, 'ADE')]"
+                                },
+								{
+                                    "name": "securityType",
+                                    "type": "Microsoft.Common.DropDown",
+                                    "label": "Security Type",
+                                    "placeholder": "",
+                                    "defaultValue": "Trusted Launch",
+                                    "toolTip": "Select the appropriate Security Type configuration for the Virtual Machine. Note that 'Trusted Launch' and 'Confidential Virtual Machines' are not available in all regions and may require specific VM Sizes.",
+                                    "constraints": {
+                                        "allowedValues": [
+                                            {
+                                                "label": "Confidential Virtual Machine",
+                                                "value": "ConfidentialVM"
+                                            },
+                                            {
+                                                "label": "Standard",
+                                                "value": "Standard"
+                                            },
+                                            {
+                                                "label": "Trusted Launch",
+                                                "value": "TrustedLaunch"
+                                            }
+                                        ],
+                                        "required": true
+                                    },
+                                    "visible": true
                                 }
                             ]
                         },
@@ -1105,7 +1122,7 @@
 				"diskEncryptionSolution": "[steps('hosts').security.diskEncryptionSolution]",				
 				"diskEncryptionSetResourceId": "[if(contains(steps('hosts').security.diskEncryptionSolution, 'CMK'), steps('hosts').security.diskEncryptionSet.id, '')]",
 				"adeKeyVaultResourceId": "[if(contains(steps('hosts').security.diskEncryptionSolution, 'ADE'), steps('hosts').security.keyVault.id, '')]",
-				"trustedLaunch": "[steps('hosts').security.trustedLaunch]",
+				"virtualMachineSecurityType": "[steps('hosts').security.securityType]",
 				"domainJoinUserPassword": "[steps('hosts').domainJoinCredentials.password]",
                 "domainJoinUserPrincipalName": "[steps('hosts').domainJoinCredentials.userPrincipalName]",
                 "domainName": "[steps('hosts').identity.domainName]",

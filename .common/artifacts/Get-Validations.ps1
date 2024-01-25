@@ -28,6 +28,10 @@ Param(
     [string]
     $Location,
 
+    [Parameter]
+    [string]
+    $SecurityType,
+
     [parameter(Mandatory)]
     [int]
     $SessionHostCount,
@@ -198,17 +202,23 @@ try
     }
 
     ##############################################################
-    # Trusted Launch Validation
+    # Security Type Validation
     ##############################################################
-    if($null -eq ($Sku.capabilities | Where-Object {$_.name -eq "TrustedLaunchDisabled"}).value)
-    {
-        $TrustedLaunch = "true"
+    If ($null -ne $SecurityType) {
+        If ($SecurityType -eq 'TrustedLaunch') {
+            if(($Sku.capabilities | Where-Object {$_.name -eq "TrustedLaunchDisabled"}).value) {
+                Write-Error -Exception "INVALID SECURITYTYPE: The VM Sku does not support TrustedLaunch."
+            } Else {
+                Write-Log -Message "Trusted Launch Validation Succeeded" -Type 'INFO'
+            }
+        } Elseif ($SecurityType -eq 'ConfidentialVM') {
+            if(($Sku.capabilities | Where-Object {$_.name -eq "ConfidentialComputingType"}).value) {
+                Write-Log -Message "Confidential VM Validation Succeeded" -Type 'INFO'
+            } Else {
+                Write-Error -Exception "INVALID SECURITYTYPE: The VM Sku does not support ConfidentialVM."
+            }
+        }
     }
-    else
-    {
-        $TrustedLaunch = "false"
-    }
-    Write-Log -Message "Trusted Launch Validation Succeeded" -Type 'INFO'
 
     ##############################################################
     # vCPU Count Validation
@@ -255,7 +265,6 @@ try
         existingWorkspace = if($Workspace){"true"}else{"false"}
         existingGlobalWorkspace = if($GlobalWorkspace){"true"}else{"false"}
         storagePrefix = if($StoragePrefixValidated){"true"}else{"false"}
-        trustedLaunch = $TrustedLaunch
     }
     $JsonOutput = $Output | ConvertTo-Json
     return $JsonOutput

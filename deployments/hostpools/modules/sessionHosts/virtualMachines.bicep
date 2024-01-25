@@ -46,6 +46,7 @@ param resourceGroupControlPlane string
 param resourceGroupManagement string
 param securityDataCollectionRulesResourceId string
 param securityLogAnalyticsWorkspaceResourceId string
+param securityType string
 param sessionHostCount int
 param sessionHostIndex int
 param storageSuffix string
@@ -53,7 +54,6 @@ param subnetResourceId string
 param tagsNetworkInterfaces object
 param tagsVirtualMachines object
 param timeStamp string
-param trustedLaunch string
 @secure()
 param virtualMachineAdminPassword string
 @secure()
@@ -277,12 +277,12 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-03-01' = [for i 
       ]
     }
     securityProfile: {
-      uefiSettings: trustedLaunch == 'true' ? {
+      encryptionAtHost: encryptionAtHost
+      securityType: empty(securityType) ? null : securityType
+      uefiSettings: empty(securityType) ? null : {
         secureBootEnabled: true
         vTpmEnabled: true
-      } : null
-      securityType: trustedLaunch == 'true' ? 'trustedLaunch' : null
-      encryptionAtHost: encryptionAtHost
+      }
     }
     diagnosticsProfile: {
       bootDiagnostics: {

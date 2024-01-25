@@ -284,6 +284,14 @@ param diskEncryptionSolution string = 'SSE + PMK'
 @description('The storage SKU for the AVD session host disks.  Production deployments should use Premium_LRS.')
 param diskSku string = 'Premium_LRS'
 
+@allowed([
+  'Standard'
+  'ConfidentialVM'
+  'TrustedLaunch'
+])
+@description('Optional. The Security Type of the AVD Session Hosts.  ConfidentialVM and TrustedLaunch are only available in certain regions.')
+param virtualMachineSecurityType string = 'TrustedLaunch'
+
 @description('Offer for the virtual machine image')
 param imageOffer string = 'office-365'
 
@@ -359,6 +367,8 @@ var artifactsUri = 'https://${artifactsStorageAccountName}.blob.${environment().
 var locationVirtualMachines = vmVirtualNetwork.location
 
 var resourceGroupsCount = 3 + (fslogixStorageService == 'None' ? 0 : 1) + (avdPrivateLink ? 1 :0)
+
+var securityType = virtualMachineSecurityType == 'Standard' ? '' : virtualMachineSecurityType
 
 // Existing Virtual Network location
 resource vmVirtualNetwork 'Microsoft.Network/virtualNetworks@2023-04-01' existing = {
@@ -482,6 +492,7 @@ module management 'modules/management/management.bicep' = {
     resourceGroupStorage: resourceNames.outputs.resourceGroupStorage
     roleDefinitions: logic.outputs.roleDefinitions
     securityDataCollectionRulesResourceId: securityDataCollectionRulesResourceId
+    securityType: securityType
     sessionHostCount: sessionHostCount
     fslogixStorageSolution: logic.outputs.fslogixStorageSolution
     tags: tags
@@ -679,13 +690,13 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     securityDataCollectionRulesResourceId: securityDataCollectionRulesResourceId
     securityPrincipalObjectIds: map(securityPrincipals, item => item.objectId)
     securityLogAnalyticsWorkspaceResourceId: securityLogAnalyticsWorkspaceResourceId
+    securityType: securityType
     sessionHostBatchCount: logic.outputs.sessionHostBatchCount
     sessionHostIndex: sessionHostIndex
     storageSuffix: logic.outputs.storageSuffix
     subnetResourceId: virtualMachineSubnetResourceId
     tags: tags
     timeStamp: timeStamp
-    trustedLaunch: management.outputs.validateTrustedLaunch
     virtualMachineNamePrefix: resourceNames.outputs.virtualMachineNamePrefix
     virtualMachineAdminPassword: empty(virtualMachineAdminPassword) ? keyVault_Reference.getSecret(virtualMachineAdminPassword) : virtualMachineAdminPassword
     virtualMachineSize: virtualMachineSize
