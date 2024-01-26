@@ -593,71 +593,6 @@
 							},
 							"visible": true
 						},
-                        {
-                            "name": "network",
-                            "type": "Microsoft.Common.Section",
-                            "label": "Network",
-                            "visible": true,
-                            "elements": [
-                                {
-                                    "name": "virtualNetwork",
-                                    "type": "Microsoft.Common.DropDown",
-                                    "label": "Virtual Network",
-                                    "defaultValue": "",
-                                    "toolTip": "Select the virtual network where the AVD Private Link Private Endpoints will be created.",
-                                    "constraints": {
-                                        "required": true,
-                                        "allowedValues": "[map(filter(steps('basics').virtualNetworksApi.value, (item) => equals(item.location, steps('basics').scope.location.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
-                                    },
-									"visible": true
-                                },
-                                {
-                                    "name": "subnetsApi",
-                                    "type": "Microsoft.Solutions.ArmApiControl",
-                                    "request": {
-                                        "method": "GET",
-                                        "path": "[concat(steps('hosts').network.virtualNetwork, '/subnets?api-version=2022-05-01')]"
-                                    }
-                                },
-                                {
-                                    "name": "subnet",
-                                    "type": "Microsoft.Common.DropDown",
-                                    "visible": true,
-                                    "label": "Subnet",
-                                    "defaultValue": "",
-                                    "toolTip": "Select an existing subnet for the AVD session hosts.",
-                                    "constraints": {
-                                        "required": true,
-                                        "allowedValues": "[map(steps('hosts').network.subnetsApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.id, '\"}')))]"
-                                    }
-                                }
-                            ]
-                        },
-                        {
-                            "name": "availability",
-                            "type": "Microsoft.Common.DropDown",
-                            "label": "Availability Options",
-                            "filter": true,
-                            "defaultValue": "Availability Zones",
-                            "toolTip": "Select the redundancy / resiliency for the virtual machines.",
-                            "constraints": {
-                                "required": true,
-                                "allowedValues": [
-                                    {
-                                        "label": "Availability Sets",
-                                        "value": "AvailabilitySets"
-                                    },
-                                    {
-                                        "label": "Availability Zones",
-                                        "value": "AvailabilityZones"
-                                    },
-                                    {
-                                        "label": "No infrastructure redundancy required",
-                                        "value": "None"
-                                    }
-                                ]
-                            }
-                        },
 						{
                             "name": "count",
                             "type": "Microsoft.Common.Slider",
@@ -741,50 +676,141 @@
                             }
                         },
 						{
-							"name": "diskEncryptionSolution",
-							"type": "Microsoft.Common.DropDown",
-							"label": "Disk Encryption Solution",
-							"placeholder": "",
-							"defaultValue": "Encryption At Host",
-							"toolTip": "Select the appropriate disk encryption option for your virtual machines. See https://learn.microsoft.com/en-us/azure/virtual-machines/disk-encryption-overview for more details.",
-							"constraints": {
-								"allowedValues": [
-									{
-										"label": "Azure Disk Storage Server-Side Encryption",
-										"value": "SSE + PMK"
-									},
-									{
-										"label": "Azure Disk Storage Server-Side Encryption with Customer Managed Keys",
-										"value": "SSE + CMK"
-									},
-									{
-										"label": "Encryption At Host",
-										"value": "EAH + PMK"
-									},
-									{
-										"label": "Encryption At Host with Customer Managed Keys",
-										"value": "EAH + CMK"
-									},
-									{
-										"label": "Azure Disk Encryption",
-										"value": "ADE"
-									},
-									{
-										"label": "Azure Disk Encryption with Key Encryption Key",
-										"value": "ADE + KEK"
-									}
-								],
-								"required": true
-							},
-							"visible": true
-						},
-                        {
-                            "name": "drainMode",
-                            "type": "Microsoft.Common.CheckBox",
-                            "label": "Drain Mode",
-                            "defaultValue": false,
-                            "toolTip": "Enables drain mode on the AVD session hosts so the virtual machines cannot be accessed until they have been validated."
+                            "name": "availability",
+                            "type": "Microsoft.Common.DropDown",
+                            "label": "Availability Options",
+                            "filter": true,
+                            "defaultValue": "Availability Zones",
+                            "toolTip": "Select the redundancy / resiliency for the virtual machines.",
+                            "constraints": {
+                                "required": true,
+                                "allowedValues": [
+                                    {
+                                        "label": "Availability Sets",
+                                        "value": "AvailabilitySets"
+                                    },
+                                    {
+                                        "label": "Availability Zones",
+                                        "value": "AvailabilityZones"
+                                    },
+                                    {
+                                        "label": "No infrastructure redundancy required",
+                                        "value": "None"
+                                    }
+                                ]
+                            }
                         },
+                        {
+                            "name": "network",
+                            "type": "Microsoft.Common.Section",
+                            "label": "Network",
+                            "visible": true,
+                            "elements": [
+                                {
+                                    "name": "virtualNetwork",
+                                    "type": "Microsoft.Common.DropDown",
+                                    "label": "Virtual Network",
+                                    "defaultValue": "",
+                                    "toolTip": "Select the virtual network where the AVD Private Link Private Endpoints will be created.",
+                                    "constraints": {
+                                        "required": true,
+                                        "allowedValues": "[map(filter(steps('basics').virtualNetworksApi.value, (item) => equals(item.location, steps('basics').scope.location.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
+                                    },
+									"visible": true
+                                },
+                                {
+                                    "name": "subnetsApi",
+                                    "type": "Microsoft.Solutions.ArmApiControl",
+                                    "request": {
+                                        "method": "GET",
+                                        "path": "[concat(steps('hosts').network.virtualNetwork, '/subnets?api-version=2022-05-01')]"
+                                    }
+                                },
+                                {
+                                    "name": "subnet",
+                                    "type": "Microsoft.Common.DropDown",
+                                    "visible": true,
+                                    "label": "Subnet",
+                                    "defaultValue": "",
+                                    "toolTip": "Select an existing subnet for the AVD session hosts.",
+                                    "constraints": {
+                                        "required": true,
+                                        "allowedValues": "[map(steps('hosts').network.subnetsApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.id, '\"}')))]"
+                                    }
+                                }
+                            ]
+                        },						
+						{
+                            "name": "security",
+                            "type": "Microsoft.Common.Section",
+                            "label": "Security",
+                            "elements": [
+                                {
+									"name": "diskEncryptionSolution",
+									"type": "Microsoft.Common.DropDown",
+									"label": "Disk Encryption Solution",
+									"placeholder": "",
+									"defaultValue": "Encryption At Host",
+									"toolTip": "Select the appropriate disk encryption option for your virtual machines. See https://learn.microsoft.com/en-us/azure/virtual-machines/disk-encryption-overview for more details.",
+									"constraints": {
+										"allowedValues": [
+											{
+												"label": "Azure Disk Storage Server-Side Encryption",
+												"value": "SSE + PMK"
+											},
+											{
+												"label": "Azure Disk Storage Server-Side Encryption with Customer Managed Keys",
+												"value": "SSE + CMK"
+											},
+											{
+												"label": "Encryption At Host",
+												"value": "EAH + PMK"
+											},
+											{
+												"label": "Encryption At Host with Customer Managed Keys",
+												"value": "EAH + CMK"
+											},
+											{
+												"label": "Azure Disk Encryption",
+												"value": "ADE"
+											},
+											{
+												"label": "Azure Disk Encryption with Key Encryption Key",
+												"value": "ADE + KEK"
+											}
+										],
+										"required": true
+									},
+									"visible": true
+								},
+								{
+                                    "name": "securityType",
+                                    "type": "Microsoft.Common.DropDown",
+                                    "label": "Security Type",
+                                    "placeholder": "",
+                                    "defaultValue": "Trusted Launch",
+                                    "toolTip": "Select the appropriate Security Type configuration for the Virtual Machine. Note that 'Trusted Launch' and 'Confidential Virtual Machines' are not available in all regions and may require specific VM Sizes.",
+                                    "constraints": {
+                                        "allowedValues": [
+                                            {
+                                                "label": "Confidential Virtual Machine",
+                                                "value": "ConfidentialVM"
+                                            },
+                                            {
+                                                "label": "Standard",
+                                                "value": "Standard"
+                                            },
+                                            {
+                                                "label": "Trusted Launch",
+                                                "value": "TrustedLaunch"
+                                            }
+                                        ],
+                                        "required": true
+                                    },
+                                    "visible": true
+                                }
+							]
+						},
                         {
                             "name": "image",
                             "type": "Microsoft.Common.Section",
@@ -1162,100 +1188,6 @@
                             }
                         },
                         {
-                            "name": "storageEndpoint",
-                            "type": "Microsoft.Common.DropDown",
-                            "visible": "[and(equals(steps('userProfiles').profileSolution, 'fslogix'), equals(steps('userProfiles').fslogixStorageService, 'AzureFiles'))]",
-                            "label": "Storage Endpoint",
-                            "defaultValue": "Private",
-                            "toolTip": "Select the storage endpoint for the SMB file shares to support the use of FSLogix.",
-                            "constraints": {
-                                "required": true,
-                                "allowedValues": [
-                                    {
-                                        "label": "Private",
-                                        "value": "PrivateEndpoint"
-                                    },
-                                    {
-                                        "label": "Public",
-                                        "value": "PublicEndpoint"
-                                    }
-                                ]
-                            }
-                        },
-                        {
-                            "name": "privateEndpoints",
-                            "type": "Microsoft.Common.Section",
-                            "label": "Private Endpoint Configuration",
-                            "visible": "[and(equals(steps('userProfiles').fslogixStorageService, 'AzureFiles'), equals(steps('userProfiles').storageEndpoint, 'PrivateEndpoint'))]",
-                            "elements": [
-                                {
-                                    "name": "virtualNetwork",
-                                    "type": "Microsoft.Common.DropDown",
-                                    "label": "Private Endpoint Virtual Network",
-                                    "defaultValue": "",
-                                    "toolTip": "Select the virtual network containing the subnet where the Storage Account Private Endpoint will be created.",
-                                    "constraints": {
-                                        "required": true,
-                                        "allowedValues": "[map(filter(steps('basics').virtualNetworksApi.value, (item) => equals(item.location, steps('basics').scope.location.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
-                                    },
-									"visible": true
-                                },
-                                {
-                                    "name": "subnetsApi",
-                                    "type": "Microsoft.Solutions.ArmApiControl",
-                                    "request": {
-                                        "method": "GET",
-                                        "path": "[concat(steps('userProfiles').privateEndpoints.virtualNetwork, '/subnets?api-version=2022-05-01')]"
-                                    }
-                                },
-                                {
-                                    "name": "subnet",
-                                    "type": "Microsoft.Common.DropDown",
-                                    "label": "Private Endpoint Subnet",
-                                    "toolTip": "Select an existing subnet for the private Endpoint.",
-                                    "constraints": {
-                                        "required": true,
-                                        "allowedValues": "[map(steps('userProfiles').privateEndpoints.subnetsApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.id, '\"}')))]"
-                                    },
-									"visible": true
-                                },
-								{
-									"name": "textBlock1",
-									"type": "Microsoft.Common.TextBlock",
-									"visible": true,
-									"options": {
-										"text": "Select the subscription containing your Azure Files Private DNS Zone."
-									}
-								},
-                                {
-                                    "name": "subscription",
-                                    "visible": true,
-                                    "type": "Microsoft.Common.SubscriptionSelector"
-                                },
-                                {
-                                    "name": "privateDnsZoneApi",
-                                    "type": "Microsoft.Solutions.ArmApiControl",
-                                    "request": {
-                                        "method": "GET",
-                                        "path": "[concat('/subscriptions/', steps('userProfiles').privateEndpoints.subscription.subscriptionId, '/providers/Microsoft.Network/privateDnsZones?api-version=2018-09-01')]"
-                                    }
-                                },
-                                {
-                                    "name": "privateDnsZone",
-                                    "type": "Microsoft.Common.DropDown",
-                                    "visible": true,
-                                    "label": "Private DNS Zone",
-                                    "defaultValue": "",
-                                    "multiLine": true,
-                                    "toolTip": "Select the existing Private DNS Zone for Azure Files.",
-                                    "constraints": {
-                                        "required": false,
-                                        "allowedValues": "[map(filter(steps('userProfiles').privateEndpoints.privateDnsZoneApi.value, (item) => contains(item.name, 'privatelink.file.')), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
-                                    }
-                                }
-                            ]
-                        },
-                        {
                             "name": "storageKerberosEncryption",
                             "type": "Microsoft.Common.DropDown",
                             "visible": "[and(equals(steps('userProfiles').profileSolution, 'fslogix'), equals(steps('userProfiles').fslogixStorageService, 'AzureFiles'))]",
@@ -1346,6 +1278,100 @@
                                     }
                                 ]
                             }
+                        },
+						{
+                            "name": "storageEndpoint",
+                            "type": "Microsoft.Common.DropDown",
+                            "visible": "[and(equals(steps('userProfiles').profileSolution, 'fslogix'), equals(steps('userProfiles').fslogixStorageService, 'AzureFiles'))]",
+                            "label": "Storage Endpoint",
+                            "defaultValue": "Private",
+                            "toolTip": "Select the storage endpoint for the SMB file shares to support the use of FSLogix.",
+                            "constraints": {
+                                "required": true,
+                                "allowedValues": [
+                                    {
+                                        "label": "Private",
+                                        "value": "PrivateEndpoint"
+                                    },
+                                    {
+                                        "label": "Public",
+                                        "value": "PublicEndpoint"
+                                    }
+                                ]
+                            }
+                        },
+						{
+                            "name": "privateEndpoints",
+                            "type": "Microsoft.Common.Section",
+                            "label": "Private Endpoint Configuration",
+                            "visible": "[and(equals(steps('userProfiles').fslogixStorageService, 'AzureFiles'), equals(steps('userProfiles').storageEndpoint, 'PrivateEndpoint'))]",
+                            "elements": [
+                                {
+                                    "name": "virtualNetwork",
+                                    "type": "Microsoft.Common.DropDown",
+                                    "label": "Private Endpoint Virtual Network",
+                                    "defaultValue": "",
+                                    "toolTip": "Select the virtual network containing the subnet where the Storage Account Private Endpoint will be created.",
+                                    "constraints": {
+                                        "required": true,
+                                        "allowedValues": "[map(filter(steps('basics').virtualNetworksApi.value, (item) => equals(item.location, steps('basics').scope.location.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
+                                    },
+									"visible": true
+                                },
+                                {
+                                    "name": "subnetsApi",
+                                    "type": "Microsoft.Solutions.ArmApiControl",
+                                    "request": {
+                                        "method": "GET",
+                                        "path": "[concat(steps('userProfiles').privateEndpoints.virtualNetwork, '/subnets?api-version=2022-05-01')]"
+                                    }
+                                },
+                                {
+                                    "name": "subnet",
+                                    "type": "Microsoft.Common.DropDown",
+                                    "label": "Private Endpoint Subnet",
+                                    "toolTip": "Select an existing subnet for the private Endpoint.",
+                                    "constraints": {
+                                        "required": true,
+                                        "allowedValues": "[map(steps('userProfiles').privateEndpoints.subnetsApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.id, '\"}')))]"
+                                    },
+									"visible": true
+                                },
+								{
+									"name": "textBlock1",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": true,
+									"options": {
+										"text": "Select the subscription containing your Azure Files Private DNS Zone."
+									}
+								},
+                                {
+                                    "name": "subscription",
+                                    "visible": true,
+                                    "type": "Microsoft.Common.SubscriptionSelector"
+                                },
+                                {
+                                    "name": "privateDnsZoneApi",
+                                    "type": "Microsoft.Solutions.ArmApiControl",
+                                    "request": {
+                                        "method": "GET",
+                                        "path": "[concat('/subscriptions/', steps('userProfiles').privateEndpoints.subscription.subscriptionId, '/providers/Microsoft.Network/privateDnsZones?api-version=2018-09-01')]"
+                                    }
+                                },
+                                {
+                                    "name": "privateDnsZone",
+                                    "type": "Microsoft.Common.DropDown",
+                                    "visible": true,
+                                    "label": "Private DNS Zone",
+                                    "defaultValue": "",
+                                    "multiLine": true,
+                                    "toolTip": "Select the existing Private DNS Zone for Azure Files.",
+                                    "constraints": {
+                                        "required": false,
+                                        "allowedValues": "[map(filter(steps('userProfiles').privateEndpoints.privateDnsZoneApi.value, (item) => contains(item.name, 'privatelink.file.')), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
+                                    }
+                                }
+                            ]
                         },
 						{
 							"name": "fslogixSessionHostConfig",
@@ -1442,7 +1468,8 @@
 									"required": false,
 									"visible": "[steps('userProfiles').fslogixSessionHostConfig.addStorageAccounts]"
 								}
-							]
+							],
+							"visible": "[not(equals(steps('userProfiles').profileSolution, 'local'))]"
 						}								
                     ]
                 },
@@ -1450,6 +1477,13 @@
                     "name": "management",
                     "label": "Management",
                     "elements": [
+						{
+                            "name": "drainMode",
+                            "type": "Microsoft.Common.CheckBox",
+                            "label": "Drain Mode",
+                            "defaultValue": false,
+                            "toolTip": "Enables drain mode on the AVD session hosts so the virtual machines cannot be accessed until they have been validated."
+                        },
                         {
                             "name": "backup",
                             "type": "Microsoft.Common.Section",
@@ -1685,12 +1719,13 @@
                 "azureFilesPrivateDnsZoneResourceId": "[if(and(equals(steps('userProfiles').fslogixStorageService, 'AzureFiles'), equals(steps('userProfiles').storageEndpoint, 'PrivateEndpoint')), steps('userProfiles').privateEndpoints.privateDnsZone, '')]",
 				"businessUnitIdentifier": "[steps('basics').naming.businessUnitIdentifier]",
 				"cseBlobNames": "[if(steps('hosts').customScripts.addCustomScripts, map(steps('hosts').customScripts.customizations, (item) => item.blobName), '')]",
-                "diskEncryptionSolution": "[steps('hosts').diskEncryptionSolution]",
+                "diskEncryptionSolution": "[steps('hosts').security.diskEncryptionSolution]",
+				"virtualMachineSecurityType": "[steps('hosts').security.securityType]",
                 "diskSku": "[steps('hosts').diskSku]",
                 "domainJoinUserPassword": "[steps('hosts').domainJoinCredentials.password]",
                 "domainJoinUserPrincipalName": "[steps('hosts').domainJoinCredentials.userPrincipalName]",
                 "domainName": "[steps('hosts').identity.domainName]",
-                "drainMode": "[steps('hosts').drainMode]",
+                "drainMode": "[steps('management').drainMode]",
                 "environmentShortName": "[steps('basics').naming.environmentShortName]",
 				"fslogixConfigureSessionHosts": "[steps('userProfiles').fslogixSessionHostConfig.fslogixConfigureSessionHosts]",
 				"fslogixConfigurationBlobName": "[if(steps('userProfiles').fslogixSessionHostConfig.fslogixConfigureSessionHosts, steps('userProfiles').fslogixSessionHostConfig.fslogixBlob.blobName , '')]",
