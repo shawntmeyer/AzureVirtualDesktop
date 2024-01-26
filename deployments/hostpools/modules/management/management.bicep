@@ -10,6 +10,7 @@ param avdObjectId string
 param locationControlPlane string
 param dataCollectionEndpointName string
 param dataCollectionRulesNameConv string
+//param diskAccessName string
 param diskNamePrefix string
 param diskEncryptionOptions object
 param diskEncryptionSetName string
@@ -41,6 +42,7 @@ param privateEndpointNameConv string
 param recoveryServices bool
 param recoveryServicesVaultName string
 param resourceGroupControlPlane string
+param resourceGroupHosts string
 param resourceGroupManagement string
 param resourceGroupStorage string
 param roleDefinitions object
@@ -182,6 +184,33 @@ module artifactsRoleAssignment 'artifactsRoleAssignment.bicep' = if(empty(artifa
     storageName: last(split(artifactsStorageAccountResourceId, '/'))
     userAssignedIdentityName: artifactsUserAssignedIdentityName
     userAssignedIdentityPrincipalId: empty(artifactsUserAssignedIdentityResourceId)? artifactsUserAssignedIdentity.outputs.principalId : ''
+  }
+}
+
+// Disabling the deployment below until Enhanced Policies in Recovery Services support managed disks with private link
+/*
+module diskAccess 'diskAccess.bicep' = {
+  scope: resourceGroup(resourceGroupManagement)
+  name: 'DiskAccess_${timeStamp}'
+  params: {
+    diskAccessName: diskAccessName
+    location: locationVirtualMachines
+    privateEndpointNameConv: privateEndpointNameConv
+    subnetResourceId: privateEndpointSubnetResourceId
+    tags: tags
+  }
+}
+*/
+
+// Sets an Azure policy to disable public network access to managed disks
+// Once Enhanced Policies in Recovery Services support managed disks with private link, remove the "if" condition
+module policy 'policy.bicep' = if (contains(hostPoolType, 'Pooled') && recoveryServices) {
+  name: 'ManagedDisks_NetworkAccess_Policy_${timeStamp}'
+  params: {
+    // Disabling the param below until Enhanced Policies in Recovery Services support managed disks with private link
+    //diskAccessResourceId: diskAccess.outputs.resourceId
+    location: locationVirtualMachines
+    resourceGroupName: resourceGroupHosts
   }
 }
 

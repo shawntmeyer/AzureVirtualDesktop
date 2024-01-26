@@ -459,6 +459,7 @@ module management 'modules/management/management.bicep' = {
     locationControlPlane: locationControlPlane
     dataCollectionEndpointName: resourceNames.outputs.dataCollectionEndpointName
     dataCollectionRulesNameConv: resourceNames.outputs.dataCollectionRulesNameConv
+    //diskAccessName: resourceNames.outputs.diskAccessName
     diskEncryptionOptions: logic.outputs.diskEncryptionOptions
     diskEncryptionSetName: resourceNames.outputs.diskEncryptionSetName
     diskNamePrefix: resourceNames.outputs.diskNamePrefix
@@ -487,6 +488,7 @@ module management 'modules/management/management.bicep' = {
     privateEndpointNameConv: resourceNames.outputs.privateEndpointNameConv
     recoveryServices: recoveryServices
     recoveryServicesVaultName: resourceNames.outputs.recoveryServicesVaultName
+    resourceGroupHosts: resourceNames.outputs.resourceGroupHosts
     resourceGroupControlPlane: resourceNames.outputs.resourceGroupControlPlane
     resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
     resourceGroupStorage: resourceNames.outputs.resourceGroupStorage

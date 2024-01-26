@@ -5,6 +5,7 @@
     "dataCollectionEndpoints": "dce",
     "dataCollectionRules": "dcr",
     "desktopApplicationGroups": "vddag",
+    "diskAccesses": "da",
     "remoteApplicationGroups": "vdrag",
     "disks": "disk",
     "diskEncryptionSets": "des",

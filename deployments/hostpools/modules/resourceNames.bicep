@@ -70,6 +70,7 @@ var automationAccountName = replace(replace(nameConv_Mgmt_Resources, 'resourceTy
 var dataCollectionEndpointName = replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.dataCollectionEndpoints), 'location', locations[locationVirtualMachines].abbreviation)
 // the AVD Insights data collection rule must start with 'microsoft-avdi-'
 var dataCollectionRulesNameConv = replace(replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.dataCollectionRules), 'location', locations[locationVirtualMachines].abbreviation), 'avd-', '')
+var diskAccessName = replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.diskAccesses), 'location', locations[locationVirtualMachines].abbreviation)
 var diskEncryptionSetName = replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.diskEncryptionSets), 'location', locations[locationVirtualMachines].abbreviation)
 var keyVaultName = replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.keyVaults), 'location', locations[locationVirtualMachines].abbreviation)
 var KeyVaultUniqueString = take(uniqueString(keyVaultName,resourceGroupManagement, subscription().subscriptionId), 24 - (length(keyVaultName)+1))
@@ -90,6 +91,7 @@ output automationAccountName string = automationAccountName
 output dataCollectionEndpointName string = dataCollectionEndpointName
 output dataCollectionRulesNameConv string = dataCollectionRulesNameConv
 output desktopApplicationGroupName string = desktopApplicationGroupName
+output diskAccessName string = diskAccessName
 output diskEncryptionSetName string = diskEncryptionSetName
 output diskNamePrefix string = diskNamePrefix
 output globalFeedWorkspaceName string = globalFeedWorkspaceName
