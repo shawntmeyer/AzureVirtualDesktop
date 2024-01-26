@@ -7,15 +7,25 @@
             "steps": [
                 {
                     "name": "basics",
-                    "label": "Basics",
+                    "label": "Deployment Basics",
                     "elements": [
                         {
                             "name": "scope",
                             "type": "Microsoft.Common.ResourceScope",
 							"instanceDetailsLabel": "Deployment Details",
-                            "location": {
-                                "resourceTypes": []
+							"location": {
+								"label": "Region (Session Hosts and Management Resources)",
+                                "resourceTypes": ["Microsoft.Compute/virtualmachines"]
                             }
+						},
+						{
+							"name": "locationControlPlane",
+							"type": "Microsoft.Common.LocationSelector",
+							"label": "Region (Control Plane)",
+							"toolTip": "Select the location for the AVD Control Plane resources: host pool, workspace, application group, etc.",
+							"resourceTypes": [
+								"Microsoft.DesktopVirtualization/hostPools"
+							]
                         },
                         {
                             "name": "naming",
@@ -199,15 +209,6 @@
                     "name": "controlPlane",
                     "label": "Control Plane",
                     "elements": [
-						{
-                            "name": "location",
-                            "type": "Microsoft.Common.LocationSelector",
-                            "label": "Region",
-                            "toolTip": "Select the location for the AVD Control Plane resources: host pool, workspace, application group, etc.",
-                            "resourceTypes": [
-                                "Microsoft.DesktopVirtualization/hostPools"
-                            ]
-                        },
 						{
                             "name": "naming",
                             "type": "Microsoft.Common.Section",
@@ -1743,7 +1744,7 @@
                 "customImageResourceId": "[if(equals(steps('hosts').image.source, 'gallery'), steps('hosts').image.galleryImage.id, '')]",
                 "fslogixStorageAccountADKerberosEncryption": "[if(or(equals(steps('userProfiles').profileSolution, 'local'), equals(steps('userProfiles').fslogixStorageService, 'AzureNetAppFiles')), 'RC4', steps('userProfiles').storageKerberosEncryption)]",
 				"keyVaultPrivateDnsZoneResourceId": "[if(steps('management').privateEndpoints.enabled, steps('management').privateEndpoints.keyVaultPrivateDnsZone, '')]",
-                "locationControlPlane": "[steps('controlPlane').location.name]",
+                "locationControlPlane": "[steps('basics').locationControlPlane.name]",
                 "logAnalyticsWorkspaceRetention": 30,
                 "logAnalyticsWorkspaceSku": "PerGB2018",
                 "managementPrivateEndpoints": "[steps('management').privateEndpoints.enabled]",
