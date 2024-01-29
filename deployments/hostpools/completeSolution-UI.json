@@ -127,14 +127,6 @@
 								}
                             ]
                         },
-						{
-							"name": "virtualNetworksApi",
-							"type": "Microsoft.Solutions.ArmApiControl",
-							"request": {
-								"method": "GET",
-								"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Network/virtualNetworks?api-version=2022-11-01')]"
-							}
-						},
                         {
                             "name": "servicePrincipalApi",
                             "type": "Microsoft.Solutions.GraphApiControl",
@@ -495,6 +487,14 @@
 									},
 									"visible": true
 								},
+								{
+									"name": "virtualNetworksApi",
+									"type": "Microsoft.Solutions.ArmApiControl",
+									"request": {
+										"method": "GET",
+										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Network/virtualNetworks?api-version=2022-11-01')]"
+									}
+								},
                                 {
                                     "name": "virtualNetwork",
                                     "type": "Microsoft.Common.DropDown",
@@ -503,7 +503,7 @@
                                     "toolTip": "Select the virtual network where the AVD Private Link Private Endpoints will be created.",
                                     "constraints": {
                                         "required": true,
-                                        "allowedValues": "[map(filter(steps('basics').virtualNetworksApi.value, (item) => equals(item.location, steps('controlPlane').location.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
+                                        "allowedValues": "[map(filter(steps('controlPlane').privateLink.virtualNetworksApi.value, (item) => equals(item.location, steps('basics').locationControlPlane.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
                                     },
 									"visible": "[or(not(equals(steps('controlPlane').privateLink.feedDiscoveryPublicNetworkAccess, 'Enabled')), not(equals(steps('controlPlane').privateLink.feedDownloadPublicNetworkAccess, 'Enabled')), not(equals(steps('controlPlane').privateLink.hostPoolPublicNetworkAccess, 'Enabled')))]"
                                 },
@@ -707,6 +707,14 @@
                             "label": "Network",
                             "visible": true,
                             "elements": [
+								{
+									"name": "virtualNetworksApi",
+									"type": "Microsoft.Solutions.ArmApiControl",
+									"request": {
+										"method": "GET",
+										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Network/virtualNetworks?api-version=2022-11-01')]"
+									}
+								},
                                 {
                                     "name": "virtualNetwork",
                                     "type": "Microsoft.Common.DropDown",
@@ -715,7 +723,7 @@
                                     "toolTip": "Select the virtual network where the AVD Private Link Private Endpoints will be created.",
                                     "constraints": {
                                         "required": true,
-                                        "allowedValues": "[map(filter(steps('basics').virtualNetworksApi.value, (item) => equals(item.location, steps('basics').scope.location.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
+                                        "allowedValues": "[map(filter(steps('hosts').network.virtualNetworksApi.value, (item) => equals(item.location, steps('basics').scope.location.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
                                     },
 									"visible": true
                                 },
@@ -747,44 +755,6 @@
                             "label": "Security",
                             "elements": [
                                 {
-									"name": "diskEncryptionSolution",
-									"type": "Microsoft.Common.DropDown",
-									"label": "Disk Encryption Solution",
-									"placeholder": "",
-									"defaultValue": "Encryption At Host",
-									"toolTip": "Select the appropriate disk encryption option for your virtual machines. See https://learn.microsoft.com/en-us/azure/virtual-machines/disk-encryption-overview for more details.",
-									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Azure Disk Storage Server-Side Encryption",
-												"value": "SSE + PMK"
-											},
-											{
-												"label": "Azure Disk Storage Server-Side Encryption with Customer Managed Keys",
-												"value": "SSE + CMK"
-											},
-											{
-												"label": "Encryption At Host",
-												"value": "EAH + PMK"
-											},
-											{
-												"label": "Encryption At Host with Customer Managed Keys",
-												"value": "EAH + CMK"
-											},
-											{
-												"label": "Azure Disk Encryption",
-												"value": "ADE"
-											},
-											{
-												"label": "Azure Disk Encryption with Key Encryption Key",
-												"value": "ADE + KEK"
-											}
-										],
-										"required": true
-									},
-									"visible": true
-								},
-								{
                                     "name": "securityType",
                                     "type": "Microsoft.Common.DropDown",
                                     "label": "Security Type",
@@ -809,7 +779,90 @@
                                         "required": true
                                     },
                                     "visible": true
-                                }
+                                },
+								{
+									"name": "confVMinfoBox",
+									"type": "Microsoft.Common.InfoBox",
+									"visible": "[if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), true, false)]",
+									"options": {
+										"icon": "Warning",
+										"text": "Confidential VMs are not supported in all regions and require certain VM Skus.",
+										"uri": "https://learn.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview"
+									}
+								},
+								{
+									"name": "diskEncryptionTextBlock",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": true,
+									"options": {
+										"text": "Azure disk storage encryption automatically encrypts your data stored on Azure managed disks (OS and data disks) at rest by default when persisting it to the cloud."
+									}
+								},
+								{
+									"name": "encryptionAtHostTextBlock",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": true,
+									"options": {
+										"text": "Encryption at host encrypts temporary disks and ephemeral OS disks with platform-managed keys, OS and data disk caches with the key specified in the key management dropdown, and flows encrypted to the Storage service.",
+										"link": {
+											"label": "Learn more",
+											"uri": "http://go.microsoft.com/fwlink/?LinkId=2133517"
+										}
+									}
+								},
+								{
+									"name": "encryptionAtHost",
+									"type": "Microsoft.Common.CheckBox",
+									"label": "Encryption At Host.",
+									"defaultValue": true
+								},
+								{
+									"name": "confidentialVMEncryptionTextBlock",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": "[if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), true, false)]",
+									"options": {
+										"text": "Confidential disk encryption is an additional layer of encryption which binds the disk encryption keys to the virtual machine's TPM and makes the disk content accessible only to the VM.",
+										"link": {
+											"label": "Learn more",
+											"uri": "http://go.microsoft.com/fwlink/?LinkId=2133517"
+										}
+									}
+								},
+								{
+									"name": "confidentialVMOSDiskEncryption",
+									"type": "Microsoft.Common.CheckBox",
+									"label": "Confidential OS Disk Encryption",
+									"defaultValue": true,
+									"visible": "[if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), true, false)]"
+								},
+								{
+									"name": "keyManagement",
+									"type": "Microsoft.Common.DropDown",
+									"label": "Key Management",
+									"defaultValue": "Platform-Managed Keys",
+									"toolTip": "Platform-managed keys are key encryption keys that are generated, stored, and managed entirely by Azure. Choose Platform Managed for the best balance of security and ease of use. Customer-managed keys are key encryption keys that are generated, stored, and managed by you, the customer, in your Azure Key Vault. Choose Customer Managed if you need to meet specific compliance requirements. Platform-Managed and Customer-Managed Keys provide double encryption with an infrastructure encryption layer using platform-managed keys and a disk encryption layer using customer-managed keys.",
+									"constraints": {
+										"allowedValues": "[if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), parse('[{\"label\":\"Platform-Managed Keys\",\"value\":\"PlatformManaged\"},{\"label\":\"Customer-Managed Keys\",\"value\":\"CustomerManaged\"}]'), parse('[{\"label\":\"Platform-Managed Keys\",\"value\":\"PlatformManaged\"},{\"label\":\"Customer-Managed Keys\",\"value\":\"CustomerManaged\"},{\"label\":\"Platform-Managed and Customer-Managed Keys\",\"value\":\"PlatformAndCustomerManaged\"}]'))]"
+									}
+								},
+								{
+									"name": "confOSDiskEncryptionWarning",
+									"type": "Microsoft.Common.InfoBox",
+									"visible": "[and( steps('hosts').security.confidentialVMOSDiskEncryption, equals(steps('hosts').security.keyManagement, 'CustomerManaged') )]",
+									"options": {
+										"icon": "Warning",
+										"text": "You must have completed the prerequistes to support Confidential VM Disk Encryption.",
+										"uri": "https://learn.microsoft.com/en-us/azure/confidential-computing/quick-create-confidential-vm-portal#prerequisites"
+									}
+								},
+								{
+									"name": "confDiskEncryptionPrincipalApi",
+									"type": "Microsoft.Solutions.GraphApiControl",
+									"request": {
+										"method": "GET",
+										"path": "/v1.0/serviceprincipals?$filter=appId eq 'bf7b6499-ff71-4aa2-97a4-f372087be7f0'"
+									}
+								}               
 							]
 						},
                         {
@@ -1308,6 +1361,14 @@
                             "visible": "[and(equals(steps('userProfiles').fslogixStorageService, 'AzureFiles'), equals(steps('userProfiles').storageEndpoint, 'PrivateEndpoint'))]",
                             "elements": [
                                 {
+									"name": "virtualNetworksApi",
+									"type": "Microsoft.Solutions.ArmApiControl",
+									"request": {
+										"method": "GET",
+										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Network/virtualNetworks?api-version=2022-11-01')]"
+								}
+								},
+								{
                                     "name": "virtualNetwork",
                                     "type": "Microsoft.Common.DropDown",
                                     "label": "Private Endpoint Virtual Network",
@@ -1315,7 +1376,7 @@
                                     "toolTip": "Select the virtual network containing the subnet where the Storage Account Private Endpoint will be created.",
                                     "constraints": {
                                         "required": true,
-                                        "allowedValues": "[map(filter(steps('basics').virtualNetworksApi.value, (item) => equals(item.location, steps('basics').scope.location.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
+                                        "allowedValues": "[map(filter(steps('userProfiles').privateEndpoints.virtualNetworksApi.value, (item) => equals(item.location, steps('basics').scope.location.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
                                     },
 									"visible": true
                                 },
@@ -1592,6 +1653,14 @@
 									},
 									"visible": true
 								},
+								{
+									"name": "virtualNetworksApi",
+									"type": "Microsoft.Solutions.ArmApiControl",
+									"request": {
+										"method": "GET",
+										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Network/virtualNetworks?api-version=2022-11-01')]"
+									}
+								},
                                 {
                                     "name": "virtualNetwork",
                                     "type": "Microsoft.Common.DropDown",
@@ -1600,7 +1669,7 @@
                                     "toolTip": "Select the virtual network where the AVD Private Link Private Endpoints will be created.",
                                     "constraints": {
                                         "required": true,
-                                        "allowedValues": "[map(filter(steps('basics').virtualNetworksApi.value, (item) => equals(item.location, steps('basics').scope.location.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
+                                        "allowedValues": "[map(filter(steps('management').privateEndpoints.virtualNetworksApi.value, (item) => equals(item.location, steps('basics').scope.location.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
                                     },
 									"visible": "[steps('management').privateEndpoints.enabled]"
                                 },
@@ -1719,8 +1788,10 @@
                 "avdObjectId": "[first(map(steps('basics').servicePrincipalApi.value, (item) => item.id))]",
                 "azureFilesPrivateDnsZoneResourceId": "[if(and(equals(steps('userProfiles').fslogixStorageService, 'AzureFiles'), equals(steps('userProfiles').storageEndpoint, 'PrivateEndpoint')), steps('userProfiles').privateEndpoints.privateDnsZone, '')]",
 				"businessUnitIdentifier": "[steps('basics').naming.businessUnitIdentifier]",
+				"confidentialVMOrchestratorObjectId": "[first(map(steps('hosts').security.confDiskEncryptionPrincipalApi.value, (item) => item.id))]",
+				"keyManagementDisksAndStorage": "[steps('hosts').security.keyManagement]",
 				"cseBlobNames": "[if(steps('hosts').customScripts.addCustomScripts, map(steps('hosts').customScripts.customizations, (item) => item.blobName), '')]",
-                "diskEncryptionSolution": "[steps('hosts').security.diskEncryptionSolution]",
+				"encryptionAtHost": "[steps('hosts').security.encryptionAtHost]",
 				"virtualMachineSecurityType": "[steps('hosts').security.securityType]",
                 "diskSku": "[steps('hosts').diskSku]",
                 "domainJoinUserPassword": "[steps('hosts').domainJoinCredentials.password]",

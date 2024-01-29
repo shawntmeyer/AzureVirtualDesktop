@@ -4,7 +4,6 @@ param identitySolution string
 param artifactsUri string
 param avdAgentInstallersBlobName string
 param avdPrivateLink bool
-param diskEncryptionSolution string
 param diskSku string
 param domainName string
 param cseBlobNames array
@@ -52,14 +51,7 @@ var availabilitySetsCount = length(range(beginAvSetRange, (endAvSetRange - begin
 var fslogix = fslogixStorageService == 'None' ? false : true
 var cseArtifacts = fslogixConfigureSessionHosts ? union(['${cseMasterScript}'], cseBlobNames, ['${fslogixConfigurationBlobName}'], ['${avdAgentInstallersBlobName}']) : union(['${cseMasterScript}'], cseBlobNames, ['${avdAgentInstallersBlobName}'])
 var cseUris = [ for artifact in cseArtifacts : contains(toLower(artifact), 'http') ? artifact : '${artifactsUri}${artifact}' ]
-// Disk Encryption Options
-var diskEncryptionOptions = {
-  azureDiskEncryption: contains(diskEncryptionSolution, 'ADE')
-  encryptionAtHost: contains(diskEncryptionSolution, 'EAH')
-  diskEncryptionSet: contains(diskEncryptionSolution, 'CMK')
-  keyEncryptionKey: contains(diskEncryptionSolution, 'CMK') || contains(diskEncryptionSolution, 'KEK')
-  storageEncryptionKey: contains(diskEncryptionSolution, 'CMK') || contains(diskEncryptionSolution, 'KEK')
-}
+
 var fileShares = fileShareNames[fslogixContainerType]
 // ONLY DEPLOY 1 storage account when Cloud Only identity is used because Sharding is not possible.
 var countStorage = identitySolution == 'EntraId' || identitySolution == 'EntraIdIntuneEnrollment' ? 1 : fslogixStorageCount
@@ -91,6 +83,8 @@ var roleDefinitions = {
   DesktopVirtualizationSessionHostOperator: '2ad6aaab-ead9-4eaa-8ac5-da422f562408'
   DesktopVirtualizationUser: '1d18fff3-a72a-46b5-b4a9-0b38a3cd7e63'
   DesktopVirtualizationWorkspaceContributor: '21efdde3-836f-432b-bf3d-3e8e734d4b2b'
+  KeyVaultCryptoServiceEncryptionUser: 'e147488a-f6f5-4113-8e2d-b22465e65bf6'
+  KeyVaultCryptoServiceReleaseUser: '08bbd89e-9f13-488c-ac41-acfcb10c90ab'
   Reader: 'acdd72a7-3385-48ef-bd42-f606fba81ae7'
   StorageAccountContributor: '17d1049b-9a84-46fb-8f53-869881c3d3ab'
   StorageBlobDataReader: '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1'
@@ -109,7 +103,6 @@ var virtualMachineTemplate = '{"domain":"${domainName}","galleryImageOffer":"${i
 output availabilitySetsCount int = availabilitySetsCount
 output beginAvSetRange int = beginAvSetRange
 output cseUris array = cseUris
-output diskEncryptionOptions object = diskEncryptionOptions
 output divisionRemainderValue int = divisionRemainderValue
 output fileShares array = fileShares
 output fslogix bool = fslogix

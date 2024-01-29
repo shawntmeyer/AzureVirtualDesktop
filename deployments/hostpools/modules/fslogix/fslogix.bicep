@@ -7,9 +7,9 @@ param artifactsUserAssignedIdentityClientId string
 param automationAccountName string
 param availability string
 param azureFilesPrivateDnsZoneResourceId string
+param customerManagedKeysEnabled bool
 param deploymentUserAssignedIdentityClientId string
 param delegatedSubnetId string
-param diskEncryptionOptions object
 param dnsServers string
 @secure()
 param domainJoinUserPassword string
@@ -98,7 +98,7 @@ module azureFiles 'azureFiles/azureFiles.bicep' = if (storageSolution == 'AzureF
     availability: availability
     azureFilesPrivateDnsZoneResourceId: azureFilesPrivateDnsZoneResourceId
     deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
-    customerManagedKeysEnabled: diskEncryptionOptions.storageEncryptionKey
+    customerManagedKeysEnabled: customerManagedKeysEnabled
     domainJoinUserPassword: domainJoinUserPassword
     domainJoinUserPrincipalName: domainJoinUserPrincipalName
     encryptionUserAssignedIdentityResourceId: encryptionUserAssignedIdentityResourceId

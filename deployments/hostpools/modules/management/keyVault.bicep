@@ -1,7 +1,7 @@
 @secure()
-param domainJoinUserPrincipalName string
+param domainJoinUserPrincipalName string = ''
 @secure()
-param domainJoinUserPassword string
+param domainJoinUserPassword string = ''
 param environmentShortName string
 param keyVaultName string
 param keyVaultPrivateDnsZoneResourceId string
@@ -9,11 +9,13 @@ param location string
 param privateEndpoint bool
 param privateEndpointNameConv string
 param privateEndpointSubnetId string
+param skuName string
 param tagsKeyVault object
 param tagsPrivateEndpoints object
-param virtualMachineAdminUserName string
 @secure()
-param virtualMachineAdminPassword string
+param virtualMachineAdminUserName string = ''
+@secure()
+param virtualMachineAdminPassword string = ''
 
 resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' = {
   name: keyVaultName
@@ -35,7 +37,7 @@ resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' = {
     publicNetworkAccess: 'Disabled'
     sku: {
       family: 'A'
-      name: 'standard'
+      name: skuName
     }
     softDeleteRetentionInDays: environmentShortName == 'd' || environmentShortName == 't' ? 7 : 90
     tenantId: subscription().tenantId

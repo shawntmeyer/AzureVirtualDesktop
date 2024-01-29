@@ -252,6 +252,7 @@ param availability string = 'availabilityZones'
 @description('Optional. The name of the blob containing the AVDAgent Agent installers and script.')
 param avdAgentInstallersBlobName string = 'Set-SessionHostConfiguration.zip'
 
+
 @description('''Array of script (or other artifact) names or full uris that will be downloaded by the Custom Script Extension on each Session Host Virtual Machine.
 Either specify the entire URL or just the name of the blob if is located at the fqdn specified by the [artifactsUri] parameter.
 ''')
@@ -265,16 +266,33 @@ param cseMasterScript string = 'cse_master_script.ps1'
 ''')
 param cseScriptAddDynParameters string = ''
 
+@description('''Optional. Encryption at host encrypts temporary disks and ephemeral OS disks with platform-managed keys,
+OS and data disk caches with the key specified in the "keyManagementDisksAndStorage" parameter, and flows encrypted to the Storage service.
+''')
+param encryptionAtHost bool = true
+
+@description('Optional. Confidential disk encryption is an additional layer of encryption which binds the disk encryption keys to the virtual machine TPM and makes the disk content accessible only to the VM.')
+param confidentialVMOSDiskEncryption bool = false
+
+@description('''Optional. The object ID of the Confidential VM Orchestrator enterprise application with application ID "bf7b6499-ff71-4aa2-97a4-f372087be7f0".
+This is required when "confidentialVMOSDiskEncryption" is set to "true". You must create this application in your tenant before deploying this solution using the following PowerShell script:
+  Connect-AzureAD -Tenant "your tenant ID"
+  New-AzureADServicePrincipal -AppId bf7b6499-ff71-4aa2-97a4-f372087be7f0 -DisplayName "Confidential VM Orchestrator"
+''')
+param confidentialVMOrchestratorObjectId string = ''
+
 @allowed([
-  'SSE + PMK' // Default Encryption in Azure
-  'SSE + CMK' // Server Side Encryption with Customer Managed Keys
-  'EAH + PMK' // Encryption at Host with Platform Managed Keys
-  'EAH + CMK' // Encryption at Host with Customer Managed Keys
-  'ADE' // Azure Disk Encryption
-  'ADE + KEK' // Azure Disk Encryption with Key Encryption Key
+  'CustomerManaged'
+  'PlatformManaged'
+  'PlatformManagedAndCustomerManaged'
 ])
-@description('Optional. The VM disk encryption configuration. (Default: "SSE + PMK")')
-param diskEncryptionSolution string = 'SSE + PMK'
+@description('''Optional. The type of encryption key management used for the OS disk. (Default: "PlatformManaged")
+- Platform-managed keys (PMKs) are key encryption keys that are generated, stored, and managed entirely by Azure. Choose Platform Managed for the best balance of security and ease of use.
+- Customer-managed keys (CMKs) are key encryption keys that are generated, stored, and managed by you, the customer, in your Azure Key Vault. Choose Customer Managed if you need to meet specific compliance requirements.
+- Double encryption is 2 layers of encryption: an infrastructure encryption layer with platform managed keys and a disk encryption layer with customer managed keys defined by disk encryption sets.
+Choose Platform Managed and Customer Managed if you need double encryption. This option does not apply to confidential VMs.
+''')
+param keyManagementDisksAndStorage string = 'PlatformManaged'
 
 @allowed([
   'Standard_LRS'
@@ -365,6 +383,7 @@ param timeStamp string = utcNow('yyyyMMddhhmmss')
 var artifactsStorageAccountName = last(split(artifactsStorageAccountResourceId, '/'))
 var artifactsUri = 'https://${artifactsStorageAccountName}.blob.${environment().suffixes.storage}/${artifactsContainerName}/'
 var locationVirtualMachines = vmVirtualNetwork.location
+var confidentialVMOSDiskEncryptionType = confidentialVMOSDiskEncryption ? 'DiskWithVMGuestState' : 'VMGuestStateOnly'
 
 var resourceGroupsCount = 3 + (fslogixStorageService == 'None' ? 0 : 1) + (avdPrivateLink ? 1 :0)
 
@@ -377,7 +396,7 @@ resource vmVirtualNetwork 'Microsoft.Network/virtualNetworks@2023-04-01' existin
 }
 
 resource keyVault_Reference 'Microsoft.KeyVault/vaults@2021-06-01-preview' existing = if(contains(identitySolution,'DomainServices') && (empty(domainJoinUserPassword) || empty(domainJoinUserPrincipalName)) || empty(virtualMachineAdminPassword) || empty(virtualMachineAdminUserName))  {
-  name: resourceNames.outputs.keyVaultName
+  name: resourceNames.outputs.keyVaultNames.VMSecrets
   scope: resourceGroup(resourceNames.outputs.resourceGroupManagement)
 }
 
@@ -405,7 +424,6 @@ module logic 'modules/logic.bicep' = {
     avdAgentInstallersBlobName: avdAgentInstallersBlobName
     avdPrivateLink: avdPrivateLink
     cseMasterScript: cseMasterScript
-    diskEncryptionSolution: diskEncryptionSolution
     diskSku: diskSku
     cseBlobNames: cseBlobNames
     domainName: domainName
@@ -456,17 +474,18 @@ module management 'modules/management/management.bicep' = {
     automationAccountPrivateDnsZoneResourceId: automationAccountPrivateDnsZoneResourceId
     availability: availability
     avdObjectId: avdObjectId
-    locationControlPlane: locationControlPlane
+    confidentialVMOrchestratorObjectId: confidentialVMOrchestratorObjectId
+    confidentialVMOSDiskEncryptionType: confidentialVMOSDiskEncryptionType
     dataCollectionEndpointName: resourceNames.outputs.dataCollectionEndpointName
     dataCollectionRulesNameConv: resourceNames.outputs.dataCollectionRulesNameConv
     //diskAccessName: resourceNames.outputs.diskAccessName
-    diskEncryptionOptions: logic.outputs.diskEncryptionOptions
-    diskEncryptionSetName: resourceNames.outputs.diskEncryptionSetName
+    diskEncryptionSetNames: resourceNames.outputs.diskEncryptionSetNames
     diskNamePrefix: resourceNames.outputs.diskNamePrefix
     diskSku: diskSku
     domainJoinUserPassword: domainJoinUserPassword
     domainJoinUserPrincipalName: domainJoinUserPrincipalName
     domainName: domainName
+    encryptionAtHost: encryptionAtHost
     environmentShortName: environmentShortName
     fslogix: logic.outputs.fslogix
     fslogixStorageAccountNamePrefix: resourceNames.outputs.storageAccountNamePrefix
@@ -474,8 +493,9 @@ module management 'modules/management/management.bicep' = {
     hostPoolType: hostPoolType
     identitySolution: identitySolution
     kerberosEncryption: fslogixStorageAccountADKerberosEncryption
-    keyVaultName: resourceNames.outputs.keyVaultName
+    keyVaultNames: resourceNames.outputs.keyVaultNames
     keyVaultPrivateDnsZoneResourceId: keyVaultPrivateDnsZoneResourceId
+    locationControlPlane: locationControlPlane
     locationVirtualMachines: locationVirtualMachines
     logAnalyticsWorkspaceName: resourceNames.outputs.logAnalyticsWorkspaceName
     logAnalyticsWorkspaceRetention: logAnalyticsWorkspaceRetention
@@ -483,6 +503,7 @@ module management 'modules/management/management.bicep' = {
     enableInsights: enableInsights
     netAppVnetResourceId: fslogixNetAppVnetResourceId
     networkInterfaceNamePrefix: resourceNames.outputs.networkInterfaceNamePrefix
+    keyManagementDisksAndStorage: keyManagementDisksAndStorage
     privateEndpointSubnetResourceId: managementPrivateEndpointSubnetResourceId
     privateEndpoint: managementPrivateEndpoints
     privateEndpointNameConv: resourceNames.outputs.privateEndpointNameConv
@@ -509,7 +530,7 @@ module management 'modules/management/management.bicep' = {
     workspaceName: resourceNames.outputs.workspaceName
     globalFeedWorkspaceName: resourceNames.outputs.globalFeedWorkspaceName
     globalFeedWorkspaceResourceGroupName: resourceNames.outputs.resourceGroupGlobalFeed
-  }    
+  }                
   dependsOn: [
     rgs
   ]
@@ -572,9 +593,9 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (fslogixStorageService != 'N
     automationAccountName: resourceNames.outputs.automationAccountName
     availability: availability
     azureFilesPrivateDnsZoneResourceId: azureFilesPrivateDnsZoneResourceId
+    customerManagedKeysEnabled: keyManagementDisksAndStorage != 'PlatformManaged' ? true : false
     deploymentUserAssignedIdentityClientId: management.outputs.deploymentUserAssignedIdentityClientId
     delegatedSubnetId: management.outputs.validateANFSubnetId
-    diskEncryptionOptions: logic.outputs.diskEncryptionOptions
     dnsServers: management.outputs.validateANFDnsServers
     domainJoinUserPassword: empty(domainJoinUserPassword) ? contains(identitySolution, 'DomainServices') ? keyVault_Reference.getSecret(domainJoinUserPassword) : '' : domainJoinUserPassword
     domainJoinUserPrincipalName: empty(domainJoinUserPrincipalName) ? contains(identitySolution, 'DomainServices') ? keyVault_Reference.getSecret(domainJoinUserPrincipalName) : '' : domainJoinUserPrincipalName
@@ -586,7 +607,7 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (fslogixStorageService != 'N
     storageService: fslogixStorageService
     identitySolution: identitySolution
     kerberosEncryption: fslogixStorageAccountADKerberosEncryption
-    keyVaultUri: management.outputs.keyVaultUrl
+    keyVaultUri: management.outputs.encryptionKeysKeyVaultUrl
     location: locationVirtualMachines
     managementVirtualMachineName: management.outputs.virtualMachineName
     netAppAccountName: resourceNames.outputs.netAppAccountName
@@ -638,9 +659,6 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
   name: 'SessionHosts_${timeStamp}'
   params: {
     acceleratedNetworking: management.outputs.validateAcceleratedNetworking
-    adeKEKUrl: management.outputs.diskEncryptionKeyUrl
-    adeKeyVaultResourceId: management.outputs.keyVaultResourceId
-    adeKeyVaultUrl: management.outputs.keyVaultUrl
     artifactsUri: artifactsUri
     artifactsUserAssignedIdentityClientId: management.outputs.artifactsUserAssignedIdentityClientId // ClientId that comes from Management / UserAssignedIdentity Modules is already determined.
     artifactsUserAssignedIdentityResourceId: management.outputs.artifactsUserAssignedIdentityResourceId // ResourceId that comes from Management / UserAssignedIdentity Modules is already determined.
@@ -649,12 +667,12 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     availabilitySetsCount: logic.outputs.availabilitySetsCount
     availabilitySetsIndex: logic.outputs.beginAvSetRange
     availabilityZones: management.outputs.validateavailabilityZones
+    confidentialVMOSDiskEncryptionType: confidentialVMOSDiskEncryptionType
     cseMasterScript: cseMasterScript
     cseScriptAddDynParameters: cseScriptAddDynParameters
     cseUris: logic.outputs.cseUris
     customImageResourceId: customImageResourceId
     dataCollectionEndpointResourceId: management.outputs.dataCollectionEndpointResourceId    
-    diskEncryptionOptions: logic.outputs.diskEncryptionOptions
     diskEncryptionSetResourceId: management.outputs.diskEncryptionSetResourceId
     diskNamePrefix: resourceNames.outputs.diskNamePrefix
     diskSku: diskSku
@@ -664,6 +682,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     domainName: domainName
     drainMode: drainMode
     drainModeUserAssignedIdentityClientId: management.outputs.deploymentUserAssignedIdentityClientId
+    encryptionAtHost: encryptionAtHost
     fslogixConfigureSessionHosts: fslogixConfigureSessionHosts
     fslogixContainerType: fslogixContainerType
     fslogixDeployedStorageAccountResourceIds: fslogix.outputs.storageAccountResourceIds
@@ -703,6 +722,8 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     virtualMachineAdminPassword: empty(virtualMachineAdminPassword) ? keyVault_Reference.getSecret(virtualMachineAdminPassword) : virtualMachineAdminPassword
     virtualMachineSize: virtualMachineSize
     virtualMachineAdminUserName: empty(virtualMachineAdminUserName) ? keyVault_Reference.getSecret(virtualMachineAdminUserName) : virtualMachineAdminUserName
+    
+
   }
   dependsOn: [
     rgs

@@ -116,6 +116,14 @@ param availability string = 'availabilityZones'
 @description('Optional. The name of the blob containing the AVDAgent Agent installers and script.')
 param avdAgentInstallersBlobName string = 'Set-SessionHostConfiguration.zip'
 
+@description('Optional. Confidential disk encryption is an additional layer of encryption which binds the disk encryption keys to the virtual machine TPM and makes the disk content accessible only to the VM.')
+param confidentialVMOSDiskEncryption bool = false
+
+@description('''Optional. Encryption at host encrypts temporary disks and ephemeral OS disks with platform-managed keys,
+OS and data disk caches with the key specified in the "keyManagementDisksAndStorage" parameter, and flows encrypted to the Storage service.
+''')
+param encryptionAtHost bool = true
+
 @description('''Array of script (or other artifact) names or full uris that will be downloaded by the Custom Script Extension on each Session Host Virtual Machine.
 Either specify the entire URL or just the name of the blob if is located at the fqdn specified by the [artifactsUri] parameter.
 ''')
@@ -129,22 +137,8 @@ param cseMasterScript string = 'cse_master_script.ps1'
 ''')
 param cseScriptAddDynParameters string = ''
 
-@allowed([
-  'SSE + PMK' // Default Encryption in Azure
-  'SSE + CMK' // Server Side Encryption with Customer Managed Keys
-  'EAH + PMK' // Encryption at Host with Platform Managed Keys
-  'EAH + CMK' // Encryption at Host with Customer Managed Keys
-  'ADE' // Azure Disk Encryption
-  'ADE + KEK' // Azure Disk Encryption with Key Encryption Key
-])
-@description('Optional. The VM disk encryption configuration. (Default: "SSE + PMK")')
-param diskEncryptionSolution string = 'SSE + PMK'
-
 @description('Optional. The resource ID of the Azure Disk Encryption Set to use to protect the ADE encryption keys. Only valid when diskEncryptionSolution specifies customer managed keys.')
 param diskEncryptionSetResourceId string = ''
-
-@description('Optional. The resource ID of the Azure Key Vault used to store the ADE encryption keys. Only valid when diskEncryptionSolution specifies Azure Disk Encryption.')
-param adeKeyVaultResourceId string = ''
 
 @allowed([
   'Standard'
@@ -228,6 +222,7 @@ param tags object = {}
 param timeStamp string = utcNow('yyyyMMddhhmmss')
 
 var acceleratedNetworkingString = acceleratedNetworking ? 'True' : 'False'
+var confidentialVMOSDiskEncryptionType = confidentialVMOSDiskEncryption ? 'DiskWithVMGuestState' : 'VMGuestStateOnly'
 
 var securityType = virtualMachineSecurityType == 'Standard' ? '' : virtualMachineSecurityType
 
@@ -252,8 +247,6 @@ var resourceGroupManagement = !empty(recoveryServicesVaultResourceId) ? split(re
 
 var hostPoolName = last(split(hostPoolResourceId, '/'))
 
-var adeKeyEncryptionKeyUrl = !empty(adeKeyVaultResourceId) ? '${adeKeyVault.properties.vaultUri}/keys/ADEkeyEncryptionKey' : ''
-
 resource artifactsUAI 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = {
   name: last(split(artifactsUserAssignedIdentityResourceId, '/'))
   scope: resourceGroup(split(artifactsUserAssignedIdentityResourceId, '/')[2], split(artifactsUserAssignedIdentityResourceId, '/')[4])
@@ -264,17 +257,7 @@ resource vmVirtualNetwork 'Microsoft.Network/virtualNetworks@2023-04-01' existin
   scope: resourceGroup(split(virtualMachineSubnetResourceId, '/')[2], split(virtualMachineSubnetResourceId, '/')[4])
 }
 
-resource keyVault_Reference 'Microsoft.KeyVault/vaults@2021-06-01-preview' existing = if(contains(identitySolution,'DomainServices') && (empty(domainJoinUserPassword) || empty(domainJoinUserPrincipalName)) || empty(virtualMachineAdminPassword) || empty(virtualMachineAdminUserName))  {
-  name: resourceNames.outputs.keyVaultName
-  scope: resourceGroup(resourceNames.outputs.resourceGroupManagement)
-}
-
-resource adeKeyVault 'Microsoft.KeyVault/vaults@2021-06-01-preview' existing = if(!empty(adeKeyVaultResourceId)) {
-  name: last(split(adeKeyVaultResourceId, '/'))
-  scope: resourceGroup(split(adeKeyVaultResourceId, '/')[2], split(adeKeyVaultResourceId, '/')[4])
-}
-
-resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' existing = {
+resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2022-09-09' existing = {
   name: last(split(hostPoolResourceId, '/'))
   scope: resourceGroup(split(hostPoolResourceId, '/')[2], split(hostPoolResourceId, '/')[4])
 }
@@ -304,7 +287,6 @@ module logic 'modules/logic.bicep' = {
     avdAgentInstallersBlobName: avdAgentInstallersBlobName
     avdPrivateLink: false
     cseMasterScript: cseMasterScript
-    diskEncryptionSolution: diskEncryptionSolution
     diskSku: diskSku
     cseBlobNames: cseBlobNames
     domainName: domainName
@@ -338,7 +320,6 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
   params: {
     acceleratedNetworking: acceleratedNetworkingString
     identitySolution: identitySolution
-    adeKEKUrl: diskEncryptionSolution == 'ADE + KEK' ? adeKeyEncryptionKeyUrl : ''
     artifactsUri: artifactsUri
     artifactsUserAssignedIdentityClientId: artifactsUAI.properties.clientId
     artifactsUserAssignedIdentityResourceId: artifactsUserAssignedIdentityResourceId
@@ -348,22 +329,21 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     availabilitySetsIndex: logic.outputs.beginAvSetRange
     availabilityZones: availabilityZones
     avdInsightsDataCollectionRulesResourceId: avdInsightsDataCollectionRulesResourceId
+    confidentialVMOSDiskEncryptionType: confidentialVMOSDiskEncryptionType
     cseMasterScript: cseMasterScript
     cseScriptAddDynParameters: cseScriptAddDynParameters
     cseUris: logic.outputs.cseUris
     dataCollectionEndpointResourceId: dataCollectionEndpointResourceId
-    diskEncryptionOptions: logic.outputs.diskEncryptionOptions
     diskEncryptionSetResourceId: diskEncryptionSetResourceId
-    adeKeyVaultResourceId: adeKeyVaultResourceId
-    adeKeyVaultUrl: !empty(adeKeyVaultResourceId) ? adeKeyVault.properties.vaultUri : ''
     diskNamePrefix: diskNamePrefix
     diskSku: diskSku
     divisionRemainderValue: logic.outputs.divisionRemainderValue
-    domainJoinUserPassword: empty(domainJoinUserPassword) ? contains(identitySolution, 'DomainServices') ? keyVault_Reference.getSecret(domainJoinUserPassword) : '' : domainJoinUserPassword
-    domainJoinUserPrincipalName: empty(domainJoinUserPrincipalName) ? contains(identitySolution, 'DomainServices') ? keyVault_Reference.getSecret(domainJoinUserPrincipalName) : '' : domainJoinUserPrincipalName
+    domainJoinUserPassword: domainJoinUserPassword
+    domainJoinUserPrincipalName: domainJoinUserPrincipalName
     domainName: domainName
     drainMode: false
     drainModeUserAssignedIdentityClientId: ''
+    encryptionAtHost: encryptionAtHost
     fslogixConfigureSessionHosts: fslogixConfigureSessionHosts
     fslogixContainerType: fslogixContainerType
     fslogixDeployedStorageAccountResourceIds: []
@@ -398,9 +378,9 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     timeStamp: timeStamp
     securityType: securityType
     virtualMachineNamePrefix: virtualMachineNamePrefix
-    virtualMachineAdminPassword: empty(virtualMachineAdminPassword) ? keyVault_Reference.getSecret(virtualMachineAdminPassword) : virtualMachineAdminPassword
+    virtualMachineAdminPassword: virtualMachineAdminPassword
     virtualMachineSize: virtualMachineSize
-    virtualMachineAdminUserName: empty(virtualMachineAdminUserName) ? keyVault_Reference.getSecret(virtualMachineAdminUserName) : virtualMachineAdminUserName
+    virtualMachineAdminUserName: virtualMachineAdminUserName
     vmInsightsDataCollectionRulesResourceId: vmInsightsDataCollectionRulesResourceId
   }
 }

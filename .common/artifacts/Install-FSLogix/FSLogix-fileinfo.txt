@@ -1,0 +1,2 @@
+DownloadUrl = https://aka.ms/fslogix_download
+Download File = FSLogix_Apps_2.9.8612.60056.zip

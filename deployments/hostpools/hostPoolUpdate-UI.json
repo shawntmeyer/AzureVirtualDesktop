@@ -47,6 +47,36 @@
 							"required": true,
 							"toolTip": "Select the AVD Hostpool."
 						},
+														{
+									"name": "environmentShortName",
+									"type": "Microsoft.Common.DropDown",
+									"label": "Environment",
+									"placeholder": "",
+									"defaultValue": "Not Defined",
+									"toolTip": "The environment is used in resource naming. only specify if naming production, develop, and test resources distinctly.",
+									"constraints": {
+										"allowedValues": [
+											{
+												"label": "Development",
+												"value": "d"
+											},
+											{
+												"label": "Production",
+												"value": "p"
+											},
+											{
+												"label": "Test",
+												"value": "t"
+											},
+											{
+												"label": "Not Defined",
+												"value": ""
+											}
+										],
+										"required": false
+									},
+									"visible": true
+								},  
 						{
 							"name": "prereqs",
 							"type": "Microsoft.Common.Section",
@@ -133,7 +163,7 @@
                             "name": "naming",
                             "type": "Microsoft.Common.Section",
                             "label": "Naming",
-                            "elements": [                                                    
+                            "elements": [                                               
                                 {
                                     "name": "virtualMachineNamePrefix",
                                     "type": "Microsoft.Common.TextBox",
@@ -345,72 +375,6 @@
                             "type": "Microsoft.Common.Section",
                             "label": "Security",
                             "elements": [
-                                {
-                                    "name": "diskEncryptionSolution",
-                                    "type": "Microsoft.Common.DropDown",
-                                    "label": "Disk Encryption Solution",
-                                    "placeholder": "",
-                                    "defaultValue": "Encryption At Host",
-                                    "toolTip": "Select the appropriate disk encryption option for your virtual machines. See https://learn.microsoft.com/en-us/azure/virtual-machines/disk-encryption-overview for more details.",
-                                    "constraints": {
-                                        "allowedValues": [
-                                            {
-                                                "label": "Azure Disk Storage Server-Side Encryption",
-                                                "value": "SSE + PMK"
-                                            },
-                                            {
-                                                "label": "Azure Disk Storage Server-Side Encryption with Customer Managed Keys",
-                                                "value": "SSE + CMK"
-                                            },
-                                            {
-                                                "label": "Encryption At Host",
-                                                "value": "EAH + PMK"
-                                            },
-                                            {
-                                                "label": "Encryption At Host with Customer Managed Keys",
-                                                "value": "EAH + CMK"
-                                            },
-                                            {
-                                                "label": "Azure Disk Encryption",
-                                                "value": "ADE"
-                                            },
-                                            {
-                                                "label": "Azure Disk Encryption with Key Encryption Key",
-                                                "value": "ADE + KEK"
-                                            }
-                                        ],
-                                        "required": true
-                                    },
-                                    "visible": true
-                                },
-                                {
-                                    "name": "diskEncryptionSet",
-                                    "type": "Microsoft.Solutions.ResourceSelector",
-                                    "label": "Disk Encryption Set (for customer managed keys)",
-                                    "resourceType": "Microsoft.Compute/diskEncryptionSets",
-                                    "options": {
-                                        "filter": {
-                                        "subscription": "onBasics",
-                                        "location": "onBasics"
-                                        }
-                                    },
-                                    "required": true,
-                                    "visible": "[contains(steps('hosts').security.diskEncryptionSolution, 'CMK')]"
-                                },
-                                {
-                                    "name": "keyVault",
-                                    "type": "Microsoft.Solutions.ResourceSelector",
-                                    "label": "Azure Disk Encryption Key Vault",
-                                    "resourceType": "Microsoft.KeyVault/vaults",
-                                    "options": {
-                                        "filter": {
-                                        "subscription": "onBasics",
-                                        "location": "onBasics"
-                                        }
-                                    },
-                                    "required": true,
-                                    "visible": "[contains(steps('hosts').security.diskEncryptionSolution, 'ADE')]"
-                                },
 								{
                                     "name": "securityType",
                                     "type": "Microsoft.Common.DropDown",
@@ -436,6 +400,60 @@
                                         "required": true
                                     },
                                     "visible": true
+                                },
+								{
+									"name": "encryptionAtHost",
+									"type": "Microsoft.Common.CheckBox",
+									"label": "Encryption At Host.",
+									"defaultValue": true
+								},
+								{
+									"name": "confidentialVMEncryptionTextBlock",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": "[if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), true, false)]",
+									"options": {
+										"text": "Confidential disk encryption is an additional layer of encryption which binds the disk encryption keys to the virtual machine's TPM and makes the disk content accessible only to the VM.",
+										"link": {
+											"label": "Learn more",
+											"uri": "http://go.microsoft.com/fwlink/?LinkId=2133517"
+										}
+									}
+								},
+								{
+									"name": "confidentialVMOSDiskEncryption",
+									"type": "Microsoft.Common.CheckBox",
+									"label": "Confidential OS Disk Encryption",
+									"defaultValue": true,
+									"visible": "[if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), true, false)]"
+								},
+								{
+									"name": "keyManagement",
+									"type": "Microsoft.Common.DropDown",
+									"label": "Key Management",
+									"defaultValue": "Platform-Managed Keys",
+									"toolTip": "Platform-managed keys are key encryption keys that are generated, stored, and managed entirely by Azure. Choose Platform Managed for the best balance of security and ease of use. Customer-managed keys are key encryption keys that are generated, stored, and managed by you, the customer, in your Azure Key Vault. Choose Customer Managed if you need to meet specific compliance requirements. Platform-Managed and Customer-Managed Keys provide double encryption with an infrastructure encryption layer using platform-managed keys and a disk encryption layer using customer-managed keys.",
+									"constraints": {
+										"allowedValues": "[if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), parse('[{\"label\":\"Platform-Managed Keys\",\"value\":\"PlatformManaged\"},{\"label\":\"Customer-Managed Keys\",\"value\":\"CustomerManaged\"}]'), parse('[{\"label\":\"Platform-Managed Keys\",\"value\":\"PlatformManaged\"},{\"label\":\"Customer-Managed Keys\",\"value\":\"CustomerManaged\"},{\"label\":\"Platform-Managed and Customer-Managed Keys\",\"value\":\"PlatformAndCustomerManaged\"}]'))]"
+									}
+								},
+                                {
+                                    "name": "diskEncryptionSetsApi",
+                                    "type": "Microsoft.Solutions.ArmApiControl",
+                                    "request": {
+                                        "method": "GET",
+                                        "path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Compute/diskEncryptionSets?api-version=2023-10-02')]"
+                                    }
+                                },
+                                {
+                                    "name": "diskEncryptionSet",
+                                    "type": "Microsoft.Common.DropDown",
+                                    "label": "Disk Encryption Set (for Customer-Managed keys)",                                    
+                                    "toolTip": "Select the appropriate Disk Encryption Set.",
+                                    "constraints": {
+                                        "allowedValues": "[map(filter(steps('hosts').security.diskEncryptionSetsApi.value, (item) => and(equals(item.location, steps('basics').scope.location.name), if(steps('hosts').security.confidentialVMOSDiskEncryption, contains(item.properties.encryptionType, 'Confidential'), if(contains(steps('hosts').security.keyManagement, 'Platform'), contains(item.properties.encryptionType, 'Platform'), equals(item.properties.encryptionType, 'EncryptionAtRestWithCustomerKey'))))), (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.id, '\"}')))]",
+                                        "required": true
+                                    },
+                                    "visible": "[contains(steps('hosts').security.keyManagement, 'CustomerManaged')]"
                                 }
                             ]
                         },
@@ -1119,9 +1137,8 @@
 				"artifactsContainerName": "[first(skip(split(steps('basics').prereqs.container, '/'), 12))]",
 				"artifactsUserAssignedIdentityResourceId": "[if(not(empty(steps('basics').prereqs.managedIdentity)), steps('basics').prereqs.managedIdentity.id, parse('[]'))]",
                 "identitySolution": "[if(and(equals(steps('hosts').identity.solution, 'EntraId'), steps('hosts').identity.intune), 'EntraIdIntuneEnrollment', steps('hosts').identity.solution)]",
-				"diskEncryptionSolution": "[steps('hosts').security.diskEncryptionSolution]",				
-				"diskEncryptionSetResourceId": "[if(contains(steps('hosts').security.diskEncryptionSolution, 'CMK'), steps('hosts').security.diskEncryptionSet.id, '')]",
-				"adeKeyVaultResourceId": "[if(contains(steps('hosts').security.diskEncryptionSolution, 'ADE'), steps('hosts').security.keyVault.id, '')]",
+				"encryptionAtHost": "[steps('hosts').security.encryptionAtHost]",				
+				"diskEncryptionSetResourceId": "[if(contains(steps('hosts').security.keyManagement, 'CustomerManaged'), steps('hosts').security.diskEncryptionSet, '')]",
 				"virtualMachineSecurityType": "[steps('hosts').security.securityType]",
 				"domainJoinUserPassword": "[steps('hosts').domainJoinCredentials.password]",
                 "domainJoinUserPrincipalName": "[steps('hosts').domainJoinCredentials.userPrincipalName]",

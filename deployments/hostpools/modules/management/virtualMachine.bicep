@@ -1,7 +1,7 @@
 param identitySolution string
 param artifactsUri string
 param artifactsUserAssignedIdentityClientId string
-param diskEncryptionOptions object
+param confidentialVMOSDiskEncryptionType string
 param diskEncryptionSetResourceId string
 param diskNamePrefix string
 param diskSku string
@@ -10,8 +10,10 @@ param domainJoinUserPassword string
 @secure()
 param domainJoinUserPrincipalName string
 param domainName string
+param encryptionAtHost bool
 param location string
 param networkInterfaceNamePrefix string
+param securityType string
 param subnetResourceId string
 param tagsNetworkInterfaces object
 param tagsVirtualMachines object
@@ -21,9 +23,6 @@ param virtualMachineNamePrefix string
 @secure()
 param virtualMachineAdminPassword string
 param virtualMachineAdminUserName string
-
-var diskEncryptionSet = bool(diskEncryptionOptions.diskEncryptionSet)
-var encryptionAtHost = bool(diskEncryptionOptions.encryptionAtHost)
 
 var NicName = '${networkInterfaceNamePrefix}mgt'
 var VmName = '${virtualMachineNamePrefix}mgt'
@@ -67,17 +66,23 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-11-01' = {
         version: 'latest'
       }
       osDisk: {
-        deleteOption: 'Delete'
+        name: '${diskNamePrefix}mgt'
         osType: 'Windows'
         createOption: 'FromImage'
+        deleteOption: 'Delete'
         caching: 'None'
         managedDisk: {
-          diskEncryptionSet: diskEncryptionSet ? {
+          diskEncryptionSet: securityType != 'ConfidentialVM' && !empty(diskEncryptionSetResourceId) ? {
             id: diskEncryptionSetResourceId
+          } : null
+          securityProfile: securityType == 'ConfidentialVM' ? {
+            diskEncryptionSet: !empty(diskEncryptionSetResourceId) ? {
+              id: diskEncryptionSetResourceId
+            } : null
+            securityEncryptionType: confidentialVMOSDiskEncryptionType
           } : null
           storageAccountType: diskSku
         }
-        name: '${diskNamePrefix}mgt'
       }
       dataDisks: []
     }

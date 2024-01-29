@@ -1,7 +1,4 @@
 param identitySolution string
-param adeKeyVaultResourceId string
-param adeKeyVaultUrl string
-param adeKEKUrl string
 param artifactsUri string
 param artifactsUserAssignedIdentityClientId string
 param artifactsUserAssignedIdentityResourceId string
@@ -10,11 +7,11 @@ param availability string
 param availabilitySetNamePrefix string
 param availabilityZones array
 param batchCount int
+param confidentialVMOSDiskEncryptionType string
 param cseMasterScript string
 param cseUris array
 param cseScriptAddDynParameters string
 param dataCollectionEndpointResourceId string
-param diskEncryptionOptions object
 param diskEncryptionSetResourceId string
 param diskNamePrefix string
 param diskSku string
@@ -25,6 +22,7 @@ param domainJoinUserPrincipalName string
 param domainName string
 param drainMode bool
 param drainModeUserAssignedIdentityClientId string
+param encryptionAtHost bool
 param fslogixConfigureSessionHosts bool
 param fslogixContainerType string
 param fslogixExistingStorageAccounts array
@@ -143,11 +141,6 @@ var cseScriptDynamicParameters = empty(cseScriptAddDynParameters) ? '@{${cseScri
 // When sending a hashtable via powershell.exe you must use -command instead of -File in order for the parameter to be interpreted as a hashtable and not a string
 var cseCommandToExecute = 'powershell -ExecutionPolicy Unrestricted -Command .\\${cseMasterScript} -DynParameters ${cseScriptDynamicParameters}'
 
-var azureDiskEncryption = bool(diskEncryptionOptions.azureDiskEncryption)
-var diskEncryptionSet = bool(diskEncryptionOptions.diskEncryptionSet)
-var encryptionAtHost = bool(diskEncryptionOptions.encryptionAtHost)
-var keyEncryptionKey = bool(diskEncryptionOptions.keyEncryptionKey)
-
 var identityType = (!contains(identitySolution, 'DomainServices') || enableInsights ? true : false) ? (!empty(artifactsUserAssignedIdentityResourceId) ? 'SystemAssigned,UserAssigned' : 'SystemAssigned') : (!empty(artifactsUserAssignedIdentityResourceId) ? 'UserAssigned' : 'None')
 
 var userAssignedIdentities = !empty(artifactsUserAssignedIdentityResourceId) ? {
@@ -223,7 +216,7 @@ resource networkInterface 'Microsoft.Network/networkInterfaces@2020-05-01' = [fo
   }
 }]
 
-resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-03-01' = [for i in range(0, sessionHostCount): {
+resource virtualMachine 'Microsoft.Compute/virtualMachines@2022-11-01' = [for i in range(0, sessionHostCount): {
   name: '${virtualMachineNamePrefix}${padLeft((i + sessionHostIndex), 3, '0')}'
   location: location
   tags: tagsVirtualMachines
@@ -247,8 +240,14 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-03-01' = [for i 
         caching: 'ReadWrite'
         deleteOption: 'Delete'
         managedDisk: {
-          diskEncryptionSet: diskEncryptionSet ? {
+          diskEncryptionSet: securityType != 'ConfidentialVM' && !empty(diskEncryptionSetResourceId) ? {
             id: diskEncryptionSetResourceId
+          } : null
+          securityProfile: securityType == 'ConfidentialVM' ? {
+            diskEncryptionSet: !empty(diskEncryptionSetResourceId) ? {
+              id: diskEncryptionSetResourceId
+            } : null
+            securityEncryptionType: confidentialVMOSDiskEncryptionType
           } : null
           storageAccountType: diskSku
         }
@@ -278,11 +277,11 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-03-01' = [for i 
     }
     securityProfile: {
       encryptionAtHost: encryptionAtHost
-      securityType: empty(securityType) ? null : securityType
-      uefiSettings: empty(securityType) ? null : {
+      securityType: !empty(securityType) ? securityType : null
+      uefiSettings: !empty(securityType) ? {
         secureBootEnabled: true
         vTpmEnabled: true
-      }
+      } : null 
     }
     diagnosticsProfile: {
       bootDiagnostics: {
@@ -455,29 +454,6 @@ module setDrainMode '../common/customScriptExtensions.bicep' = if (drainMode) {
     extension_CustomScriptExtension
   ]
 }
-
-resource extension_AzureDiskEncryption 'Microsoft.Compute/virtualMachines/extensions@2023-07-01' = [for i in range(0, sessionHostCount): if (azureDiskEncryption) {
-  parent: virtualMachine[i]
-  name: 'AzureDiskEncryption'
-  location: location
-  tags: tagsVirtualMachines
-  properties: {
-    publisher: 'Microsoft.Azure.Security'
-    type: 'AzureDiskEncryption'
-    typeHandlerVersion: '2.2'
-    autoUpgradeMinorVersion: true
-    settings: {
-      EncryptionOperation: 'EnableEncryption'
-      KeyEncryptionAlgorith: 'RSA-OAEP-256'
-      adeKeyVaultUrl: adeKeyVaultUrl
-      adeKeyVaultResourceId: adeKeyVaultResourceId
-      kekVaultResourceId: keyEncryptionKey ? adeKeyVaultResourceId : null
-      keyEncryptionKeyUrl: keyEncryptionKey ? adeKEKUrl : null
-      ResizeOSDisk: true
-      VolumeType: 'All'
-    }
-  }
-}]
 
 resource extension_JsonADDomainExtension 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): if (contains(identitySolution, 'DomainServices')) {
   parent: virtualMachine[i]

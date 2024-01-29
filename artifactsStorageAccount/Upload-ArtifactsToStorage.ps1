@@ -59,7 +59,11 @@ param(
 #region Variables
 
 $Time = Get-Date -Format 'yyyyMMddhhmmss'
-$FunctionsPath = Join-Path -Path $PSScriptRoot -ChildPath 'sharedPowerShellFunctions'
+Write-Output $Time
+$FunctionsPath = Join-Path -Path $PSScriptRoot -ChildPath '..\.common\powerShellFunctions'
+Write-Output $PSSCriptRoot
+Write-Output $FunctionsPath
+Start-Sleep -Seconds 5
 $BicepPath = Join-Path -Path $PSScriptRoot -ChildPath 'artifactsStorageAccount'
 $storageTemplate = Join-Path -Path $BicepPath -ChildPath 'storage.bicep'
 $storageParameters = Join-Path -Path $BicepPath -ChildPath 'storage.parameters.json'

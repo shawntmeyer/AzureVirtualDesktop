@@ -1,10 +1,6 @@
 targetScope = 'subscription'
 
 param acceleratedNetworking string
-param identitySolution string
-param adeKEKUrl string
-param adeKeyVaultResourceId string
-param adeKeyVaultUrl string
 param artifactsUri string
 param artifactsUserAssignedIdentityClientId string
 param artifactsUserAssignedIdentityResourceId string
@@ -13,13 +9,13 @@ param availabilitySetNamePrefix string
 param availabilitySetsCount int
 param availabilitySetsIndex int
 param availabilityZones array
+param confidentialVMOSDiskEncryptionType string
 param cseMasterScript string
 param cseScriptAddDynParameters string
 param cseUris array
 param dataCollectionEndpointResourceId string
 param avdInsightsDataCollectionRulesResourceId string
 param vmInsightsDataCollectionRulesResourceId string
-param diskEncryptionOptions object
 param diskEncryptionSetResourceId string
 param diskNamePrefix string
 param diskSku string
@@ -31,11 +27,13 @@ param domainJoinUserPrincipalName string
 param domainName string
 param drainMode bool
 param drainModeUserAssignedIdentityClientId string
+param encryptionAtHost bool
 param fslogixConfigureSessionHosts bool
 param fslogixExistingStorageAccountResourceIds array
 param fslogixContainerType string
 param fslogixDeployedStorageAccountResourceIds array
 param hostPoolName string
+param identitySolution string
 param imageOffer string
 param imagePublisher string
 param imageSku string
@@ -114,9 +112,6 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
   params: {
     acceleratedNetworking: acceleratedNetworking
     identitySolution: identitySolution
-    adeKEKUrl: adeKEKUrl
-    adeKeyVaultResourceId: adeKeyVaultResourceId
-    adeKeyVaultUrl: adeKeyVaultUrl
     artifactsUri: artifactsUri
     artifactsUserAssignedIdentityResourceId: artifactsUserAssignedIdentityResourceId
     artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
@@ -124,12 +119,12 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     availabilityZones: availabilityZones
     availabilitySetNamePrefix: availabilitySetNamePrefix
     batchCount: i
+    confidentialVMOSDiskEncryptionType: confidentialVMOSDiskEncryptionType
     cseMasterScript: cseMasterScript
     cseScriptAddDynParameters: cseScriptAddDynParameters
     cseUris: cseUris
     customImageResourceId: customImageResourceId
     dataCollectionEndpointResourceId: dataCollectionEndpointResourceId
-    diskEncryptionOptions: diskEncryptionOptions
     diskEncryptionSetResourceId: diskEncryptionSetResourceId
     diskNamePrefix: diskNamePrefix
     diskSku: diskSku
@@ -138,6 +133,7 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     domainName: domainName
     drainMode: drainMode
     drainModeUserAssignedIdentityClientId: drainModeUserAssignedIdentityClientId
+    encryptionAtHost: encryptionAtHost
     fslogixConfigureSessionHosts: fslogixConfigureSessionHosts
     fslogixContainerType: fslogixContainerType
     fslogixDeployedStorageAccountResourceIds: fslogixDeployedStorageAccountResourceIds

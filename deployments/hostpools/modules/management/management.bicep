@@ -8,18 +8,20 @@ param automationAccountPrivateDnsZoneResourceId string
 param availability string
 param avdObjectId string
 param locationControlPlane string
+param confidentialVMOrchestratorObjectId string
+param confidentialVMOSDiskEncryptionType string
 param dataCollectionEndpointName string
 param dataCollectionRulesNameConv string
 //param diskAccessName string
 param diskNamePrefix string
-param diskEncryptionOptions object
-param diskEncryptionSetName string
+param diskEncryptionSetNames object
 param diskSku string
 @secure()
 param domainJoinUserPassword string
 @secure()
 param domainJoinUserPrincipalName string
 param domainName string
+param encryptionAtHost bool
 param environmentShortName string
 param fslogix bool
 param fslogixStorageService string
@@ -27,7 +29,7 @@ param globalFeedWorkspaceResourceGroupName string
 param globalFeedWorkspaceName string
 param hostPoolType string
 param kerberosEncryption string
-param keyVaultName string
+param keyVaultNames object
 param keyVaultPrivateDnsZoneResourceId string
 param privateEndpointSubnetResourceId string
 param locationVirtualMachines string
@@ -37,6 +39,7 @@ param logAnalyticsWorkspaceSku string
 param enableInsights bool
 param netAppVnetResourceId string
 param networkInterfaceNamePrefix string
+param keyManagementDisksAndStorage string
 param privateEndpoint bool
 param privateEndpointNameConv string
 param recoveryServices bool
@@ -69,6 +72,9 @@ var cpuCountMin = contains(hostPoolType, 'Pooled') ? 4 : 2
 
 var artifactsUserAssignedIdentityName = replace(userAssignedIdentityNameConv, 'uaiPurpose', 'artifacts')
 var deploymentUserAssignedIdentityName = replace(userAssignedIdentityNameConv, 'uaiPurpose', 'deployment')
+
+var confidentialVMOSDiskEncryption = confidentialVMOSDiskEncryptionType == 'DiskWithVMGuestState' ? true : false
+var diskEncryptionSetEncryptionType = confidentialVMOSDiskEncryption ? 'ConfidentialVmEncryptedWithCustomerKey' : ( keyManagementDisksAndStorage == 'CustomerManaged' ? 'EncryptionAtRestWithCustomerKey' : 'EncryptionAtRestWithPlatformAndCustomerKeys' )
 
 var netAppVirtualNetworkName = !empty(netAppVnetResourceId) ? (split(netAppVnetResourceId, '/')) : ''
 var netAppVirtualNetworkResourceGroupName = !empty(netAppVnetResourceId) ? split(netAppVnetResourceId, '/')[4] : ''
@@ -167,6 +173,11 @@ resource existingArtifactsUserAssignedIdentity 'Microsoft.ManagedIdentity/userAs
   scope: resourceGroup(split(artifactsUserAssignedIdentityResourceId, '/')[2], split(artifactsUserAssignedIdentityResourceId, '/')[4])
 }
 
+resource keyVault_Ref 'Microsoft.KeyVault/vaults@2023-07-01' existing = if(contains(identitySolution,'DomainServices') && (empty(domainJoinUserPassword) || empty(domainJoinUserPrincipalName)) || empty(virtualMachineAdminPassword) || empty(virtualMachineAdminUserName)) {
+  name: keyVaultNames.VMSecrets
+  scope: resourceGroup(resourceGroupManagement)
+}
+
 module artifactsUserAssignedIdentity 'userAssignedIdentity.bicep' = if(empty(artifactsUserAssignedIdentityResourceId)) {
   scope: resourceGroup(resourceGroupManagement)
   name: 'UserAssignedIdentity_Artifacts_${timeStamp}'
@@ -214,19 +225,20 @@ module policy 'policy.bicep' = if (contains(hostPoolType, 'Pooled') && recoveryS
   }
 }
 
-module keyVault 'keyVault.bicep' =  {
-  name: 'KeyVault_${timeStamp}'
+module secretsKeyVault 'keyVault.bicep' =  {
+  name: 'KeyVault_Secrets_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
     domainJoinUserPassword: domainJoinUserPassword
     domainJoinUserPrincipalName: domainJoinUserPrincipalName   
     environmentShortName: environmentShortName
-    keyVaultName: keyVaultName
+    keyVaultName: keyVaultNames.VMSecrets
     keyVaultPrivateDnsZoneResourceId: keyVaultPrivateDnsZoneResourceId
     location: locationVirtualMachines
     privateEndpoint: privateEndpoint
     privateEndpointNameConv: privateEndpointNameConv
     privateEndpointSubnetId: privateEndpointSubnetResourceId
+    skuName: 'standard'
     tagsKeyVault: contains(tags, 'Microsoft.KeyVault/vaults') ? tags['Microsoft.KeyVault/vaults'] : {}
     tagsPrivateEndpoints: contains(tags, 'Microsoft.Network/privateEndpoints') ? tags['Microsoft.Network/privateEndpoints'] : {}
     virtualMachineAdminPassword: virtualMachineAdminPassword
@@ -234,31 +246,62 @@ module keyVault 'keyVault.bicep' =  {
   }
 }
 
-resource keyVault_Ref 'Microsoft.KeyVault/vaults@2023-07-01' existing = if(contains(identitySolution,'DomainServices') && (empty(domainJoinUserPassword) || empty(domainJoinUserPrincipalName)) || empty(virtualMachineAdminPassword) || empty(virtualMachineAdminUserName)) {
-  name: keyVaultName
+module encryptionKeysKeyVault 'keyVault.bicep' = if(keyManagementDisksAndStorage != 'PlatformManaged') {
+  name: 'KeyVault_VMKeys_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
+  params: {
+    environmentShortName: environmentShortName
+    keyVaultName: keyVaultNames.RSAKeys
+    keyVaultPrivateDnsZoneResourceId: keyVaultPrivateDnsZoneResourceId
+    location: locationVirtualMachines
+    privateEndpoint: privateEndpoint
+    privateEndpointNameConv: privateEndpointNameConv
+    privateEndpointSubnetId: privateEndpointSubnetResourceId
+    skuName: 'standard'
+    tagsKeyVault: contains(tags, 'Microsoft.KeyVault/vaults') ? tags['Microsoft.KeyVault/vaults'] : {}
+    tagsPrivateEndpoints: contains(tags, 'Microsoft.Network/privateEndpoints') ? tags['Microsoft.Network/privateEndpoints'] : {}
+  }
 }
 
-module customerManagedKeys 'customerManagedKeys.bicep' = if (diskEncryptionOptions.diskEncryptionSet || diskEncryptionOptions.keyEncryptionKey) {
+module confidentialVMEncryptionKeysKeyVault 'keyVault.bicep' = if(keyManagementDisksAndStorage != 'PlatformManaged' && confidentialVMOSDiskEncryption) {
+  name: 'KeyVault_ConfVMKeys_${timeStamp}'
+  scope: resourceGroup(resourceGroupManagement)
+  params: {
+    environmentShortName: environmentShortName
+    keyVaultName: keyVaultNames.RSAHSMKeys
+    keyVaultPrivateDnsZoneResourceId: keyVaultPrivateDnsZoneResourceId
+    location: locationVirtualMachines
+    privateEndpoint: privateEndpoint
+    privateEndpointNameConv: privateEndpointNameConv
+    privateEndpointSubnetId: privateEndpointSubnetResourceId
+    skuName: 'premium'
+    tagsKeyVault: contains(tags, 'Microsoft.KeyVault/vaults') ? tags['Microsoft.KeyVault/vaults'] : {}
+    tagsPrivateEndpoints: contains(tags, 'Microsoft.Network/privateEndpoints') ? tags['Microsoft.Network/privateEndpoints'] : {}
+  }
+}
+
+module customerManagedKeys 'customerManagedKeys.bicep' = if (keyManagementDisksAndStorage != 'PlatformManaged') {
   name: 'CustomerManagedKeys_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
-    diskEncryptionOptions: diskEncryptionOptions
     location: locationVirtualMachines
     tags: tags
     timeStamp: timeStamp
-    keyVaultResourceId: keyVault.outputs.keyVaultResourceId
+    confidentialVMOrchestratorObjectId: confidentialVMOrchestratorObjectId
+    confidentialVMEncryptionKeysKeyVaultResourceId: confidentialVMOSDiskEncryption ? confidentialVMEncryptionKeysKeyVault.outputs.keyVaultResourceId : ''
+    encryptionKeyVaultResourceId: encryptionKeysKeyVault.outputs.keyVaultResourceId
     userAssignedIdentityNameConv: userAssignedIdentityNameConv
   }
 }
 
-module diskEncryptionSet 'diskEncryptionSet.bicep' = if(diskEncryptionOptions.diskEncryptionSet) {
+module diskEncryptionSet 'diskEncryptionSet.bicep' = if(keyManagementDisksAndStorage != 'PlatformManaged') {
   name: 'DiskEncryptionSet_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
-    diskEncryptionSetName: diskEncryptionSetName
-    keyUrl: (diskEncryptionOptions.diskEncryptionSet || diskEncryptionOptions.keyEncryptionKey) ? customerManagedKeys.outputs.diskKeyUriWithVersion : ''
-    keyVaultResourceId: keyVault.outputs.keyVaultResourceId
+    diskEncryptionSetName: confidentialVMOSDiskEncryption ? diskEncryptionSetNames.ConfidentialVMs : ( diskEncryptionSetEncryptionType == 'EncryptionAtRestWithCustomerKey' ? diskEncryptionSetNames.CustomerManaged : diskEncryptionSetNames.PlatformAndCustomerManaged )
+    encryptionType: diskEncryptionSetEncryptionType
+    keyUrl: customerManagedKeys.outputs.diskKeyUriWithVersion
+    keyVaultResourceId: confidentialVMOSDiskEncryption ? confidentialVMEncryptionKeysKeyVault.outputs.keyVaultResourceId : encryptionKeysKeyVault.outputs.keyVaultResourceId
     location: locationVirtualMachines
     tags: contains(tags, 'Microsoft.Compute/diskEncryptionSets') ? tags['Microsoft.Compute/diskEncryptionSets'] : {}
     timeStamp: timeStamp
@@ -274,15 +317,17 @@ module virtualMachine 'virtualMachine.bicep' = {
     identitySolution: identitySolution
     artifactsUri: artifactsUri
     artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
-    diskEncryptionOptions: diskEncryptionOptions
-    diskEncryptionSetResourceId: diskEncryptionOptions.diskEncryptionSet ? diskEncryptionSet.outputs.resourceId : ''
+    diskEncryptionSetResourceId: keyManagementDisksAndStorage != 'PlatformManaged' ? diskEncryptionSet.outputs.resourceId : ''
     diskNamePrefix: diskNamePrefix
     diskSku: diskSku
     domainJoinUserPassword: !empty(domainJoinUserPassword) ? domainJoinUserPassword : contains(identitySolution, 'DomainServices') ? keyVault_Ref.getSecret('domainJoinUserPassword') : ''
     domainJoinUserPrincipalName: !empty(domainJoinUserPrincipalName) ? domainJoinUserPrincipalName : contains(identitySolution, 'DomainServices') ? keyVault_Ref.getSecret('domainJoinUserPrincipalName') : ''
     domainName: domainName
+    encryptionAtHost: encryptionAtHost
     location: locationVirtualMachines
     networkInterfaceNamePrefix: networkInterfaceNamePrefix
+    confidentialVMOSDiskEncryptionType: confidentialVMOSDiskEncryptionType 
+    securityType: securityType
     subnetResourceId: virtualMachineSubnetResourceId
     tagsNetworkInterfaces: contains(tags, 'Microsoft.Network/networkInterfaces') ? tags['Microsoft.Network/networkInterfaces'] : {}
     tagsVirtualMachines: contains(tags, 'Microsoft.Compute/virtualMachines') ? tags['Microsoft.Compute/virtualMachines'] : {}
@@ -404,17 +449,16 @@ output artifactsUserAssignedIdentityResourceId string = empty(artifactsUserAssig
 output dataCollectionEndpointResourceId string = enableInsights ? dataCollectionEndpoint.outputs.resourceId : ''
 output avdInsightsDataCollectionRulesResourceId string = enableInsights ? avdInsightsDataCollectionRules.outputs.dataCollectionRulesId : ''
 output vmInsightsDataCollectionRulesResourceId string = enableInsights ? vmInsightsDataCollectionRules.outputs.dataCollectionRulesId : ''
-output diskEncryptionKeyUrl string = (diskEncryptionOptions.diskEncryptionSet || diskEncryptionOptions.keyEncryptionKey) ? customerManagedKeys.outputs.diskKeyUri : ''
-output diskEncryptionSetResourceId string = diskEncryptionOptions.diskEncryptionSet ? diskEncryptionSet.outputs.resourceId : ''
-output encryptionUserAssignedIdentityResourceId string = (diskEncryptionOptions.diskEncryptionSet || diskEncryptionOptions.keyEncryptionKey) ? customerManagedKeys.outputs.encryptionUserAssignedIdentityResourceId : ''
+output diskEncryptionKeyUrl string = keyManagementDisksAndStorage != 'PlatformManaged' ? customerManagedKeys.outputs.diskKeyUri : ''
+output diskEncryptionSetResourceId string = keyManagementDisksAndStorage != 'PlatformManaged' ? diskEncryptionSet.outputs.resourceId : ''
+output encryptionUserAssignedIdentityResourceId string = keyManagementDisksAndStorage != 'PlatformManaged' ? customerManagedKeys.outputs.encryptionUserAssignedIdentityResourceId : ''
 output existingWorkspace bool = validations.outputs.value.existingWorkspace == 'true' ? true : false
 output existingGlobalWorkspace bool = validations.outputs.value.existingGlobalWorkspace == 'true' ? true : false
-output keyVaultResourceId string = keyVault.outputs.keyVaultResourceId
-output keyVaultUrl string = keyVault.outputs.keyVaultUrl
+output encryptionKeysKeyVaultUrl string = keyManagementDisksAndStorage != 'PlatformManaged' ? encryptionKeysKeyVault.outputs.keyVaultUrl : ''
 output logAnalyticsWorkspaceResourceId string = enableInsights ? logAnalyticsWorkspace.outputs.ResourceId : ''
 output deploymentUserAssignedIdentityClientId string = deploymentUserAssignedIdentity.outputs.clientId
 output deploymentUserAssignedIdentityResourceId string = deploymentUserAssignedIdentity.outputs.resourceId
-output storageAccountEncryptionKeyName string = diskEncryptionOptions.storageEncryptionKey ? customerManagedKeys.outputs.storageKeyName : ''
+output storageAccountEncryptionKeyName string = keyManagementDisksAndStorage != 'PlatformManaged' ? customerManagedKeys.outputs.storageKeyName : ''
 output validateAcceleratedNetworking string = validations.outputs.value.acceleratedNetworking
 output validateANFfActiveDirectory string = validations.outputs.value.anfActiveDirectory
 output validateANFDnsServers string = validations.outputs.value.anfDnsServers
