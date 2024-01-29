@@ -341,11 +341,33 @@
                             "label": "Assignment",
                             "visible": true,
                             "elements": [
+								{
+                                    "name": "groupsApi",
+                                    "type": "Microsoft.Solutions.GraphApiControl",
+                                    "request": {
+                                        "method": "GET",
+                                        "path": "/v1.0/groups?$top=999"
+                                    }
+                                },
                                 {
-                                    "name": "groups",
+                                    "name": "groupsDropDown",
+                                    "type": "Microsoft.Common.DropDown",
+                                    "label": "Groups",
+                                    "defaultValue": "",
+                                    "toolTip": "Select the desired group(s) to give access to this AVD hostpool and if applicable, the FSLogix file share.",
+                                    "multiselect": true,
+                                    "constraints": {
+                                        "allowedValues": "[map(steps('controlPlane').assignment.groupsApi.value, (item) => parse(concat('{\"label\":\"', item.displayName, '\",\"value\": {\"name\":\"', item.displayName, '\",\"objectId\":\"', item.id, '\"}}')))]",
+                                        "required": true
+                                    },
+                                    "visible": "[not(empty(steps('controlPlane').assignment.groupsApi))]"
+                                },
+                                {
+                                    "name": "groupsGrid",
                                     "type": "Microsoft.Common.EditableGrid",
                                     "ariaLabel": "Enter the security groups for access to AVD and if applicable, FSLogix. If deploying FSLogix, a storage account will be deployed for each group to support sharding.",
                                     "label": "Security Groups",
+									"visible": "[empty(steps('controlPlane').assignment.groupsApi)]",
                                     "constraints": {
                                         "width": "Full",
                                         "rows": {
@@ -1481,7 +1503,7 @@
                                 {
                                     "name": "addStorageAccounts",
                                     "type": "Microsoft.Common.CheckBox",
-                                    "visible": true,
+                                    "visible": "[steps('userProfiles').fslogixSessionHostConfig.fslogixConfigureSessionHosts]",
                                     "label": "Add Existing Storage Accounts for FSLogix Configuration",
                                     "defaultValue": false,
                                     "toolTip": "Checking this box allows you to specify additional storage accounts for use with FSLogix containers in addition to the ones deployed through this solution."
@@ -1825,7 +1847,7 @@
                 "enableInsights": "[steps('management').monitoring.enableInsights]",
                 "ouPath": "[if(equals(steps('hosts').identity.solution, 'EntraId'), '', steps('hosts').identity.ouPath)]",
                 "recoveryServices": "[steps('management').backup.recoveryServices]",
-                "securityPrincipals": "[steps('controlPlane').assignment.groups]",
+                "securityPrincipals": "[if(empty(steps('controlPlane').assignment.groupsApi), steps('controlPlane').assignment.groupsGrid, steps('controlPlane').assignment.groupsDropDown)]",
 				"securityDataCollectionRulesResourceId": "[if(steps('management').monitoring.enableSecurity, steps('management').monitoring.dataCollectionRule.id, '')]",
                 "SecurityLogAnalyticsWorkspaceResourceId": "[if(steps('management').monitoring.enableSecurity, steps('management').monitoring.logAnalyticsWorkspace.id, '')]",
                 "sessionHostCount": "[steps('hosts').count]",
