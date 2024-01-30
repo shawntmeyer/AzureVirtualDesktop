@@ -118,4 +118,4 @@ resource secretVirtualMachineAdminPassword 'Microsoft.KeyVault/vaults/secrets@20
 }
 
 output keyVaultResourceId string = keyVault.id
-output keyVaultUrl string = keyVault.properties.vaultUri
+output keyVaultUri string = keyVault.properties.vaultUri

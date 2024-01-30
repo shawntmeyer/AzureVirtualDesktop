@@ -607,7 +607,7 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (fslogixStorageService != 'N
     storageService: fslogixStorageService
     identitySolution: identitySolution
     kerberosEncryption: fslogixStorageAccountADKerberosEncryption
-    keyVaultUri: management.outputs.encryptionKeysKeyVaultUrl
+    keyVaultUri: management.outputs.storageEncryptionKeyKeyVaultUri
     location: locationVirtualMachines
     managementVirtualMachineName: management.outputs.virtualMachineName
     netAppAccountName: resourceNames.outputs.netAppAccountName

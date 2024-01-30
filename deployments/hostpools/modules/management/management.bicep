@@ -246,64 +246,23 @@ module secretsKeyVault 'keyVault.bicep' =  {
   }
 }
 
-module encryptionKeysKeyVault 'keyVault.bicep' = if(keyManagementDisksAndStorage != 'PlatformManaged') {
-  name: 'KeyVault_VMKeys_${timeStamp}'
-  scope: resourceGroup(resourceGroupManagement)
-  params: {
-    environmentShortName: environmentShortName
-    keyVaultName: keyVaultNames.RSAKeys
-    keyVaultPrivateDnsZoneResourceId: keyVaultPrivateDnsZoneResourceId
-    location: locationVirtualMachines
-    privateEndpoint: privateEndpoint
-    privateEndpointNameConv: privateEndpointNameConv
-    privateEndpointSubnetId: privateEndpointSubnetResourceId
-    skuName: 'standard'
-    tagsKeyVault: contains(tags, 'Microsoft.KeyVault/vaults') ? tags['Microsoft.KeyVault/vaults'] : {}
-    tagsPrivateEndpoints: contains(tags, 'Microsoft.Network/privateEndpoints') ? tags['Microsoft.Network/privateEndpoints'] : {}
-  }
-}
-
-module confidentialVMEncryptionKeysKeyVault 'keyVault.bicep' = if(keyManagementDisksAndStorage != 'PlatformManaged' && confidentialVMOSDiskEncryption) {
-  name: 'KeyVault_ConfVMKeys_${timeStamp}'
-  scope: resourceGroup(resourceGroupManagement)
-  params: {
-    environmentShortName: environmentShortName
-    keyVaultName: keyVaultNames.RSAHSMKeys
-    keyVaultPrivateDnsZoneResourceId: keyVaultPrivateDnsZoneResourceId
-    location: locationVirtualMachines
-    privateEndpoint: privateEndpoint
-    privateEndpointNameConv: privateEndpointNameConv
-    privateEndpointSubnetId: privateEndpointSubnetResourceId
-    skuName: 'premium'
-    tagsKeyVault: contains(tags, 'Microsoft.KeyVault/vaults') ? tags['Microsoft.KeyVault/vaults'] : {}
-    tagsPrivateEndpoints: contains(tags, 'Microsoft.Network/privateEndpoints') ? tags['Microsoft.Network/privateEndpoints'] : {}
-  }
-}
-
 module customerManagedKeys 'customerManagedKeys.bicep' = if (keyManagementDisksAndStorage != 'PlatformManaged') {
   name: 'CustomerManagedKeys_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
-    location: locationVirtualMachines
-    tags: tags
-    timeStamp: timeStamp
     confidentialVMOrchestratorObjectId: confidentialVMOrchestratorObjectId
-    confidentialVMEncryptionKeysKeyVaultResourceId: confidentialVMOSDiskEncryption ? confidentialVMEncryptionKeysKeyVault.outputs.keyVaultResourceId : ''
-    encryptionKeyVaultResourceId: encryptionKeysKeyVault.outputs.keyVaultResourceId
-    userAssignedIdentityNameConv: userAssignedIdentityNameConv
-  }
-}
-
-module diskEncryptionSet 'diskEncryptionSet.bicep' = if(keyManagementDisksAndStorage != 'PlatformManaged') {
-  name: 'DiskEncryptionSet_${timeStamp}'
-  scope: resourceGroup(resourceGroupManagement)
-  params: {
-    diskEncryptionSetName: confidentialVMOSDiskEncryption ? diskEncryptionSetNames.ConfidentialVMs : ( diskEncryptionSetEncryptionType == 'EncryptionAtRestWithCustomerKey' ? diskEncryptionSetNames.CustomerManaged : diskEncryptionSetNames.PlatformAndCustomerManaged )
-    encryptionType: diskEncryptionSetEncryptionType
-    keyUrl: customerManagedKeys.outputs.diskKeyUriWithVersion
-    keyVaultResourceId: confidentialVMOSDiskEncryption ? confidentialVMEncryptionKeysKeyVault.outputs.keyVaultResourceId : encryptionKeysKeyVault.outputs.keyVaultResourceId
+    confidentialVMOSDiskEncryption: confidentialVMOSDiskEncryption
+    diskEncryptionSetEncryptionType: diskEncryptionSetEncryptionType
+    diskEncryptionSetNames: diskEncryptionSetNames
+    keyVaultNames: keyVaultNames
+    keyVaultPrivateDnsZoneResourceId: keyVaultPrivateDnsZoneResourceId
+    environmentShortName: environmentShortName
     location: locationVirtualMachines
-    tags: contains(tags, 'Microsoft.Compute/diskEncryptionSets') ? tags['Microsoft.Compute/diskEncryptionSets'] : {}
+    privateEndpoint: privateEndpoint
+    privateEndpointNameConv: privateEndpointNameConv
+    privateEndpointSubnetId: privateEndpointSubnetResourceId
+    userAssignedIdentityNameConv: userAssignedIdentityNameConv
+    tags: tags
     timeStamp: timeStamp
   }
 }
@@ -317,7 +276,7 @@ module virtualMachine 'virtualMachine.bicep' = {
     identitySolution: identitySolution
     artifactsUri: artifactsUri
     artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
-    diskEncryptionSetResourceId: keyManagementDisksAndStorage != 'PlatformManaged' ? diskEncryptionSet.outputs.resourceId : ''
+    diskEncryptionSetResourceId: keyManagementDisksAndStorage != 'PlatformManaged' ? customerManagedKeys.outputs.diskEncryptionSetResourceId : ''
     diskNamePrefix: diskNamePrefix
     diskSku: diskSku
     domainJoinUserPassword: !empty(domainJoinUserPassword) ? domainJoinUserPassword : contains(identitySolution, 'DomainServices') ? keyVault_Ref.getSecret('domainJoinUserPassword') : ''
@@ -449,12 +408,12 @@ output artifactsUserAssignedIdentityResourceId string = empty(artifactsUserAssig
 output dataCollectionEndpointResourceId string = enableInsights ? dataCollectionEndpoint.outputs.resourceId : ''
 output avdInsightsDataCollectionRulesResourceId string = enableInsights ? avdInsightsDataCollectionRules.outputs.dataCollectionRulesId : ''
 output vmInsightsDataCollectionRulesResourceId string = enableInsights ? vmInsightsDataCollectionRules.outputs.dataCollectionRulesId : ''
-output diskEncryptionKeyUrl string = keyManagementDisksAndStorage != 'PlatformManaged' ? customerManagedKeys.outputs.diskKeyUri : ''
-output diskEncryptionSetResourceId string = keyManagementDisksAndStorage != 'PlatformManaged' ? diskEncryptionSet.outputs.resourceId : ''
+output diskEncryptionKeyUrl string = keyManagementDisksAndStorage != 'PlatformManaged' ? customerManagedKeys.outputs.diskEncryptionKeyUrl : ''
+output diskEncryptionSetResourceId string = keyManagementDisksAndStorage != 'PlatformManaged' ? customerManagedKeys.outputs.diskEncryptionSetResourceId : ''
 output encryptionUserAssignedIdentityResourceId string = keyManagementDisksAndStorage != 'PlatformManaged' ? customerManagedKeys.outputs.encryptionUserAssignedIdentityResourceId : ''
 output existingWorkspace bool = validations.outputs.value.existingWorkspace == 'true' ? true : false
 output existingGlobalWorkspace bool = validations.outputs.value.existingGlobalWorkspace == 'true' ? true : false
-output encryptionKeysKeyVaultUrl string = keyManagementDisksAndStorage != 'PlatformManaged' ? encryptionKeysKeyVault.outputs.keyVaultUrl : ''
+output storageEncryptionKeyKeyVaultUri string = keyManagementDisksAndStorage != 'PlatformManaged' ? customerManagedKeys.outputs.storagestorageEncryptionKeyKeyVaultUri : ''
 output logAnalyticsWorkspaceResourceId string = enableInsights ? logAnalyticsWorkspace.outputs.ResourceId : ''
 output deploymentUserAssignedIdentityClientId string = deploymentUserAssignedIdentity.outputs.clientId
 output deploymentUserAssignedIdentityResourceId string = deploymentUserAssignedIdentity.outputs.resourceId
