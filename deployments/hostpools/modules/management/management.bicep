@@ -410,7 +410,6 @@ output artifactsUserAssignedIdentityResourceId string = empty(artifactsUserAssig
 output dataCollectionEndpointResourceId string = enableInsights ? dataCollectionEndpoint.outputs.resourceId : ''
 output avdInsightsDataCollectionRulesResourceId string = enableInsights ? avdInsightsDataCollectionRules.outputs.dataCollectionRulesId : ''
 output vmInsightsDataCollectionRulesResourceId string = enableInsights ? vmInsightsDataCollectionRules.outputs.dataCollectionRulesId : ''
-output diskEncryptionKeyUrl string = keyManagementDisksAndStorage != 'PlatformManaged' ? customerManagedKeys.outputs.diskEncryptionKeyUrl : ''
 output diskEncryptionSetResourceId string = keyManagementDisksAndStorage != 'PlatformManaged' ? customerManagedKeys.outputs.diskEncryptionSetResourceId : ''
 output encryptionUserAssignedIdentityResourceId string = keyManagementDisksAndStorage != 'PlatformManaged' ? customerManagedKeys.outputs.encryptionUserAssignedIdentityResourceId : ''
 output existingWorkspace bool = validations.outputs.value.existingWorkspace == 'true' ? true : false

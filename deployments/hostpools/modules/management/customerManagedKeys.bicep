@@ -119,7 +119,7 @@ module diskEncryptionSet 'diskEncryptionSet.bicep' = {
   params: {
     diskEncryptionSetName: confidentialVMOSDiskEncryption ? diskEncryptionSetNames.ConfidentialVMs : ( diskEncryptionSetEncryptionType == 'EncryptionAtRestWithCustomerKey' ? diskEncryptionSetNames.CustomerManaged : diskEncryptionSetNames.PlatformAndCustomerManaged )
     encryptionType: diskEncryptionSetEncryptionType
-    keyUrl: confidentialVMOSDiskEncryption ? rsahsm_key_disks.outputs.diskKeyUriWithVersion : rsa_key_disks.outputs.diskKeyUriWithVersion
+    keyUrl: confidentialVMOSDiskEncryption ? rsahsm_key_disks.outputs.keyUriWithVersion : rsa_key_disks.outputs.keyUriWithVersion
     keyVaultResourceId: confidentialVMOSDiskEncryption ? confidentialVMEncryptionKeysVault.outputs.keyVaultResourceId : encryptionKeysVault.outputs.keyVaultResourceId
     location: location
     tags: contains(tags, 'Microsoft.Compute/diskEncryptionSets') ? tags['Microsoft.Compute/diskEncryptionSets'] : {}
@@ -127,10 +127,10 @@ module diskEncryptionSet 'diskEncryptionSet.bicep' = {
   }
 }
 
-output diskEncryptionKeyUrl string = confidentialVMOSDiskEncryption ? rsahsm_key_disks.outputs.diskKeyUri : rsa_key_disks.outputs.diskKeyUri
+//output diskEncryptionKeyUrl string = confidentialVMOSDiskEncryption ? rsahsm_key_disks.outputs.keyUri : rsa_key_disks.outputs.keyUri
 output diskEncryptionSetResourceId string = diskEncryptionSet.outputs.resourceId
 output storagestorageEncryptionKeyKeyVaultUri string = encryptionKeysVault.outputs.keyVaultUri
-output storageKeyName string = key_storageAccounts.name
+output storageKeyName string = key_storageAccounts.outputs.keyName
 output encryptionUserAssignedIdentityClientId string = userAssignedIdentity.outputs.clientId
 output encryptionUserAssignedIdentityPrincipalId string = userAssignedIdentity.outputs.principalId
 output encryptionUserAssignedIdentityResourceId string = userAssignedIdentity.outputs.resourceId

@@ -45,5 +45,6 @@ resource key 'Microsoft.KeyVault/vaults/keys@2022-07-01' = {
   }
 }
 
-output diskKeyUri string = key.properties.keyUri
-output diskKeyUriWithVersion string = key.properties.keyUriWithVersion
+output keyName string = key.name
+output keyUri string = key.properties.keyUri
+output keyUriWithVersion string = key.properties.keyUriWithVersion
