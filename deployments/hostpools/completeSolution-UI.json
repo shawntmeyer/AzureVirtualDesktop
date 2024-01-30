@@ -1810,6 +1810,7 @@
                 "avdObjectId": "[first(map(steps('basics').servicePrincipalApi.value, (item) => item.id))]",
                 "azureFilesPrivateDnsZoneResourceId": "[if(and(equals(steps('userProfiles').fslogixStorageService, 'AzureFiles'), equals(steps('userProfiles').storageEndpoint, 'PrivateEndpoint')), steps('userProfiles').privateEndpoints.privateDnsZone, '')]",
 				"businessUnitIdentifier": "[steps('basics').naming.businessUnitIdentifier]",
+                "confidentialVMOSDiskEncryption": "[steps('hosts').security.confidentialVMOSDiskEncryption]",
 				"confidentialVMOrchestratorObjectId": "[first(map(steps('hosts').security.confDiskEncryptionPrincipalApi.value, (item) => item.id))]",
 				"keyManagementDisksAndStorage": "[steps('hosts').security.keyManagement]",
 				"cseBlobNames": "[if(steps('hosts').customScripts.addCustomScripts, map(steps('hosts').customScripts.customizations, (item) => item.blobName), '')]",
