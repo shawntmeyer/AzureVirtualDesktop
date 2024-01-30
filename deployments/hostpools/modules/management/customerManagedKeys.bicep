@@ -127,10 +127,7 @@ module diskEncryptionSet 'diskEncryptionSet.bicep' = {
   }
 }
 
-//output diskEncryptionKeyUrl string = confidentialVMOSDiskEncryption ? rsahsm_key_disks.outputs.keyUri : rsa_key_disks.outputs.keyUri
 output diskEncryptionSetResourceId string = diskEncryptionSet.outputs.resourceId
 output storagestorageEncryptionKeyKeyVaultUri string = encryptionKeysVault.outputs.keyVaultUri
 output storageKeyName string = key_storageAccounts.outputs.keyName
-output encryptionUserAssignedIdentityClientId string = userAssignedIdentity.outputs.clientId
-output encryptionUserAssignedIdentityPrincipalId string = userAssignedIdentity.outputs.principalId
 output encryptionUserAssignedIdentityResourceId string = userAssignedIdentity.outputs.resourceId
