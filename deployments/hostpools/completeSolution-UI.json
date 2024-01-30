@@ -645,130 +645,6 @@
                             "visible": true
                         },
                         {
-                            "name": "vmSizesApi",
-                            "type": "Microsoft.Solutions.ArmApiControl",
-                            "request": {
-                                "method": "GET",
-                                "path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Compute/locations/', steps('basics').scope.location.name, '/vmSizes?api-version=2023-03-01')]"
-                            }
-                        },
-						{
-                            "name": "size",
-                            "type": "Microsoft.Common.DropDown",
-                            "label": "Virtual Machine Size",
-                            "defaultValue": "[if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), 'Standard_DC4ads_v5' ,'Standard_D4ads_v5')]",
-                            "toolTip": "Select the size of the virtual machines. Multi-session hosts should have 4 - 24 vCPUs. Single session host should have 2 or more vCPUs.",
-                            "multiselect": false,
-                            "selectAll": false,
-                            "filter": true,
-                            "filterPlaceholder": "Filter items ...",
-                            "multiLine": true,
-                            "defaultDescription": "",
-                            "constraints": {
-                                "allowedValues": "[if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), map(filter(steps('hosts').vmSizesApi.value, (item) => and(or(startsWith(item.name, 'Standard_DC'), startsWith(item.name, 'Standard_EC')), endsWith(item.name, '5'))), (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.name, '\"}'))), map(steps('hosts').vmSizesApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.name, '\"}'))))]",
-                                "required": true
-                            },
-                            "visible": true
-                        },
-                        {
-                            "name": "diskSku",
-                            "type": "Microsoft.Common.DropDown",
-                            "label": "OS Disk SKU",
-                            "filter": true,
-                            "defaultValue": "Premium_LRS",
-                            "toolTip": "Select the disk SKU for the operating system disk.",
-                            "constraints": {
-                                "required": true,
-                                "allowedValues": [
-                                    {
-                                        "label": "Premium_LRS",
-                                        "value": "Premium_LRS"
-                                    },
-                                    {
-                                        "label": "Standard_LRS",
-                                        "value": "Standard_LRS"
-                                    },
-                                    {
-                                        "label": "StandardSSD_LRS",
-                                        "value": "StandardSSD_LRS"
-                                    }
-                                ]
-                            }
-                        },
-						{
-                            "name": "availability",
-                            "type": "Microsoft.Common.DropDown",
-                            "label": "Availability Options",
-                            "filter": true,
-                            "defaultValue": "Availability Zones",
-                            "toolTip": "Select the redundancy / resiliency for the virtual machines.",
-                            "constraints": {
-                                "required": true,
-                                "allowedValues": [
-                                    {
-                                        "label": "Availability Sets",
-                                        "value": "AvailabilitySets"
-                                    },
-                                    {
-                                        "label": "Availability Zones",
-                                        "value": "AvailabilityZones"
-                                    },
-                                    {
-                                        "label": "No infrastructure redundancy required",
-                                        "value": "None"
-                                    }
-                                ]
-                            }
-                        },
-                        {
-                            "name": "network",
-                            "type": "Microsoft.Common.Section",
-                            "label": "Network",
-                            "visible": true,
-                            "elements": [
-								{
-									"name": "virtualNetworksApi",
-									"type": "Microsoft.Solutions.ArmApiControl",
-									"request": {
-										"method": "GET",
-										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Network/virtualNetworks?api-version=2022-11-01')]"
-									}
-								},
-                                {
-                                    "name": "virtualNetwork",
-                                    "type": "Microsoft.Common.DropDown",
-                                    "label": "Virtual Network",
-                                    "defaultValue": "",
-                                    "toolTip": "Select the virtual network where the AVD Private Link Private Endpoints will be created.",
-                                    "constraints": {
-                                        "required": true,
-                                        "allowedValues": "[map(filter(steps('hosts').network.virtualNetworksApi.value, (item) => equals(item.location, steps('basics').scope.location.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
-                                    },
-									"visible": true
-                                },
-                                {
-                                    "name": "subnetsApi",
-                                    "type": "Microsoft.Solutions.ArmApiControl",
-                                    "request": {
-                                        "method": "GET",
-                                        "path": "[concat(steps('hosts').network.virtualNetwork, '/subnets?api-version=2022-05-01')]"
-                                    }
-                                },
-                                {
-                                    "name": "subnet",
-                                    "type": "Microsoft.Common.DropDown",
-                                    "visible": true,
-                                    "label": "Subnet",
-                                    "defaultValue": "",
-                                    "toolTip": "Select an existing subnet for the AVD session hosts.",
-                                    "constraints": {
-                                        "required": true,
-                                        "allowedValues": "[map(steps('hosts').network.subnetsApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.id, '\"}')))]"
-                                    }
-                                }
-                            ]
-                        },						
-						{
                             "name": "security",
                             "type": "Microsoft.Common.Section",
                             "label": "Security",
@@ -884,6 +760,89 @@
 								}               
 							]
 						},
+						{
+							"name": "specs",
+							"type": "Microsoft.Common.Section",
+							"label": "Specifications",
+							"elements": [
+								{
+									"name": "vmSizesApi",
+									"type": "Microsoft.Solutions.ArmApiControl",
+									"request": {
+										"method": "GET",
+										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Compute/locations/', steps('basics').scope.location.name, '/vmSizes?api-version=2023-03-01')]"
+									}
+								},
+								{
+									"name": "size",
+									"type": "Microsoft.Common.DropDown",
+									"label": "Virtual Machine Size",
+									"defaultValue": "[if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), 'Standard_DC4ads_v5' ,'Standard_D4ads_v5')]",
+									"toolTip": "Select the size of the virtual machines. Multi-session hosts should have 4 - 24 vCPUs. Single session host should have 2 or more vCPUs.",
+									"multiselect": false,
+									"selectAll": false,
+									"filter": true,
+									"filterPlaceholder": "Filter items ...",
+									"multiLine": true,
+									"defaultDescription": "",
+									"constraints": {
+										"allowedValues": "[if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), map(filter(steps('hosts').specs.vmSizesApi.value, (item) => and(or(startsWith(item.name, 'Standard_DC'), startsWith(item.name, 'Standard_EC')), endsWith(item.name, '5'))), (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.name, '\"}'))), map(steps('hosts').specs.vmSizesApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.name, '\"}'))))]",
+										"required": true
+									},
+									"visible": true
+								},
+								{
+									"name": "diskSku",
+									"type": "Microsoft.Common.DropDown",
+									"label": "OS Disk SKU",
+									"filter": true,
+									"defaultValue": "Premium_LRS",
+									"toolTip": "Select the disk SKU for the operating system disk.",
+									"constraints": {
+										"required": true,
+										"allowedValues": [
+											{
+												"label": "Premium_LRS",
+												"value": "Premium_LRS"
+											},
+											{
+												"label": "Standard_LRS",
+												"value": "Standard_LRS"
+											},
+											{
+												"label": "StandardSSD_LRS",
+												"value": "StandardSSD_LRS"
+											}
+										]
+									}
+								}
+							]
+						},
+						{
+                            "name": "availability",
+                            "type": "Microsoft.Common.DropDown",
+                            "label": "Availability Options",
+                            "filter": true,
+                            "defaultValue": "Availability Zones",
+                            "toolTip": "Select the redundancy / resiliency for the virtual machines.",
+                            "constraints": {
+                                "required": true,
+                                "allowedValues": [
+                                    {
+                                        "label": "Availability Sets",
+                                        "value": "AvailabilitySets"
+                                    },
+                                    {
+                                        "label": "Availability Zones",
+                                        "value": "AvailabilityZones"
+                                    },
+                                    {
+                                        "label": "No infrastructure redundancy required",
+                                        "value": "None"
+                                    }
+                                ]
+                            }
+                        },					
                         {
                             "name": "image",
                             "type": "Microsoft.Common.Section",
@@ -968,6 +927,54 @@
                                 }
                             ]
                         },
+						{
+                            "name": "network",
+                            "type": "Microsoft.Common.Section",
+                            "label": "Network",
+                            "visible": true,
+                            "elements": [
+								{
+									"name": "virtualNetworksApi",
+									"type": "Microsoft.Solutions.ArmApiControl",
+									"request": {
+										"method": "GET",
+										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Network/virtualNetworks?api-version=2022-11-01')]"
+									}
+								},
+                                {
+                                    "name": "virtualNetwork",
+                                    "type": "Microsoft.Common.DropDown",
+                                    "label": "Virtual Network",
+                                    "defaultValue": "",
+                                    "toolTip": "Select the virtual network where the AVD Private Link Private Endpoints will be created.",
+                                    "constraints": {
+                                        "required": true,
+                                        "allowedValues": "[map(filter(steps('hosts').network.virtualNetworksApi.value, (item) => equals(item.location, steps('basics').scope.location.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
+                                    },
+									"visible": true
+                                },
+                                {
+                                    "name": "subnetsApi",
+                                    "type": "Microsoft.Solutions.ArmApiControl",
+                                    "request": {
+                                        "method": "GET",
+                                        "path": "[concat(steps('hosts').network.virtualNetwork, '/subnets?api-version=2022-05-01')]"
+                                    }
+                                },
+                                {
+                                    "name": "subnet",
+                                    "type": "Microsoft.Common.DropDown",
+                                    "visible": true,
+                                    "label": "Subnet",
+                                    "defaultValue": "",
+                                    "toolTip": "Select an existing subnet for the AVD session hosts.",
+                                    "constraints": {
+                                        "required": true,
+                                        "allowedValues": "[map(steps('hosts').network.subnetsApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.id, '\"}')))]"
+                                    }
+                                }
+                            ]
+                        },	
                         {
                             "name": "identity",
                             "type": "Microsoft.Common.Section",
@@ -1813,7 +1820,7 @@
 				"cseBlobNames": "[if(steps('hosts').customScripts.addCustomScripts, map(steps('hosts').customScripts.customizations, (item) => item.blobName), '')]",
 				"encryptionAtHost": "[steps('hosts').security.encryptionAtHost]",
 				"virtualMachineSecurityType": "[steps('hosts').security.securityType]",
-                "diskSku": "[steps('hosts').diskSku]",
+                "diskSku": "[steps('hosts').specs.diskSku]",
                 "domainJoinUserPassword": "[steps('hosts').domainJoinCredentials.password]",
                 "domainJoinUserPrincipalName": "[steps('hosts').domainJoinCredentials.userPrincipalName]",
                 "domainName": "[steps('hosts').identity.domainName]",
@@ -1857,7 +1864,7 @@
                 "hostPoolValidationEnvironment": "[steps('controlPlane').hostPool.validation]",
                 "virtualMachineNamePrefix": "[steps('hosts').virtualMachineNamePrefix]",
                 "virtualMachineAdminPassword": "[steps('hosts').localAdminCredentials.password]",
-                "virtualMachineSize": "[steps('hosts').size]",
+                "virtualMachineSize": "[steps('hosts').specs.size]",
                 "virtualMachineAdminUserName": "[steps('hosts').localAdminCredentials.username]",
 				"desktopFriendlyName": "[steps('controlPlane').naming.desktopFriendlyName]",
                 "workspaceFriendlyName": "[steps('controlPlane').naming.workspaceFriendlyName]"
