@@ -617,20 +617,6 @@
 							"visible": true
 						},
 						{
-                            "name": "count",
-                            "type": "Microsoft.Common.Slider",
-                            "label": "Number of Virtual Machines",
-                            "defaultValue": 1,
-                            "toolTip": "Select the number of virtual machines to deploy in your AVD host pool.",
-                            "min": 1,
-                            "max": 4999,
-                            "showStepMarkers": true,
-                            "constraints": {
-                                "required": true
-                            },
-                            "visible": true
-                        },
-						{
                             "name": "index",
                             "type": "Microsoft.Common.Slider",
                             "label": "Starting number (index)",
@@ -644,6 +630,54 @@
                             },
                             "visible": true
                         },
+						{
+                            "name": "network",
+                            "type": "Microsoft.Common.Section",
+                            "label": "Network",
+                            "visible": true,
+                            "elements": [
+								{
+									"name": "virtualNetworksApi",
+									"type": "Microsoft.Solutions.ArmApiControl",
+									"request": {
+										"method": "GET",
+										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Network/virtualNetworks?api-version=2022-11-01')]"
+									}
+								},
+                                {
+                                    "name": "virtualNetwork",
+                                    "type": "Microsoft.Common.DropDown",
+                                    "label": "Virtual Network",
+                                    "defaultValue": "",
+                                    "toolTip": "Select the virtual network where the AVD Private Link Private Endpoints will be created.",
+                                    "constraints": {
+                                        "required": true,
+                                        "allowedValues": "[map(filter(steps('hosts').network.virtualNetworksApi.value, (item) => equals(item.location, steps('basics').scope.location.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
+                                    },
+									"visible": true
+                                },
+                                {
+                                    "name": "subnetsApi",
+                                    "type": "Microsoft.Solutions.ArmApiControl",
+                                    "request": {
+                                        "method": "GET",
+                                        "path": "[concat(steps('hosts').network.virtualNetwork, '/subnets?api-version=2022-05-01')]"
+                                    }
+                                },
+                                {
+                                    "name": "subnet",
+                                    "type": "Microsoft.Common.DropDown",
+                                    "visible": true,
+                                    "label": "Subnet",
+                                    "defaultValue": "",
+                                    "toolTip": "Select an existing subnet for the AVD session hosts.",
+                                    "constraints": {
+                                        "required": true,
+                                        "allowedValues": "[map(steps('hosts').network.subnetsApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.id, '\"}')))]"
+                                    }
+                                }
+                            ]
+                        },	
                         {
                             "name": "security",
                             "type": "Microsoft.Common.Section",
@@ -763,8 +797,22 @@
 						{
 							"name": "specs",
 							"type": "Microsoft.Common.Section",
-							"label": "Specifications",
+							"label": "Capacity, Performance, and Availability",
 							"elements": [
+								{
+									"name": "count",
+									"type": "Microsoft.Common.Slider",
+									"label": "Number of Virtual Machines",
+									"defaultValue": 1,
+									"toolTip": "Select the number of virtual machines to deploy in your AVD host pool.",
+									"min": 1,
+									"max": 4999,
+									"showStepMarkers": true,
+									"constraints": {
+										"required": true
+									},
+									"visible": true
+								},
 								{
 									"name": "vmSizesApi",
 									"type": "Microsoft.Solutions.ArmApiControl",
@@ -927,54 +975,6 @@
                                 }
                             ]
                         },
-						{
-                            "name": "network",
-                            "type": "Microsoft.Common.Section",
-                            "label": "Network",
-                            "visible": true,
-                            "elements": [
-								{
-									"name": "virtualNetworksApi",
-									"type": "Microsoft.Solutions.ArmApiControl",
-									"request": {
-										"method": "GET",
-										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Network/virtualNetworks?api-version=2022-11-01')]"
-									}
-								},
-                                {
-                                    "name": "virtualNetwork",
-                                    "type": "Microsoft.Common.DropDown",
-                                    "label": "Virtual Network",
-                                    "defaultValue": "",
-                                    "toolTip": "Select the virtual network where the AVD Private Link Private Endpoints will be created.",
-                                    "constraints": {
-                                        "required": true,
-                                        "allowedValues": "[map(filter(steps('hosts').network.virtualNetworksApi.value, (item) => equals(item.location, steps('basics').scope.location.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
-                                    },
-									"visible": true
-                                },
-                                {
-                                    "name": "subnetsApi",
-                                    "type": "Microsoft.Solutions.ArmApiControl",
-                                    "request": {
-                                        "method": "GET",
-                                        "path": "[concat(steps('hosts').network.virtualNetwork, '/subnets?api-version=2022-05-01')]"
-                                    }
-                                },
-                                {
-                                    "name": "subnet",
-                                    "type": "Microsoft.Common.DropDown",
-                                    "visible": true,
-                                    "label": "Subnet",
-                                    "defaultValue": "",
-                                    "toolTip": "Select an existing subnet for the AVD session hosts.",
-                                    "constraints": {
-                                        "required": true,
-                                        "allowedValues": "[map(steps('hosts').network.subnetsApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.id, '\"}')))]"
-                                    }
-                                }
-                            ]
-                        },	
                         {
                             "name": "identity",
                             "type": "Microsoft.Common.Section",
@@ -1855,7 +1855,7 @@
                 "securityPrincipals": "[if(empty(steps('controlPlane').assignment.groupsApi), steps('controlPlane').assignment.groupsGrid, steps('controlPlane').assignment.groupsDropDown)]",
 				"securityDataCollectionRulesResourceId": "[if(steps('management').monitoring.enableSecurity, steps('management').monitoring.dataCollectionRule.id, '')]",
                 "SecurityLogAnalyticsWorkspaceResourceId": "[if(steps('management').monitoring.enableSecurity, steps('management').monitoring.logAnalyticsWorkspace.id, '')]",
-                "sessionHostCount": "[steps('hosts').count]",
+                "sessionHostCount": "[steps('hosts').specs.count]",
                 "sessionHostIndex": "[steps('hosts').index]",
 				"storagePrivateEndpoints": "[if(equals(steps('userProfiles').storageEndpoint, 'PrivateEndpoint'), true, false)]",
                 "storagePrivateEndpointSubnetResourceId": "[if(equals(steps('userProfiles').storageEndpoint, 'PrivateEndpoint'), steps('userProfiles').privateEndpoints.subnet, '')]",
