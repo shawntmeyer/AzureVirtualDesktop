@@ -122,7 +122,7 @@ try
     # Availability Zone Validation
     ##############################################################
     $AvailabilityZones = $Sku.locationInfo.zones | Sort-Object
-    Write-Log -Message "Accelerated Networking Validation Succeeded" -Type 'INFO'
+    Write-Log -Message "Availability Zones Validation Succeeded" -Type 'INFO'
 
     ##############################################################
     # Azure NetApp Files Validation

@@ -2,8 +2,6 @@ param azModuleBlobName string
 param identitySolution string
 param artifactsUri string
 param artifactsUserAssignedIdentityClientId string
-param confidentialVMOSDiskEncryptionType string
-param diskEncryptionSetResourceId string
 param diskName string
 param diskSku string
 @secure()
@@ -14,7 +12,6 @@ param domainName string
 param encryptionAtHost bool
 param location string
 param networkInterfaceName string
-param securityType string
 param subnetResourceId string
 param tagsNetworkInterfaces object
 param tagsVirtualMachines object
@@ -70,15 +67,6 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-11-01' = {
         deleteOption: 'Delete'
         caching: 'None'
         managedDisk: {
-          diskEncryptionSet: securityType != 'ConfidentialVM' && !empty(diskEncryptionSetResourceId) ? {
-            id: diskEncryptionSetResourceId
-          } : null
-          securityProfile: securityType == 'ConfidentialVM' ? {
-            diskEncryptionSet: !empty(diskEncryptionSetResourceId) ? {
-              id: diskEncryptionSetResourceId
-            } : null
-            securityEncryptionType: confidentialVMOSDiskEncryptionType
-          } : null
           storageAccountType: diskSku
         }
       }

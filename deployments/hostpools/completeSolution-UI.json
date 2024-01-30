@@ -652,26 +652,23 @@
                                 "path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Compute/locations/', steps('basics').scope.location.name, '/vmSizes?api-version=2023-03-01')]"
                             }
                         },
-                        {
+						{
                             "name": "size",
-                            "type": "Microsoft.Compute.SizeSelector",
+                            "type": "Microsoft.Common.DropDown",
                             "label": "Virtual Machine Size",
+                            "defaultValue": "[if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), 'Standard_DC4ads_v5' ,'Standard_D4ads_v5')]",
                             "toolTip": "Select the size of the virtual machines. Multi-session hosts should have 4 - 24 vCPUs. Single session host should have 2 or more vCPUs.",
-                            "recommendedSizes": [
-                                "Standard_D4ads_v5",
-                                "Standard_D8ads_v5",
-                                "Standard_D16ads_v5"
-                            ],
+                            "multiselect": false,
+                            "selectAll": false,
+                            "filter": true,
+                            "filterPlaceholder": "Filter items ...",
+                            "multiLine": true,
+                            "defaultDescription": "",
                             "constraints": {
-                                "allowedSizes": "[map(filter(steps('hosts').vmSizesApi.value, (item) => greater(item.numberOfCores, if(equals(steps('management').hostPool.type, 'Personal'), 2, 4))), (item) => parse(concat('\"', item.name, '\"')))]",
-                                "numAvailabilityZonesRequired": "[if(equals(steps('hosts').availability, 'AvailabilityZones'), 2, 1)]"
+                                "allowedValues": "[if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), map(filter(steps('hosts').vmSizesApi.value, (item) => and(or(startsWith(item.name, 'Standard_DC'), startsWith(item.name, 'Standard_EC')), endsWith(item.name, '5'))), (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.name, '\"}'))), map(steps('hosts').vmSizesApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.name, '\"}'))))]",
+                                "required": true
                             },
-                            "options": {
-                                "hideDiskTypeFilter": false
-                            },
-                            "osPlatform": "Windows",
-                            "visible": true,
-                            "count": "[steps('hosts').count]"
+                            "visible": true
                         },
                         {
                             "name": "diskSku",

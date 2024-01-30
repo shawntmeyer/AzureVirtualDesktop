@@ -30,7 +30,7 @@ module encryptionKeysVault 'keyVault.bicep' = {
 }
 
 module confidentialVMEncryptionKeysVault 'keyVault.bicep' = if (confidentialVMOSDiskEncryption) {
-  name: 'KV_Encryption_${timeStamp}'
+  name: 'KV_ConfidentialVM_Encryption_${timeStamp}'
   params: {
     location: location
     environmentShortName: environmentShortName
@@ -46,7 +46,7 @@ module confidentialVMEncryptionKeysVault 'keyVault.bicep' = if (confidentialVMOS
 }
 
 module rsa_key_disks 'keyVaultKeys.bicep' = if(!confidentialVMOSDiskEncryption) {
-  name: 'VMOSDiskEncryptionKey_${timeStamp}'
+  name: 'EncryptionKey_VMDiskEncryption_${timeStamp}'
   params: {
     exportable: false
     keyName: 'VMOSDiskEncryptionKey'
@@ -57,18 +57,22 @@ module rsa_key_disks 'keyVaultKeys.bicep' = if(!confidentialVMOSDiskEncryption) 
 }
 
 module rsahsm_key_disks 'keyVaultKeys.bicep' = if(confidentialVMOSDiskEncryption) {
-  name: 'ConfidentialVMOSDiskEncryptionKey_${timeStamp}'
+  name: 'EncryptionKey_ConfidentialVMOSDisk_${timeStamp}'
   params: {
     exportable: true
     keyName: 'ConfidentialVMOSDiskEncryptionKey'
     keyType: 'RSA-HSM'
     keyVaultName: confidentialVMOSDiskEncryption ? last(split(confidentialVMEncryptionKeysVault.outputs.keyVaultResourceId, '/')) : ''
+    release_policy: {
+      contentType: 'application/json; charset=utf-8'
+      data: loadFileAsBase64('confidentialVMReleasePolicy.json')
+    }
     rotationPolicy: false
   }
 }
 
 module key_storageAccounts 'keyVaultKeys.bicep' = {
-  name: 'StorageAccountEncryptionKey_${timeStamp}'
+  name: 'EncryptionKey_StorageAccounts_${timeStamp}'
   params: {
     exportable: false
     keyName: 'StorageAccountEncryptionKey'
@@ -88,7 +92,7 @@ module userAssignedIdentity 'userAssignedIdentity.bicep' = {
 }
 
 module roleAssignment_UAI_EncryptUser '../common/roleAssignment.bicep' = {
-  name: 'RoleAssignment_Encryption_${timeStamp}'
+  name: 'RoleAssignment_Encryption_UAI_EncryptUser_${timeStamp}'
   params: {
     PrincipalId: userAssignedIdentity.outputs.principalId
     PrincipalType: 'ServicePrincipal'
@@ -97,7 +101,7 @@ module roleAssignment_UAI_EncryptUser '../common/roleAssignment.bicep' = {
 }
 
 module roleAssignment_ConfVMOrchestrator_EncryptUser '../common/roleAssignment.bicep' = if(confidentialVMOSDiskEncryption) {
-  name: 'RoleAssignment_ConfVMOrchestratorEncryptUser_${timeStamp}'
+  name: 'RoleAssignment_ConfVMOrchestrator_EncryptUser_${timeStamp}'
   params: {
     PrincipalId: confidentialVMOrchestratorObjectId
     PrincipalType: 'ServicePrincipal'
@@ -106,7 +110,7 @@ module roleAssignment_ConfVMOrchestrator_EncryptUser '../common/roleAssignment.b
 }
 
 module roleAssignment_ConfVMOrchestrator_ReleaseUser '../common/roleAssignment.bicep' = if(confidentialVMOSDiskEncryption) {
-  name: 'RoleAssignment_ConfVMOrchestratorReleaseUser_${timeStamp}'
+  name: 'RoleAssignment_ConfVMOrchestrator_ReleaseUser_${timeStamp}'
   params: {
     PrincipalId: confidentialVMOrchestratorObjectId
     PrincipalType: 'ServicePrincipal'
@@ -117,6 +121,7 @@ module roleAssignment_ConfVMOrchestrator_ReleaseUser '../common/roleAssignment.b
 module diskEncryptionSet 'diskEncryptionSet.bicep' = {
   name: 'DiskEncryptionSet_${timeStamp}'
   params: {
+    autoKeyRotationEnabled: confidentialVMOSDiskEncryption ? false : true
     diskEncryptionSetName: confidentialVMOSDiskEncryption ? diskEncryptionSetNames.ConfidentialVMs : ( diskEncryptionSetEncryptionType == 'EncryptionAtRestWithCustomerKey' ? diskEncryptionSetNames.CustomerManaged : diskEncryptionSetNames.PlatformAndCustomerManaged )
     encryptionType: diskEncryptionSetEncryptionType
     keyUrl: confidentialVMOSDiskEncryption ? rsahsm_key_disks.outputs.keyUriWithVersion : rsa_key_disks.outputs.keyUriWithVersion

@@ -269,7 +269,7 @@ module customerManagedKeys 'customerManagedKeys.bicep' = if (keyManagementDisksA
 }
 
 // Management VM
-// The management VM is required to validate the deployment and configure FSLogix storage.
+// The management VM is required to validate the deployment and configure FSLogix storage. This deployment does not use customer managed keys for the management machine to allow it to remain idempotent.
 module virtualMachine 'virtualMachine.bicep' = {
   name: 'ManagementVirtualMachine_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
@@ -278,7 +278,6 @@ module virtualMachine 'virtualMachine.bicep' = {
     artifactsUri: artifactsUri
     artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
     azModuleBlobName: azModuleBlobName
-    diskEncryptionSetResourceId: keyManagementDisksAndStorage != 'PlatformManaged' ? customerManagedKeys.outputs.diskEncryptionSetResourceId : ''
     diskName: virtualMachineDiskName
     diskSku: diskSku
     domainJoinUserPassword: !empty(domainJoinUserPassword) ? domainJoinUserPassword : contains(identitySolution, 'DomainServices') ? keyVault_Ref.getSecret('domainJoinUserPassword') : ''
@@ -287,8 +286,6 @@ module virtualMachine 'virtualMachine.bicep' = {
     encryptionAtHost: encryptionAtHost
     location: locationVirtualMachines
     networkInterfaceName: virtualMachineNICName
-    confidentialVMOSDiskEncryptionType: confidentialVMOSDiskEncryptionType 
-    securityType: securityType
     subnetResourceId: virtualMachineSubnetResourceId
     tagsNetworkInterfaces: contains(tags, 'Microsoft.Network/networkInterfaces') ? tags['Microsoft.Network/networkInterfaces'] : {}
     tagsVirtualMachines: contains(tags, 'Microsoft.Compute/virtualMachines') ? tags['Microsoft.Compute/virtualMachines'] : {}

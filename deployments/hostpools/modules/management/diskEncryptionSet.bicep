@@ -1,7 +1,9 @@
+param autoKeyRotationEnabled bool
 param diskEncryptionSetName string
 param encryptionType string
 param keyVaultResourceId string
 param keyUrl string
+
 param location string
 param tags object
 param timeStamp string
@@ -22,7 +24,7 @@ resource diskEncryptionSet 'Microsoft.Compute/diskEncryptionSets@2022-07-02' = {
       keyUrl: keyUrl
     }
     encryptionType: encryptionType
-    rotationToLatestKeyVersionEnabled: true
+    rotationToLatestKeyVersionEnabled: autoKeyRotationEnabled
   }
 }
 

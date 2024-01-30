@@ -79,7 +79,7 @@ var diskEncryptionSetPlatAndCustKeysName = replace(diskEncryptionSetNameConv, 'a
 var keyVaultNameConv = replace(replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.keyVaults), 'location', locations[locationVirtualMachines].abbreviation), 'avd-', 'avd-keyVaultPurpose-')
 var keyVaultNameSecrets = replace(keyVaultNameConv, 'avd-keyVaultPurpose-', 'avd-secrets-')
 var keyVaultNameStandardKeys = replace(keyVaultNameConv, 'avd-keyVaultPurpose-', 'avd-enckeys-')
-var keyVaultNameConfVMKeys = replace(keyVaultNameConv, 'avd-keyVaultPurpose-', 'avd-cvmenckeys-')
+var keyVaultNameConfVMKeys = replace(keyVaultNameConv, 'avd-keyVaultPurpose-', 'avd-confvmenckeys-')
 
 var logAnalyticsWorkspaceName = replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.logAnalyticsWorkspaces), 'location', locations[locationVirtualMachines].abbreviation)
 var recoveryServicesVaultName = replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.recoveryServicesVaults), 'location', locations[locationVirtualMachines].abbreviation)

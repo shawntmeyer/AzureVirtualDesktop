@@ -2,6 +2,7 @@ param exportable bool
 param keyName string
 param keyType string
 param keyVaultName string
+param release_policy object = {}
 param rotationPolicy bool
 param diskEncryptionKeyExpirationInDays int = 180
 
@@ -19,6 +20,7 @@ resource key 'Microsoft.KeyVault/vaults/keys@2022-07-01' = {
     }
     keySize: 4096
     kty: keyType
+    release_policy: !empty(release_policy) ? release_policy : null
     rotationPolicy: rotationPolicy ? {
       attributes: {
         expiryTime: 'P${string(diskEncryptionKeyExpirationInDays)}D'
