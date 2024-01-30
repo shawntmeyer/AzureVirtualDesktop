@@ -4,7 +4,7 @@ param artifactsUri string
 param artifactsUserAssignedIdentityClientId string
 param confidentialVMOSDiskEncryptionType string
 param diskEncryptionSetResourceId string
-param diskNamePrefix string
+param diskName string
 param diskSku string
 @secure()
 param domainJoinUserPassword string
@@ -13,23 +13,20 @@ param domainJoinUserPrincipalName string
 param domainName string
 param encryptionAtHost bool
 param location string
-param networkInterfaceNamePrefix string
+param networkInterfaceName string
 param securityType string
 param subnetResourceId string
 param tagsNetworkInterfaces object
 param tagsVirtualMachines object
 param timeStamp string = utcNow('yyyyMMddhhmmss')
 param userAssignedIdentitiesResourceIds object
-param virtualMachineNamePrefix string
+param virtualMachineName string
 @secure()
 param virtualMachineAdminPassword string
 param virtualMachineAdminUserName string
 
-var NicName = '${networkInterfaceNamePrefix}mgt'
-var VmName = '${virtualMachineNamePrefix}mgt'
-
 resource networkInterface 'Microsoft.Network/networkInterfaces@2020-05-01' = {
-  name: NicName
+  name: networkInterfaceName
   location: location
   tags: tagsNetworkInterfaces
   properties: {
@@ -52,7 +49,7 @@ resource networkInterface 'Microsoft.Network/networkInterfaces@2020-05-01' = {
 }
 
 resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-11-01' = {
-  name: VmName
+  name: virtualMachineName
   location: location
   tags: tagsVirtualMachines
   properties: {
@@ -67,7 +64,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-11-01' = {
         version: 'latest'
       }
       osDisk: {
-        name: '${diskNamePrefix}mgt'
+        name: diskName
         osType: 'Windows'
         createOption: 'FromImage'
         deleteOption: 'Delete'
@@ -88,7 +85,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-11-01' = {
       dataDisks: []
     }
     osProfile: {
-      computerName: VmName
+      computerName: virtualMachineName
       adminUsername: virtualMachineAdminUserName
       adminPassword: virtualMachineAdminPassword
       windowsConfiguration: {

@@ -484,7 +484,6 @@ module management 'modules/management/management.bicep' = {
     dataCollectionRulesNameConv: resourceNames.outputs.dataCollectionRulesNameConv
     //diskAccessName: resourceNames.outputs.diskAccessName
     diskEncryptionSetNames: resourceNames.outputs.diskEncryptionSetNames
-    diskNamePrefix: resourceNames.outputs.diskNamePrefix
     diskSku: diskSku
     domainJoinUserPassword: domainJoinUserPassword
     domainJoinUserPrincipalName: domainJoinUserPrincipalName
@@ -506,7 +505,6 @@ module management 'modules/management/management.bicep' = {
     logAnalyticsWorkspaceSku: logAnalyticsWorkspaceSku
     enableInsights: enableInsights
     netAppVnetResourceId: fslogixNetAppVnetResourceId
-    networkInterfaceNamePrefix: resourceNames.outputs.networkInterfaceNamePrefix
     keyManagementDisksAndStorage: keyManagementDisksAndStorage
     privateEndpointSubnetResourceId: managementPrivateEndpointSubnetResourceId
     privateEndpoint: managementPrivateEndpoints
@@ -527,6 +525,8 @@ module management 'modules/management/management.bicep' = {
     timeZone: logic.outputs.timeZone
     userAssignedIdentityNameConv: resourceNames.outputs.userAssignedIdentityNameConv
     virtualMachineName: resourceNames.outputs.mgmtVirtualMachineName
+    virtualMachineNICName: resourceNames.outputs.mgmtVirtualMachineNicName
+    virtualMachineDiskName: resourceNames.outputs.mgmtVirtualMachineDiskName
     virtualMachineAdminPassword: empty(virtualMachineAdminPassword) ? keyVault_Reference.getSecret(virtualMachineAdminPassword) : virtualMachineAdminPassword
     virtualMachineSize: virtualMachineSize
     virtualMachineAdminUserName: empty(virtualMachineAdminUserName) ? keyVault_Reference.getSecret(virtualMachineAdminUserName) : virtualMachineAdminUserName

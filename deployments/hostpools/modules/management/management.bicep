@@ -14,7 +14,6 @@ param confidentialVMOSDiskEncryptionType string
 param dataCollectionEndpointName string
 param dataCollectionRulesNameConv string
 //param diskAccessName string
-param diskNamePrefix string
 param diskEncryptionSetNames object
 param diskSku string
 @secure()
@@ -39,7 +38,6 @@ param logAnalyticsWorkspaceRetention int
 param logAnalyticsWorkspaceSku string
 param enableInsights bool
 param netAppVnetResourceId string
-param networkInterfaceNamePrefix string
 param keyManagementDisksAndStorage string
 param privateEndpoint bool
 param privateEndpointNameConv string
@@ -60,6 +58,8 @@ param timeStamp string
 param timeZone string
 param userAssignedIdentityNameConv string
 param virtualMachineName string
+param virtualMachineNICName string
+param virtualMachineDiskName string
 @secure()
 param virtualMachineAdminPassword string
 @secure()
@@ -279,14 +279,14 @@ module virtualMachine 'virtualMachine.bicep' = {
     artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
     azModuleBlobName: azModuleBlobName
     diskEncryptionSetResourceId: keyManagementDisksAndStorage != 'PlatformManaged' ? customerManagedKeys.outputs.diskEncryptionSetResourceId : ''
-    diskNamePrefix: diskNamePrefix
+    diskName: virtualMachineDiskName
     diskSku: diskSku
     domainJoinUserPassword: !empty(domainJoinUserPassword) ? domainJoinUserPassword : contains(identitySolution, 'DomainServices') ? keyVault_Ref.getSecret('domainJoinUserPassword') : ''
     domainJoinUserPrincipalName: !empty(domainJoinUserPrincipalName) ? domainJoinUserPrincipalName : contains(identitySolution, 'DomainServices') ? keyVault_Ref.getSecret('domainJoinUserPrincipalName') : ''
     domainName: domainName
     encryptionAtHost: encryptionAtHost
     location: locationVirtualMachines
-    networkInterfaceNamePrefix: networkInterfaceNamePrefix
+    networkInterfaceName: virtualMachineNICName
     confidentialVMOSDiskEncryptionType: confidentialVMOSDiskEncryptionType 
     securityType: securityType
     subnetResourceId: virtualMachineSubnetResourceId
@@ -299,7 +299,7 @@ module virtualMachine 'virtualMachine.bicep' = {
       '${existingArtifactsUserAssignedIdentity.id}': {}
       '${deploymentUserAssignedIdentity.outputs.resourceId}' : {}
      }
-    virtualMachineNamePrefix: virtualMachineName
+    virtualMachineName: virtualMachineName
     virtualMachineAdminPassword: virtualMachineAdminPassword
     virtualMachineAdminUserName: virtualMachineAdminUserName
   }

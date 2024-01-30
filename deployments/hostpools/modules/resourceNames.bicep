@@ -84,7 +84,10 @@ var keyVaultNameConfVMKeys = replace(keyVaultNameConv, 'avd-keyVaultPurpose-', '
 var logAnalyticsWorkspaceName = replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.logAnalyticsWorkspaces), 'location', locations[locationVirtualMachines].abbreviation)
 var recoveryServicesVaultName = replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.recoveryServicesVaults), 'location', locations[locationVirtualMachines].abbreviation)
 var userAssignedIdentityNameConv = replace(replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.userAssignedIdentities), 'location', locations[locationVirtualMachines].abbreviation), 'avd-', 'avd-uaiPurpose-')
-var mgmtVirtualMachineName = replace(replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.virtualMachines), 'location', locations[locationVirtualMachines].abbreviation), '-', '')
+var mgmtVirtualMachineName = replace(replace(replace(replace(nameConv_Mgmt_Resources, 'resourceType', ''), 'location', locations[locationVirtualMachines].abbreviation), 'avd-', 'avdmgmt'), '-', '')
+var mgmtVirtualMachineDiskName = nameConvResTypeAtEnd ? '${mgmtVirtualMachineName}-${resourceAbbreviations.disks}' : '${resourceAbbreviations.disks}-${mgmtVirtualMachineName}'
+var mgmtVirtualMachineNicName = nameConvResTypeAtEnd ? '${mgmtVirtualMachineName}-${resourceAbbreviations.networkInterfaces}' : '${resourceAbbreviations.networkInterfaces}-${mgmtVirtualMachineName}'
+
 // Storage Resources
 var resourceGroupStorage = replace(replace(replace(nameConv_HP_ResGroups, 'resGroupPurpose', 'storage'), 'location', '${locations[locationVirtualMachines].abbreviation}'), 'resourceType', '${resourceAbbreviations.resourceGroups}')
 var netAppAccountName = replace(replace(nameConv_HP_Resources, 'resourceType', resourceAbbreviations.netAppAccounts), 'location', locations[locationVirtualMachines].abbreviation)
@@ -128,4 +131,6 @@ output storageAccountNamePrefix string = storageAccountNamePrefix
 output userAssignedIdentityNameConv string = userAssignedIdentityNameConv
 output virtualMachineNamePrefix string = virtualMachineNamePrefix
 output mgmtVirtualMachineName string = mgmtVirtualMachineName
+output mgmtVirtualMachineNicName string = mgmtVirtualMachineNicName
+output mgmtVirtualMachineDiskName string = mgmtVirtualMachineDiskName
 output workspaceName string = workspaceName
