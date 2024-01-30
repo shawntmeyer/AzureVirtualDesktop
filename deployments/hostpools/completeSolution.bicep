@@ -725,9 +725,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     virtualMachineNamePrefix: resourceNames.outputs.virtualMachineNamePrefix
     virtualMachineAdminPassword: empty(virtualMachineAdminPassword) ? keyVault_Reference.getSecret(virtualMachineAdminPassword) : virtualMachineAdminPassword
     virtualMachineSize: virtualMachineSize
-    virtualMachineAdminUserName: empty(virtualMachineAdminUserName) ? keyVault_Reference.getSecret(virtualMachineAdminUserName) : virtualMachineAdminUserName
-    
-
+    virtualMachineAdminUserName: empty(virtualMachineAdminUserName) ? keyVault_Reference.getSecret(virtualMachineAdminUserName) : virtualMachineAdminUserName 
   }
   dependsOn: [
     rgs
