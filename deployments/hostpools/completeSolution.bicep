@@ -657,6 +657,9 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (fslogixStorageService != 'N
     virtualNetwork: split(storagePrivateEndpointSubnetResourceId, '/')[8]
     virtualNetworkResourceGroup: split(storagePrivateEndpointSubnetResourceId, '/')[4]
   }
+  dependsOn: [
+    controlPlane
+  ]
 }
 
 module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
