@@ -1,3 +1,4 @@
+param azModuleBlobName string
 param identitySolution string
 param artifactsUri string
 param artifactsUserAssignedIdentityClientId string
@@ -167,7 +168,7 @@ resource extension_CustomScriptExtension 'Microsoft.Compute/virtualMachines/exte
     protectedSettings: {
       commandToExecute: 'powershell.exe -ExecutionPolicy Unrestricted -File cse_master_script.ps1'
       fileUris: [
-        '${artifactsUri}PowerShell-Az-Module.zip'
+        '${artifactsUri}${azModuleBlobName}'
         '${artifactsUri}cse_master_script.ps1'
       ]
       managedIdentity: { clientId: artifactsUserAssignedIdentityClientId }

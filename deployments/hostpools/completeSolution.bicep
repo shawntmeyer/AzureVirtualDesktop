@@ -47,6 +47,9 @@ by this solution will be granted \'Storage Blob Data Reader\' rights on the stor
 ''')
 param artifactsUserAssignedIdentityResourceId string = ''
 
+@description('Optional. The name of the blob that contains the PowerShell Az Module Install Script and MSI.')
+param azModuleBlobName string = 'PowerShell-Az-Module.zip'
+
 // Identity Configuration
 
 @allowed([
@@ -474,6 +477,7 @@ module management 'modules/management/management.bicep' = {
     automationAccountPrivateDnsZoneResourceId: automationAccountPrivateDnsZoneResourceId
     availability: availability
     avdObjectId: avdObjectId
+    azModuleBlobName: azModuleBlobName
     confidentialVMOrchestratorObjectId: confidentialVMOrchestratorObjectId
     confidentialVMOSDiskEncryptionType: confidentialVMOSDiskEncryptionType
     dataCollectionEndpointName: resourceNames.outputs.dataCollectionEndpointName

@@ -7,6 +7,7 @@ param automationAccountName string
 param automationAccountPrivateDnsZoneResourceId string
 param availability string
 param avdObjectId string
+param azModuleBlobName string
 param locationControlPlane string
 param confidentialVMOrchestratorObjectId string
 param confidentialVMOSDiskEncryptionType string
@@ -276,6 +277,7 @@ module virtualMachine 'virtualMachine.bicep' = {
     identitySolution: identitySolution
     artifactsUri: artifactsUri
     artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
+    azModuleBlobName: azModuleBlobName
     diskEncryptionSetResourceId: keyManagementDisksAndStorage != 'PlatformManaged' ? customerManagedKeys.outputs.diskEncryptionSetResourceId : ''
     diskNamePrefix: diskNamePrefix
     diskSku: diskSku
