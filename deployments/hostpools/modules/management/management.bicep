@@ -59,7 +59,7 @@ param tags object
 param timeStamp string
 param timeZone string
 param userAssignedIdentityNameConv string
-param virtualMachineNamePrefix string
+param virtualMachineName string
 @secure()
 param virtualMachineAdminPassword string
 @secure()
@@ -84,7 +84,7 @@ var requiredValidationScriptParameters = '-ActiveDirectorySolution ${identitySol
 var netAppValidationScriptParameters = '-NetAppVirtualNetworkName ${netAppVirtualNetworkName} -NetAppVirtualNetworkResourceGroupName ${netAppVirtualNetworkResourceGroupName}'
 var domainServicesValidationScriptParameters = '-DomainName ${domainName} -KerberosEncryption ${kerberosEncryption}'
 var optionalValidationScriptParameters = identitySolution == 'EntraDomainServices' ? ( contains(fslogixStorageSolution, 'NetApp') ? '${domainServicesValidationScriptParameters} ${netAppValidationScriptParameters}' : domainServicesValidationScriptParameters ) : ( contains(fslogixStorageSolution, 'NetApp') ? netAppValidationScriptParameters : '' )
-var validationScriptParameters = empty(securityType) ? '${requiredValidationScriptParameters} ${optionalValidationScriptParameters}' : '${requiredValidationScriptParameters} ${optionalValidationScriptParameters} -SecurityType ${securityType}'
+var validationScriptParameters = empty(securityType) ? replace('${requiredValidationScriptParameters} ${optionalValidationScriptParameters}', '  ', ' ') : replace('${requiredValidationScriptParameters} ${optionalValidationScriptParameters} -SecurityType ${securityType}', '  ', ' ')
 
 var roleAssignmentsCommon = [
   {
@@ -299,7 +299,7 @@ module virtualMachine 'virtualMachine.bicep' = {
       '${existingArtifactsUserAssignedIdentity.id}': {}
       '${deploymentUserAssignedIdentity.outputs.resourceId}' : {}
      }
-    virtualMachineNamePrefix: virtualMachineNamePrefix
+    virtualMachineNamePrefix: virtualMachineName
     virtualMachineAdminPassword: virtualMachineAdminPassword
     virtualMachineAdminUserName: virtualMachineAdminUserName
   }

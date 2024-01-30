@@ -28,7 +28,7 @@ Param(
     [string]
     $Location,
 
-    [Parameter]
+    [Parameter()]
     [string]
     $SecurityType,
 

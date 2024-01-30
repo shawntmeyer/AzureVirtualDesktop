@@ -166,10 +166,9 @@ resource extension_CustomScriptExtension 'Microsoft.Compute/virtualMachines/exte
       timeStamp: timeStamp
     }    
     protectedSettings: {
-      commandToExecute: 'powershell.exe -ExecutionPolicy Unrestricted -File cse_master_script.ps1'
+      commandToExecute: 'msiexec.exe /i ${azModuleBlobName} /quiet /qn /norestart /passive'
       fileUris: [
         '${artifactsUri}${azModuleBlobName}'
-        '${artifactsUri}cse_master_script.ps1'
       ]
       managedIdentity: { clientId: artifactsUserAssignedIdentityClientId }
     }

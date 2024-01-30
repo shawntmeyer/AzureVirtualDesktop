@@ -47,8 +47,8 @@ by this solution will be granted \'Storage Blob Data Reader\' rights on the stor
 ''')
 param artifactsUserAssignedIdentityResourceId string = ''
 
-@description('Optional. The name of the blob that contains the PowerShell Az Module Install Script and MSI.')
-param azModuleBlobName string = 'PowerShell-Az-Module.zip'
+@description('Optional. The name of the blob that contains the PowerShell Az Module msi.')
+param azModuleBlobName string = 'PowerShell-Az.msi'
 
 // Identity Configuration
 
@@ -526,7 +526,7 @@ module management 'modules/management/management.bicep' = {
     timeStamp: timeStamp
     timeZone: logic.outputs.timeZone
     userAssignedIdentityNameConv: resourceNames.outputs.userAssignedIdentityNameConv
-    virtualMachineNamePrefix: resourceNames.outputs.virtualMachineNamePrefix
+    virtualMachineName: resourceNames.outputs.mgmtVirtualMachineName
     virtualMachineAdminPassword: empty(virtualMachineAdminPassword) ? keyVault_Reference.getSecret(virtualMachineAdminPassword) : virtualMachineAdminPassword
     virtualMachineSize: virtualMachineSize
     virtualMachineAdminUserName: empty(virtualMachineAdminUserName) ? keyVault_Reference.getSecret(virtualMachineAdminUserName) : virtualMachineAdminUserName

@@ -71,7 +71,6 @@ var dataCollectionEndpointName = replace(replace(nameConv_Mgmt_Resources, 'resou
 // the AVD Insights data collection rule must start with 'microsoft-avdi-'
 var dataCollectionRulesNameConv = replace(replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.dataCollectionRules), 'location', locations[locationVirtualMachines].abbreviation), 'avd-', '')
 var diskAccessName = replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.diskAccesses), 'location', locations[locationVirtualMachines].abbreviation)
-//var diskEncryptionSetName = replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.diskEncryptionSets), 'location', locations[locationVirtualMachines].abbreviation)
 var diskEncryptionSetNameConv = replace(replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.diskEncryptionSets), 'location', locations[locationVirtualMachines].abbreviation), 'avd-', 'avd-desType-')
 var diskEncryptionSetConfVms = replace(diskEncryptionSetNameConv, 'avd-desType-', 'avd-confvm-')
 var diskEncryptionSetCustKeysName = replace(diskEncryptionSetNameConv, 'avd-desType-', 'avd-vmcustkeys-')
@@ -79,19 +78,13 @@ var diskEncryptionSetPlatAndCustKeysName = replace(diskEncryptionSetNameConv, 'a
 
 var keyVaultNameConv = replace(replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.keyVaults), 'location', locations[locationVirtualMachines].abbreviation), 'avd-', 'avd-keyVaultPurpose-')
 var keyVaultNameSecrets = replace(keyVaultNameConv, 'avd-keyVaultPurpose-', 'avd-secrets-')
-var keyVaultNameStandardKeys = replace(keyVaultNameConv, 'avd-keyVaultPurpose-', 'avd-vmkeys-')
-var keyVaultNameConfVMKeys = replace(keyVaultNameConv, 'avd-keyVaultPurpose-', 'avd-cvmkeys-')
+var keyVaultNameStandardKeys = replace(keyVaultNameConv, 'avd-keyVaultPurpose-', 'avd-enckeys-')
+var keyVaultNameConfVMKeys = replace(keyVaultNameConv, 'avd-keyVaultPurpose-', 'avd-cvmenckeys-')
 
-var KeyVaultUniqueString = take(uniqueString(keyVaultNameConv,resourceGroupManagement, subscription().subscriptionId), 24 - (length(keyVaultNameSecrets)+1))
-var keyVaultUniqueNameSecrets = nameConvResTypeAtEnd ? replace(keyVaultNameSecrets, '-${resourceAbbreviations.keyVaults}', '-${KeyVaultUniqueString}-${resourceAbbreviations.keyVaults}') : '${keyVaultNameSecrets}-${KeyVaultUniqueString}'
-var keyVaultUniqueNameStandardKeys = nameConvResTypeAtEnd ? replace(keyVaultNameStandardKeys, '-${resourceAbbreviations.keyVaults}', '-${KeyVaultUniqueString}-${resourceAbbreviations.keyVaults}') : '${keyVaultNameStandardKeys}-${KeyVaultUniqueString}'
-var keyVaultUniqueNameConfVMKeys = nameConvResTypeAtEnd ? replace(keyVaultNameConfVMKeys, '-${resourceAbbreviations.keyVaults}', '-${KeyVaultUniqueString}-${resourceAbbreviations.keyVaults}') : '${keyVaultNameConfVMKeys}-${KeyVaultUniqueString}'
-
-
-var logAnalyticsWorkspaceName = replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.logAnalyticsWorkspaces), 'location', locations[locationControlPlane].abbreviation)
+var logAnalyticsWorkspaceName = replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.logAnalyticsWorkspaces), 'location', locations[locationVirtualMachines].abbreviation)
 var recoveryServicesVaultName = replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.recoveryServicesVaults), 'location', locations[locationVirtualMachines].abbreviation)
 var userAssignedIdentityNameConv = replace(replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.userAssignedIdentities), 'location', locations[locationVirtualMachines].abbreviation), 'avd-', 'avd-uaiPurpose-')
-
+var mgmtVirtualMachineName = replace(replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.virtualMachines), 'location', locations[locationVirtualMachines].abbreviation), '-', '')
 // Storage Resources
 var resourceGroupStorage = replace(replace(replace(nameConv_HP_ResGroups, 'resGroupPurpose', 'storage'), 'location', '${locations[locationVirtualMachines].abbreviation}'), 'resourceType', '${resourceAbbreviations.resourceGroups}')
 var netAppAccountName = replace(replace(nameConv_HP_Resources, 'resourceType', resourceAbbreviations.netAppAccounts), 'location', locations[locationVirtualMachines].abbreviation)
@@ -115,9 +108,9 @@ output globalFeedWorkspaceName string = globalFeedWorkspaceName
 output fileShareNames object = fileShareNames
 output hostPoolName string = hostPoolName
 output keyVaultNames object = {
-  RSAHSMKeys: keyVaultUniqueNameConfVMKeys
-  VMSecrets: keyVaultUniqueNameSecrets
-  RSAKeys: keyVaultUniqueNameStandardKeys
+  RSAHSMKeys: keyVaultNameConfVMKeys
+  VMSecrets: keyVaultNameSecrets
+  RSAKeys: keyVaultNameStandardKeys
 }
 output locations object = locations
 output logAnalyticsWorkspaceName string = logAnalyticsWorkspaceName
@@ -134,4 +127,5 @@ output resourceGroupStorage string = resourceGroupStorage
 output storageAccountNamePrefix string = storageAccountNamePrefix
 output userAssignedIdentityNameConv string = userAssignedIdentityNameConv
 output virtualMachineNamePrefix string = virtualMachineNamePrefix
+output mgmtVirtualMachineName string = mgmtVirtualMachineName
 output workspaceName string = workspaceName
