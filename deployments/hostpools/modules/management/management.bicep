@@ -425,5 +425,4 @@ output validateANFfActiveDirectory string = validations.outputs.value.anfActiveD
 output validateANFDnsServers string = validations.outputs.value.anfDnsServers
 output validateANFSubnetId string = validations.outputs.value.anfSubnetId
 output validateavailabilityZones array = availability == 'availabilityZones' ? validations.outputs.value.availabilityZones : [ '1' ]
-output validateTrustedLaunch string = validations.outputs.value.trustedLaunch
 output virtualMachineName string = virtualMachine.outputs.Name
