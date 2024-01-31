@@ -225,7 +225,7 @@ module diskAccess 'diskAccess.bicep' = {
 
 // Sets an Azure policy to disable public network access to managed disks
 // Once Enhanced Policies in Recovery Services support managed disks with private link, remove the "if" condition
-module policy 'policy.bicep' = if (contains(hostPoolType, 'Pooled') && recoveryServices) {
+module policy 'policy.bicep' = if (contains(hostPoolType, 'Pooled') || recoveryServices) {
   name: 'ManagedDisks_NetworkAccess_Policy_${timeStamp}'
   params: {
     // Disabling the param below until Enhanced Policies in Recovery Services support managed disks with private link

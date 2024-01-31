@@ -60,23 +60,6 @@ module rsa_key_disks 'keyVaultKeys.bicep' = if (!confidentialVMOSDiskEncryption)
   }
 }
 
-/*
-module rsahsm_key_disks 'keyVaultKeys.bicep' = if (confidentialVMOSDiskEncryption) {
-  name: 'EncryptionKey_ConfidentialVMOSDisk_${timeStamp}'
-  params: {
-    exportable: true
-    keyName: 'ConfidentialVMOSDiskEncryptionKey'
-    keyType: 'RSA-HSM'
-    keyVaultName: confidentialVMOSDiskEncryption ? last(split(confidentialVMEncryptionKeysVault.outputs.keyVaultResourceId, '/')) : ''
-    release_policy: {
-      contentType: 'application/json; charset=utf-8'
-      data: loadFileAsBase64('confidentialVMReleasePolicy.json')
-    }
-    rotationPolicy: false
-  }
-}
-*/
-
 module rsahsm_key_disks '../common/customScriptExtensions.bicep' = if(confidentialVMOSDiskEncryption) {
   name: 'EncryptionKey_ConfidentialVMOSDisk_${timeStamp}'
   params: {
