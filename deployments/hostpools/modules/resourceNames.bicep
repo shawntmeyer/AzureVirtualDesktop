@@ -77,7 +77,7 @@ var diskEncryptionSetCustKeysName = replace(diskEncryptionSetNameConv, 'avd-desT
 var diskEncryptionSetPlatAndCustKeysName = replace(diskEncryptionSetNameConv, 'avd-desType-', 'avd-vmplatcustkeys-')
 
 var keyVaultNameConv = replace(replace(replace(nameConv_Mgmt_Resources, 'resourceType', resourceAbbreviations.keyVaults), 'location', locations[locationVirtualMachines].abbreviation), 'avd-', 'avd-keyVaultPurpose-')
-var keyVaultNameSecrets = replace(keyVaultNameConv, 'avd-keyVaultPurpose-', 'avd-secrets-')
+var keyVaultNameSecrets = replace(keyVaultNameConv, 'avd-keyVaultPurpose-', 'avd-depsecrets-')
 var keyVaultNameStandardKeys = replace(keyVaultNameConv, 'avd-keyVaultPurpose-', 'avd-enckeys-')
 var keyVaultNameConfVMKeys = replace(keyVaultNameConv, 'avd-keyVaultPurpose-', 'avd-confvmenckeys-')
 

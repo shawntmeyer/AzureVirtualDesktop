@@ -1,11 +1,15 @@
+param artifactsUri string
+param artifactsUserAssignedIdentityClientId string
 param confidentialVMOSDiskEncryption bool
 param confidentialVMOrchestratorObjectId string
+param deploymentUserAssignedIdentityClientId string
 param diskEncryptionSetNames object
 param diskEncryptionSetEncryptionType string
 param environmentShortName string
 param keyVaultNames object
 param keyVaultPrivateDnsZoneResourceId string
 param location string
+param managementVirtualMachineName string
 param privateEndpoint bool
 param privateEndpointNameConv string
 param privateEndpointSubnetId string
@@ -45,7 +49,7 @@ module confidentialVMEncryptionKeysVault 'keyVault.bicep' = if (confidentialVMOS
   }
 }
 
-module rsa_key_disks 'keyVaultKeys.bicep' = if(!confidentialVMOSDiskEncryption) {
+module rsa_key_disks 'keyVaultKeys.bicep' = if (!confidentialVMOSDiskEncryption) {
   name: 'EncryptionKey_VMDiskEncryption_${timeStamp}'
   params: {
     exportable: false
@@ -56,7 +60,8 @@ module rsa_key_disks 'keyVaultKeys.bicep' = if(!confidentialVMOSDiskEncryption) 
   }
 }
 
-module rsahsm_key_disks 'keyVaultKeys.bicep' = if(confidentialVMOSDiskEncryption) {
+/*
+module rsahsm_key_disks 'keyVaultKeys.bicep' = if (confidentialVMOSDiskEncryption) {
   name: 'EncryptionKey_ConfidentialVMOSDisk_${timeStamp}'
   params: {
     exportable: true
@@ -68,6 +73,22 @@ module rsahsm_key_disks 'keyVaultKeys.bicep' = if(confidentialVMOSDiskEncryption
       data: loadFileAsBase64('confidentialVMReleasePolicy.json')
     }
     rotationPolicy: false
+  }
+}
+*/
+
+module rsahsm_key_disks '../common/customScriptExtensions.bicep' = if(confidentialVMOSDiskEncryption) {
+  name: 'EncryptionKey_ConfidentialVMOSDisk_${timeStamp}'
+  params: {
+    fileUris: [
+      '${artifactsUri}Create-ConfidentialVMOSDiskEncryptionKey.ps1'
+    ]
+    scriptFileName: 'Create-ConfidentialVMOSDiskEncryptionKey.ps1'
+    location: location
+    parameters: '-keyVaultName ${last(split(confidentialVMEncryptionKeysVault.outputs.keyVaultResourceId, '/'))} -keyName ConfidentialVMOSDiskEncryptionKey -Environment ${environment().name} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentityClientId}'
+    tags: {}
+    userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
+    virtualMachineName: managementVirtualMachineName
   }
 }
 
@@ -100,7 +121,7 @@ module roleAssignment_UAI_EncryptUser '../common/roleAssignment.bicep' = {
   }
 }
 
-module roleAssignment_ConfVMOrchestrator_EncryptUser '../common/roleAssignment.bicep' = if(confidentialVMOSDiskEncryption) {
+module roleAssignment_ConfVMOrchestrator_EncryptUser '../common/roleAssignment.bicep' = if (confidentialVMOSDiskEncryption) {
   name: 'RoleAssignment_ConfVMOrchestrator_EncryptUser_${timeStamp}'
   params: {
     PrincipalId: confidentialVMOrchestratorObjectId
@@ -109,7 +130,7 @@ module roleAssignment_ConfVMOrchestrator_EncryptUser '../common/roleAssignment.b
   }
 }
 
-module roleAssignment_ConfVMOrchestrator_ReleaseUser '../common/roleAssignment.bicep' = if(confidentialVMOSDiskEncryption) {
+module roleAssignment_ConfVMOrchestrator_ReleaseUser '../common/roleAssignment.bicep' = if (confidentialVMOSDiskEncryption) {
   name: 'RoleAssignment_ConfVMOrchestrator_ReleaseUser_${timeStamp}'
   params: {
     PrincipalId: confidentialVMOrchestratorObjectId
@@ -122,9 +143,9 @@ module diskEncryptionSet 'diskEncryptionSet.bicep' = {
   name: 'DiskEncryptionSet_${timeStamp}'
   params: {
     autoKeyRotationEnabled: confidentialVMOSDiskEncryption ? false : true
-    diskEncryptionSetName: confidentialVMOSDiskEncryption ? diskEncryptionSetNames.ConfidentialVMs : ( diskEncryptionSetEncryptionType == 'EncryptionAtRestWithCustomerKey' ? diskEncryptionSetNames.CustomerManaged : diskEncryptionSetNames.PlatformAndCustomerManaged )
+    diskEncryptionSetName: confidentialVMOSDiskEncryption ? diskEncryptionSetNames.ConfidentialVMs : (diskEncryptionSetEncryptionType == 'EncryptionAtRestWithCustomerKey' ? diskEncryptionSetNames.CustomerManaged : diskEncryptionSetNames.PlatformAndCustomerManaged)
     encryptionType: diskEncryptionSetEncryptionType
-    keyUrl: confidentialVMOSDiskEncryption ? rsahsm_key_disks.outputs.keyUriWithVersion : rsa_key_disks.outputs.keyUriWithVersion
+    keyUrl: confidentialVMOSDiskEncryption ? rsahsm_key_disks.outputs.value.KeyUriWithVersion : rsa_key_disks.outputs.keyUriWithVersion
     keyVaultResourceId: confidentialVMOSDiskEncryption ? confidentialVMEncryptionKeysVault.outputs.keyVaultResourceId : encryptionKeysVault.outputs.keyVaultResourceId
     location: location
     tags: contains(tags, 'Microsoft.Compute/diskEncryptionSets') ? tags['Microsoft.Compute/diskEncryptionSets'] : {}

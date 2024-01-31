@@ -85,6 +85,7 @@ var roleDefinitions = {
   DesktopVirtualizationWorkspaceContributor: '21efdde3-836f-432b-bf3d-3e8e734d4b2b'
   KeyVaultCryptoServiceEncryptionUser: 'e147488a-f6f5-4113-8e2d-b22465e65bf6'
   KeyVaultCryptoServiceReleaseUser: '08bbd89e-9f13-488c-ac41-acfcb10c90ab'
+  KeyVaultReader: '21090545-7ca7-4776-b22c-e363652d74d2'
   Reader: 'acdd72a7-3385-48ef-bd42-f606fba81ae7'
   StorageAccountContributor: '17d1049b-9a84-46fb-8f53-869881c3d3ab'
   StorageBlobDataReader: '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1'

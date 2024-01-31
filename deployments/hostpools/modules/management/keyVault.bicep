@@ -2,6 +2,10 @@
 param domainJoinUserPrincipalName string = ''
 @secure()
 param domainJoinUserPassword string = ''
+param enabledForDeployment bool = false
+param enabledForDiskEncryption bool = false
+param enabledForTemplateDeployment bool = false
+param enablePurgeProtection bool = true
 param environmentShortName string
 param keyVaultName string
 param keyVaultPrivateDnsZoneResourceId string
@@ -22,10 +26,10 @@ resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' = {
   location: location
   tags: tagsKeyVault
   properties: {
-    enabledForDeployment: true
-    enabledForDiskEncryption: true
-    enabledForTemplateDeployment: true
-    enablePurgeProtection: true
+    enabledForDeployment: enabledForDeployment
+    enabledForDiskEncryption: enabledForDiskEncryption
+    enabledForTemplateDeployment: enabledForTemplateDeployment
+    enablePurgeProtection: enablePurgeProtection ? true : null
     enableRbacAuthorization: true
     enableSoftDelete: true
     networkAcls: {
@@ -34,7 +38,7 @@ resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' = {
       ipRules: []
       virtualNetworkRules: []
     }
-    publicNetworkAccess: 'Disabled'
+    publicNetworkAccess: privateEndpoint ? 'Disabled' : 'Enabled'
     sku: {
       family: 'A'
       name: skuName
@@ -44,7 +48,7 @@ resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' = {
   }
 }
 
-resource vaultPrivateEndpoint 'Microsoft.Network/privateEndpoints@2020-05-01' = {
+resource vaultPrivateEndpoint 'Microsoft.Network/privateEndpoints@2020-05-01' = if(privateEndpoint) { 
   name: replace(replace(privateEndpointNameConv, 'subresource', 'vault'), 'resource', keyVaultName)
   location: location
   tags: tagsPrivateEndpoints

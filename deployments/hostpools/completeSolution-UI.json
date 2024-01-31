@@ -214,7 +214,7 @@
 									"defaultValue": "",
 									"toolTip": "Input the friendly name for the AVD workspace that will be displayed in the end user's client.",
 									"constraints": {
-										"required": true,
+										"required": false,
 										"regex": "^.{1,64}$",
 										"validationMessage": "The value must be between 1 and 64 characters in length."
 									},
@@ -227,7 +227,7 @@
 									"defaultValue": "",
 									"toolTip": "Input the friendly name for the default SessionDesktop that will be displayed in the end user's client.",
 									"constraints": {
-										"required": true,
+										"required": false,
 										"regex": "^.{1,20}$",
 										"validationMessage": "The value must be between 1 and 20 characters in length."
 									},
@@ -1691,7 +1691,7 @@
                                     "name": "virtualNetwork",
                                     "type": "Microsoft.Common.DropDown",
                                     "label": "Virtual Network",
-                                    "defaultValue": "",
+                                    "defaultValue": "[last(split(steps('userProfiles').privateEndpoints.virtualNetwork.name), '/')]",
                                     "toolTip": "Select the virtual network where the AVD Private Link Private Endpoints will be created.",
                                     "constraints": {
                                         "required": true,
@@ -1711,6 +1711,7 @@
                                     "name": "subnet",
                                     "type": "Microsoft.Common.DropDown",
                                     "label": "Subnet",
+                                    "defaultValue": "[last(split(steps('userProfiles').privateEndpoints.subnet.name, '/'))]",
                                     "toolTip": "Select an existing subnet for the private Endpoints.",
                                     "constraints": {
                                         "required": true,

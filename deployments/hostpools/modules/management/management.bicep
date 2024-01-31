@@ -126,7 +126,16 @@ var roleAssignmentStorage = fslogix && !contains(identitySolution, 'EntraId')? [
     subscription: subscription().subscriptionId
   }
 ] : []
-var roleAssignments = union(roleAssignmentsCommon, roleAssignmentStorage)
+var roleAssignmentKeyVault = confidentialVMOSDiskEncryption && keyManagementDisksAndStorage == 'CustomerManaged' ? [
+  {
+    roleDefinitionId: roleDefinitions.KeyVaultReader // (Purpose: Retrieve the customer managed keys from the key vault for idempotent deployment)
+    roleShortName: 'KeyVaultReader'
+    resourceGroup: resourceGroupManagement
+    subscription: subscription().subscriptionId
+  }
+] : []
+
+var roleAssignments = union(roleAssignmentsCommon, roleAssignmentKeyVault, roleAssignmentStorage)
 var artifactsUserAssignedIdentityClientId = empty(artifactsUserAssignedIdentityResourceId) ? artifactsUserAssignedIdentity.outputs.clientId : existingArtifactsUserAssignedIdentity.properties.clientId
 
 // Role Assignment required for Start VM On Connect
@@ -231,7 +240,10 @@ module secretsKeyVault 'keyVault.bicep' =  {
   scope: resourceGroup(resourceGroupManagement)
   params: {
     domainJoinUserPassword: domainJoinUserPassword
-    domainJoinUserPrincipalName: domainJoinUserPrincipalName   
+    domainJoinUserPrincipalName: domainJoinUserPrincipalName
+    enabledForDeployment: true
+    enabledForTemplateDeployment: true
+    enablePurgeProtection: false   
     environmentShortName: environmentShortName
     keyVaultName: keyVaultNames.VMSecrets
     keyVaultPrivateDnsZoneResourceId: keyVaultPrivateDnsZoneResourceId
@@ -244,27 +256,6 @@ module secretsKeyVault 'keyVault.bicep' =  {
     tagsPrivateEndpoints: contains(tags, 'Microsoft.Network/privateEndpoints') ? tags['Microsoft.Network/privateEndpoints'] : {}
     virtualMachineAdminPassword: virtualMachineAdminPassword
     virtualMachineAdminUserName: virtualMachineAdminUserName
-  }
-}
-
-module customerManagedKeys 'customerManagedKeys.bicep' = if (keyManagementDisksAndStorage != 'PlatformManaged') {
-  name: 'CustomerManagedKeys_${timeStamp}'
-  scope: resourceGroup(resourceGroupManagement)
-  params: {
-    confidentialVMOrchestratorObjectId: confidentialVMOrchestratorObjectId
-    confidentialVMOSDiskEncryption: confidentialVMOSDiskEncryption
-    diskEncryptionSetEncryptionType: diskEncryptionSetEncryptionType
-    diskEncryptionSetNames: diskEncryptionSetNames
-    keyVaultNames: keyVaultNames
-    keyVaultPrivateDnsZoneResourceId: keyVaultPrivateDnsZoneResourceId
-    environmentShortName: environmentShortName
-    location: locationVirtualMachines
-    privateEndpoint: privateEndpoint
-    privateEndpointNameConv: privateEndpointNameConv
-    privateEndpointSubnetId: privateEndpointSubnetResourceId
-    userAssignedIdentityNameConv: userAssignedIdentityNameConv
-    tags: tags
-    timeStamp: timeStamp
   }
 }
 
@@ -318,10 +309,41 @@ module validations '../common/customScriptExtensions.bicep' = {
     userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
     virtualMachineName: virtualMachine.outputs.Name
   }
+  dependsOn: [
+    roleAssignments_deployment
+    roleAssignment_validation
+  ]
+}
+
+module customerManagedKeys 'customerManagedKeys.bicep' = if (keyManagementDisksAndStorage != 'PlatformManaged') {
+  name: 'CustomerManagedKeys_${timeStamp}'
+  scope: resourceGroup(resourceGroupManagement)
+  params: {
+    artifactsUri: artifactsUri
+    artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
+    confidentialVMOrchestratorObjectId: confidentialVMOrchestratorObjectId
+    confidentialVMOSDiskEncryption: confidentialVMOSDiskEncryption
+    deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentity.outputs.clientId
+    diskEncryptionSetEncryptionType: diskEncryptionSetEncryptionType
+    diskEncryptionSetNames: diskEncryptionSetNames
+    keyVaultNames: keyVaultNames
+    keyVaultPrivateDnsZoneResourceId: keyVaultPrivateDnsZoneResourceId
+    environmentShortName: environmentShortName
+    location: locationVirtualMachines
+    managementVirtualMachineName: virtualMachine.outputs.Name
+    privateEndpoint: privateEndpoint
+    privateEndpointNameConv: privateEndpointNameConv
+    privateEndpointSubnetId: privateEndpointSubnetResourceId
+    tags: tags
+    timeStamp: timeStamp
+    userAssignedIdentityNameConv: userAssignedIdentityNameConv
+  }
+  dependsOn: [
+    validations
+  ]
 }
 
 // enableInsights Resources for AVD Insights
-
 module logAnalyticsWorkspace 'logAnalyticsWorkspace.bicep' = if (enableInsights) {
   name: 'LogAnalytics_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
