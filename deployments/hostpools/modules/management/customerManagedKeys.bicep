@@ -85,7 +85,7 @@ module rsahsm_key_disks '../common/customScriptExtensions.bicep' = if(confidenti
     ]
     scriptFileName: 'Create-ConfidentialVMOSDiskEncryptionKey.ps1'
     location: location
-    parameters: '-keyVaultName ${last(split(confidentialVMEncryptionKeysVault.outputs.keyVaultResourceId, '/'))} -keyName ConfidentialVMOSDiskEncryptionKey -Environment ${environment().name} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentityClientId}'
+    parameters: confidentialVMOSDiskEncryption ? '-keyVaultName ${last(split(confidentialVMEncryptionKeysVault.outputs.keyVaultResourceId, '/'))} -keyName ConfidentialVMOSDiskEncryptionKey -Environment ${environment().name} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentityClientId}' : ''
     tags: {}
     userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
     virtualMachineName: managementVirtualMachineName

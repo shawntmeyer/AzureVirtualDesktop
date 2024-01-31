@@ -21,6 +21,14 @@
 								]
                             }
                         },
+                        {
+							"name": "hostPool",
+							"type": "Microsoft.Solutions.ResourceSelector",
+							"label": "Select the Host Pool to update",
+							"resourceType": "Microsoft.DesktopVirtualization/hostPools",
+							"required": true,
+							"toolTip": "Select the AVD Hostpool."
+						},
 						{
 							"name": "resourceGroupsApi",
 							"type": "Microsoft.Solutions.ArmApiControl",
@@ -33,19 +41,11 @@
 							"name": "resourceGroupHosts",
 							"type": "Microsoft.Common.DropDown",
 							"label": "Session Host/VM Resource Group",
-							"toolTip": "Select the name of the existing resource group where the session host virtual machines and associated resources will be created.",
+							"toolTip": "Select the name of the existing resource group where the session host virtual machines and associated resources will be created. This resouce group name should be similar to the host pool name and include the word hosts or compute.",
 							"constraints": {
 								"allowedValues": "[map(filter(steps('basics').resourceGroupsApi.value, (item) => equals(item.location, steps('basics').scope.location.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.name, '\"}')))]",
 								"required": true
 							}
-						},
-						{
-							"name": "hostPool",
-							"type": "Microsoft.Solutions.ResourceSelector",
-							"label": "Select the Host Pool to update",
-							"resourceType": "Microsoft.DesktopVirtualization/hostPools",
-							"required": true,
-							"toolTip": "Select the AVD Hostpool."
 						},
 						{
 									"name": "environmentShortName",
@@ -763,7 +763,7 @@
 									"type": "Microsoft.Common.TextBlock",
 									"visible": "[equals(steps('imageCustomizations').fslogixSessionHostConfig.storageService, 'AzureFiles')]",
 									"options": {
-										"text": "Provide the Resource Ids of Azure storage accounts located in other regions to be used for FSLogix profile and office containers. These storage accounts will be added to any that are created by this solution."
+										"text": "Provide the Resource Ids of the Azure storage accounts used for FSLogix profile and office containers."
 									}
 								},
 								{
@@ -1100,22 +1100,9 @@
                             "name": "tags",
                             "type": "Microsoft.Common.TagsByResource",
                             "resources": [
-                                "Microsoft.Automation/automationAccounts",
                                 "Microsoft.Compute/availabilitySets",
-                                "Microsoft.Compute/diskEncryptionSets",
                                 "Microsoft.Compute/virtualMachines",
-                                "Microsoft.DesktopVirtualization/applicationGroups",
-                                "Microsoft.DesktopVirtualization/hostPools",
-                                "Microsoft.DesktopVirtualization/workspaces",
-                                "Microsoft.KeyVault/vaults",
-                                "Microsoft.ManagedIdentity/userAssignedIdentities",
-                                "Microsoft.NetApp/netAppAccounts",
-                                "Microsoft.Network/networkInterfaces",
-                                "Microsoft.Network/privateEndpoints",
-                                "Microsoft.OperationalInsights/workspaces",
-                                "Microsoft.RecoveryServices/vaults",
-                                "Microsoft.Resources/resourceGroups",
-                                "Microsoft.Storage/storageAccounts"
+                                "Microsoft.Network/networkInterfaces"
                             ]
                         }
                     ]

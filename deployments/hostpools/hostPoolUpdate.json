@@ -1,0 +1,3150 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.24.24.22086",
+      "templateHash": "12346026811326610148"
+    }
+  },
+  "parameters": {
+    "nameConvResTypeAtEnd": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Reverse the normal Cloud Adoption Framework naming convention by putting the resource type abbreviation at the end of the resource name."
+      }
+    },
+    "hostPoolResourceId": {
+      "type": "string",
+      "metadata": {
+        "description": "The resource ID of the AVD hostpool to update."
+      }
+    },
+    "resourceGroupHosts": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "The name of the Resource Group to where the AVD Session Hosts are to be deployed."
+      }
+    },
+    "environmentShortName": {
+      "type": "string",
+      "defaultValue": "",
+      "allowedValues": [
+        "d",
+        "p",
+        "s",
+        "t",
+        ""
+      ],
+      "metadata": {
+        "description": "The target environment for the solution."
+      }
+    },
+    "artifactsContainerName": {
+      "type": "string",
+      "metadata": {
+        "description": "Required. The name of the Azure Blobs container hosting the required artifacts."
+      }
+    },
+    "artifactsStorageAccountResourceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Required. The storage account resource Id where the artifacts used by this deployment are stored."
+      }
+    },
+    "artifactsUserAssignedIdentityResourceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional.\r\nThe resource ID of the managed identity with Storage Blob Data Reader Access to the artifacts storage Account.\r\nIf provided this identity will be used to access blobs. Otherwise, the managed identity created\r\nby this solution will be granted \\'Storage Blob Data Reader\\' rights on the storage account.\r\n"
+      }
+    },
+    "identitySolution": {
+      "type": "string",
+      "allowedValues": [
+        "ActiveDirectoryDomainServices",
+        "EntraDomainServices",
+        "EntraId",
+        "EntraIdIntuneEnrollment"
+      ],
+      "metadata": {
+        "description": "The service providing domain services for Azure Virtual Desktop.  This is needed to properly configure the session hosts and if applicable, the Azure Storage Account."
+      }
+    },
+    "domainJoinUserPassword": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional. The password of the privileged account to domain join the AVD session hosts to your domain"
+      }
+    },
+    "domainJoinUserPrincipalName": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional. The UPN of the privileged account to domain join the AVD session hosts to your domain. This should be an account the resides within the domain you are joining."
+      }
+    },
+    "domainName": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional. The name of the domain that provides ADDS to the AVD session hosts and is synchronized with Azure AD"
+      }
+    },
+    "ouPath": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional. The distinguished name for the target Organization Unit in Active Directory Domain Services."
+      }
+    },
+    "fslogixContainerType": {
+      "type": "string",
+      "defaultValue": "ProfileContainer",
+      "allowedValues": [
+        "CloudCacheProfileContainer",
+        "CloudCacheProfileOfficeContainer",
+        "ProfileContainer",
+        "ProfileOfficeContainer"
+      ]
+    },
+    "fslogixNetAppFileShares": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "Optional. The UNC paths for NetApp File Shares that support FSLogix.\r\nOnly required when \"fslogixConfigureSessionHosts\" is true and \"fslogixStorageService\" is AzureNetAppFiles Premium or Standard.\r\nIf an office container path is specified, then ensure that the profile path is first.\r\nDo NOT include the trailing \"\\\"."
+      }
+    },
+    "fslogixConfigureSessionHosts": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Configure FSLogix agent on the session hosts via local registry keys."
+      }
+    },
+    "fslogixConfigurationBlobName": {
+      "type": "string",
+      "defaultValue": "FSLogix-Configure.zip",
+      "metadata": {
+        "description": "Optional. The name of the blob that contains the FSLogix Configuration Script."
+      }
+    },
+    "fslogixExistingStorageAccountResourceIds": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "Existing FSLogix Storage Account Resource Ids. Only used when fslogixConfigureSessionHosts = \"true\".\r\nThis list will be added to any storage accounts created when setting \"fslogixStorageService\" to any of the AzureFiles options. \r\nIf \"identitySolution\" is set to \"EntraId\" or \"EntraIdIntuneEnrollment\" then only the first storage account listed will be used.\r\n"
+      }
+    },
+    "sessionHostCount": {
+      "type": "int",
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 5000,
+      "metadata": {
+        "description": "The number of session hosts to deploy in the host pool. Ensure you have the approved quota to deploy the desired count."
+      }
+    },
+    "sessionHostIndex": {
+      "type": "int",
+      "defaultValue": 1,
+      "minValue": 0,
+      "maxValue": 4999,
+      "metadata": {
+        "description": "The starting number for the session hosts. This is important when adding virtual machines to ensure an update deployment is not performed on an exiting, active session host."
+      }
+    },
+    "acceleratedNetworking": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Enable accelerated networking on the AVD session hosts."
+      }
+    },
+    "availability": {
+      "type": "string",
+      "defaultValue": "availabilityZones",
+      "allowedValues": [
+        "availabilitySets",
+        "availabilityZones",
+        "None"
+      ],
+      "metadata": {
+        "description": "Set the desired availability / SLA with a pooled host pool.  The best practice is to deploy to availability Zones for resilency."
+      }
+    },
+    "avdAgentInstallersBlobName": {
+      "type": "string",
+      "defaultValue": "Set-SessionHostConfiguration.zip",
+      "metadata": {
+        "description": "Optional. The name of the blob containing the AVDAgent Agent installers and script."
+      }
+    },
+    "confidentialVMOSDiskEncryption": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Optional. Confidential disk encryption is an additional layer of encryption which binds the disk encryption keys to the virtual machine TPM and makes the disk content accessible only to the VM."
+      }
+    },
+    "encryptionAtHost": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Optional. Encryption at host encrypts temporary disks and ephemeral OS disks with platform-managed keys,\r\nOS and data disk caches with the key specified in the \"keyManagementDisksAndStorage\" parameter, and flows encrypted to the Storage service.\r\n"
+      }
+    },
+    "cseBlobNames": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "Array of script (or other artifact) names or full uris that will be downloaded by the Custom Script Extension on each Session Host Virtual Machine.\r\nEither specify the entire URL or just the name of the blob if is located at the fqdn specified by the [artifactsUri] parameter.\r\n"
+      }
+    },
+    "cseMasterScript": {
+      "type": "string",
+      "defaultValue": "cse_master_script.ps1",
+      "metadata": {
+        "description": "Optional. The name of the script and blob that is ran by the Custom Script Extension on Virtual Machines."
+      }
+    },
+    "cseScriptAddDynParameters": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Additional Custom Dynamic parameters passed to CSE Scripts.\r\n(ex: 'Script2Keys=@([pscustomobject]@{stringValue=\\'storageAccountName\\';booleanValue=\\'false\\'});Script3Keys=@([pscustomobject]@{intValue=\\'10\\'}')\r\n"
+      }
+    },
+    "diskEncryptionSetResourceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional. The resource ID of the Azure Disk Encryption Set to use to protect the ADE encryption keys. Only valid when diskEncryptionSolution specifies customer managed keys."
+      }
+    },
+    "virtualMachineSecurityType": {
+      "type": "string",
+      "defaultValue": "TrustedLaunch",
+      "allowedValues": [
+        "Standard",
+        "ConfidentialVM",
+        "TrustedLaunch"
+      ],
+      "metadata": {
+        "description": "Optional. The Security Type of the AVD Session Hosts.  ConfidentialVM and TrustedLaunch are only available in certain regions."
+      }
+    },
+    "diskSku": {
+      "type": "string",
+      "defaultValue": "Premium_LRS",
+      "allowedValues": [
+        "Standard_LRS",
+        "StandardSSD_LRS",
+        "Premium_LRS"
+      ],
+      "metadata": {
+        "description": "The storage SKU for the AVD session host disks.  Production deployments should use Premium_LRS."
+      }
+    },
+    "imageOffer": {
+      "type": "string",
+      "defaultValue": "office-365",
+      "metadata": {
+        "description": "Offer for the virtual machine image"
+      }
+    },
+    "imagePublisher": {
+      "type": "string",
+      "defaultValue": "MicrosoftWindowsDesktop",
+      "metadata": {
+        "description": "Publisher for the virtual machine image"
+      }
+    },
+    "imageSku": {
+      "type": "string",
+      "defaultValue": "win11-22h2-avd-m365",
+      "metadata": {
+        "description": "SKU for the virtual machine image"
+      }
+    },
+    "customImageResourceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "The resource ID for the Compute Gallery Image Version. Do not set this value if using a marketplace image."
+      }
+    },
+    "virtualMachineSubnetResourceId": {
+      "type": "string",
+      "metadata": {
+        "description": "The resource ID of the subnet to place the network interfaces for the AVD session hosts."
+      }
+    },
+    "virtualMachineAdminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Local administrator password for the AVD session hosts"
+      }
+    },
+    "virtualMachineAdminUserName": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The Local Administrator Username for the Session Hosts"
+      }
+    },
+    "virtualMachineSize": {
+      "type": "string",
+      "defaultValue": "Standard_D4ads_v5",
+      "metadata": {
+        "description": "The VM SKU for the AVD session hosts."
+      }
+    },
+    "virtualMachineNamePrefix": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 12,
+      "metadata": {
+        "description": "Required. The Virtual Machine Name prefix."
+      }
+    },
+    "enableInsights": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Deploys the required enableInsights resources to enable AVD Insights and monitor features in the automation account."
+      }
+    },
+    "dataCollectionEndpointResourceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional. The resource ID of the Data Collection Endpoint located in the same region as the Virtual Machines."
+      }
+    },
+    "avdInsightsDataCollectionRulesResourceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional. The resource ID of the Data Collection Rules used with the Azure Monitor Agent to power AVD insights."
+      }
+    },
+    "vmInsightsDataCollectionRulesResourceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional. The resource ID of the Data Collection Rules used with the Azure Monitor Agent to power VM insights."
+      }
+    },
+    "securityLogAnalyticsWorkspaceResourceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "The resource ID of the log analytics workspace used for Azure Sentinel and / or Defender for Cloud. When using the Microsoft Monitor Agent (Log Analytics Agent), this allows you to multihome the agent to reduce unnecessary log collection and reduce cost."
+      }
+    },
+    "securityDataCollectionRulesResourceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "The resource ID of the data collection rule used for Azure Sentinel and / or Defender for Cloud when using the Azure Monitor Agent."
+      }
+    },
+    "recoveryServices": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Enable backups to an Azure Recovery Services vault.  For a pooled host pool this will enable backups on the Azure file share.  For a personal host pool this will enable backups on the AVD sessions hosts."
+      }
+    },
+    "recoveryServicesVaultResourceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "The resource ID of the Recovery Services Vault to use for backups."
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Key / value pairs of metadata for the Azure resource groups and resources."
+      }
+    },
+    "timeStamp": {
+      "type": "string",
+      "defaultValue": "[utcNow('yyyyMMddhhmmss')]",
+      "metadata": {
+        "description": "DO NOT MODIFY THIS VALUE! The timeStamp is needed to differentiate deployments for certain Azure resources and must be set using a parameter."
+      }
+    }
+  },
+  "variables": {
+    "$fxv#0": {
+      "automationAccounts": "aa",
+      "availabilitySets": "as",
+      "computeGalleries": "gal",
+      "dataCollectionEndpoints": "dce",
+      "dataCollectionRules": "dcr",
+      "desktopApplicationGroups": "vddag",
+      "diskAccesses": "da",
+      "remoteApplicationGroups": "vdrag",
+      "disks": "disk",
+      "diskEncryptionSets": "des",
+      "hostPools": "vdpool",
+      "keyVaults": "kv",
+      "logAnalyticsWorkspaces": "law",
+      "netAppAccounts": "naa",
+      "netAppCapacityPools": "nacp",
+      "networkInterfaces": "nic",
+      "privateEndpoints": "pe",
+      "recoveryServicesVaults": "rsv",
+      "resourceGroups": "rg",
+      "storageAccounts": "sa",
+      "userAssignedIdentities": "uai",
+      "virtualMachines": "vm",
+      "workspaces": "vdws"
+    },
+    "acceleratedNetworkingString": "[if(parameters('acceleratedNetworking'), 'True', 'False')]",
+    "confidentialVMOSDiskEncryptionType": "[if(parameters('confidentialVMOSDiskEncryption'), 'DiskWithVMGuestState', 'VMGuestStateOnly')]",
+    "securityType": "[if(equals(parameters('virtualMachineSecurityType'), 'Standard'), '', parameters('virtualMachineSecurityType'))]",
+    "resourceAbbreviations": "[variables('$fxv#0')]",
+    "availabilitySetNamePrefix": "[if(parameters('nameConvResTypeAtEnd'), format('{0}-{1}-', variables('vmNamePrefixWithoutDash'), variables('resourceAbbreviations').availabilitySets), format('{0}-{1}-', variables('resourceAbbreviations').availabilitySets, variables('vmNamePrefixWithoutDash')))]",
+    "vmNamePrefixWithoutDash": "[if(equals(last(parameters('virtualMachineNamePrefix')), '-'), take(parameters('virtualMachineNamePrefix'), sub(length(parameters('virtualMachineNamePrefix')), 1)), parameters('virtualMachineNamePrefix'))]",
+    "diskNamePrefix": "[if(parameters('nameConvResTypeAtEnd'), format('{0}-{1}-', variables('vmNamePrefixWithoutDash'), variables('resourceAbbreviations').disks), format('{0}-{1}-', variables('resourceAbbreviations').disks, variables('vmNamePrefixWithoutDash')))]",
+    "networkInterfaceNamePrefix": "[if(parameters('nameConvResTypeAtEnd'), format('{0}-{1}-', variables('vmNamePrefixWithoutDash'), variables('resourceAbbreviations').networkInterfaces), format('{0}-{1}-', variables('resourceAbbreviations').networkInterfaces, variables('vmNamePrefixWithoutDash')))]",
+    "artifactsStorageAccountName": "[last(split(parameters('artifactsStorageAccountResourceId'), '/'))]",
+    "artifactsUri": "[format('https://{0}.blob.{1}/{2}/', variables('artifactsStorageAccountName'), environment().suffixes.storage, parameters('artifactsContainerName'))]",
+    "availabilityZones": "[if(equals(parameters('availability'), 'availabilityZones'), createArray('1', '2', '3'), createArray())]",
+    "recoveryServicesVaultName": "[if(not(empty(parameters('recoveryServicesVaultResourceId'))), last(split(parameters('recoveryServicesVaultResourceId'), '/')), '')]",
+    "resourceGroupControlPlane": "[split(parameters('hostPoolResourceId'), '/')[4]]",
+    "resourceGroupManagement": "[if(not(empty(parameters('recoveryServicesVaultResourceId'))), split(parameters('recoveryServicesVaultResourceId'), '/')[4], '')]",
+    "hostPoolName": "[last(split(parameters('hostPoolResourceId'), '/'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "[format('ResourceNames_{0}', parameters('timeStamp'))]",
+      "location": "[deployment().location]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "environmentShortName": {
+            "value": "[parameters('environmentShortName')]"
+          },
+          "businessUnitIdentifier": {
+            "value": ""
+          },
+          "centralizedAVDManagement": {
+            "value": false
+          },
+          "fslogixStorageCustomPrefix": {
+            "value": ""
+          },
+          "hostPoolIdentifier": {
+            "value": ""
+          },
+          "locationControlPlane": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('virtualMachineSubnetResourceId'), '/')[2], split(parameters('virtualMachineSubnetResourceId'), '/')[4]), 'Microsoft.Network/virtualNetworks', split(parameters('virtualMachineSubnetResourceId'), '/')[8]), '2023-04-01', 'full').location]"
+          },
+          "locationVirtualMachines": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('virtualMachineSubnetResourceId'), '/')[2], split(parameters('virtualMachineSubnetResourceId'), '/')[4]), 'Microsoft.Network/virtualNetworks', split(parameters('virtualMachineSubnetResourceId'), '/')[8]), '2023-04-01', 'full').location]"
+          },
+          "nameConvResTypeAtEnd": {
+            "value": "[parameters('nameConvResTypeAtEnd')]"
+          },
+          "virtualMachineNamePrefix": {
+            "value": "[parameters('virtualMachineNamePrefix')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.24.24.22086",
+              "templateHash": "1489560366386110634"
+            }
+          },
+          "parameters": {
+            "environmentShortName": {
+              "type": "string"
+            },
+            "businessUnitIdentifier": {
+              "type": "string"
+            },
+            "centralizedAVDManagement": {
+              "type": "bool"
+            },
+            "fslogixStorageCustomPrefix": {
+              "type": "string"
+            },
+            "hostPoolIdentifier": {
+              "type": "string"
+            },
+            "locationControlPlane": {
+              "type": "string"
+            },
+            "locationVirtualMachines": {
+              "type": "string"
+            },
+            "nameConvResTypeAtEnd": {
+              "type": "bool"
+            },
+            "virtualMachineNamePrefix": {
+              "type": "string"
+            }
+          },
+          "variables": {
+            "$fxv#0": {
+              "australiacentral": {
+                "abbreviation": "auc",
+                "timeDifference": "+10:00",
+                "timeZone": "AUS Eastern Standard Time"
+              },
+              "australiacentral2": {
+                "abbreviation": "auc2",
+                "timeDifference": "+10:00",
+                "timeZone": "AUS Eastern Standard Time"
+              },
+              "australiaeast": {
+                "abbreviation": "aue",
+                "timeDifference": "+10:00",
+                "timeZone": "AUS Eastern Standard Time"
+              },
+              "australiasoutheast": {
+                "abbreviation": "ause",
+                "timeDifference": "+10:00",
+                "timeZone": "AUS Eastern Standard Time"
+              },
+              "brazilsouth": {
+                "abbreviation": "brs",
+                "timeDifference": "-3:00",
+                "timeZone": "E. South America Standard Time"
+              },
+              "brazilsoutheast": {
+                "abbreviation": "brse",
+                "timeDifference": "-3:00",
+                "timeZone": "E. South America Standard Time"
+              },
+              "canadacentral": {
+                "abbreviation": "cac",
+                "timeDifference": "-5:00",
+                "timeZone": "Eastern Standard Time"
+              },
+              "canadaeast": {
+                "abbreviation": "cae",
+                "timeDifference": "-5:00",
+                "timeZone": "Eastern Standard Time"
+              },
+              "centralindia": {
+                "abbreviation": "inc",
+                "timeDifference": "+5:30",
+                "timeZone": "India Standard Time"
+              },
+              "centralus": {
+                "abbreviation": "usc",
+                "timeDifference": "-6:00",
+                "timeZone": "Central Standard Time"
+              },
+              "chinaeast": {
+                "abbreviation": "cne",
+                "timeDifference": "+8:00",
+                "timeZone": "China Standard Time"
+              },
+              "chinaeast2": {
+                "abbreviation": "cne2",
+                "timeDifference": "+8:00",
+                "timeZone": "China Standard Time"
+              },
+              "chinanorth": {
+                "abbreviation": "cnn",
+                "timeDifference": "+8:00",
+                "timeZone": "China Standard Time"
+              },
+              "chinanorth2": {
+                "abbreviation": "cnn2",
+                "timeDifference": "+8:00",
+                "timeZone": "China Standard Time"
+              },
+              "eastasia": {
+                "abbreviation": "ase",
+                "timeDifference": "+8:00",
+                "timeZone": "China Standard Time"
+              },
+              "eastus": {
+                "abbreviation": "use",
+                "timeDifference": "-5:00",
+                "timeZone": "Eastern Standard Time"
+              },
+              "eastus2": {
+                "abbreviation": "use2",
+                "timeDifference": "-5:00",
+                "timeZone": "Eastern Standard Time"
+              },
+              "francecentral": {
+                "abbreviation": "frc",
+                "timeDifference": "+1:00",
+                "timeZone": "Central Europe Standard Time"
+              },
+              "francesouth": {
+                "abbreviation": "frs",
+                "timeDifference": "+1:00",
+                "timeZone": "Central Europe Standard Time"
+              },
+              "germanynorth": {
+                "abbreviation": "den",
+                "timeDifference": "+1:00",
+                "timeZone": "Central Europe Standard Time"
+              },
+              "germanywestcentral": {
+                "abbreviation": "dewc",
+                "timeDifference": "+1:00",
+                "timeZone": "Central Europe Standard Time"
+              },
+              "japaneast": {
+                "abbreviation": "jpe",
+                "timeDifference": "+9:00",
+                "timeZone": "Tokyo Standard Time"
+              },
+              "japanwest": {
+                "abbreviation": "jpw",
+                "timeDifference": "+9:00",
+                "timeZone": "Tokyo Standard Time"
+              },
+              "jioindiacentral": {
+                "abbreviation": "injc",
+                "timeDifference": "+5:30",
+                "timeZone": "India Standard Time"
+              },
+              "jioindiawest": {
+                "abbreviation": "injw",
+                "timeDifference": "+5:30",
+                "timeZone": "India Standard Time"
+              },
+              "koreacentral": {
+                "abbreviation": "krc",
+                "timeDifference": "+9:00",
+                "timeZone": "Korea Standard Time"
+              },
+              "koreasouth": {
+                "abbreviation": "krs",
+                "timeDifference": "+9:00",
+                "timeZone": "Korea Standard Time"
+              },
+              "northcentralus": {
+                "abbreviation": "usnc",
+                "timeDifference": "-6:00",
+                "timeZone": "Central Standard Time"
+              },
+              "northeurope": {
+                "abbreviation": "eun",
+                "timeDifference": "0:00",
+                "timeZone": "GMT Standard Time"
+              },
+              "norwayeast": {
+                "abbreviation": "noe",
+                "timeDifference": "+1:00",
+                "timeZone": "Central Europe Standard Time"
+              },
+              "norwaywest": {
+                "abbreviation": "now",
+                "timeDifference": "+1:00",
+                "timeZone": "Central Europe Standard Time"
+              },
+              "southafricanorth": {
+                "abbreviation": "zan",
+                "timeDifference": "+2:00",
+                "timeZone": "South Africa Standard Time"
+              },
+              "southafricawest": {
+                "abbreviation": "zaw",
+                "timeDifference": "+2:00",
+                "timeZone": "South Africa Standard Time"
+              },
+              "southcentralus": {
+                "abbreviation": "ussc",
+                "timeDifference": "-6:00",
+                "timeZone": "Central Standard Time"
+              },
+              "southeastasia": {
+                "abbreviation": "asse",
+                "timeDifference": "+8:00",
+                "timeZone": "Singapore Standard Time"
+              },
+              "southindia": {
+                "abbreviation": "ins",
+                "timeDifference": "+5:30",
+                "timeZone": "India Standard Time"
+              },
+              "swedencentral": {
+                "abbreviation": "sec",
+                "timeDifference": "+1:00",
+                "timeZone": "Central Europe Standard Time"
+              },
+              "switzerlandnorth": {
+                "abbreviation": "chn",
+                "timeDifference": "+1:00",
+                "timeZone": "Central Europe Standard Time"
+              },
+              "switzerlandwest": {
+                "abbreviation": "chw",
+                "timeDifference": "+1:00",
+                "timeZone": "Central Europe Standard Time"
+              },
+              "uaecentral": {
+                "abbreviation": "aec",
+                "timeDifference": "+3:00",
+                "timeZone": "Arabian Standard Time"
+              },
+              "uaenorth": {
+                "abbreviation": "aen",
+                "timeDifference": "+3:00",
+                "timeZone": "Arabian Standard Time"
+              },
+              "uksouth": {
+                "abbreviation": "uks",
+                "timeDifference": "0:00",
+                "timeZone": "GMT Standard Time"
+              },
+              "ukwest": {
+                "abbreviation": "ukw",
+                "timeDifference": "0:00",
+                "timeZone": "GMT Standard Time"
+              },
+              "usdodcentral": {
+                "abbreviation": "dodc",
+                "timeDifference": "-6:00",
+                "timeZone": "Central Standard Time"
+              },
+              "usdodeast": {
+                "abbreviation": "dode",
+                "timeDifference": "-5:00",
+                "timeZone": "Eastern Standard Time"
+              },
+              "usgovarizona": {
+                "abbreviation": "az",
+                "timeDifference": "-7:00",
+                "timeZone": "Mountain Standard Time"
+              },
+              "usgovtexas": {
+                "abbreviation": "tx",
+                "timeDifference": "-6:00",
+                "timeZone": "Central Standard Time"
+              },
+              "usgovvirginia": {
+                "abbreviation": "va",
+                "timeDifference": "-5:00",
+                "timeZone": "Eastern Standard Time"
+              },
+              "westcentralus": {
+                "abbreviation": "uswc",
+                "timeDifference": "-7:00",
+                "timeZone": "Mountain Standard Time"
+              },
+              "westeurope": {
+                "abbreviation": "euw",
+                "timeDifference": "+1:00",
+                "timeZone": "Central Europe Standard Time"
+              },
+              "westindia": {
+                "abbreviation": "inw",
+                "timeDifference": "+5:30",
+                "timeZone": "India Standard Time"
+              },
+              "westus": {
+                "abbreviation": "usw",
+                "timeDifference": "-8:00",
+                "timeZone": "Pacific Standard Time"
+              },
+              "westus2": {
+                "abbreviation": "usw2",
+                "timeDifference": "-8:00",
+                "timeZone": "Pacific Standard Time"
+              },
+              "westus3": {
+                "abbreviation": "usw3",
+                "timeDifference": "-7:00",
+                "timeZone": "Mountain Standard Time"
+              }
+            },
+            "$fxv#1": {
+              "automationAccounts": "aa",
+              "availabilitySets": "as",
+              "computeGalleries": "gal",
+              "dataCollectionEndpoints": "dce",
+              "dataCollectionRules": "dcr",
+              "desktopApplicationGroups": "vddag",
+              "diskAccesses": "da",
+              "remoteApplicationGroups": "vdrag",
+              "disks": "disk",
+              "diskEncryptionSets": "des",
+              "hostPools": "vdpool",
+              "keyVaults": "kv",
+              "logAnalyticsWorkspaces": "law",
+              "netAppAccounts": "naa",
+              "netAppCapacityPools": "nacp",
+              "networkInterfaces": "nic",
+              "privateEndpoints": "pe",
+              "recoveryServicesVaults": "rsv",
+              "resourceGroups": "rg",
+              "storageAccounts": "sa",
+              "userAssignedIdentities": "uai",
+              "virtualMachines": "vm",
+              "workspaces": "vdws"
+            },
+            "centralAVDManagement": "[if(not(empty(parameters('businessUnitIdentifier'))), parameters('centralizedAVDManagement'), true())]",
+            "fileShareNames": {
+              "CloudCacheProfileContainer": [
+                "profile-containers"
+              ],
+              "CloudCacheProfileOfficeContainer": [
+                "profile-containers",
+                "office-containers"
+              ],
+              "ProfileContainer": [
+                "profile-containers"
+              ],
+              "ProfileOfficeContainer": [
+                "profile-containers",
+                "office-containers"
+              ]
+            },
+            "locations": "[variables('$fxv#0')]",
+            "resourceAbbreviations": "[variables('$fxv#1')]",
+            "businessUnitId": "[if(not(empty(parameters('businessUnitIdentifier'))), if(contains(parameters('businessUnitIdentifier'), 'avd'), parameters('businessUnitIdentifier'), format('{0}-avd', parameters('businessUnitIdentifier'))), '')]",
+            "hostPoolId": "[if(not(empty(parameters('businessUnitIdentifier'))), parameters('hostPoolIdentifier'), if(contains(parameters('hostPoolIdentifier'), 'avd'), parameters('hostPoolIdentifier'), format('avd-{0}', parameters('hostPoolIdentifier'))))]",
+            "hostPoolBaseName": "[if(not(empty(parameters('businessUnitIdentifier'))), format('{0}-{1}', variables('businessUnitId'), variables('hostPoolId')), variables('hostPoolId'))]",
+            "hostPoolPrefix": "[if(parameters('nameConvResTypeAtEnd'), variables('hostPoolBaseName'), format('resourceType-{0}', variables('hostPoolBaseName')))]",
+            "nameConv_Suffix_withoutResType": "[if(not(empty(parameters('environmentShortName'))), format('{0}-location', parameters('environmentShortName')), 'location')]",
+            "nameConvSuffix": "[if(parameters('nameConvResTypeAtEnd'), format('{0}-resourceType', variables('nameConv_Suffix_withoutResType')), variables('nameConv_Suffix_withoutResType'))]",
+            "nameConv_HP_ResGroups": "[format('{0}-resGroupPurpose-{1}', variables('hostPoolPrefix'), variables('nameConvSuffix'))]",
+            "nameConv_HP_Resources": "[format('{0}-{1}', variables('hostPoolPrefix'), variables('nameConvSuffix'))]",
+            "nameConv_Shared_ResGroups": "[if(parameters('nameConvResTypeAtEnd'), if(not(empty(parameters('businessUnitIdentifier'))), format('{0}-resGroupPurpose-{1}', variables('businessUnitId'), variables('nameConvSuffix')), format('avd-resGroupPurpose-{0}', variables('nameConvSuffix'))), if(not(empty(parameters('businessUnitIdentifier'))), format('resourceType-{0}-resGroupPurpose-{1}', variables('businessUnitId'), variables('nameConvSuffix')), format('resourceType-avd-resGroupPurpose-{0}', variables('nameConvSuffix'))))]",
+            "nameConv_Shared_Resources": "[if(parameters('nameConvResTypeAtEnd'), if(not(empty(parameters('businessUnitIdentifier'))), format('{0}-{1}', variables('businessUnitId'), variables('nameConvSuffix')), format('{0}', variables('nameConvSuffix'))), if(not(empty(variables('businessUnitId'))), format('resourceType-{0}-{1}', variables('businessUnitId'), variables('nameConvSuffix')), format('resourceType-{0}', variables('nameConvSuffix'))))]",
+            "nameConv_Mgmt_ResGroup": "[if(variables('centralAVDManagement'), if(parameters('nameConvResTypeAtEnd'), format('avd-resGroupPurpose-{0}', variables('nameConvSuffix')), format('resourceType-avd-resGroupPurpose-{0}', variables('nameConvSuffix'))), variables('nameConv_Shared_ResGroups'))]",
+            "nameConv_Mgmt_Resources": "[if(variables('centralAVDManagement'), if(parameters('nameConvResTypeAtEnd'), format('avd-{0}', variables('nameConvSuffix')), format('resourceType-avd-{0}', variables('nameConvSuffix'))), variables('nameConv_Shared_Resources'))]",
+            "resourceGroupControlPlane": "[replace(replace(replace(variables('nameConv_Shared_ResGroups'), 'resGroupPurpose', 'controlplane'), 'location', format('{0}', variables('locations')[parameters('locationControlPlane')].abbreviation)), 'resourceType', format('{0}', variables('resourceAbbreviations').resourceGroups))]",
+            "workspaceName": "[replace(replace(variables('nameConv_Mgmt_Resources'), 'resourceType', variables('resourceAbbreviations').workspaces), 'location', variables('locations')[parameters('locationControlPlane')].abbreviation)]",
+            "desktopApplicationGroupName": "[replace(replace(variables('nameConv_HP_Resources'), 'resourceType', variables('resourceAbbreviations').desktopApplicationGroups), 'location', variables('locations')[parameters('locationControlPlane')].abbreviation)]",
+            "hostPoolName": "[replace(replace(variables('nameConv_HP_Resources'), 'resourceType', variables('resourceAbbreviations').hostPools), 'location', variables('locations')[parameters('locationControlPlane')].abbreviation)]",
+            "globalFeedResourceGroupName": "[replace(replace(replace(variables('nameConv_Mgmt_ResGroup'), 'resGroupPurpose', 'global-feed'), 'location', format('{0}', variables('locations')[parameters('locationVirtualMachines')].abbreviation)), 'resourceType', format('{0}', variables('resourceAbbreviations').resourceGroups))]",
+            "globalFeedWorkspaceName": "[replace(if(parameters('nameConvResTypeAtEnd'), 'avd-feed-global-resourceType', 'resourceType-avd-feed-global'), 'resourceType', variables('resourceAbbreviations').workspaces)]",
+            "resourceGroupHosts": "[replace(replace(replace(variables('nameConv_HP_ResGroups'), 'resGroupPurpose', 'hosts'), 'location', format('{0}', variables('locations')[parameters('locationControlPlane')].abbreviation)), 'resourceType', format('{0}', variables('resourceAbbreviations').resourceGroups))]",
+            "availabilitySetNamePrefix": "[if(parameters('nameConvResTypeAtEnd'), format('{0}-{1}-', variables('vmNamePrefixWithoutDash'), variables('resourceAbbreviations').availabilitySets), format('{0}-{1}-', variables('resourceAbbreviations').availabilitySets, variables('vmNamePrefixWithoutDash')))]",
+            "vmNamePrefixWithoutDash": "[if(equals(last(parameters('virtualMachineNamePrefix')), '-'), take(parameters('virtualMachineNamePrefix'), sub(length(parameters('virtualMachineNamePrefix')), 1)), parameters('virtualMachineNamePrefix'))]",
+            "diskNamePrefix": "[if(parameters('nameConvResTypeAtEnd'), format('{0}-{1}-', variables('vmNamePrefixWithoutDash'), variables('resourceAbbreviations').disks), format('{0}-{1}-', variables('resourceAbbreviations').disks, variables('vmNamePrefixWithoutDash')))]",
+            "networkInterfaceNamePrefix": "[if(parameters('nameConvResTypeAtEnd'), format('{0}-{1}-', variables('vmNamePrefixWithoutDash'), variables('resourceAbbreviations').networkInterfaces), format('{0}-{1}-', variables('resourceAbbreviations').networkInterfaces, variables('vmNamePrefixWithoutDash')))]",
+            "resourceGroupManagement": "[replace(replace(replace(variables('nameConv_Mgmt_ResGroup'), 'resGroupPurpose', 'management'), 'location', format('{0}', variables('locations')[parameters('locationVirtualMachines')].abbreviation)), 'resourceType', format('{0}', variables('resourceAbbreviations').resourceGroups))]",
+            "automationAccountName": "[replace(replace(variables('nameConv_Mgmt_Resources'), 'resourceType', variables('resourceAbbreviations').automationAccounts), 'location', variables('locations')[parameters('locationVirtualMachines')].abbreviation)]",
+            "dataCollectionEndpointName": "[replace(replace(variables('nameConv_Mgmt_Resources'), 'resourceType', variables('resourceAbbreviations').dataCollectionEndpoints), 'location', variables('locations')[parameters('locationVirtualMachines')].abbreviation)]",
+            "dataCollectionRulesNameConv": "[replace(replace(replace(variables('nameConv_Mgmt_Resources'), 'resourceType', variables('resourceAbbreviations').dataCollectionRules), 'location', variables('locations')[parameters('locationVirtualMachines')].abbreviation), 'avd-', '')]",
+            "diskAccessName": "[replace(replace(variables('nameConv_Mgmt_Resources'), 'resourceType', variables('resourceAbbreviations').diskAccesses), 'location', variables('locations')[parameters('locationVirtualMachines')].abbreviation)]",
+            "diskEncryptionSetNameConv": "[replace(replace(replace(variables('nameConv_Mgmt_Resources'), 'resourceType', variables('resourceAbbreviations').diskEncryptionSets), 'location', variables('locations')[parameters('locationVirtualMachines')].abbreviation), 'avd-', 'avd-desType-')]",
+            "diskEncryptionSetConfVms": "[replace(variables('diskEncryptionSetNameConv'), 'avd-desType-', 'avd-confvm-')]",
+            "diskEncryptionSetCustKeysName": "[replace(variables('diskEncryptionSetNameConv'), 'avd-desType-', 'avd-vmcustkeys-')]",
+            "diskEncryptionSetPlatAndCustKeysName": "[replace(variables('diskEncryptionSetNameConv'), 'avd-desType-', 'avd-vmplatcustkeys-')]",
+            "keyVaultNameConv": "[replace(replace(replace(variables('nameConv_Mgmt_Resources'), 'resourceType', variables('resourceAbbreviations').keyVaults), 'location', variables('locations')[parameters('locationVirtualMachines')].abbreviation), 'avd-', 'avd-keyVaultPurpose-')]",
+            "keyVaultNameSecrets": "[replace(variables('keyVaultNameConv'), 'avd-keyVaultPurpose-', 'avd-depsecrets-')]",
+            "keyVaultNameStandardKeys": "[replace(variables('keyVaultNameConv'), 'avd-keyVaultPurpose-', 'avd-enckeys-')]",
+            "keyVaultNameConfVMKeys": "[replace(variables('keyVaultNameConv'), 'avd-keyVaultPurpose-', 'avd-confvmenckeys-')]",
+            "logAnalyticsWorkspaceName": "[replace(replace(variables('nameConv_Mgmt_Resources'), 'resourceType', variables('resourceAbbreviations').logAnalyticsWorkspaces), 'location', variables('locations')[parameters('locationVirtualMachines')].abbreviation)]",
+            "recoveryServicesVaultName": "[replace(replace(variables('nameConv_Mgmt_Resources'), 'resourceType', variables('resourceAbbreviations').recoveryServicesVaults), 'location', variables('locations')[parameters('locationVirtualMachines')].abbreviation)]",
+            "userAssignedIdentityNameConv": "[replace(replace(replace(variables('nameConv_Mgmt_Resources'), 'resourceType', variables('resourceAbbreviations').userAssignedIdentities), 'location', variables('locations')[parameters('locationVirtualMachines')].abbreviation), 'avd-', 'avd-uaiPurpose-')]",
+            "mgmtVirtualMachineName": "[replace(replace(replace(replace(variables('nameConv_Mgmt_Resources'), 'resourceType', ''), 'location', variables('locations')[parameters('locationVirtualMachines')].abbreviation), 'avd-', 'avdmgmt'), '-', '')]",
+            "mgmtVirtualMachineDiskName": "[if(parameters('nameConvResTypeAtEnd'), format('{0}-{1}', variables('mgmtVirtualMachineName'), variables('resourceAbbreviations').disks), format('{0}-{1}', variables('resourceAbbreviations').disks, variables('mgmtVirtualMachineName')))]",
+            "mgmtVirtualMachineNicName": "[if(parameters('nameConvResTypeAtEnd'), format('{0}-{1}', variables('mgmtVirtualMachineName'), variables('resourceAbbreviations').networkInterfaces), format('{0}-{1}', variables('resourceAbbreviations').networkInterfaces, variables('mgmtVirtualMachineName')))]",
+            "resourceGroupStorage": "[replace(replace(replace(variables('nameConv_HP_ResGroups'), 'resGroupPurpose', 'storage'), 'location', format('{0}', variables('locations')[parameters('locationVirtualMachines')].abbreviation)), 'resourceType', format('{0}', variables('resourceAbbreviations').resourceGroups))]",
+            "netAppAccountName": "[replace(replace(variables('nameConv_HP_Resources'), 'resourceType', variables('resourceAbbreviations').netAppAccounts), 'location', variables('locations')[parameters('locationVirtualMachines')].abbreviation)]",
+            "netAppCapacityPoolName": "[replace(replace(variables('nameConv_HP_Resources'), 'resourceType', variables('resourceAbbreviations').netAppCapacityPools), 'location', variables('locations')[parameters('locationVirtualMachines')].abbreviation)]",
+            "storageAccountNamePrefix": "[if(empty(parameters('fslogixStorageCustomPrefix')), toLower(format('{0}', replace(replace(replace(replace(replace(variables('nameConv_HP_Resources'), 'resourceType', variables('resourceAbbreviations').storageAccounts), variables('hostPoolBaseName'), format('{0}fsl', variables('hostPoolBaseName'))), 'location', variables('locations')[parameters('locationVirtualMachines')].abbreviation), 'avd-', ''), '-', ''))), parameters('fslogixStorageCustomPrefix'))]",
+            "privateEndpointNameConv": "[replace(format('{0}', if(parameters('nameConvResTypeAtEnd'), 'resource-subresource-resourceType', 'resourceType-resource-subresource')), 'resourceType', variables('resourceAbbreviations').privateEndpoints)]"
+          },
+          "resources": [],
+          "outputs": {
+            "availabilitySetNamePrefix": {
+              "type": "string",
+              "value": "[variables('availabilitySetNamePrefix')]"
+            },
+            "automationAccountName": {
+              "type": "string",
+              "value": "[variables('automationAccountName')]"
+            },
+            "dataCollectionEndpointName": {
+              "type": "string",
+              "value": "[variables('dataCollectionEndpointName')]"
+            },
+            "dataCollectionRulesNameConv": {
+              "type": "string",
+              "value": "[variables('dataCollectionRulesNameConv')]"
+            },
+            "desktopApplicationGroupName": {
+              "type": "string",
+              "value": "[variables('desktopApplicationGroupName')]"
+            },
+            "diskAccessName": {
+              "type": "string",
+              "value": "[variables('diskAccessName')]"
+            },
+            "diskEncryptionSetNames": {
+              "type": "object",
+              "value": {
+                "ConfidentialVMs": "[variables('diskEncryptionSetConfVms')]",
+                "CustomerManaged": "[variables('diskEncryptionSetCustKeysName')]",
+                "PlatformAndCustomerManaged": "[variables('diskEncryptionSetPlatAndCustKeysName')]"
+              }
+            },
+            "diskNamePrefix": {
+              "type": "string",
+              "value": "[variables('diskNamePrefix')]"
+            },
+            "globalFeedWorkspaceName": {
+              "type": "string",
+              "value": "[variables('globalFeedWorkspaceName')]"
+            },
+            "fileShareNames": {
+              "type": "object",
+              "value": "[variables('fileShareNames')]"
+            },
+            "hostPoolName": {
+              "type": "string",
+              "value": "[variables('hostPoolName')]"
+            },
+            "keyVaultNames": {
+              "type": "object",
+              "value": {
+                "RSAHSMKeys": "[variables('keyVaultNameConfVMKeys')]",
+                "VMSecrets": "[variables('keyVaultNameSecrets')]",
+                "RSAKeys": "[variables('keyVaultNameStandardKeys')]"
+              }
+            },
+            "locations": {
+              "type": "object",
+              "value": "[variables('locations')]"
+            },
+            "logAnalyticsWorkspaceName": {
+              "type": "string",
+              "value": "[variables('logAnalyticsWorkspaceName')]"
+            },
+            "netAppAccountName": {
+              "type": "string",
+              "value": "[variables('netAppAccountName')]"
+            },
+            "netAppCapacityPoolName": {
+              "type": "string",
+              "value": "[variables('netAppCapacityPoolName')]"
+            },
+            "networkInterfaceNamePrefix": {
+              "type": "string",
+              "value": "[variables('networkInterfaceNamePrefix')]"
+            },
+            "privateEndpointNameConv": {
+              "type": "string",
+              "value": "[variables('privateEndpointNameConv')]"
+            },
+            "recoveryServicesVaultName": {
+              "type": "string",
+              "value": "[variables('recoveryServicesVaultName')]"
+            },
+            "resourceGroupControlPlane": {
+              "type": "string",
+              "value": "[variables('resourceGroupControlPlane')]"
+            },
+            "resourceGroupGlobalFeed": {
+              "type": "string",
+              "value": "[variables('globalFeedResourceGroupName')]"
+            },
+            "resourceGroupHosts": {
+              "type": "string",
+              "value": "[variables('resourceGroupHosts')]"
+            },
+            "resourceGroupManagement": {
+              "type": "string",
+              "value": "[variables('resourceGroupManagement')]"
+            },
+            "resourceGroupStorage": {
+              "type": "string",
+              "value": "[variables('resourceGroupStorage')]"
+            },
+            "storageAccountNamePrefix": {
+              "type": "string",
+              "value": "[variables('storageAccountNamePrefix')]"
+            },
+            "userAssignedIdentityNameConv": {
+              "type": "string",
+              "value": "[variables('userAssignedIdentityNameConv')]"
+            },
+            "virtualMachineNamePrefix": {
+              "type": "string",
+              "value": "[parameters('virtualMachineNamePrefix')]"
+            },
+            "mgmtVirtualMachineName": {
+              "type": "string",
+              "value": "[variables('mgmtVirtualMachineName')]"
+            },
+            "mgmtVirtualMachineNicName": {
+              "type": "string",
+              "value": "[variables('mgmtVirtualMachineNicName')]"
+            },
+            "mgmtVirtualMachineDiskName": {
+              "type": "string",
+              "value": "[variables('mgmtVirtualMachineDiskName')]"
+            },
+            "workspaceName": {
+              "type": "string",
+              "value": "[variables('workspaceName')]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "[format('Logic_{0}', parameters('timeStamp'))]",
+      "location": "[deployment().location]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "identitySolution": {
+            "value": "[parameters('identitySolution')]"
+          },
+          "artifactsUri": {
+            "value": "[variables('artifactsUri')]"
+          },
+          "avdAgentInstallersBlobName": {
+            "value": "[parameters('avdAgentInstallersBlobName')]"
+          },
+          "avdPrivateLink": {
+            "value": false
+          },
+          "cseMasterScript": {
+            "value": "[parameters('cseMasterScript')]"
+          },
+          "diskSku": {
+            "value": "[parameters('diskSku')]"
+          },
+          "cseBlobNames": {
+            "value": "[parameters('cseBlobNames')]"
+          },
+          "domainName": {
+            "value": "[parameters('domainName')]"
+          },
+          "fileShareNames": {
+            "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.fileShareNames.value]"
+          },
+          "fslogixConfigureSessionHosts": {
+            "value": "[parameters('fslogixConfigureSessionHosts')]"
+          },
+          "fslogixConfigurationBlobName": {
+            "value": "[parameters('fslogixConfigurationBlobName')]"
+          },
+          "fslogixContainerType": {
+            "value": "[parameters('fslogixContainerType')]"
+          },
+          "fslogixStorageService": {
+            "value": "None"
+          },
+          "hostPoolType": {
+            "value": "Pooled DepthFirst"
+          },
+          "imageOffer": {
+            "value": "[parameters('imageOffer')]"
+          },
+          "imagePublisher": {
+            "value": "[parameters('imagePublisher')]"
+          },
+          "imageSku": {
+            "value": "[parameters('imageSku')]"
+          },
+          "locations": {
+            "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.locations.value]"
+          },
+          "locationVirtualMachines": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('virtualMachineSubnetResourceId'), '/')[2], split(parameters('virtualMachineSubnetResourceId'), '/')[4]), 'Microsoft.Network/virtualNetworks', split(parameters('virtualMachineSubnetResourceId'), '/')[8]), '2023-04-01', 'full').location]"
+          },
+          "resourceGroupControlPlane": {
+            "value": "[variables('resourceGroupControlPlane')]"
+          },
+          "resourceGroupGlobalFeed": {
+            "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.resourceGroupGlobalFeed.value]"
+          },
+          "resourceGroupHosts": {
+            "value": "[parameters('resourceGroupHosts')]"
+          },
+          "resourceGroupManagement": {
+            "value": "[variables('resourceGroupManagement')]"
+          },
+          "resourceGroupStorage": {
+            "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.resourceGroupStorage.value]"
+          },
+          "securityPrincipals": {
+            "value": []
+          },
+          "sessionHostCount": {
+            "value": "[parameters('sessionHostCount')]"
+          },
+          "sessionHostIndex": {
+            "value": "[parameters('sessionHostIndex')]"
+          },
+          "fslogixStorageCount": {
+            "value": 1
+          },
+          "virtualMachineNamePrefix": {
+            "value": "[parameters('virtualMachineNamePrefix')]"
+          },
+          "virtualMachineSize": {
+            "value": "[parameters('virtualMachineSize')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.24.24.22086",
+              "templateHash": "16497338144811203529"
+            }
+          },
+          "parameters": {
+            "identitySolution": {
+              "type": "string"
+            },
+            "artifactsUri": {
+              "type": "string"
+            },
+            "avdAgentInstallersBlobName": {
+              "type": "string"
+            },
+            "avdPrivateLink": {
+              "type": "bool"
+            },
+            "diskSku": {
+              "type": "string"
+            },
+            "domainName": {
+              "type": "string"
+            },
+            "cseBlobNames": {
+              "type": "array"
+            },
+            "cseMasterScript": {
+              "type": "string"
+            },
+            "fileShareNames": {
+              "type": "object"
+            },
+            "fslogixConfigureSessionHosts": {
+              "type": "bool"
+            },
+            "fslogixConfigurationBlobName": {
+              "type": "string"
+            },
+            "fslogixContainerType": {
+              "type": "string"
+            },
+            "fslogixStorageService": {
+              "type": "string"
+            },
+            "hostPoolOnly": {
+              "type": "bool",
+              "defaultValue": false
+            },
+            "hostPoolType": {
+              "type": "string",
+              "defaultValue": "Pooled DepthFirst"
+            },
+            "imageOffer": {
+              "type": "string"
+            },
+            "imagePublisher": {
+              "type": "string"
+            },
+            "imageSku": {
+              "type": "string"
+            },
+            "locations": {
+              "type": "object"
+            },
+            "locationVirtualMachines": {
+              "type": "string"
+            },
+            "resourceGroupControlPlane": {
+              "type": "string"
+            },
+            "resourceGroupGlobalFeed": {
+              "type": "string"
+            },
+            "resourceGroupHosts": {
+              "type": "string"
+            },
+            "resourceGroupManagement": {
+              "type": "string"
+            },
+            "resourceGroupStorage": {
+              "type": "string"
+            },
+            "securityPrincipals": {
+              "type": "array"
+            },
+            "sessionHostCount": {
+              "type": "int"
+            },
+            "sessionHostIndex": {
+              "type": "int"
+            },
+            "fslogixStorageCount": {
+              "type": "int"
+            },
+            "virtualMachineNamePrefix": {
+              "type": "string"
+            },
+            "virtualMachineSize": {
+              "type": "string"
+            }
+          },
+          "variables": {
+            "copy": [
+              {
+                "name": "cseUris",
+                "count": "[length(variables('cseArtifacts'))]",
+                "input": "[if(contains(toLower(variables('cseArtifacts')[copyIndex('cseUris')]), 'http'), variables('cseArtifacts')[copyIndex('cseUris')], format('{0}{1}', parameters('artifactsUri'), variables('cseArtifacts')[copyIndex('cseUris')]))]"
+              }
+            ],
+            "maxResourcesPerTemplateDeployment": 79,
+            "divisionValue": "[div(parameters('sessionHostCount'), variables('maxResourcesPerTemplateDeployment'))]",
+            "divisionRemainderValue": "[mod(parameters('sessionHostCount'), variables('maxResourcesPerTemplateDeployment'))]",
+            "sessionHostBatchCount": "[if(greater(variables('divisionRemainderValue'), 0), add(variables('divisionValue'), 1), variables('divisionValue'))]",
+            "maxAvSetMembers": 200,
+            "beginAvSetRange": "[div(parameters('sessionHostIndex'), variables('maxAvSetMembers'))]",
+            "endAvSetRange": "[div(add(parameters('sessionHostCount'), parameters('sessionHostIndex')), variables('maxAvSetMembers'))]",
+            "availabilitySetsCount": "[length(range(variables('beginAvSetRange'), add(sub(variables('endAvSetRange'), variables('beginAvSetRange')), 1)))]",
+            "fslogix": "[if(equals(parameters('fslogixStorageService'), 'None'), false(), true())]",
+            "cseArtifacts": "[if(parameters('fslogixConfigureSessionHosts'), union(createArray(format('{0}', parameters('cseMasterScript'))), parameters('cseBlobNames'), createArray(format('{0}', parameters('fslogixConfigurationBlobName'))), createArray(format('{0}', parameters('avdAgentInstallersBlobName')))), union(createArray(format('{0}', parameters('cseMasterScript'))), parameters('cseBlobNames'), createArray(format('{0}', parameters('avdAgentInstallersBlobName')))))]",
+            "fileShares": "[parameters('fileShareNames')[parameters('fslogixContainerType')]]",
+            "countStorage": "[if(or(equals(parameters('identitySolution'), 'EntraId'), equals(parameters('identitySolution'), 'EntraIdIntuneEnrollment')), 1, parameters('fslogixStorageCount'))]",
+            "netbios": "[split(parameters('domainName'), '.')[0]]",
+            "pooledHostPool": "[if(equals(split(parameters('hostPoolType'), ' ')[0], 'Pooled'), true(), false())]",
+            "resGroupHostPools": [
+              "[parameters('resourceGroupControlPlane')]",
+              "[parameters('resourceGroupHosts')]"
+            ],
+            "resGroupBase": "[if(variables('fslogix'), createArray(parameters('resourceGroupControlPlane'), parameters('resourceGroupHosts'), parameters('resourceGroupManagement'), parameters('resourceGroupStorage')), createArray(parameters('resourceGroupControlPlane'), parameters('resourceGroupHosts'), parameters('resourceGroupManagement')))]",
+            "resourceGroupNames": "[if(parameters('hostPoolOnly'), variables('resGroupHostPools'), if(parameters('avdPrivateLink'), union(createArray(parameters('resourceGroupGlobalFeed')), variables('resGroupBase')), variables('resGroupBase')))]",
+            "roleDefinitions": {
+              "AutomationContributor": "f353d9bd-d4a6-484e-a77a-8050b599b867",
+              "DesktopVirtualizationApplicationGroupContributor": "86240b0e-9422-4c43-887b-b61143f32ba8",
+              "DesktopVirtualizationPowerOnContributor": "489581de-a3bd-480d-9518-53dea7416b33",
+              "DesktopVirtualizationSessionHostOperator": "2ad6aaab-ead9-4eaa-8ac5-da422f562408",
+              "DesktopVirtualizationUser": "1d18fff3-a72a-46b5-b4a9-0b38a3cd7e63",
+              "DesktopVirtualizationWorkspaceContributor": "21efdde3-836f-432b-bf3d-3e8e734d4b2b",
+              "KeyVaultCryptoServiceEncryptionUser": "e147488a-f6f5-4113-8e2d-b22465e65bf6",
+              "KeyVaultCryptoServiceReleaseUser": "08bbd89e-9f13-488c-ac41-acfcb10c90ab",
+              "KeyVaultReader": "21090545-7ca7-4776-b22c-e363652d74d2",
+              "Reader": "acdd72a7-3385-48ef-bd42-f606fba81ae7",
+              "StorageAccountContributor": "17d1049b-9a84-46fb-8f53-869881c3d3ab",
+              "StorageBlobDataReader": "2a2b9908-6ea1-4ae2-8e65-a410df84e7d1",
+              "VirtualMachineContributor": "9980e02c-c2be-4d73-94e8-173b1dc7cf3c",
+              "VirtualMachineUserLogin": "fb879df8-f326-4884-b1cf-06f3ad86be52"
+            },
+            "SecurityPrincipalsCount": "[length(parameters('securityPrincipals'))]",
+            "smbServerLocation": "[parameters('locations')[parameters('locationVirtualMachines')].abbreviation]",
+            "fslogixStorageSku": "[if(equals(parameters('fslogixStorageService'), 'None'), 'None', split(parameters('fslogixStorageService'), ' ')[1])]",
+            "fslogixStorageSolution": "[split(parameters('fslogixStorageService'), ' ')[0]]",
+            "storageSuffix": "[environment().suffixes.storage]",
+            "timeDifference": "[parameters('locations')[parameters('locationVirtualMachines')].timeDifference]",
+            "timeZone": "[parameters('locations')[parameters('locationVirtualMachines')].timeZone]",
+            "virtualMachineTemplate": "[format('{{\"domain\":\"{0}\",\"galleryImageOffer\":\"{1}\",\"galleryImagePublisher\":\"{2}\",\"galleryImageSKU\":\"{3}\",\"imageType\":\"Gallery\",\"imageUri\":null,\"customImageId\":null,\"namePrefix\":\"{4}\",\"osDiskType\":\"{5}\",\"useManagedDisks\":true,\"virtualMachineSize\":{{\"id\":\"{6}\",\"cores\":null,\"ram\":null}},\"galleryItemId\":\"{7}.{8}{9}\"}}', parameters('domainName'), parameters('imageOffer'), parameters('imagePublisher'), parameters('imageSku'), parameters('virtualMachineNamePrefix'), parameters('diskSku'), parameters('virtualMachineSize'), parameters('imagePublisher'), parameters('imageOffer'), parameters('imageSku'))]"
+          },
+          "resources": [],
+          "outputs": {
+            "availabilitySetsCount": {
+              "type": "int",
+              "value": "[variables('availabilitySetsCount')]"
+            },
+            "beginAvSetRange": {
+              "type": "int",
+              "value": "[variables('beginAvSetRange')]"
+            },
+            "cseUris": {
+              "type": "array",
+              "value": "[variables('cseUris')]"
+            },
+            "divisionRemainderValue": {
+              "type": "int",
+              "value": "[variables('divisionRemainderValue')]"
+            },
+            "fileShares": {
+              "type": "array",
+              "value": "[variables('fileShares')]"
+            },
+            "fslogix": {
+              "type": "bool",
+              "value": "[variables('fslogix')]"
+            },
+            "maxResourcesPerTemplateDeployment": {
+              "type": "int",
+              "value": "[variables('maxResourcesPerTemplateDeployment')]"
+            },
+            "netbios": {
+              "type": "string",
+              "value": "[variables('netbios')]"
+            },
+            "pooledHostPool": {
+              "type": "bool",
+              "value": "[variables('pooledHostPool')]"
+            },
+            "resourceGroupNames": {
+              "type": "array",
+              "value": "[variables('resourceGroupNames')]"
+            },
+            "roleDefinitions": {
+              "type": "object",
+              "value": "[variables('roleDefinitions')]"
+            },
+            "sessionHostBatchCount": {
+              "type": "int",
+              "value": "[variables('sessionHostBatchCount')]"
+            },
+            "SecurityPrincipalsCount": {
+              "type": "int",
+              "value": "[variables('SecurityPrincipalsCount')]"
+            },
+            "smbServerLocation": {
+              "type": "string",
+              "value": "[variables('smbServerLocation')]"
+            },
+            "fslogixStorageSku": {
+              "type": "string",
+              "value": "[variables('fslogixStorageSku')]"
+            },
+            "fslogixStorageSolution": {
+              "type": "string",
+              "value": "[variables('fslogixStorageSolution')]"
+            },
+            "storageSuffix": {
+              "type": "string",
+              "value": "[variables('storageSuffix')]"
+            },
+            "fslogixStorageCount": {
+              "type": "int",
+              "value": "[variables('countStorage')]"
+            },
+            "timeDifference": {
+              "type": "string",
+              "value": "[variables('timeDifference')]"
+            },
+            "timeZone": {
+              "type": "string",
+              "value": "[variables('timeZone')]"
+            },
+            "virtualMachineTemplate": {
+              "type": "string",
+              "value": "[variables('virtualMachineTemplate')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "[format('SessionHosts_{0}', parameters('timeStamp'))]",
+      "location": "[deployment().location]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "acceleratedNetworking": {
+            "value": "[variables('acceleratedNetworkingString')]"
+          },
+          "identitySolution": {
+            "value": "[parameters('identitySolution')]"
+          },
+          "artifactsUri": {
+            "value": "[variables('artifactsUri')]"
+          },
+          "artifactsUserAssignedIdentityClientId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('artifactsUserAssignedIdentityResourceId'), '/')[2], split(parameters('artifactsUserAssignedIdentityResourceId'), '/')[4]), 'Microsoft.ManagedIdentity/userAssignedIdentities', last(split(parameters('artifactsUserAssignedIdentityResourceId'), '/'))), '2023-01-31').clientId]"
+          },
+          "artifactsUserAssignedIdentityResourceId": {
+            "value": "[parameters('artifactsUserAssignedIdentityResourceId')]"
+          },
+          "availability": {
+            "value": "[parameters('availability')]"
+          },
+          "availabilitySetNamePrefix": {
+            "value": "[variables('availabilitySetNamePrefix')]"
+          },
+          "availabilitySetsCount": {
+            "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Logic_{0}', parameters('timeStamp'))), '2022-09-01').outputs.availabilitySetsCount.value]"
+          },
+          "availabilitySetsIndex": {
+            "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Logic_{0}', parameters('timeStamp'))), '2022-09-01').outputs.beginAvSetRange.value]"
+          },
+          "availabilityZones": {
+            "value": "[variables('availabilityZones')]"
+          },
+          "avdInsightsDataCollectionRulesResourceId": {
+            "value": "[parameters('avdInsightsDataCollectionRulesResourceId')]"
+          },
+          "confidentialVMOSDiskEncryptionType": {
+            "value": "[variables('confidentialVMOSDiskEncryptionType')]"
+          },
+          "cseMasterScript": {
+            "value": "[parameters('cseMasterScript')]"
+          },
+          "cseScriptAddDynParameters": {
+            "value": "[parameters('cseScriptAddDynParameters')]"
+          },
+          "cseUris": {
+            "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Logic_{0}', parameters('timeStamp'))), '2022-09-01').outputs.cseUris.value]"
+          },
+          "dataCollectionEndpointResourceId": {
+            "value": "[parameters('dataCollectionEndpointResourceId')]"
+          },
+          "diskEncryptionSetResourceId": {
+            "value": "[parameters('diskEncryptionSetResourceId')]"
+          },
+          "diskNamePrefix": {
+            "value": "[variables('diskNamePrefix')]"
+          },
+          "diskSku": {
+            "value": "[parameters('diskSku')]"
+          },
+          "divisionRemainderValue": {
+            "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Logic_{0}', parameters('timeStamp'))), '2022-09-01').outputs.divisionRemainderValue.value]"
+          },
+          "domainJoinUserPassword": {
+            "value": "[parameters('domainJoinUserPassword')]"
+          },
+          "domainJoinUserPrincipalName": {
+            "value": "[parameters('domainJoinUserPrincipalName')]"
+          },
+          "domainName": {
+            "value": "[parameters('domainName')]"
+          },
+          "drainMode": {
+            "value": false
+          },
+          "drainModeUserAssignedIdentityClientId": {
+            "value": ""
+          },
+          "encryptionAtHost": {
+            "value": "[parameters('encryptionAtHost')]"
+          },
+          "fslogixConfigureSessionHosts": {
+            "value": "[parameters('fslogixConfigureSessionHosts')]"
+          },
+          "fslogixContainerType": {
+            "value": "[parameters('fslogixContainerType')]"
+          },
+          "fslogixDeployedStorageAccountResourceIds": {
+            "value": []
+          },
+          "fslogixExistingStorageAccountResourceIds": {
+            "value": "[parameters('fslogixExistingStorageAccountResourceIds')]"
+          },
+          "fslogixNetAppFileShares": {
+            "value": "[parameters('fslogixNetAppFileShares')]"
+          },
+          "hostPoolName": {
+            "value": "[variables('hostPoolName')]"
+          },
+          "imageOffer": {
+            "value": "[parameters('imageOffer')]"
+          },
+          "imagePublisher": {
+            "value": "[parameters('imagePublisher')]"
+          },
+          "imageSku": {
+            "value": "[parameters('imageSku')]"
+          },
+          "customImageResourceId": {
+            "value": "[parameters('customImageResourceId')]"
+          },
+          "location": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('virtualMachineSubnetResourceId'), '/')[2], split(parameters('virtualMachineSubnetResourceId'), '/')[4]), 'Microsoft.Network/virtualNetworks', split(parameters('virtualMachineSubnetResourceId'), '/')[8]), '2023-04-01', 'full').location]"
+          },
+          "managementVirtualMachineName": {
+            "value": ""
+          },
+          "maxResourcesPerTemplateDeployment": {
+            "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Logic_{0}', parameters('timeStamp'))), '2022-09-01').outputs.maxResourcesPerTemplateDeployment.value]"
+          },
+          "enableInsights": {
+            "value": "[parameters('enableInsights')]"
+          },
+          "networkInterfaceNamePrefix": {
+            "value": "[variables('networkInterfaceNamePrefix')]"
+          },
+          "ouPath": {
+            "value": "[parameters('ouPath')]"
+          },
+          "pooledHostPool": "[if(equals(reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('hostPoolResourceId'), '/')[2], split(parameters('hostPoolResourceId'), '/')[4]), 'Microsoft.DesktopVirtualization/hostPools', last(split(parameters('hostPoolResourceId'), '/'))), '2022-09-09').hostPoolType, 'Pooled'), createObject('value', true()), createObject('value', false()))]",
+          "recoveryServices": {
+            "value": "[parameters('recoveryServices')]"
+          },
+          "recoveryServicesVaultName": {
+            "value": "[variables('recoveryServicesVaultName')]"
+          },
+          "resourceGroupControlPlane": {
+            "value": "[variables('resourceGroupControlPlane')]"
+          },
+          "resourceGroupHosts": {
+            "value": "[parameters('resourceGroupHosts')]"
+          },
+          "resourceGroupManagement": {
+            "value": "[variables('resourceGroupManagement')]"
+          },
+          "roleDefinitions": {
+            "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Logic_{0}', parameters('timeStamp'))), '2022-09-01').outputs.roleDefinitions.value]"
+          },
+          "securityDataCollectionRulesResourceId": {
+            "value": "[parameters('securityDataCollectionRulesResourceId')]"
+          },
+          "securityLogAnalyticsWorkspaceResourceId": {
+            "value": "[parameters('securityLogAnalyticsWorkspaceResourceId')]"
+          },
+          "securityPrincipalObjectIds": {
+            "value": []
+          },
+          "sessionHostBatchCount": {
+            "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Logic_{0}', parameters('timeStamp'))), '2022-09-01').outputs.sessionHostBatchCount.value]"
+          },
+          "sessionHostIndex": {
+            "value": "[parameters('sessionHostIndex')]"
+          },
+          "storageSuffix": {
+            "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Logic_{0}', parameters('timeStamp'))), '2022-09-01').outputs.storageSuffix.value]"
+          },
+          "subnetResourceId": {
+            "value": "[parameters('virtualMachineSubnetResourceId')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "timeStamp": {
+            "value": "[parameters('timeStamp')]"
+          },
+          "securityType": {
+            "value": "[variables('securityType')]"
+          },
+          "virtualMachineNamePrefix": {
+            "value": "[parameters('virtualMachineNamePrefix')]"
+          },
+          "virtualMachineAdminPassword": {
+            "value": "[parameters('virtualMachineAdminPassword')]"
+          },
+          "virtualMachineSize": {
+            "value": "[parameters('virtualMachineSize')]"
+          },
+          "virtualMachineAdminUserName": {
+            "value": "[parameters('virtualMachineAdminUserName')]"
+          },
+          "vmInsightsDataCollectionRulesResourceId": {
+            "value": "[parameters('vmInsightsDataCollectionRulesResourceId')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.24.24.22086",
+              "templateHash": "3561631770624535979"
+            }
+          },
+          "parameters": {
+            "acceleratedNetworking": {
+              "type": "string"
+            },
+            "artifactsUri": {
+              "type": "string"
+            },
+            "artifactsUserAssignedIdentityClientId": {
+              "type": "string"
+            },
+            "artifactsUserAssignedIdentityResourceId": {
+              "type": "string"
+            },
+            "availability": {
+              "type": "string"
+            },
+            "availabilitySetNamePrefix": {
+              "type": "string"
+            },
+            "availabilitySetsCount": {
+              "type": "int"
+            },
+            "availabilitySetsIndex": {
+              "type": "int"
+            },
+            "availabilityZones": {
+              "type": "array"
+            },
+            "confidentialVMOSDiskEncryptionType": {
+              "type": "string"
+            },
+            "cseMasterScript": {
+              "type": "string"
+            },
+            "cseScriptAddDynParameters": {
+              "type": "string"
+            },
+            "cseUris": {
+              "type": "array"
+            },
+            "dataCollectionEndpointResourceId": {
+              "type": "string"
+            },
+            "avdInsightsDataCollectionRulesResourceId": {
+              "type": "string"
+            },
+            "vmInsightsDataCollectionRulesResourceId": {
+              "type": "string"
+            },
+            "diskEncryptionSetResourceId": {
+              "type": "string"
+            },
+            "diskNamePrefix": {
+              "type": "string"
+            },
+            "diskSku": {
+              "type": "string"
+            },
+            "divisionRemainderValue": {
+              "type": "int"
+            },
+            "domainJoinUserPassword": {
+              "type": "securestring"
+            },
+            "domainJoinUserPrincipalName": {
+              "type": "securestring"
+            },
+            "domainName": {
+              "type": "string"
+            },
+            "drainMode": {
+              "type": "bool"
+            },
+            "drainModeUserAssignedIdentityClientId": {
+              "type": "string"
+            },
+            "encryptionAtHost": {
+              "type": "bool"
+            },
+            "fslogixConfigureSessionHosts": {
+              "type": "bool"
+            },
+            "fslogixExistingStorageAccountResourceIds": {
+              "type": "array"
+            },
+            "fslogixContainerType": {
+              "type": "string"
+            },
+            "fslogixDeployedStorageAccountResourceIds": {
+              "type": "array"
+            },
+            "hostPoolName": {
+              "type": "string"
+            },
+            "identitySolution": {
+              "type": "string"
+            },
+            "imageOffer": {
+              "type": "string"
+            },
+            "imagePublisher": {
+              "type": "string"
+            },
+            "imageSku": {
+              "type": "string"
+            },
+            "customImageResourceId": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string"
+            },
+            "managementVirtualMachineName": {
+              "type": "string"
+            },
+            "maxResourcesPerTemplateDeployment": {
+              "type": "int"
+            },
+            "enableInsights": {
+              "type": "bool"
+            },
+            "fslogixNetAppFileShares": {
+              "type": "array"
+            },
+            "networkInterfaceNamePrefix": {
+              "type": "string"
+            },
+            "ouPath": {
+              "type": "string"
+            },
+            "pooledHostPool": {
+              "type": "bool"
+            },
+            "recoveryServices": {
+              "type": "bool"
+            },
+            "recoveryServicesVaultName": {
+              "type": "string"
+            },
+            "resourceGroupControlPlane": {
+              "type": "string"
+            },
+            "resourceGroupHosts": {
+              "type": "string"
+            },
+            "resourceGroupManagement": {
+              "type": "string"
+            },
+            "roleDefinitions": {
+              "type": "object"
+            },
+            "securityDataCollectionRulesResourceId": {
+              "type": "string"
+            },
+            "securityPrincipalObjectIds": {
+              "type": "array"
+            },
+            "securityLogAnalyticsWorkspaceResourceId": {
+              "type": "string"
+            },
+            "securityType": {
+              "type": "string"
+            },
+            "sessionHostBatchCount": {
+              "type": "int"
+            },
+            "sessionHostIndex": {
+              "type": "int"
+            },
+            "storageSuffix": {
+              "type": "string"
+            },
+            "subnetResourceId": {
+              "type": "string"
+            },
+            "tags": {
+              "type": "object"
+            },
+            "timeStamp": {
+              "type": "string"
+            },
+            "virtualMachineNamePrefix": {
+              "type": "string"
+            },
+            "virtualMachineAdminPassword": {
+              "type": "securestring"
+            },
+            "virtualMachineSize": {
+              "type": "string"
+            },
+            "virtualMachineAdminUserName": {
+              "type": "securestring"
+            }
+          },
+          "variables": {
+            "tagsAvailabilitySets": "[union(createObject('cm-resource-parent', format('{0}}}/resourceGroups/{1}/providers/Microsoft.DesktopVirtualization/hostpools/{2}', subscription().id, parameters('resourceGroupControlPlane'), parameters('hostPoolName'))), if(contains(parameters('tags'), 'Microsoft.Compute/availabilitySets'), parameters('tags')['Microsoft.Compute/availabilitySets'], createObject()))]",
+            "tagsNetworkInterfaces": "[union(createObject('cm-resource-parent', format('{0}}}/resourceGroups/{1}/providers/Microsoft.DesktopVirtualization/hostpools/{2}', subscription().id, parameters('resourceGroupControlPlane'), parameters('hostPoolName'))), if(contains(parameters('tags'), 'Microsoft.Network/networkInterfaces'), parameters('tags')['Microsoft.Network/networkInterfaces'], createObject()))]",
+            "tagsRecoveryServicesVault": "[union(createObject('cm-resource-parent', format('{0}}}/resourceGroups/{1}/providers/Microsoft.DesktopVirtualization/hostpools/{2}', subscription().id, parameters('resourceGroupControlPlane'), parameters('hostPoolName'))), if(contains(parameters('tags'), 'Microsoft.recoveryServices/vaults'), parameters('tags')['Microsoft.recoveryServices/vaults'], createObject()))]",
+            "tagsVirtualMachines": "[union(createObject('cm-resource-parent', format('{0}}}/resourceGroups/{1}/providers/Microsoft.DesktopVirtualization/hostpools/{2}', subscription().id, parameters('resourceGroupControlPlane'), parameters('hostPoolName'))), if(contains(parameters('tags'), 'Microsoft.Compute/virtualMachines'), parameters('tags')['Microsoft.Compute/virtualMachines'], createObject()))]"
+          },
+          "resources": [
+            {
+              "condition": "[and(parameters('fslogixConfigureSessionHosts'), not(empty(parameters('fslogixExistingStorageAccountResourceIds'))))]",
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2022-09-01",
+              "name": "[format('ExistingFslogixStorageAccounts_{0}', parameters('timeStamp'))]",
+              "location": "[deployment().location]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "storageResourceIds": {
+                    "value": "[parameters('fslogixExistingStorageAccountResourceIds')]"
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.24.24.22086",
+                      "templateHash": "2539735831573847485"
+                    }
+                  },
+                  "parameters": {
+                    "storageResourceIds": {
+                      "type": "array"
+                    }
+                  },
+                  "resources": [],
+                  "outputs": {
+                    "storageAccounts": {
+                      "type": "array",
+                      "copy": {
+                        "count": "[length(range(0, length(parameters('storageResourceIds'))))]",
+                        "input": {
+                          "name": "[last(split(parameters('storageResourceIds')[range(0, length(parameters('storageResourceIds')))[copyIndex()]], '/'))]",
+                          "location": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('storageResourceIds')[range(0, length(parameters('storageResourceIds')))[copyIndex()]], '/')[2], split(parameters('storageResourceIds')[range(0, length(parameters('storageResourceIds')))[copyIndex()]], '/')[4]), 'Microsoft.Storage/storageAccounts', last(split(parameters('storageResourceIds')[range(0, length(parameters('storageResourceIds')))[copyIndex()]], '/'))), '2023-01-01', 'full').location]",
+                          "id": "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('storageResourceIds')[range(0, length(parameters('storageResourceIds')))[copyIndex()]], '/')[2], split(parameters('storageResourceIds')[range(0, length(parameters('storageResourceIds')))[copyIndex()]], '/')[4]), 'Microsoft.Storage/storageAccounts', last(split(parameters('storageResourceIds')[range(0, length(parameters('storageResourceIds')))[copyIndex()]], '/')))]"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "condition": "[and(parameters('pooledHostPool'), equals(parameters('availability'), 'AvailabilitySets'))]",
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2022-09-01",
+              "name": "[format('AvailabilitySets_{0}', parameters('timeStamp'))]",
+              "resourceGroup": "[parameters('resourceGroupHosts')]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "availabilitySetNamePrefix": {
+                    "value": "[parameters('availabilitySetNamePrefix')]"
+                  },
+                  "availabilitySetsCount": {
+                    "value": "[parameters('availabilitySetsCount')]"
+                  },
+                  "availabilitySetsIndex": {
+                    "value": "[parameters('availabilitySetsIndex')]"
+                  },
+                  "location": {
+                    "value": "[parameters('location')]"
+                  },
+                  "tagsAvailabilitySets": {
+                    "value": "[variables('tagsAvailabilitySets')]"
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.24.24.22086",
+                      "templateHash": "16572090608376863698"
+                    }
+                  },
+                  "parameters": {
+                    "availabilitySetNamePrefix": {
+                      "type": "string"
+                    },
+                    "availabilitySetsCount": {
+                      "type": "int"
+                    },
+                    "availabilitySetsIndex": {
+                      "type": "int"
+                    },
+                    "location": {
+                      "type": "string"
+                    },
+                    "tagsAvailabilitySets": {
+                      "type": "object"
+                    }
+                  },
+                  "resources": [
+                    {
+                      "copy": {
+                        "name": "availabilitySets",
+                        "count": "[length(range(0, parameters('availabilitySetsCount')))]"
+                      },
+                      "type": "Microsoft.Compute/availabilitySets",
+                      "apiVersion": "2019-07-01",
+                      "name": "[format('{0}{1}', parameters('availabilitySetNamePrefix'), padLeft(add(range(0, parameters('availabilitySetsCount'))[copyIndex()], parameters('availabilitySetsIndex')), 2, '0'))]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tagsAvailabilitySets')]",
+                      "sku": {
+                        "name": "Aligned"
+                      },
+                      "properties": {
+                        "platformUpdateDomainCount": 5,
+                        "platformFaultDomainCount": 2
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "copy": {
+                "name": "roleAssignments",
+                "count": "[length(range(0, length(parameters('securityPrincipalObjectIds'))))]"
+              },
+              "condition": "[not(contains(parameters('identitySolution'), 'DomainServices'))]",
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2022-09-01",
+              "name": "[format('RoleAssignments_{0}_{1}', range(0, length(parameters('securityPrincipalObjectIds')))[copyIndex()], parameters('timeStamp'))]",
+              "resourceGroup": "[parameters('resourceGroupHosts')]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "PrincipalId": {
+                    "value": "[parameters('securityPrincipalObjectIds')[range(0, length(parameters('securityPrincipalObjectIds')))[copyIndex()]]]"
+                  },
+                  "PrincipalType": {
+                    "value": "Group"
+                  },
+                  "RoleDefinitionId": {
+                    "value": "[parameters('roleDefinitions').VirtualMachineUserLogin]"
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.24.24.22086",
+                      "templateHash": "16643960771397562828"
+                    }
+                  },
+                  "parameters": {
+                    "PrincipalId": {
+                      "type": "string"
+                    },
+                    "PrincipalType": {
+                      "type": "string"
+                    },
+                    "RoleDefinitionId": {
+                      "type": "string"
+                    }
+                  },
+                  "resources": [
+                    {
+                      "type": "Microsoft.Authorization/roleAssignments",
+                      "apiVersion": "2022-04-01",
+                      "name": "[guid(parameters('PrincipalId'), parameters('RoleDefinitionId'), resourceGroup().id)]",
+                      "properties": {
+                        "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', parameters('RoleDefinitionId'))]",
+                        "principalId": "[parameters('PrincipalId')]",
+                        "principalType": "[parameters('PrincipalType')]"
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "copy": {
+                "name": "virtualMachines",
+                "count": "[length(range(1, parameters('sessionHostBatchCount')))]",
+                "mode": "serial",
+                "batchSize": 1
+              },
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2022-09-01",
+              "name": "[format('VirtualMachines_{0}_{1}', sub(range(1, parameters('sessionHostBatchCount'))[copyIndex()], 1), parameters('timeStamp'))]",
+              "resourceGroup": "[parameters('resourceGroupHosts')]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "acceleratedNetworking": {
+                    "value": "[parameters('acceleratedNetworking')]"
+                  },
+                  "identitySolution": {
+                    "value": "[parameters('identitySolution')]"
+                  },
+                  "artifactsUri": {
+                    "value": "[parameters('artifactsUri')]"
+                  },
+                  "artifactsUserAssignedIdentityResourceId": {
+                    "value": "[parameters('artifactsUserAssignedIdentityResourceId')]"
+                  },
+                  "artifactsUserAssignedIdentityClientId": {
+                    "value": "[parameters('artifactsUserAssignedIdentityClientId')]"
+                  },
+                  "availability": {
+                    "value": "[parameters('availability')]"
+                  },
+                  "availabilityZones": {
+                    "value": "[parameters('availabilityZones')]"
+                  },
+                  "availabilitySetNamePrefix": {
+                    "value": "[parameters('availabilitySetNamePrefix')]"
+                  },
+                  "batchCount": {
+                    "value": "[range(1, parameters('sessionHostBatchCount'))[copyIndex()]]"
+                  },
+                  "confidentialVMOSDiskEncryptionType": {
+                    "value": "[parameters('confidentialVMOSDiskEncryptionType')]"
+                  },
+                  "cseMasterScript": {
+                    "value": "[parameters('cseMasterScript')]"
+                  },
+                  "cseScriptAddDynParameters": {
+                    "value": "[parameters('cseScriptAddDynParameters')]"
+                  },
+                  "cseUris": {
+                    "value": "[parameters('cseUris')]"
+                  },
+                  "customImageResourceId": {
+                    "value": "[parameters('customImageResourceId')]"
+                  },
+                  "dataCollectionEndpointResourceId": {
+                    "value": "[parameters('dataCollectionEndpointResourceId')]"
+                  },
+                  "diskEncryptionSetResourceId": {
+                    "value": "[parameters('diskEncryptionSetResourceId')]"
+                  },
+                  "diskNamePrefix": {
+                    "value": "[parameters('diskNamePrefix')]"
+                  },
+                  "diskSku": {
+                    "value": "[parameters('diskSku')]"
+                  },
+                  "domainJoinUserPassword": {
+                    "value": "[parameters('domainJoinUserPassword')]"
+                  },
+                  "domainJoinUserPrincipalName": {
+                    "value": "[parameters('domainJoinUserPrincipalName')]"
+                  },
+                  "domainName": {
+                    "value": "[parameters('domainName')]"
+                  },
+                  "drainMode": {
+                    "value": "[parameters('drainMode')]"
+                  },
+                  "drainModeUserAssignedIdentityClientId": {
+                    "value": "[parameters('drainModeUserAssignedIdentityClientId')]"
+                  },
+                  "encryptionAtHost": {
+                    "value": "[parameters('encryptionAtHost')]"
+                  },
+                  "fslogixConfigureSessionHosts": {
+                    "value": "[parameters('fslogixConfigureSessionHosts')]"
+                  },
+                  "fslogixContainerType": {
+                    "value": "[parameters('fslogixContainerType')]"
+                  },
+                  "fslogixDeployedStorageAccountResourceIds": {
+                    "value": "[parameters('fslogixDeployedStorageAccountResourceIds')]"
+                  },
+                  "fslogixExistingStorageAccounts": "[if(and(parameters('fslogixConfigureSessionHosts'), not(empty(parameters('fslogixExistingStorageAccountResourceIds')))), createObject('value', reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ExistingFslogixStorageAccounts_{0}', parameters('timeStamp'))), '2022-09-01').outputs.storageAccounts.value), createObject('value', createArray()))]",
+                  "hostPoolName": {
+                    "value": "[parameters('hostPoolName')]"
+                  },
+                  "imageOffer": {
+                    "value": "[parameters('imageOffer')]"
+                  },
+                  "imagePublisher": {
+                    "value": "[parameters('imagePublisher')]"
+                  },
+                  "imageSku": {
+                    "value": "[parameters('imageSku')]"
+                  },
+                  "location": {
+                    "value": "[parameters('location')]"
+                  },
+                  "managementVirtualMachineName": {
+                    "value": "[parameters('managementVirtualMachineName')]"
+                  },
+                  "enableInsights": {
+                    "value": "[parameters('enableInsights')]"
+                  },
+                  "fslogixNetAppFileShares": {
+                    "value": "[parameters('fslogixNetAppFileShares')]"
+                  },
+                  "networkInterfaceNamePrefix": {
+                    "value": "[parameters('networkInterfaceNamePrefix')]"
+                  },
+                  "ouPath": {
+                    "value": "[parameters('ouPath')]"
+                  },
+                  "avdInsightsDataCollectionRulesResourceId": {
+                    "value": "[parameters('avdInsightsDataCollectionRulesResourceId')]"
+                  },
+                  "vmInsightsDataCollectionRulesResourceId": {
+                    "value": "[parameters('vmInsightsDataCollectionRulesResourceId')]"
+                  },
+                  "resourceGroupControlPlane": {
+                    "value": "[parameters('resourceGroupControlPlane')]"
+                  },
+                  "resourceGroupManagement": {
+                    "value": "[parameters('resourceGroupManagement')]"
+                  },
+                  "securityDataCollectionRulesResourceId": {
+                    "value": "[parameters('securityDataCollectionRulesResourceId')]"
+                  },
+                  "securityLogAnalyticsWorkspaceResourceId": {
+                    "value": "[parameters('securityLogAnalyticsWorkspaceResourceId')]"
+                  },
+                  "securityType": {
+                    "value": "[parameters('securityType')]"
+                  },
+                  "sessionHostCount": "[if(and(equals(range(1, parameters('sessionHostBatchCount'))[copyIndex()], parameters('sessionHostBatchCount')), greater(parameters('divisionRemainderValue'), 0)), createObject('value', parameters('divisionRemainderValue')), createObject('value', parameters('maxResourcesPerTemplateDeployment')))]",
+                  "sessionHostIndex": "[if(equals(range(1, parameters('sessionHostBatchCount'))[copyIndex()], 1), createObject('value', parameters('sessionHostIndex')), createObject('value', add(mul(sub(range(1, parameters('sessionHostBatchCount'))[copyIndex()], 1), parameters('maxResourcesPerTemplateDeployment')), parameters('sessionHostIndex'))))]",
+                  "storageSuffix": {
+                    "value": "[parameters('storageSuffix')]"
+                  },
+                  "subnetResourceId": {
+                    "value": "[parameters('subnetResourceId')]"
+                  },
+                  "tagsNetworkInterfaces": {
+                    "value": "[variables('tagsNetworkInterfaces')]"
+                  },
+                  "tagsVirtualMachines": {
+                    "value": "[variables('tagsVirtualMachines')]"
+                  },
+                  "timeStamp": {
+                    "value": "[parameters('timeStamp')]"
+                  },
+                  "virtualMachineNamePrefix": {
+                    "value": "[parameters('virtualMachineNamePrefix')]"
+                  },
+                  "virtualMachineAdminPassword": {
+                    "value": "[parameters('virtualMachineAdminPassword')]"
+                  },
+                  "virtualMachineSize": {
+                    "value": "[parameters('virtualMachineSize')]"
+                  },
+                  "virtualMachineAdminUserName": {
+                    "value": "[parameters('virtualMachineAdminUserName')]"
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.24.24.22086",
+                      "templateHash": "7317582065274169918"
+                    }
+                  },
+                  "parameters": {
+                    "identitySolution": {
+                      "type": "string"
+                    },
+                    "artifactsUri": {
+                      "type": "string"
+                    },
+                    "artifactsUserAssignedIdentityClientId": {
+                      "type": "string"
+                    },
+                    "artifactsUserAssignedIdentityResourceId": {
+                      "type": "string"
+                    },
+                    "acceleratedNetworking": {
+                      "type": "string"
+                    },
+                    "availability": {
+                      "type": "string"
+                    },
+                    "availabilitySetNamePrefix": {
+                      "type": "string"
+                    },
+                    "availabilityZones": {
+                      "type": "array"
+                    },
+                    "batchCount": {
+                      "type": "int"
+                    },
+                    "confidentialVMOSDiskEncryptionType": {
+                      "type": "string"
+                    },
+                    "cseMasterScript": {
+                      "type": "string"
+                    },
+                    "cseUris": {
+                      "type": "array"
+                    },
+                    "cseScriptAddDynParameters": {
+                      "type": "string"
+                    },
+                    "dataCollectionEndpointResourceId": {
+                      "type": "string"
+                    },
+                    "diskEncryptionSetResourceId": {
+                      "type": "string"
+                    },
+                    "diskNamePrefix": {
+                      "type": "string"
+                    },
+                    "diskSku": {
+                      "type": "string"
+                    },
+                    "domainJoinUserPassword": {
+                      "type": "securestring"
+                    },
+                    "domainJoinUserPrincipalName": {
+                      "type": "securestring"
+                    },
+                    "domainName": {
+                      "type": "string"
+                    },
+                    "drainMode": {
+                      "type": "bool"
+                    },
+                    "drainModeUserAssignedIdentityClientId": {
+                      "type": "string"
+                    },
+                    "encryptionAtHost": {
+                      "type": "bool"
+                    },
+                    "fslogixConfigureSessionHosts": {
+                      "type": "bool"
+                    },
+                    "fslogixContainerType": {
+                      "type": "string"
+                    },
+                    "fslogixExistingStorageAccounts": {
+                      "type": "array"
+                    },
+                    "fslogixDeployedStorageAccountResourceIds": {
+                      "type": "array",
+                      "defaultValue": []
+                    },
+                    "fslogixNetAppFileShares": {
+                      "type": "array"
+                    },
+                    "hostPoolName": {
+                      "type": "string"
+                    },
+                    "imageOffer": {
+                      "type": "string"
+                    },
+                    "imagePublisher": {
+                      "type": "string"
+                    },
+                    "imageSku": {
+                      "type": "string"
+                    },
+                    "customImageResourceId": {
+                      "type": "string"
+                    },
+                    "location": {
+                      "type": "string"
+                    },
+                    "managementVirtualMachineName": {
+                      "type": "string"
+                    },
+                    "enableInsights": {
+                      "type": "bool"
+                    },
+                    "networkInterfaceNamePrefix": {
+                      "type": "string"
+                    },
+                    "ouPath": {
+                      "type": "string"
+                    },
+                    "avdInsightsDataCollectionRulesResourceId": {
+                      "type": "string"
+                    },
+                    "vmInsightsDataCollectionRulesResourceId": {
+                      "type": "string"
+                    },
+                    "resourceGroupControlPlane": {
+                      "type": "string"
+                    },
+                    "resourceGroupManagement": {
+                      "type": "string"
+                    },
+                    "securityDataCollectionRulesResourceId": {
+                      "type": "string"
+                    },
+                    "securityLogAnalyticsWorkspaceResourceId": {
+                      "type": "string"
+                    },
+                    "securityType": {
+                      "type": "string"
+                    },
+                    "sessionHostCount": {
+                      "type": "int"
+                    },
+                    "sessionHostIndex": {
+                      "type": "int"
+                    },
+                    "storageSuffix": {
+                      "type": "string"
+                    },
+                    "subnetResourceId": {
+                      "type": "string"
+                    },
+                    "tagsNetworkInterfaces": {
+                      "type": "object"
+                    },
+                    "tagsVirtualMachines": {
+                      "type": "object"
+                    },
+                    "timeStamp": {
+                      "type": "string"
+                    },
+                    "virtualMachineAdminPassword": {
+                      "type": "securestring"
+                    },
+                    "virtualMachineAdminUserName": {
+                      "type": "securestring"
+                    },
+                    "virtualMachineNamePrefix": {
+                      "type": "string"
+                    },
+                    "virtualMachineSize": {
+                      "type": "string"
+                    }
+                  },
+                  "variables": {
+                    "copy": [
+                      {
+                        "name": "fslogixExSAResIds",
+                        "count": "[length(parameters('fslogixExistingStorageAccounts'))]",
+                        "input": "[parameters('fslogixExistingStorageAccounts')[copyIndex('fslogixExSAResIds')].id]"
+                      },
+                      {
+                        "name": "fslogixExSAResIdsInOtherRegions",
+                        "count": "[length(parameters('fslogixExistingStorageAccounts'))]",
+                        "input": "[if(not(equals(parameters('fslogixExistingStorageAccounts')[copyIndex('fslogixExSAResIdsInOtherRegions')].location, parameters('location'))), parameters('fslogixExistingStorageAccounts')[copyIndex('fslogixExSAResIdsInOtherRegions')].id, '')]"
+                      },
+                      {
+                        "name": "fslogixAllSANames",
+                        "count": "[length(variables('fslogixSAResIds'))]",
+                        "input": "[last(split(variables('fslogixSAResIds')[copyIndex('fslogixAllSANames')], '/'))]"
+                      },
+                      {
+                        "name": "fslogixSANameMinus2",
+                        "count": "[length(variables('fslogixAllSANames'))]",
+                        "input": "[take(variables('fslogixAllSANames')[copyIndex('fslogixSANameMinus2')], sub(length(variables('fslogixAllSANames')[copyIndex('fslogixSANameMinus2')]), 2))]"
+                      },
+                      {
+                        "name": "fslogixOfficeSharesNoMatch",
+                        "count": "[length(variables('fslogixAllSANames'))]",
+                        "input": "[format('\\\\{0}.file.{1}}}\\office-containers\\*\\*.VHDX', variables('fslogixAllSANames')[copyIndex('fslogixOfficeSharesNoMatch')], parameters('storageSuffix'))]"
+                      },
+                      {
+                        "name": "fslogixProfileSharesNoMatch",
+                        "count": "[length(variables('fslogixAllSANames'))]",
+                        "input": "[format('\\\\{0}.file.{1}}}\\profile-containers\\*\\*.VHDX', variables('fslogixAllSANames')[copyIndex('fslogixProfileSharesNoMatch')], parameters('storageSuffix'))]"
+                      },
+                      {
+                        "name": "fslogixExclusionsOfficeContainers",
+                        "count": "[length(variables('fslogixOfficeVHDXs'))]",
+                        "input": "[format('\"{0}\";\"{1}.lock\";\"{2}.meta\";\"{3}.metadata\"', variables('fslogixOfficeVHDXs')[copyIndex('fslogixExclusionsOfficeContainers')], variables('fslogixOfficeVHDXs')[copyIndex('fslogixExclusionsOfficeContainers')], variables('fslogixOfficeVHDXs')[copyIndex('fslogixExclusionsOfficeContainers')], variables('fslogixOfficeVHDXs')[copyIndex('fslogixExclusionsOfficeContainers')])]"
+                      },
+                      {
+                        "name": "fslogixExclusionProfileContainers",
+                        "count": "[length(variables('fslogixProfileVHDXs'))]",
+                        "input": "[format('\"{0}\";\"{1}.lock\";\"{2}.meta\";\"{3}.metadata\"', variables('fslogixProfileVHDXs')[copyIndex('fslogixExclusionProfileContainers')], variables('fslogixProfileVHDXs')[copyIndex('fslogixExclusionProfileContainers')], variables('fslogixProfileVHDXs')[copyIndex('fslogixExclusionProfileContainers')], variables('fslogixProfileVHDXs')[copyIndex('fslogixExclusionProfileContainers')])]"
+                      }
+                    ],
+                    "amdVmSize": "[contains(variables('amdVmSizes'), parameters('virtualMachineSize'))]",
+                    "amdVmSizes": [
+                      "Standard_NV4as_v4",
+                      "Standard_NV8as_v4",
+                      "Standard_NV16as_v4",
+                      "Standard_NV32as_v4"
+                    ],
+                    "fslogixCloudCacheString": "[if(contains(parameters('fslogixContainerType'), 'CloudCache'), 'CloudCache=$true', 'CloudCache=$false')]",
+                    "fslogixIdP": "[if(not(contains(parameters('identitySolution'), 'DomainServices')), 'AAD', 'DomainServices')]",
+                    "fslogixIdpString": "[format('IdP=''{0}''', variables('fslogixIdP'))]",
+                    "fslogixStorageSolution": "[if(not(empty(parameters('fslogixNetAppFileShares'))), 'AzureNetAppFiles', if(or(not(empty(parameters('fslogixDeployedStorageAccountResourceIds'))), not(empty(parameters('fslogixExistingStorageAccounts')))), 'AzureFiles', 'None'))]",
+                    "fslogixStorageSolutionString": "[format('StorageSolution=''{0}''', variables('fslogixStorageSolution'))]",
+                    "fslogixNetAppSharesString": "[if(equals(variables('fslogixStorageSolution'), 'AzureNetAppFiles'), format('NetAppFileShares=''{0}''', replace(join(parameters('fslogixNetAppFileShares'), ','), ',', ''',''')), '')]",
+                    "fslogixSASuffixString": "[if(equals(variables('fslogixStorageSolution'), 'AzureFiles'), format('SASuffix=''{0}''', parameters('storageSuffix')), '')]",
+                    "fslogixNewSAResIds": "[if(not(empty(parameters('fslogixDeployedStorageAccountResourceIds'))), if(equals(variables('fslogixIdP'), 'AAD'), createArray(parameters('fslogixDeployedStorageAccountResourceIds')[0]), parameters('fslogixDeployedStorageAccountResourceIds')), createArray())]",
+                    "fslogixExistingSAResIds": "[if(equals(variables('fslogixIdP'), 'AAD'), if(not(empty(parameters('fslogixDeployedStorageAccountResourceIds'))), take(intersection(variables('fslogixExSAResIds'), variables('fslogixExSAResIdsInOtherRegions')), 4), take(variables('fslogixExSAResIds'), 4)), variables('fslogixExSAResIds'))]",
+                    "fslogixSAResIds": "[union(variables('fslogixNewSAResIds'), variables('fslogixExistingSAResIds'))]",
+                    "fslogixSANamesString": "[if(equals(variables('fslogixStorageSolution'), 'AzureFiles'), format('SANames=''{0}''', replace(join(variables('fslogixAllSANames'), ','), ',', ''',''')), '')]",
+                    "fslogixSharesString": "[if(not(equals(variables('fslogixStorageSolution'), 'AzureNetAppFiles')), if(contains(parameters('fslogixContainerType'), 'Office'), 'ShareNames=''profile-containers'',''office-containers''', 'ShareNames=''profile-containers'''), '')]",
+                    "fslogixCommon": "[format('{0};{1};{2}', variables('fslogixIdpString'), variables('fslogixStorageSolutionString'), variables('fslogixCloudCacheString'))]",
+                    "fslogixExclusionsCloudCache": "[if(contains(parameters('fslogixContainerType'), 'CloudCache'), ';\"%ProgramData%\\FSLogix\\Cache\\*\";\"%ProgramData%\\FSLogix\\Proxy\\*\"', '')]",
+                    "fslogixDedupedSANames": "[union(variables('fslogixSANameMinus2'), variables('fslogixSANameMinus2'))]",
+                    "fslogixMatchPrefix": "[if(equals(length(variables('fslogixDedupedSANames')), 1), true(), false())]",
+                    "fslogixOfficeSharesPrefixMatch": [
+                      "[format('\\\\{0}??.file.{1}\\office-containers\\*\\*.VHDX', variables('fslogixDedupedSANames')[0], parameters('storageSuffix'))]"
+                    ],
+                    "fslogixProfileSharesPrefixMatch": [
+                      "[format('\\\\{0}??.file.{1}\\profile-containers\\*\\*.VHDX', variables('fslogixDedupedSANames')[0], parameters('storageSuffix'))]"
+                    ],
+                    "fslogixOfficeVHDXs": "[if(variables('fslogixMatchPrefix'), variables('fslogixOfficeSharesPrefixMatch'), variables('fslogixOfficeSharesNoMatch'))]",
+                    "fslogixProfileVHDXs": "[if(variables('fslogixMatchPrefix'), variables('fslogixProfileSharesPrefixMatch'), variables('fslogixProfileSharesNoMatch'))]",
+                    "fslogixExclusionsOffice": "[if(contains(parameters('fslogixContainerType'), 'Office'), format(';{0}', join(variables('fslogixExclusionsOfficeContainers'), ';')), '')]",
+                    "fslogixExclusionsProfile": "[format(';{0}', join(variables('fslogixExclusionProfileContainers'), ';'))]",
+                    "fslogixExclusions": "[format('\"%TEMP%\\*\\*.VHDX\";\"%Windir%\\TEMP\\*\\*.VHDX\"{0}{1}{2}', variables('fslogixExclusionsCloudCache'), variables('fslogixExclusionsProfile'), variables('fslogixExclusionsOffice'))]",
+                    "identityType": "[if(if(or(not(contains(parameters('identitySolution'), 'DomainServices')), parameters('enableInsights')), true(), false()), if(not(empty(parameters('artifactsUserAssignedIdentityResourceId'))), 'SystemAssigned,UserAssigned', 'SystemAssigned'), if(not(empty(parameters('artifactsUserAssignedIdentityResourceId'))), 'UserAssigned', 'None'))]",
+                    "userAssignedIdentities": "[if(not(empty(parameters('artifactsUserAssignedIdentityResourceId'))), createObject(format('{0}', parameters('artifactsUserAssignedIdentityResourceId')), createObject()), createObject())]",
+                    "identity": "[if(not(equals(variables('identityType'), 'None')), createObject('type', variables('identityType'), 'userAssignedIdentities', if(not(empty(variables('userAssignedIdentities'))), variables('userAssignedIdentities'), null())), null())]",
+                    "ImageReference": "[if(empty(parameters('customImageResourceId')), createObject('publisher', parameters('imagePublisher'), 'offer', parameters('imageOffer'), 'sku', parameters('imageSku'), 'version', 'latest'), createObject('id', parameters('customImageResourceId')))]",
+                    "intune": "[contains(parameters('identitySolution'), 'IntuneEnrollment')]",
+                    "nvidiaVmSize": "[contains(variables('nvidiaVmSizes'), parameters('virtualMachineSize'))]",
+                    "nvidiaVmSizes": [
+                      "Standard_NV6",
+                      "Standard_NV12",
+                      "Standard_NV24",
+                      "Standard_NV12s_v3",
+                      "Standard_NV24s_v3",
+                      "Standard_NV48s_v3",
+                      "Standard_NC4as_T4_v3",
+                      "Standard_NC8as_T4_v3",
+                      "Standard_NC16as_T4_v3",
+                      "Standard_NC64as_T4_v3",
+                      "Standard_NV6ads_A10_v5",
+                      "Standard_NV12ads_A10_v5",
+                      "Standard_NV18ads_A10_v5",
+                      "Standard_NV36ads_A10_v5",
+                      "Standard_NV36adms_A10_v5",
+                      "Standard_NV72ads_A10_v5"
+                    ]
+                  },
+                  "resources": [
+                    {
+                      "copy": {
+                        "name": "networkInterface",
+                        "count": "[length(range(0, parameters('sessionHostCount')))]"
+                      },
+                      "type": "Microsoft.Network/networkInterfaces",
+                      "apiVersion": "2020-05-01",
+                      "name": "[format('{0}{1}', parameters('networkInterfaceNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[copyIndex()], parameters('sessionHostIndex')), 3, '0'))]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tagsNetworkInterfaces')]",
+                      "properties": {
+                        "ipConfigurations": [
+                          {
+                            "name": "ipconfig",
+                            "properties": {
+                              "privateIPAllocationMethod": "Dynamic",
+                              "subnet": {
+                                "id": "[parameters('subnetResourceId')]"
+                              },
+                              "primary": true,
+                              "privateIPAddressVersion": "IPv4"
+                            }
+                          }
+                        ],
+                        "enableAcceleratedNetworking": "[if(equals(parameters('acceleratedNetworking'), 'True'), true(), false())]",
+                        "enableIPForwarding": false
+                      }
+                    },
+                    {
+                      "copy": {
+                        "name": "virtualMachine",
+                        "count": "[length(range(0, parameters('sessionHostCount')))]"
+                      },
+                      "type": "Microsoft.Compute/virtualMachines",
+                      "apiVersion": "2022-11-01",
+                      "name": "[format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[copyIndex()], parameters('sessionHostIndex')), 3, '0'))]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tagsVirtualMachines')]",
+                      "zones": "[if(equals(parameters('availability'), 'availabilityZones'), createArray(parameters('availabilityZones')[mod(range(0, parameters('sessionHostCount'))[copyIndex()], length(parameters('availabilityZones')))]), null())]",
+                      "identity": "[variables('identity')]",
+                      "properties": {
+                        "availabilitySet": "[if(equals(parameters('availability'), 'AvailabilitySets'), createObject('id', resourceId('Microsoft.Compute/availabilitySets', format('{0}-{1}', parameters('availabilitySetNamePrefix'), div(add(range(0, parameters('sessionHostCount'))[copyIndex()], parameters('sessionHostIndex')), 200)))), null())]",
+                        "hardwareProfile": {
+                          "vmSize": "[parameters('virtualMachineSize')]"
+                        },
+                        "storageProfile": {
+                          "imageReference": "[variables('ImageReference')]",
+                          "osDisk": {
+                            "name": "[format('{0}{1}', parameters('diskNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[copyIndex()], parameters('sessionHostIndex')), 3, '0'))]",
+                            "osType": "Windows",
+                            "createOption": "FromImage",
+                            "caching": "ReadWrite",
+                            "deleteOption": "Delete",
+                            "managedDisk": {
+                              "diskEncryptionSet": "[if(and(not(equals(parameters('securityType'), 'ConfidentialVM')), not(empty(parameters('diskEncryptionSetResourceId')))), createObject('id', parameters('diskEncryptionSetResourceId')), null())]",
+                              "securityProfile": "[if(equals(parameters('securityType'), 'ConfidentialVM'), createObject('diskEncryptionSet', if(not(empty(parameters('diskEncryptionSetResourceId'))), createObject('id', parameters('diskEncryptionSetResourceId')), null()), 'securityEncryptionType', parameters('confidentialVMOSDiskEncryptionType')), null())]",
+                              "storageAccountType": "[parameters('diskSku')]"
+                            }
+                          },
+                          "dataDisks": []
+                        },
+                        "osProfile": {
+                          "computerName": "[format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[copyIndex()], parameters('sessionHostIndex')), 3, '0'))]",
+                          "adminUsername": "[parameters('virtualMachineAdminUserName')]",
+                          "adminPassword": "[parameters('virtualMachineAdminPassword')]",
+                          "windowsConfiguration": {
+                            "provisionVMAgent": true,
+                            "enableAutomaticUpdates": false
+                          },
+                          "secrets": [],
+                          "allowExtensionOperations": true
+                        },
+                        "networkProfile": {
+                          "networkInterfaces": [
+                            {
+                              "id": "[resourceId('Microsoft.Network/networkInterfaces', format('{0}{1}', parameters('networkInterfaceNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[copyIndex()], parameters('sessionHostIndex')), 3, '0')))]",
+                              "properties": {
+                                "deleteOption": "Delete"
+                              }
+                            }
+                          ]
+                        },
+                        "securityProfile": {
+                          "encryptionAtHost": "[parameters('encryptionAtHost')]",
+                          "securityType": "[if(not(empty(parameters('securityType'))), parameters('securityType'), null())]",
+                          "uefiSettings": "[if(not(empty(parameters('securityType'))), createObject('secureBootEnabled', true(), 'vTpmEnabled', true()), null())]"
+                        },
+                        "diagnosticsProfile": {
+                          "bootDiagnostics": {
+                            "enabled": false
+                          }
+                        },
+                        "licenseType": "[if(or(equals(parameters('imagePublisher'), 'MicrosoftWindowsDesktop'), not(empty(parameters('customImageResourceId')))), 'Windows_Client', 'Windows_Server')]"
+                      },
+                      "dependsOn": [
+                        "networkInterface"
+                      ]
+                    },
+                    {
+                      "copy": {
+                        "name": "extension_IaasAntimalware",
+                        "count": "[length(range(0, parameters('sessionHostCount')))]"
+                      },
+                      "type": "Microsoft.Compute/virtualMachines/extensions",
+                      "apiVersion": "2021-03-01",
+                      "name": "[format('{0}/{1}', format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[range(0, parameters('sessionHostCount'))[copyIndex()]], parameters('sessionHostIndex')), 3, '0')), 'IaaSAntimalware')]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tagsVirtualMachines')]",
+                      "properties": {
+                        "publisher": "Microsoft.Azure.Security",
+                        "type": "IaaSAntimalware",
+                        "typeHandlerVersion": "1.3",
+                        "autoUpgradeMinorVersion": true,
+                        "settings": {
+                          "AntimalwareEnabled": true,
+                          "RealtimeProtectionEnabled": "true",
+                          "ScheduledScanSettings": {
+                            "isEnabled": "true",
+                            "day": "7",
+                            "time": "120",
+                            "scanType": "Quick"
+                          },
+                          "Exclusions": "[if(parameters('fslogixConfigureSessionHosts'), createObject('Paths', variables('fslogixExclusions')), createObject())]"
+                        }
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.Compute/virtualMachines', format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[range(0, parameters('sessionHostCount'))[copyIndex()]], parameters('sessionHostIndex')), 3, '0')))]"
+                      ]
+                    },
+                    {
+                      "copy": {
+                        "name": "extension_AzureMonitorWindowsAgent",
+                        "count": "[length(range(0, parameters('sessionHostCount')))]"
+                      },
+                      "condition": "[parameters('enableInsights')]",
+                      "type": "Microsoft.Compute/virtualMachines/extensions",
+                      "apiVersion": "2023-03-01",
+                      "name": "[format('{0}/{1}', format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[range(0, parameters('sessionHostCount'))[copyIndex()]], parameters('sessionHostIndex')), 3, '0')), 'AzureMonitorAgent')]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tagsVirtualMachines')]",
+                      "properties": {
+                        "publisher": "Microsoft.Azure.Monitor",
+                        "type": "AzureMonitorWindowsAgent",
+                        "typeHandlerVersion": "1.0",
+                        "autoUpgradeMinorVersion": true,
+                        "enableAutomaticUpgrade": true
+                      },
+                      "dependsOn": [
+                        "extension_IaasAntimalware",
+                        "[resourceId('Microsoft.Compute/virtualMachines', format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[range(0, parameters('sessionHostCount'))[copyIndex()]], parameters('sessionHostIndex')), 3, '0')))]"
+                      ]
+                    },
+                    {
+                      "copy": {
+                        "name": "dataCollectionEndpointAssociation",
+                        "count": "[length(range(0, parameters('sessionHostCount')))]"
+                      },
+                      "condition": "[and(parameters('enableInsights'), not(empty(parameters('dataCollectionEndpointResourceId'))))]",
+                      "type": "Microsoft.Insights/dataCollectionRuleAssociations",
+                      "apiVersion": "2022-06-01",
+                      "scope": "[format('Microsoft.Compute/virtualMachines/{0}', format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[range(0, parameters('sessionHostCount'))[copyIndex()]], parameters('sessionHostIndex')), 3, '0')))]",
+                      "name": "configurationAccessEndpoint",
+                      "properties": {
+                        "dataCollectionEndpointId": "[parameters('dataCollectionEndpointResourceId')]",
+                        "description": "Data Collection Endpoint Association"
+                      },
+                      "dependsOn": [
+                        "extension_AzureMonitorWindowsAgent",
+                        "[resourceId('Microsoft.Compute/virtualMachines', format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[range(0, parameters('sessionHostCount'))[copyIndex()]], parameters('sessionHostIndex')), 3, '0')))]"
+                      ]
+                    },
+                    {
+                      "copy": {
+                        "name": "avdInsightsDataCollectionRuleAssociation",
+                        "count": "[length(range(0, parameters('sessionHostCount')))]"
+                      },
+                      "condition": "[and(parameters('enableInsights'), not(empty(parameters('avdInsightsDataCollectionRulesResourceId'))))]",
+                      "type": "Microsoft.Insights/dataCollectionRuleAssociations",
+                      "apiVersion": "2022-06-01",
+                      "scope": "[format('Microsoft.Compute/virtualMachines/{0}', format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[range(0, parameters('sessionHostCount'))[copyIndex()]], parameters('sessionHostIndex')), 3, '0')))]",
+                      "name": "[format('avdinsights-{0}-dcra', format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[range(0, parameters('sessionHostCount'))[copyIndex()]], parameters('sessionHostIndex')), 3, '0')))]",
+                      "properties": {
+                        "dataCollectionRuleId": "[parameters('avdInsightsDataCollectionRulesResourceId')]",
+                        "description": "AVD Insights data collection rule association"
+                      },
+                      "dependsOn": [
+                        "extension_AzureMonitorWindowsAgent",
+                        "[resourceId('Microsoft.Compute/virtualMachines', format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[range(0, parameters('sessionHostCount'))[copyIndex()]], parameters('sessionHostIndex')), 3, '0')))]",
+                        "[resourceId('Microsoft.Compute/virtualMachines', format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[range(0, parameters('sessionHostCount'))[copyIndex()]], parameters('sessionHostIndex')), 3, '0')))]"
+                      ]
+                    },
+                    {
+                      "copy": {
+                        "name": "vmInsightsDataCollectionRuleAssociation",
+                        "count": "[length(range(0, parameters('sessionHostCount')))]"
+                      },
+                      "condition": "[and(parameters('enableInsights'), not(empty(parameters('vmInsightsDataCollectionRulesResourceId'))))]",
+                      "type": "Microsoft.Insights/dataCollectionRuleAssociations",
+                      "apiVersion": "2022-06-01",
+                      "scope": "[format('Microsoft.Compute/virtualMachines/{0}', format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[range(0, parameters('sessionHostCount'))[copyIndex()]], parameters('sessionHostIndex')), 3, '0')))]",
+                      "name": "[format('vmInsights-{0}-dcra', format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[range(0, parameters('sessionHostCount'))[copyIndex()]], parameters('sessionHostIndex')), 3, '0')))]",
+                      "properties": {
+                        "dataCollectionRuleId": "[parameters('vmInsightsDataCollectionRulesResourceId')]",
+                        "description": "VM Insights data collection rule association"
+                      },
+                      "dependsOn": [
+                        "extension_AzureMonitorWindowsAgent",
+                        "[resourceId('Microsoft.Compute/virtualMachines', format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[range(0, parameters('sessionHostCount'))[copyIndex()]], parameters('sessionHostIndex')), 3, '0')))]",
+                        "[resourceId('Microsoft.Compute/virtualMachines', format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[range(0, parameters('sessionHostCount'))[copyIndex()]], parameters('sessionHostIndex')), 3, '0')))]"
+                      ]
+                    },
+                    {
+                      "copy": {
+                        "name": "securityDataCollectionRuleAssociation",
+                        "count": "[length(range(0, parameters('sessionHostCount')))]"
+                      },
+                      "condition": "[not(empty(parameters('securityDataCollectionRulesResourceId')))]",
+                      "type": "Microsoft.Insights/dataCollectionRuleAssociations",
+                      "apiVersion": "2022-06-01",
+                      "scope": "[format('Microsoft.Compute/virtualMachines/{0}', format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[range(0, parameters('sessionHostCount'))[copyIndex()]], parameters('sessionHostIndex')), 3, '0')))]",
+                      "name": "[format('security-{0}-dcra', format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[range(0, parameters('sessionHostCount'))[copyIndex()]], parameters('sessionHostIndex')), 3, '0')))]",
+                      "properties": {
+                        "dataCollectionRuleId": "[parameters('securityDataCollectionRulesResourceId')]",
+                        "description": "Security Events data collection rule association"
+                      },
+                      "dependsOn": [
+                        "extension_AzureMonitorWindowsAgent",
+                        "[resourceId('Microsoft.Compute/virtualMachines', format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[range(0, parameters('sessionHostCount'))[copyIndex()]], parameters('sessionHostIndex')), 3, '0')))]",
+                        "[resourceId('Microsoft.Compute/virtualMachines', format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[range(0, parameters('sessionHostCount'))[copyIndex()]], parameters('sessionHostIndex')), 3, '0')))]"
+                      ]
+                    },
+                    {
+                      "copy": {
+                        "name": "extension_MicrosoftMonitoringAgent",
+                        "count": "[length(range(0, parameters('sessionHostCount')))]"
+                      },
+                      "condition": "[not(empty(parameters('securityLogAnalyticsWorkspaceResourceId')))]",
+                      "type": "Microsoft.Compute/virtualMachines/extensions",
+                      "apiVersion": "2021-03-01",
+                      "name": "[format('{0}/{1}', format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[range(0, parameters('sessionHostCount'))[copyIndex()]], parameters('sessionHostIndex')), 3, '0')), 'MicrosoftMonitoringAgent')]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tagsVirtualMachines')]",
+                      "properties": {
+                        "publisher": "Microsoft.EnterpriseCloud.Monitoring",
+                        "type": "MicrosoftMonitoringAgent",
+                        "typeHandlerVersion": "1.0",
+                        "autoUpgradeMinorVersion": true,
+                        "settings": {
+                          "workspaceId": "[if(not(empty(parameters('securityLogAnalyticsWorkspaceResourceId'))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('securityLogAnalyticsWorkspaceResourceId'), '/')[2], split(parameters('securityLogAnalyticsWorkspaceResourceId'), '/')[4]), 'Microsoft.OperationalInsights/workspaces', last(split(parameters('securityLogAnalyticsWorkspaceResourceId'), '/'))), '2022-10-01').customerId, '')]"
+                        },
+                        "protectedSettings": {
+                          "workspaceKey": "[if(not(empty(parameters('securityLogAnalyticsWorkspaceResourceId'))), listKeys(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('securityLogAnalyticsWorkspaceResourceId'), '/')[2], split(parameters('securityLogAnalyticsWorkspaceResourceId'), '/')[4]), 'Microsoft.OperationalInsights/workspaces', last(split(parameters('securityLogAnalyticsWorkspaceResourceId'), '/'))), '2022-10-01').primarySharedKey, '')]"
+                        }
+                      },
+                      "dependsOn": [
+                        "extension_IaasAntimalware",
+                        "[resourceId('Microsoft.Compute/virtualMachines', format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[range(0, parameters('sessionHostCount'))[copyIndex()]], parameters('sessionHostIndex')), 3, '0')))]"
+                      ]
+                    },
+                    {
+                      "copy": {
+                        "name": "extension_CustomScriptExtension",
+                        "count": "[length(range(0, parameters('sessionHostCount')))]"
+                      },
+                      "type": "Microsoft.Compute/virtualMachines/extensions",
+                      "apiVersion": "2021-03-01",
+                      "name": "[format('{0}/{1}', format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[range(0, parameters('sessionHostCount'))[copyIndex()]], parameters('sessionHostIndex')), 3, '0')), 'CustomScriptExtension')]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tagsVirtualMachines')]",
+                      "properties": {
+                        "publisher": "Microsoft.Compute",
+                        "type": "CustomScriptExtension",
+                        "typeHandlerVersion": "1.10",
+                        "autoUpgradeMinorVersion": true,
+                        "settings": {
+                          "fileUris": "[parameters('cseUris')]",
+                          "timeStamp": "[parameters('timeStamp')]"
+                        },
+                        "protectedSettings": "[if(contains(parameters('artifactsUri'), environment().suffixes.storage), createObject('commandToExecute', format('powershell -ExecutionPolicy Unrestricted -Command .\\{0} -DynParameters {1}', parameters('cseMasterScript'), if(empty(parameters('cseScriptAddDynParameters')), format('@{{{0}}}', if(parameters('fslogixConfigureSessionHosts'), format('{0};{1}', format('FSLogix=@([pscustomobject]@{{{0}}})', if(equals(variables('fslogixStorageSolution'), 'AzureNetAppFiles'), format('{0};{1}', variables('fslogixCommon'), variables('fslogixNetAppSharesString')), if(equals(variables('fslogixIdP'), 'AAD'), format('{0};{1};{2};{3};{4}', variables('fslogixCommon'), variables('fslogixSASuffixString'), variables('fslogixSANamesString'), if(equals(variables('fslogixIdP'), 'AAD'), format('SAKeys=''{0}''', replace(join(union(if(and(and(equals(variables('fslogixIdP'), 'AAD'), parameters('fslogixConfigureSessionHosts')), not(empty(variables('fslogixSAResIds')))), createArray(listkeys(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(variables('fslogixSAResIds')[0], '/')[2], split(variables('fslogixSAResIds')[0], '/')[4]), 'Microsoft.Storage/storageAccounts', last(split(variables('fslogixSAResIds')[0], '/'))), '2023-01-01').keys[0].value), createArray()), if(and(and(equals(variables('fslogixIdP'), 'AAD'), parameters('fslogixConfigureSessionHosts')), greater(length(variables('fslogixSAResIds')), 1)), createArray(listkeys(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(variables('fslogixSAResIds')[1], '/')[2], split(variables('fslogixSAResIds')[1], '/')[4]), 'Microsoft.Storage/storageAccounts', last(split(variables('fslogixSAResIds')[1], '/'))), '2023-01-01').keys[0].value), createArray()), if(and(and(equals(variables('fslogixIdP'), 'AAD'), parameters('fslogixConfigureSessionHosts')), greater(length(variables('fslogixSAResIds')), 2)), createArray(listkeys(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(variables('fslogixSAResIds')[2], '/')[2], split(variables('fslogixSAResIds')[2], '/')[4]), 'Microsoft.Storage/storageAccounts', last(split(variables('fslogixSAResIds')[2], '/'))), '2023-01-01').keys[0].value), createArray()), if(and(and(equals(variables('fslogixIdP'), 'AAD'), parameters('fslogixConfigureSessionHosts')), greater(length(variables('fslogixSAResIds')), 3)), createArray(listkeys(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(variables('fslogixSAResIds')[3], '/')[2], split(variables('fslogixSAResIds')[3], '/')[4]), 'Microsoft.Storage/storageAccounts', last(split(variables('fslogixSAResIds')[3], '/'))), '2023-01-01').keys[0].value), createArray())), ','), ',', ''',''')), ''), variables('fslogixSharesString')), format('{0};{1};{2};{3}', variables('fslogixCommon'), variables('fslogixSASuffixString'), variables('fslogixSANamesString'), variables('fslogixSharesString'))))), format('SHConfiguration=@([pscustomobject]@{{{0}}})', format('AmdVmSize=''{0}'';nvidiaVmSize=''{1}'';HostPoolRegistrationToken=''{2}''', variables('amdVmSize'), variables('nvidiaVmSize'), reference(resourceId(parameters('resourceGroupControlPlane'), 'Microsoft.DesktopVirtualization/hostPools', parameters('hostPoolName')), '2019-12-10-preview').registrationInfo.token))), format('{0}', format('SHConfiguration=@([pscustomobject]@{{{0}}})', format('AmdVmSize=''{0}'';nvidiaVmSize=''{1}'';HostPoolRegistrationToken=''{2}''', variables('amdVmSize'), variables('nvidiaVmSize'), reference(resourceId(parameters('resourceGroupControlPlane'), 'Microsoft.DesktopVirtualization/hostPools', parameters('hostPoolName')), '2019-12-10-preview').registrationInfo.token))))), format('@{{{0};{1}}}', if(parameters('fslogixConfigureSessionHosts'), format('{0};{1}', format('FSLogix=@([pscustomobject]@{{{0}}})', if(equals(variables('fslogixStorageSolution'), 'AzureNetAppFiles'), format('{0};{1}', variables('fslogixCommon'), variables('fslogixNetAppSharesString')), if(equals(variables('fslogixIdP'), 'AAD'), format('{0};{1};{2};{3};{4}', variables('fslogixCommon'), variables('fslogixSASuffixString'), variables('fslogixSANamesString'), if(equals(variables('fslogixIdP'), 'AAD'), format('SAKeys=''{0}''', replace(join(union(if(and(and(equals(variables('fslogixIdP'), 'AAD'), parameters('fslogixConfigureSessionHosts')), not(empty(variables('fslogixSAResIds')))), createArray(listkeys(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(variables('fslogixSAResIds')[0], '/')[2], split(variables('fslogixSAResIds')[0], '/')[4]), 'Microsoft.Storage/storageAccounts', last(split(variables('fslogixSAResIds')[0], '/'))), '2023-01-01').keys[0].value), createArray()), if(and(and(equals(variables('fslogixIdP'), 'AAD'), parameters('fslogixConfigureSessionHosts')), greater(length(variables('fslogixSAResIds')), 1)), createArray(listkeys(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(variables('fslogixSAResIds')[1], '/')[2], split(variables('fslogixSAResIds')[1], '/')[4]), 'Microsoft.Storage/storageAccounts', last(split(variables('fslogixSAResIds')[1], '/'))), '2023-01-01').keys[0].value), createArray()), if(and(and(equals(variables('fslogixIdP'), 'AAD'), parameters('fslogixConfigureSessionHosts')), greater(length(variables('fslogixSAResIds')), 2)), createArray(listkeys(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(variables('fslogixSAResIds')[2], '/')[2], split(variables('fslogixSAResIds')[2], '/')[4]), 'Microsoft.Storage/storageAccounts', last(split(variables('fslogixSAResIds')[2], '/'))), '2023-01-01').keys[0].value), createArray()), if(and(and(equals(variables('fslogixIdP'), 'AAD'), parameters('fslogixConfigureSessionHosts')), greater(length(variables('fslogixSAResIds')), 3)), createArray(listkeys(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(variables('fslogixSAResIds')[3], '/')[2], split(variables('fslogixSAResIds')[3], '/')[4]), 'Microsoft.Storage/storageAccounts', last(split(variables('fslogixSAResIds')[3], '/'))), '2023-01-01').keys[0].value), createArray())), ','), ',', ''',''')), ''), variables('fslogixSharesString')), format('{0};{1};{2};{3}', variables('fslogixCommon'), variables('fslogixSASuffixString'), variables('fslogixSANamesString'), variables('fslogixSharesString'))))), format('SHConfiguration=@([pscustomobject]@{{{0}}})', format('AmdVmSize=''{0}'';nvidiaVmSize=''{1}'';HostPoolRegistrationToken=''{2}''', variables('amdVmSize'), variables('nvidiaVmSize'), reference(resourceId(parameters('resourceGroupControlPlane'), 'Microsoft.DesktopVirtualization/hostPools', parameters('hostPoolName')), '2019-12-10-preview').registrationInfo.token))), format('{0}', format('SHConfiguration=@([pscustomobject]@{{{0}}})', format('AmdVmSize=''{0}'';nvidiaVmSize=''{1}'';HostPoolRegistrationToken=''{2}''', variables('amdVmSize'), variables('nvidiaVmSize'), reference(resourceId(parameters('resourceGroupControlPlane'), 'Microsoft.DesktopVirtualization/hostPools', parameters('hostPoolName')), '2019-12-10-preview').registrationInfo.token)))), parameters('cseScriptAddDynParameters')))), 'managedIdentity', createObject('clientId', parameters('artifactsUserAssignedIdentityClientId'))), createObject('commandToExecute', format('powershell -ExecutionPolicy Unrestricted -Command .\\{0} -DynParameters {1}', parameters('cseMasterScript'), if(empty(parameters('cseScriptAddDynParameters')), format('@{{{0}}}', if(parameters('fslogixConfigureSessionHosts'), format('{0};{1}', format('FSLogix=@([pscustomobject]@{{{0}}})', if(equals(variables('fslogixStorageSolution'), 'AzureNetAppFiles'), format('{0};{1}', variables('fslogixCommon'), variables('fslogixNetAppSharesString')), if(equals(variables('fslogixIdP'), 'AAD'), format('{0};{1};{2};{3};{4}', variables('fslogixCommon'), variables('fslogixSASuffixString'), variables('fslogixSANamesString'), if(equals(variables('fslogixIdP'), 'AAD'), format('SAKeys=''{0}''', replace(join(union(if(and(and(equals(variables('fslogixIdP'), 'AAD'), parameters('fslogixConfigureSessionHosts')), not(empty(variables('fslogixSAResIds')))), createArray(listkeys(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(variables('fslogixSAResIds')[0], '/')[2], split(variables('fslogixSAResIds')[0], '/')[4]), 'Microsoft.Storage/storageAccounts', last(split(variables('fslogixSAResIds')[0], '/'))), '2023-01-01').keys[0].value), createArray()), if(and(and(equals(variables('fslogixIdP'), 'AAD'), parameters('fslogixConfigureSessionHosts')), greater(length(variables('fslogixSAResIds')), 1)), createArray(listkeys(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(variables('fslogixSAResIds')[1], '/')[2], split(variables('fslogixSAResIds')[1], '/')[4]), 'Microsoft.Storage/storageAccounts', last(split(variables('fslogixSAResIds')[1], '/'))), '2023-01-01').keys[0].value), createArray()), if(and(and(equals(variables('fslogixIdP'), 'AAD'), parameters('fslogixConfigureSessionHosts')), greater(length(variables('fslogixSAResIds')), 2)), createArray(listkeys(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(variables('fslogixSAResIds')[2], '/')[2], split(variables('fslogixSAResIds')[2], '/')[4]), 'Microsoft.Storage/storageAccounts', last(split(variables('fslogixSAResIds')[2], '/'))), '2023-01-01').keys[0].value), createArray()), if(and(and(equals(variables('fslogixIdP'), 'AAD'), parameters('fslogixConfigureSessionHosts')), greater(length(variables('fslogixSAResIds')), 3)), createArray(listkeys(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(variables('fslogixSAResIds')[3], '/')[2], split(variables('fslogixSAResIds')[3], '/')[4]), 'Microsoft.Storage/storageAccounts', last(split(variables('fslogixSAResIds')[3], '/'))), '2023-01-01').keys[0].value), createArray())), ','), ',', ''',''')), ''), variables('fslogixSharesString')), format('{0};{1};{2};{3}', variables('fslogixCommon'), variables('fslogixSASuffixString'), variables('fslogixSANamesString'), variables('fslogixSharesString'))))), format('SHConfiguration=@([pscustomobject]@{{{0}}})', format('AmdVmSize=''{0}'';nvidiaVmSize=''{1}'';HostPoolRegistrationToken=''{2}''', variables('amdVmSize'), variables('nvidiaVmSize'), reference(resourceId(parameters('resourceGroupControlPlane'), 'Microsoft.DesktopVirtualization/hostPools', parameters('hostPoolName')), '2019-12-10-preview').registrationInfo.token))), format('{0}', format('SHConfiguration=@([pscustomobject]@{{{0}}})', format('AmdVmSize=''{0}'';nvidiaVmSize=''{1}'';HostPoolRegistrationToken=''{2}''', variables('amdVmSize'), variables('nvidiaVmSize'), reference(resourceId(parameters('resourceGroupControlPlane'), 'Microsoft.DesktopVirtualization/hostPools', parameters('hostPoolName')), '2019-12-10-preview').registrationInfo.token))))), format('@{{{0};{1}}}', if(parameters('fslogixConfigureSessionHosts'), format('{0};{1}', format('FSLogix=@([pscustomobject]@{{{0}}})', if(equals(variables('fslogixStorageSolution'), 'AzureNetAppFiles'), format('{0};{1}', variables('fslogixCommon'), variables('fslogixNetAppSharesString')), if(equals(variables('fslogixIdP'), 'AAD'), format('{0};{1};{2};{3};{4}', variables('fslogixCommon'), variables('fslogixSASuffixString'), variables('fslogixSANamesString'), if(equals(variables('fslogixIdP'), 'AAD'), format('SAKeys=''{0}''', replace(join(union(if(and(and(equals(variables('fslogixIdP'), 'AAD'), parameters('fslogixConfigureSessionHosts')), not(empty(variables('fslogixSAResIds')))), createArray(listkeys(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(variables('fslogixSAResIds')[0], '/')[2], split(variables('fslogixSAResIds')[0], '/')[4]), 'Microsoft.Storage/storageAccounts', last(split(variables('fslogixSAResIds')[0], '/'))), '2023-01-01').keys[0].value), createArray()), if(and(and(equals(variables('fslogixIdP'), 'AAD'), parameters('fslogixConfigureSessionHosts')), greater(length(variables('fslogixSAResIds')), 1)), createArray(listkeys(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(variables('fslogixSAResIds')[1], '/')[2], split(variables('fslogixSAResIds')[1], '/')[4]), 'Microsoft.Storage/storageAccounts', last(split(variables('fslogixSAResIds')[1], '/'))), '2023-01-01').keys[0].value), createArray()), if(and(and(equals(variables('fslogixIdP'), 'AAD'), parameters('fslogixConfigureSessionHosts')), greater(length(variables('fslogixSAResIds')), 2)), createArray(listkeys(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(variables('fslogixSAResIds')[2], '/')[2], split(variables('fslogixSAResIds')[2], '/')[4]), 'Microsoft.Storage/storageAccounts', last(split(variables('fslogixSAResIds')[2], '/'))), '2023-01-01').keys[0].value), createArray()), if(and(and(equals(variables('fslogixIdP'), 'AAD'), parameters('fslogixConfigureSessionHosts')), greater(length(variables('fslogixSAResIds')), 3)), createArray(listkeys(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(variables('fslogixSAResIds')[3], '/')[2], split(variables('fslogixSAResIds')[3], '/')[4]), 'Microsoft.Storage/storageAccounts', last(split(variables('fslogixSAResIds')[3], '/'))), '2023-01-01').keys[0].value), createArray())), ','), ',', ''',''')), ''), variables('fslogixSharesString')), format('{0};{1};{2};{3}', variables('fslogixCommon'), variables('fslogixSASuffixString'), variables('fslogixSANamesString'), variables('fslogixSharesString'))))), format('SHConfiguration=@([pscustomobject]@{{{0}}})', format('AmdVmSize=''{0}'';nvidiaVmSize=''{1}'';HostPoolRegistrationToken=''{2}''', variables('amdVmSize'), variables('nvidiaVmSize'), reference(resourceId(parameters('resourceGroupControlPlane'), 'Microsoft.DesktopVirtualization/hostPools', parameters('hostPoolName')), '2019-12-10-preview').registrationInfo.token))), format('{0}', format('SHConfiguration=@([pscustomobject]@{{{0}}})', format('AmdVmSize=''{0}'';nvidiaVmSize=''{1}'';HostPoolRegistrationToken=''{2}''', variables('amdVmSize'), variables('nvidiaVmSize'), reference(resourceId(parameters('resourceGroupControlPlane'), 'Microsoft.DesktopVirtualization/hostPools', parameters('hostPoolName')), '2019-12-10-preview').registrationInfo.token)))), parameters('cseScriptAddDynParameters'))))))]"
+                      },
+                      "dependsOn": [
+                        "extension_AzureMonitorWindowsAgent",
+                        "extension_MicrosoftMonitoringAgent",
+                        "[resourceId('Microsoft.Compute/virtualMachines', format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[range(0, parameters('sessionHostCount'))[copyIndex()]], parameters('sessionHostIndex')), 3, '0')))]"
+                      ]
+                    },
+                    {
+                      "copy": {
+                        "name": "extension_JsonADDomainExtension",
+                        "count": "[length(range(0, parameters('sessionHostCount')))]"
+                      },
+                      "condition": "[contains(parameters('identitySolution'), 'DomainServices')]",
+                      "type": "Microsoft.Compute/virtualMachines/extensions",
+                      "apiVersion": "2021-03-01",
+                      "name": "[format('{0}/{1}', format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[range(0, parameters('sessionHostCount'))[copyIndex()]], parameters('sessionHostIndex')), 3, '0')), 'JsonADDomainExtension')]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tagsVirtualMachines')]",
+                      "properties": {
+                        "forceUpdateTag": "[parameters('timeStamp')]",
+                        "publisher": "Microsoft.Compute",
+                        "type": "JsonADDomainExtension",
+                        "typeHandlerVersion": "1.3",
+                        "autoUpgradeMinorVersion": true,
+                        "settings": {
+                          "Name": "[parameters('domainName')]",
+                          "User": "[parameters('domainJoinUserPrincipalName')]",
+                          "Restart": "true",
+                          "Options": "3",
+                          "OUPath": "[parameters('ouPath')]"
+                        },
+                        "protectedSettings": {
+                          "Password": "[parameters('domainJoinUserPassword')]"
+                        }
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.Compute/virtualMachines', format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[range(0, parameters('sessionHostCount'))[copyIndex()]], parameters('sessionHostIndex')), 3, '0')))]"
+                      ]
+                    },
+                    {
+                      "copy": {
+                        "name": "extension_AADLoginForWindows",
+                        "count": "[length(range(0, parameters('sessionHostCount')))]"
+                      },
+                      "condition": "[not(contains(parameters('identitySolution'), 'DomainServices'))]",
+                      "type": "Microsoft.Compute/virtualMachines/extensions",
+                      "apiVersion": "2021-03-01",
+                      "name": "[format('{0}/{1}', format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[range(0, parameters('sessionHostCount'))[copyIndex()]], parameters('sessionHostIndex')), 3, '0')), 'AADLoginForWindows')]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tagsVirtualMachines')]",
+                      "properties": {
+                        "publisher": "Microsoft.Azure.ActiveDirectory",
+                        "type": "AADLoginForWindows",
+                        "typeHandlerVersion": "1.0",
+                        "autoUpgradeMinorVersion": true,
+                        "settings": "[if(variables('intune'), createObject('mdmId', '0000000a-0000-0000-c000-000000000000'), null())]"
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.Compute/virtualMachines', format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[range(0, parameters('sessionHostCount'))[copyIndex()]], parameters('sessionHostIndex')), 3, '0')))]"
+                      ]
+                    },
+                    {
+                      "copy": {
+                        "name": "extension_AmdGpuDriverWindows",
+                        "count": "[length(range(0, parameters('sessionHostCount')))]"
+                      },
+                      "condition": "[variables('amdVmSize')]",
+                      "type": "Microsoft.Compute/virtualMachines/extensions",
+                      "apiVersion": "2021-03-01",
+                      "name": "[format('{0}/{1}', format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[range(0, parameters('sessionHostCount'))[copyIndex()]], parameters('sessionHostIndex')), 3, '0')), 'AmdGpuDriverWindows')]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tagsVirtualMachines')]",
+                      "properties": {
+                        "publisher": "Microsoft.HpcCompute",
+                        "type": "AmdGpuDriverWindows",
+                        "typeHandlerVersion": "1.0",
+                        "autoUpgradeMinorVersion": true,
+                        "settings": {}
+                      },
+                      "dependsOn": [
+                        "extension_AADLoginForWindows",
+                        "extension_JsonADDomainExtension",
+                        "[resourceId('Microsoft.Compute/virtualMachines', format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[range(0, parameters('sessionHostCount'))[copyIndex()]], parameters('sessionHostIndex')), 3, '0')))]"
+                      ]
+                    },
+                    {
+                      "copy": {
+                        "name": "extension_NvidiaGpuDriverWindows",
+                        "count": "[length(range(0, parameters('sessionHostCount')))]"
+                      },
+                      "condition": "[variables('nvidiaVmSize')]",
+                      "type": "Microsoft.Compute/virtualMachines/extensions",
+                      "apiVersion": "2021-03-01",
+                      "name": "[format('{0}/{1}', format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[range(0, parameters('sessionHostCount'))[copyIndex()]], parameters('sessionHostIndex')), 3, '0')), 'NvidiaGpuDriverWindows')]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tagsVirtualMachines')]",
+                      "properties": {
+                        "publisher": "Microsoft.HpcCompute",
+                        "type": "NvidiaGpuDriverWindows",
+                        "typeHandlerVersion": "1.2",
+                        "autoUpgradeMinorVersion": true,
+                        "settings": {}
+                      },
+                      "dependsOn": [
+                        "extension_AADLoginForWindows",
+                        "extension_JsonADDomainExtension",
+                        "[resourceId('Microsoft.Compute/virtualMachines', format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[range(0, parameters('sessionHostCount'))[copyIndex()]], parameters('sessionHostIndex')), 3, '0')))]"
+                      ]
+                    },
+                    {
+                      "condition": "[parameters('drainMode')]",
+                      "type": "Microsoft.Resources/deployments",
+                      "apiVersion": "2022-09-01",
+                      "name": "[format('CSE_DrainMode_{0}_{1}', parameters('batchCount'), parameters('timeStamp'))]",
+                      "resourceGroup": "[parameters('resourceGroupManagement')]",
+                      "properties": {
+                        "expressionEvaluationOptions": {
+                          "scope": "inner"
+                        },
+                        "mode": "Incremental",
+                        "parameters": {
+                          "fileUris": {
+                            "value": [
+                              "[format('{0}Set-AvdDrainMode.ps1', parameters('artifactsUri'))]"
+                            ]
+                          },
+                          "scriptFileName": {
+                            "value": "Set-AvdDrainMode.ps1"
+                          },
+                          "location": {
+                            "value": "[parameters('location')]"
+                          },
+                          "parameters": {
+                            "value": "[format('-environmentShortName {0} -hostPoolName {1} -HostPoolResourceGroupName {2} -sessionHostCount {3} -sessionHostIndex {4} -SubscriptionId {5} -TenantId {6} -userAssignedIdentityClientId {7} -virtualMachineNamePrefix {8}', environment().name, parameters('hostPoolName'), parameters('resourceGroupControlPlane'), parameters('sessionHostCount'), parameters('sessionHostIndex'), subscription().subscriptionId, tenant().tenantId, parameters('drainModeUserAssignedIdentityClientId'), parameters('virtualMachineNamePrefix'))]"
+                          },
+                          "tags": {
+                            "value": "[parameters('tagsVirtualMachines')]"
+                          },
+                          "userAssignedIdentityClientId": {
+                            "value": "[parameters('artifactsUserAssignedIdentityClientId')]"
+                          },
+                          "virtualMachineName": {
+                            "value": "[parameters('managementVirtualMachineName')]"
+                          }
+                        },
+                        "template": {
+                          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                          "contentVersion": "1.0.0.0",
+                          "metadata": {
+                            "_generator": {
+                              "name": "bicep",
+                              "version": "0.24.24.22086",
+                              "templateHash": "12329895463149598703"
+                            }
+                          },
+                          "parameters": {
+                            "fileUris": {
+                              "type": "array"
+                            },
+                            "location": {
+                              "type": "string"
+                            },
+                            "output": {
+                              "type": "bool",
+                              "defaultValue": true
+                            },
+                            "parameters": {
+                              "type": "string"
+                            },
+                            "scriptFileName": {
+                              "type": "string"
+                            },
+                            "tags": {
+                              "type": "object"
+                            },
+                            "timeStamp": {
+                              "type": "string",
+                              "defaultValue": "[utcNow('yyyyMMddhhmmss')]"
+                            },
+                            "userAssignedIdentityClientId": {
+                              "type": "string"
+                            },
+                            "virtualMachineName": {
+                              "type": "string"
+                            }
+                          },
+                          "resources": [
+                            {
+                              "type": "Microsoft.Compute/virtualMachines/extensions",
+                              "apiVersion": "2021-03-01",
+                              "name": "[format('{0}/{1}', parameters('virtualMachineName'), 'CustomScriptExtension')]",
+                              "location": "[parameters('location')]",
+                              "tags": "[parameters('tags')]",
+                              "properties": {
+                                "publisher": "Microsoft.Compute",
+                                "type": "CustomScriptExtension",
+                                "typeHandlerVersion": "1.10",
+                                "autoUpgradeMinorVersion": true,
+                                "settings": {
+                                  "timeStamp": "[parameters('timeStamp')]"
+                                },
+                                "protectedSettings": {
+                                  "commandToExecute": "[format('powershell -ExecutionPolicy Unrestricted -File {0} {1}', parameters('scriptFileName'), parameters('parameters'))]",
+                                  "fileUris": "[parameters('fileUris')]",
+                                  "managedIdentity": {
+                                    "clientId": "[parameters('userAssignedIdentityClientId')]"
+                                  }
+                                }
+                              }
+                            }
+                          ],
+                          "outputs": {
+                            "value": {
+                              "type": "object",
+                              "value": "[if(parameters('output'), json(filter(reference(resourceId('Microsoft.Compute/virtualMachines/extensions', parameters('virtualMachineName'), 'CustomScriptExtension'), '2021-03-01').instanceView.substatuses, lambda('item', equals(lambdaVariables('item').code, 'ComponentStatus/StdOut/succeeded')))[0].message), null())]"
+                            }
+                          }
+                        }
+                      },
+                      "dependsOn": [
+                        "extension_CustomScriptExtension"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "dependsOn": [
+                "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupHosts')), 'Microsoft.Resources/deployments', format('AvailabilitySets_{0}', parameters('timeStamp')))]",
+                "[subscriptionResourceId('Microsoft.Resources/deployments', format('ExistingFslogixStorageAccounts_{0}', parameters('timeStamp')))]"
+              ]
+            },
+            {
+              "condition": "[parameters('recoveryServices')]",
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2022-09-01",
+              "name": "[format('RecoveryServices_VirtualMachines_{0}', parameters('timeStamp'))]",
+              "resourceGroup": "[parameters('resourceGroupManagement')]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "divisionRemainderValue": {
+                    "value": "[parameters('divisionRemainderValue')]"
+                  },
+                  "pooledHostPool": {
+                    "value": "[parameters('pooledHostPool')]"
+                  },
+                  "location": {
+                    "value": "[parameters('location')]"
+                  },
+                  "maxResourcesPerTemplateDeployment": {
+                    "value": "[parameters('maxResourcesPerTemplateDeployment')]"
+                  },
+                  "recoveryServicesVaultName": {
+                    "value": "[parameters('recoveryServicesVaultName')]"
+                  },
+                  "resourceGroupHosts": {
+                    "value": "[parameters('resourceGroupHosts')]"
+                  },
+                  "resourceGroupManagement": {
+                    "value": "[parameters('resourceGroupManagement')]"
+                  },
+                  "sessionHostBatchCount": {
+                    "value": "[parameters('sessionHostBatchCount')]"
+                  },
+                  "sessionHostIndex": {
+                    "value": "[parameters('sessionHostIndex')]"
+                  },
+                  "tagsRecoveryServicesVault": {
+                    "value": "[variables('tagsRecoveryServicesVault')]"
+                  },
+                  "timeStamp": {
+                    "value": "[parameters('timeStamp')]"
+                  },
+                  "virtualMachineNamePrefix": {
+                    "value": "[parameters('virtualMachineNamePrefix')]"
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.24.24.22086",
+                      "templateHash": "9624969841359647424"
+                    }
+                  },
+                  "parameters": {
+                    "divisionRemainderValue": {
+                      "type": "int"
+                    },
+                    "pooledHostPool": {
+                      "type": "bool"
+                    },
+                    "location": {
+                      "type": "string"
+                    },
+                    "maxResourcesPerTemplateDeployment": {
+                      "type": "int"
+                    },
+                    "recoveryServicesVaultName": {
+                      "type": "string"
+                    },
+                    "resourceGroupHosts": {
+                      "type": "string"
+                    },
+                    "resourceGroupManagement": {
+                      "type": "string"
+                    },
+                    "sessionHostBatchCount": {
+                      "type": "int"
+                    },
+                    "sessionHostIndex": {
+                      "type": "int"
+                    },
+                    "tagsRecoveryServicesVault": {
+                      "type": "object"
+                    },
+                    "timeStamp": {
+                      "type": "string"
+                    },
+                    "virtualMachineNamePrefix": {
+                      "type": "string"
+                    }
+                  },
+                  "resources": [
+                    {
+                      "copy": {
+                        "name": "protectedItems_Vm",
+                        "count": "[length(range(1, parameters('sessionHostBatchCount')))]"
+                      },
+                      "condition": "[not(parameters('pooledHostPool'))]",
+                      "type": "Microsoft.Resources/deployments",
+                      "apiVersion": "2022-09-01",
+                      "name": "[format('BackupProtectedItems_VirtualMachines_{0}_{1}', sub(range(1, parameters('sessionHostBatchCount'))[copyIndex()], 1), parameters('timeStamp'))]",
+                      "resourceGroup": "[parameters('resourceGroupManagement')]",
+                      "properties": {
+                        "expressionEvaluationOptions": {
+                          "scope": "inner"
+                        },
+                        "mode": "Incremental",
+                        "parameters": {
+                          "location": {
+                            "value": "[parameters('location')]"
+                          },
+                          "PolicyId": {
+                            "value": "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupManagement')), 'Microsoft.RecoveryServices/vaults/backupPolicies', parameters('recoveryServicesVaultName'), 'AvdPolicyVm')]"
+                          },
+                          "recoveryServicesVaultName": {
+                            "value": "[parameters('recoveryServicesVaultName')]"
+                          },
+                          "sessionHostCount": "[if(and(equals(range(1, parameters('sessionHostBatchCount'))[copyIndex()], parameters('sessionHostBatchCount')), greater(parameters('divisionRemainderValue'), 0)), createObject('value', parameters('divisionRemainderValue')), createObject('value', parameters('maxResourcesPerTemplateDeployment')))]",
+                          "sessionHostIndex": "[if(equals(range(1, parameters('sessionHostBatchCount'))[copyIndex()], 1), createObject('value', parameters('sessionHostIndex')), createObject('value', add(mul(sub(range(1, parameters('sessionHostBatchCount'))[copyIndex()], 1), parameters('maxResourcesPerTemplateDeployment')), parameters('sessionHostIndex'))))]",
+                          "tags": {
+                            "value": "[parameters('tagsRecoveryServicesVault')]"
+                          },
+                          "virtualMachineNamePrefix": {
+                            "value": "[parameters('virtualMachineNamePrefix')]"
+                          },
+                          "VirtualMachineResourceGroupName": {
+                            "value": "[parameters('resourceGroupHosts')]"
+                          }
+                        },
+                        "template": {
+                          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                          "contentVersion": "1.0.0.0",
+                          "metadata": {
+                            "_generator": {
+                              "name": "bicep",
+                              "version": "0.24.24.22086",
+                              "templateHash": "1924227107322294942"
+                            }
+                          },
+                          "parameters": {
+                            "location": {
+                              "type": "string"
+                            },
+                            "PolicyId": {
+                              "type": "string"
+                            },
+                            "recoveryServicesVaultName": {
+                              "type": "string"
+                            },
+                            "sessionHostCount": {
+                              "type": "int"
+                            },
+                            "sessionHostIndex": {
+                              "type": "int"
+                            },
+                            "tags": {
+                              "type": "object"
+                            },
+                            "virtualMachineNamePrefix": {
+                              "type": "string"
+                            },
+                            "VirtualMachineResourceGroupName": {
+                              "type": "string"
+                            }
+                          },
+                          "variables": {
+                            "v2VmContainer": "iaasvmcontainer;iaasvmcontainerv2;",
+                            "v2Vm": "vm;iaasvmcontainerv2;"
+                          },
+                          "resources": [
+                            {
+                              "copy": {
+                                "name": "protectedItems_Vm",
+                                "count": "[length(range(0, parameters('sessionHostCount')))]"
+                              },
+                              "type": "Microsoft.RecoveryServices/vaults/backupFabrics/protectionContainers/protectedItems",
+                              "apiVersion": "2021-08-01",
+                              "name": "[format('{0}/Azure/{1}{2};{3}{4}/{5}{6};{7}{8}', parameters('recoveryServicesVaultName'), variables('v2VmContainer'), parameters('VirtualMachineResourceGroupName'), parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[copyIndex()], parameters('sessionHostIndex')), 4, '0'), variables('v2Vm'), parameters('VirtualMachineResourceGroupName'), parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[copyIndex()], parameters('sessionHostIndex')), 4, '0'))]",
+                              "location": "[parameters('location')]",
+                              "tags": "[parameters('tags')]",
+                              "properties": {
+                                "protectedItemType": "Microsoft.Compute/virtualMachines",
+                                "policyId": "[parameters('PolicyId')]",
+                                "sourceResourceId": "[resourceId(parameters('VirtualMachineResourceGroupName'), 'Microsoft.Compute/virtualMachines', format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[copyIndex()], parameters('sessionHostIndex')), 4, '0')))]"
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "dependsOn": [
+                "virtualMachines"
+              ]
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/deployments', format('Logic_{0}', parameters('timeStamp')))]"
+      ]
+    }
+  ]
+}

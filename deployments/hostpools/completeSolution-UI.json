@@ -1501,27 +1501,46 @@
                                             "zip"
                                         ]
                                     },
-									"required": false,
 									"visible": "[steps('userProfiles').fslogixSessionHostConfig.fslogixConfigureSessionHosts]"
                                 },
+								{
+									"name": "storageAccountsApi",
+									"type": "Microsoft.Solutions.ArmApiControl",
+									"request": {
+										"method": "GET",
+										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Storage/storageAccounts?api-version=2023-01-01')]"
+									}
+								},
+								{
+									"name": "textBlockSelector",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": "[and(startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache'), steps('userProfiles').fslogixSessionHostConfig.fslogixConfigureSessionHosts, not(empty(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi.value)))]",
+									"options": {
+										"text": "If cross-region High Availability is desired, select the existing storage accounts to be added to the fslogix container paths. The selection below is limited to storage accounts not in the same region as the virtual machines."
+									}
+								},
                                 {
-                                    "name": "addStorageAccounts",
-                                    "type": "Microsoft.Common.CheckBox",
-                                    "visible": "[steps('userProfiles').fslogixSessionHostConfig.fslogixConfigureSessionHosts]",
-                                    "label": "Add Existing Storage Accounts for FSLogix Configuration",
-                                    "defaultValue": false,
-                                    "toolTip": "Checking this box allows you to specify additional storage accounts for use with FSLogix containers in addition to the ones deployed through this solution."
+                                    "name": "existingStorageAccounts",
+                                    "type": "Microsoft.Common.DropDown",
+                                    "label": "Existing Storage Accounts",
+									"multiselect": true,
+                                    "toolTip": "Select the existing storage accounts to be added to the fslogix container paths. The selection below is limited to storage accounts not in the same region as the virtual machines.",
+                                    "constraints": {
+                                        "required": false,
+                                        "allowedValues": "[map(filter(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi.value, (item) => not(equals(item.location, steps('basics').scope.location.name))), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
+                                    },
+									"visible": "[and(startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache'), steps('userProfiles').fslogixSessionHostConfig.fslogixConfigureSessionHosts, not(empty(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi.value)))]"
                                 },
 								{
 									"name": "textBlockGrid",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[steps('userProfiles').fslogixSessionHostConfig.addStorageAccounts]",
+									"visible": "[and(startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache'), steps('userProfiles').fslogixSessionHostConfig.fslogixConfigureSessionHosts, empty(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi))]",
 									"options": {
-										"text": "Provide the Resource Ids of Azure storage accounts located in other regions to be used for FSLogix profile and office containers. These storage accounts will be added to any that are created by this solution."
+										"text": "If cross-region High Availability is desired, provide the Resource Ids of Azure storage accounts located in other regions to be used for FSLogix profile and office containers. These storage accounts will be added to any that are created by this solution."
 									}
 								},
 								{
-									"name": "fslogixExistingStorageAccounts",
+									"name": "existingStorageAccountsGrid",
 									"type": "Microsoft.Common.EditableGrid",
 									"ariaLabel": "FSLogix Existing Storage Account Resource Ids",
 									"label": "FSLogix Existing Storage Account Resource Ids",
@@ -1541,20 +1560,14 @@
 												"element": {
 													"type": "Microsoft.Common.TextBox",
 													"constraints": {
-														"allowedValues": [
-															{
-																"label": "Resource Id",
-																"value": "text"
-															}
-														],
-														"required": true
+														"required": false
 													}
 												}
 											}
 										]
 									},
 									"required": false,
-									"visible": "[steps('userProfiles').fslogixSessionHostConfig.addStorageAccounts]"
+									"visible": "[and(startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache'), steps('userProfiles').fslogixSessionHostConfig.fslogixConfigureSessionHosts, empty(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi))]"
 								}
 							],
 							"visible": "[not(equals(steps('userProfiles').profileSolution, 'local'))]"
@@ -1829,7 +1842,7 @@
                 "environmentShortName": "[steps('basics').naming.environmentShortName]",
 				"fslogixConfigureSessionHosts": "[steps('userProfiles').fslogixSessionHostConfig.fslogixConfigureSessionHosts]",
 				"fslogixConfigurationBlobName": "[if(steps('userProfiles').fslogixSessionHostConfig.fslogixConfigureSessionHosts, steps('userProfiles').fslogixSessionHostConfig.fslogixBlob.blobName , '')]",
-				"fslogixExistingStorageAccountResourceIds": "[if(steps('userProfiles').fslogixSessionHostConfig.addStorageAccounts, map(steps('userProfiles').fslogixSessionHostConfig.fslogixExistingStorageAccounts, (item) => item.resourceId), parse('[]'))]",
+				"fslogixExistingStorageAccountResourceIds": "[if(and(steps('userProfiles').fslogixSessionHostConfig.fslogixConfigureSessionHosts, startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache')), if(empty(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi), map(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccountsGrid, (item) => item.resourceId), steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts), parse('[]'))]",
                 "fslogixShareSizeInGB": "[if(equals(steps('userProfiles').profileSolution, 'local'), 100, steps('userProfiles').storageShareSize)]",
                 "fslogixContainerType": "[steps('userProfiles').fslogixContainerType]",
                 "fslogixStorageService": "[if(equals(steps('userProfiles').profileSolution, 'local'), 'None', concat(steps('userProfiles').fslogixStorageService, ' ', steps('userProfiles').storageSku))]",
