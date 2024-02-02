@@ -737,6 +737,35 @@
 									"visible": "[steps('imageCustomizations').fslogixSessionHostConfig.fslogixConfigureSessionHosts]"
                                 },
 								{
+									"name": "fslogixContainerType",
+									"type": "Microsoft.Common.DropDown",
+									"visible": "[steps('imageCustomizations').fslogixSessionHostConfig.fslogixConfigureSessionHosts]",
+									"label": "FSLogix Container Type(s)",
+									"defaultValue": "Profile Container",
+									"toolTip": "Select the solution for the FSLogix profiles.",
+									"constraints": {
+										"required": true,
+										"allowedValues": [
+											{
+												"label": "Cloud Cache, Profile Container",
+												"value": "CloudCacheProfileContainer"
+											},
+											{
+												"label": "Cloud Cache, Profile & Office Container",
+												"value": "CloudCacheProfileOfficeContainer"
+											},
+											{
+												"label": "Profile Container",
+												"value": "ProfileContainer"
+											},
+											{
+												"label": "Profile & Office Container",
+												"value": "ProfileOfficeContainer"
+											}
+										]
+									}
+								},
+								{
 									"name": "storageService",
 									"type": "Microsoft.Common.DropDown",
 									"label": "Select FSLogix Storage Service",
@@ -767,6 +796,30 @@
 									}
 								},
 								{
+									"name": "entraIdTexBlock",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": "[and(equals(steps('hosts').identity.solution, 'EntraId'), steps('imageCustomizations').fslogixSessionHostConfig.fslogixConfigureSessionHosts, equals(steps('imageCustomizations').fslogixSessionHostConfig.storageService, 'AzureFiles'))]",
+									"options": {
+										"text": "For the 'Entra Id' identity provider selected on the 'Virtual Machines' blade, you can specify 1 storage account per region up to a maximum of 4 because sharding is not possible.",
+										"link": {
+											"label": "Learn more",
+											"uri": "https://learn.microsoft.com/en-us/fslogix/how-to-configure-object-specific-settings"
+										}
+									}
+								},
+								{
+									"name": "domainServicesCloudCacheTexBlock",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": "[and(not(equals(steps('hosts').identity.solution, 'EntraId')), startsWith(steps('imageCustomizations').fslogixSessionHostConfig.fslogixContainerType, 'CloudCache'), steps('imageCustomizations').fslogixSessionHostConfig.fslogixConfigureSessionHosts, equals(steps('imageCustomizations').fslogixSessionHostConfig.storageService, 'AzureFiles'))]",
+									"options": {
+										"text": "When using CloudCache containers, you can specify a maximum of 4 storage Accounts.",
+										"link": {
+											"label": "Learn more",
+											"uri": "https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=ccd#ccdlocations"
+										}
+									}
+								},
+								{
 									"name": "fslogixExistingStorageAccounts",
 									"type": "Microsoft.Common.EditableGrid",
 									"ariaLabel": "FSLogix Existing Storage Account Resource Ids",
@@ -775,8 +828,8 @@
 										"width": "Full",
 										"rows": {
 											"count": {
-												"min": 0,
-												"max": 4
+												"min": 1,
+												"max": 8
 											}
 										},
 										"columns": [
@@ -803,32 +856,23 @@
 									"visible": "[equals(steps('imageCustomizations').fslogixSessionHostConfig.storageService, 'AzureFiles')]"
 								},
 								{
-									"name": "fslogixContainerType",
-									"type": "Microsoft.Common.DropDown",
-									"visible": "[equals(steps('imageCustomizations').fslogixSessionHostConfig.storageService, 'AzureFiles')]",
-									"label": "FSLogix Solution",
-									"defaultValue": "Profile Container",
-									"toolTip": "Select the solution for the FSLogix profiles.",
-									"constraints": {
-										"required": true,
-										"allowedValues": [
-											{
-												"label": "Cloud Cache, Profile Container",
-												"value": "CloudCacheProfileContainer"
-											},
-											{
-												"label": "Cloud Cache, Profile & Office Container",
-												"value": "CloudCacheProfileOfficeContainer"
-											},
-											{
-												"label": "Profile Container",
-												"value": "ProfileContainer"
-											},
-											{
-												"label": "Profile & Office Container",
-												"value": "ProfileOfficeContainer"
-											}
-										]
+									"name": "cloudCacheErrorBox",
+									"type": "Microsoft.Common.InfoBox",
+									"visible": "[and(startsWith(steps('imageCustomizations').fslogixSessionHostConfig.fslogixContainerType, 'CloudCache'), greater(length(steps('imageCustomizations').fslogixSessionHostConfig.fslogixExistingStorageAccounts), 4))]",
+									"options": {
+										"icon": "Error",
+										"text": "When using CloudCache containers, you can specify a maximum of 4 storage Accounts.",
+										"uri": "https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=ccd#ccdlocations"
+									}
+								},
+								{
+									"name": "entraIdErrorBox",
+									"type": "Microsoft.Common.InfoBox",
+									"visible": "[and(equals(steps('hosts').identity.solution, 'EntraId'), greater(length(steps('imageCustomizations').fslogixSessionHostConfig.fslogixExistingStorageAccounts), 4))]",
+									"options": {
+										"icon": "Error",
+										"text": "For the 'Entra Id' identity provider selected on the 'Virtual Machines' blade, you can specify a maximum of 4 storage Accounts.",
+										"uri": "https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=ccd#ccdlocations"
 									}
 								},
 								{
@@ -847,7 +891,7 @@
 										"columns": [
 											{
 												"id": "sharePath",
-												"header": "Share Path",
+												"header": "NetApp UNC Share Path (Do not include the container folder)",
 												"width": "10fr",
 												"element": {
 													"type": "Microsoft.Common.TextBox",
