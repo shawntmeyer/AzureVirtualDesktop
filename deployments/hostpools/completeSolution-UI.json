@@ -1204,34 +1204,33 @@
                     "name": "userProfiles",
                     "label": "User Profiles",
                     "elements": [
-                        {
-                            "name": "profileSolution",
-                            "type": "Microsoft.Common.DropDown",
+						{
+							"name": "profileSolution",
+							"type": "Microsoft.Common.DropDown",
 							"defaultValue": "FSLogix",
-                            "visible": true,
-                            "label": "Profile Solution",
-                            "toolTip": "Select the user profile solution for your end users.",
-                            "constraints": {
-                                "required": true,
-                                "allowedValues": [
+							"visible": true,
+							"label": "Profile Solution",
+							"toolTip": "Select the user profile solution for your end users.",
+							"constraints": {
+								"allowedValues": [
 									{
 										"label": "FSLogix",
-										"value": "fslogix"
+										"value": "FSLogix"
 									},
 									{
-										"label": "Local",
-										"value": "local"
+										"label": "Other",
+										"value": "Other"
 									}
 								]
-                            }
-                        },
+							}
+						},
 						{
                             "name": "fslogixContainerType",
                             "type": "Microsoft.Common.DropDown",
-                            "visible": "[equals(steps('userProfiles').profileSolution, 'fslogix')]",
-                            "label": "FSLogix Container Types",
+                            "visible": "[equals(steps('userProfiles').profileSolution, 'FSLogix')]",
+                            "label": "FSLogix Container Type(s)",
                             "defaultValue": "Profile Container",
-                            "toolTip": "Select the solution for the FSLogix profiles.",
+                            "toolTip": "Select the container type(s) for the FSLogix profiles.",
                             "constraints": {
                                 "required": true,
                                 "allowedValues": [
@@ -1254,157 +1253,197 @@
                                 ]
                             }
                         },
-                        {
-                            "name": "fslogixStorageService",
-                            "type": "Microsoft.Common.DropDown",
-                            "visible": "[equals(steps('userProfiles').profileSolution, 'fslogix')]",
-                            "label": "Storage Product",
-                            "defaultValue": "Azure Files",
-                            "toolTip": "Select the storage product for the SMB file share to support the use of FSLogix.",
-                            "constraints": {
-                                "required": true,
-                                "allowedValues": [
-                                    {
-                                        "label": "Azure NetApp Files",
-                                        "value": "AzureNetAppFiles"
-                                    },
-                                    {
-                                        "label": "Azure Files",
-                                        "value": "AzureFiles"
-                                    }
-                                ]
-                            }
-                        },
-                        {
-                            "name": "storageSku",
-                            "type": "Microsoft.Common.DropDown",
-                            "visible": "[equals(steps('userProfiles').profileSolution, 'fslogix')]",
-                            "label": "Storage SKU",
-                            "defaultValue": "Premium",
-                            "toolTip": "Select the storage SKU for the SMB file shares to support the use of FSLogix.",
-                            "constraints": {
-                                "required": true,
-                                "allowedValues": [
-                                    {
-                                        "label": "Premium",
-                                        "value": "Premium"
-                                    },
-                                    {
-                                        "label": "Standard",
-                                        "value": "Standard"
-                                    }
-                                ]
-                            }
-                        },
 						{
-                            "name": "storageShareSize",
-                            "type": "Microsoft.Common.Slider",
-                            "label": "Storage Share Size (GB)",
-                            "defaultValue": 100,
-                            "toolTip": "Input the quota size for the SMB file share to support the use of FSLogix.",
-                            "min": 100,
-                            "max": 100000,
-                            "showStepMarkers": false,
-                            "constraints": {
-                                "required": true
-                            },
-                            "visible": "[equals(steps('userProfiles').profileSolution, 'fslogix')]"
-                        },
-						{
-							"name": "sliderTextBlock",
-							"type": "Microsoft.Common.TextBlock",
-							"visible": true,
-							"options": {
-								"text": "The number of storage accounts are automatically determined based on your choices from previous screens. The storage account names are automatically determined by combining a suffix with a 0-padded two digit suffix starting at the 'Storage Index' value."
+							"name": "deployStorage",
+							"type": "Microsoft.Common.DropDown",
+							"defaultValue": "No",
+							"visible": "[equals(steps('userProfiles').profileSolution, 'FSLogix')]",
+							"label": "Deploy FSLogix Storage Resources",
+							"toolTip": "Select 'Yes' to deploy the required storage resources for FSLogix Profiles.",
+							"constraints": {
+								"allowedValues": [
+									{
+										"label": "Yes",
+										"value": true
+									},
+									{
+										"label": "No",
+										"value": false
+									}
+								]
 							}
 						},
 						{
-							"name": "entraIdTexBlock",
-							"type": "Microsoft.Common.TextBlock",
-							"visible": "[equals(steps('hosts').identity.solution, 'EntraId')]",
-							"options": {
-								"text": "For the 'Entra Id' identity provider selected on the 'Session Host' screen, the storage account count value is limited to '1'. You can deploy a maximum of 1 storage account when the identity provider is 'EntraId' because sharding is not possible.",
-								"link": {
-									"label": "Learn more",
-									"uri": "https://learn.microsoft.com/en-us/fslogix/how-to-configure-object-specific-settings"
+							"name": "configureSessionHosts",
+							"type": "Microsoft.Common.DropDown",
+							"label": "Configure FSLogix Settings on Session Hosts",
+							"placeholder": "",
+							"defaultValue": "No",
+							"toolTip": "Select 'Yes' if you desire to run automatically configure the FSLogix settings on the Session Hosts.",
+							"visible": "[equals(steps('userProfiles').profileSolution, 'FSLogix')]",
+							"constraints": {
+								"allowedValues": [
+									{
+										"label": "Yes",
+										"value": true
+									},
+									{
+										"label": "No",
+										"value": false
+									}
+								],
+								"required": false
+							}
+						},						
+						{
+							"name": "fslogixStorage",
+							"type": "Microsoft.Common.Section",
+							"label": "FSLogix Storage Deployment",
+							"elements": [
+								{
+									"name": "storageService",
+									"type": "Microsoft.Common.DropDown",
+									"visible": true,
+									"label": "Storage Product",
+									"defaultValue": "Azure Files",
+									"toolTip": "Select the storage product for the SMB file share to support the use of FSLogix.",
+									"constraints": {
+										"allowedValues": "[if(equals(steps('hosts').identity.solution, 'EntraId'), parse('[{\"label\":\"Azure Files\",\"value\":\"AzureFiles\"}]'), parse('[{\"label\":\"Azure Files\",\"value\":\"AzureFiles\"},{\"label\":\"Azure NetApp Files\",\"value\":\"AzureNetAppFiles\"}]'))]"
+									}
+								},
+								{
+									"name": "storageSku",
+									"type": "Microsoft.Common.DropDown",
+									"visible": true,
+									"label": "Storage SKU",
+									"defaultValue": "Premium",
+									"toolTip": "Select the storage SKU for the SMB file shares to support the use of FSLogix.",
+									"constraints": {
+										"required": true,
+										"allowedValues": [
+											{
+												"label": "Premium",
+												"value": "Premium"
+											},
+											{
+												"label": "Standard",
+												"value": "Standard"
+											}
+										]
+									}
+								},
+								{
+									"name": "storageShareSize",
+									"type": "Microsoft.Common.Slider",
+									"label": "Storage Share Size (GB)",
+									"defaultValue": 100,
+									"toolTip": "Input the quota size for the SMB file share to support the use of FSLogix.",
+									"min": 100,
+									"max": 100000,
+									"showStepMarkers": false,
+									"constraints": {
+										"required": true
+									},
+									"visible": true
+								},
+								{
+									"name": "sliderTextBlock",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": true,
+									"options": {
+										"text": "The number of storage accounts are automatically determined based on your choices from previous screens. The storage account names are automatically determined by combining a suffix with a 0-padded two digit suffix starting at the 'Storage Index' value."
+									}
+								},
+								{
+									"name": "entraIdTexBlock",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": "[equals(steps('hosts').identity.solution, 'EntraId')]",
+									"options": {
+										"text": "For the 'Entra Id' identity provider selected on the 'Session Host' screen, the storage account count value is limited to '1'. You can deploy a maximum of 1 storage account when the identity provider is 'EntraId' because sharding is not possible.",
+										"link": {
+											"label": "Learn more",
+											"uri": "https://learn.microsoft.com/en-us/fslogix/how-to-configure-object-specific-settings"
+										}
+									}
+								},
+								{
+									"name": "domainServiceTextBlock",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": "[and(not(equals(steps('hosts').identity.solution, 'EntraId')), or(not(startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache')), lessOrEquals(if(empty(steps('controlPlane').assignment.groupsApi), length(steps('controlPlane').assignment.groupsGrid), length(steps('controlPlane').assignment.groupsDropDown)), 4)))]",
+									"options": {
+										"text": "For the 'Active Directory Domain Services' or 'Entra Id Domain Services' identity providers selected on the 'Session Host' screen, the number of storage accounts equals the number of security principals or groups you entered under the assignments section of the 'Control Plane' blade. A storage account is created for each security principal and permissions are assigned separately to each to enable storage sharding.",
+										"link": {
+											"label": "Learn more",
+											"uri": "https://learn.microsoft.com/en-us/fslogix/how-to-configure-object-specific-settings"
+										}
+									}
+								},
+								{
+									"name": "domainServiceWithCloudCacheErrorBox",
+									"type": "Microsoft.Common.InfoBox",
+									"visible": "[and(not(equals(steps('hosts').identity.solution, 'EntraId')) , startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache'), greater(if(empty(steps('controlPlane').assignment.groupsApi), length(steps('controlPlane').assignment.groupsGrid), length(steps('controlPlane').assignment.groupsDropDown)), 4))]",
+									"options": {
+										"icon": "Error",
+										"text": "You can deploy a maximum of 4 storage accounts when using Cloud Cache. The number of groups/principals assigned in the 'Assignment' pane is over 4. Either reduce the number of principals assigned, or do not use Cloud Cache as a container type.",
+										"uri": "https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=ccd#ccdlocations"
+									}
+								},
+								{
+									"name": "storageCount",
+									"type": "Microsoft.Common.Slider",
+									"label": "Storage Count",
+									"defaultValue": 1,
+									"toolTip": "Input the number of Storage Accounts to deploy with SMB file shares to support the use of FSLogix.",
+									"min": "[if(equals(steps('hosts').identity.solution, 'EntraId'), 1, if(startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache'), if(lessOrEquals(if(empty(steps('controlPlane').assignment.groupsApi), length(steps('controlPlane').assignment.groupsGrid), length(steps('controlPlane').assignment.groupsDropDown)), 4), if(empty(steps('controlPlane').assignment.groupsApi), length(steps('controlPlane').assignment.groupsGrid), length(steps('controlPlane').assignment.groupsDropDown)), 4), if(empty(steps('controlPlane').assignment.groupsApi), length(steps('controlPlane').assignment.groupsGrid), length(steps('controlPlane').assignment.groupsDropDown))))]",
+									"max": "[if(equals(steps('hosts').identity.solution, 'EntraId'), 1, if(startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache'), if(lessOrEquals(if(empty(steps('controlPlane').assignment.groupsApi), length(steps('controlPlane').assignment.groupsGrid), length(steps('controlPlane').assignment.groupsDropDown)), 4), if(empty(steps('controlPlane').assignment.groupsApi), length(steps('controlPlane').assignment.groupsGrid), length(steps('controlPlane').assignment.groupsDropDown)), 4), if(empty(steps('controlPlane').assignment.groupsApi), length(steps('controlPlane').assignment.groupsGrid), length(steps('controlPlane').assignment.groupsDropDown))))]",
+									"showStepMarkers": false,
+									"constraints": {
+										"required": true
+									},
+									"visible": "[equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles')]"
+								},
+								{
+									"name": "storageIndex",
+									"type": "Microsoft.Common.Slider",
+									"label": "Storage Index",
+									"defaultValue": 1,
+									"toolTip": "Input the starting number of the storage accounts to deploy with SMB file shares to support the use of FSLogix.",
+									"min": 1,
+									"max": "[sub(99, steps('userProfiles').fslogixStorage.storageCount)]",
+									"showStepMarkers": false,
+									"constraints": {
+										"required": true
+									},
+									"visible": "[equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles')]"
+								},
+								{
+									"name": "storageKerberosEncryption",
+									"type": "Microsoft.Common.DropDown",
+									"visible": "[and(equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles'), not(equals(steps('hosts').identity.solution, 'EntraId')))]",
+									"label": "Storage Kerberos Encryption",
+									"defaultValue": "AES256",
+									"toolTip": "Select the Kerberos encryption for the SMB file shares to support the use of FSLogix.",
+									"constraints": {
+										"required": true,
+										"allowedValues": [
+											{
+												"label": "AES256",
+												"value": "AES256"
+											},
+											{
+												"label": "RC4",
+												"value": "RC4"
+											}
+										]
+									}
 								}
-							}
-						},
-						{
-							"name": "domainServiceTextBlock",
-							"type": "Microsoft.Common.TextBlock",
-							"visible": "[and(not(equals(steps('hosts').identity.solution, 'EntraId')), or(not(startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache')), lessOrEquals(if(empty(steps('controlPlane').assignment.groupsApi), length(steps('controlPlane').assignment.groupsGrid), length(steps('controlPlane').assignment.groupsDropDown)), 4)))]",
-							"options": {
-								"text": "For the 'Active Directory Domain Services' or 'Entra Id Domain Services' identity providers selected on the 'Session Host' screen, the number of storage accounts equals the number of security principals or groups you entered under the assignments section of the 'Control Plane' blade. A storage account is created for each security principal and permissions are assigned separately to each to enable storage sharding.",
-								"link": {
-									"label": "Learn more",
-									"uri": "https://learn.microsoft.com/en-us/fslogix/how-to-configure-object-specific-settings"
-								}
-							}
-						},
-						{
-							"name": "domainServiceWithCloudCacheErrorBox",
-							"type": "Microsoft.Common.InfoBox",
-							"visible": "[and(not(equals(steps('hosts').identity.solution, 'EntraId')) , startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache'), greater(if(empty(steps('controlPlane').assignment.groupsApi), length(steps('controlPlane').assignment.groupsGrid), length(steps('controlPlane').assignment.groupsDropDown)), 4))]",
-							"options": {
-								"icon": "Error",
-								"text": "You can deploy a maximum of 4 storage accounts when using Cloud Cache. The number of groups/principals assigned in the 'Assignment' pane is over 4. Either reduce the number of principals assigned, or do not use Cloud Cache as a container type.",
-								"uri": "https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=ccd#ccdlocations"
-							}
-						},
-                        {
-                            "name": "storageCount",
-                            "type": "Microsoft.Common.Slider",
-                            "label": "Storage Count",
-                            "defaultValue": 1,
-                            "toolTip": "Input the number of Storage Accounts to deploy with SMB file shares to support the use of FSLogix.",
-                            "min": "[if(equals(steps('hosts').identity.solution, 'EntraId'), 1, if(startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache'), if(lessOrEquals(if(empty(steps('controlPlane').assignment.groupsApi), length(steps('controlPlane').assignment.groupsGrid), length(steps('controlPlane').assignment.groupsDropDown)), 4), if(empty(steps('controlPlane').assignment.groupsApi), length(steps('controlPlane').assignment.groupsGrid), length(steps('controlPlane').assignment.groupsDropDown)), 4), if(empty(steps('controlPlane').assignment.groupsApi), length(steps('controlPlane').assignment.groupsGrid), length(steps('controlPlane').assignment.groupsDropDown))))]",
-                            "max": "[if(equals(steps('hosts').identity.solution, 'EntraId'), 1, if(startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache'), if(lessOrEquals(if(empty(steps('controlPlane').assignment.groupsApi), length(steps('controlPlane').assignment.groupsGrid), length(steps('controlPlane').assignment.groupsDropDown)), 4), if(empty(steps('controlPlane').assignment.groupsApi), length(steps('controlPlane').assignment.groupsGrid), length(steps('controlPlane').assignment.groupsDropDown)), 4), if(empty(steps('controlPlane').assignment.groupsApi), length(steps('controlPlane').assignment.groupsGrid), length(steps('controlPlane').assignment.groupsDropDown))))]",
-                            "showStepMarkers": false,
-                            "constraints": {
-                                "required": true
-                            },
-                            "visible": "[and(equals(steps('userProfiles').profileSolution, 'fslogix'), equals(steps('userProfiles').fslogixStorageService, 'AzureFiles'))]"
-                        },
-						{
-                            "name": "storageIndex",
-                            "type": "Microsoft.Common.Slider",
-                            "label": "Storage Index",
-                            "defaultValue": 1,
-                            "toolTip": "Input the starting number of the storage accounts to deploy with SMB file shares to support the use of FSLogix.",
-                            "min": 1,
-							"max": "[sub(99, steps('userProfiles').storageCount)]",
-                            "showStepMarkers": false,
-                            "constraints": {
-                                "required": true
-                            },
-                            "visible": "[and(equals(steps('userProfiles').profileSolution, 'fslogix'), equals(steps('userProfiles').fslogixStorageService, 'AzureFiles'))]"
-                        },
-						{
-                            "name": "storageKerberosEncryption",
-                            "type": "Microsoft.Common.DropDown",
-                            "visible": "[and(equals(steps('userProfiles').profileSolution, 'fslogix'), equals(steps('userProfiles').fslogixStorageService, 'AzureFiles'), not(equals(steps('hosts').identity.solution, 'EntraId')))]",
-                            "label": "Storage Kerberos Encryption",
-                            "defaultValue": "AES256",
-                            "toolTip": "Select the Kerberos encryption for the SMB file shares to support the use of FSLogix.",
-                            "constraints": {
-                                "required": true,
-                                "allowedValues": [
-                                    {
-                                        "label": "AES256",
-                                        "value": "AES256"
-                                    },
-                                    {
-                                        "label": "RC4",
-                                        "value": "RC4"
-                                    }
-                                ]
-                            }
-                        },
+							],
+							"visible": "[and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').deployStorage)]"
+						},                       
 						{
                             "name": "storageEndpoint",
                             "type": "Microsoft.Common.DropDown",
-                            "visible": "[and(equals(steps('userProfiles').profileSolution, 'fslogix'), equals(steps('userProfiles').fslogixStorageService, 'AzureFiles'))]",
+                            "visible": "[and(steps('userProfiles').deployStorage, equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles'))]",
                             "label": "Storage Endpoint",
                             "defaultValue": "Private",
                             "toolTip": "Select the storage endpoint for the SMB file shares to support the use of FSLogix.",
@@ -1426,7 +1465,7 @@
                             "name": "privateEndpoints",
                             "type": "Microsoft.Common.Section",
                             "label": "Private Endpoint Configuration",
-                            "visible": "[and(equals(steps('userProfiles').fslogixStorageService, 'AzureFiles'), equals(steps('userProfiles').storageEndpoint, 'PrivateEndpoint'))]",
+                            "visible": "[and(equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles'), equals(steps('userProfiles').storageEndpoint, 'PrivateEndpoint'))]",
                             "elements": [
                                 {
 									"name": "virtualNetworksApi",
@@ -1507,29 +1546,8 @@
 							"name": "fslogixSessionHostConfig",
 							"type": "Microsoft.Common.Section",
 							"label": "Session Host Configuration",
+							"visible": "[and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').configureSessionHosts)]",
 							"elements": [
-								{
-									"name": "fslogixConfigureSessionHosts",
-									"type": "Microsoft.Common.DropDown",
-									"label": "Configure FSLogix Settings on Session Hosts",
-									"placeholder": "",
-									"defaultValue": "No",
-									"toolTip": "",
-									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Yes",
-												"value": true
-											},
-											{
-												"label": "No",
-												"value": false
-											}
-										],
-										"required": false
-									},
-									"visible": true
-								},
 								{
                                     "name": "fslogixBlob",
                                     "type": "Microsoft.Storage.StorageBlobSelector",
@@ -1542,47 +1560,66 @@
                                         "allowedFileExtensions": [
                                             "zip"
                                         ]
-                                    },
-									"visible": "[steps('userProfiles').fslogixSessionHostConfig.fslogixConfigureSessionHosts]"
+                                    }
                                 },
 								{
-									"name": "storageAccountsApi",
-									"type": "Microsoft.Solutions.ArmApiControl",
-									"request": {
-										"method": "GET",
-										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Storage/storageAccounts?api-version=2023-01-01')]"
+									"name": "storageService",
+									"type": "Microsoft.Common.DropDown",
+									"visible": "[and(equals(steps('userProfiles').deployStorage, false), not(equals(steps('hosts').identity.solution, 'EntraId')))]",
+									"label": "Storage Product",
+									"defaultValue": "Azure Files",
+									"toolTip": "Select the storage product for the SMB file share to support the use of FSLogix.",
+									"constraints": {
+										"allowedValues": "[if(equals(steps('hosts').identity.solution, 'EntraId'), parse('[{\"label\":\"Azure Files\",\"value\":\"AzureFiles\"}]'), parse('[{\"label\":\"Azure Files\",\"value\":\"AzureFiles\"},{\"label\":\"Azure NetApp Files\",\"value\":\"AzureNetAppFiles\"}]'))]"
 									}
 								},
 								{
-									"name": "textBlockSelector",
+									"name": "netAppTextBlock",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache'), steps('userProfiles').fslogixSessionHostConfig.fslogixConfigureSessionHosts, not(empty(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi.value)))]",
+									"visible": "[equals(steps('userProfiles').fslogixSessionHostConfig.storageService, 'AzureNetAppFiles')]",
 									"options": {
-										"text": "If cross-region High Availability is desired, select the existing storage accounts to be added to the fslogix container paths. The selection below is limited to storage accounts not in the same region as the virtual machines."
+										"text": "Enter the existing NetApp File Shares below. Enter the path to the profile container first and if applicable, the office container second."
 									}
 								},
-                                {
-                                    "name": "existingStorageAccounts",
-                                    "type": "Microsoft.Common.DropDown",
-                                    "label": "Existing Storage Accounts",
-									"multiselect": true,
-                                    "toolTip": "Select the existing storage accounts to be added to the fslogix container paths. The selection below is limited to storage accounts not in the same region as the virtual machines.",
-                                    "constraints": {
-                                        "required": false,
-                                        "allowedValues": "[map(filter(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi.value, (item) => not(equals(item.location, steps('basics').scope.location.name))), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
-                                    },
-									"visible": "[and(startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache'), steps('userProfiles').fslogixSessionHostConfig.fslogixConfigureSessionHosts, not(empty(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi.value)))]"
-                                },
 								{
-									"name": "textBlockGrid",
+									"name": "netAppFileShares",
+									"type": "Microsoft.Common.EditableGrid",
+									"ariaLabel": "FSLogix Existing NetApp Share Paths",
+									"label": "FSLogix Existing NetApp Share Paths",
+									"constraints": {
+										"width": "Full",
+										"rows": {
+											"count": {
+												"min": 0,
+												"max": 2
+											}
+										},
+										"columns": [
+											{
+												"id": "sharePath",
+												"header": "NetApp UNC Share Path(s)",
+												"width": "10fr",
+												"element": {
+													"type": "Microsoft.Common.TextBox",
+													"constraints": {
+														"required": false
+													}
+												}
+											}
+										]
+									},
+									"visible": "[equals(steps('userProfiles').fslogixSessionHostConfig.storageService, 'AzureNetAppFiles')]"
+								},
+								{
+									"name": "existingStorageAccountTextBlock",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache'), steps('userProfiles').fslogixSessionHostConfig.fslogixConfigureSessionHosts, empty(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi))]",
+									"visible": "[startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache')]",
 									"options": {
-										"text": "If cross-region High Availability is desired, provide the Resource Ids of Azure storage accounts located in other regions to be used for FSLogix profile and office containers. These storage accounts will be added to any that are created by this solution."
+										"text": "To enable cross-region high availability of user profiles using FSLogix CloudCache enter up to 4 (3 if you deployed storage resources above) storage account resource Ids which are from unique regions to be added to the fslogix container paths. Enter the values in the order of preference."
 									}
 								},
 								{
-									"name": "existingStorageAccountsGrid",
+									"name": "existingStorageAccounts",
 									"type": "Microsoft.Common.EditableGrid",
 									"ariaLabel": "FSLogix Existing Storage Account Resource Ids",
 									"label": "FSLogix Existing Storage Account Resource Ids",
@@ -1597,7 +1634,7 @@
 										"columns": [
 											{
 												"id": "resourceId",
-												"header": "Storage Account Resource Id",
+												"header": "Existing Storage Account Resource Ids",
 												"width": "10fr",
 												"element": {
 													"type": "Microsoft.Common.TextBox",
@@ -1608,11 +1645,18 @@
 											}
 										]
 									},
-									"required": false,
-									"visible": "[and(startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache'), steps('userProfiles').fslogixSessionHostConfig.fslogixConfigureSessionHosts, empty(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi))]"
+									"visible": "[startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache')]"
+								},
+								{
+									"name": "tooManyStorageAccountsErrorBox",
+									"type": "Microsoft.Common.InfoBox",
+									"visible": "[if(steps('userProfiles').deployStorage, greater(length(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts), 3), greater(length(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts), 4))]",
+									"options": {
+										"icon": "Error",
+										"text": "You have provided too many storage account resource Ids. You can only specify 3 existing resource Ids when deploying storage resources and 4 when not deploying resources."
+									}
 								}
-							],
-							"visible": "[not(equals(steps('userProfiles').profileSolution, 'local'))]"
+							]
 						}								
                     ]
                 },
@@ -1806,7 +1850,7 @@
                                         "required": true,
                                         "allowedValues": "[map(filter(steps('management').privateEndpoints.privateDNSZonesApi.value, (item) => contains(item.name, 'privatelink.azure-automation.')), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
                                     },
-									"visible": "[and(steps('management').privateEndpoints.enabled, equals(steps('userProfiles').storageSku, 'Premium'))]"
+									"visible": "[and(steps('management').privateEndpoints.enabled, equals(steps('userProfiles').fslogixStorage.storageSku, 'Premium'))]"
                                 },
 								{
                                     "name": "keyVaultPrivateDnsZone",
@@ -1861,14 +1905,14 @@
 				"artifactsStorageAccountResourceId": "[steps('basics').prereqs.storageAccount.id]",
 				"artifactsContainerName": "[first(skip(split(steps('basics').prereqs.container, '/'), 12))]",
 				"artifactsUserAssignedIdentityResourceId": "[if(not(empty(steps('basics').prereqs.managedIdentity)), steps('basics').prereqs.managedIdentity.id, parse('[]'))]",
-				"automationAccountPrivateDnsZoneResourceId": "[if(and(steps('management').privateEndpoints.enabled, equals(steps('userProfiles').storageSku, 'Premium')), steps('management').privateEndpoints.automationAccountPrivateDnsZone, '')]",
+				"automationAccountPrivateDnsZoneResourceId": "[if(and(steps('management').privateEndpoints.enabled, equals(steps('userProfiles').fslogixStorage.storageSku, 'Premium')), steps('management').privateEndpoints.automationAccountPrivateDnsZone, '')]",
 				"avdGlobalFeedPrivateDnsZoneResourceId": "[if(steps('controlPlane').avdPrivateLink, steps('controlPlane').privateLink.avdGlobalPrivateLinkDnsZone, '')]",
 				"avdPrivateDnsZoneResourceId": "[if(steps('controlPlane').avdPrivateLink, steps('controlPlane').privateLink.avdPrivateLinkDnsZone, '')]",
 				"avdPrivateLink": "[steps('controlPlane').avdPrivateLink]",
                 "identitySolution": "[if(and(equals(steps('hosts').identity.solution, 'EntraId'), steps('hosts').identity.intune), 'EntraIdIntuneEnrollment', steps('hosts').identity.solution)]",
                 "availability": "[steps('hosts').availability]",
                 "avdObjectId": "[first(map(steps('basics').servicePrincipalApi.value, (item) => item.id))]",
-                "azureFilesPrivateDnsZoneResourceId": "[if(and(equals(steps('userProfiles').fslogixStorageService, 'AzureFiles'), equals(steps('userProfiles').storageEndpoint, 'PrivateEndpoint')), steps('userProfiles').privateEndpoints.privateDnsZone, '')]",
+                "azureFilesPrivateDnsZoneResourceId": "[if(and(equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles'), equals(steps('userProfiles').storageEndpoint, 'PrivateEndpoint')), steps('userProfiles').privateEndpoints.privateDnsZone, '')]",
 				"businessUnitIdentifier": "[steps('basics').naming.businessUnitIdentifier]",
                 "confidentialVMOSDiskEncryption": "[steps('hosts').security.confidentialVMOSDiskEncryption]",
 				"confidentialVMOrchestratorObjectId": "[first(map(steps('hosts').security.confDiskEncryptionPrincipalApi.value, (item) => item.id))]",
@@ -1882,21 +1926,21 @@
                 "domainName": "[steps('hosts').identity.domainName]",
                 "drainMode": "[steps('management').drainMode]",
                 "environmentShortName": "[steps('basics').naming.environmentShortName]",
-				"fslogixConfigureSessionHosts": "[steps('userProfiles').fslogixSessionHostConfig.fslogixConfigureSessionHosts]",
-				"fslogixConfigurationBlobName": "[if(steps('userProfiles').fslogixSessionHostConfig.fslogixConfigureSessionHosts, steps('userProfiles').fslogixSessionHostConfig.fslogixBlob.blobName , '')]",
-				"fslogixExistingStorageAccountResourceIds": "[if(and(steps('userProfiles').fslogixSessionHostConfig.fslogixConfigureSessionHosts, startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache')), if(empty(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi), map(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccountsGrid, (item) => item.resourceId), steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts), parse('[]'))]",
-                "fslogixShareSizeInGB": "[if(equals(steps('userProfiles').profileSolution, 'local'), 100, steps('userProfiles').storageShareSize)]",
+				"configureSessionHosts": "[steps('userProfiles').configureSessionHosts]",
+				"fslogixConfigurationBlobName": "[if(steps('userProfiles').configureSessionHosts, steps('userProfiles').fslogixSessionHostConfig.fslogixBlob.blobName , '')]",
+				"fslogixExistingStorageAccountResourceIds": "[if(and(steps('userProfiles').configureSessionHosts, startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache')), steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts.resourceId, parse('[]'))]",
+                "fslogixShareSizeInGB": "[if(equals(steps('userProfiles').deployStorage, false), 100, steps('userProfiles').fslogixStorage.storageShareSize)]",
                 "fslogixContainerType": "[steps('userProfiles').fslogixContainerType]",
-                "fslogixStorageService": "[if(equals(steps('userProfiles').profileSolution, 'local'), 'None', concat(steps('userProfiles').fslogixStorageService, ' ', steps('userProfiles').storageSku))]",
-				"fslogixStorageCount": "[if(or(equals(steps('userProfiles').profileSolution, 'local'), equals(steps('userProfiles').fslogixStorageService, 'AzureNetAppFiles')), 0, steps('userProfiles').storageCount)]",
-				"fslogixStorageIndex": "[if(or(equals(steps('userProfiles').profileSolution, 'local'), equals(steps('userProfiles').fslogixStorageService, 'AzureNetAppFiles')), 0, steps('userProfiles').storageIndex)]",
+                "fslogixStorageService": "[if(equals(steps('userProfiles').deployStorage, false), 'None', concat(steps('userProfiles').fslogixStorage.storageService, ' ', steps('userProfiles').fslogixStorage.storageSku))]",
+				"fslogixStorageCount": "[if(or(equals(steps('userProfiles').deployStorage, false), equals(steps('userProfiles').fslogixStorage.storageService, 'AzureNetAppFiles')), 0, steps('userProfiles').fslogixStorage.storageCount)]",
+				"fslogixStorageIndex": "[if(or(equals(steps('userProfiles').deployStorage, false), equals(steps('userProfiles').fslogixStorage.storageService, 'AzureNetAppFiles')), 0, steps('userProfiles').fslogixStorage.storageIndex)]",
                 "hostPoolType": "[if(equals(steps('controlPlane').hostPool.type, 'Pooled'), concat(steps('controlPlane').hostPool.type, ' ', steps('controlPlane').hostPool.loadBalancerAlgorithm), concat(steps('controlPlane').hostPool.type, ' ', steps('controlPlane').hostPool.assignmentType))]",
                 "hostPoolIdentifier": "[steps('basics').naming.hostPoolIdentifier]",
                 "imageOffer": "[steps('hosts').image.offer]",
                 "imagePublisher": "MicrosoftWindowsDesktop",
                 "imageSku": "[steps('hosts').image.sku]",
                 "customImageResourceId": "[if(equals(steps('hosts').image.source, 'gallery'), steps('hosts').image.galleryImage.id, '')]",
-                "fslogixStorageAccountADKerberosEncryption": "[if(or(equals(steps('userProfiles').profileSolution, 'local'), equals(steps('userProfiles').fslogixStorageService, 'AzureNetAppFiles')), 'RC4', steps('userProfiles').storageKerberosEncryption)]",
+                "fslogixStorageAccountADKerberosEncryption": "[if(or(equals(steps('userProfiles').deployStorage, false), equals(steps('userProfiles').fslogixStorage.storageService, 'AzureNetAppFiles')), 'RC4', steps('userProfiles').fslogixStorage.storageKerberosEncryption)]",
 				"keyVaultPrivateDnsZoneResourceId": "[if(steps('management').privateEndpoints.enabled, steps('management').privateEndpoints.keyVaultPrivateDnsZone, '')]",
                 "locationControlPlane": "[steps('basics').locationControlPlane.name]",
                 "logAnalyticsWorkspaceRetention": 30,

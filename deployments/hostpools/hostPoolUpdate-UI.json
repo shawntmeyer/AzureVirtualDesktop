@@ -737,6 +737,19 @@
 									"visible": "[steps('imageCustomizations').fslogixSessionHostConfig.fslogixConfigureSessionHosts]"
                                 },
 								{
+									"name": "storageService",
+									"type": "Microsoft.Common.DropDown",
+									"label": "Select FSLogix Storage Service",
+									"placeholder": "",
+									"defaultValue": "Azure Files",
+									"toolTip": "",
+									"constraints": {
+										"allowedValues": "[if(equals(steps('hosts').identity.solution, 'EntraId'), parse('[{\"label\":\"Azure Files\",\"value\":\"AzureFiles\"}]'), parse('[{\"label\":\"Azure Files\",\"value\":\"AzureFiles\"},{\"label\":\"Azure NetApp Files\",\"value\":\"AzureNetAppFiles\"}]'))]",
+										"required": true
+									},
+									"visible": "[steps('imageCustomizations').fslogixSessionHostConfig.fslogixConfigureSessionHosts]"
+								},
+								{
 									"name": "fslogixContainerType",
 									"type": "Microsoft.Common.DropDown",
 									"visible": "[steps('imageCustomizations').fslogixSessionHostConfig.fslogixConfigureSessionHosts]",
@@ -766,33 +779,11 @@
 									}
 								},
 								{
-									"name": "storageService",
-									"type": "Microsoft.Common.DropDown",
-									"label": "Select FSLogix Storage Service",
-									"placeholder": "",
-									"defaultValue": "Azure Files",
-									"toolTip": "",
-									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Azure Files",
-												"value": "AzureFiles"
-											},
-											{
-												"label": "Azure NetApp Files",
-												"value": "AzureNetAppFiles"
-											}
-										],
-										"required": true
-									},
-									"visible": "[steps('imageCustomizations').fslogixSessionHostConfig.fslogixConfigureSessionHosts]"
-								},
-								{
 									"name": "textBlockGrid",
 									"type": "Microsoft.Common.TextBlock",
 									"visible": "[equals(steps('imageCustomizations').fslogixSessionHostConfig.storageService, 'AzureFiles')]",
 									"options": {
-										"text": "Provide the Resource Ids of the Azure storage accounts used for FSLogix profile and office containers."
+										"text": "Provide the Resource Ids of the Azure storage accounts used for FSLogix profile and office containers in the order of preference for the region where the hosts are being deployed."
 									}
 								},
 								{
@@ -800,7 +791,7 @@
 									"type": "Microsoft.Common.TextBlock",
 									"visible": "[and(equals(steps('hosts').identity.solution, 'EntraId'), steps('imageCustomizations').fslogixSessionHostConfig.fslogixConfigureSessionHosts, equals(steps('imageCustomizations').fslogixSessionHostConfig.storageService, 'AzureFiles'))]",
 									"options": {
-										"text": "For the 'Entra Id' identity provider selected on the 'Virtual Machines' blade, you can specify 1 storage account per region up to a maximum of 4 because sharding is not possible.",
+										"text": "For the 'Entra Id' identity provider selected on the 'Virtual Machines' blade, you can specify 1 storage account per region up to 4 regions because sharding is not possible.",
 										"link": {
 											"label": "Learn more",
 											"uri": "https://learn.microsoft.com/en-us/fslogix/how-to-configure-object-specific-settings"
@@ -876,6 +867,14 @@
 									}
 								},
 								{
+									"name": "netAppTextBlock",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": "[equals(steps('imageCustomizations').fslogixSessionHostConfig.storageService, 'AzureNetAppFiles')]",
+									"options": {
+										"text": "Enter the existing NetApp File Shares below. Enter the path to the profile container first and if applicable, the office container second. Do not include the trailing '\\'."
+									}
+								},
+								{
 									"name": "fslogixNetAppFileShares",
 									"type": "Microsoft.Common.EditableGrid",
 									"ariaLabel": "FSLogix NetApp Files Shares",
@@ -885,13 +884,13 @@
 										"rows": {
 											"count": {
 												"min": 0,
-												"max": 4
+												"max": 2
 											}
 										},
 										"columns": [
 											{
 												"id": "sharePath",
-												"header": "NetApp UNC Share Path (Do not include the container folder)",
+												"header": "NetApp UNC Share Path",
 												"width": "10fr",
 												"element": {
 													"type": "Microsoft.Common.TextBox",
