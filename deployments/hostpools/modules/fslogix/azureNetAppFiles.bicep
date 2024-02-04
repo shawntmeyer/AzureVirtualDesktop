@@ -112,14 +112,14 @@ resource volumes 'Microsoft.NetApp/netAppAccounts/capacityPools/volumes@2021-06-
     // isRestoring: bool
     kerberosEnabled: false
     ldapEnabled: false
-    networkFeatures: 'Basic'
+    networkFeatures: 'Standard'
     protocolTypes: [
       'CIFS'
     ]
     securityStyle: 'ntfs'
     serviceLevel: storageSku
     // Enable when GA 
-    //smbContinuouslyAvailable: true // recommended for FSLogix: https://docs.microsoft.com/en-us/azure/azure-netapp-files/enable-continuous-availability-existing-smb
+    smbContinuouslyAvailable: true // recommended for FSLogix: https://docs.microsoft.com/en-us/azure/azure-netapp-files/enable-continuous-availability-existing-smb
     smbEncryption: true
     snapshotDirectoryVisible: true
     // snapshotId: 'string'
