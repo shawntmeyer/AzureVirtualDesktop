@@ -721,6 +721,14 @@
 									"visible": true
 								},
 								{
+									"name": "storageAccountsApi",
+									"type": "Microsoft.Solutions.ArmApiControl",
+									"request": {
+										"method": "GET",
+										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Storage/storageAccounts?api-version=2023-01-01')]"
+									}
+								},
+								{
                                     "name": "fslogixBlob",
                                     "type": "Microsoft.Storage.StorageBlobSelector",
                                     "toolTip": "Select FsLogix Configuration Script blob. 'Configure-FSLogix.zip' is used by default.",
@@ -820,31 +828,26 @@
 										"rows": {
 											"count": {
 												"min": 1,
-												"max": 8
+												"max": 4
 											}
 										},
 										"columns": [
 											{
 												"id": "resourceId",
-												"header": "Storage Account Resource Id",
-												"width": "10fr",
+												"header": "storageAccounts",
+												"width": "1fr",
 												"element": {
-													"type": "Microsoft.Common.TextBox",
+													"type": "Microsoft.Common.DropDown",
 													"constraints": {
-														"allowedValues": [
-															{
-																"label": "Resource Id",
-																"value": "text"
-															}
-														],
+														"allowedValues": "[map(steps('imageCustomizations').fslogixSessionHostConfig.storageAccountsApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Location: ', item.location, '\",\"value\":\"', item.id, '\"}')))]",
 														"required": true
 													}
 												}
 											}
-										]
-									},
-									"required": false,
-									"visible": "[equals(steps('imageCustomizations').fslogixSessionHostConfig.storageService, 'AzureFiles')]"
+										],
+										"required": false
+									},																			
+									"visible": "[and(steps('imageCustomizations').fslogixSessionHostConfig.fslogixConfigureSessionHosts, equals(steps('imageCustomizations').fslogixSessionHostConfig.storageService, 'AzureFiles'))]"
 								},
 								{
 									"name": "cloudCacheErrorBox",
