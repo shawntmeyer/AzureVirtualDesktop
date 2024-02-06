@@ -521,7 +521,7 @@
                                     "name": "virtualNetwork",
                                     "type": "Microsoft.Common.DropDown",
                                     "label": "Virtual Network",
-                                    "defaultValue": "",
+									"multiLine": true,
                                     "toolTip": "Select the virtual network where the AVD Private Link Private Endpoints will be created.",
                                     "constraints": {
                                         "required": true,
@@ -648,7 +648,7 @@
                                     "name": "virtualNetwork",
                                     "type": "Microsoft.Common.DropDown",
                                     "label": "Virtual Network",
-                                    "defaultValue": "",
+                                    "multiLine": true,
                                     "toolTip": "Select the virtual network where the AVD Private Link Private Endpoints will be created.",
                                     "constraints": {
                                         "required": true,
@@ -1479,7 +1479,7 @@
                                     "name": "virtualNetwork",
                                     "type": "Microsoft.Common.DropDown",
                                     "label": "Private Endpoint Virtual Network",
-                                    "defaultValue": "",
+                                    "multiLine": true,
                                     "toolTip": "Select the virtual network containing the subnet where the Storage Account Private Endpoint will be created.",
                                     "constraints": {
                                         "required": true,
@@ -1798,6 +1798,7 @@
                                     "type": "Microsoft.Common.DropDown",
                                     "label": "Virtual Network",
                                     "defaultValue": "[last(split(steps('userProfiles').privateEndpoints.virtualNetwork.name), '/')]",
+									"multiLine": true,
                                     "toolTip": "Select the virtual network where the AVD Private Link Private Endpoints will be created.",
                                     "constraints": {
                                         "required": true,
