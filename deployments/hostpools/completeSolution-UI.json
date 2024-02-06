@@ -1646,8 +1646,9 @@
 												"width": "1fr",
 												"element": {
 													"type": "Microsoft.Common.DropDown",
+													"multiLine": true,
 													"constraints": {
-														"allowedValues": "[if(steps('userProfiles').deployStorage, map(filter(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi.value, (item) => not(equals(item.location, steps('basics').scope.location.name))), (item) => parse(concat('{\"label\":\"', item.name, '\", \"value\":\"', item.id, '\"}'))), map(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\", \"value\":\"', item.id, '\"}'))))]"
+														"allowedValues": "[if(steps('userProfiles').deployStorage, map(filter(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi.value, (item) => not(equals(item.location, steps('basics').scope.location.name))), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Location: ', item.location, '\", \"value\":\"', item.id, '\"}'))), map(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\", \"description\":\"Location: ', item.location, '\", \"value\":\"', item.id, '\"}'))))]"
 													}
 												}
 											}

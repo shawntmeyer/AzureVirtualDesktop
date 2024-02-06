@@ -231,7 +231,7 @@
                                     "name": "virtualNetwork",
                                     "type": "Microsoft.Common.DropDown",
                                     "label": "Virtual Network",
-                                    "defaultValue": "",
+                                    "multiLine": true,
                                     "toolTip": "Select the virtual network where the AVD Private Link Private Endpoints will be created.",
                                     "constraints": {
                                         "required": true,
@@ -838,6 +838,7 @@
 												"width": "1fr",
 												"element": {
 													"type": "Microsoft.Common.DropDown",
+													"multiLine": true,
 													"constraints": {
 														"allowedValues": "[map(steps('imageCustomizations').fslogixSessionHostConfig.storageAccountsApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Location: ', item.location, '\",\"value\":\"', item.id, '\"}')))]",
 														"required": true
@@ -1066,11 +1067,11 @@
                                     "name": "avdInsightsDataCollectionRule",
                                     "type": "Microsoft.Common.DropDown",
                                     "label": "AVD Insights Data Collection Rule",
-                                    "defaultValue": "",
+                                    "multiLine": true,
                                     "toolTip": "Select the data collection rule that will be associated with the session hosts.",
                                     "constraints": {
                                         "required": true,
-                                        "allowedValues": "[map(filter(steps('management').monitoring.dataCollectionRulesApi.value, (item) => contains(item.name, 'microsoft-avdi')), (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.id, '\"}')))]"
+                                        "allowedValues": "[map(filter(steps('management').monitoring.dataCollectionRulesApi.value, (item) => contains(item.name, 'microsoft-avdi')), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
                                     },
 									"visible": "[steps('management').monitoring.enableInsights]"
                                 },
@@ -1078,11 +1079,11 @@
                                     "name": "vmInsightsDataCollectionRule",
                                     "type": "Microsoft.Common.DropDown",
                                     "label": "Virtual Machine Insights Data Collection Rule",
-                                    "defaultValue": "",
+                                    "multiLine": true,
                                     "toolTip": "Select the data collection rule that will be associated with the session hosts.",
                                     "constraints": {
                                         "required": true,
-                                        "allowedValues": "[map(filter(steps('management').monitoring.dataCollectionRulesApi.value, (item) => contains(item.name, 'MSVMI-')), (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.id, '\"}')))]"
+                                        "allowedValues": "[map(filter(steps('management').monitoring.dataCollectionRulesApi.value, (item) => contains(item.name, 'MSVMI-')), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\", \"value\":\"', item.id, '\"}')))]"
                                     },
 									"visible": "[steps('management').monitoring.enableInsights]"
                                 },
