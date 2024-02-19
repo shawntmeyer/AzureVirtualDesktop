@@ -84,6 +84,27 @@
                                     }
                                 },
 								{
+									"name": "centralizedAVDManagement",
+									"type": "Microsoft.Common.OptionsGroup",
+									"label": "Centralized AVD Management",
+									"defaultValue": "Yes",
+									"toolTip": "When the 'businessUnitIdentifier' parameter is not empty, this parameter determines if the AVD Management Resource Group and associated resources are created in a centralized resource group (does not include 'Business Unit Identifier' in the name) and management resources are named accordingly or if a Business unit specific AVD management resource group is created and management resources are named accordingly. If the 'Business Unit Identifier' value is left empty, then this value has no effect.",
+									"constraints": {
+										"allowedValues": [
+											{
+												"label": "Yes",
+												"value": true
+											},
+											{
+												"label": "No",
+												"value": false
+											}
+										],
+										"required": true
+									},
+									"visible": true
+								},
+								{
 									"name": "nameConvResTypeAtEnd",
 									"type": "Microsoft.Common.OptionsGroup",
 									"label": "Move the Resource Type to the end of resource names",
@@ -1278,18 +1299,7 @@
 							"name": "fslogixStorage",
 							"type": "Microsoft.Common.Section",
 							"label": "FSLogix Storage Deployment",
-                            "visible": "[and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').deployStorage)]",
 							"elements": [
-                                {
-									"name": "netAppInformation",
-									"type": "Microsoft.Common.InfoBox",
-									"visible": "[and(steps('userProfiles').fslogixSessionHostConfig.configureSessionHosts, equals(steps('hosts').identity.solution, 'EntraId'))]",
-									"options": {
-										"icon": "Info",
-										"text": "NetApp Files do not support Entra Id as an identity provider.",
-										"uri": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-netapp-comparison"
-									}
-								},
 								{
 									"name": "storageService",
 									"type": "Microsoft.Common.DropDown",
@@ -1359,7 +1369,7 @@
 								{
 									"name": "domainServiceTextBlock",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(not(equals(steps('hosts').identity.solution, 'EntraId')), lessOrEquals(if(empty(steps('controlPlane').assignment.groupsApi), length(steps('controlPlane').assignment.groupsGrid), length(steps('controlPlane').assignment.groupsDropDown)), 4)))]",
+									"visible": "[and(not(equals(steps('hosts').identity.solution, 'EntraId')), or(not(startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache')), lessOrEquals(if(empty(steps('controlPlane').assignment.groupsApi), length(steps('controlPlane').assignment.groupsGrid), length(steps('controlPlane').assignment.groupsDropDown)), 4)))]",
 									"options": {
 										"text": "For the 'Active Directory Domain Services' or 'Entra Id Domain Services' identity providers selected on the 'Session Host' screen, the number of storage accounts equals the number of security principals or groups you entered under the assignments section of the 'Control Plane' blade. A storage account is created for each security principal and permissions are assigned separately to each to enable storage sharding.",
 										"link": {
@@ -1427,7 +1437,8 @@
 										]
 									}
 								}
-							]
+							],
+							"visible": "[and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').deployStorage)]"
 						},                       
 						{
                             "name": "storageEndpoint",
@@ -1535,7 +1546,7 @@
 							"name": "fslogixSessionHostConfig",
 							"type": "Microsoft.Common.Section",
 							"label": "Session Host Configuration",
-							"visible": "[steps('userProfiles').configureSessionHosts]",
+							"visible": "[and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').configureSessionHosts)]",
 							"elements": [
 								{
                                     "name": "fslogixBlob",
@@ -1550,44 +1561,31 @@
                                             "zip"
                                         ]
                                     }
-                                },                                
-                                {
-									"name": "EntraIdVHDDeployedInformation",
-									"type": "Microsoft.Common.InfoBox",
-									"visible": "[and(steps('userProfiles').deployStorage, not(contains(steps('userProfiles').fslogixContainerType, 'CloudCache')))]",
-									"options": {
-										"icon": "Info",
-										"text": "No additional storage accounts can be selected with Entra Id and standard VHD(x) containers."
-									}
-								},					
-                                {
-									"name": "existingStorageAccountIntroduction",
+                                },											
+								{
+									"name": "notDeployedCCTextBox",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[or(equals('userProfiles').deployStorage, false), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]",
+									"visible": "[and(equals(steps('userProfiles').deployStorage, false), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]",
 									"options": {
-										"text": "Use the grid below to select the existing storage accounts from the dropdown. Select the number and order of the storage accounts as noted below."                                        
+										"text": "To enable cross-region high availability of user profiles using FSLogix CloudCache enter up to 4 storage accounts which are from unique regions to be added to the fslogix container paths. Enter the values in the order of preference with the first one list located in the region where the virtual machines were deployed."
 									}
 								},
-                                {
-                                    "name": "EntraIdCCDeployedInfoBox",
-                                    "type": "Microsoft.Common.InfoBox",
-                                    "visible": "[and(steps('userProfiles').deployStorage, equals(steps('userProfiles').fslogixStorage, 'AzureFiles'), equals(steps('hosts').identity.solution, 'EntraId'), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]",
-                                    "options": {
-                                        "icon": "Info",
-                                        "text": "For Entra Id authentication with cloud cache container(s), provide up to three (3) additional storage accounts to enable cross-region high availability, limited to one (1) per region because sharding is not possible. Configure them below in the order of preference.",
-                                        "uri": "https://learn.microsoft.com/en-us/fslogix/how-to-configure-object-specific-settings"
-                                    }
-                                },
-                                {
-                                    "name": "EntraIdCCExistingOnlyInfoBox",
-                                    "type": "Microsoft.Common.InfoBox",
-                                    "visible": "[and(equals(steps('userProfiles').deployStorage, false), equals(steps('userProfiles').configureSessionHosts.storageService, 'AzureFiles'), equals(steps('hosts').identity.solution, 'EntraId'), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]",
-                                    "options": {
-                                        "icon": "Info",
-                                        "text": "For Entra Id authentication with cloud cache container(s), you can provide up to four (4) storage accounts to enable cross-region high availability, limited to one (1) per region because sharding is not possible. Configure them below in the order of preference, with the storage account in the same region as the session hosts, listed first.",
-                                        "uri": "https://learn.microsoft.com/en-us/fslogix/how-to-configure-object-specific-settings"
-                                    }
-                                },
+								{
+									"name": "deployedCCTextBox",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": "[and(steps('userProfiles').deployStorage, contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]",
+									"options": {
+										"text": "To enable cross-region high availability of user profiles using FSLogix CloudCache select up to 3 additional storage accounts which are not from the region where you deployed the virtual machines but are also from unique regions to be added to the fslogix container paths. Enter the values in the order of preference."
+									}
+								},
+								{
+									"name": "notDeployedVHDxTextBox",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": "[and(equals(steps('userProfiles').deployStorage, false), not(contains(steps('userProfiles').fslogixContainerType, 'CloudCache')))]",
+									"options": {
+										"text": "To enable cross-region high availability of user profiles using FSLogix CloudCache select up to 3 additional storage accounts which are not from the region where you deployed the virtual machines but are also from unique regions to be added to the fslogix container paths. Enter the values in the order of preference."
+									}
+								},
 								{
 									"name": "storageAccountsApi",
 									"type": "Microsoft.Solutions.ArmApiControl",
@@ -1625,15 +1623,24 @@
 										],
 										"required": false
 									},									
-									"visible": "[or(equals('userProfiles').deployStorage, false), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]"
+									"visible": "[or(equals(steps('userProfiles').deployStorage, false), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]"
 								},
 								{
-									"name": "tooManyStorageAccountsErrorBox",
+									"name": "tooManyStorageAccountsCCErrorBox",
 									"type": "Microsoft.Common.InfoBox",
-									"visible": "[if(steps('userProfiles').deployStorage, greater(length(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts), 3), greater(length(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts), 4))]",
+									"visible": "[if(steps('userProfiles').deployStorage, greater(length(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts), 3), false)]",
 									"options": {
 										"icon": "Error",
-										"text": "You have provided too many storage account resource Ids. You can only specify 3 existing resource Ids when deploying storage resources and 4 when not deploying resources."
+										"text": "You have provided too many storage account resource Ids. You can only specify 3 existing resource Ids when deploying storage resources."
+									}
+								},
+								{
+									"name": "tooManyStorageAccountsVHDxErrorBox",
+									"type": "Microsoft.Common.InfoBox",
+									"visible": "[if(and(equals(steps('userProfiles').deployStorage, false), not(contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))), greater(length(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts), 1), false)]",
+									"options": {
+										"icon": "Error",
+										"text": "You have provided too many storage account resource Ids. You can only specify 1 existing resource Ids when specifying a standard VHDx container type (i.e., no Cloud Cache)."
 									}
 								}
 							]
@@ -1681,27 +1688,6 @@
                                     "defaultValue": false,
                                     "toolTip": "Deploy the required resources to enable AVD and VM Insights."
                                 },
-                                {
-									"name": "centralizedAVDMonitoring",
-									"type": "Microsoft.Common.OptionsGroup",
-									"label": "Centralized AVD Monitoring",
-									"defaultValue": "Yes",
-									"toolTip": "When the 'businessUnitIdentifier' parameter is not empty, this parameter determines if the AVD Monitoring Resource Group and associated resources are created in a centralized resource group (does not include 'Business Unit Identifier' in the name) and monitoring resources are named accordingly or if a Business unit specific AVD monitoring resource group is created and monitoring resources are named accordingly. If the 'Business Unit Identifier' value is left empty, then this value has no effect.",
-									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Yes",
-												"value": true
-											},
-											{
-												"label": "No",
-												"value": false
-											}
-										],
-										"required": true
-									},
-									"visible": "[steps('management').monitoring.enableInsights]"
-								},
                                 {
                                     "name": "enableSecurity",
                                     "type": "Microsoft.Common.CheckBox",
@@ -1914,7 +1900,6 @@
                 "avdObjectId": "[first(map(steps('basics').servicePrincipalApi.value, (item) => item.id))]",
                 "azureFilesPrivateDnsZoneResourceId": "[if(and(equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles'), equals(steps('userProfiles').storageEndpoint, 'PrivateEndpoint')), steps('userProfiles').privateEndpoints.privateDnsZone, '')]",
 				"businessUnitIdentifier": "[steps('basics').naming.businessUnitIdentifier]",
-                "centralizedAVDMonitoring": "[if(steps('management').monitoring.enableInsights, steps('management').monitoring.centralizedAVDMonitoring, false)]",
                 "confidentialVMOSDiskEncryption": "[steps('hosts').security.confidentialVMOSDiskEncryption]",
 				"confidentialVMOrchestratorObjectId": "[first(map(steps('hosts').security.confDiskEncryptionPrincipalApi.value, (item) => item.id))]",
 				"keyManagementDisksAndStorage": "[steps('hosts').security.keyManagement]",
@@ -1927,9 +1912,9 @@
                 "domainName": "[steps('hosts').identity.domainName]",
                 "drainMode": "[steps('management').drainMode]",
                 "environmentShortName": "[steps('basics').naming.environmentShortName]",
-				"configureSessionHosts": "[steps('userProfiles').configureSessionHosts]",
+				"fslogixConfigureSessionHosts": "[if(and(equals(steps('hosts').identity.solution, 'EntraId'), equals(steps('userProfiles').profileSolution, 'FSLogix')), steps('userProfiles').configureSessionHosts, false)]",
 				"fslogixConfigurationBlobName": "[if(steps('userProfiles').configureSessionHosts, steps('userProfiles').fslogixSessionHostConfig.fslogixBlob.blobName , '')]",
-				"fslogixExistingStorageAccountResourceIds": "[if(and(steps('userProfiles').configureSessionHosts, startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache')), map(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts, (item) => item.resourceId), parse('[]'))]",
+				"fslogixExistingStorageAccountResourceIds": "[if(and(steps('userProfiles').configureSessionHosts, or(equals(steps('userProfiles').deployStorage, false), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))), map(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts, (item) => item.resourceId), parse('[]'))]",
                 "fslogixShareSizeInGB": "[if(equals(steps('userProfiles').deployStorage, false), 100, steps('userProfiles').fslogixStorage.storageShareSize)]",
                 "fslogixContainerType": "[steps('userProfiles').fslogixContainerType]",
                 "fslogixStorageService": "[if(equals(steps('userProfiles').deployStorage, false), 'None', concat(steps('userProfiles').fslogixStorage.storageService, ' ', steps('userProfiles').fslogixStorage.storageSku))]",
