@@ -694,12 +694,13 @@
                     "label": "Image Customizations",
                     "elements": [
                		    {
-							"name": "fslogixSessionHostConfig",
+							"name": "fslogix",
 							"type": "Microsoft.Common.Section",
 							"label": "FSLogix Configuration",
+							"visible": "[equals(steps('hosts').identity.solution, 'EntraId')]",
 							"elements": [
 								{
-									"name": "fslogixConfigureSessionHosts",
+									"name": "configureHosts",
 									"type": "Microsoft.Common.DropDown",
 									"label": "Configure FSLogix Settings on Session Hosts",
 									"placeholder": "",
@@ -715,10 +716,8 @@
 												"label": "No",
 												"value": false
 											}
-										],
-										"required": false
-									},
-									"visible": true
+										]
+									}									
 								},
 								{
 									"name": "storageAccountsApi",
@@ -741,26 +740,12 @@
                                             "zip"
                                         ]
                                     },
-									"required": false,
-									"visible": "[steps('imageCustomizations').fslogixSessionHostConfig.fslogixConfigureSessionHosts]"
-                                },
-								{
-									"name": "storageService",
-									"type": "Microsoft.Common.DropDown",
-									"label": "Select FSLogix Storage Service",
-									"placeholder": "",
-									"defaultValue": "Azure Files",
-									"toolTip": "",
-									"constraints": {
-										"allowedValues": "[if(equals(steps('hosts').identity.solution, 'EntraId'), parse('[{\"label\":\"Azure Files\",\"value\":\"AzureFiles\"}]'), parse('[{\"label\":\"Azure Files\",\"value\":\"AzureFiles\"},{\"label\":\"Azure NetApp Files\",\"value\":\"AzureNetAppFiles\"}]'))]",
-										"required": true
-									},
-									"visible": "[steps('imageCustomizations').fslogixSessionHostConfig.fslogixConfigureSessionHosts]"
-								},
+									"visible": "[steps('imageCustomizations').fslogix.configureHosts]"
+                                },				
 								{
 									"name": "fslogixContainerType",
 									"type": "Microsoft.Common.DropDown",
-									"visible": "[steps('imageCustomizations').fslogixSessionHostConfig.fslogixConfigureSessionHosts]",
+									"visible": "[steps('imageCustomizations').fslogix.configureHosts]",
 									"label": "FSLogix Container Type(s)",
 									"defaultValue": "Profile Container",
 									"toolTip": "Select the solution for the FSLogix profiles.",
@@ -789,35 +774,31 @@
 								{
 									"name": "textBlockGrid",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[equals(steps('imageCustomizations').fslogixSessionHostConfig.storageService, 'AzureFiles')]",
+									"visible": "[steps('imageCustomizations').fslogix.configureHosts]",
 									"options": {
-										"text": "Provide the Resource Ids of the Azure storage accounts used for FSLogix profile and office containers in the order of preference for the region where the hosts are being deployed."
+										"text": "Select the Azure storage accounts used for FSLogix profile and office containers in the number and order of preference as defined by the in the note below."
 									}
 								},
-								{
-									"name": "entraIdTexBlock",
-									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(equals(steps('hosts').identity.solution, 'EntraId'), steps('imageCustomizations').fslogixSessionHostConfig.fslogixConfigureSessionHosts, equals(steps('imageCustomizations').fslogixSessionHostConfig.storageService, 'AzureFiles'))]",
-									"options": {
-										"text": "For the 'Entra Id' identity provider selected on the 'Virtual Machines' blade, you can specify 1 storage account per region up to 4 regions because sharding is not possible.",
-										"link": {
-											"label": "Learn more",
-											"uri": "https://learn.microsoft.com/en-us/fslogix/how-to-configure-object-specific-settings"
-										}
-									}
-								},
-								{
-									"name": "domainServicesCloudCacheTexBlock",
-									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(not(equals(steps('hosts').identity.solution, 'EntraId')), startsWith(steps('imageCustomizations').fslogixSessionHostConfig.fslogixContainerType, 'CloudCache'), steps('imageCustomizations').fslogixSessionHostConfig.fslogixConfigureSessionHosts, equals(steps('imageCustomizations').fslogixSessionHostConfig.storageService, 'AzureFiles'))]",
-									"options": {
-										"text": "When using CloudCache containers, you can specify a maximum of 4 storage Accounts.",
-										"link": {
-											"label": "Learn more",
-											"uri": "https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=ccd#ccdlocations"
-										}
-									}
-								},
+                                {
+                                    "name": "EntraIdCCInfoBox",
+                                    "type": "Microsoft.Common.InfoBox",
+                                    "visible": "[and(steps('imageCustomizations').fslogix.configureHosts, contains(steps('imageCustomizations').fslogix.fslogixContainerType, 'CloudCache'))]",
+                                    "options": {
+                                        "icon": "Info",
+                                        "text": "For Entra Id authentication with cloud cache container(s), provide up to four (4) storage accounts, limited to one (1) per region because sharding is not possible. Configure them below in the order of preference with the storage account located in the region of the session hosts as the first listed.",
+                                        "uri": "https://learn.microsoft.com/en-us/fslogix/how-to-configure-object-specific-settings"
+                                    }
+                                },
+                                {
+                                    "name": "EntraIdVHDInfoBox",
+                                    "type": "Microsoft.Common.InfoBox",
+                                    "visible": "[and(steps('imageCustomizations').fslogix.configureHosts, not(contains(steps('imageCustomizations').fslogix.fslogixContainerType, 'CloudCache')))]",
+                                    "options": {
+                                        "icon": "Info",
+                                        "text": "For Entra Id authentication with VHD container(s), provide the one (1) storage account in the same region as the virtual machines because sharding is not possible.",
+                                        "uri": "https://learn.microsoft.com/en-us/fslogix/how-to-configure-object-specific-settings"
+                                    }
+                                },
 								{
 									"name": "fslogixExistingStorageAccounts",
 									"type": "Microsoft.Common.EditableGrid",
@@ -840,7 +821,7 @@
 													"type": "Microsoft.Common.DropDown",
 													"multiLine": true,
 													"constraints": {
-														"allowedValues": "[map(steps('imageCustomizations').fslogixSessionHostConfig.storageAccountsApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Location: ', item.location, '\",\"value\":\"', item.id, '\"}')))]",
+														"allowedValues": "[map(steps('imageCustomizations').fslogix.storageAccountsApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Location: ', item.location, '\",\"value\":\"', item.id, '\"}')))]",
 														"required": true
 													}
 												}
@@ -848,72 +829,18 @@
 										],
 										"required": false
 									},																			
-									"visible": "[and(steps('imageCustomizations').fslogixSessionHostConfig.fslogixConfigureSessionHosts, equals(steps('imageCustomizations').fslogixSessionHostConfig.storageService, 'AzureFiles'))]"
-								},
-								{
-									"name": "cloudCacheErrorBox",
-									"type": "Microsoft.Common.InfoBox",
-									"visible": "[and(startsWith(steps('imageCustomizations').fslogixSessionHostConfig.fslogixContainerType, 'CloudCache'), greater(length(steps('imageCustomizations').fslogixSessionHostConfig.fslogixExistingStorageAccounts), 4))]",
-									"options": {
-										"icon": "Error",
-										"text": "When using CloudCache containers, you can specify a maximum of 4 storage Accounts.",
-										"uri": "https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=ccd#ccdlocations"
-									}
+									"visible": "[steps('imageCustomizations').fslogix.configureHosts]"
 								},
 								{
 									"name": "entraIdErrorBox",
 									"type": "Microsoft.Common.InfoBox",
-									"visible": "[and(equals(steps('hosts').identity.solution, 'EntraId'), greater(length(steps('imageCustomizations').fslogixSessionHostConfig.fslogixExistingStorageAccounts), 4))]",
+									"visible": "[and(steps('imageCustomizations').fslogix.configureHosts, not(contains(steps('imageCustomizations').fslogix.fslogixContainerType, 'CloudCache')), greater(length(steps('imageCustomizations').fslogix.fslogixExistingStorageAccounts), 1))]",
 									"options": {
 										"icon": "Error",
-										"text": "For the 'Entra Id' identity provider selected on the 'Virtual Machines' blade, you can specify a maximum of 4 storage Accounts.",
+										"text": "For the 'Entra Id' identity provider selected on the 'Virtual Machines' blade with standard profile or profile and office containers, you can specify a maximum of 1 storage account in the same region as the virtual machines.",
 										"uri": "https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=ccd#ccdlocations"
 									}
-								},
-								{
-									"name": "netAppTextBlock",
-									"type": "Microsoft.Common.TextBlock",
-									"visible": "[equals(steps('imageCustomizations').fslogixSessionHostConfig.storageService, 'AzureNetAppFiles')]",
-									"options": {
-										"text": "Enter the existing NetApp File Shares below. Enter the path to the profile container first and if applicable, the office container second. Do not include the trailing '\\'."
-									}
-								},
-								{
-									"name": "fslogixNetAppFileShares",
-									"type": "Microsoft.Common.EditableGrid",
-									"ariaLabel": "FSLogix NetApp Files Shares",
-									"label": "FSLogix NetApp File Shares as UNC Path",
-									"constraints": {
-										"width": "Full",
-										"rows": {
-											"count": {
-												"min": 0,
-												"max": 2
-											}
-										},
-										"columns": [
-											{
-												"id": "sharePath",
-												"header": "NetApp UNC Share Path",
-												"width": "10fr",
-												"element": {
-													"type": "Microsoft.Common.TextBox",
-													"constraints": {
-														"allowedValues": [
-															{
-																"label": "Share Path",
-																"value": "text"
-															}
-														],
-														"required": true
-													}
-												}
-											}
-										]
-									},
-									"required": false,
-									"visible": "[equals(steps('imageCustomizations').fslogixSessionHostConfig.storageService, 'AzureNetAppFiles')]"
-								}
+								}								
 							]
 						},
 						{
@@ -1176,11 +1103,10 @@
                 "domainJoinUserPrincipalName": "[steps('hosts').domainJoinCredentials.userPrincipalName]",
                 "domainName": "[steps('hosts').identity.domainName]",
                 "ouPath": "[if(equals(steps('hosts').identity.solution, 'EntraId'), '', steps('hosts').identity.ouPath)]",
-                "fslogixContainerType": "[steps('imageCustomizations').fslogixSessionHostConfig.fslogixContainerType]",
-				"fslogixNetAppFileShares": "[if(equals(steps('imageCustomizations').fslogixSessionHostConfig.storageService, 'AzureNetAppFiles'), map(steps('imageCustomizations').fslogixSessionHostConfig.fslogixNetAppFileShares, (item) => item.sharePath), '')]",
-				"fslogixConfigureSessionHosts": "[steps('imageCustomizations').fslogixSessionHostConfig.fslogixConfigureSessionHosts]",
-				"fslogixConfigurationBlobName": "[if(steps('imageCustomizations').fslogixSessionHostConfig.fslogixConfigureSessionHosts, steps('imageCustomizations').fslogixSessionHostConfig.fslogixBlob.blobName , '')]",
-				"fslogixExistingStorageAccountResourceIds": "[if(equals(steps('imageCustomizations').fslogixSessionHostConfig.storageService, 'AzureFiles'), map(steps('imageCustomizations').fslogixSessionHostConfig.fslogixExistingStorageAccounts, (item) => item.resourceId), parse('[]'))]",
+				"fslogixConfigureSessionHosts": "[steps('imageCustomizations').fslogix.configureHosts]",
+                "fslogixContainerType": "[if(steps('imageCustomizations').fslogix.configureHosts, steps('imageCustomizations').fslogix.fslogixContainerType, '')]",
+				"fslogixConfigurationBlobName": "[if(steps('imageCustomizations').fslogix.configureHosts, steps('imageCustomizations').fslogix.fslogixBlob.blobName , '')]",
+				"fslogixExistingStorageAccountResourceIds": "[if(steps('imageCustomizations').fslogix.configureHosts, map(steps('imageCustomizations').fslogix.fslogixExistingStorageAccounts, (item) => item.resourceId), parse('[]'))]",
                 "sessionHostCount": "[steps('hosts').specs.count]",
                 "sessionHostIndex": "[steps('hosts').naming.index]",
                 "diskSku": "[steps('hosts').specs.diskSku]",

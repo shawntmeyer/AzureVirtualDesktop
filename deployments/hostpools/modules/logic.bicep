@@ -24,6 +24,7 @@ param resourceGroupControlPlane string
 param resourceGroupGlobalFeed string
 param resourceGroupHosts string
 param resourceGroupManagement string
+param resourceGroupMonitoring string
 param resourceGroupStorage string
 param securityPrincipals array
 param sessionHostCount int
@@ -49,7 +50,9 @@ var availabilitySetsCount = length(range(beginAvSetRange, (endAvSetRange - begin
 // OTHER LOGIC & COMPUTED VALUES
 //  Ensure that the CSE files are supplied correctly.
 var fslogix = fslogixStorageService == 'None' ? false : true
-var cseArtifacts = fslogixConfigureSessionHosts ? union(['${cseMasterScript}'], cseBlobNames, ['${fslogixConfigurationBlobName}'], ['${avdAgentInstallersBlobName}']) : union(['${cseMasterScript}'], cseBlobNames, ['${avdAgentInstallersBlobName}'])
+// fslogix will not be configured on session hosts if identity solution is not EntraId. Decision made to lower complexity and to avoid potential issues. Assumes the use of Group Policy to configure FSlogix with Domain Services identity solution.
+var fslogixConfigureHosts = identitySolution != 'EntraId' ? false : fslogixConfigureSessionHosts
+var cseArtifacts = fslogixConfigureHosts ? union(['${cseMasterScript}'], cseBlobNames, ['${fslogixConfigurationBlobName}'], ['${avdAgentInstallersBlobName}']) : union(['${cseMasterScript}'], cseBlobNames, ['${avdAgentInstallersBlobName}'])
 var cseUris = [ for artifact in cseArtifacts : contains(toLower(artifact), 'http') ? artifact : '${artifactsUri}${artifact}' ]
 
 var fileShares = fileShareNames[fslogixContainerType]
@@ -67,11 +70,13 @@ var resGroupBase = fslogix ? [
   resourceGroupControlPlane
   resourceGroupHosts
   resourceGroupManagement
+  resourceGroupMonitoring
   resourceGroupStorage
 ] : [
   resourceGroupControlPlane
   resourceGroupHosts
   resourceGroupManagement
+  resourceGroupMonitoring
 ]
 
 var resourceGroupNames = hostPoolOnly ? resGroupHostPools : ( avdPrivateLink ? union([resourceGroupGlobalFeed], resGroupBase) : resGroupBase )
@@ -117,6 +122,7 @@ output SecurityPrincipalsCount int = SecurityPrincipalsCount
 output smbServerLocation string = smbServerLocation
 output fslogixStorageSku string = fslogixStorageSku
 output fslogixStorageSolution string = fslogixStorageSolution
+output fslogixConfigureSessionHosts bool = fslogixConfigureHosts
 output storageSuffix string = storageSuffix
 output fslogixStorageCount int = countStorage
 output timeDifference string = timeDifference

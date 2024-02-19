@@ -71,13 +71,7 @@ param ouPath string = ''
 ])
 param fslogixContainerType string = 'ProfileContainer'
 
-@description('''Optional. The UNC paths for NetApp File Shares that support FSLogix.
-Only required when "fslogixConfigureSessionHosts" is true and "fslogixStorageService" is AzureNetAppFiles Premium or Standard.
-If an office container path is specified, then ensure that the profile path is first.
-Do NOT include the trailing "\".''')
-param fslogixNetAppFileShares array = []
-
-@description('Configure FSLogix agent on the session hosts via local registry keys.')
+@description('Configure FSLogix agent on the session hosts via local registry keys for Entra Id identity only.')
 param fslogixConfigureSessionHosts bool = true
 
 @description('Optional. The name of the blob that contains the FSLogix Configuration Script.')
@@ -268,7 +262,7 @@ module resourceNames 'modules/resourceNames.bicep' = {
   params: {
     environmentShortName: environmentShortName
     businessUnitIdentifier: ''
-    centralizedAVDManagement: false
+    centralizedAVDMonitoring: false
     fslogixStorageCustomPrefix: ''
     hostPoolIdentifier: ''
     locationControlPlane: locationVirtualMachines
@@ -312,6 +306,7 @@ module logic 'modules/logic.bicep' = {
     fslogixStorageCount: 1
     virtualMachineNamePrefix: virtualMachineNamePrefix
     virtualMachineSize: virtualMachineSize
+    resourceGroupMonitoring: resourceNames.outputs.resourceGroupMonitoring
   }
 }
 
@@ -344,11 +339,10 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     drainMode: false
     drainModeUserAssignedIdentityClientId: ''
     encryptionAtHost: encryptionAtHost
-    fslogixConfigureSessionHosts: fslogixConfigureSessionHosts
+    fslogixConfigureSessionHosts: logic.outputs.fslogixConfigureSessionHosts
     fslogixContainerType: fslogixContainerType
     fslogixDeployedStorageAccountResourceIds: []
     fslogixExistingStorageAccountResourceIds: fslogixExistingStorageAccountResourceIds
-    fslogixNetAppFileShares: fslogixNetAppFileShares
     hostPoolName: hostPoolName
     imageOffer: imageOffer
     imagePublisher: imagePublisher

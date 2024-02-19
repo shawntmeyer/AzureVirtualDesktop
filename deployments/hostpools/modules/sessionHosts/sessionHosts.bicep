@@ -42,7 +42,6 @@ param location string
 param managementVirtualMachineName string
 param maxResourcesPerTemplateDeployment int
 param enableInsights bool
-param fslogixNetAppFileShares array
 param networkInterfaceNamePrefix string
 param ouPath string
 param pooledHostPool bool
@@ -147,7 +146,6 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     location: location
     managementVirtualMachineName: managementVirtualMachineName
     enableInsights: enableInsights
-    fslogixNetAppFileShares: fslogixNetAppFileShares
     networkInterfaceNamePrefix: networkInterfaceNamePrefix
     ouPath: ouPath
     avdInsightsDataCollectionRulesResourceId: avdInsightsDataCollectionRulesResourceId

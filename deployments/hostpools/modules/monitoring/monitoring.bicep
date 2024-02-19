@@ -1,0 +1,64 @@
+targetScope = 'subscription'
+
+param dataCollectionEndpointName string
+param dataCollectionRulesNameConv string
+param location string
+param logAnalyticsWorkspaceName string
+param logAnalyticsWorkspaceRetention int
+param logAnalyticsWorkspaceSku string
+param resourceGroupMonitoring string
+param securityDataCollectionRulesResourceId string
+param tags object
+param timeStamp string
+
+module logAnalyticsWorkspace 'logAnalyticsWorkspace.bicep' = {
+  scope: resourceGroup(resourceGroupMonitoring)
+  name: 'LogAnalytics_${timeStamp}'
+  params: {
+    logAnalyticsWorkspaceName: logAnalyticsWorkspaceName
+    logAnalyticsWorkspaceRetention: logAnalyticsWorkspaceRetention
+    logAnalyticsWorkspaceSku: logAnalyticsWorkspaceSku
+    location: location
+    tags: contains(tags, 'Microsoft.OperationalInsights/workspaces') ? tags['Microsoft.OperationalInsights/workspaces'] : {}
+  }
+}
+
+// Data Collection Rule for AVD Insights required for the Azure Monitor Agent
+module avdInsightsDataCollectionRules 'avdInsightsDataCollectionRules.bicep' = {
+  name: 'AVDInsights_DataCollectionRule_${timeStamp}'
+  scope: resourceGroup(resourceGroupMonitoring)
+  params: {
+    LogAWorkspaceId: logAnalyticsWorkspace.outputs.ResourceId
+    location: location
+    NameConv: dataCollectionRulesNameConv
+    tags: contains(tags, 'Microsoft.Insights/dataCollectionRules') ? tags['Microsoft.Insights/dataCollectionRules'] : {}
+  }
+}
+
+// Data Collection Rule for VM Insights required for the Azure Monitor Agent
+module vmInsightsDataCollectionRules 'vmInsightsDataCollectionRules.bicep' = {
+  name: 'VMInsights_DataCollectionRule_${timeStamp}'
+  scope: resourceGroup(resourceGroupMonitoring)
+  params: {
+    LogAWorkspaceId: logAnalyticsWorkspace.outputs.ResourceId
+    location: location
+    NameConv: dataCollectionRulesNameConv
+    tags: contains(tags, 'Microsoft.Insights/dataCollectionRules') ? tags['Microsoft.Insights/dataCollectionRules'] : {}
+  }
+}
+
+module dataCollectionEndpoint 'dataCollectionEndpoint.bicep' = if (!empty(securityDataCollectionRulesResourceId)) {
+  name: 'DataCollectionEndpoint_${timeStamp}'
+  scope: resourceGroup(resourceGroupMonitoring)
+  params: {
+    location: location
+    tags: contains(tags, 'Microsoft.Insights/dataCollectionEndpoints') ? tags['Microsoft.Insights/dataCollectionEndpoints'] : {}
+    name: dataCollectionEndpointName
+    publicNetworkAccess: 'Enabled'
+  }
+}
+
+output dataCollectionEndpointResourceId string = !empty(securityDataCollectionRulesResourceId) ? dataCollectionEndpoint.outputs.resourceId : ''
+output avdInsightsDataCollectionRulesResourceId string = avdInsightsDataCollectionRules.outputs.dataCollectionRulesId
+output vmInsightsDataCollectionRulesResourceId string = vmInsightsDataCollectionRules.outputs.dataCollectionRulesId
+output logAnalyticsWorkspaceResourceId string = logAnalyticsWorkspace.outputs.ResourceId

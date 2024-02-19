@@ -11,8 +11,6 @@ param azModuleBlobName string
 param locationControlPlane string
 param confidentialVMOrchestratorObjectId string
 param confidentialVMOSDiskEncryptionType string
-param dataCollectionEndpointName string
-param dataCollectionRulesNameConv string
 //param diskAccessName string
 param diskEncryptionSetNames object
 param diskSku string
@@ -33,9 +31,7 @@ param keyVaultNames object
 param keyVaultPrivateDnsZoneResourceId string
 param privateEndpointSubnetResourceId string
 param locationVirtualMachines string
-param logAnalyticsWorkspaceName string
-param logAnalyticsWorkspaceRetention int
-param logAnalyticsWorkspaceSku string
+param logAnalyticsWorkspaceResourceId string
 param enableInsights bool
 param netAppVnetResourceId string
 param keyManagementDisksAndStorage string
@@ -48,7 +44,6 @@ param resourceGroupHosts string
 param resourceGroupManagement string
 param resourceGroupStorage string
 param roleDefinitions object
-param securityDataCollectionRulesResourceId string
 param securityType string
 param sessionHostCount int
 param fslogixStorageAccountNamePrefix string
@@ -343,54 +338,6 @@ module customerManagedKeys 'customerManagedKeys.bicep' = if (keyManagementDisksA
   ]
 }
 
-// enableInsights Resources for AVD Insights
-module logAnalyticsWorkspace 'logAnalyticsWorkspace.bicep' = if (enableInsights) {
-  name: 'LogAnalytics_${timeStamp}'
-  scope: resourceGroup(resourceGroupManagement)
-  params: {
-    logAnalyticsWorkspaceName: logAnalyticsWorkspaceName
-    logAnalyticsWorkspaceRetention: logAnalyticsWorkspaceRetention
-    logAnalyticsWorkspaceSku: logAnalyticsWorkspaceSku
-    location: locationControlPlane
-    tags: contains(tags, 'Microsoft.OperationalInsights/workspaces') ? tags['Microsoft.OperationalInsights/workspaces'] : {}
-  }
-}
-
-// Data Collection Rule for AVD Insights required for the Azure Monitor Agent
-module avdInsightsDataCollectionRules 'avdInsightsDataCollectionRules.bicep' = if (enableInsights) {
-  name: 'AVDInsights_DataCollectionRule_${timeStamp}'
-  scope: resourceGroup(resourceGroupManagement)
-  params: {
-    LogAWorkspaceId: logAnalyticsWorkspace.outputs.ResourceId
-    location: locationControlPlane
-    NameConv: dataCollectionRulesNameConv
-    tags: contains(tags, 'Microsoft.Insights/dataCollectionRules') ? tags['Microsoft.Insights/dataCollectionRules'] : {}
-  }
-}
-
-// Data Collection Rule for VM Insights required for the Azure Monitor Agent
-module vmInsightsDataCollectionRules 'vmInsightsDataCollectionRules.bicep' = if (enableInsights) {
-  name: 'VMInsights_DataCollectionRule_${timeStamp}'
-  scope: resourceGroup(resourceGroupManagement)
-  params: {
-    LogAWorkspaceId: logAnalyticsWorkspace.outputs.ResourceId
-    location: locationControlPlane
-    NameConv: dataCollectionRulesNameConv
-    tags: contains(tags, 'Microsoft.Insights/dataCollectionRules') ? tags['Microsoft.Insights/dataCollectionRules'] : {}
-  }
-}
-
-module dataCollectionEndpoint 'dataCollectionEndpoint.bicep' = if (enableInsights || !empty(securityDataCollectionRulesResourceId)) {
-  name: 'DataCollectionEndpoint_${timeStamp}'
-  scope: resourceGroup(resourceGroupManagement)
-  params: {
-    location: locationControlPlane
-    tags: contains(tags, 'Microsoft.Insights/dataCollectionEndpoints') ? tags['Microsoft.Insights/dataCollectionEndpoints'] : {}
-    name: dataCollectionEndpointName
-    publicNetworkAccess: 'Enabled'
-  }
-}
-
 // Automation Account required for the Auto Increase Premium File Share Quota solution
 module automationAccount 'automationAccount.bicep' = if (fslogixStorageService == 'AzureFiles Premium') {
   name: 'AutomationAccount_${timeStamp}'
@@ -398,7 +345,7 @@ module automationAccount 'automationAccount.bicep' = if (fslogixStorageService =
   params: {
     automationAccountName: automationAccountName
     location: locationVirtualMachines
-    logAnalyticsWorkspaceResourceId: enableInsights ? logAnalyticsWorkspace.outputs.ResourceId : ''
+    logAnalyticsWorkspaceResourceId: enableInsights ? logAnalyticsWorkspaceResourceId : ''
     enableInsights: enableInsights
     tags: tags
     automationAccountPrivateDnsZoneResourceId: automationAccountPrivateDnsZoneResourceId
@@ -406,9 +353,6 @@ module automationAccount 'automationAccount.bicep' = if (fslogixStorageService =
     privateEndpointNameConv: privateEndpointNameConv
     subnetResourceId: privateEndpointSubnetResourceId
   }
-  dependsOn: [
-    logAnalyticsWorkspace
-  ]
 }
 
 module recoveryServicesVault 'recoveryServicesVault.bicep' = if (recoveryServices) {
@@ -426,15 +370,11 @@ module recoveryServicesVault 'recoveryServicesVault.bicep' = if (recoveryService
 
 output artifactsUserAssignedIdentityClientId string = artifactsUserAssignedIdentityClientId
 output artifactsUserAssignedIdentityResourceId string = empty(artifactsUserAssignedIdentityResourceId) ? artifactsUserAssignedIdentity.outputs.resourceId : existingArtifactsUserAssignedIdentity.id
-output dataCollectionEndpointResourceId string = enableInsights ? dataCollectionEndpoint.outputs.resourceId : ''
-output avdInsightsDataCollectionRulesResourceId string = enableInsights ? avdInsightsDataCollectionRules.outputs.dataCollectionRulesId : ''
-output vmInsightsDataCollectionRulesResourceId string = enableInsights ? vmInsightsDataCollectionRules.outputs.dataCollectionRulesId : ''
 output diskEncryptionSetResourceId string = keyManagementDisksAndStorage != 'PlatformManaged' ? customerManagedKeys.outputs.diskEncryptionSetResourceId : ''
 output encryptionUserAssignedIdentityResourceId string = keyManagementDisksAndStorage != 'PlatformManaged' ? customerManagedKeys.outputs.encryptionUserAssignedIdentityResourceId : ''
 output existingWorkspace bool = validations.outputs.value.existingWorkspace == 'true' ? true : false
 output existingGlobalWorkspace bool = validations.outputs.value.existingGlobalWorkspace == 'true' ? true : false
 output storageEncryptionKeyKeyVaultUri string = keyManagementDisksAndStorage != 'PlatformManaged' ? customerManagedKeys.outputs.storagestorageEncryptionKeyKeyVaultUri : ''
-output logAnalyticsWorkspaceResourceId string = enableInsights ? logAnalyticsWorkspace.outputs.ResourceId : ''
 output deploymentUserAssignedIdentityClientId string = deploymentUserAssignedIdentity.outputs.clientId
 output deploymentUserAssignedIdentityResourceId string = deploymentUserAssignedIdentity.outputs.resourceId
 output storageAccountEncryptionKeyName string = keyManagementDisksAndStorage != 'PlatformManaged' ? customerManagedKeys.outputs.storageKeyName : ''

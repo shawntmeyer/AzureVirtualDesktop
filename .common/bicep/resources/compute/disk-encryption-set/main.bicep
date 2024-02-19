@@ -42,7 +42,7 @@ param roleAssignments array = []
 @description('Optional. Tags of the disk encryption resource.')
 param tags object = {}
 
-var identityType = systemAssignedIdentity ? (!empty(userAssignedIdentities) ? 'SystemAssigned,UserAssigned' : 'SystemAssigned') : 'UserAssigned'
+var identityType = systemAssignedIdentity ? (!empty(userAssignedIdentities) ? 'SystemAssigned, UserAssigned' : 'SystemAssigned') : 'UserAssigned'
 
 var identity = {
   type: identityType

@@ -26,7 +26,6 @@ param encryptionAtHost bool
 param fslogixConfigureSessionHosts bool
 param fslogixContainerType string
 param fslogixStorageAccountResourceIds array
-param fslogixNetAppFileShares array
 param hostPoolName string
 param imageOffer string
 param imagePublisher string
@@ -69,28 +68,25 @@ var amdVmSizes = [
 // Dynamic parameters for Configure-FSLogix Script
 //  cloudcache determined from fslogixContainerType parameter
 var fslogixCloudCacheString = contains(fslogixContainerType, 'CloudCache') ? 'CloudCache=$true' : 'CloudCache=$false'
-//  convert long identitySolution parameter values to short and SMB authentication specific values for script.
-var fslogixIdP = !contains(identitySolution, 'DomainServices') ? 'AAD' : 'DomainServices'
-var fslogixIdpString = 'IdP=\'${fslogixIdP}\''
-var fslogixStorageSolution = !empty(fslogixNetAppFileShares) ? 'AzureNetAppFiles' : ( !empty(fslogixStorageAccountResourceIds) ? 'AzureFiles'  : 'None' )
+
+var fslogixStorageSolution = !empty(fslogixStorageAccountResourceIds) ? 'AzureFiles'  : 'None'
 var fslogixStorageSolutionString = 'StorageSolution=\'${fslogixStorageSolution}\'' 
-var fslogixNetAppSharesString = fslogixStorageSolution == 'AzureNetAppFiles' ? 'NetAppFileShares=\'${replace(join(fslogixNetAppFileShares, ','), ',', '\',\'')}\'' : ''
 var fslogixSASuffixString = fslogixStorageSolution == 'AzureFiles' ? 'SASuffix=\'${storageSuffix}\'' : ''
 // build storage names string
 var fslogixStorageAccountNames = [for id in fslogixStorageAccountResourceIds: last(split(id, '/'))]
 var fslogixSANamesString = fslogixStorageSolution == 'AzureFiles' ? 'SANames=\'${replace(join(fslogixStorageAccountNames, ','), ',', '\',\'')}\'' : ''
 // build storage account keys string
-var fslogixSAKey1 = fslogixIdP == 'AAD' && fslogixConfigureSessionHosts && !empty(fslogixStorageAccountResourceIds) ? [ storageAccounts[0].listkeys().keys[0].value ] : []
-var fslogixSAKey2 = fslogixIdP == 'AAD' && fslogixConfigureSessionHosts && length(fslogixStorageAccountResourceIds) > 1 ? [ storageAccounts[1].listkeys().keys[0].value ] : []
-var fslogixSAKey3 = fslogixIdP == 'AAD' && fslogixConfigureSessionHosts && length(fslogixStorageAccountResourceIds) > 2 ? [ storageAccounts[2].listkeys().keys[0].value ] : []
-var fslogixSAKey4 = fslogixIdP == 'AAD' && fslogixConfigureSessionHosts && length(fslogixStorageAccountResourceIds) > 3 ? [ storageAccounts[3].listkeys().keys[0].value ] : []  
-var fslogixSAKeysString = fslogixIdP == 'AAD' ? 'SAKeys=\'${replace(join(union(fslogixSAKey1, fslogixSAKey2, fslogixSAKey3, fslogixSAKey4), ','), ',', '\',\'')}\'' : ''
+var fslogixSAKey1 = fslogixConfigureSessionHosts && !empty(fslogixStorageAccountResourceIds) ? [ storageAccounts[0].listkeys().keys[0].value ] : []
+var fslogixSAKey2 = fslogixConfigureSessionHosts && length(fslogixStorageAccountResourceIds) > 1 ? [ storageAccounts[1].listkeys().keys[0].value ] : []
+var fslogixSAKey3 = fslogixConfigureSessionHosts && length(fslogixStorageAccountResourceIds) > 2 ? [ storageAccounts[2].listkeys().keys[0].value ] : []
+var fslogixSAKey4 = fslogixConfigureSessionHosts && length(fslogixStorageAccountResourceIds) > 3 ? [ storageAccounts[3].listkeys().keys[0].value ] : []  
+var fslogixSAKeysString = 'SAKeys=\'${replace(join(union(fslogixSAKey1, fslogixSAKey2, fslogixSAKey3, fslogixSAKey4), ','), ',', '\',\'')}\''
 // build shares string
 var fslogixSharesString = fslogixStorageSolution != 'AzureNetAppFiles' ? contains(fslogixContainerType, 'Office') ? 'ShareNames=\'profile-containers\',\'office-containers\'' : 'ShareNames=\'profile-containers\'' : ''
 // build fslogix common string
-var fslogixCommon = '${fslogixIdpString};${fslogixStorageSolutionString};${fslogixCloudCacheString}'
+var fslogixCommon = '${fslogixStorageSolutionString};${fslogixCloudCacheString}'
 // add optional values to string
-var fslogixString = fslogixStorageSolution == 'AzureNetAppFiles' ? '${fslogixCommon};${fslogixNetAppSharesString}' : fslogixIdP == 'AAD' ? '${fslogixCommon};${fslogixSASuffixString};${fslogixSANamesString};${fslogixSAKeysString};${fslogixSharesString}' : '${fslogixCommon};${fslogixSASuffixString};${fslogixSANamesString};${fslogixSharesString}'
+var fslogixString = '${fslogixCommon};${fslogixSASuffixString};${fslogixSANamesString};${fslogixSAKeysString};${fslogixSharesString}'
 // create custom object
 var fslogixCustomObject = 'FSLogix=@([pscustomobject]@{${fslogixString}})'
 
@@ -130,7 +126,7 @@ var cseScriptDynamicParameters = empty(cseScriptAddDynParameters) ? '@{${cseScri
 // When sending a hashtable via powershell.exe you must use -command instead of -File in order for the parameter to be interpreted as a hashtable and not a string
 var cseCommandToExecute = 'powershell -ExecutionPolicy Unrestricted -Command .\\${cseMasterScript} -DynParameters ${cseScriptDynamicParameters}'
 
-var identityType = (!contains(identitySolution, 'DomainServices') || enableInsights ? true : false) ? (!empty(artifactsUserAssignedIdentityResourceId) ? 'SystemAssigned,UserAssigned' : 'SystemAssigned') : (!empty(artifactsUserAssignedIdentityResourceId) ? 'UserAssigned' : 'None')
+var identityType = (!contains(identitySolution, 'DomainServices') || enableInsights ? true : false) ? (!empty(artifactsUserAssignedIdentityResourceId) ? 'SystemAssigned, UserAssigned' : 'SystemAssigned') : (!empty(artifactsUserAssignedIdentityResourceId) ? 'UserAssigned' : 'None')
 
 var userAssignedIdentities = !empty(artifactsUserAssignedIdentityResourceId) ? {
   '${artifactsUserAssignedIdentityResourceId}': {}
@@ -172,7 +168,7 @@ var nvidiaVmSizes = [
 
 // call on new storage accounts only if we need the Storage Key(s)
 
-resource storageAccounts 'Microsoft.Storage/storageAccounts@2023-01-01' existing = [for ResId in fslogixStorageAccountResourceIds: if(fslogixIdP == 'AAD' && fslogixConfigureSessionHosts && !empty(fslogixStorageAccountResourceIds)) {
+resource storageAccounts 'Microsoft.Storage/storageAccounts@2023-01-01' existing = [for ResId in fslogixStorageAccountResourceIds: if(fslogixConfigureSessionHosts && !empty(fslogixStorageAccountResourceIds)) {
   name: last(split(ResId, '/'))
   scope: resourceGroup(split(ResId, '/')[2], split(ResId, '/')[4])
 }]
