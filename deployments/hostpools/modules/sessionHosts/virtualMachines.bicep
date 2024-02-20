@@ -69,12 +69,10 @@ var amdVmSizes = [
 //  cloudcache determined from fslogixContainerType parameter
 var fslogixCloudCacheString = contains(fslogixContainerType, 'CloudCache') ? 'CloudCache=$true' : 'CloudCache=$false'
 
-var fslogixStorageSolution = !empty(fslogixStorageAccountResourceIds) ? 'AzureFiles'  : 'None'
-var fslogixStorageSolutionString = 'StorageSolution=\'${fslogixStorageSolution}\'' 
-var fslogixSASuffixString = fslogixStorageSolution == 'AzureFiles' ? 'SASuffix=\'${storageSuffix}\'' : ''
+var fslogixSASuffixString = 'SASuffix=\'${storageSuffix}\''
 // build storage names string
 var fslogixStorageAccountNames = [for id in fslogixStorageAccountResourceIds: last(split(id, '/'))]
-var fslogixSANamesString = fslogixStorageSolution == 'AzureFiles' ? 'SANames=\'${replace(join(fslogixStorageAccountNames, ','), ',', '\',\'')}\'' : ''
+var fslogixSANamesString = 'SANames=\'${replace(join(fslogixStorageAccountNames, ','), ',', '\',\'')}\''
 // build storage account keys string
 var fslogixSAKey1 = fslogixConfigureSessionHosts && !empty(fslogixStorageAccountResourceIds) ? [ storageAccounts[0].listkeys().keys[0].value ] : []
 var fslogixSAKey2 = fslogixConfigureSessionHosts && length(fslogixStorageAccountResourceIds) > 1 ? [ storageAccounts[1].listkeys().keys[0].value ] : []
@@ -82,9 +80,9 @@ var fslogixSAKey3 = fslogixConfigureSessionHosts && length(fslogixStorageAccount
 var fslogixSAKey4 = fslogixConfigureSessionHosts && length(fslogixStorageAccountResourceIds) > 3 ? [ storageAccounts[3].listkeys().keys[0].value ] : []  
 var fslogixSAKeysString = 'SAKeys=\'${replace(join(union(fslogixSAKey1, fslogixSAKey2, fslogixSAKey3, fslogixSAKey4), ','), ',', '\',\'')}\''
 // build shares string
-var fslogixSharesString = fslogixStorageSolution != 'AzureNetAppFiles' ? contains(fslogixContainerType, 'Office') ? 'ShareNames=\'profile-containers\',\'office-containers\'' : 'ShareNames=\'profile-containers\'' : ''
+var fslogixSharesString = contains(fslogixContainerType, 'Office') ? 'ShareNames=\'profile-containers\',\'office-containers\'' : 'ShareNames=\'profile-containers\''
 // build fslogix common string
-var fslogixCommon = '${fslogixStorageSolutionString};${fslogixCloudCacheString}'
+var fslogixCommon = fslogixCloudCacheString
 // add optional values to string
 var fslogixString = '${fslogixCommon};${fslogixSASuffixString};${fslogixSANamesString};${fslogixSAKeysString};${fslogixSharesString}'
 // create custom object
@@ -97,8 +95,8 @@ var fslogixSANameMinus2 = [for name in fslogixStorageAccountNames: take(name, le
 var fslogixDedupedSANames = union(fslogixSANameMinus2, fslogixSANameMinus2)
 var fslogixMatchPrefix = length(fslogixDedupedSANames) == 1 ? true : false
 
-var fslogixOfficeSharesPrefixMatch = ['\\\\${fslogixDedupedSANames[0]}??.file.${storageSuffix}\\office-containers\\*\\*.VHDX']
-var fslogixProfileSharesPrefixMatch = ['\\\\${fslogixDedupedSANames[0]}??.file.${storageSuffix}\\profile-containers\\*\\*.VHDX']
+var fslogixOfficeSharesPrefixMatch = !empty(fslogixDedupedSANames) ? ['\\\\${fslogixDedupedSANames[0]}??.file.${storageSuffix}\\office-containers\\*\\*.VHDX'] : []
+var fslogixProfileSharesPrefixMatch = !empty(fslogixDedupedSANames) ? ['\\\\${fslogixDedupedSANames[0]}??.file.${storageSuffix}\\profile-containers\\*\\*.VHDX'] : []
 
 var fslogixOfficeSharesNoMatch = [for name in fslogixStorageAccountNames: '\\\\${name}.file.${storageSuffix}}\\office-containers\\*\\*.VHDX']
 var fslogixProfileSharesNoMatch = [for name in fslogixStorageAccountNames: '\\\\${name}.file.${storageSuffix}}\\profile-containers\\*\\*.VHDX']

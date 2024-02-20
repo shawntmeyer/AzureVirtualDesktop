@@ -84,11 +84,11 @@
                                     }
                                 },
 								{
-									"name": "centralizedAVDManagement",
+									"name": "centralizedAVDMonitoring",
 									"type": "Microsoft.Common.OptionsGroup",
-									"label": "Centralized AVD Management",
+									"label": "Centralized AVD Monitoring",
 									"defaultValue": "Yes",
-									"toolTip": "When the 'businessUnitIdentifier' parameter is not empty, this parameter determines if the AVD Management Resource Group and associated resources are created in a centralized resource group (does not include 'Business Unit Identifier' in the name) and management resources are named accordingly or if a Business unit specific AVD management resource group is created and management resources are named accordingly. If the 'Business Unit Identifier' value is left empty, then this value has no effect.",
+									"toolTip": "When the 'businessUnitIdentifier' parameter is not empty, this parameter determines if the AVD Monitoring Resource Group and associated resources are created in a centralized resource group (does not include 'Business Unit Identifier' in the name) and monitoring resources are named accordingly or if a Business unit specific AVD monitoring resource group is created and monitoring resources are named accordingly. If the 'Business Unit Identifier' value is left empty, then this value has no effect.",
 									"constraints": {
 										"allowedValues": [
 											{
@@ -1294,7 +1294,7 @@
 								],
 								"required": false
 							}
-						},						
+						},				
 						{
 							"name": "fslogixStorage",
 							"type": "Microsoft.Common.Section",
@@ -1565,7 +1565,7 @@
 								{
 									"name": "notDeployedCCTextBox",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(equals(steps('userProfiles').deployStorage, false), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]",
+									"visible": "[and(not(equals(steps('userProfiles').deployStorage, true)), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]",
 									"options": {
 										"text": "To enable cross-region high availability of user profiles using FSLogix CloudCache enter up to 4 storage accounts which are from unique regions to be added to the fslogix container paths. Enter the values in the order of preference with the first one list located in the region where the virtual machines were deployed."
 									}
@@ -1574,14 +1574,6 @@
 									"name": "deployedCCTextBox",
 									"type": "Microsoft.Common.TextBlock",
 									"visible": "[and(steps('userProfiles').deployStorage, contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]",
-									"options": {
-										"text": "To enable cross-region high availability of user profiles using FSLogix CloudCache select up to 3 additional storage accounts which are not from the region where you deployed the virtual machines but are also from unique regions to be added to the fslogix container paths. Enter the values in the order of preference."
-									}
-								},
-								{
-									"name": "notDeployedVHDxTextBox",
-									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(equals(steps('userProfiles').deployStorage, false), not(contains(steps('userProfiles').fslogixContainerType, 'CloudCache')))]",
 									"options": {
 										"text": "To enable cross-region high availability of user profiles using FSLogix CloudCache select up to 3 additional storage accounts which are not from the region where you deployed the virtual machines but are also from unique regions to be added to the fslogix container paths. Enter the values in the order of preference."
 									}
@@ -1623,7 +1615,7 @@
 										],
 										"required": false
 									},									
-									"visible": "[or(equals(steps('userProfiles').deployStorage, false), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]"
+									"visible": "[or(not(equals(steps('userProfiles').deployStorage, true)), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]"
 								},
 								{
 									"name": "tooManyStorageAccountsCCErrorBox",
@@ -1637,7 +1629,7 @@
 								{
 									"name": "tooManyStorageAccountsVHDxErrorBox",
 									"type": "Microsoft.Common.InfoBox",
-									"visible": "[if(and(equals(steps('userProfiles').deployStorage, false), not(contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))), greater(length(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts), 1), false)]",
+									"visible": "[if(and(not(equals(steps('userProfiles').deployStorage, true)), not(contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))), greater(length(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts), 1), false)]",
 									"options": {
 										"icon": "Error",
 										"text": "You have provided too many storage account resource Ids. You can only specify 1 existing resource Ids when specifying a standard VHDx container type (i.e., no Cloud Cache)."
@@ -1900,6 +1892,7 @@
                 "avdObjectId": "[first(map(steps('basics').servicePrincipalApi.value, (item) => item.id))]",
                 "azureFilesPrivateDnsZoneResourceId": "[if(and(equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles'), equals(steps('userProfiles').storageEndpoint, 'PrivateEndpoint')), steps('userProfiles').privateEndpoints.privateDnsZone, '')]",
 				"businessUnitIdentifier": "[steps('basics').naming.businessUnitIdentifier]",
+                "centralizedAVDMonitoring": "[steps('basics').naming.centralizedAVDMonitoring]",
                 "confidentialVMOSDiskEncryption": "[steps('hosts').security.confidentialVMOSDiskEncryption]",
 				"confidentialVMOrchestratorObjectId": "[first(map(steps('hosts').security.confDiskEncryptionPrincipalApi.value, (item) => item.id))]",
 				"keyManagementDisksAndStorage": "[steps('hosts').security.keyManagement]",

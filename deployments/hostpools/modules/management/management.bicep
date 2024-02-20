@@ -67,7 +67,7 @@ var cpuCountMax = contains(hostPoolType, 'Pooled') ? 32 : 128
 var cpuCountMin = contains(hostPoolType, 'Pooled') ? 4 : 2
 
 var artifactsUserAssignedIdentityName = replace(userAssignedIdentityNameConv, 'uaiPurpose', 'artifacts')
-var deploymentUserAssignedIdentityName = replace(userAssignedIdentityNameConv, 'uaiPurpose', 'deployment')
+var deploymentUserAssignedIdentityName = replace(userAssignedIdentityNameConv, 'uaiPurpose', 'avd-deployment')
 
 var confidentialVMOSDiskEncryption = confidentialVMOSDiskEncryptionType == 'DiskWithVMGuestState' ? true : false
 var diskEncryptionSetEncryptionType = confidentialVMOSDiskEncryption ? 'ConfidentialVmEncryptedWithCustomerKey' : ( keyManagementDisksAndStorage == 'CustomerManaged' ? 'EncryptionAtRestWithCustomerKey' : 'EncryptionAtRestWithPlatformAndCustomerKeys' )
@@ -360,10 +360,11 @@ module recoveryServicesVault 'recoveryServicesVault.bicep' = if (recoveryService
   scope: resourceGroup(resourceGroupManagement)
   params: {
     fslogix: fslogix
+    hostPoolType: hostPoolType
     location: locationVirtualMachines
     recoveryServicesVaultName: recoveryServicesVaultName
     fslogixStorageSolution: fslogixStorageSolution
-    tags: contains(tags, 'Microsoft.recoveryServices/vaults') ? tags['Microsoft.recoveryServices/vaults'] : {}
+    tags: tags
     timeZone: timeZone
   }
 }
