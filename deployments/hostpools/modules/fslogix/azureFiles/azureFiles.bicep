@@ -9,6 +9,7 @@ param deploymentUserAssignedIdentityClientId string
 param domainJoinUserPassword string
 param domainJoinUserPrincipalName string
 param customerManagedKeysEnabled bool
+param enableIncreaseQuotaAutomation bool
 param encryptionUserAssignedIdentityResourceId string
 param fileShares array
 param fslogixShareSizeInGB int
@@ -246,7 +247,7 @@ module recServices 'recoveryServices.bicep' = if (recoveryServices) {
   }
 }
 
-module autoIncreasePremiumFileShareQuota '../../management/autoIncreasePremiumFileShareQuota.bicep' = if (contains(fslogixStorageService, 'AzureFiles Premium') && storageCount > 0) {
+module autoIncreasePremiumFileShareQuota '../../management/autoIncreasePremiumFileShareQuota.bicep' = if (enableIncreaseQuotaAutomation && contains(fslogixStorageService, 'AzureFiles Premium') && storageCount > 0) {
   name: 'AutoIncreasePremiumFileShareQuota_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {

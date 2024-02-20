@@ -16,6 +16,7 @@ param domainJoinUserPassword string
 @secure()
 param domainJoinUserPrincipalName string
 param domainName string
+param enableIncreaseQuotaAutomation bool
 param encryptionUserAssignedIdentityResourceId string
 param fileShares array
 param shareSizeInGB int
@@ -101,6 +102,7 @@ module azureFiles 'azureFiles/azureFiles.bicep' = if (storageSolution == 'AzureF
     customerManagedKeysEnabled: customerManagedKeysEnabled
     domainJoinUserPassword: domainJoinUserPassword
     domainJoinUserPrincipalName: domainJoinUserPrincipalName
+    enableIncreaseQuotaAutomation: enableIncreaseQuotaAutomation
     encryptionUserAssignedIdentityResourceId: encryptionUserAssignedIdentityResourceId
     fileShares: fileShares
     fslogixShareSizeInGB: shareSizeInGB

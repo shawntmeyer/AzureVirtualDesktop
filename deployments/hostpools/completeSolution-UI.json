@@ -1665,6 +1665,14 @@
                             "toolTip": "Enables drain mode on the AVD session hosts so the virtual machines cannot be accessed until they have been validated."
                         },
                         {
+                            "name": "increaseFileShareQuota",
+                            "type": "Microsoft.Common.CheckBox",
+                            "label": "Enable Automation to increase Premium File Share Quota",
+                            "defaultValue": false,
+                            "toolTip": "Creates an Azure Automation Account, hybrid runbook workers, and enables automatic scaling up of the premium file share quota.",
+                            "visible": "[and(steps('userProfiles').deployStorage, equals(steps('userProfiles').fslogixStorage.storageSku, 'Premium'))]"
+                        },
+                        {
                             "name": "backup",
                             "type": "Microsoft.Common.Section",
                             "label": "Backup",
@@ -1842,7 +1850,7 @@
                                         "required": true,
                                         "allowedValues": "[map(filter(steps('management').privateEndpoints.privateDNSZonesApi.value, (item) => contains(item.name, 'privatelink.azure-automation.')), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
                                     },
-									"visible": "[and(steps('management').privateEndpoints.enabled, equals(steps('userProfiles').fslogixStorage.storageSku, 'Premium'))]"
+									"visible": "[and(steps('management').privateEndpoints.enabled, steps('management').increaseFileShareQuota)]"
                                 },
 								{
                                     "name": "keyVaultPrivateDnsZone",
@@ -1897,7 +1905,7 @@
 				"artifactsStorageAccountResourceId": "[steps('basics').prereqs.storageAccount.id]",
 				"artifactsContainerName": "[first(skip(split(steps('basics').prereqs.container, '/'), 12))]",
 				"artifactsUserAssignedIdentityResourceId": "[if(not(empty(steps('basics').prereqs.managedIdentity)), steps('basics').prereqs.managedIdentity.id, parse('[]'))]",
-				"automationAccountPrivateDnsZoneResourceId": "[if(and(steps('management').privateEndpoints.enabled, equals(steps('userProfiles').fslogixStorage.storageSku, 'Premium')), steps('management').privateEndpoints.automationAccountPrivateDnsZone, '')]",
+				"automationAccountPrivateDnsZoneResourceId": "[if(and(steps('management').increaseFileShareQuota, steps('management').privateEndpoints.enabled), steps('management').privateEndpoints.automationAccountPrivateDnsZone, '')]",
 				"avdGlobalFeedPrivateDnsZoneResourceId": "[if(steps('controlPlane').avdPrivateLink, steps('controlPlane').privateLink.avdGlobalPrivateLinkDnsZone, '')]",
 				"avdPrivateDnsZoneResourceId": "[if(steps('controlPlane').avdPrivateLink, steps('controlPlane').privateLink.avdPrivateLinkDnsZone, '')]",
 				"avdPrivateLink": "[steps('controlPlane').avdPrivateLink]",
@@ -1919,6 +1927,7 @@
                 "domainName": "[steps('hosts').identity.domainName]",
                 "drainMode": "[steps('management').drainMode]",
                 "environmentShortName": "[steps('basics').naming.environmentShortName]",
+                "enableIncreaseQuotaAutomation": "[steps('management').increaseFileShareQuota]",
 				"fslogixConfigureSessionHosts": "[if(and(equals(steps('hosts').identity.solution, 'EntraId'), equals(steps('userProfiles').profileSolution, 'FSLogix')), steps('userProfiles').configureSessionHosts, false)]",
 				"fslogixConfigurationBlobName": "[if(steps('userProfiles').configureSessionHosts, steps('userProfiles').fslogixSessionHostConfig.fslogixBlob.blobName , '')]",
 				"fslogixExistingStorageAccountResourceIds": "[if(and(steps('userProfiles').configureSessionHosts, or(equals(steps('userProfiles').deployStorage, false), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))), map(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts, (item) => item.resourceId), parse('[]'))]",

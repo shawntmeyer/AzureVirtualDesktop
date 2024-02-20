@@ -19,6 +19,7 @@ param domainJoinUserPassword string
 @secure()
 param domainJoinUserPrincipalName string
 param domainName string
+param enableIncreaseQuotaAutomation bool
 param encryptionAtHost bool
 param environmentShortName string
 param fslogix bool
@@ -338,8 +339,9 @@ module customerManagedKeys 'customerManagedKeys.bicep' = if (keyManagementDisksA
   ]
 }
 
+
 // Automation Account required for the Auto Increase Premium File Share Quota solution
-module automationAccount 'automationAccount.bicep' = if (fslogixStorageService == 'AzureFiles Premium') {
+module automationAccount 'automationAccount.bicep' = if (enableIncreaseQuotaAutomation && fslogixStorageService == 'AzureFiles Premium') {
   name: 'AutomationAccount_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
@@ -352,6 +354,7 @@ module automationAccount 'automationAccount.bicep' = if (fslogixStorageService =
     privateEndpoint: privateEndpoint
     privateEndpointNameConv: privateEndpointNameConv
     subnetResourceId: privateEndpointSubnetResourceId
+    virtualMachineName: virtualMachine.outputs.Name
   }
 }
 

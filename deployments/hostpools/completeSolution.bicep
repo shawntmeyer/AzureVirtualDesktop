@@ -160,6 +160,9 @@ param fslogixContainerType string = 'ProfileContainer'
 @description('Enable an fslogix storage option to manage user profiles for the AVD session hosts. The selected service & SKU should provide sufficient IOPS for all of your users. https://docs.microsoft.com/en-us/azure/architecture/example-scenario/wvd/windows-virtual-desktop-fslogix#performance-requirements')
 param fslogixStorageService string = 'AzureFiles Standard'
 
+@description('Optional. Enable Automatic File Share Quota Increase for Azure Files Premium.')
+param enableIncreaseQuotaAutomation bool = false
+
 @description('Configure FSLogix agent on the session hosts via local registry keys.')
 param fslogixConfigureSessionHosts bool = false
 
@@ -487,6 +490,7 @@ module management 'modules/management/management.bicep' = {
     domainJoinUserPassword: domainJoinUserPassword
     domainJoinUserPrincipalName: domainJoinUserPrincipalName
     domainName: domainName
+    enableIncreaseQuotaAutomation: enableIncreaseQuotaAutomation
     encryptionAtHost: encryptionAtHost
     environmentShortName: environmentShortName
     fslogix: logic.outputs.fslogix
@@ -619,6 +623,7 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (fslogixStorageService != 'N
     domainJoinUserPassword: empty(domainJoinUserPassword) ? contains(identitySolution, 'DomainServices') ? keyVault_Reference.getSecret(domainJoinUserPassword) : '' : domainJoinUserPassword
     domainJoinUserPrincipalName: empty(domainJoinUserPrincipalName) ? contains(identitySolution, 'DomainServices') ? keyVault_Reference.getSecret(domainJoinUserPrincipalName) : '' : domainJoinUserPrincipalName
     domainName: domainName
+    enableIncreaseQuotaAutomation: enableIncreaseQuotaAutomation
     encryptionUserAssignedIdentityResourceId: management.outputs.encryptionUserAssignedIdentityResourceId
     fileShares: logic.outputs.fileShares
     shareSizeInGB: fslogixShareSizeInGB
@@ -749,7 +754,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
   ]
 }
 
-module cleanUp 'modules/cleanUp/cleanUp.bicep' = {
+module cleanUp 'modules/cleanUp/cleanUp.bicep' = if(!enableIncreaseQuotaAutomation) {
   name: 'CleanUp_${timeStamp}'
   params: {
     location: locationVirtualMachines
