@@ -39,8 +39,8 @@
                                     "toolTip": "Input a 10 character max identifier for the business unit utilizing AVD in your tenant.",
                                     "constraints": {
                                         "required": false,
-                                        "regex": "^[a-z0-9A-Z]{1,10}$",
-                                        "validationMessage": "The value must be 1 - 10 characters in length and must be alphanumeric."
+                                        "regex": "^[a-z0-9A-Z]{1,8}$",
+                                        "validationMessage": "The value must be 1 - 8 characters in length and must be alphanumeric."
                                     }
                                 },
 								{
@@ -48,11 +48,23 @@
                                     "type": "Microsoft.Common.TextBox",
                                     "label": "HostPool Identifier",
                                     "toolTip": "Input a 10 character max identifier for the hostpool created by this solution.",
-                                    "constraints": {
-                                        "required": false,
-                                        "regex": "^[a-z0-9A-Z]{1,10}$",
-                                        "validationMessage": "The value must be 1 - 10 characters in length and must be alphanumeric."
-                                    }
+									"constraints": {
+										"required": true,
+										"validations": [
+											{
+												"regex": "^[a-z0-9A-Z]+$",
+												"message": "Only alphanumeric characters are allowed."
+											},
+											{
+												"isValid": "[if(empty(steps('basics').naming.businessUnitIdentifier), not(greater(length(steps('basics').naming.hostPoolIdentifier), 10)), true)]",
+												"message": "The length cannot exceed 10 characters."
+											},
+											{
+												"isValid": "[if(not(empty(steps('basics').naming.businessUnitIdentifier)), not(greater(length(steps('basics').naming.hostPoolIdentifier), sub(10, length(steps('basics').naming.businessUnitIdentifier)))), true)]",
+												"message": "[concat('The length cannot exceed ', string(sub(10, length(steps('basics').naming.businessUnitIdentifier))), ' characters, which equals 10 - length of the Business Unit Identifier.')]"
+											}
+										]
+									}
                                 },
                                 {
                                     "name": "environmentShortName",
@@ -1222,7 +1234,8 @@
 										"value": "Other"
 									}
 								]
-							}
+							},
+                            "required": true
 						},
 						{
                             "name": "fslogixContainerType",
@@ -1256,7 +1269,7 @@
 						{
 							"name": "deployStorage",
 							"type": "Microsoft.Common.DropDown",
-							"defaultValue": "No",
+							"defaultValue": "Yes",
 							"visible": "[equals(steps('userProfiles').profileSolution, 'FSLogix')]",
 							"label": "Deploy FSLogix Storage Resources",
 							"toolTip": "Select 'Yes' to deploy the required storage resources for FSLogix Profiles.",
@@ -1271,14 +1284,15 @@
 										"value": false
 									}
 								]
-							}
+							},
+                            "required": true
 						},
 						{
 							"name": "configureSessionHosts",
 							"type": "Microsoft.Common.DropDown",
 							"label": "Configure FSLogix Settings on Session Hosts",
 							"placeholder": "",
-							"defaultValue": "No",
+							"defaultValue": "Yes",
 							"toolTip": "Select 'Yes' if you desire to run automatically configure the FSLogix settings on the Session Hosts.",
 							"visible": "[and(equals(steps('hosts').identity.solution, 'EntraId'), equals(steps('userProfiles').profileSolution, 'FSLogix'))]",
 							"constraints": {
@@ -1909,8 +1923,9 @@
 				"fslogixConfigurationBlobName": "[if(steps('userProfiles').configureSessionHosts, steps('userProfiles').fslogixSessionHostConfig.fslogixBlob.blobName , '')]",
 				"fslogixExistingStorageAccountResourceIds": "[if(and(steps('userProfiles').configureSessionHosts, or(equals(steps('userProfiles').deployStorage, false), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))), map(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts, (item) => item.resourceId), parse('[]'))]",
                 "fslogixShareSizeInGB": "[if(equals(steps('userProfiles').deployStorage, false), 100, steps('userProfiles').fslogixStorage.storageShareSize)]",
+                "fslogixStorageAccountADKerberosEncryption": "[if(or(equals(steps('userProfiles').deployStorage, false), equals(steps('userProfiles').fslogixStorage.storageService, 'AzureNetAppFiles')), 'RC4', steps('userProfiles').fslogixStorage.storageKerberosEncryption)]",
                 "fslogixContainerType": "[steps('userProfiles').fslogixContainerType]",
-                "fslogixStorageService": "[if(equals(steps('userProfiles').deployStorage, false), 'None', concat(steps('userProfiles').fslogixStorage.storageService, ' ', steps('userProfiles').fslogixStorage.storageSku))]",
+                "fslogixStorageService": "[if(steps('userProfiles').deployStorage, concat(steps('userProfiles').fslogixStorage.storageService, ' ', steps('userProfiles').fslogixStorage.storageSku), 'None')]",
 				"fslogixStorageCount": "[if(or(equals(steps('userProfiles').deployStorage, false), equals(steps('userProfiles').fslogixStorage.storageService, 'AzureNetAppFiles')), 0, steps('userProfiles').fslogixStorage.storageCount)]",
 				"fslogixStorageIndex": "[if(or(equals(steps('userProfiles').deployStorage, false), equals(steps('userProfiles').fslogixStorage.storageService, 'AzureNetAppFiles')), 0, steps('userProfiles').fslogixStorage.storageIndex)]",
                 "hostPoolType": "[if(equals(steps('controlPlane').hostPool.type, 'Pooled'), concat(steps('controlPlane').hostPool.type, ' ', steps('controlPlane').hostPool.loadBalancerAlgorithm), concat(steps('controlPlane').hostPool.type, ' ', steps('controlPlane').hostPool.assignmentType))]",
@@ -1919,7 +1934,6 @@
                 "imagePublisher": "MicrosoftWindowsDesktop",
                 "imageSku": "[steps('hosts').image.sku]",
                 "customImageResourceId": "[if(equals(steps('hosts').image.source, 'gallery'), steps('hosts').image.galleryImage.id, '')]",
-                "fslogixStorageAccountADKerberosEncryption": "[if(or(equals(steps('userProfiles').deployStorage, false), equals(steps('userProfiles').fslogixStorage.storageService, 'AzureNetAppFiles')), 'RC4', steps('userProfiles').fslogixStorage.storageKerberosEncryption)]",
 				"keyVaultPrivateDnsZoneResourceId": "[if(steps('management').privateEndpoints.enabled, steps('management').privateEndpoints.keyVaultPrivateDnsZone, '')]",
                 "locationControlPlane": "[steps('basics').locationControlPlane.name]",
                 "logAnalyticsWorkspaceRetention": 30,
