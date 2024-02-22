@@ -263,8 +263,8 @@ module resourceNames 'modules/resourceNames.bicep' = {
     environmentShortName: environmentShortName
     businessUnitIdentifier: ''
     centralizedAVDMonitoring: false
-    fslogixStorageCustomPrefix: ''
-    hostPoolIdentifier: ''
+    fslogixStorageCustomPrefix: 'notused'
+    hostPoolIdentifier: 'notused'
     locationControlPlane: locationVirtualMachines
     locationVirtualMachines: locationVirtualMachines
     nameConvResTypeAtEnd: nameConvResTypeAtEnd

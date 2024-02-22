@@ -550,7 +550,6 @@ module monitoring 'modules/monitoring/monitoring.bicep' = if(enableInsights) {
     logAnalyticsWorkspaceRetention:logAnalyticsWorkspaceRetention
     logAnalyticsWorkspaceSku: logAnalyticsWorkspaceSku
     resourceGroupMonitoring: resourceNames.outputs.resourceGroupMonitoring
-    securityDataCollectionRulesResourceId: securityDataCollectionRulesResourceId
     tags: tags
     timeStamp: timeStamp
   }

@@ -7,7 +7,6 @@ param logAnalyticsWorkspaceName string
 param logAnalyticsWorkspaceRetention int
 param logAnalyticsWorkspaceSku string
 param resourceGroupMonitoring string
-param securityDataCollectionRulesResourceId string
 param tags object
 param timeStamp string
 
@@ -28,6 +27,7 @@ module avdInsightsDataCollectionRules 'avdInsightsDataCollectionRules.bicep' = {
   name: 'AVDInsights_DataCollectionRule_${timeStamp}'
   scope: resourceGroup(resourceGroupMonitoring)
   params: {
+    dataCollectionEndpointId: dataCollectionEndpoint.outputs.resourceId
     LogAWorkspaceId: logAnalyticsWorkspace.outputs.ResourceId
     location: location
     NameConv: dataCollectionRulesNameConv
@@ -40,6 +40,7 @@ module vmInsightsDataCollectionRules 'vmInsightsDataCollectionRules.bicep' = {
   name: 'VMInsights_DataCollectionRule_${timeStamp}'
   scope: resourceGroup(resourceGroupMonitoring)
   params: {
+    dataCollectionEndpointId: dataCollectionEndpoint.outputs.resourceId
     LogAWorkspaceId: logAnalyticsWorkspace.outputs.ResourceId
     location: location
     NameConv: dataCollectionRulesNameConv
@@ -47,7 +48,7 @@ module vmInsightsDataCollectionRules 'vmInsightsDataCollectionRules.bicep' = {
   }
 }
 
-module dataCollectionEndpoint 'dataCollectionEndpoint.bicep' = if (!empty(securityDataCollectionRulesResourceId)) {
+module dataCollectionEndpoint 'dataCollectionEndpoint.bicep' = {
   name: 'DataCollectionEndpoint_${timeStamp}'
   scope: resourceGroup(resourceGroupMonitoring)
   params: {
@@ -58,7 +59,7 @@ module dataCollectionEndpoint 'dataCollectionEndpoint.bicep' = if (!empty(securi
   }
 }
 
-output dataCollectionEndpointResourceId string = !empty(securityDataCollectionRulesResourceId) ? dataCollectionEndpoint.outputs.resourceId : ''
+output dataCollectionEndpointResourceId string = dataCollectionEndpoint.outputs.resourceId
 output avdInsightsDataCollectionRulesResourceId string = avdInsightsDataCollectionRules.outputs.dataCollectionRulesId
 output vmInsightsDataCollectionRulesResourceId string = vmInsightsDataCollectionRules.outputs.dataCollectionRulesId
 output logAnalyticsWorkspaceResourceId string = logAnalyticsWorkspace.outputs.ResourceId
