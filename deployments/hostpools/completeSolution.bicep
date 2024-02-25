@@ -11,12 +11,12 @@ If this is specified, then the "centralizedAVDManagement" parameter determines h
 ''')
 param businessUnitIdentifier string = ''
 
-@description('''Conditional. When the "businessUnitIdentifier" parameter is not empty, this parameter determines if the AVD Management Resource Group and associated resources
-are created in a centralized resource group (does not include "businessUnitIdentifier" in the name) and management resources are named accordingly or if a Business unit
-specific AVD management resource group is created and management resources are named accordingly.
+@description('''Conditional. When the "businessUnitIdentifier" parameter is not empty, this parameter determines if the AVD Monitoring Resource Group and associated resources
+are created in a centralized resource group (does not include "businessUnitIdentifier" in the name) and monitoring resources are named accordingly or if a Business unit
+specific AVD management resource group is created and monitoring resources are named accordingly.
 If the "businessUnitIdentifier" parameter is left empty ("") then this value has no effect.
 ''')
-param centralizedAVDManagement bool = false
+param centralizedAVDMonitoring bool = false
 
 @maxLength(10)
 @description('An identifier used to distinquish each host pool. This can represent the user or use case.')
@@ -160,8 +160,11 @@ param fslogixContainerType string = 'ProfileContainer'
 @description('Enable an fslogix storage option to manage user profiles for the AVD session hosts. The selected service & SKU should provide sufficient IOPS for all of your users. https://docs.microsoft.com/en-us/azure/architecture/example-scenario/wvd/windows-virtual-desktop-fslogix#performance-requirements')
 param fslogixStorageService string = 'AzureFiles Standard'
 
+@description('Optional. Enable Automatic File Share Quota Increase for Azure Files Premium.')
+param enableIncreaseQuotaAutomation bool = false
+
 @description('Configure FSLogix agent on the session hosts via local registry keys.')
-param fslogixConfigureSessionHosts bool = true
+param fslogixConfigureSessionHosts bool = false
 
 @description('Optional. The name of the blob that contains the FSLogix Configuration Script.')
 param fslogixConfigurationBlobName string = 'FSLogix-Configure.zip'
@@ -232,6 +235,48 @@ param hostPoolValidationEnvironment bool = false
 @description('An array of Security Principals with their object IDs and display names to assign to the AVD Application Group and FSLogix Storage.')
 param securityPrincipals array = []
 
+@description('Determines if the scaling plan is deployed to the host pool.')
+param deployScalingPlan bool = false
+
+@description('The tag used to exclude virtual machines from the scaling plan.')
+param scalingPlanExclusionTag string = ''
+
+@description('The scaling plan weekday ramp up schedule')
+param scalingPlanRampUpSchedule object = {
+  startTime: '8:00'
+  minimumHostsPct: 20
+  capacityThresholdPct: 60
+  loadBalancingAlgorithm: 'DepthFirst'
+}
+
+@description('The scaling plan weekday peak schedule.')
+param scalingPlanPeakSchedule object = {
+  startTime: '9:00'
+  loadBalancingAlgorithm: 'DepthFirst'
+}
+
+@description('The scaling plan weekday rampdown schedule.')
+param scalingPlanRampDownSchedule object = {
+  startTime: '5:00'
+  minimumHostsPct: 10
+  capacityThresholdPct: 90
+  loadBalancingAlgorithm: 'DepthFirst'
+}
+
+@description('The scaling plan weakday off peak schedule.')
+param scalingPlanOffPeakSchedule object = {
+  startTime: '20:00'
+  loadBalancingAlgorithm: 'DepthFirst'
+}
+
+@description('Determines if the scaling plan will forcefully log off users when scaling down.')
+param scalingPlanForceLogoff bool = false
+
+@description('The number of minutes to wait before forcefully logging off users when scaling down.')
+param scalingPlanMinsBeforeLogoff int = 0
+
+// Session Host/VM Configuration
+
 @maxValue(5000)
 @minValue(0)
 @description('The number of session hosts to deploy in the host pool. Ensure you have the approved quota to deploy the desired count.')
@@ -241,8 +286,6 @@ param sessionHostCount int = 1
 @minValue(0)
 @description('The starting number for the session hosts. This is important when adding virtual machines to ensure an update deployment is not performed on an exiting, active session host.')
 param sessionHostIndex int = 1
-
-// Session Host/VM Configuration
 
 @allowed([
   'availabilitySets'
@@ -345,8 +388,8 @@ param virtualMachineSize string = 'Standard_D4ads_v5'
 param virtualMachineNamePrefix string
 
 // Monitoring Configuration
-@description('Deploys the required monitoring resources to enable AVD Insights and monitor features in the automation account.')
-param enableInsights bool = true
+@description('Deploys the required monitoring resources to enable AVD and VM Insights and monitor features in the automation account.')
+param enableMonitoring bool = true
 
 @maxValue(730)
 @minValue(30)
@@ -388,7 +431,7 @@ var artifactsUri = 'https://${artifactsStorageAccountName}.blob.${environment().
 var locationVirtualMachines = vmVirtualNetwork.location
 var confidentialVMOSDiskEncryptionType = confidentialVMOSDiskEncryption ? 'DiskWithVMGuestState' : 'VMGuestStateOnly'
 
-var resourceGroupsCount = 3 + (fslogixStorageService == 'None' ? 0 : 1) + (avdPrivateLink ? 1 :0)
+var resourceGroupsCount = 4 + (fslogixStorageService == 'None' ? 0 : 1) + (avdPrivateLink ? 1 :0)
 
 var securityType = virtualMachineSecurityType == 'Standard' ? '' : virtualMachineSecurityType
 
@@ -409,7 +452,7 @@ module resourceNames 'modules/resourceNames.bicep' = {
   params: {
     environmentShortName: environmentShortName
     businessUnitIdentifier: businessUnitIdentifier
-    centralizedAVDManagement: centralizedAVDManagement
+    centralizedAVDMonitoring: centralizedAVDMonitoring
     fslogixStorageCustomPrefix: fslogixStorageCustomPrefix
     hostPoolIdentifier: hostPoolIdentifier
     locationControlPlane: locationControlPlane
@@ -427,6 +470,7 @@ module logic 'modules/logic.bicep' = {
     avdAgentInstallersBlobName: avdAgentInstallersBlobName
     avdPrivateLink: avdPrivateLink
     cseMasterScript: cseMasterScript
+    deployScalingPlan: deployScalingPlan
     diskSku: diskSku
     cseBlobNames: cseBlobNames
     domainName: domainName
@@ -446,7 +490,14 @@ module logic 'modules/logic.bicep' = {
     resourceGroupGlobalFeed: resourceNames.outputs.resourceGroupGlobalFeed
     resourceGroupHosts: resourceNames.outputs.resourceGroupHosts
     resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
+    resourceGroupMonitoring: resourceNames.outputs.resourceGroupMonitoring
     resourceGroupStorage: resourceNames.outputs.resourceGroupStorage
+    scalingPlanForceLogoff: scalingPlanForceLogoff
+    scalingPlanMinsBeforeLogoff: scalingPlanMinsBeforeLogoff
+    scalingPlanRampUpSchedule: scalingPlanRampUpSchedule
+    scalingPlanPeakSchedule: scalingPlanPeakSchedule
+    scalingPlanRampDownSchedule: scalingPlanRampDownSchedule
+    scalingPlanOffPeakSchedule: scalingPlanOffPeakSchedule
     securityPrincipals: securityPrincipals
     sessionHostCount: sessionHostCount
     sessionHostIndex: sessionHostIndex
@@ -480,14 +531,13 @@ module management 'modules/management/management.bicep' = {
     azModuleBlobName: azModuleBlobName
     confidentialVMOrchestratorObjectId: confidentialVMOrchestratorObjectId
     confidentialVMOSDiskEncryptionType: confidentialVMOSDiskEncryptionType
-    dataCollectionEndpointName: resourceNames.outputs.dataCollectionEndpointName
-    dataCollectionRulesNameConv: resourceNames.outputs.dataCollectionRulesNameConv
     //diskAccessName: resourceNames.outputs.diskAccessName
     diskEncryptionSetNames: resourceNames.outputs.diskEncryptionSetNames
     diskSku: diskSku
     domainJoinUserPassword: domainJoinUserPassword
     domainJoinUserPrincipalName: domainJoinUserPrincipalName
     domainName: domainName
+    enableIncreaseQuotaAutomation: enableIncreaseQuotaAutomation
     encryptionAtHost: encryptionAtHost
     environmentShortName: environmentShortName
     fslogix: logic.outputs.fslogix
@@ -500,10 +550,8 @@ module management 'modules/management/management.bicep' = {
     keyVaultPrivateDnsZoneResourceId: keyVaultPrivateDnsZoneResourceId
     locationControlPlane: locationControlPlane
     locationVirtualMachines: locationVirtualMachines
-    logAnalyticsWorkspaceName: resourceNames.outputs.logAnalyticsWorkspaceName
-    logAnalyticsWorkspaceRetention: logAnalyticsWorkspaceRetention
-    logAnalyticsWorkspaceSku: logAnalyticsWorkspaceSku
-    enableInsights: enableInsights
+    logAnalyticsWorkspaceResourceId: enableMonitoring ? monitoring.outputs.logAnalyticsWorkspaceResourceId : ''
+    enableMonitoring: enableMonitoring
     netAppVnetResourceId: fslogixNetAppVnetResourceId
     keyManagementDisksAndStorage: keyManagementDisksAndStorage
     privateEndpointSubnetResourceId: managementPrivateEndpointSubnetResourceId
@@ -516,7 +564,6 @@ module management 'modules/management/management.bicep' = {
     resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
     resourceGroupStorage: resourceNames.outputs.resourceGroupStorage
     roleDefinitions: logic.outputs.roleDefinitions
-    securityDataCollectionRulesResourceId: securityDataCollectionRulesResourceId
     securityType: securityType
     sessionHostCount: sessionHostCount
     fslogixStorageSolution: logic.outputs.fslogixStorageSolution
@@ -540,6 +587,24 @@ module management 'modules/management/management.bicep' = {
   ]
 }
 
+module monitoring 'modules/monitoring/monitoring.bicep' = if(enableMonitoring) {
+  name: 'Monitoring_${timeStamp}'
+  params: {
+    dataCollectionEndpointName: resourceNames.outputs.dataCollectionEndpointName
+    dataCollectionRulesNameConv: resourceNames.outputs.dataCollectionRulesNameConv
+    location: locationVirtualMachines
+    logAnalyticsWorkspaceName: resourceNames.outputs.logAnalyticsWorkspaceName
+    logAnalyticsWorkspaceRetention:logAnalyticsWorkspaceRetention
+    logAnalyticsWorkspaceSku: logAnalyticsWorkspaceSku
+    resourceGroupMonitoring: resourceNames.outputs.resourceGroupMonitoring
+    tags: tags
+    timeStamp: timeStamp
+  }
+  dependsOn: [
+    rgs
+  ]
+}
+
 // AVD Control Plane Resources
 // This module deploys the host pool and desktop application group
 module controlPlane 'modules/controlPlane/controlPlane.bicep' = {
@@ -550,6 +615,7 @@ module controlPlane 'modules/controlPlane/controlPlane.bicep' = {
     avdGlobalFeedPrivateDnsZoneResourceId: avdGlobalFeedPrivateDnsZoneResourceId
     avdPrivateDnsZoneResourceId: avdPrivateDnsZoneResourceId
     avdPrivateLink: avdPrivateLink
+    deployScalingPlan: deployScalingPlan
     deploymentUserAssignedIdentityClientId: management.outputs.deploymentUserAssignedIdentityClientId
     desktopApplicationGroupName: resourceNames.outputs.desktopApplicationGroupName
     desktopFriendlyName: desktopFriendlyName
@@ -566,15 +632,16 @@ module controlPlane 'modules/controlPlane/controlPlane.bicep' = {
     identitySolution: identitySolution
     locationControlPlane: locationControlPlane
     locationVirtualMachines: locationVirtualMachines
-    logAnalyticsWorkspaceResourceId: enableInsights ? management.outputs.logAnalyticsWorkspaceResourceId : ''
+    logAnalyticsWorkspaceResourceId: enableMonitoring ? monitoring.outputs.logAnalyticsWorkspaceResourceId : ''
     managementVirtualMachineName: management.outputs.virtualMachineName    
-    enableInsights: enableInsights
+    enableMonitoring: enableMonitoring
     privateEndpointNameConv: resourceNames.outputs.privateEndpointNameConv
     privateEndpointSubnetResourceId: controlPlanePrivateEndpointSubnetResourceId
     resourceGroupControlPlane: resourceNames.outputs.resourceGroupControlPlane
     resourceGroupGlobalFeed: resourceNames.outputs.resourceGroupGlobalFeed
     resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
     roleDefinitions: logic.outputs.roleDefinitions
+    scalingPlanExclusionTag: scalingPlanExclusionTag
     securityPrincipalObjectIds: map(securityPrincipals, item => item.objectId)
     tags: tags
     timeStamp: timeStamp
@@ -582,6 +649,9 @@ module controlPlane 'modules/controlPlane/controlPlane.bicep' = {
     workspaceFriendlyName: workspaceFriendlyName
     workspaceName: resourceNames.outputs.workspaceName
     workspacePublicNetworkAccess: workspacePublicNetworkAccess
+    scalingPlanName: resourceNames.outputs.scalingPlanName
+    scalingPlanSchedules: logic.outputs.scalingPlanSchedules
+    virtualMachinesTimeZone: logic.outputs.timeZone
   }
   dependsOn: [
     rgs
@@ -604,6 +674,7 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (fslogixStorageService != 'N
     domainJoinUserPassword: empty(domainJoinUserPassword) ? contains(identitySolution, 'DomainServices') ? keyVault_Reference.getSecret(domainJoinUserPassword) : '' : domainJoinUserPassword
     domainJoinUserPrincipalName: empty(domainJoinUserPrincipalName) ? contains(identitySolution, 'DomainServices') ? keyVault_Reference.getSecret(domainJoinUserPrincipalName) : '' : domainJoinUserPrincipalName
     domainName: domainName
+    enableIncreaseQuotaAutomation: enableIncreaseQuotaAutomation
     encryptionUserAssignedIdentityResourceId: management.outputs.encryptionUserAssignedIdentityResourceId
     fileShares: logic.outputs.fileShares
     shareSizeInGB: fslogixShareSizeInGB
@@ -679,7 +750,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     cseScriptAddDynParameters: cseScriptAddDynParameters
     cseUris: logic.outputs.cseUris
     customImageResourceId: customImageResourceId
-    dataCollectionEndpointResourceId: management.outputs.dataCollectionEndpointResourceId    
+    dataCollectionEndpointResourceId: enableMonitoring ? monitoring.outputs.dataCollectionEndpointResourceId : ''    
     diskEncryptionSetResourceId: management.outputs.diskEncryptionSetResourceId
     diskNamePrefix: resourceNames.outputs.diskNamePrefix
     diskSku: diskSku
@@ -690,11 +761,10 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     drainMode: drainMode
     drainModeUserAssignedIdentityClientId: management.outputs.deploymentUserAssignedIdentityClientId
     encryptionAtHost: encryptionAtHost
-    fslogixConfigureSessionHosts: fslogixConfigureSessionHosts
+    fslogixConfigureSessionHosts: logic.outputs.fslogixConfigureSessionHosts
     fslogixContainerType: fslogixContainerType
-    fslogixDeployedStorageAccountResourceIds: fslogix.outputs.storageAccountResourceIds
+    fslogixDeployedStorageAccountResourceIds: (fslogixStorageService != 'None') ? fslogix.outputs.storageAccountResourceIds : []
     fslogixExistingStorageAccountResourceIds: fslogixExistingStorageAccountResourceIds
-    fslogixNetAppFileShares: fslogixConfigureSessionHosts ? fslogix.outputs.netAppShares : []
     hostPoolName: controlPlane.outputs.hostPoolName
     identitySolution: identitySolution
     imageOffer: imageOffer
@@ -703,11 +773,11 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     location: vmVirtualNetwork.location
     managementVirtualMachineName: management.outputs.virtualMachineName
     maxResourcesPerTemplateDeployment: logic.outputs.maxResourcesPerTemplateDeployment
-    enableInsights: enableInsights
+    enableMonitoring: enableMonitoring
     networkInterfaceNamePrefix: resourceNames.outputs.networkInterfaceNamePrefix
     ouPath: ouPath
-    avdInsightsDataCollectionRulesResourceId: management.outputs.avdInsightsDataCollectionRulesResourceId
-    vmInsightsDataCollectionRulesResourceId: management.outputs.vmInsightsDataCollectionRulesResourceId
+    avdInsightsDataCollectionRulesResourceId: enableMonitoring ? monitoring.outputs.avdInsightsDataCollectionRulesResourceId : ''
+    vmInsightsDataCollectionRulesResourceId: enableMonitoring ? monitoring.outputs.vmInsightsDataCollectionRulesResourceId : ''
     pooledHostPool: logic.outputs.pooledHostPool
     recoveryServices: recoveryServices
     recoveryServicesVaultName: resourceNames.outputs.recoveryServicesVaultName
@@ -735,7 +805,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
   ]
 }
 
-module cleanUp 'modules/cleanUp/cleanUp.bicep' = {
+module cleanUp 'modules/cleanUp/cleanUp.bicep' = if(!enableIncreaseQuotaAutomation) {
   name: 'CleanUp_${timeStamp}'
   params: {
     location: locationVirtualMachines

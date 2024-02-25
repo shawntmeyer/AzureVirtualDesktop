@@ -1,3 +1,4 @@
+param dataCollectionEndpointId string
 param NameConv string
 param location string
 param LogAWorkspaceId string
@@ -9,6 +10,7 @@ resource dcr 'Microsoft.Insights/dataCollectionRules@2022-06-01' = {
   tags: tags
   kind: 'Windows'
   properties: {
+    dataCollectionEndpointId: dataCollectionEndpointId
     description: 'Data collection rule for VM Insights.'
     dataSources: {
       performanceCounters: [

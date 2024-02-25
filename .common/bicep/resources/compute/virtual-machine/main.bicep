@@ -339,12 +339,12 @@ var accountSasProperties = {
     If the AADJoin Extension is not enabled then we add SystemAssigned to the identityType only if the value of the systemAssignedIdentity parameter is true.
   Second, we determine if User Assigned Identities are assigned to the VM via the userAssignedIdentities parameter.
   Third, we take the outcome of these two values and determine the identityType
-    If the System Identity and User Identities are assigned then the identityType is 'SystemAssigned,UserAssigned'
+    If the System Identity and User Identities are assigned then the identityType is 'SystemAssigned, UserAssigned'
     If only the system Identity is assigned then the identityType is 'SystemAssigned'
     If only user managed Identities are assigned, then the identityType is 'UserAssigned'
     Finally, if no identities are assigned, then the identityType is 'none'.
 */
-var identityType = (extensionAadJoinConfig.enabled ? true : systemAssignedIdentity) ? (!empty(userAssignedIdentities) ? 'SystemAssigned,UserAssigned' : 'SystemAssigned') : (!empty(userAssignedIdentities) ? 'UserAssigned' : 'None')
+var identityType = (extensionAadJoinConfig.enabled ? true : systemAssignedIdentity) ? (!empty(userAssignedIdentities) ? 'SystemAssigned, UserAssigned' : 'SystemAssigned') : (!empty(userAssignedIdentities) ? 'UserAssigned' : 'None')
 
 var identity = identityType != 'None' ? {
   type: identityType

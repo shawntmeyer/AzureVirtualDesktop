@@ -516,67 +516,50 @@ If (Test-Path -Path $TempDir) { Remove-Item -Path $TempDir -Recurse -Force }
 New-Item -Path $TempDir -ItemType Directory -Force | Out-Null
 
 $FsLogixKeys = $DynParameters.FSLogix
-$IdentityProvider = $FSLogixKeys.IdP
 $CloudCache = $FsLogixKeys.CloudCache
-$StorageSolution = $FSLogixKeys.StorageSolution
 Write-Log -message '* Begin Script Parameters *'
 Write-Log -message 'Started Script with the following Dynamic Parameters:'
-Write-Log -message " IdentityProvider = $IdentityProvider"
-Write-Log -message " StorageSolution = $StorageSolution"
 Write-Log -message " CloudCache = $CloudCache"
 
-switch ($StorageSolution) {
-    'AzureNetAppFiles' {
-        [array]$NetAppFileShares = $FSLogix.NetAppFileShares
-        Write-Log -message ' NetAppFileShares ='
-        ForEach ($Share in $NetAppFileShares) { Write-Log -message "  $Share" }
-        [array]$OfficeContainerPaths += "\\$($NetAppFileShares[1])"
-        [array]$ProfileContainerPaths += "\\$($NetAppFileShares[0])"
-        [array]$CloudCacheOfficeContainerPaths += "type=smb,connectionString=\\$($NetAppFileShares[1])"
-        [array]$CloudCacheProfileContainerPaths += "type=smb,connectionString=\\$($NetAppFileShares[0])"
-        Write-Log -message '* End Script Parameters *'
+[array]$StorageAccountNames = $FSLogixKeys.SANames
+Write-Log -message ' Azure Storage Account Names ='
+ForEach ($sa in $StorageAccountNames) { Write-Log -message "  $sa" }
+[array]$StorageAccountKeys = $FSLogixKeys.SAKeys
+if ($null -ne $StorageAccountKeys) { Write-Log -message " $($StorageAccountKeys.Count) storage account keys provided." }
+$StorageAccountSuffix = $FSLogixKeys.SASuffix
+Write-Log -message " Storage Account Suffix = $StorageAccountSuffix"
+[array]$shares = $FSlogixKeys.ShareNames       
+$ProfileShareName = $shares[0]
+Write-Log -message " Profile Container Share Name = $ProfileShareName"
+if ($shares.Count -gt 1) {
+    $OfficeShareName = $shares[1]
+    Write-Log -message " Office Container Share Name = $OfficeShareName"
+}
+Write-Log -message '* End Script Parameters *'
+Write-Log -message '* Calculated Values *'
+For ($i = 0; $i -lt $StorageAccountNames.Count; $i++) {
+    Write-Log -message " Storage Account: $($StorageAccountNames[$i])"
+    $SAFQDN = "$($StorageAccountNames[$i]).file.$StorageAccountSuffix"
+    Write-Log -message "  FQDN: $SAFQDN"
+    If ($StorageAccountKeys) {
+        If ($StorageAccountKeys[$i]) {
+            Write-Log -message '  Storage Key Provided, stored securely in credential manager.'
+            Start-Process -FilePath 'cmdkey.exe' -ArgumentList "/add:$SAFQDN /user:localhost\$($StorageAccountNames[$i]) /pass:$($StorageAccountKeys[$i])" -NoNewWindow -Wait
+        }
     }
-    'AzureFiles' {
-        [array]$StorageAccountNames = $FSLogixKeys.SANames
-        Write-Log -message ' Azure Storage Account Names ='
-        ForEach ($sa in $StorageAccountNames) { Write-Log -message "  $sa" }
-        [array]$StorageAccountKeys = $FSLogixKeys.SAKeys
-        if ($null -ne $StorageAccountKeys) { Write-Log -message " $($StorageAccountKeys.Count) storage account keys provided." }
-        $StorageAccountSuffix = $FSLogixKeys.SASuffix
-        Write-Log -message " Storage Account Suffix = $StorageAccountSuffix"
-        [array]$shares = $FSlogixKeys.ShareNames       
-        $ProfileShareName = $shares[0]
-        Write-Log -message " Profile Container Share Name = $ProfileShareName"
-        if ($shares.Count -gt 1) {
-            $OfficeShareName = $shares[1]
-            Write-Log -message " Office Container Share Name = $OfficeShareName"
-        }
-        Write-Log -message '* End Script Parameters *'
-        Write-Log -message '* Calculated Values *'
-        For ($i = 0; $i -lt $StorageAccountNames.Count; $i++) {
-            Write-Log -message " Storage Account: $($StorageAccountNames[$i])"
-            $SAFQDN = "$($StorageAccountNames[$i]).file.$StorageAccountSuffix"
-            Write-Log -message "  FQDN: $SAFQDN"
-            If ($StorageAccountKeys -and $IdentityProvider -eq 'AAD') {
-                If ($StorageAccountKeys[$i]) {
-                    Write-Log -message '  Storage Key Provided, stored securely in credential manager.'
-                    Start-Process -FilePath 'cmdkey.exe' -ArgumentList "/add:$SAFQDN /user:localhost\$($StorageAccountNames[$i]) /pass:$($StorageAccountKeys[$i])" -NoNewWindow -Wait
-                }
-            }
-            If ($OfficeShareName) {
-                [array]$OfficeContainerPaths += "\\$SAFQDN\$OfficeShareName"
-                [array]$CloudCacheOfficeContainerPaths += "type=smb,connectionString=\\$SAFQDN\$OfficeShareName"
-                Write-Log -message "  Office Container Share Path: \\$SAFQDN\$OfficeShareName"
-            }
-            If ($ProfileShareName) {
-                [array]$ProfileContainerPaths += "\\$SAFQDN\$ProfileShareName"
-                [array]$CloudCacheProfileContainerPaths += "type=smb,connectionString=\\$SAFQDN\$ProfileShareName"
-                Write-Log -message "  Profile Container Share Path: \\$SAFQDN\$ProfileShareName"
-            }
-        }
-        Write-Log -message '* End Calculated Values *'
+    If ($OfficeShareName) {
+        [array]$OfficeContainerPaths += "\\$SAFQDN\$OfficeShareName"
+        [array]$CloudCacheOfficeContainerPaths += "type=smb,connectionString=\\$SAFQDN\$OfficeShareName"
+        Write-Log -message "  Office Container Share Path: \\$SAFQDN\$OfficeShareName"
+    }
+    If ($ProfileShareName) {
+        [array]$ProfileContainerPaths += "\\$SAFQDN\$ProfileShareName"
+        [array]$CloudCacheProfileContainerPaths += "type=smb,connectionString=\\$SAFQDN\$ProfileShareName"
+        Write-Log -message "  Profile Container Share Path: \\$SAFQDN\$ProfileShareName"
     }
 }
+Write-Log -message '* End Calculated Values *'
+   
 
 [array]$defenderShareExclusionPaths = $($OfficeContainerPaths; $ProfileContainerPaths)
 
@@ -677,19 +660,15 @@ $Settings += @(
         PropertyType = 'String'
         Value        = 'VHDX'
     }
-)
 
-If ($IdentityProvider -eq 'AAD') {
-    $Settings += @(
-        # Attach the users VHD(x) as the computer: https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=profiles#accessnetworkascomputerobject
-        [PSCustomObject]@{
-            Name         = 'AccessNetworkAsComputerObject'
-            Path         = 'HKLM:\SOFTWARE\FSLogix\Profiles'
-            PropertyType = 'DWord'
-            Value        = 1
-        }
-    )
-}
+    # Attach the users VHD(x) as the computer: https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=profiles#accessnetworkascomputerobject
+    [PSCustomObject]@{
+        Name         = 'AccessNetworkAsComputerObject'
+        Path         = 'HKLM:\SOFTWARE\FSLogix\Profiles'
+        PropertyType = 'DWord'
+        Value        = 1
+    }
+)
 
 If ($CloudCache) {
     $Settings += @(
@@ -804,19 +783,15 @@ If ($OfficeContainerPaths) {
             PropertyType = 'String'
             Value        = 'VHDX'
         }
-    )
 
-    If ($IdentityProvider -eq 'AAD') {
-        $Settings += @(
-            # Attach the users VHD(x) as the computer: https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=odfc#accessnetworkascomputerobject-1
-            [PSCustomObject]@{
-                Name         = 'AccessNetworkAsComputerObject'
-                Path         = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'
-                PropertyType = 'DWord'
-                Value        = 1
-            }
-        )
-    }
+        # Attach the users VHD(x) as the computer: https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=odfc#accessnetworkascomputerobject-1
+        [PSCustomObject]@{
+            Name         = 'AccessNetworkAsComputerObject'
+            Path         = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'
+            PropertyType = 'DWord'
+            Value        = 1
+        }
+    )
 
     If ($CloudCache) {
         $Settings += @(
@@ -850,19 +825,6 @@ If ($OfficeContainerPaths) {
     }       
 }
 
-If ($IdentityProvider -eq 'AADKERB') {
-    # Support for Azure Files Azure AD Kerberos Authentication for Hybrid Identities
-    Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath 'SYSTEM\CurrentControlSet\Control\Lsa\Kerberos\Parameters' -RegistryValue 'CloudKerberosTicketRetrievalEnabled' -RegistryData 1 -RegistryType DWORD -outfileprefix $appName -Verbose
-    $Settings += @(        
-        [PSCustomObject]@{
-            Name         = 'LoadCredKeyFromProfile'
-            Path         = 'HKLM:\SOFTWARE\Policies\Microsoft\AzureADAccount'
-            PropertyType = 'DWord'
-            Value        = 1
-        }
-    )
-}
-    
 If (Get-InstalledApplication 'Teams') {
     $customRedirFolder = "$env:ProgramFiles\FSLogix\CustomRedirections"
     If (-not (Test-Path $customRedirFolder )) {

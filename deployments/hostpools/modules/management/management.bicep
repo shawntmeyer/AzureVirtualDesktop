@@ -11,8 +11,6 @@ param azModuleBlobName string
 param locationControlPlane string
 param confidentialVMOrchestratorObjectId string
 param confidentialVMOSDiskEncryptionType string
-param dataCollectionEndpointName string
-param dataCollectionRulesNameConv string
 //param diskAccessName string
 param diskEncryptionSetNames object
 param diskSku string
@@ -21,6 +19,7 @@ param domainJoinUserPassword string
 @secure()
 param domainJoinUserPrincipalName string
 param domainName string
+param enableIncreaseQuotaAutomation bool
 param encryptionAtHost bool
 param environmentShortName string
 param fslogix bool
@@ -33,10 +32,8 @@ param keyVaultNames object
 param keyVaultPrivateDnsZoneResourceId string
 param privateEndpointSubnetResourceId string
 param locationVirtualMachines string
-param logAnalyticsWorkspaceName string
-param logAnalyticsWorkspaceRetention int
-param logAnalyticsWorkspaceSku string
-param enableInsights bool
+param logAnalyticsWorkspaceResourceId string
+param enableMonitoring bool
 param netAppVnetResourceId string
 param keyManagementDisksAndStorage string
 param privateEndpoint bool
@@ -48,7 +45,6 @@ param resourceGroupHosts string
 param resourceGroupManagement string
 param resourceGroupStorage string
 param roleDefinitions object
-param securityDataCollectionRulesResourceId string
 param securityType string
 param sessionHostCount int
 param fslogixStorageAccountNamePrefix string
@@ -72,7 +68,7 @@ var cpuCountMax = contains(hostPoolType, 'Pooled') ? 32 : 128
 var cpuCountMin = contains(hostPoolType, 'Pooled') ? 4 : 2
 
 var artifactsUserAssignedIdentityName = replace(userAssignedIdentityNameConv, 'uaiPurpose', 'artifacts')
-var deploymentUserAssignedIdentityName = replace(userAssignedIdentityNameConv, 'uaiPurpose', 'deployment')
+var deploymentUserAssignedIdentityName = replace(userAssignedIdentityNameConv, 'uaiPurpose', 'avd-deployment')
 
 var confidentialVMOSDiskEncryption = confidentialVMOSDiskEncryptionType == 'DiskWithVMGuestState' ? true : false
 var diskEncryptionSetEncryptionType = confidentialVMOSDiskEncryption ? 'ConfidentialVmEncryptedWithCustomerKey' : ( keyManagementDisksAndStorage == 'CustomerManaged' ? 'EncryptionAtRestWithCustomerKey' : 'EncryptionAtRestWithPlatformAndCustomerKeys' )
@@ -343,72 +339,23 @@ module customerManagedKeys 'customerManagedKeys.bicep' = if (keyManagementDisksA
   ]
 }
 
-// enableInsights Resources for AVD Insights
-module logAnalyticsWorkspace 'logAnalyticsWorkspace.bicep' = if (enableInsights) {
-  name: 'LogAnalytics_${timeStamp}'
-  scope: resourceGroup(resourceGroupManagement)
-  params: {
-    logAnalyticsWorkspaceName: logAnalyticsWorkspaceName
-    logAnalyticsWorkspaceRetention: logAnalyticsWorkspaceRetention
-    logAnalyticsWorkspaceSku: logAnalyticsWorkspaceSku
-    location: locationControlPlane
-    tags: contains(tags, 'Microsoft.OperationalInsights/workspaces') ? tags['Microsoft.OperationalInsights/workspaces'] : {}
-  }
-}
-
-// Data Collection Rule for AVD Insights required for the Azure Monitor Agent
-module avdInsightsDataCollectionRules 'avdInsightsDataCollectionRules.bicep' = if (enableInsights) {
-  name: 'AVDInsights_DataCollectionRule_${timeStamp}'
-  scope: resourceGroup(resourceGroupManagement)
-  params: {
-    LogAWorkspaceId: logAnalyticsWorkspace.outputs.ResourceId
-    location: locationControlPlane
-    NameConv: dataCollectionRulesNameConv
-    tags: contains(tags, 'Microsoft.Insights/dataCollectionRules') ? tags['Microsoft.Insights/dataCollectionRules'] : {}
-  }
-}
-
-// Data Collection Rule for VM Insights required for the Azure Monitor Agent
-module vmInsightsDataCollectionRules 'vmInsightsDataCollectionRules.bicep' = if (enableInsights) {
-  name: 'VMInsights_DataCollectionRule_${timeStamp}'
-  scope: resourceGroup(resourceGroupManagement)
-  params: {
-    LogAWorkspaceId: logAnalyticsWorkspace.outputs.ResourceId
-    location: locationControlPlane
-    NameConv: dataCollectionRulesNameConv
-    tags: contains(tags, 'Microsoft.Insights/dataCollectionRules') ? tags['Microsoft.Insights/dataCollectionRules'] : {}
-  }
-}
-
-module dataCollectionEndpoint 'dataCollectionEndpoint.bicep' = if (enableInsights || !empty(securityDataCollectionRulesResourceId)) {
-  name: 'DataCollectionEndpoint_${timeStamp}'
-  scope: resourceGroup(resourceGroupManagement)
-  params: {
-    location: locationControlPlane
-    tags: contains(tags, 'Microsoft.Insights/dataCollectionEndpoints') ? tags['Microsoft.Insights/dataCollectionEndpoints'] : {}
-    name: dataCollectionEndpointName
-    publicNetworkAccess: 'Enabled'
-  }
-}
 
 // Automation Account required for the Auto Increase Premium File Share Quota solution
-module automationAccount 'automationAccount.bicep' = if (fslogixStorageService == 'AzureFiles Premium') {
+module automationAccount 'automationAccount.bicep' = if (enableIncreaseQuotaAutomation && fslogixStorageService == 'AzureFiles Premium') {
   name: 'AutomationAccount_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
     automationAccountName: automationAccountName
     location: locationVirtualMachines
-    logAnalyticsWorkspaceResourceId: enableInsights ? logAnalyticsWorkspace.outputs.ResourceId : ''
-    enableInsights: enableInsights
+    logAnalyticsWorkspaceResourceId: enableMonitoring ? logAnalyticsWorkspaceResourceId : ''
+    enableMonitoring: enableMonitoring
     tags: tags
     automationAccountPrivateDnsZoneResourceId: automationAccountPrivateDnsZoneResourceId
     privateEndpoint: privateEndpoint
     privateEndpointNameConv: privateEndpointNameConv
     subnetResourceId: privateEndpointSubnetResourceId
+    virtualMachineName: virtualMachine.outputs.Name
   }
-  dependsOn: [
-    logAnalyticsWorkspace
-  ]
 }
 
 module recoveryServicesVault 'recoveryServicesVault.bicep' = if (recoveryServices) {
@@ -416,25 +363,22 @@ module recoveryServicesVault 'recoveryServicesVault.bicep' = if (recoveryService
   scope: resourceGroup(resourceGroupManagement)
   params: {
     fslogix: fslogix
+    hostPoolType: hostPoolType
     location: locationVirtualMachines
     recoveryServicesVaultName: recoveryServicesVaultName
     fslogixStorageSolution: fslogixStorageSolution
-    tags: contains(tags, 'Microsoft.recoveryServices/vaults') ? tags['Microsoft.recoveryServices/vaults'] : {}
+    tags: tags
     timeZone: timeZone
   }
 }
 
 output artifactsUserAssignedIdentityClientId string = artifactsUserAssignedIdentityClientId
 output artifactsUserAssignedIdentityResourceId string = empty(artifactsUserAssignedIdentityResourceId) ? artifactsUserAssignedIdentity.outputs.resourceId : existingArtifactsUserAssignedIdentity.id
-output dataCollectionEndpointResourceId string = enableInsights ? dataCollectionEndpoint.outputs.resourceId : ''
-output avdInsightsDataCollectionRulesResourceId string = enableInsights ? avdInsightsDataCollectionRules.outputs.dataCollectionRulesId : ''
-output vmInsightsDataCollectionRulesResourceId string = enableInsights ? vmInsightsDataCollectionRules.outputs.dataCollectionRulesId : ''
 output diskEncryptionSetResourceId string = keyManagementDisksAndStorage != 'PlatformManaged' ? customerManagedKeys.outputs.diskEncryptionSetResourceId : ''
 output encryptionUserAssignedIdentityResourceId string = keyManagementDisksAndStorage != 'PlatformManaged' ? customerManagedKeys.outputs.encryptionUserAssignedIdentityResourceId : ''
 output existingWorkspace bool = validations.outputs.value.existingWorkspace == 'true' ? true : false
 output existingGlobalWorkspace bool = validations.outputs.value.existingGlobalWorkspace == 'true' ? true : false
 output storageEncryptionKeyKeyVaultUri string = keyManagementDisksAndStorage != 'PlatformManaged' ? customerManagedKeys.outputs.storagestorageEncryptionKeyKeyVaultUri : ''
-output logAnalyticsWorkspaceResourceId string = enableInsights ? logAnalyticsWorkspace.outputs.ResourceId : ''
 output deploymentUserAssignedIdentityClientId string = deploymentUserAssignedIdentity.outputs.clientId
 output deploymentUserAssignedIdentityResourceId string = deploymentUserAssignedIdentity.outputs.resourceId
 output storageAccountEncryptionKeyName string = keyManagementDisksAndStorage != 'PlatformManaged' ? customerManagedKeys.outputs.storageKeyName : ''

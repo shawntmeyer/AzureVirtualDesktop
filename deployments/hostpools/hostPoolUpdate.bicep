@@ -71,13 +71,7 @@ param ouPath string = ''
 ])
 param fslogixContainerType string = 'ProfileContainer'
 
-@description('''Optional. The UNC paths for NetApp File Shares that support FSLogix.
-Only required when "fslogixConfigureSessionHosts" is true and "fslogixStorageService" is AzureNetAppFiles Premium or Standard.
-If an office container path is specified, then ensure that the profile path is first.
-Do NOT include the trailing "\".''')
-param fslogixNetAppFileShares array = []
-
-@description('Configure FSLogix agent on the session hosts via local registry keys.')
+@description('Configure FSLogix agent on the session hosts via local registry keys for Entra Id identity only.')
 param fslogixConfigureSessionHosts bool = true
 
 @description('Optional. The name of the blob that contains the FSLogix Configuration Script.')
@@ -188,8 +182,8 @@ param virtualMachineSize string = 'Standard_D4ads_v5'
 param virtualMachineNamePrefix string
 
 // Monitoring Configuration
-@description('Deploys the required enableInsights resources to enable AVD Insights and monitor features in the automation account.')
-param enableInsights bool = true
+@description('Deploys the required Monitoring agents on the VMs to enable AVD and VM Insights.')
+param enableMonitoring bool = true
 
 @description('Optional. The resource ID of the Data Collection Endpoint located in the same region as the Virtual Machines.')
 param dataCollectionEndpointResourceId string = ''
@@ -268,9 +262,9 @@ module resourceNames 'modules/resourceNames.bicep' = {
   params: {
     environmentShortName: environmentShortName
     businessUnitIdentifier: ''
-    centralizedAVDManagement: false
-    fslogixStorageCustomPrefix: ''
-    hostPoolIdentifier: ''
+    centralizedAVDMonitoring: false
+    fslogixStorageCustomPrefix: 'notused'
+    hostPoolIdentifier: 'notused'
     locationControlPlane: locationVirtualMachines
     locationVirtualMachines: locationVirtualMachines
     nameConvResTypeAtEnd: nameConvResTypeAtEnd
@@ -312,6 +306,7 @@ module logic 'modules/logic.bicep' = {
     fslogixStorageCount: 1
     virtualMachineNamePrefix: virtualMachineNamePrefix
     virtualMachineSize: virtualMachineSize
+    resourceGroupMonitoring: resourceNames.outputs.resourceGroupMonitoring
   }
 }
 
@@ -344,11 +339,10 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     drainMode: false
     drainModeUserAssignedIdentityClientId: ''
     encryptionAtHost: encryptionAtHost
-    fslogixConfigureSessionHosts: fslogixConfigureSessionHosts
+    fslogixConfigureSessionHosts: logic.outputs.fslogixConfigureSessionHosts
     fslogixContainerType: fslogixContainerType
     fslogixDeployedStorageAccountResourceIds: []
     fslogixExistingStorageAccountResourceIds: fslogixExistingStorageAccountResourceIds
-    fslogixNetAppFileShares: fslogixNetAppFileShares
     hostPoolName: hostPoolName
     imageOffer: imageOffer
     imagePublisher: imagePublisher
@@ -357,7 +351,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     location: vmVirtualNetwork.location
     managementVirtualMachineName: ''
     maxResourcesPerTemplateDeployment: logic.outputs.maxResourcesPerTemplateDeployment
-    enableInsights: enableInsights
+    enableMonitoring: enableMonitoring
     networkInterfaceNamePrefix: networkInterfaceNamePrefix
     ouPath: ouPath
     pooledHostPool: hostPool.properties.hostPoolType == 'Pooled' ? true : false

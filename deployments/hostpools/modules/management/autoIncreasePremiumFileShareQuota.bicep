@@ -13,23 +13,26 @@ param tags object
 param timeStamp string
 param timeZone string
 
+var runbookFileName = 'Set-FileShareScaling.ps1'
+var scriptFileName = 'Set-AutomationRunbook.ps1'
 var subscriptionId = subscription().subscriptionId
 
 resource automationAccount 'Microsoft.Automation/automationAccounts@2022-08-08' existing = {
   name: automationAccountName
 }
 
-module runbook 'runbook.bicep' = {
+module runbook '../common/customScriptExtensions.bicep' = {
   name: 'Runbook_QuotaScaling_${timeStamp}'
   params: {
-    artifactsUri: artifactsUri
-    automationAccountName: automationAccountName
-    blobName: 'Set-FileShareScaling.ps1'
+    fileUris: [
+      '${artifactsUri}${runbookFileName}'
+      '${artifactsUri}${scriptFileName}'
+    ]
     location: location
-    purpose: 'quota-scaling'
-    tags: tags
-    userAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
-    artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
+    parameters: '-AutomationAccountName ${automationAccountName} -Environment ${environment().name} -ResourceGroupName ${resourceGroup().name} -RunbookFileName ${runbookFileName} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentityClientId}'
+    scriptFileName: scriptFileName
+    tags: contains(tags, 'Microsoft.Compute/virtualMachines') ? tags['Microsoft.Compute/virtualMachines'] : {}
+    userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
     virtualMachineName: managementVirtualMachineName
   }
 }

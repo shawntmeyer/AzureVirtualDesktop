@@ -41,8 +41,7 @@ param customImageResourceId string
 param location string
 param managementVirtualMachineName string
 param maxResourcesPerTemplateDeployment int
-param enableInsights bool
-param fslogixNetAppFileShares array
+param enableMonitoring bool
 param networkInterfaceNamePrefix string
 param ouPath string
 param pooledHostPool bool
@@ -74,13 +73,13 @@ var tagsNetworkInterfaces = union({'cm-resource-parent': '${subscription().id}}/
 var tagsRecoveryServicesVault = union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroupControlPlane}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'}, contains(tags, 'Microsoft.recoveryServices/vaults') ? tags['Microsoft.recoveryServices/vaults'] : {})
 var tagsVirtualMachines = union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroupControlPlane}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'}, contains(tags, 'Microsoft.Compute/virtualMachines') ? tags['Microsoft.Compute/virtualMachines'] : {})
 
-module fslogixStorageAccountResourceIds 'fslogix/resolveStorageAccountResourceIds.bicep' = if(fslogixConfigureSessionHosts && (!empty(fslogixDeployedStorageAccountResourceIds) || empty(fslogixExistingStorageAccountResourceIds))) {
+module fslogixStorageAccountResourceIds 'fslogix/resolveStorageAccountResourceIds.bicep' = if(fslogixConfigureSessionHosts && (!empty(fslogixDeployedStorageAccountResourceIds) || !empty(fslogixExistingStorageAccountResourceIds))) {
   name: 'Fslogix_Storage_Logic_${timeStamp}'
   params: {
     fslogixContainerType: fslogixContainerType
-    identitySolution: identitySolution
     deployedStorageAccountResourceIds: fslogixDeployedStorageAccountResourceIds
     existingStorageAccountResourceIds: fslogixExistingStorageAccountResourceIds
+    location: location
   }
 }
 
@@ -139,15 +138,14 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     encryptionAtHost: encryptionAtHost
     fslogixConfigureSessionHosts: fslogixConfigureSessionHosts
     fslogixContainerType: fslogixContainerType
-    fslogixStorageAccountResourceIds: fslogixConfigureSessionHosts ? fslogixStorageAccountResourceIds.outputs.storageAccountResourceIds : []
+    fslogixStorageAccountResourceIds: fslogixConfigureSessionHosts && (!empty(fslogixDeployedStorageAccountResourceIds) || !empty(fslogixExistingStorageAccountResourceIds)) ? fslogixStorageAccountResourceIds.outputs.storageAccountResourceIds : []
     hostPoolName: hostPoolName
     imageOffer: imageOffer
     imagePublisher: imagePublisher
     imageSku: imageSku
     location: location
     managementVirtualMachineName: managementVirtualMachineName
-    enableInsights: enableInsights
-    fslogixNetAppFileShares: fslogixNetAppFileShares
+    enableMonitoring: enableMonitoring
     networkInterfaceNamePrefix: networkInterfaceNamePrefix
     ouPath: ouPath
     avdInsightsDataCollectionRulesResourceId: avdInsightsDataCollectionRulesResourceId

@@ -1,14 +1,16 @@
+param dataCollectionEndpointId string
 param NameConv string
 param location string
 param LogAWorkspaceId string
 param tags object
 
-resource dcr 'Microsoft.Insights/dataCollectionRules@2021-04-01' = {
+resource dcr 'Microsoft.Insights/dataCollectionRules@2022-06-01' = {
   name: 'microsoft-avdi-${NameConv}'
   location: location
   tags: tags
   kind: 'Windows'
   properties: {
+    dataCollectionEndpointId: dataCollectionEndpointId
     dataSources: {
       performanceCounters: [
         {

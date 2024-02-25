@@ -39,8 +39,8 @@
                                     "toolTip": "Input a 10 character max identifier for the business unit utilizing AVD in your tenant.",
                                     "constraints": {
                                         "required": false,
-                                        "regex": "^[a-z0-9A-Z]{1,10}$",
-                                        "validationMessage": "The value must be 1 - 10 characters in length and must be alphanumeric."
+                                        "regex": "^[a-z0-9A-Z]{1,8}$",
+                                        "validationMessage": "The value must be 1 - 8 characters in length and must be alphanumeric."
                                     }
                                 },
 								{
@@ -48,11 +48,23 @@
                                     "type": "Microsoft.Common.TextBox",
                                     "label": "HostPool Identifier",
                                     "toolTip": "Input a 10 character max identifier for the hostpool created by this solution.",
-                                    "constraints": {
-                                        "required": false,
-                                        "regex": "^[a-z0-9A-Z]{1,10}$",
-                                        "validationMessage": "The value must be 1 - 10 characters in length and must be alphanumeric."
-                                    }
+									"constraints": {
+										"required": true,
+										"validations": [
+											{
+												"regex": "^[a-z0-9A-Z]+$",
+												"message": "Only alphanumeric characters are allowed."
+											},
+											{
+												"isValid": "[if(empty(steps('basics').naming.businessUnitIdentifier), not(greater(length(steps('basics').naming.hostPoolIdentifier), 10)), true)]",
+												"message": "The length cannot exceed 10 characters."
+											},
+											{
+												"isValid": "[if(not(empty(steps('basics').naming.businessUnitIdentifier)), not(greater(length(steps('basics').naming.hostPoolIdentifier), sub(10, length(steps('basics').naming.businessUnitIdentifier)))), true)]",
+												"message": "[concat('The length cannot exceed ', string(sub(10, length(steps('basics').naming.businessUnitIdentifier))), ' characters, which equals 10 - length of the Business Unit Identifier.')]"
+											}
+										]
+									}
                                 },
                                 {
                                     "name": "environmentShortName",
@@ -84,11 +96,11 @@
                                     }
                                 },
 								{
-									"name": "centralizedAVDManagement",
+									"name": "centralizedAVDMonitoring",
 									"type": "Microsoft.Common.OptionsGroup",
-									"label": "Centralized AVD Management",
+									"label": "Centralized AVD Monitoring",
 									"defaultValue": "Yes",
-									"toolTip": "When the 'businessUnitIdentifier' parameter is not empty, this parameter determines if the AVD Management Resource Group and associated resources are created in a centralized resource group (does not include 'Business Unit Identifier' in the name) and management resources are named accordingly or if a Business unit specific AVD management resource group is created and management resources are named accordingly. If the 'Business Unit Identifier' value is left empty, then this value has no effect.",
+									"toolTip": "When the 'businessUnitIdentifier' parameter is not empty, this parameter determines if the AVD Monitoring Resource Group and associated resources are created in a centralized resource group (does not include 'Business Unit Identifier' in the name) and monitoring resources are named accordingly or if a Business unit specific AVD monitoring resource group is created and monitoring resources are named accordingly. If the 'Business Unit Identifier' value is left empty, then this value has no effect.",
 									"constraints": {
 										"allowedValues": [
 											{
@@ -410,30 +422,30 @@
                         },
 						{
 							"name": "avdPrivateLink",
-							"type": "Microsoft.Common.OptionsGroup",
-							"label": "Enable AVD Private Link",
-							"defaultValue": "No",
-							"toolTip": "",
-							"constraints": {
-								"allowedValues": [
-									{
-										"label": "Yes",
-										"value": true
-									},
-									{
-										"label": "No",
-										"value": false
-									}
-								],
-								"required": true
-							},
-							"visible": true
-						},
-						{
-							"name": "privateLink",
 							"type": "Microsoft.Common.Section",
 							"label": "AVD Private Link",
 							"elements": [
+								{
+									"name": "enablePrivateLink",
+									"type": "Microsoft.Common.OptionsGroup",
+									"label": "Enable AVD Private Link",
+									"defaultValue": "No",
+									"toolTip": "",
+									"constraints": {
+										"allowedValues": [
+											{
+												"label": "Yes",
+												"value": true
+											},
+											{
+												"label": "No",
+												"value": false
+											}
+										],
+										"required": true
+									},
+									"visible": true
+								},
 								{
 									"name": "feedDiscoveryPublicNetworkAccess",
 									"type": "Microsoft.Common.DropDown",
@@ -455,7 +467,7 @@
 										],
 										"required": true
 									},
-									"visible": true
+									"visible": "[steps('controlPlane').avdPrivateLink.enablePrivateLink]"
 								},
 								{
 									"name": "feedDownloadPublicNetworkAccess",
@@ -477,7 +489,7 @@
 										],
 										"required": true
 									},
-									"visible": true
+									"visible": "[steps('controlPlane').avdPrivateLink.enablePrivateLink]"
 								},
 								{
 									"name": "hostPoolPublicNetworkAccess",
@@ -507,7 +519,7 @@
 										],
 										"required": true
 									},
-									"visible": true
+									"visible": "[steps('controlPlane').avdPrivateLink.enablePrivateLink]"
 								},
 								{
 									"name": "virtualNetworksApi",
@@ -525,16 +537,16 @@
                                     "toolTip": "Select the virtual network where the AVD Private Link Private Endpoints will be created.",
                                     "constraints": {
                                         "required": true,
-                                        "allowedValues": "[map(filter(steps('controlPlane').privateLink.virtualNetworksApi.value, (item) => equals(item.location, steps('basics').locationControlPlane.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
+                                        "allowedValues": "[map(filter(steps('controlPlane').avdPrivateLink.virtualNetworksApi.value, (item) => equals(item.location, steps('basics').locationControlPlane.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
                                     },
-									"visible": "[or(not(equals(steps('controlPlane').privateLink.feedDiscoveryPublicNetworkAccess, 'Enabled')), not(equals(steps('controlPlane').privateLink.feedDownloadPublicNetworkAccess, 'Enabled')), not(equals(steps('controlPlane').privateLink.hostPoolPublicNetworkAccess, 'Enabled')))]"
+									"visible": "[and(steps('controlPlane').avdPrivateLink.enablePrivateLink, or(not(equals(steps('controlPlane').avdPrivateLink.feedDiscoveryPublicNetworkAccess, 'Enabled')), not(equals(steps('controlPlane').avdPrivateLink.feedDownloadPublicNetworkAccess, 'Enabled')), not(equals(steps('controlPlane').avdPrivateLink.hostPoolPublicNetworkAccess, 'Enabled'))))]"
                                 },
                                 {
                                     "name": "subnetsApi",
                                     "type": "Microsoft.Solutions.ArmApiControl",
                                     "request": {
                                         "method": "GET",
-                                        "path": "[concat(steps('controlPlane').privateLink.virtualNetwork, '/subnets?api-version=2022-05-01')]"
+                                        "path": "[concat(steps('controlPlane').avdPrivateLink.virtualNetwork, '/subnets?api-version=2022-05-01')]"
                                     }
                                 },
                                 {
@@ -544,21 +556,21 @@
                                     "toolTip": "Select an existing subnet for the private Endpoints.",
                                     "constraints": {
                                         "required": true,
-                                        "allowedValues": "[map(steps('controlPlane').privateLink.subnetsApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.id, '\"}')))]"
+                                        "allowedValues": "[map(steps('controlPlane').avdPrivateLink.subnetsApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.id, '\"}')))]"
                                     },
-									"visible": "[or(not(equals(steps('controlPlane').privateLink.feedDiscoveryPublicNetworkAccess, 'Enabled')), not(equals(steps('controlPlane').privateLink.feedDownloadPublicNetworkAccess, 'Enabled')), not(equals(steps('controlPlane').privateLink.hostPoolPublicNetworkAccess, 'Enabled')))]"
+									"visible": "[and(steps('controlPlane').avdPrivateLink.enablePrivateLink, or(not(equals(steps('controlPlane').avdPrivateLink.feedDiscoveryPublicNetworkAccess, 'Enabled')), not(equals(steps('controlPlane').avdPrivateLink.feedDownloadPublicNetworkAccess, 'Enabled')), not(equals(steps('controlPlane').avdPrivateLink.hostPoolPublicNetworkAccess, 'Enabled'))))]"
                                 },
 								{
 									"name": "textBlock1",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[or(not(equals(steps('controlPlane').privateLink.feedDiscoveryPublicNetworkAccess, 'Enabled')), not(equals(steps('controlPlane').privateLink.feedDownloadPublicNetworkAccess, 'Enabled')), not(equals(steps('controlPlane').privateLink.hostPoolPublicNetworkAccess, 'Enabled')))]",
+									"visible": "[and(steps('controlPlane').avdPrivateLink.enablePrivateLink, or(not(equals(steps('controlPlane').avdPrivateLink.feedDiscoveryPublicNetworkAccess, 'Enabled')), not(equals(steps('controlPlane').avdPrivateLink.feedDownloadPublicNetworkAccess, 'Enabled')), not(equals(steps('controlPlane').avdPrivateLink.hostPoolPublicNetworkAccess, 'Enabled'))))]",
 									"options": {
 										"text": "Please select the subscription containing your Private DNS Zones and then each zone as required."
 									}
 								},
 								{
                                     "name": "privateDNSZoneSubscription",
-                                    "visible": "[or(not(equals(steps('controlPlane').privateLink.feedDiscoveryPublicNetworkAccess, 'Enabled')), not(equals(steps('controlPlane').privateLink.feedDownloadPublicNetworkAccess, 'Enabled')), not(equals(steps('controlPlane').privateLink.hostPoolPublicNetworkAccess, 'Enabled')))]",
+                                    "visible": "[and(steps('controlPlane').avdPrivateLink.enablePrivateLink, or(not(equals(steps('controlPlane').avdPrivateLink.feedDiscoveryPublicNetworkAccess, 'Enabled')), not(equals(steps('controlPlane').avdPrivateLink.feedDownloadPublicNetworkAccess, 'Enabled')), not(equals(steps('controlPlane').avdPrivateLink.hostPoolPublicNetworkAccess, 'Enabled'))))]",
                                     "type": "Microsoft.Common.SubscriptionSelector"
                                 },
                                 {
@@ -566,38 +578,425 @@
                                     "type": "Microsoft.Solutions.ArmApiControl",
                                     "request": {
                                         "method": "GET",
-                                        "path": "[concat('/subscriptions/', steps('controlPlane').privateLink.privateDNSZoneSubscription.subscriptionId, '/providers/Microsoft.Network/privateDnsZones?api-version=2018-09-01')]"
+                                        "path": "[concat('/subscriptions/', steps('controlPlane').avdPrivateLink.privateDNSZoneSubscription.subscriptionId, '/providers/Microsoft.Network/privateDnsZones?api-version=2018-09-01')]"
                                     }
                                 },
                                 {
                                     "name": "avdGlobalPrivateLinkDnsZone",
                                     "type": "Microsoft.Common.DropDown",
-                                    "visible": "[equals(steps('controlPlane').privateLink.feedDiscoveryPublicNetworkAccess, 'Disabled')]",
+                                    "visible": "[and(steps('controlPlane').avdPrivateLink.enablePrivateLink, equals(steps('controlPlane').avdPrivateLink.feedDiscoveryPublicNetworkAccess, 'Disabled'))]",
                                     "label": "Global Feed Discovery DNS Zone",
                                     "defaultValue": "",
                                     "multiLine": true,
                                     "toolTip": "Select the existing Private DNS Zone for the global Feed.",
                                     "constraints": {
                                         "required": true,
-                                        "allowedValues": "[map(filter(steps('controlPlane').privateLink.privateDNSZonesApi.value, (item) => contains(item.name, 'privatelink-global.wvd.')), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
+                                        "allowedValues": "[map(filter(steps('controlPlane').avdPrivateLink.privateDNSZonesApi.value, (item) => contains(item.name, 'privatelink-global.wvd.')), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
                                     }
                                 },
 								{
                                     "name": "avdPrivateLinkDnsZone",
                                     "type": "Microsoft.Common.DropDown",
-                                    "visible": "[or(equals(steps('controlPlane').privateLink.feedDownloadPublicNetworkAccess, 'Disabled'), not(equals(steps('controlPlane').privateLink.hostPoolPublicNetworkAccess, 'Enabled')))]",
+                                    "visible": "[and(steps('controlPlane').avdPrivateLink.enablePrivateLink, or(equals(steps('controlPlane').avdPrivateLink.feedDownloadPublicNetworkAccess, 'Disabled'), not(equals(steps('controlPlane').avdPrivateLink.hostPoolPublicNetworkAccess, 'Enabled'))))]",
                                     "label": "Feed Download and Hostpool Access DNS Zone",
                                     "defaultValue": "",
                                     "multiLine": true,
                                     "toolTip": "Select the existing Private DNS Zone for the feed download.",
                                     "constraints": {
                                         "required": true,
-                                        "allowedValues": "[map(filter(steps('controlPlane').privateLink.privateDNSZonesApi.value, (item) => contains(item.name, 'privatelink.wvd.')), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
+                                        "allowedValues": "[map(filter(steps('controlPlane').avdPrivateLink.privateDNSZonesApi.value, (item) => contains(item.name, 'privatelink.wvd.')), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
                                     }
                                 }
 
 							],
-							"visible": "[steps('controlPlane').avdPrivateLink]"
+							"visible": true
+						},
+						{
+							"name": "scalingPlan",
+							"type": "Microsoft.Common.Section",
+							"label": "Scaling Plan",
+							"elements": [
+								{
+									"name": "deployScalingPlan",
+									"type": "Microsoft.Common.OptionsGroup",
+									"label": "Deploy Scaling Plan",
+									"defaultValue": "No",
+									"toolTip": "Select Yes to configure and deploy a scaling plan specific to the host pool.",
+									"constraints": {
+										"allowedValues": [
+											{
+												"label": "Yes",
+												"value": true
+											},
+											{
+												"label": "No",
+												"value": false
+											}
+										],
+										"required": true
+									},
+									"visible": true
+								},
+								{
+									"name": "exclusionTag",
+									"type": "Microsoft.Common.TextBox",
+									"label": "Tag to exclude hosts from Scaling",
+									"placeholder": "",
+									"defaultValue": "DoNotScale",
+									"toolTip": "Use only allowed characters",
+									"constraints": {
+										"required": true,
+										"regex": "^[a-z0-9A-Z]{1,30}$",
+										"validationMessage": "Only alphanumeric characters are allowed, and the value must be 1-30 characters long."
+									},
+									"visible": "[steps('controlPlane').scalingPlan.deployScalingPlan]"
+								},
+								{
+									"name": "textBlock",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": "[steps('controlPlane').scalingPlan.deployScalingPlan]",
+									"options": {
+										"text": "Use the grids and selectors below to configure the Weekday Scaling Plan schedule."
+									}
+								},
+								{
+									"name": "weekdayRampUpSchedule",
+									"type": "Microsoft.Common.EditableGrid",
+									"ariaLabel": "Enter Weekday Schedule Information",
+									"label": "Weekday Ramp Up Schedule",
+									"constraints": {
+										"width": "Full",
+										"rows": {
+											"count": {
+												"min": 1,
+												"max": 1
+											}
+										},
+										"columns": [
+											{
+												"id": "startTime",
+												"header": "Ramp Up Time",
+												"width": "2fr",
+												"element": {
+													"type": "Microsoft.Common.TextBox",
+													"placeholder": "8:00",
+													"constraints": {
+														"required": true,
+														"validations": [
+															{
+																"regex": "^(0?[1-9]|1[0-9]|2[0-3]):[0-5][0-9]$",
+																"message": "Must be a valid 24-hour time format without leading zeros."
+															}
+														]
+													}
+												}
+											},
+											{
+												"id": "minPctOfHosts",
+												"header": "Min % of Hosts",
+												"width": "1fr",
+												"element": {
+													"type": "Microsoft.Common.TextBox",
+													"placeholder": "20",
+													"constraints": {
+														"required": true,
+														"validations": [
+															{
+																"regex": "^( [1-9] [0-9]?|100)$",
+																"message": "Must be an integer from 1 - 100."
+															}
+														]
+													}
+												}
+											},
+											{
+												"id": "capacityThresholdPct",
+												"header": "Capacity threshold (%)",
+												"width": "2fr",
+												"element": {
+													"type": "Microsoft.Common.TextBox",
+													"placeholder": "60",
+													"constraints": {
+														"required": true,
+														"validations": [
+															{
+																"regex": "^( [1-9] [0-9]?|100)$",
+																"message": "Must be an integer from 1 - 100."
+															}
+														]
+													}
+												}
+											},											
+											{
+												"id": "loadBalancing",
+												"header": "Load Balancing",
+												"width": "1fr",
+												"element": {													
+													"type": "Microsoft.Common.DropDown",
+													"constraints": {
+														"allowedValues": [
+															{
+																"label": "Breadth-First",
+																"value": "BreadthFirst"
+															},
+															{
+																"label": "Depth-First",
+																"value": "DepthFirst"
+															}
+														],
+														"required": true
+													}
+												}
+											}								
+										]
+									},
+									"visible": "[steps('controlPlane').scalingPlan.deployScalingPlan]"
+
+								},
+								{
+									"name": "weekdayPeakSchedule",
+									"type": "Microsoft.Common.EditableGrid",
+									"ariaLabel": "Enter Weekday Schedule Information",
+									"label": "Weekday Peak Schedule",
+									"constraints": {
+										"width": "Full",
+										"rows": {
+											"count": {
+												"min": 1,
+												"max": 1
+											}
+										},
+										"columns": [
+											{
+												"id": "startTime",
+												"header": "Peak Start Time",
+												"width": "5fr",
+												"element": {
+													"type": "Microsoft.Common.TextBox",
+													"placeholder": "9:00",
+													"constraints": {
+														"required": true,
+														"validations": [
+															{
+																"regex": "^(0?[1-9]|1[0-9]|2[0-3]):[0-5][0-9]$",
+																"message": "Must be a valid 24-hour time format without leading zeros."
+															}
+														]
+													}
+												}
+											},																						
+											{
+												"id": "loadBalancing",
+												"header": "Load Balancing",
+												"width": "1fr",
+												"element": {													
+													"type": "Microsoft.Common.DropDown",
+													"constraints": {
+														"allowedValues": [
+															{
+																"label": "Breadth-First",
+																"value": "BreadthFirst"
+															},
+															{
+																"label": "Depth-First",
+																"value": "DepthFirst"
+															}
+														],
+														"required": true
+													}
+												}
+											}									
+										]
+									},
+									"visible": "[steps('controlPlane').scalingPlan.deployScalingPlan]"
+								},
+								{
+									"name": "weekdayRampDownSchedule",
+									"type": "Microsoft.Common.EditableGrid",
+									"ariaLabel": "Enter Weekday Schedule Information",
+									"label": "Weekday Ramp Down Schedule",
+									"constraints": {
+										"width": "Full",
+										"rows": {
+											"count": {
+												"min": 1,
+												"max": 1
+											}
+										},
+										"columns": [
+											{
+												"id": "startTime",
+												"header": "Ramp Down Start Time",
+												"width": "2fr",
+												"element": {
+													"type": "Microsoft.Common.TextBox",
+													"placeholder": "17:00",
+													"constraints": {
+														"required": true,
+														"validations": [
+															{
+																"regex": "^(0?[1-9]|1[0-9]|2[0-3]):[0-5][0-9]$",
+																"message": "Must be a valid 24-hour time format without leading zeros."
+															}
+														]
+													}
+												}
+											},
+											{
+												"id": "minPctOfHosts",
+												"header": "Min % of Hosts",
+												"width": "1fr",
+												"element": {
+													"type": "Microsoft.Common.TextBox",
+													"placeholder": "10",
+													"constraints": {
+														"required": true,
+														"validations": [
+															{
+																"regex": "^( [1-9] [0-9]?|100)$",
+																"message": "Must be an integer from 1 - 100."
+															}
+														]
+													}
+												}
+											},
+											{
+												"id": "capacityThresholdPct",
+												"header": "Capacity threshold (%)",
+												"width": "2fr",
+												"element": {
+													"type": "Microsoft.Common.TextBox",
+													"placeholder": "90",
+													"constraints": {
+														"required": true,
+														"validations": [
+															{
+																"regex": "^( [1-9] [0-9]?|100)$",
+																"message": "Must be an integer from 1 - 100."
+															}
+														]
+													}
+												}
+											},											
+											{
+												"id": "loadBalancing",
+												"header": "Load Balancing",
+												"width": "1fr",
+												"element": {													
+													"type": "Microsoft.Common.DropDown",
+													"constraints": {
+														"allowedValues": [
+															{
+																"label": "Breadth-First",
+																"value": "BreadthFirst"
+															},
+															{
+																"label": "Depth-First",
+																"value": "DepthFirst"
+															}
+														],
+														"required": true
+													}
+												}
+											}										
+										]
+									},
+									"visible": "[steps('controlPlane').scalingPlan.deployScalingPlan]"
+								},
+								{
+									"name": "forceLogoff",
+									"type": "Microsoft.Common.OptionsGroup",
+									"label": "Force Logoff during Ramp Down",
+									"defaultValue": "No",
+									"toolTip": "",
+									"constraints": {
+										"allowedValues": [
+											{
+												"label": "Yes",
+												"value": true
+											},
+											{
+												"label": "No",
+												"value": false
+											}
+										],
+										"required": true
+									},
+									"visible": "[steps('controlPlane').scalingPlan.deployScalingPlan]"
+								},
+								{
+									"name": "minsToLogoff",
+									"type": "Microsoft.Common.TextBox",
+									"label": "Number of minutes before users are forcefully logged off",
+									"placeholder": "",
+									"defaultValue": "30",
+									"toolTip": "Use only integers",
+									"constraints": {
+										"required": true,
+										"regex": "^(?:[1-9]|[1-9][0-9]|1[01][0-9]|120)$",
+										"validationMessage": "Must be an integer from 1 - 120."
+									},
+									"visible": "[and(steps('controlPlane').scalingPlan.deployScalingPlan, steps('controlPlane').scalingPlan.forceLogoff)]"
+								},
+								{
+									"name": "weekdayOffPeakSchedule",
+									"type": "Microsoft.Common.EditableGrid",
+									"ariaLabel": "Enter Weekday Off Peak Schedule Information",
+									"label": "Weekday Off Peak Schedule",
+									"constraints": {
+										"width": "Full",
+										"rows": {
+											"count": {
+												"min": 1,
+												"max": 1
+											}
+										},
+										"columns": [
+											{
+												"id": "startTime",
+												"header": "Off Peak Start Time",
+												"width": "5fr",
+												"element": {
+													"type": "Microsoft.Common.TextBox",
+													"placeholder": "20:00",
+													"constraints": {
+														"required": true,
+														"validations": [
+															{
+																"regex": "^(0?[1-9]|1[0-9]|2[0-3]):[0-5][0-9]$",
+																"message": "Must be a valid 24-hour time format without leading zeros."
+															}
+														]
+													}
+												}
+											},																						
+											{
+												"id": "loadBalancing",
+												"header": "Load Balancing",
+												"width": "1fr",
+												"element": {													
+													"type": "Microsoft.Common.DropDown",
+													"constraints": {
+														"allowedValues": [
+															{
+																"label": "Breadth-First",
+																"value": "BreadthFirst"
+															},
+															{
+																"label": "Depth-First",
+																"value": "DepthFirst"
+															}
+														],
+														"required": true
+													}
+												}
+											}								
+										]
+									},
+									"visible": "[steps('controlPlane').scalingPlan.deployScalingPlan]"
+								}		
+							],
+							"visible": true
 						}
                     ]
                 },
@@ -1222,7 +1621,8 @@
 										"value": "Other"
 									}
 								]
-							}
+							},
+                            "required": true
 						},
 						{
                             "name": "fslogixContainerType",
@@ -1256,7 +1656,7 @@
 						{
 							"name": "deployStorage",
 							"type": "Microsoft.Common.DropDown",
-							"defaultValue": "No",
+							"defaultValue": "Yes",
 							"visible": "[equals(steps('userProfiles').profileSolution, 'FSLogix')]",
 							"label": "Deploy FSLogix Storage Resources",
 							"toolTip": "Select 'Yes' to deploy the required storage resources for FSLogix Profiles.",
@@ -1271,16 +1671,17 @@
 										"value": false
 									}
 								]
-							}
+							},
+                            "required": true
 						},
 						{
 							"name": "configureSessionHosts",
 							"type": "Microsoft.Common.DropDown",
 							"label": "Configure FSLogix Settings on Session Hosts",
 							"placeholder": "",
-							"defaultValue": "No",
+							"defaultValue": "Yes",
 							"toolTip": "Select 'Yes' if you desire to run automatically configure the FSLogix settings on the Session Hosts.",
-							"visible": "[equals(steps('userProfiles').profileSolution, 'FSLogix')]",
+							"visible": "[and(equals(steps('hosts').identity.solution, 'EntraId'), equals(steps('userProfiles').profileSolution, 'FSLogix'))]",
 							"constraints": {
 								"allowedValues": [
 									{
@@ -1294,7 +1695,7 @@
 								],
 								"required": false
 							}
-						},						
+						},				
 						{
 							"name": "fslogixStorage",
 							"type": "Microsoft.Common.Section",
@@ -1561,61 +1962,21 @@
                                             "zip"
                                         ]
                                     }
-                                },
+                                },											
 								{
-									"name": "storageService",
-									"type": "Microsoft.Common.DropDown",
-									"visible": "[and(equals(steps('userProfiles').deployStorage, false), not(equals(steps('hosts').identity.solution, 'EntraId')))]",
-									"label": "Storage Product",
-									"defaultValue": "Azure Files",
-									"toolTip": "Select the storage product for the SMB file share to support the use of FSLogix.",
-									"constraints": {
-										"allowedValues": "[if(equals(steps('hosts').identity.solution, 'EntraId'), parse('[{\"label\":\"Azure Files\",\"value\":\"AzureFiles\"}]'), parse('[{\"label\":\"Azure Files\",\"value\":\"AzureFiles\"},{\"label\":\"Azure NetApp Files\",\"value\":\"AzureNetAppFiles\"}]'))]"
+									"name": "notDeployedCCTextBox",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": "[and(not(equals(steps('userProfiles').deployStorage, true)), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]",
+									"options": {
+										"text": "To enable cross-region high availability of user profiles using FSLogix CloudCache enter up to 4 storage accounts which are from unique regions to be added to the fslogix container paths. Enter the values in the order of preference with the first one list located in the region where the virtual machines were deployed."
 									}
 								},
 								{
-									"name": "netAppTextBlock",
+									"name": "deployedCCTextBox",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[equals(steps('userProfiles').fslogixSessionHostConfig.storageService, 'AzureNetAppFiles')]",
+									"visible": "[and(steps('userProfiles').deployStorage, contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]",
 									"options": {
-										"text": "Enter the existing NetApp File Shares below. Enter the path to the profile container first and if applicable, the office container second."
-									}
-								},
-								{
-									"name": "netAppFileShares",
-									"type": "Microsoft.Common.EditableGrid",
-									"ariaLabel": "FSLogix Existing NetApp Share Paths",
-									"label": "FSLogix Existing NetApp Share Paths",
-									"constraints": {
-										"width": "Full",
-										"rows": {
-											"count": {
-												"min": 0,
-												"max": 2
-											}
-										},
-										"columns": [
-											{
-												"id": "sharePath",
-												"header": "NetApp UNC Share Path(s)",
-												"width": "10fr",
-												"element": {
-													"type": "Microsoft.Common.TextBox",
-													"constraints": {
-														"required": false
-													}
-												}
-											}
-										]
-									},
-									"visible": "[equals(steps('userProfiles').fslogixSessionHostConfig.storageService, 'AzureNetAppFiles')]"
-								},
-								{
-									"name": "existingStorageAccountTextBlock",
-									"type": "Microsoft.Common.TextBlock",
-									"visible": "[startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache')]",
-									"options": {
-										"text": "To enable cross-region high availability of user profiles using FSLogix CloudCache enter up to 4 (3 if you deployed storage resources above) storage account resource Ids which are from unique regions to be added to the fslogix container paths. Enter the values in the order of preference."
+										"text": "To enable cross-region high availability of user profiles using FSLogix CloudCache select up to 3 additional storage accounts which are not from the region where you deployed the virtual machines but are also from unique regions to be added to the fslogix container paths. Enter the values in the order of preference."
 									}
 								},
 								{
@@ -1655,15 +2016,24 @@
 										],
 										"required": false
 									},									
-									"visible": "[startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache')]"
+									"visible": "[or(not(equals(steps('userProfiles').deployStorage, true)), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]"
 								},
 								{
-									"name": "tooManyStorageAccountsErrorBox",
+									"name": "tooManyStorageAccountsCCErrorBox",
 									"type": "Microsoft.Common.InfoBox",
-									"visible": "[if(steps('userProfiles').deployStorage, greater(length(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts), 3), greater(length(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts), 4))]",
+									"visible": "[if(steps('userProfiles').deployStorage, greater(length(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts), 3), false)]",
 									"options": {
 										"icon": "Error",
-										"text": "You have provided too many storage account resource Ids. You can only specify 3 existing resource Ids when deploying storage resources and 4 when not deploying resources."
+										"text": "You have provided too many storage account resource Ids. You can only specify 3 existing resource Ids when deploying storage resources."
+									}
+								},
+								{
+									"name": "tooManyStorageAccountsVHDxErrorBox",
+									"type": "Microsoft.Common.InfoBox",
+									"visible": "[if(and(not(equals(steps('userProfiles').deployStorage, true)), not(contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))), greater(length(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts), 1), false)]",
+									"options": {
+										"icon": "Error",
+										"text": "You have provided too many storage account resource Ids. You can only specify 1 existing resource Ids when specifying a standard VHDx container type (i.e., no Cloud Cache)."
 									}
 								}
 							]
@@ -1680,6 +2050,14 @@
                             "label": "Drain Mode",
                             "defaultValue": false,
                             "toolTip": "Enables drain mode on the AVD session hosts so the virtual machines cannot be accessed until they have been validated."
+                        },
+                        {
+                            "name": "increaseFileShareQuota",
+                            "type": "Microsoft.Common.CheckBox",
+                            "label": "Enable Automation to increase Premium File Share Quota",
+                            "defaultValue": false,
+                            "toolTip": "Creates an Azure Automation Account, hybrid runbook workers, and enables automatic scaling up of the premium file share quota.",
+                            "visible": "[and(steps('userProfiles').deployStorage, equals(steps('userProfiles').fslogixStorage.storageSku, 'Premium'))]"
                         },
                         {
                             "name": "backup",
@@ -1704,7 +2082,7 @@
                             "visible": true,
                             "elements": [
                                 {
-                                    "name": "enableInsights",
+                                    "name": "enableMonitoring",
                                     "type": "Microsoft.Common.CheckBox",
                                     "visible": true,
                                     "label": "Enable Monitoring for AVD and VM Insights",
@@ -1859,7 +2237,7 @@
                                         "required": true,
                                         "allowedValues": "[map(filter(steps('management').privateEndpoints.privateDNSZonesApi.value, (item) => contains(item.name, 'privatelink.azure-automation.')), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
                                     },
-									"visible": "[and(steps('management').privateEndpoints.enabled, equals(steps('userProfiles').fslogixStorage.storageSku, 'Premium'))]"
+									"visible": "[and(steps('management').privateEndpoints.enabled, steps('management').increaseFileShareQuota)]"
                                 },
 								{
                                     "name": "keyVaultPrivateDnsZone",
@@ -1914,33 +2292,37 @@
 				"artifactsStorageAccountResourceId": "[steps('basics').prereqs.storageAccount.id]",
 				"artifactsContainerName": "[first(skip(split(steps('basics').prereqs.container, '/'), 12))]",
 				"artifactsUserAssignedIdentityResourceId": "[if(not(empty(steps('basics').prereqs.managedIdentity)), steps('basics').prereqs.managedIdentity.id, parse('[]'))]",
-				"automationAccountPrivateDnsZoneResourceId": "[if(and(steps('management').privateEndpoints.enabled, equals(steps('userProfiles').fslogixStorage.storageSku, 'Premium')), steps('management').privateEndpoints.automationAccountPrivateDnsZone, '')]",
-				"avdGlobalFeedPrivateDnsZoneResourceId": "[if(steps('controlPlane').avdPrivateLink, steps('controlPlane').privateLink.avdGlobalPrivateLinkDnsZone, '')]",
-				"avdPrivateDnsZoneResourceId": "[if(steps('controlPlane').avdPrivateLink, steps('controlPlane').privateLink.avdPrivateLinkDnsZone, '')]",
-				"avdPrivateLink": "[steps('controlPlane').avdPrivateLink]",
+				"automationAccountPrivateDnsZoneResourceId": "[if(and(steps('management').increaseFileShareQuota, steps('management').privateEndpoints.enabled), steps('management').privateEndpoints.automationAccountPrivateDnsZone, '')]",
+				"avdGlobalFeedPrivateDnsZoneResourceId": "[if(steps('controlPlane').avdPrivateLink.enablePrivateLink, steps('controlPlane').avdPrivateLink.avdGlobalPrivateLinkDnsZone, '')]",
+				"avdPrivateDnsZoneResourceId": "[if(steps('controlPlane').avdPrivateLink.enablePrivateLink, steps('controlPlane').avdPrivateLink.avdPrivateLinkDnsZone, '')]",
+				"avdPrivateLink": "[steps('controlPlane').avdPrivateLink.enablePrivateLink]",
                 "identitySolution": "[if(and(equals(steps('hosts').identity.solution, 'EntraId'), steps('hosts').identity.intune), 'EntraIdIntuneEnrollment', steps('hosts').identity.solution)]",
                 "availability": "[steps('hosts').availability]",
                 "avdObjectId": "[first(map(steps('basics').servicePrincipalApi.value, (item) => item.id))]",
                 "azureFilesPrivateDnsZoneResourceId": "[if(and(equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles'), equals(steps('userProfiles').storageEndpoint, 'PrivateEndpoint')), steps('userProfiles').privateEndpoints.privateDnsZone, '')]",
 				"businessUnitIdentifier": "[steps('basics').naming.businessUnitIdentifier]",
+                "centralizedAVDMonitoring": "[steps('basics').naming.centralizedAVDMonitoring]",
                 "confidentialVMOSDiskEncryption": "[steps('hosts').security.confidentialVMOSDiskEncryption]",
 				"confidentialVMOrchestratorObjectId": "[first(map(steps('hosts').security.confDiskEncryptionPrincipalApi.value, (item) => item.id))]",
 				"keyManagementDisksAndStorage": "[steps('hosts').security.keyManagement]",
 				"cseBlobNames": "[if(steps('hosts').customScripts.addCustomScripts, map(steps('hosts').customScripts.customizations, (item) => item.blobName), '')]",
 				"encryptionAtHost": "[steps('hosts').security.encryptionAtHost]",
 				"virtualMachineSecurityType": "[steps('hosts').security.securityType]",
+				"deployScalingPlan": "[steps('controlPlane').scalingPlan.deployScalingPlan]",
                 "diskSku": "[steps('hosts').specs.diskSku]",
                 "domainJoinUserPassword": "[steps('hosts').domainJoinCredentials.password]",
                 "domainJoinUserPrincipalName": "[steps('hosts').domainJoinCredentials.userPrincipalName]",
                 "domainName": "[steps('hosts').identity.domainName]",
                 "drainMode": "[steps('management').drainMode]",
                 "environmentShortName": "[steps('basics').naming.environmentShortName]",
-				"configureSessionHosts": "[steps('userProfiles').configureSessionHosts]",
+                "enableIncreaseQuotaAutomation": "[steps('management').increaseFileShareQuota]",
+				"fslogixConfigureSessionHosts": "[if(and(equals(steps('hosts').identity.solution, 'EntraId'), equals(steps('userProfiles').profileSolution, 'FSLogix')), steps('userProfiles').configureSessionHosts, false)]",
 				"fslogixConfigurationBlobName": "[if(steps('userProfiles').configureSessionHosts, steps('userProfiles').fslogixSessionHostConfig.fslogixBlob.blobName , '')]",
-				"fslogixExistingStorageAccountResourceIds": "[if(and(steps('userProfiles').configureSessionHosts, startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache')), map(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts, (item) => item.resourceId), parse('[]'))]",
+				"fslogixExistingStorageAccountResourceIds": "[if(and(steps('userProfiles').configureSessionHosts, or(equals(steps('userProfiles').deployStorage, false), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))), map(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts, (item) => item.resourceId), parse('[]'))]",
                 "fslogixShareSizeInGB": "[if(equals(steps('userProfiles').deployStorage, false), 100, steps('userProfiles').fslogixStorage.storageShareSize)]",
+                "fslogixStorageAccountADKerberosEncryption": "[if(or(equals(steps('userProfiles').deployStorage, false), equals(steps('userProfiles').fslogixStorage.storageService, 'AzureNetAppFiles')), 'RC4', steps('userProfiles').fslogixStorage.storageKerberosEncryption)]",
                 "fslogixContainerType": "[steps('userProfiles').fslogixContainerType]",
-                "fslogixStorageService": "[if(equals(steps('userProfiles').deployStorage, false), 'None', concat(steps('userProfiles').fslogixStorage.storageService, ' ', steps('userProfiles').fslogixStorage.storageSku))]",
+                "fslogixStorageService": "[if(steps('userProfiles').deployStorage, concat(steps('userProfiles').fslogixStorage.storageService, ' ', steps('userProfiles').fslogixStorage.storageSku), 'None')]",
 				"fslogixStorageCount": "[if(or(equals(steps('userProfiles').deployStorage, false), equals(steps('userProfiles').fslogixStorage.storageService, 'AzureNetAppFiles')), 0, steps('userProfiles').fslogixStorage.storageCount)]",
 				"fslogixStorageIndex": "[if(or(equals(steps('userProfiles').deployStorage, false), equals(steps('userProfiles').fslogixStorage.storageService, 'AzureNetAppFiles')), 0, steps('userProfiles').fslogixStorage.storageIndex)]",
                 "hostPoolType": "[if(equals(steps('controlPlane').hostPool.type, 'Pooled'), concat(steps('controlPlane').hostPool.type, ' ', steps('controlPlane').hostPool.loadBalancerAlgorithm), concat(steps('controlPlane').hostPool.type, ' ', steps('controlPlane').hostPool.assignmentType))]",
@@ -1949,7 +2331,6 @@
                 "imagePublisher": "MicrosoftWindowsDesktop",
                 "imageSku": "[steps('hosts').image.sku]",
                 "customImageResourceId": "[if(equals(steps('hosts').image.source, 'gallery'), steps('hosts').image.galleryImage.id, '')]",
-                "fslogixStorageAccountADKerberosEncryption": "[if(or(equals(steps('userProfiles').deployStorage, false), equals(steps('userProfiles').fslogixStorage.storageService, 'AzureNetAppFiles')), 'RC4', steps('userProfiles').fslogixStorage.storageKerberosEncryption)]",
 				"keyVaultPrivateDnsZoneResourceId": "[if(steps('management').privateEndpoints.enabled, steps('management').privateEndpoints.keyVaultPrivateDnsZone, '')]",
                 "locationControlPlane": "[steps('basics').locationControlPlane.name]",
                 "logAnalyticsWorkspaceRetention": 30,
@@ -1958,9 +2339,16 @@
                 "managementPrivateEndpointSubnetResourceId": "[if(steps('management').privateEndpoints.enabled, steps('management').privateEndpoints.subnet, '')]",
                 "nameConvResTypeAtEnd": "[steps('basics').naming.nameConvResTypeAtEnd]",
                 "hostPoolMaxSessionLimit": "[if(equals(steps('controlPlane').hostPool.type, 'Pooled'), steps('controlPlane').hostPool.maxSessions, 1)]",
-                "enableInsights": "[steps('management').monitoring.enableInsights]",
+                "enableMonitoring": "[steps('management').monitoring.enableMonitoring]",
                 "ouPath": "[if(equals(steps('hosts').identity.solution, 'EntraId'), '', steps('hosts').identity.ouPath)]",
                 "recoveryServices": "[steps('management').backup.recoveryServices]",
+				"scalingPlanExclusionTag": "[if(steps('controlPlane').scalingPlan.deployScalingPlan, steps('controlPlane').scalingPlan.exclusionTag, '')]",
+				"scalingPlanRampUpSchedule": "[if(steps('controlPlane').scalingPlan.deployScalingPlan, first(steps('controlPlane').scalingPlan.weekdayRampUpSchedule), parse('{}'))]",
+				"scalingPlanPeakSchedule": "[if(steps('controlPlane').scalingPlan.deployScalingPlan, first(steps('controlPlane').scalingPlan.weekdayPeakSchedule), parse('{}'))]",
+				"scalingPlanRampDownSchedule": "[if(steps('controlPlane').scalingPlan.deployScalingPlan, first(steps('controlPlane').scalingPlan.weekdayRampDownSchedule), parse('{}'))]",
+				"scalingPlanOffPeakSchedule": "[if(steps('controlPlane').scalingPlan.deployScalingPlan, first(steps('controlPlane').scalingPlan.weekdayOffPeakSchedule), parse('{}'))]",
+				"scalingPlanForceLogoff": "[if(steps('controlPlane').scalingPlan.deployScalingPlan, steps('controlPlane').scalingPlan.forceLogoff, false)]",
+				"scalingPlanMinsBeforeLogoff": "[if(and(steps('controlPlane').scalingPlan.deployScalingPlan, steps('controlPlane').scalingPlan.forceLogoff), steps('controlPlane').scalingPlan.minsToLogoff, 0)]",
                 "securityPrincipals": "[if(empty(steps('controlPlane').assignment.groupsApi), steps('controlPlane').assignment.groupsGrid, steps('controlPlane').assignment.groupsDropDown)]",
 				"securityDataCollectionRulesResourceId": "[if(steps('management').monitoring.enableSecurity, steps('management').monitoring.dataCollectionRule.id, '')]",
                 "SecurityLogAnalyticsWorkspaceResourceId": "[if(steps('management').monitoring.enableSecurity, steps('management').monitoring.logAnalyticsWorkspace.id, '')]",
