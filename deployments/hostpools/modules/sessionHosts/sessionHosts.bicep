@@ -41,7 +41,7 @@ param customImageResourceId string
 param location string
 param managementVirtualMachineName string
 param maxResourcesPerTemplateDeployment int
-param enableInsights bool
+param enableMonitoring bool
 param networkInterfaceNamePrefix string
 param ouPath string
 param pooledHostPool bool
@@ -145,7 +145,7 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     imageSku: imageSku
     location: location
     managementVirtualMachineName: managementVirtualMachineName
-    enableInsights: enableInsights
+    enableMonitoring: enableMonitoring
     networkInterfaceNamePrefix: networkInterfaceNamePrefix
     ouPath: ouPath
     avdInsightsDataCollectionRulesResourceId: avdInsightsDataCollectionRulesResourceId

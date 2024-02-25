@@ -2,7 +2,7 @@ param automationAccountName string
 param automationAccountPrivateDnsZoneResourceId string
 param location string
 param logAnalyticsWorkspaceResourceId string
-param enableInsights bool
+param enableMonitoring bool
 param privateEndpoint bool
 param privateEndpointNameConv string
 param subnetResourceId string
@@ -69,7 +69,7 @@ resource privateDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneG
 }
 
 // Enables logging in a log analytics workspace for alerting and dashboards
-resource diagnostics 'Microsoft.Insights/diagnosticsettings@2017-05-01-preview' = if (enableInsights) {
+resource diagnostics 'Microsoft.Insights/diagnosticsettings@2017-05-01-preview' = if (enableMonitoring) {
   scope: automationAccount
   name: 'diag-${automationAccountName}'
   properties: {

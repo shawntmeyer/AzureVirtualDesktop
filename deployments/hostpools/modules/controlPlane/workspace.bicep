@@ -9,7 +9,7 @@ param location string
 param locationVirtualMachines string
 param logAnalyticsWorkspaceResourceId string
 param managementVirtualMachineName string
-param enableInsights bool
+param enableMonitoring bool
 param privateDnsZoneResourceId string
 param privateEndpointName string
 param publicNetworkAccess string
@@ -89,7 +89,7 @@ resource privateDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneG
   }
 }
 
-resource workspaceDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (!existingWorkspace && enableInsights) {
+resource workspaceDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (!existingWorkspace && enableMonitoring) {
   name: 'diag-${workspaceName}'
   scope: workspace
   properties: {

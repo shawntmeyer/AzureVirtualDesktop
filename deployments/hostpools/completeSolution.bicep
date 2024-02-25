@@ -235,6 +235,48 @@ param hostPoolValidationEnvironment bool = false
 @description('An array of Security Principals with their object IDs and display names to assign to the AVD Application Group and FSLogix Storage.')
 param securityPrincipals array = []
 
+@description('Determines if the scaling plan is deployed to the host pool.')
+param deployScalingPlan bool = false
+
+@description('The tag used to exclude virtual machines from the scaling plan.')
+param scalingPlanExclusionTag string = ''
+
+@description('The scaling plan weekday ramp up schedule')
+param scalingPlanRampUpSchedule object = {
+  startTime: '8:00'
+  minimumHostsPct: 20
+  capacityThresholdPct: 60
+  loadBalancingAlgorithm: 'DepthFirst'
+}
+
+@description('The scaling plan weekday peak schedule.')
+param scalingPlanPeakSchedule object = {
+  startTime: '9:00'
+  loadBalancingAlgorithm: 'DepthFirst'
+}
+
+@description('The scaling plan weekday rampdown schedule.')
+param scalingPlanRampDownSchedule object = {
+  startTime: '5:00'
+  minimumHostsPct: 10
+  capacityThresholdPct: 90
+  loadBalancingAlgorithm: 'DepthFirst'
+}
+
+@description('The scaling plan weakday off peak schedule.')
+param scalingPlanOffPeakSchedule object = {
+  startTime: '20:00'
+  loadBalancingAlgorithm: 'DepthFirst'
+}
+
+@description('Determines if the scaling plan will forcefully log off users when scaling down.')
+param scalingPlanForceLogoff bool = false
+
+@description('The number of minutes to wait before forcefully logging off users when scaling down.')
+param scalingPlanMinsBeforeLogoff int = 0
+
+// Session Host/VM Configuration
+
 @maxValue(5000)
 @minValue(0)
 @description('The number of session hosts to deploy in the host pool. Ensure you have the approved quota to deploy the desired count.')
@@ -244,8 +286,6 @@ param sessionHostCount int = 1
 @minValue(0)
 @description('The starting number for the session hosts. This is important when adding virtual machines to ensure an update deployment is not performed on an exiting, active session host.')
 param sessionHostIndex int = 1
-
-// Session Host/VM Configuration
 
 @allowed([
   'availabilitySets'
@@ -348,8 +388,8 @@ param virtualMachineSize string = 'Standard_D4ads_v5'
 param virtualMachineNamePrefix string
 
 // Monitoring Configuration
-@description('Deploys the required monitoring resources to enable AVD Insights and monitor features in the automation account.')
-param enableInsights bool = true
+@description('Deploys the required monitoring resources to enable AVD and VM Insights and monitor features in the automation account.')
+param enableMonitoring bool = true
 
 @maxValue(730)
 @minValue(30)
@@ -430,6 +470,7 @@ module logic 'modules/logic.bicep' = {
     avdAgentInstallersBlobName: avdAgentInstallersBlobName
     avdPrivateLink: avdPrivateLink
     cseMasterScript: cseMasterScript
+    deployScalingPlan: deployScalingPlan
     diskSku: diskSku
     cseBlobNames: cseBlobNames
     domainName: domainName
@@ -451,6 +492,12 @@ module logic 'modules/logic.bicep' = {
     resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
     resourceGroupMonitoring: resourceNames.outputs.resourceGroupMonitoring
     resourceGroupStorage: resourceNames.outputs.resourceGroupStorage
+    scalingPlanForceLogoff: scalingPlanForceLogoff
+    scalingPlanMinsBeforeLogoff: scalingPlanMinsBeforeLogoff
+    scalingPlanRampUpSchedule: scalingPlanRampUpSchedule
+    scalingPlanPeakSchedule: scalingPlanPeakSchedule
+    scalingPlanRampDownSchedule: scalingPlanRampDownSchedule
+    scalingPlanOffPeakSchedule: scalingPlanOffPeakSchedule
     securityPrincipals: securityPrincipals
     sessionHostCount: sessionHostCount
     sessionHostIndex: sessionHostIndex
@@ -503,8 +550,8 @@ module management 'modules/management/management.bicep' = {
     keyVaultPrivateDnsZoneResourceId: keyVaultPrivateDnsZoneResourceId
     locationControlPlane: locationControlPlane
     locationVirtualMachines: locationVirtualMachines
-    logAnalyticsWorkspaceResourceId: monitoring.outputs.logAnalyticsWorkspaceResourceId
-    enableInsights: enableInsights
+    logAnalyticsWorkspaceResourceId: enableMonitoring ? monitoring.outputs.logAnalyticsWorkspaceResourceId : ''
+    enableMonitoring: enableMonitoring
     netAppVnetResourceId: fslogixNetAppVnetResourceId
     keyManagementDisksAndStorage: keyManagementDisksAndStorage
     privateEndpointSubnetResourceId: managementPrivateEndpointSubnetResourceId
@@ -540,7 +587,7 @@ module management 'modules/management/management.bicep' = {
   ]
 }
 
-module monitoring 'modules/monitoring/monitoring.bicep' = if(enableInsights) {
+module monitoring 'modules/monitoring/monitoring.bicep' = if(enableMonitoring) {
   name: 'Monitoring_${timeStamp}'
   params: {
     dataCollectionEndpointName: resourceNames.outputs.dataCollectionEndpointName
@@ -568,6 +615,7 @@ module controlPlane 'modules/controlPlane/controlPlane.bicep' = {
     avdGlobalFeedPrivateDnsZoneResourceId: avdGlobalFeedPrivateDnsZoneResourceId
     avdPrivateDnsZoneResourceId: avdPrivateDnsZoneResourceId
     avdPrivateLink: avdPrivateLink
+    deployScalingPlan: deployScalingPlan
     deploymentUserAssignedIdentityClientId: management.outputs.deploymentUserAssignedIdentityClientId
     desktopApplicationGroupName: resourceNames.outputs.desktopApplicationGroupName
     desktopFriendlyName: desktopFriendlyName
@@ -584,15 +632,16 @@ module controlPlane 'modules/controlPlane/controlPlane.bicep' = {
     identitySolution: identitySolution
     locationControlPlane: locationControlPlane
     locationVirtualMachines: locationVirtualMachines
-    logAnalyticsWorkspaceResourceId: enableInsights ? monitoring.outputs.logAnalyticsWorkspaceResourceId : ''
+    logAnalyticsWorkspaceResourceId: enableMonitoring ? monitoring.outputs.logAnalyticsWorkspaceResourceId : ''
     managementVirtualMachineName: management.outputs.virtualMachineName    
-    enableInsights: enableInsights
+    enableMonitoring: enableMonitoring
     privateEndpointNameConv: resourceNames.outputs.privateEndpointNameConv
     privateEndpointSubnetResourceId: controlPlanePrivateEndpointSubnetResourceId
     resourceGroupControlPlane: resourceNames.outputs.resourceGroupControlPlane
     resourceGroupGlobalFeed: resourceNames.outputs.resourceGroupGlobalFeed
     resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
     roleDefinitions: logic.outputs.roleDefinitions
+    scalingPlanExclusionTag: scalingPlanExclusionTag
     securityPrincipalObjectIds: map(securityPrincipals, item => item.objectId)
     tags: tags
     timeStamp: timeStamp
@@ -600,6 +649,9 @@ module controlPlane 'modules/controlPlane/controlPlane.bicep' = {
     workspaceFriendlyName: workspaceFriendlyName
     workspaceName: resourceNames.outputs.workspaceName
     workspacePublicNetworkAccess: workspacePublicNetworkAccess
+    scalingPlanName: resourceNames.outputs.scalingPlanName
+    scalingPlanSchedules: logic.outputs.scalingPlanSchedules
+    virtualMachinesTimeZone: logic.outputs.timeZone
   }
   dependsOn: [
     rgs
@@ -698,7 +750,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     cseScriptAddDynParameters: cseScriptAddDynParameters
     cseUris: logic.outputs.cseUris
     customImageResourceId: customImageResourceId
-    dataCollectionEndpointResourceId: monitoring.outputs.dataCollectionEndpointResourceId    
+    dataCollectionEndpointResourceId: enableMonitoring ? monitoring.outputs.dataCollectionEndpointResourceId : ''    
     diskEncryptionSetResourceId: management.outputs.diskEncryptionSetResourceId
     diskNamePrefix: resourceNames.outputs.diskNamePrefix
     diskSku: diskSku
@@ -721,11 +773,11 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     location: vmVirtualNetwork.location
     managementVirtualMachineName: management.outputs.virtualMachineName
     maxResourcesPerTemplateDeployment: logic.outputs.maxResourcesPerTemplateDeployment
-    enableInsights: enableInsights
+    enableMonitoring: enableMonitoring
     networkInterfaceNamePrefix: resourceNames.outputs.networkInterfaceNamePrefix
     ouPath: ouPath
-    avdInsightsDataCollectionRulesResourceId: monitoring.outputs.avdInsightsDataCollectionRulesResourceId
-    vmInsightsDataCollectionRulesResourceId: monitoring.outputs.vmInsightsDataCollectionRulesResourceId
+    avdInsightsDataCollectionRulesResourceId: enableMonitoring ? monitoring.outputs.avdInsightsDataCollectionRulesResourceId : ''
+    vmInsightsDataCollectionRulesResourceId: enableMonitoring ? monitoring.outputs.vmInsightsDataCollectionRulesResourceId : ''
     pooledHostPool: logic.outputs.pooledHostPool
     recoveryServices: recoveryServices
     recoveryServicesVaultName: resourceNames.outputs.recoveryServicesVaultName

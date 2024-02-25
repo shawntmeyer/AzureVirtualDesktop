@@ -33,7 +33,7 @@ param imageSku string
 param customImageResourceId string
 param location string
 param managementVirtualMachineName string
-param enableInsights bool
+param enableMonitoring bool
 param networkInterfaceNamePrefix string
 param ouPath string
 param avdInsightsDataCollectionRulesResourceId string
@@ -124,7 +124,7 @@ var cseScriptDynamicParameters = empty(cseScriptAddDynParameters) ? '@{${cseScri
 // When sending a hashtable via powershell.exe you must use -command instead of -File in order for the parameter to be interpreted as a hashtable and not a string
 var cseCommandToExecute = 'powershell -ExecutionPolicy Unrestricted -Command .\\${cseMasterScript} -DynParameters ${cseScriptDynamicParameters}'
 
-var identityType = (!contains(identitySolution, 'DomainServices') || enableInsights ? true : false) ? (!empty(artifactsUserAssignedIdentityResourceId) ? 'SystemAssigned, UserAssigned' : 'SystemAssigned') : (!empty(artifactsUserAssignedIdentityResourceId) ? 'UserAssigned' : 'None')
+var identityType = (!contains(identitySolution, 'DomainServices') || enableMonitoring ? true : false) ? (!empty(artifactsUserAssignedIdentityResourceId) ? 'SystemAssigned, UserAssigned' : 'SystemAssigned') : (!empty(artifactsUserAssignedIdentityResourceId) ? 'UserAssigned' : 'None')
 
 var userAssignedIdentities = !empty(artifactsUserAssignedIdentityResourceId) ? {
   '${artifactsUserAssignedIdentityResourceId}': {}
@@ -304,7 +304,7 @@ resource extension_IaasAntimalware 'Microsoft.Compute/virtualMachines/extensions
   }
 }]
 
-resource extension_AzureMonitorWindowsAgent 'Microsoft.Compute/virtualMachines/extensions@2023-03-01' = [for i in range(0, sessionHostCount): if (enableInsights) {
+resource extension_AzureMonitorWindowsAgent 'Microsoft.Compute/virtualMachines/extensions@2023-03-01' = [for i in range(0, sessionHostCount): if (enableMonitoring) {
   parent: virtualMachine[i]
   name: 'AzureMonitorAgent'
   location: location
@@ -321,7 +321,7 @@ resource extension_AzureMonitorWindowsAgent 'Microsoft.Compute/virtualMachines/e
   ]
 }]
 
-resource dataCollectionEndpointAssociation 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = [for i in range(0, sessionHostCount): if (enableInsights && !empty(dataCollectionEndpointResourceId)) {
+resource dataCollectionEndpointAssociation 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = [for i in range(0, sessionHostCount): if (enableMonitoring && !empty(dataCollectionEndpointResourceId)) {
   scope: virtualMachine[i]
   name: 'configurationAccessEndpoint'
   properties: {
@@ -333,7 +333,7 @@ resource dataCollectionEndpointAssociation 'Microsoft.Insights/dataCollectionRul
   ]
 }]
 
-resource avdInsightsDataCollectionRuleAssociation 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = [for i in range(0, sessionHostCount): if (enableInsights && !empty(avdInsightsDataCollectionRulesResourceId)) {
+resource avdInsightsDataCollectionRuleAssociation 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = [for i in range(0, sessionHostCount): if (enableMonitoring && !empty(avdInsightsDataCollectionRulesResourceId)) {
   scope: virtualMachine[i]
   name: 'avdinsights-${virtualMachine[i].name}-dcra'
   properties: {
@@ -345,7 +345,7 @@ resource avdInsightsDataCollectionRuleAssociation 'Microsoft.Insights/dataCollec
   ]
 }]
 
-resource vmInsightsDataCollectionRuleAssociation 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = [for i in range(0, sessionHostCount): if (enableInsights && !empty(vmInsightsDataCollectionRulesResourceId)) {
+resource vmInsightsDataCollectionRuleAssociation 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = [for i in range(0, sessionHostCount): if (enableMonitoring && !empty(vmInsightsDataCollectionRulesResourceId)) {
   scope: virtualMachine[i]
   name: 'vmInsights-${virtualMachine[i].name}-dcra'
   properties: {

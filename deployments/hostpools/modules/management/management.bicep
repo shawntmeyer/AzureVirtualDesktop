@@ -33,7 +33,7 @@ param keyVaultPrivateDnsZoneResourceId string
 param privateEndpointSubnetResourceId string
 param locationVirtualMachines string
 param logAnalyticsWorkspaceResourceId string
-param enableInsights bool
+param enableMonitoring bool
 param netAppVnetResourceId string
 param keyManagementDisksAndStorage string
 param privateEndpoint bool
@@ -347,8 +347,8 @@ module automationAccount 'automationAccount.bicep' = if (enableIncreaseQuotaAuto
   params: {
     automationAccountName: automationAccountName
     location: locationVirtualMachines
-    logAnalyticsWorkspaceResourceId: enableInsights ? logAnalyticsWorkspaceResourceId : ''
-    enableInsights: enableInsights
+    logAnalyticsWorkspaceResourceId: enableMonitoring ? logAnalyticsWorkspaceResourceId : ''
+    enableMonitoring: enableMonitoring
     tags: tags
     automationAccountPrivateDnsZoneResourceId: automationAccountPrivateDnsZoneResourceId
     privateEndpoint: privateEndpoint

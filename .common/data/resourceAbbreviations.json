@@ -18,6 +18,7 @@
     "privateEndpoints": "pe",
     "recoveryServicesVaults": "rsv",
     "resourceGroups": "rg",
+    "scalingPlans": "vdscaling",
     "storageAccounts": "sa",
     "userAssignedIdentities": "uai",
     "virtualMachines": "vm",

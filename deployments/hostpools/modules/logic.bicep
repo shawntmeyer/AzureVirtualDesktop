@@ -4,6 +4,7 @@ param identitySolution string
 param artifactsUri string
 param avdAgentInstallersBlobName string
 param avdPrivateLink bool
+param deployScalingPlan bool
 param diskSku string
 param domainName string
 param cseBlobNames array
@@ -26,12 +27,53 @@ param resourceGroupHosts string
 param resourceGroupManagement string
 param resourceGroupMonitoring string
 param resourceGroupStorage string
+param scalingPlanRampUpSchedule object
+param scalingPlanPeakSchedule object
+param scalingPlanRampDownSchedule object
+param scalingPlanOffPeakSchedule object
+param scalingPlanForceLogoff bool
+param scalingPlanMinsBeforeLogoff int
 param securityPrincipals array
 param sessionHostCount int
 param sessionHostIndex int
 param fslogixStorageCount int
 param virtualMachineNamePrefix string
 param virtualMachineSize string
+
+var scalingPlanSchedules = deployScalingPlan ? [
+  {
+    rampUpStartTime: {
+      hour: first(split(scalingPlanRampUpSchedule.startTime, ':')[0]) == '0' ? int(last(split(scalingPlanRampUpSchedule.startTime, ':')[0])) : int(split(scalingPlanRampUpSchedule.startTime, ':')[0])
+      minute: first(split(scalingPlanRampUpSchedule.startTime, ':')[1]) == '0' ? int(last(split(scalingPlanRampUpSchedule.startTime, ':')[1])) : int(split(scalingPlanRampUpSchedule.startTime, ':')[1])
+    }
+    peakStartTime: {
+      hour: first(split(scalingPlanPeakSchedule.startTime, ':')[0]) == '0' ? int(last(split(scalingPlanPeakSchedule.startTime, ':')[0])) : int(split(scalingPlanPeakSchedule.startTime, ':')[0])
+      minute: first(split(scalingPlanPeakSchedule.startTime, ':')[1]) == '0' ? int(last(split(scalingPlanPeakSchedule.startTime, ':')[1])) : int(split(scalingPlanPeakSchedule.startTime, ':')[1])
+    }
+    rampDownStartTime: {
+      hour: first(split(scalingPlanRampDownSchedule.startTime, ':')[0]) == '0' ? int(last(split(scalingPlanRampDownSchedule.startTime, ':')[0])) : int(split(scalingPlanRampDownSchedule.startTime, ':')[0])
+      minute: first(split(scalingPlanRampDownSchedule.startTime, ':')[1]) == '0' ? int(last(split(scalingPlanRampDownSchedule.startTime, ':')[1])) : int(split(scalingPlanRampDownSchedule.startTime, ':')[1])
+    }
+    offPeakStartTime: {
+      hour: first(split(scalingPlanOffPeakSchedule.startTime, ':')[0]) == '0' ? int(last(split(scalingPlanOffPeakSchedule.startTime, ':')[0])) : int(split(scalingPlanOffPeakSchedule.startTime, ':')[0])
+      minute: first(split(scalingPlanOffPeakSchedule.startTime, ':')[1]) == '0' ? int(last(split(scalingPlanOffPeakSchedule.startTime, ':')[1])) : int(split(scalingPlanOffPeakSchedule.startTime, ':')[1])
+    }
+    name: 'weekdays_schedule'
+    daysOfWeek: [ 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday' ]
+    rampUpLoadBalancingAlgorithm: scalingPlanRampUpSchedule.loadBalancingAlgorithm
+    rampUpMinimumHostsPct: scalingPlanRampUpSchedule.minimumHostsPct
+    rampUpCapacityThresholdPct: scalingPlanRampUpSchedule.capacityThresholdPct
+    peakLoadBalancingAlgorithm: scalingPlanPeakSchedule.loadBalancingAlgorithm
+    rampDownLoadBalancingAlgorithm: scalingPlanRampDownSchedule.loadBalancingAlgorithm
+    rampDownMinimumHostsPct: scalingPlanRampDownSchedule.minimumHostsPct
+    rampDownCapacityThresholdPct: scalingPlanRampDownSchedule.capacityThresholdPct
+    rampDownForceLogoffUsers: scalingPlanForceLogoff
+    rampDownWaitTimeMinutes: scalingPlanForceLogoff ? scalingPlanMinsBeforeLogoff : null
+    rampDownNotificationMessage: scalingPlanForceLogoff ? 'You will be logged off in ${scalingPlanMinsBeforeLogoff} minutes. Make sure to save your work.' : null
+    rampDownStopHostsWhen: 'ZeroSessions'
+    offPeakLoadBalancingAlgorithm: scalingPlanOffPeakSchedule.loadBalancingAlgorithm
+  }
+] : []
 
 //  BATCH SESSION HOSTS
 // The following variables are used to determine the batches to deploy any number of AVD session hosts.
@@ -117,6 +159,7 @@ output netbios string = netbios
 output pooledHostPool bool = pooledHostPool
 output resourceGroupNames array = resourceGroupNames
 output roleDefinitions object = roleDefinitions
+output scalingPlanSchedules array = scalingPlanSchedules
 output sessionHostBatchCount int = sessionHostBatchCount
 output SecurityPrincipalsCount int = SecurityPrincipalsCount
 output smbServerLocation string = smbServerLocation

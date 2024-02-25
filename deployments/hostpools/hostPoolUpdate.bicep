@@ -182,8 +182,8 @@ param virtualMachineSize string = 'Standard_D4ads_v5'
 param virtualMachineNamePrefix string
 
 // Monitoring Configuration
-@description('Deploys the required enableInsights resources to enable AVD Insights and monitor features in the automation account.')
-param enableInsights bool = true
+@description('Deploys the required Monitoring agents on the VMs to enable AVD and VM Insights.')
+param enableMonitoring bool = true
 
 @description('Optional. The resource ID of the Data Collection Endpoint located in the same region as the Virtual Machines.')
 param dataCollectionEndpointResourceId string = ''
@@ -351,7 +351,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     location: vmVirtualNetwork.location
     managementVirtualMachineName: ''
     maxResourcesPerTemplateDeployment: logic.outputs.maxResourcesPerTemplateDeployment
-    enableInsights: enableInsights
+    enableMonitoring: enableMonitoring
     networkInterfaceNamePrefix: networkInterfaceNamePrefix
     ouPath: ouPath
     pooledHostPool: hostPool.properties.hostPoolType == 'Pooled' ? true : false

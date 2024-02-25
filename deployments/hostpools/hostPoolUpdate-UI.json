@@ -969,7 +969,7 @@
 									}
 								},
                                 {
-                                    "name": "enableInsights",
+                                    "name": "enableMonitoring",
                                     "type": "Microsoft.Common.CheckBox",
                                     "visible": true,
                                     "label": "Enable Monitoring for AVD and VM Insights",
@@ -980,7 +980,7 @@
                                     "name": "dataCollectionEndpoint",
                                     "type": "Microsoft.Solutions.ResourceSelector",
                                     "label": "Data Collection Endpoint",
-                                    "visible": "[or(steps('management').monitoring.enableInsights, equals(steps('management').monitoring.securityAgent, 'AMA'))]",
+                                    "visible": "[or(steps('management').monitoring.enableMonitoring, equals(steps('management').monitoring.securityAgent, 'AMA'))]",
                                     "resourceType": "Microsoft.Insights/dataCollectionEndpoints",
                                     "toolTip": "Select the Data Collection Endpoint used by the Azure Monitor Agent.",
                                     "options": {
@@ -1000,7 +1000,7 @@
                                         "required": true,
                                         "allowedValues": "[map(filter(steps('management').monitoring.dataCollectionRulesApi.value, (item) => contains(item.name, 'microsoft-avdi')), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
                                     },
-									"visible": "[steps('management').monitoring.enableInsights]"
+									"visible": "[steps('management').monitoring.enableMonitoring]"
                                 },
 								{
                                     "name": "vmInsightsDataCollectionRule",
@@ -1012,7 +1012,7 @@
                                         "required": true,
                                         "allowedValues": "[map(filter(steps('management').monitoring.dataCollectionRulesApi.value, (item) => contains(item.name, 'MSVMI-')), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\", \"value\":\"', item.id, '\"}')))]"
                                     },
-									"visible": "[steps('management').monitoring.enableInsights]"
+									"visible": "[steps('management').monitoring.enableMonitoring]"
                                 },
                                 {
                                     "name": "enableSecurity",
@@ -1120,10 +1120,10 @@
                 "virtualMachineAdminUserName": "[steps('hosts').localAdminCredentials.username]",
                 "virtualMachineNamePrefix": "[steps('hosts').naming.virtualMachineNamePrefix]",
 				"nameConvResTypeAtEnd": "[steps('hosts').naming.nameConvResTypeAtEnd]",
-				"enableInsights": "[steps('management').monitoring.enableInsights]",
-				"avdInsightsDataCollectionRulesResourceId": "[if(steps('management').monitoring.enableInsights, steps('management').monitoring.avdInsightsDataCollectionRule, '')]",
-				"vmInsightsDataCollectionRulesResourceId": "[if(steps('management').monitoring.enableInsights, steps('management').monitoring.vmInsightsDataCollectionRule, '')]",
-				"dataCollectionEndpointResourceId": "[if(or(steps('management').monitoring.enableInsights, equals(steps('management').monitoring.securityAgent, 'AMA')), steps('management').monitoring.dataCollectionEndpoint.id, '')]",
+				"enableMonitoring": "[steps('management').monitoring.enableMonitoring]",
+				"avdInsightsDataCollectionRulesResourceId": "[if(steps('management').monitoring.enableMonitoring, steps('management').monitoring.avdInsightsDataCollectionRule, '')]",
+				"vmInsightsDataCollectionRulesResourceId": "[if(steps('management').monitoring.enableMonitoring, steps('management').monitoring.vmInsightsDataCollectionRule, '')]",
+				"dataCollectionEndpointResourceId": "[if(or(steps('management').monitoring.enableMonitoring, equals(steps('management').monitoring.securityAgent, 'AMA')), steps('management').monitoring.dataCollectionEndpoint.id, '')]",
 				"securityDataCollectionRulesResourceId": "[if(steps('management').monitoring.enableSecurity, steps('management').monitoring.securityDataCollectionRule.id, '')]",
                 "SecurityLogAnalyticsWorkspaceResourceId": "[if(steps('management').monitoring.enableSecurity, steps('management').monitoring.logAnalyticsWorkspace.id, '')]",
 				"recoveryServices": "[steps('management').backup.recoveryServices]",

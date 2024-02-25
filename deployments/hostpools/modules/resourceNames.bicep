@@ -62,6 +62,7 @@ var globalFeedWorkspaceName = replace((nameConvResTypeAtEnd ? 'avd-global-feed-r
 // Control Plane HostPool Resources
 var desktopApplicationGroupName = replace(replace('${hostPoolPrefix}-${nameConvSuffix}', 'resourceType', resourceAbbreviations.desktopApplicationGroups), 'location', locations[locationControlPlane].abbreviation)
 var hostPoolName = replace(replace('${hostPoolPrefix}-${nameConvSuffix}', 'resourceType', resourceAbbreviations.hostPools), 'location', locations[locationControlPlane].abbreviation)
+var scalingPlanName = replace(replace('${hostPoolPrefix}-${nameConvSuffix}', 'resourceType', resourceAbbreviations.scalingPlans), 'location', locations[locationVirtualMachines].abbreviation)
 
 // Control Plane Business Unit Resources
 var resourceGroupControlPlane = replace(replace(replace(nameConv_Shared_ResGroups, 'resGroupPurpose', 'avd-controlplane'), 'location', '${locations[locationControlPlane].abbreviation}'), 'resourceType', '${resourceAbbreviations.resourceGroups}')
@@ -145,6 +146,7 @@ output resourceGroupHosts string = resourceGroupHosts
 output resourceGroupManagement string = resourceGroupManagement
 output resourceGroupMonitoring string = resourceGroupMonitoring
 output resourceGroupStorage string = resourceGroupStorage
+output scalingPlanName string = scalingPlanName
 output storageAccountNamePrefix string = storageAccountNamePrefix
 output userAssignedIdentityNameConv string = userAssignedIdentityNameConv
 output virtualMachineNamePrefix string = virtualMachineNamePrefix

@@ -7,6 +7,7 @@ param avdGlobalFeedPrivateDnsZoneResourceId string
 param avdPrivateDnsZoneResourceId string
 param avdPrivateLink bool
 param hostPoolRDPProperties string
+param deployScalingPlan bool
 param deploymentUserAssignedIdentityClientId string
 param desktopApplicationGroupName string
 param desktopFriendlyName string
@@ -22,18 +23,22 @@ param logAnalyticsWorkspaceResourceId string
 param managementVirtualMachineName string
 param hostPoolMaxSessionLimit int
 param hostPoolPublicNetworkAccess string
-param enableInsights bool
+param enableMonitoring bool
 param privateEndpointNameConv string
 param privateEndpointSubnetResourceId string
 param resourceGroupControlPlane string
 param resourceGroupGlobalFeed string
 param resourceGroupManagement string
 param roleDefinitions object
+param scalingPlanExclusionTag string
+param scalingPlanName string
+param scalingPlanSchedules array
 param securityPrincipalObjectIds array
 param tags object
 param timeStamp string
 param hostPoolValidationEnvironment bool
 param virtualMachineTemplate string
+param virtualMachinesTimeZone string
 param workspaceFriendlyName string
 param workspaceName string
 param workspacePublicNetworkAccess string
@@ -57,7 +62,7 @@ module hostPool 'hostPool.bicep' = {
     location: locationControlPlane
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
     hostPoolMaxSessionLimit: hostPoolMaxSessionLimit
-    enableInsights: enableInsights    
+    enableMonitoring: enableMonitoring    
     privateEndpointName: hostPoolPrivateEndpointName
     privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
     tags: tags
@@ -96,7 +101,7 @@ module feedWorkspace 'workspace.bicep' = {
     friendlyName: workspaceFriendlyName
     location: locationControlPlane
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
-    enableInsights: enableInsights
+    enableMonitoring: enableMonitoring
     privateDnsZoneResourceId: avdPrivateDnsZoneResourceId
     privateEndpointName: feedPrivateEndpointName
     privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
@@ -113,6 +118,22 @@ module feedWorkspace 'workspace.bicep' = {
   }
 }
 
+module scalingPlan 'scalingPlan.bicep' = if(deployScalingPlan && hostPoolType == 'Pooled') {
+  name: 'ScalingPlan_${timeStamp}'
+  scope: resourceGroup(resourceGroupControlPlane)
+  params: {
+    diagnosticWorkspaceId: logAnalyticsWorkspaceResourceId
+    exclusionTag: scalingPlanExclusionTag
+    hostPoolReferences: [hostPool.outputs.ResourceId]
+    hostPoolType: hostPoolType
+    location: locationVirtualMachines
+    name: scalingPlanName
+    tags: tags
+    schedules: scalingPlanSchedules
+    timeZone: virtualMachinesTimeZone
+  }
+} 
+
 module globalWorkspace 'workspace.bicep' = if(!existingGlobalWorkspace && avdPrivateLink && !empty(avdGlobalFeedPrivateDnsZoneResourceId)) {
   name: 'Global_Feed_Workspace_${timeStamp}'
   scope: resourceGroup(resourceGroupGlobalFeed)
@@ -123,7 +144,7 @@ module globalWorkspace 'workspace.bicep' = if(!existingGlobalWorkspace && avdPri
     friendlyName: ''
     location: locationControlPlane
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
-    enableInsights: enableInsights
+    enableMonitoring: enableMonitoring
     privateDnsZoneResourceId: avdGlobalFeedPrivateDnsZoneResourceId
     privateEndpointName: globalFeedPrivateEndpointName
     privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
