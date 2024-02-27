@@ -9,6 +9,16 @@
                     "name": "basics",
                     "label": "Deployment Basics",
                     "elements": [
+						{
+							"name": "infoBox1",
+							"type": "Microsoft.Common.InfoBox",
+							"visible": true,
+							"options": {
+								"icon": "Info",
+								"text": "This solution will deploy a fully functional Azure Virtual Desktop Hostpool with associated resources. The resources deployed are dependent upon your choices within the form. All resources and resource groups are named in accordance with Cloud Adoption Framework (CAF) naming standards.",
+								"uri": "https://www.github.com/shawntmeyer/azurevirtualdesktop"
+							}
+						},
                         {
                             "name": "scope",
                             "type": "Microsoft.Common.ResourceScope",
@@ -161,10 +171,13 @@
 							"label": "Solution Prerequisites",
 							"elements": [
 								{
-									"name": "textBlockPrereqs",
-									"type": "Microsoft.Common.TextBlock",
+									"name": "infoBox1",
+									"type": "Microsoft.Common.InfoBox",
+									"visible": true,
 									"options": {
-										"text": "This solution requires that several artifacts are uploaded as blobs to an existing storage account."
+										"icon": "Warning",
+										"text": "This solution has several prerequisites documented on the GitHub Repo.",
+										"uri": "https://www.github.com/shawntmeyer/azurevirtualdesktop"
 									}
 								},
 								{
