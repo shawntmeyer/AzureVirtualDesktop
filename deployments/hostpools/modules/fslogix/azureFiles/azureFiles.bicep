@@ -173,7 +173,7 @@ module shares 'shares.bicep' = [for i in range(0, storageCount): {
 }]
 
 resource privateEndpoints 'Microsoft.Network/privateEndpoints@2020-05-01' = [for i in range(0, storageCount): if (privateEndpoint) {
-  name: replace(replace(privateEndpointNameConv, 'subresource', 'file'), 'resource', '${storageAccountNamePrefix}${padLeft(i + storageIndex, 2, '0')}')
+  name: replace(replace(replace(privateEndpointNameConv, 'subresource', 'file'), 'resource', '${storageAccountNamePrefix}${padLeft(i + storageIndex, 2, '0')}'), '-uniqueString', '.${uniqueString(privateEndpointSubnetId)}')
   location: location
   tags: tagsPrivateEndpoints
   properties: {

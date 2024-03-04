@@ -49,7 +49,7 @@ resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' = {
 }
 
 resource vaultPrivateEndpoint 'Microsoft.Network/privateEndpoints@2020-05-01' = if(privateEndpoint) { 
-  name: replace(replace(privateEndpointNameConv, 'subresource', 'vault'), 'resource', keyVaultName)
+  name: replace(replace(replace(privateEndpointNameConv, 'subresource', 'vault'), 'resource', keyVaultName), '-uniqueString', '.${uniqueString(privateEndpointSubnetId)}')
   location: location
   tags: tagsPrivateEndpoints
   properties: {

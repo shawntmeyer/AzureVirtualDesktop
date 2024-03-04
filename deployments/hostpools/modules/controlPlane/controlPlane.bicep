@@ -43,9 +43,9 @@ param workspaceFriendlyName string
 param workspaceName string
 param workspacePublicNetworkAccess string
 
-var feedPrivateEndpointName = replace(replace(privateEndpointNameConv, 'subresource', 'feed'), 'resource', workspaceName)
-var globalFeedPrivateEndpointName = replace(replace(privateEndpointNameConv, 'subresource', 'global'), 'resource', workspaceName)
-var hostPoolPrivateEndpointName = replace(replace(privateEndpointNameConv, 'subresource', 'connection'), 'resource', hostPoolName)
+var feedPrivateEndpointName = replace(replace(replace(privateEndpointNameConv, 'subresource', 'feed'), 'resource', workspaceName), '-uniqueString', '.${uniqueString(privateEndpointSubnetResourceId)}')
+var globalFeedPrivateEndpointName = replace(replace(replace(privateEndpointNameConv, 'subresource', 'global'), 'resource', workspaceName), '-uniqueString', '.${uniqueString(privateEndpointSubnetResourceId)}')
+var hostPoolPrivateEndpointName = replace(replace(replace(privateEndpointNameConv, 'subresource', 'connection'), 'resource', hostPoolName), '-uniqueString', '.${uniqueString(privateEndpointSubnetResourceId)}')
 
 module hostPool 'hostPool.bicep' = {
   name: 'HostPool_${timeStamp}'
