@@ -4,11 +4,12 @@ param identitySolution string
 param artifactsUri string
 param avdAgentInstallersBlobName string
 param avdPrivateLink bool
-param deployScalingPlan bool
+param deployScalingPlan bool = false
 param diskSku string
 param domainName string
 param cseBlobNames array
 param cseMasterScript string
+param deployFSLogix bool
 param fileShareNames object
 param fslogixConfigureSessionHosts bool
 param fslogixConfigurationBlobName string
@@ -27,12 +28,12 @@ param resourceGroupHosts string
 param resourceGroupManagement string
 param resourceGroupMonitoring string
 param resourceGroupStorage string
-param scalingPlanRampUpSchedule object
-param scalingPlanPeakSchedule object
-param scalingPlanRampDownSchedule object
-param scalingPlanOffPeakSchedule object
-param scalingPlanForceLogoff bool
-param scalingPlanMinsBeforeLogoff int
+param scalingPlanRampUpSchedule object = {}
+param scalingPlanPeakSchedule object = {}
+param scalingPlanRampDownSchedule object = {}
+param scalingPlanOffPeakSchedule object = {}
+param scalingPlanForceLogoff bool = false
+param scalingPlanMinsBeforeLogoff int = 0
 param securityPrincipals array
 param sessionHostCount int
 param sessionHostIndex int
@@ -90,8 +91,6 @@ var endAvSetRange = (sessionHostCount + sessionHostIndex) / maxAvSetMembers // T
 var availabilitySetsCount = length(range(beginAvSetRange, (endAvSetRange - beginAvSetRange) + 1))
 
 // OTHER LOGIC & COMPUTED VALUES
-//  Ensure that the CSE files are supplied correctly.
-var fslogix = fslogixStorageService == 'None' ? false : true
 // fslogix will not be configured on session hosts if identity solution is not EntraId. Decision made to lower complexity and to avoid potential issues. Assumes the use of Group Policy to configure FSlogix with Domain Services identity solution.
 var fslogixConfigureHosts = identitySolution != 'EntraId' ? false : fslogixConfigureSessionHosts
 var cseArtifacts = fslogixConfigureHosts ? union(['${cseMasterScript}'], cseBlobNames, ['${fslogixConfigurationBlobName}'], ['${avdAgentInstallersBlobName}']) : union(['${cseMasterScript}'], cseBlobNames, ['${avdAgentInstallersBlobName}'])
@@ -108,7 +107,7 @@ var resGroupHostPools = [
   resourceGroupHosts
 ]
 
-var resGroupBase = fslogix ? [
+var resGroupBase = deployFSLogix ? [
   resourceGroupControlPlane
   resourceGroupHosts
   resourceGroupManagement
@@ -153,7 +152,6 @@ output beginAvSetRange int = beginAvSetRange
 output cseUris array = cseUris
 output divisionRemainderValue int = divisionRemainderValue
 output fileShares array = fileShares
-output fslogix bool = fslogix
 output maxResourcesPerTemplateDeployment int = maxResourcesPerTemplateDeployment
 output netbios string = netbios
 output pooledHostPool bool = pooledHostPool

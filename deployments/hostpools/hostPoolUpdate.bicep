@@ -284,6 +284,8 @@ module logic 'modules/logic.bicep' = {
     diskSku: diskSku
     cseBlobNames: cseBlobNames
     domainName: domainName
+    deployFSLogix: false
+    deployScalingPlan: false
     fileShareNames: resourceNames.outputs.fileShareNames
     fslogixConfigureSessionHosts: fslogixConfigureSessionHosts
     fslogixConfigurationBlobName: fslogixConfigurationBlobName

@@ -136,12 +136,16 @@ param keyVaultPrivateDnsZoneResourceId string = ''
 
 // Profile Storage Configuration
 
-@description('The custom prefix to use for the name of the Azure files storage accounts to use for FSLogix. If not specified, the name is generated automatically.')
+@description('Optional. Determines whether resources to support FSLogix profile storage are deployed.')
+param deployFSLogix bool = true
+
+@description('Optional. The custom prefix to use for the name of the Azure files storage accounts to use for FSLogix. If not specified, the name is generated automatically.')
 param fslogixStorageCustomPrefix string = ''
 
-@description('The file share size(s) in GB for the fslogix storage solution.')
+@description('Optional. The file share size(s) in GB for the fslogix storage solution.')
 param fslogixShareSizeInGB int = 100
 
+@description('Optional. The type of FSLogix containers to use for FSLogix.')
 @allowed([
   'CloudCacheProfileContainer' // FSLogix Cloud Cache Profile Container
   'CloudCacheProfileOfficeContainer' // FSLogix Cloud Cache Profile & Office Container
@@ -155,21 +159,20 @@ param fslogixContainerType string = 'ProfileContainer'
   'AzureNetAppFiles Standard' // ANF with the Standard SKU, 320,000 IOPS
   'AzureFiles Premium' // Azure files Premium with a Service Endpoint, 100,000 IOPs
   'AzureFiles Standard' // Azure files Standard with the Large File Share option and the default public endpoint, 20,000 IOPS
-  'None'
 ])
-@description('Enable an fslogix storage option to manage user profiles for the AVD session hosts. The selected service & SKU should provide sufficient IOPS for all of your users. https://docs.microsoft.com/en-us/azure/architecture/example-scenario/wvd/windows-virtual-desktop-fslogix#performance-requirements')
+@description('Optional. The storage service to use for storing FSLogix containers. The service & SKU should provide sufficient IOPS for all of your users. https://docs.microsoft.com/en-us/azure/architecture/example-scenario/wvd/windows-virtual-desktop-fslogix#performance-requirements')
 param fslogixStorageService string = 'AzureFiles Standard'
 
 @description('Optional. Enable Automatic File Share Quota Increase for Azure Files Premium.')
 param enableIncreaseQuotaAutomation bool = false
 
-@description('Configure FSLogix agent on the session hosts via local registry keys.')
+@description('Optional. Configure FSLogix agent on the session hosts via local registry keys.')
 param fslogixConfigureSessionHosts bool = false
 
 @description('Optional. The name of the blob that contains the FSLogix Configuration Script.')
 param fslogixConfigurationBlobName string = 'FSLogix-Configure.zip'
 
-@description('''Existing FSLogix Storage Account Resource Ids. Only used when fslogixConfigureSessionHosts = "true".
+@description('''Optional. Existing FSLogix Storage Account Resource Ids. Only used when fslogixConfigureSessionHosts = "true".
 This list will be added to any storage accounts created when setting "fslogixStorageService" to any of the AzureFiles options. 
 If "identitySolution" is set to "EntraId" or "EntraIdIntuneEnrollment" then only the first storage account listed will be used.
 ''')
@@ -182,37 +185,36 @@ param fslogixNetAppVnetResourceId string = ''
   'AES256'
   'RC4'
 ])
-@description('The Active Directory computer object Kerberos encryption type for the Azure Storage Account or Azure NetApp files Account.')
+@description('Optional. The Active Directory computer object Kerberos encryption type for the Azure Storage Account or Azure NetApp files Account.')
 param fslogixStorageAccountADKerberosEncryption string = 'AES256'
 
 @maxValue(100)
 @minValue(0)
-@description('''
-The number of storage accounts to deploy to support the required use case for the AVD stamp. https://docs.microsoft.com/en-us/azure/architecture/patterns/sharding
+@description('''Optional. The number of storage accounts to deploy to support the required use case for the AVD stamp. https://docs.microsoft.com/en-us/azure/architecture/patterns/sharding
 Note: Cannot utilize sharding with "identitySolution" = "AAD" so fslogixStorageCount will be set to 1 in variables.
 ''')
 param fslogixStorageCount int = 1
 
 @maxValue(99)
 @minValue(0)
-@description('The starting number for the storage accounts to support the required use case for the AVD stamp. https://docs.microsoft.com/en-us/azure/architecture/patterns/sharding')
+@description('Optional. The starting number for the storage accounts to support the required use case for the AVD stamp. https://docs.microsoft.com/en-us/azure/architecture/patterns/sharding')
 param fslogixStorageIndex int = 1
 
 // Control Plane Configuration
 
-@description('The deployment location for the AVD management resources.')
+@description('Optional. The deployment location for the AVD management resources.')
 param locationControlPlane string = deployment().location
 
-@description('Required. The friendly name for the AVD workspace that is displayed in the client.')
+@description('Optional. The friendly name for the AVD workspace that is displayed in the client.')
 param workspaceFriendlyName string = ''
 
 @description('Optional. The friendly name for the Desktop in the AVD workspace.')
 param desktopFriendlyName string = ''
 
-@description('Enable drain mode on new sessions hosts to prevent users from accessing them until they are validated.')
+@description('Optional. Enable drain mode on new sessions hosts to prevent users from accessing them until they are validated.')
 param drainMode bool = false
 
-@description('The maximum number of sessions per AVD session host.')
+@description('Required. The maximum number of sessions per AVD session host.')
 param hostPoolMaxSessionLimit int
 
 @description('''Optional. Input RDP properties to add or remove RDP functionality on the AVD host pool.
@@ -226,10 +228,10 @@ param hostPoolRDPProperties string = 'audiocapturemode:i:1;camerastoredirect:s:*
   'Personal Automatic'
   'Personal Direct'
 ])
-@description('These options specify the host pool type and depending on the type provides the load balancing options and assignment types.')
+@description('Optional. These options specify the host pool type and depending on the type provides the load balancing options and assignment types.')
 param hostPoolType string = 'Pooled DepthFirst'
 
-@description('The value determines whether the hostPool should receive early AVD updates for testing.')
+@description('Optional. The value determines whether the hostPool should receive early AVD updates for testing.')
 param hostPoolValidationEnvironment bool = false
 
 @description('An array of Security Principals with their object IDs and display names to assign to the AVD Application Group and FSLogix Storage.')
@@ -473,6 +475,7 @@ module logic 'modules/logic.bicep' = {
     deployScalingPlan: deployScalingPlan
     diskSku: diskSku
     cseBlobNames: cseBlobNames
+    deployFSLogix: deployFSLogix
     domainName: domainName
     fileShareNames: resourceNames.outputs.fileShareNames
     fslogixConfigureSessionHosts: fslogixConfigureSessionHosts
@@ -540,7 +543,7 @@ module management 'modules/management/management.bicep' = {
     enableIncreaseQuotaAutomation: enableIncreaseQuotaAutomation
     encryptionAtHost: encryptionAtHost
     environmentShortName: environmentShortName
-    fslogix: logic.outputs.fslogix
+    fslogix: deployFSLogix
     fslogixStorageAccountNamePrefix: resourceNames.outputs.storageAccountNamePrefix
     fslogixStorageService: fslogixStorageService
     hostPoolType: hostPoolType
@@ -658,7 +661,7 @@ module controlPlane 'modules/controlPlane/controlPlane.bicep' = {
   ]
 }
 
-module fslogix 'modules/fslogix/fslogix.bicep' = if (fslogixStorageService != 'None') {
+module fslogix 'modules/fslogix/fslogix.bicep' = if (deployFSLogix) {
   name: 'FSLogix_${timeStamp}'
   params: {
     artifactsUri: artifactsUri
@@ -763,7 +766,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     encryptionAtHost: encryptionAtHost
     fslogixConfigureSessionHosts: logic.outputs.fslogixConfigureSessionHosts
     fslogixContainerType: fslogixContainerType
-    fslogixDeployedStorageAccountResourceIds: (fslogixStorageService != 'None') ? fslogix.outputs.storageAccountResourceIds : []
+    fslogixDeployedStorageAccountResourceIds: deployFSLogix ? fslogix.outputs.storageAccountResourceIds : []
     fslogixExistingStorageAccountResourceIds: fslogixExistingStorageAccountResourceIds
     hostPoolName: controlPlane.outputs.hostPoolName
     identitySolution: identitySolution

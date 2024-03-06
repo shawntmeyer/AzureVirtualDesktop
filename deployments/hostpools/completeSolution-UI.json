@@ -1034,6 +1034,12 @@
                     "label": "Session Hosts",
                     "elements": [
 						{
+                            "name": "drainMode",
+                            "type": "Microsoft.Common.CheckBox",
+                            "label": "Drain Mode",
+                            "toolTip": "Enables drain mode on the AVD session hosts so the virtual machines cannot be accessed until they have been validated."
+                        },
+						{
 							"name": "virtualMachineNamePrefix",
 							"type": "Microsoft.Common.TextBox",
 							"label": "Custom VM Name Prefix",
@@ -1650,8 +1656,7 @@
 										"value": "Other"
 									}
 								]
-							},
-                            "required": true
+							}
 						},
 						{
                             "name": "fslogixContainerType",
@@ -1700,8 +1705,7 @@
 										"value": false
 									}
 								]
-							},
-                            "required": true
+							}
 						},
 						{
 							"name": "configureSessionHosts",
@@ -1746,10 +1750,8 @@
 									"type": "Microsoft.Common.DropDown",
 									"visible": true,
 									"label": "Storage SKU",
-									"defaultValue": "Premium",
 									"toolTip": "Select the storage SKU for the SMB file shares to support the use of FSLogix.",
 									"constraints": {
-										"required": true,
 										"allowedValues": [
 											{
 												"label": "Premium",
@@ -1761,6 +1763,13 @@
 											}
 										]
 									}
+								},
+								{
+									"name": "increaseFileShareQuota",
+									"type": "Microsoft.Common.CheckBox",
+									"label": "Enable Automation to increase Premium File Share Quota",
+									"toolTip": "Creates an Azure Automation Account, hybrid runbook workers, and enables automatic scaling up of the premium file share quota.",
+									"visible": "[and(equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles'), equals(steps('userProfiles').fslogixStorage.storageSku, 'Premium'))]"
 								},
 								{
 									"name": "storageShareSize",
@@ -2081,21 +2090,6 @@
                     "name": "management",
                     "label": "Management",
                     "elements": [
-						{
-                            "name": "drainMode",
-                            "type": "Microsoft.Common.CheckBox",
-                            "label": "Drain Mode",
-                            "defaultValue": false,
-                            "toolTip": "Enables drain mode on the AVD session hosts so the virtual machines cannot be accessed until they have been validated."
-                        },
-                        {
-                            "name": "increaseFileShareQuota",
-                            "type": "Microsoft.Common.CheckBox",
-                            "label": "Enable Automation to increase Premium File Share Quota",
-                            "defaultValue": false,
-                            "toolTip": "Creates an Azure Automation Account, hybrid runbook workers, and enables automatic scaling up of the premium file share quota.",
-                            "visible": "[and(steps('userProfiles').deployStorage, equals(steps('userProfiles').fslogixStorage.storageSku, 'Premium'))]"
-                        },
                         {
                             "name": "backup",
                             "type": "Microsoft.Common.Section",
@@ -2107,7 +2101,6 @@
                                     "type": "Microsoft.Common.CheckBox",
                                     "visible": true,
                                     "label": "Enable Recovery Services",
-                                    "defaultValue": false,
                                     "toolTip": "Choose to deploy backups for your solution. For a personal host pool, this will enable backups on the virtual machines. For a pooled host pool, this will enable backups on the FSLogix file share when using Azure Files."
                                 }
                             ]
@@ -2282,7 +2275,7 @@
                                         "required": true,
                                         "allowedValues": "[map(filter(steps('management').privateEndpoints.privateDNSZonesApi.value, (item) => contains(item.name, 'privatelink.azure-automation.')), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
                                     },
-									"visible": "[and(steps('management').privateEndpoints.enabled, steps('management').increaseFileShareQuota)]"
+									"visible": "[and(steps('management').privateEndpoints.enabled, or(steps('hosts').drainMode, steps('userProfiles').fslogixStorage.increaseFileShareQuota))]"
                                 },
 								{
                                     "name": "keyVaultPrivateDnsZone",
@@ -2337,7 +2330,7 @@
 				"artifactsStorageAccountResourceId": "[steps('basics').prereqs.storageAccount.id]",
 				"artifactsContainerName": "[first(skip(split(steps('basics').prereqs.container, '/'), 12))]",
 				"artifactsUserAssignedIdentityResourceId": "[if(not(empty(steps('basics').prereqs.managedIdentity)), steps('basics').prereqs.managedIdentity.id, parse('[]'))]",
-				"automationAccountPrivateDnsZoneResourceId": "[if(and(steps('management').increaseFileShareQuota, steps('management').privateEndpoints.enabled), steps('management').privateEndpoints.automationAccountPrivateDnsZone, '')]",
+				"automationAccountPrivateDnsZoneResourceId": "[if(and(steps('userProfiles').fslogixStorage.increaseFileShareQuota, steps('management').privateEndpoints.enabled), steps('management').privateEndpoints.automationAccountPrivateDnsZone, '')]",
 				"avdGlobalFeedPrivateDnsZoneResourceId": "[if(steps('controlPlane').avdPrivateLink.enablePrivateLink, steps('controlPlane').avdPrivateLink.avdGlobalPrivateLinkDnsZone, '')]",
 				"avdPrivateDnsZoneResourceId": "[if(steps('controlPlane').avdPrivateLink.enablePrivateLink, steps('controlPlane').avdPrivateLink.avdPrivateLinkDnsZone, '')]",
 				"avdPrivateLink": "[steps('controlPlane').avdPrivateLink.enablePrivateLink]",
@@ -2358,18 +2351,19 @@
                 "domainJoinUserPassword": "[steps('hosts').domainJoinCredentials.password]",
                 "domainJoinUserPrincipalName": "[steps('hosts').domainJoinCredentials.userPrincipalName]",
                 "domainName": "[steps('hosts').identity.domainName]",
-                "drainMode": "[steps('management').drainMode]",
+                "drainMode": "[steps('hosts').drainMode]",
                 "environmentShortName": "[steps('basics').naming.environmentShortName]",
-                "enableIncreaseQuotaAutomation": "[steps('management').increaseFileShareQuota]",
+                "enableIncreaseQuotaAutomation": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').deployStorage, equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles'), equals(steps('userProfiles').fslogixStorage.storageSku, 'Premium')), steps('userProfiles').fslogixStorage.increaseFileShareQuota, false)]",
+				"deployFSLogix": "[if(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').deployStorage, false)]",
 				"fslogixConfigureSessionHosts": "[if(and(equals(steps('hosts').identity.solution, 'EntraId'), equals(steps('userProfiles').profileSolution, 'FSLogix')), steps('userProfiles').configureSessionHosts, false)]",
 				"fslogixConfigurationBlobName": "[if(steps('userProfiles').configureSessionHosts, steps('userProfiles').fslogixSessionHostConfig.fslogixBlob.blobName , '')]",
-				"fslogixExistingStorageAccountResourceIds": "[if(and(steps('userProfiles').configureSessionHosts, or(equals(steps('userProfiles').deployStorage, false), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))), map(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts, (item) => item.resourceId), parse('[]'))]",
-                "fslogixShareSizeInGB": "[if(equals(steps('userProfiles').deployStorage, false), 100, steps('userProfiles').fslogixStorage.storageShareSize)]",
-                "fslogixStorageAccountADKerberosEncryption": "[if(or(equals(steps('userProfiles').deployStorage, false), equals(steps('userProfiles').fslogixStorage.storageService, 'AzureNetAppFiles')), 'RC4', steps('userProfiles').fslogixStorage.storageKerberosEncryption)]",
-                "fslogixContainerType": "[steps('userProfiles').fslogixContainerType]",
-                "fslogixStorageService": "[if(steps('userProfiles').deployStorage, concat(steps('userProfiles').fslogixStorage.storageService, ' ', steps('userProfiles').fslogixStorage.storageSku), 'None')]",
-				"fslogixStorageCount": "[if(or(equals(steps('userProfiles').deployStorage, false), equals(steps('userProfiles').fslogixStorage.storageService, 'AzureNetAppFiles')), 0, steps('userProfiles').fslogixStorage.storageCount)]",
-				"fslogixStorageIndex": "[if(or(equals(steps('userProfiles').deployStorage, false), equals(steps('userProfiles').fslogixStorage.storageService, 'AzureNetAppFiles')), 0, steps('userProfiles').fslogixStorage.storageIndex)]",
+				"fslogixContainerType": "[if(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').fslogixContainerType, 'ProfileContainer')]",
+				"fslogixExistingStorageAccountResourceIds": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').configureSessionHosts, or(equals(steps('userProfiles').deployStorage, false), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))), map(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts, (item) => item.resourceId), parse('[]'))]",
+                "fslogixShareSizeInGB": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').deployStorage), steps('userProfiles').fslogixStorage.storageShareSize, 100)]",
+                "fslogixStorageAccountADKerberosEncryption": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').deployStorage, equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles')), steps('userProfiles').fslogixStorage.storageKerberosEncryption, 'RC4')]",                
+                "fslogixStorageService": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').deployStorage), concat(steps('userProfiles').fslogixStorage.storageService, ' ', steps('userProfiles').fslogixStorage.storageSku), 'AzureFiles Standard')]",
+				"fslogixStorageCount": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').deployStorage, equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles')), steps('userProfiles').fslogixStorage.storageCount, 0)]",
+				"fslogixStorageIndex": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').deployStorage, equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles')), steps('userProfiles').fslogixStorage.storageIndex, 0)]",
                 "hostPoolType": "[if(equals(steps('controlPlane').hostPool.type, 'Pooled'), concat(steps('controlPlane').hostPool.type, ' ', steps('controlPlane').hostPool.loadBalancerAlgorithm), concat(steps('controlPlane').hostPool.type, ' ', steps('controlPlane').hostPool.assignmentType))]",
                 "hostPoolIdentifier": "[steps('basics').naming.hostPoolIdentifier]",
                 "imageOffer": "[steps('hosts').image.offer]",
