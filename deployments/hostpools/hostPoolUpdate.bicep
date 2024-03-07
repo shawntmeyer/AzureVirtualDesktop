@@ -194,6 +194,9 @@ param avdInsightsDataCollectionRulesResourceId string = ''
 @description('Optional. The resource ID of the Data Collection Rules used with the Azure Monitor Agent to power VM insights.')
 param vmInsightsDataCollectionRulesResourceId string = ''
 
+@description('Optional. The tag to add to hosts to exclude them from scaling plans.')
+param scalingPlanExclusionTag string = ''
+
 @description('The resource ID of the log analytics workspace used for Azure Sentinel and / or Defender for Cloud. When using the Microsoft Monitor Agent (Log Analytics Agent), this allows you to multihome the agent to reduce unnecessary log collection and reduce cost.')
 param securityLogAnalyticsWorkspaceResourceId string = ''
 
@@ -290,6 +293,7 @@ module logic 'modules/logic.bicep' = {
     fslogixConfigureSessionHosts: fslogixConfigureSessionHosts
     fslogixConfigurationBlobName: fslogixConfigurationBlobName
     fslogixContainerType: fslogixContainerType
+    fslogixStorageCount: 1
     fslogixStorageService: 'None'
     hostPoolType: 'Pooled DepthFirst'
     imageOffer: imageOffer
@@ -302,10 +306,11 @@ module logic 'modules/logic.bicep' = {
     resourceGroupHosts: resourceGroupHosts
     resourceGroupManagement: resourceGroupManagement
     resourceGroupStorage: resourceNames.outputs.resourceGroupStorage
+    scalingPlanExclusionTag: scalingPlanExclusionTag
     securityPrincipals: []
     sessionHostCount: sessionHostCount
     sessionHostIndex: sessionHostIndex
-    fslogixStorageCount: 1
+    tags: tags
     virtualMachineNamePrefix: virtualMachineNamePrefix
     virtualMachineSize: virtualMachineSize
     resourceGroupMonitoring: resourceNames.outputs.resourceGroupMonitoring
@@ -370,7 +375,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     sessionHostIndex: sessionHostIndex
     storageSuffix: logic.outputs.storageSuffix
     subnetResourceId: virtualMachineSubnetResourceId
-    tags: tags
+    tags: logic.outputs.tags
     timeStamp: timeStamp
     securityType: securityType
     virtualMachineNamePrefix: virtualMachineNamePrefix

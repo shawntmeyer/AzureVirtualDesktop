@@ -28,6 +28,7 @@ param resourceGroupHosts string
 param resourceGroupManagement string
 param resourceGroupMonitoring string
 param resourceGroupStorage string
+param scalingPlanExclusionTag string
 param scalingPlanRampUpSchedule object = {}
 param scalingPlanPeakSchedule object = {}
 param scalingPlanRampDownSchedule object = {}
@@ -37,6 +38,7 @@ param scalingPlanMinsBeforeLogoff int = 0
 param securityPrincipals array
 param sessionHostCount int
 param sessionHostIndex int
+param tags object
 param fslogixStorageCount int
 param virtualMachineNamePrefix string
 param virtualMachineSize string
@@ -75,6 +77,14 @@ var scalingPlanSchedules = deployScalingPlan ? [
     offPeakLoadBalancingAlgorithm: scalingPlanOffPeakSchedule.loadBalancingAlgorithm
   }
 ] : []
+
+var exclusionTag = !empty(scalingPlanExclusionTag) ? {
+  'Microsoft.Compute/virtualMachines': {
+    '${scalingPlanExclusionTag}': ''
+  }
+} : {}
+
+var varTags = !empty(exclusionTag) ? union(tags, exclusionTag) : tags
 
 //  BATCH SESSION HOSTS
 // The following variables are used to determine the batches to deploy any number of AVD session hosts.
@@ -126,6 +136,7 @@ var roleDefinitions = {
   AutomationContributor: 'f353d9bd-d4a6-484e-a77a-8050b599b867'
   DesktopVirtualizationApplicationGroupContributor: '86240b0e-9422-4c43-887b-b61143f32ba8'
   DesktopVirtualizationPowerOnContributor: '489581de-a3bd-480d-9518-53dea7416b33'
+  DesktopVirtualizationPowerOnOffContributor: '40c5ff49-9181-41f8-ae61-143b0e78555e'
   DesktopVirtualizationSessionHostOperator: '2ad6aaab-ead9-4eaa-8ac5-da422f562408'
   DesktopVirtualizationUser: '1d18fff3-a72a-46b5-b4a9-0b38a3cd7e63'
   DesktopVirtualizationWorkspaceContributor: '21efdde3-836f-432b-bf3d-3e8e734d4b2b'
@@ -166,6 +177,7 @@ output fslogixStorageSolution string = fslogixStorageSolution
 output fslogixConfigureSessionHosts bool = fslogixConfigureHosts
 output storageSuffix string = storageSuffix
 output fslogixStorageCount int = countStorage
+output tags object = varTags
 output timeDifference string = timeDifference
 output timeZone string = timeZone
 output virtualMachineTemplate string = virtualMachineTemplate

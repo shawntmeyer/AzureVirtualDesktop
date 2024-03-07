@@ -11,6 +11,7 @@ param azModuleBlobName string
 param locationControlPlane string
 param confidentialVMOrchestratorObjectId string
 param confidentialVMOSDiskEncryptionType string
+param deployScalingPlan bool
 //param diskAccessName string
 param diskEncryptionSetNames object
 param diskSku string
@@ -139,6 +140,15 @@ resource roleAssignment_PowerOnContributor 'Microsoft.Authorization/roleAssignme
   name: guid(avdObjectId, roleDefinitions.DesktopVirtualizationPowerOnContributor, subscription().id)
   properties: {
     roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', roleDefinitions.DesktopVirtualizationPowerOnContributor)
+    principalId: avdObjectId
+  }
+}
+
+// Role Assignment required for Scaling Plans
+resource roleAssignment_PowerOnOffContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = if(deployScalingPlan) {
+  name: guid(avdObjectId, roleDefinitions.DesktopVirtualizationPowerOnOffContributor, subscription().id)
+  properties: {
+    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', roleDefinitions.DesktopVirtualizationPowerOnOffContributor)
     principalId: avdObjectId
   }
 }

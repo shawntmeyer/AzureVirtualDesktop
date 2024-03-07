@@ -234,14 +234,14 @@ param hostPoolType string = 'Pooled DepthFirst'
 @description('Optional. The value determines whether the hostPool should receive early AVD updates for testing.')
 param hostPoolValidationEnvironment bool = false
 
-@description('An array of Security Principals with their object IDs and display names to assign to the AVD Application Group and FSLogix Storage.')
+@description('Required. An array of Security Principals with their object IDs and display names to assign to the AVD Application Group and FSLogix Storage.')
 param securityPrincipals array = []
 
-@description('Determines if the scaling plan is deployed to the host pool.')
+@description('Optional. Determines if the scaling plan is deployed to the host pool.')
 param deployScalingPlan bool = false
 
-@description('The tag used to exclude virtual machines from the scaling plan.')
-param scalingPlanExclusionTag string = ''
+@description('Optional. The tag used to exclude virtual machines from the scaling plan.')
+param scalingPlanExclusionTag string = 'excludeFromScaling'
 
 @description('The scaling plan weekday ramp up schedule')
 param scalingPlanRampUpSchedule object = {
@@ -471,16 +471,17 @@ module logic 'modules/logic.bicep' = {
     artifactsUri: artifactsUri
     avdAgentInstallersBlobName: avdAgentInstallersBlobName
     avdPrivateLink: avdPrivateLink
+    cseBlobNames: cseBlobNames
     cseMasterScript: cseMasterScript
+    deployFSLogix: deployFSLogix
     deployScalingPlan: deployScalingPlan
     diskSku: diskSku
-    cseBlobNames: cseBlobNames
-    deployFSLogix: deployFSLogix
     domainName: domainName
     fileShareNames: resourceNames.outputs.fileShareNames
     fslogixConfigureSessionHosts: fslogixConfigureSessionHosts
     fslogixConfigurationBlobName: fslogixConfigurationBlobName
     fslogixContainerType: fslogixContainerType
+    fslogixStorageCount: fslogixStorageCount
     fslogixStorageService: fslogixStorageService
     hostPoolType: hostPoolType
     identitySolution: identitySolution
@@ -495,6 +496,7 @@ module logic 'modules/logic.bicep' = {
     resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
     resourceGroupMonitoring: resourceNames.outputs.resourceGroupMonitoring
     resourceGroupStorage: resourceNames.outputs.resourceGroupStorage
+    scalingPlanExclusionTag: scalingPlanExclusionTag
     scalingPlanForceLogoff: scalingPlanForceLogoff
     scalingPlanMinsBeforeLogoff: scalingPlanMinsBeforeLogoff
     scalingPlanRampUpSchedule: scalingPlanRampUpSchedule
@@ -504,7 +506,7 @@ module logic 'modules/logic.bicep' = {
     securityPrincipals: securityPrincipals
     sessionHostCount: sessionHostCount
     sessionHostIndex: sessionHostIndex
-    fslogixStorageCount: fslogixStorageCount
+    tags: tags
     virtualMachineNamePrefix: resourceNames.outputs.virtualMachineNamePrefix
     virtualMachineSize: virtualMachineSize
   }
@@ -534,6 +536,7 @@ module management 'modules/management/management.bicep' = {
     azModuleBlobName: azModuleBlobName
     confidentialVMOrchestratorObjectId: confidentialVMOrchestratorObjectId
     confidentialVMOSDiskEncryptionType: confidentialVMOSDiskEncryptionType
+    deployScalingPlan: deployScalingPlan
     //diskAccessName: resourceNames.outputs.diskAccessName
     diskEncryptionSetNames: resourceNames.outputs.diskEncryptionSetNames
     diskSku: diskSku
@@ -796,7 +799,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     sessionHostIndex: sessionHostIndex
     storageSuffix: logic.outputs.storageSuffix
     subnetResourceId: virtualMachineSubnetResourceId
-    tags: tags
+    tags: deployScalingPlan ? logic.outputs.tags : tags
     timeStamp: timeStamp
     virtualMachineNamePrefix: resourceNames.outputs.virtualMachineNamePrefix
     virtualMachineAdminPassword: empty(virtualMachineAdminPassword) ? keyVault_Reference.getSecret(virtualMachineAdminPassword) : virtualMachineAdminPassword
