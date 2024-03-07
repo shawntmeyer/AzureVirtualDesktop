@@ -69,7 +69,7 @@ var scalingPlanSchedules = deployScalingPlan ? [
     rampDownMinimumHostsPct: scalingPlanRampDownSchedule.minimumHostsPct
     rampDownCapacityThresholdPct: scalingPlanRampDownSchedule.capacityThresholdPct
     rampDownForceLogoffUsers: scalingPlanForceLogoff
-    rampDownWaitTimeMinutes: scalingPlanForceLogoff ? scalingPlanMinsBeforeLogoff : null
+    rampDownWaitTimeMinutes:  scalingPlanMinsBeforeLogoff
     rampDownNotificationMessage: scalingPlanForceLogoff ? 'You will be logged off in ${scalingPlanMinsBeforeLogoff} minutes. Make sure to save your work.' : null
     rampDownStopHostsWhen: 'ZeroSessions'
     offPeakLoadBalancingAlgorithm: scalingPlanOffPeakSchedule.loadBalancingAlgorithm
