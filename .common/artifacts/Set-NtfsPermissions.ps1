@@ -19,7 +19,7 @@ param
     [String]$Environment,
 
     [Parameter(Mandatory)]
-    [String]$FslogixSolution,
+    [String]$FslogixContainerType,
 
     [Parameter(Mandatory=$false)]
     [ValidateSet("AES256","RC4")]
@@ -116,8 +116,8 @@ try
     Write-Log -Message "Security Principal Names:" -Type 'INFO'
     $SecurityPrincipalNames | Add-Content -Path 'C:\cse.txt' -Force | Out-Null
 
-    # Selects the appropraite share names based on the FSlogixSolution param from the deployment
-    $Shares = switch($FslogixSolution)
+    # Selects the appropriate share names based on the FSlogixContainerType param from the deployment
+    $Shares = switch($FslogixContainerType)
     {
         'CloudCacheProfileContainer' {@('profile-containers')}
         'CloudCacheProfileOfficeContainer' {@('office-containers','profile-containers')}
