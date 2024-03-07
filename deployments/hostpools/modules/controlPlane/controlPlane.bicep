@@ -118,14 +118,14 @@ module feedWorkspace 'workspace.bicep' = {
   }
 }
 
-module scalingPlan 'scalingPlan.bicep' = if(deployScalingPlan && hostPoolType == 'Pooled') {
+module scalingPlan 'scalingPlan.bicep' = if(deployScalingPlan && contains(hostPoolType,'Pooled')) {
   name: 'ScalingPlan_${timeStamp}'
   scope: resourceGroup(resourceGroupControlPlane)
   params: {
     diagnosticWorkspaceId: logAnalyticsWorkspaceResourceId
     exclusionTag: scalingPlanExclusionTag
     hostPoolReferences: [hostPool.outputs.ResourceId]
-    hostPoolType: hostPoolType
+    hostPoolType: split(hostPoolType, ' ')[0]
     location: locationVirtualMachines
     name: scalingPlanName
     tags: tags

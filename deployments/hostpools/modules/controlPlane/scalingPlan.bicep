@@ -14,11 +14,8 @@ param description string = name
 @sys.description('Optional. Timezone to be used for the scaling plan.')
 param timeZone string
 
-@allowed([
-  'Pooled'
-])
 @sys.description('Optional. The type of hostpool where this scaling plan should be applied.')
-param hostPoolType string = 'Pooled'
+param hostPoolType string
 
 @sys.description('Optional. Provide a tag to be used for hosts that should not be affected by the scaling plan.')
 param exclusionTag string = ''
