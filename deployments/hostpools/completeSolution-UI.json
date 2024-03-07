@@ -757,8 +757,8 @@
 												}
 											},											
 											{
-												"id": "loadBalancing",
-												"header": "Load Balancing",
+												"id": "loadBalancingAlgorithm",
+												"header": "Load Balancing Algorithm",
 												"width": "1fr",
 												"element": {													
 													"type": "Microsoft.Common.DropDown",
@@ -815,8 +815,8 @@
 												}
 											},																						
 											{
-												"id": "loadBalancing",
-												"header": "Load Balancing",
+												"id": "loadBalancingAlgorithm",
+												"header": "Load Balancing Algorithm",
 												"width": "1fr",
 												"element": {													
 													"type": "Microsoft.Common.DropDown",
@@ -908,8 +908,8 @@
 												}
 											},											
 											{
-												"id": "loadBalancing",
-												"header": "Load Balancing",
+												"id": "loadBalancingAlgorithm",
+												"header": "Load Balancing Algorithm",
 												"width": "1fr",
 												"element": {													
 													"type": "Microsoft.Common.DropDown",
@@ -1000,8 +1000,8 @@
 												}
 											},																						
 											{
-												"id": "loadBalancing",
-												"header": "Load Balancing",
+												"id": "loadBalancingAlgorithm",
+												"header": "Load Balancing Algorithm",
 												"width": "1fr",
 												"element": {													
 													"type": "Microsoft.Common.DropDown",
