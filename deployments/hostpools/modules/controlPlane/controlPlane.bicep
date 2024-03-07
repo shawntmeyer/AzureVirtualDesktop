@@ -124,7 +124,7 @@ module scalingPlan 'scalingPlan.bicep' = if(deployScalingPlan && contains(hostPo
   params: {
     diagnosticWorkspaceId: logAnalyticsWorkspaceResourceId
     exclusionTag: scalingPlanExclusionTag
-    hostPoolReferences: [hostPool.outputs.ResourceId]
+    hostPoolResourceId: hostPool.outputs.ResourceId
     hostPoolType: split(hostPoolType, ' ')[0]
     location: locationVirtualMachines
     name: scalingPlanName

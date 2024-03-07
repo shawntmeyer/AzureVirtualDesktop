@@ -14,6 +14,9 @@ param description string = name
 @sys.description('Optional. Timezone to be used for the scaling plan.')
 param timeZone string
 
+@sys.description('Optional. An array of references to hostpools.')
+param hostPoolResourceId string
+
 @sys.description('Optional. The type of hostpool where this scaling plan should be applied.')
 param hostPoolType string
 
@@ -62,9 +65,6 @@ param schedules array = [
   }
 ]
 
-@sys.description('Optional. An array of references to hostpools.')
-param hostPoolReferences array = []
-
 @sys.description('Optional. Tags of the resource.')
 param tags object = {}
 
@@ -102,7 +102,12 @@ resource scalingPlan 'Microsoft.DesktopVirtualization/scalingPlans@2022-09-09' =
     hostPoolType: hostPoolType
     exclusionTag: exclusionTag
     schedules: schedules
-    hostPoolReferences: hostPoolReferences
+    hostPoolReferences: [
+      {
+        hostPoolArmPath: hostPoolResourceId
+        scalingPlanEnabled: true
+      }
+    ]
     description: description
   }
 }
