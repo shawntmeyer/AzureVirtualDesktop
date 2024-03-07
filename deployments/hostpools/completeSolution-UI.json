@@ -721,7 +721,7 @@
 												}
 											},
 											{
-												"id": "minPctOfHosts",
+												"id": "minimumHostsPct",
 												"header": "Min % of Hosts",
 												"width": "1fr",
 												"element": {
@@ -872,7 +872,7 @@
 												}
 											},
 											{
-												"id": "minPctOfHosts",
+												"id": "minimumHostsPct",
 												"header": "Min % of Hosts",
 												"width": "1fr",
 												"element": {
