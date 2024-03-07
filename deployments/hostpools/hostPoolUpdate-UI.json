@@ -1071,6 +1071,18 @@
                     "label": "Tags",
                     "elements": [
                         {
+                            "name": "scalingPlanExclusionTag",
+                            "type": "Microsoft.Common.TextBox",
+                            "label": "Scaling Plan Exclusion Tag Name",
+                            "toolTip": "Provide the tag name to exclude the session hosts from the scaling plan if deployed.",
+                            "constraints": {
+                                "regex": "^(?:[a-zA-Z0-9][a-zA-Z0-9-]{0,20})?$",
+                                "validationMessage": "The prefix must begin with an alphanumeric character and then contain only alphanumeric characters and dashes. The value can be up to 20 characters long."
+                            },
+                            "required": false,
+                            "visible": true
+                        },                        
+                        {
                             "name": "tags",
                             "type": "Microsoft.Common.TagsByResource",
                             "resources": [
@@ -1128,6 +1140,7 @@
                 "SecurityLogAnalyticsWorkspaceResourceId": "[if(steps('management').monitoring.enableSecurity, steps('management').monitoring.logAnalyticsWorkspace.id, '')]",
 				"recoveryServices": "[steps('management').backup.recoveryServices]",
 				"recoveryServicesVaultResourceId": "[if(steps('management').backup.recoveryServices, steps('management').backup.recoveryServicesVault.id, '')]",
+                "scalingPlanExclusionTag": "[steps('tags').scalingPlanExclusionTag]",
                 "tags": "[steps('tags').tags]"
             },
             "kind": "Subscription",
