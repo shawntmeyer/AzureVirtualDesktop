@@ -731,7 +731,7 @@
 														"required": true,
 														"validations": [
 															{
-																"regex": "^( [1-9] [0-9]?|100)$",
+																"regex": "^([1-9][0-9]?|100)$",
 																"message": "Must be an integer from 1 - 100."
 															}
 														]
@@ -749,7 +749,7 @@
 														"required": true,
 														"validations": [
 															{
-																"regex": "^( [1-9] [0-9]?|100)$",
+																"regex": "^([1-9][0-9]?|100)$",
 																"message": "Must be an integer from 1 - 100."
 															}
 														]
@@ -882,7 +882,7 @@
 														"required": true,
 														"validations": [
 															{
-																"regex": "^( [1-9] [0-9]?|100)$",
+																"regex": "^([1-9][0-9]?|100)$",
 																"message": "Must be an integer from 1 - 100."
 															}
 														]
@@ -900,7 +900,7 @@
 														"required": true,
 														"validations": [
 															{
-																"regex": "^( [1-9] [0-9]?|100)$",
+																"regex": "^([1-9][0-9]?|100)$",
 																"message": "Must be an integer from 1 - 100."
 															}
 														]
@@ -2275,7 +2275,7 @@
                                         "required": true,
                                         "allowedValues": "[map(filter(steps('management').privateEndpoints.privateDNSZonesApi.value, (item) => contains(item.name, 'privatelink.azure-automation.')), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
                                     },
-									"visible": "[and(steps('management').privateEndpoints.enabled, or(steps('hosts').drainMode, steps('userProfiles').fslogixStorage.increaseFileShareQuota))]"
+									"visible": "[and(steps('management').privateEndpoints.enabled, steps('userProfiles').fslogixStorage.increaseFileShareQuota)]"
                                 },
 								{
                                     "name": "keyVaultPrivateDnsZone",
