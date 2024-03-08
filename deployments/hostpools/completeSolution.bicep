@@ -220,7 +220,7 @@ param hostPoolMaxSessionLimit int
 @description('''Optional. Input RDP properties to add or remove RDP functionality on the AVD host pool.
 Settings reference: https://learn.microsoft.com/windows-server/remote/remote-desktop-services/clients/rdp-files
 ''')
-param hostPoolRDPProperties string = 'audiocapturemode:i:1;camerastoredirect:s:*'
+param hostPoolRDPProperties string = 'audiocapturemode:i:1;camerastoredirect:s:*;enablerdsaadauth:i:1'
 
 @allowed([
   'Pooled DepthFirst'
@@ -241,7 +241,7 @@ param securityPrincipals array = []
 param deployScalingPlan bool = false
 
 @description('Optional. The tag used to exclude virtual machines from the scaling plan.')
-param scalingPlanExclusionTag string = 'excludeFromScaling'
+param scalingPlanExclusionTag string = ''
 
 @description('The scaling plan weekday ramp up schedule')
 param scalingPlanRampUpSchedule object = {
@@ -690,6 +690,7 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (deployFSLogix) {
     kerberosEncryption: fslogixStorageAccountADKerberosEncryption
     keyVaultUri: management.outputs.storageEncryptionKeyKeyVaultUri
     location: locationVirtualMachines
+    logAnalyticsWorkspaceResourceId: enableMonitoring ? monitoring.outputs.logAnalyticsWorkspaceResourceId : ''
     managementVirtualMachineName: management.outputs.virtualMachineName
     netAppAccountName: resourceNames.outputs.netAppAccountName
     netAppCapacityPoolName: resourceNames.outputs.netAppCapacityPoolName

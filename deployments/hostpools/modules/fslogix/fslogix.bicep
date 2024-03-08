@@ -25,6 +25,7 @@ param storageService string
 param kerberosEncryption string
 param keyVaultUri string
 param location string
+param logAnalyticsWorkspaceResourceId string
 param managementVirtualMachineName string
 param netAppAccountName string
 param netAppCapacityPoolName string
@@ -112,6 +113,7 @@ module azureFiles 'azureFiles/azureFiles.bicep' = if (storageSolution == 'AzureF
     kerberosEncryption: kerberosEncryption
     keyVaultUri: keyVaultUri
     location: location
+    logAnalyticsWorkspaceId: logAnalyticsWorkspaceResourceId
     managementVirtualMachineName: managementVirtualMachineName
     netbios: netbios
     ouPath: ouPath

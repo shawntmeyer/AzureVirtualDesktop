@@ -18,6 +18,7 @@ param fslogixStorageService string
 param kerberosEncryption string
 param keyVaultUri string
 param location string
+param logAnalyticsWorkspaceId string
 param managementVirtualMachineName string
 param netbios string
 param ouPath string
@@ -88,21 +89,13 @@ resource storageAccounts 'Microsoft.Storage/storageAccounts@2022-09-01' = [for i
         userAssignedIdentity: encryptionUserAssignedIdentityResourceId
       } : null
       services: storageSku == 'Standard' ? {
+        blob: {
+          keyType: 'Account'
+          enabled: true
+        }
         file: {
           keyType: 'Account'
           enabled: true
-        }
-        table: {
-          keyType: 'Account'
-          enabled: true
-        }
-        queue: {
-            keyType: 'Account'
-            enabled: true
-        }
-        blob: {
-            keyType: 'Account'
-            enabled: true
         }
       } : {
         file: {
@@ -267,5 +260,39 @@ module autoIncreasePremiumFileShareQuota '../../management/autoIncreasePremiumFi
     managementVirtualMachineName: managementVirtualMachineName
   }
 }
+
+resource storageAccounts_diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = [for i in range(0, storageCount): if(!empty(logAnalyticsWorkspaceId)) {
+  name: '${storageAccountNamePrefix}${padLeft(i + storageIndex, 2, '0')}-diagnosticSettings'
+  properties: {
+    metrics: [
+      {
+        category: 'Transaction'
+        enabled: true
+      }
+    ]
+    workspaceId: logAnalyticsWorkspaceId
+  }
+  scope: storageAccounts[i]
+}]
+
+resource storageAccounts_file_diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = [for i in range(0, storageCount): if(!empty(logAnalyticsWorkspaceId)) {
+  name: '${storageAccountNamePrefix}${padLeft(i + storageIndex, 2, '0')}-file-diagnosticSettings'
+  scope: fileServices[i]
+  properties: {
+    workspaceId: logAnalyticsWorkspaceId
+    logs: [
+      {
+        category: 'StorageDelete'
+        enabled: true
+      }
+    ]
+    metrics: [
+      {
+        category: 'Transaction'
+        enabled: true
+      }
+    ]
+  }
+}]
 
 output storageAccountResourceIds array = [for i in range(0, storageCount): storageAccounts[i].id]

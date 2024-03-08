@@ -127,6 +127,18 @@
 									"visible": true
 								},
 								{
+									"name": "cafTextBlock",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": true,
+									"options": {
+										"text": "The Cloud Adoption Framework (CAF) specifies some best practices when naming resources. Some customers have chosen to reverse this order of naming elements by placing the resource type at the end of the naming convention. This solution allows you to select the name of most resources, but there are several that are automatically named including Private Endpoints. Select 'Yes' below to ensure the automatically named resources are named with this reverse convention or leave it set to 'No' to follow the CAF.",
+										"link": {
+											"label": "Learn more",
+											"uri": "https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/ready/azure-best-practices/resource-naming"
+										}
+									}
+								},
+								{
 									"name": "nameConvResTypeAtEnd",
 									"type": "Microsoft.Common.OptionsGroup",
 									"label": "Move the Resource Type to the end of resource names",
