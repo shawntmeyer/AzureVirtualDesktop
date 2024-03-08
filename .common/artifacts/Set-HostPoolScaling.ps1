@@ -321,6 +321,9 @@ try
     $AzContext = $null
     try
     {
+		If ($Environment -eq 'USNat') {
+			Add-AzEnvironment -AutoDiscover -Uri 'https://management.azure.eaglex.ic.gov/metadata/endpoints?api-version=2022-06' | Out-Null
+		}
         $AzAuth = Connect-AzAccount -Environment $EnvironmentName -Tenant $TenantId -Subscription $SubscriptionId -Identity
         if (!$AzAuth -or !$AzAuth.Context) {
             throw $AzAuth

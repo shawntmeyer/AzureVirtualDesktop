@@ -167,6 +167,9 @@ try
                 $FileServer = '\\' + $StorageAccountName + $FilesSuffix
 
                 # Connects to Azure using a User Assigned Managed Identity
+                If ($Environment -eq 'USNat') {
+                    Add-AzEnvironment -AutoDiscover -Uri 'https://management.azure.eaglex.ic.gov/metadata/endpoints?api-version=2022-06' | Out-Null
+                }
                 Connect-AzAccount -Identity -AccountId $ClientId -Environment $Environment -Tenant $TenantId -Subscription $SubscriptionId | Out-Null
                 Write-Log -Message "Authenticated to Azure" -Type 'INFO'
 

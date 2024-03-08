@@ -26,8 +26,6 @@ param (
     $UserAssignedIdentityClientId
 )
 
-
-
 function Write-Log
 {
     param(
@@ -59,6 +57,9 @@ try
     }
     If (-not (Test-Path $ScriptPath)) {
         $ScriptPath = Get-ChildItem -Path $PSScriptRoot -Filter "$(Split-Path -Path $ScriptPath -Leaf)" -Recurse
+    }
+    If ($Environment -eq 'USNat') {
+        Add-AzEnvironment -AutoDiscover -Uri 'https://management.azure.eaglex.ic.gov/metadata/endpoints?api-version=2022-06' | Out-Null
     }
     Connect-AzAccount -Environment $Environment -Tenant $TenantId -Subscription $SubscriptionId -Identity -AccountId $UserAssignedIdentityClientId | Out-Null
     Import-AzAutomationRunbook -Name $RunbookName -Path $ScriptPath -Type PowerShell -AutomationAccountName $AutomationAccountName -ResourceGroupName $ResourceGroupName -Published -Description 'This script automates host pool scaling.' -Force | Out-Null

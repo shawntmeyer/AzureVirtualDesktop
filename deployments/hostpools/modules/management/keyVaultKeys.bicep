@@ -6,7 +6,7 @@ param keyVaultName string
 param release_policy object = {}
 param rotationPolicy bool
 
-resource vault 'Microsoft.KeyVault/vaults@2023-07-01' existing = {
+resource vault 'Microsoft.KeyVault/vaults@2022-07-01' existing = {
   name: keyVaultName
 }
 

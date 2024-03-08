@@ -27,6 +27,9 @@ $ErrorActionPreference = 'Stop'
 
 try
 {
+    If ($Environment -eq 'USNat') {
+        Add-AzEnvironment -AutoDiscover -Uri 'https://management.azure.eaglex.ic.gov/metadata/endpoints?api-version=2022-06' | Out-Null
+    }
     Connect-AzAccount `
         -Environment $Environment `
         -Tenant $TenantId `
