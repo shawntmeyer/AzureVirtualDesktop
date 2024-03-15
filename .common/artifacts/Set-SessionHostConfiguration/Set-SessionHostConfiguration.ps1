@@ -3,7 +3,7 @@ param (
     [Parameter(Mandatory = $false)]
     [Hashtable] $DynParameters
 )
-[string]$Script:LogDir = "C:\WindowsAzure\Logs\Plugins\Microsoft.Compute.CustomScriptExtension"
+[string]$Script:LogDir = "$env:SystemRoot\Logs"
 [string]$Script:Name = [System.IO.Path]::GetFileNameWithoutExtension($PSCommandPath)
 $SHKeys = $DynParameters.SHConfiguration
 $AmdVmSize = $SHKeys.AmdVmSize
@@ -396,7 +396,7 @@ try
         #  Add GPU Settings
         ##############################################################
         # This setting applies to the VM Size's recommended for AVD with a GPU
-        if ($AmdVmSize -or $NvidiaVmSize) 
+        if ($AmdVmSize -eq 'True' -or $NvidiaVmSize -eq 'True') 
         {
             # Configure GPU-accelerated app rendering: https://learn.microsoft.com/azure/virtual-desktop/configure-vm-gpu#configure-gpu-accelerated-app-rendering
             Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath 'SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services' -RegistryValue 'bEnumerateHWBeforeSW' -RegistryType DWORD -RegistryData 1
@@ -406,7 +406,7 @@ try
         }
 
         # This setting applies only to VM Size's recommended for AVD with a Nvidia GPU
-        if($NvidiaVmSize)
+        if($NvidiaVmSize -eq 'True')
         {
             # Configure GPU-accelerated frame encoding: https://learn.microsoft.com/azure/virtual-desktop/configure-vm-gpu#configure-gpu-accelerated-frame-encoding
             Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath 'SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services' -RegistryValue 'AVChardwareEncodePreferred' -RegistryType DWORD -RegistryData 1
@@ -418,7 +418,7 @@ try
     #  Install the AVD Agent
     ##############################################################
     # Disabling this method for installing the AVD agent until AAD Join can completed successfully
-    $BootInstaller = (Get-ChildItem $PSScriptRoot -Filter '*Bootloader.msi' -Recurse).FullName
+    $BootInstaller = (Get-ChildItem $PSScriptRoot -Filter '*.msi' -Recurse | Where-Object {$_.Name -match 'BootLoader'}).FullName
     If (!$BootInstaller) {
         $url = 'https://query.prod.cms.rt.microsoft.com/cms/api/am/binary/RWrxrH'
         $BootInstaller = Get-InternetFile -Url $url -OutputDirectory $TempDir -ErrorAction SilentlyContinue
@@ -438,7 +438,7 @@ try
 
     Start-Sleep -Seconds 5 | Out-Null
 
-    $AgentInstaller = (Get-ChildItem $PSScriptRoot -Filter '*Agent.msi' -Recurse).FullName
+    $AgentInstaller = (Get-ChildItem $PSScriptRoot -Filter '*.msi' -Recurse | Where-Object {$_.Name -notmatch 'BootLoader'}).FullName
     If (!$AgentInstaller) {
         $url = 'https://query.prod.cms.rt.microsoft.com/cms/api/am/binary/RWrmXv'
         $AgentInstaller = Get-InternetFile -Url $url -OutputDirectory $TempDir -ErrorAction SilentlyContinue

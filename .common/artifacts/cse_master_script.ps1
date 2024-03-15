@@ -96,10 +96,10 @@ function New-Log {
 #region Initialization
 $ErrorActionPreference = 'Stop'
 $Script:Name = [System.IO.Path]::GetFileNameWithoutExtension($PSCommandPath)
-New-Log "C:\WindowsAzure\Logs\Plugins\Microsoft.Compute.CustomScriptExtension"
+New-Log "$env:SystemRoot\Logs"
 Write-Log -category Info -message "Starting '$PSCommandPath'."
 Write-Log -category Info -message "Current working dir: $((Get-Location).Path)"
-$DirTemp = Join-Path -Path $env:SystemDrive -ChildPath 'CSE'
+$DirTemp = Join-Path -Path $env:Temp -ChildPath 'CSE'
 If (Test-Path -Path $DirTemp) {Remove-Item -Path $DirTemp -Recurse -Force -ErrorAction SilentlyContinue}
 New-Item -Path $DirTemp -ItemType Directory -Force | Out-Null
 
