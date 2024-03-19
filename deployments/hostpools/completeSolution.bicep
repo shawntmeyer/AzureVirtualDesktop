@@ -137,7 +137,7 @@ param keyVaultPrivateDnsZoneResourceId string = ''
 // Profile Storage Configuration
 
 @description('Optional. Determines whether resources to support FSLogix profile storage are deployed.')
-param deployFSLogix bool = true
+param deployFSLogixStorage bool = true
 
 @description('Optional. The custom prefix to use for the name of the Azure files storage accounts to use for FSLogix. If not specified, the name is generated automatically.')
 param fslogixStorageCustomPrefix string = ''
@@ -433,7 +433,7 @@ var artifactsUri = 'https://${artifactsStorageAccountName}.blob.${environment().
 var locationVirtualMachines = vmVirtualNetwork.location
 var confidentialVMOSDiskEncryptionType = confidentialVMOSDiskEncryption ? 'DiskWithVMGuestState' : 'VMGuestStateOnly'
 
-var resourceGroupsCount = 4 + (fslogixStorageService == 'None' ? 0 : 1) + (avdPrivateLink ? 1 :0)
+var resourceGroupsCount = 4 + (deployFSLogixStorage ? 1 : 0) + (avdPrivateLink ? 1 :0)
 
 var securityType = virtualMachineSecurityType == 'Standard' ? '' : virtualMachineSecurityType
 
@@ -473,7 +473,7 @@ module logic 'modules/logic.bicep' = {
     avdPrivateLink: avdPrivateLink
     cseBlobNames: cseBlobNames
     cseMasterScript: cseMasterScript
-    deployFSLogix: deployFSLogix
+    deployFSLogixStorage: deployFSLogixStorage
     deployScalingPlan: deployScalingPlan
     diskSku: diskSku
     domainName: domainName
@@ -546,9 +546,10 @@ module management 'modules/management/management.bicep' = {
     enableIncreaseQuotaAutomation: enableIncreaseQuotaAutomation
     encryptionAtHost: encryptionAtHost
     environmentShortName: environmentShortName
-    fslogix: deployFSLogix
+    fslogix: deployFSLogixStorage
     fslogixStorageAccountNamePrefix: resourceNames.outputs.storageAccountNamePrefix
     fslogixStorageService: fslogixStorageService
+    fslogixStorageSolution: logic.outputs.fslogixStorageSolution
     hostPoolType: hostPoolType
     identitySolution: identitySolution
     kerberosEncryption: fslogixStorageAccountADKerberosEncryption
@@ -572,7 +573,6 @@ module management 'modules/management/management.bicep' = {
     roleDefinitions: logic.outputs.roleDefinitions
     securityType: securityType
     sessionHostCount: sessionHostCount
-    fslogixStorageSolution: logic.outputs.fslogixStorageSolution
     tags: tags
     timeStamp: timeStamp
     timeZone: logic.outputs.timeZone
@@ -664,7 +664,7 @@ module controlPlane 'modules/controlPlane/controlPlane.bicep' = {
   ]
 }
 
-module fslogix 'modules/fslogix/fslogix.bicep' = if (deployFSLogix) {
+module fslogix 'modules/fslogix/fslogix.bicep' = if (deployFSLogixStorage) {
   name: 'FSLogix_${timeStamp}'
   params: {
     artifactsUri: artifactsUri
@@ -770,7 +770,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     encryptionAtHost: encryptionAtHost
     fslogixConfigureSessionHosts: logic.outputs.fslogixConfigureSessionHosts
     fslogixContainerType: fslogixContainerType
-    fslogixDeployedStorageAccountResourceIds: deployFSLogix ? fslogix.outputs.storageAccountResourceIds : []
+    fslogixDeployedStorageAccountResourceIds: deployFSLogixStorage ? fslogix.outputs.storageAccountResourceIds : []
     fslogixExistingStorageAccountResourceIds: fslogixExistingStorageAccountResourceIds
     hostPoolName: controlPlane.outputs.hostPoolName
     identitySolution: identitySolution

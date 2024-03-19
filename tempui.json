@@ -1,0 +1,144 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2021-09-09/uiFormDefinition.schema.json",
+    "view": {
+        "kind": "Form",
+        "properties": {
+            "title": "Azure Virtual Desktop",
+            "steps": [
+                {
+                    "name": "basics",
+                    "label": "Deployment Basics",
+                    "elements": [
+                        {
+                            "name": "scope",
+                            "type": "Microsoft.Common.ResourceScope",
+							"instanceDetailsLabel": "Deployment Details",
+							"location": {
+								"label": "Region (Session Hosts and Management Resources)",
+                                "resourceTypes": ["Microsoft.Compute/virtualmachines"]
+                            }
+						}
+                    ]
+                },
+                {
+                    "name": "hosts",
+                    "label": "Session Hosts",
+                    "elements": [
+                        {
+                            "name": "identity",
+                            "type": "Microsoft.Common.Section",
+                            "label": "Identity",
+                            "visible": true,
+                            "elements": [
+                                {
+                                    "name": "solution",
+                                    "type": "Microsoft.Common.OptionsGroup",
+                                    "visible": true,
+                                    "label": "Identity Provider",
+                                    "defaultValue": "Active Directory Domain Services (AD DS)",
+                                    "toolTip": "Choose the Identity Solution for the Virtual Machines.",
+                                    "constraints": {
+                                        "required": true,
+                                        "allowedValues": [
+                                            {
+                                                "label": "Active Directory Domain Services (AD DS)",
+                                                "value": "ActiveDirectoryDomainServices"
+                                            },
+                                            {
+                                                "label": "Entra Id",
+                                                "value": "EntraId"
+                                            },
+                                            {
+                                                "label": "Entra Domain Services",
+                                                "value": "EntraDomainServices"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "userProfiles",
+                    "label": "User Profiles",
+                    "elements": [
+						{
+							"name": "profileSolution",
+							"type": "Microsoft.Common.DropDown",
+							"defaultValue": "FSLogix",
+							"visible": true,
+							"label": "Profile Solution",
+							"toolTip": "Select the user profile solution for your end users.",
+							"constraints": {
+								"allowedValues": [
+									{
+										"label": "FSLogix",
+										"value": "FSLogix"
+									},
+									{
+										"label": "Other",
+										"value": "Other"
+									}
+								]
+							}
+						},
+						{
+							"name": "deployStorage",
+							"type": "Microsoft.Common.DropDown",
+							"defaultValue": "Yes",
+							"visible": "[equals(steps('userProfiles').profileSolution, 'FSLogix')]",
+							"label": "Deploy FSLogix Storage Resources",
+							"toolTip": "Select 'Yes' to deploy the required storage resources for FSLogix Profiles.",
+							"constraints": {
+								"allowedValues": [
+									{
+										"label": "Yes",
+										"value": "Yes"
+									},
+									{
+										"label": "No",
+										"value": "No"
+									}
+								]
+							}
+						},
+						{
+							"name": "configureSessionHosts",
+							"type": "Microsoft.Common.DropDown",
+							"label": "Configure FSLogix Settings on Session Hosts",
+							"placeholder": "",
+							"defaultValue": "Yes",
+							"toolTip": "Select 'Yes' if you desire to run automatically configure the FSLogix settings on the Session Hosts.",
+							"visible": "[and(equals(steps('hosts').identity.solution, 'EntraId'), equals(steps('userProfiles').profileSolution, 'FSLogix'))]",
+							"constraints": {
+								"allowedValues": [
+									{
+										"label": "Yes",
+										"value": "Yes"
+									},
+									{
+										"label": "No",
+										"value": "No"
+									}
+								],
+								"required": false
+							}
+						}		
+					]
+                }
+            ]
+        },
+        "outputs": {
+            "parameters": {
+                "identitySolution": "[steps('hosts').identity.solution]",
+				"deployFSLogixStorage": "[if(equals(steps('userProfiles').profileSolution, 'FSLogix'), if(equals(steps('userProfiles').deployStorage, 'Yes'), true, false), false)]",
+				"fslogixConfigureSessionHosts": "[if(and(equals(steps('hosts').identity.solution, 'EntraId'), equals(steps('userProfiles').profileSolution, 'FSLogix')), if(equals(steps('userProfiles').configureSessionHosts, 'Yes'), true, false), false)]"
+				
+            },
+            "kind": "Subscription",
+            "location": "[steps('basics').scope.location.name]",
+            "subscriptionId": "[steps('basics').scope.subscription.id]"
+        }
+    }
+}

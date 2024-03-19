@@ -1,0 +1,7 @@
+param identitySolution string
+param deployFSLogixStorage bool
+param fslogixConfigureSessionHosts bool
+
+output identitySolution string = identitySolution
+output deployFSLogixStorage bool = deployFSLogixStorage
+output fslogixConfigureSessionHosts bool = fslogixConfigureSessionHosts

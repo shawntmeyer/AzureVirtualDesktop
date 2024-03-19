@@ -24,7 +24,9 @@ param enableIncreaseQuotaAutomation bool
 param encryptionAtHost bool
 param environmentShortName string
 param fslogix bool
+param fslogixStorageAccountNamePrefix string
 param fslogixStorageService string
+param fslogixStorageSolution string
 param globalFeedWorkspaceResourceGroupName string
 param globalFeedWorkspaceName string
 param hostPoolType string
@@ -48,8 +50,6 @@ param resourceGroupStorage string
 param roleDefinitions object
 param securityType string
 param sessionHostCount int
-param fslogixStorageAccountNamePrefix string
-param fslogixStorageSolution string
 param tags object
 param timeStamp string
 param timeZone string

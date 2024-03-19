@@ -1701,45 +1701,19 @@
                         },
 						{
 							"name": "deployStorage",
-							"type": "Microsoft.Common.DropDown",
-							"defaultValue": "Yes",
+							"type": "Microsoft.Common.CheckBox",
+							"defaultValue": true,
 							"visible": "[equals(steps('userProfiles').profileSolution, 'FSLogix')]",
 							"label": "Deploy FSLogix Storage Resources",
-							"toolTip": "Select 'Yes' to deploy the required storage resources for FSLogix Profiles.",
-							"constraints": {
-								"allowedValues": [
-									{
-										"label": "Yes",
-										"value": true
-									},
-									{
-										"label": "No",
-										"value": false
-									}
-								]
-							}
+							"toolTip": "Check this box to deploy the required storage resources for FSLogix Profiles."
 						},
 						{
 							"name": "configureSessionHosts",
-							"type": "Microsoft.Common.DropDown",
+							"type": "Microsoft.Common.CheckBox",
 							"label": "Configure FSLogix Settings on Session Hosts",
-							"placeholder": "",
-							"defaultValue": "Yes",
-							"toolTip": "Select 'Yes' if you desire to run automatically configure the FSLogix settings on the Session Hosts.",
-							"visible": "[and(equals(steps('hosts').identity.solution, 'EntraId'), equals(steps('userProfiles').profileSolution, 'FSLogix'))]",
-							"constraints": {
-								"allowedValues": [
-									{
-										"label": "Yes",
-										"value": true
-									},
-									{
-										"label": "No",
-										"value": false
-									}
-								],
-								"required": false
-							}
+							"defaultValue": true,
+							"toolTip": "Check this box if you desire to run automatically configure the FSLogix settings on the Session Hosts.",
+							"visible": "[and(equals(steps('hosts').identity.solution, 'EntraId'), equals(steps('userProfiles').profileSolution, 'FSLogix'))]"
 						},				
 						{
 							"name": "fslogixStorage",
@@ -2024,7 +1998,7 @@
 								{
 									"name": "notDeployedCCTextBox",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(not(equals(steps('userProfiles').deployStorage, true)), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]",
+									"visible": "[and(equals(steps('userProfiles').deployStorage, 'No'), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]",
 									"options": {
 										"text": "To enable cross-region high availability of user profiles using FSLogix CloudCache enter up to 4 storage accounts which are from unique regions to be added to the fslogix container paths. Enter the values in the order of preference with the first one list located in the region where the virtual machines were deployed."
 									}
@@ -2032,7 +2006,7 @@
 								{
 									"name": "deployedCCTextBox",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(steps('userProfiles').deployStorage, contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]",
+									"visible": "[and(equals(steps('userProfiles').deployStorage, 'Yes'), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]",
 									"options": {
 										"text": "To enable cross-region high availability of user profiles using FSLogix CloudCache select up to 3 additional storage accounts which are not from the region where you deployed the virtual machines but are also from unique regions to be added to the fslogix container paths. Enter the values in the order of preference."
 									}
@@ -2067,19 +2041,19 @@
 													"type": "Microsoft.Common.DropDown",
 													"multiLine": true,
 													"constraints": {
-														"allowedValues": "[if(steps('userProfiles').deployStorage, map(filter(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi.value, (item) => not(equals(item.location, steps('basics').scope.location.name))), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Location: ', item.location, '\", \"value\":\"', item.id, '\"}'))), map(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\", \"description\":\"Location: ', item.location, '\", \"value\":\"', item.id, '\"}'))))]"
+														"allowedValues": "[if(equals(steps('userProfiles').deployStorage, 'Yes'), map(filter(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi.value, (item) => not(equals(item.location, steps('basics').scope.location.name))), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Location: ', item.location, '\", \"value\":\"', item.id, '\"}'))), map(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\", \"description\":\"Location: ', item.location, '\", \"value\":\"', item.id, '\"}'))))]"
 													}
 												}
 											}
 										],
 										"required": false
 									},									
-									"visible": "[or(not(equals(steps('userProfiles').deployStorage, true)), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]"
+									"visible": "[or(equals(steps('userProfiles').deployStorage, 'No'), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]"
 								},
 								{
 									"name": "tooManyStorageAccountsCCErrorBox",
 									"type": "Microsoft.Common.InfoBox",
-									"visible": "[if(steps('userProfiles').deployStorage, greater(length(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts), 3), false)]",
+									"visible": "[if(equals(steps('userProfiles').deployStorage, 'Yes'), greater(length(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts), 3), false)]",
 									"options": {
 										"icon": "Error",
 										"text": "You have provided too many storage account resource Ids. You can only specify 3 existing resource Ids when deploying storage resources."
@@ -2088,7 +2062,7 @@
 								{
 									"name": "tooManyStorageAccountsVHDxErrorBox",
 									"type": "Microsoft.Common.InfoBox",
-									"visible": "[if(and(not(equals(steps('userProfiles').deployStorage, true)), not(contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))), greater(length(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts), 1), false)]",
+									"visible": "[if(and(equals(steps('userProfiles').deployStorage, 'No'), not(contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))), greater(length(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts), 1), false)]",
 									"options": {
 										"icon": "Error",
 										"text": "You have provided too many storage account resource Ids. You can only specify 1 existing resource Ids when specifying a standard VHDx container type (i.e., no Cloud Cache)."
@@ -2366,7 +2340,7 @@
                 "drainMode": "[steps('hosts').drainMode]",
                 "environmentShortName": "[steps('basics').naming.environmentShortName]",
                 "enableIncreaseQuotaAutomation": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').deployStorage, equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles'), equals(steps('userProfiles').fslogixStorage.storageSku, 'Premium')), steps('userProfiles').fslogixStorage.increaseFileShareQuota, false)]",
-				"deployFSLogix": "[if(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').deployStorage, false)]",
+				"deployFSLogixStorage": "[if(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').deployStorage, false)]",
 				"fslogixConfigureSessionHosts": "[if(and(equals(steps('hosts').identity.solution, 'EntraId'), equals(steps('userProfiles').profileSolution, 'FSLogix')), steps('userProfiles').configureSessionHosts, false)]",
 				"fslogixConfigurationBlobName": "[if(steps('userProfiles').configureSessionHosts, steps('userProfiles').fslogixSessionHostConfig.fslogixBlob.blobName , '')]",
 				"fslogixContainerType": "[if(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').fslogixContainerType, 'ProfileContainer')]",

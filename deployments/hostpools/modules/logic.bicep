@@ -9,7 +9,7 @@ param diskSku string
 param domainName string
 param cseBlobNames array
 param cseMasterScript string
-param deployFSLogix bool
+param deployFSLogixStorage bool
 param fileShareNames object
 param fslogixConfigureSessionHosts bool
 param fslogixConfigurationBlobName string
@@ -117,7 +117,7 @@ var resGroupHostPools = [
   resourceGroupHosts
 ]
 
-var resGroupBase = deployFSLogix ? [
+var resGroupBase = deployFSLogixStorage ? [
   resourceGroupControlPlane
   resourceGroupHosts
   resourceGroupManagement
