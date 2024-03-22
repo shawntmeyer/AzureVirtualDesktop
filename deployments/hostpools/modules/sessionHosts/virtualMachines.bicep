@@ -115,7 +115,7 @@ var fslogixExclusions = '"%TEMP%\\*\\*.VHDX";"%Windir%\\TEMP\\*\\*.VHDX"${fslogi
 // Dynamic parameters for Set-SessionHostConfiguration.ps1
 //var hostPoolToken = hostPool.properties.registrationInfo.token
 var hostPoolToken = reference(resourceId(resourceGroupControlPlane, 'Microsoft.DesktopVirtualization/hostPools', hostPoolName), '2019-12-10-preview').registrationInfo.token
-var shcCommonString = 'AmdVmSize=\'${amdVmSize}\';nvidiaVmSize=\'${nvidiaVmSize}\';HostPoolRegistrationToken=\'${hostPoolToken}\''
+var shcCommonString = 'ActiveDirectorySolution=\'${identitySolution}\';AmdVmSize=\'${amdVmSize}\';nvidiaVmSize=\'${nvidiaVmSize}\';HostPoolRegistrationToken=\'${hostPoolToken}\''
 var shcCommonCustomObject = 'SHConfiguration=@([pscustomobject]@{${shcCommonString}})'
 
 // CSE Master Script Dynamic parameters - Built from any custom parameters provided via parameter and the FSLogix and SessionHostConfiguration parameters.
@@ -388,6 +388,8 @@ resource extension_MicrosoftMonitoringAgent 'Microsoft.Compute/virtualMachines/e
   }
   dependsOn: [
     extension_IaasAntimalware
+    extension_AADLoginForWindows
+    extension_JsonADDomainExtension
   ]
 }]
 
@@ -413,6 +415,11 @@ resource extension_CustomScriptExtension 'Microsoft.Compute/virtualMachines/exte
     }
   }
   dependsOn: [
+    extension_AADLoginForWindows
+    extension_JsonADDomainExtension
+    extension_AmdGpuDriverWindows
+    extension_NvidiaGpuDriverWindows
+    extension_IaasAntimalware
     extension_AzureMonitorWindowsAgent
     extension_MicrosoftMonitoringAgent
   ]

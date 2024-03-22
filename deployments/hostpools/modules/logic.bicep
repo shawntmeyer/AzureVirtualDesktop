@@ -103,7 +103,7 @@ var availabilitySetsCount = length(range(beginAvSetRange, (endAvSetRange - begin
 // OTHER LOGIC & COMPUTED VALUES
 // fslogix will not be configured on session hosts if identity solution is not EntraId. Decision made to lower complexity and to avoid potential issues. Assumes the use of Group Policy to configure FSlogix with Domain Services identity solution.
 var fslogixConfigureHosts = identitySolution != 'EntraId' ? false : fslogixConfigureSessionHosts
-var cseArtifacts = fslogixConfigureHosts ? union(['${cseMasterScript}'], cseBlobNames, ['${fslogixConfigurationBlobName}'], ['${avdAgentInstallersBlobName}']) : union(['${cseMasterScript}'], cseBlobNames, ['${avdAgentInstallersBlobName}'])
+var cseArtifacts = fslogixConfigureHosts ? union(['${cseMasterScript}'], ['${avdAgentInstallersBlobName}'], cseBlobNames, ['${fslogixConfigurationBlobName}']) : union(['${cseMasterScript}'], ['${avdAgentInstallersBlobName}'], cseBlobNames)
 var cseUris = [ for artifact in cseArtifacts : contains(toLower(artifact), 'http') ? artifact : '${artifactsUri}${artifact}' ]
 
 var fileShares = fileShareNames[fslogixContainerType]
