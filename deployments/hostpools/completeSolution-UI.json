@@ -1503,6 +1503,27 @@
                             "label": "Domain Join Credentials",
                             "visible": "[not(equals(steps('hosts').identity.solution, 'EntraId'))]",
                             "elements": [
+								{
+									"name": "passwordSource",
+									"type": "Microsoft.Common.OptionsGroup",
+									"label": "Domain Join User and Password Source",
+									"defaultValue": "Manual Entry",
+									"toolTip": "",
+									"constraints": {
+										"allowedValues": [
+											{
+												"label": "Key Vault",
+												"value": "keyVault"
+											},
+											{
+												"label": "Manual Entry",
+												"value": "manual"
+											}
+										],
+										"required": true
+									},
+									"visible": true
+								},
                                 {
                                     "name": "userPrincipalName",
                                     "type": "Microsoft.Common.TextBox",
@@ -1513,7 +1534,8 @@
                                         "required": true,
                                         "regex": "^[a-z0-9A-Z_.-]+@(?:[a-z0-9]+\\.)+[a-z]+$",
                                         "validationMessage": "The value must be a valid user principal name."
-                                    }
+                                    },
+									"visible": "[equals(steps('hosts').domainJoinCredentials.passwordSource, 'manual')]"
                                 },
                                 {
                                     "name": "password",
@@ -1527,8 +1549,52 @@
                                     },
                                     "options": {
                                         "hideConfirmation": true
-                                    }
-                                }
+                                    },
+									"visible": "[equals(steps('hosts').domainJoinCredentials.passwordSource, 'manual')]"
+                                },
+								{
+									"name": "keyVault",
+									"type": "Microsoft.Solutions.ResourceSelector",
+									"label": "Select Key Vault",
+									"resourceType": "Microsoft.KeyVault/vaults",
+									"toolTip": "Select a key vault with the secrets",
+									"scope": {
+										"subscriptionId": "[steps('basics').scope.subscription.subscriptionId]",
+										"location": "[steps('basics').scope.location.name]"
+									},
+									"constraints": {
+										"required": true
+									},
+									"visible": "[equals(steps('hosts').domainJoinCredentials.passwordSource, 'keyVault')]"
+								},
+								{
+									"name": "userPrincipalNameSecretName",
+									"type": "Microsoft.Common.TextBox",
+									"label": "Domain join user principal name secret name",
+									"placeholder": "",
+									"defaultValue": "domainJoinUserPrincipalName",
+									"toolTip": "Use only allowed characters",
+									"constraints": {
+										"required": true,
+										"regex": "^[a-z0-9A-Z]{1,30}$",
+										"validationMessage": "Only alphanumeric characters are allowed, and the value must be 1-30 characters long."
+									},
+									"visible": "[equals(steps('hosts').domainJoinCredentials.passwordSource, 'keyVault')]"
+								},
+								{
+									"name": "passwordSecretName",
+									"type": "Microsoft.Common.TextBox",
+									"label": "Domain join user password secret name",
+									"placeholder": "",
+									"defaultValue": "domainJoinUserPassword",
+									"toolTip": "Use only allowed characters",
+									"constraints": {
+										"required": true,
+										"regex": "^[a-z0-9A-Z]{1,30}$",
+										"validationMessage": "Only alphanumeric characters are allowed, and the value must be 1-30 characters long."
+									},
+									"visible": "[equals(steps('hosts').domainJoinCredentials.passwordSource, 'keyVault')]"
+								}
                             ]
                         },
                         {
@@ -1537,6 +1603,27 @@
                             "visible": true,
                             "label": "Local Administrator Credential",
                             "elements": [
+								{
+									"name": "passwordSource",
+									"type": "Microsoft.Common.OptionsGroup",
+									"label": "Domain Join User and Password Source",
+									"defaultValue": "[steps('hosts').domainJoinCredentials.passwordsource]",
+									"toolTip": "",
+									"constraints": {
+										"allowedValues": [
+											{
+												"label": "Key Vault",
+												"value": "keyVault"
+											},
+											{
+												"label": "Manual Entry",
+												"value": "manual"
+											}
+										],
+										"required": true
+									},
+									"visible": true
+								},
                                 {
                                     "name": "username",
                                     "type": "Microsoft.Common.TextBox",
@@ -1548,7 +1635,7 @@
                                         "regex": "",
                                         "validationMessage": ""
                                     },
-                                    "visible": true
+                                    "visible": "[equals(steps('hosts').localAdminCredentials.passwordSource, 'manual')]"
                                 },
                                 {
                                     "name": "password",
@@ -1566,8 +1653,51 @@
                                     "options": {
                                         "hideConfirmation": false
                                     },
-                                    "visible": true
-                                }
+                                    "visible": "[equals(steps('hosts').localAdminCredentials.passwordSource, 'manual')]"
+                                },
+								{
+									"name": "keyVault",
+									"type": "Microsoft.Solutions.ResourceSelector",
+									"label": "Select Key Vault",
+									"resourceType": "Microsoft.KeyVault/vaults",
+									"toolTip": "Select a key vault with the secrets",
+									"scope": {
+										"subscriptionId": "[steps('basics').scope.subscription.subscriptionId]",
+										"location": "[steps('basics').scope.location.name]"
+									},
+									"constraints": {
+										"required": true
+									},
+									"visible": "[equals(steps('hosts').localAdminCredentials.passwordSource, 'keyVault')]"
+								},
+								{
+									"name": "userNameSecretName",
+									"type": "Microsoft.Common.TextBox",
+									"label": "Virtual machine admin user username secret name",
+									"placeholder": "",
+									"defaultValue": "virtualMachineAdminUserName",
+									"toolTip": "Use only allowed characters",
+									"constraints": {
+										"required": true,
+										"regex": "^[a-z0-9A-Z]{1,30}$",
+										"validationMessage": "Only alphanumeric characters are allowed, and the value must be 1-30 characters long."
+									},
+									"visible": "[equals(steps('hosts').localAdminCredentials.passwordSource, 'keyVault')]"
+								},
+								{
+									"name": "passwordSecretName",
+									"type": "Microsoft.Common.TextBox",
+									"label": "Virtual machine admin password secret name",
+									"placeholder": "",
+									"defaultValue": "virtualMachineAdminPassword",
+									"toolTip": "Use only allowed characters",
+									"constraints": {
+										"required": true,
+										"regex": "^[a-z0-9A-Z]{1,30}$",
+										"validationMessage": "Only alphanumeric characters are allowed, and the value must be 1-30 characters long."
+									},
+									"visible": "[equals(steps('hosts').localAdminCredentials.passwordSource, 'keyVault')]"
+								}
                             ]
                         },
 						{
@@ -1898,7 +2028,7 @@
 									"request": {
 										"method": "GET",
 										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Network/virtualNetworks?api-version=2022-11-01')]"
-								}
+									}
 								},
 								{
                                     "name": "virtualNetwork",
@@ -2334,8 +2464,8 @@
 				"virtualMachineSecurityType": "[steps('hosts').security.securityType]",
 				"deployScalingPlan": "[steps('controlPlane').scalingPlan.deployScalingPlan]",
                 "diskSku": "[steps('hosts').specs.diskSku]",
-                "domainJoinUserPassword": "[steps('hosts').domainJoinCredentials.password]",
-                "domainJoinUserPrincipalName": "[steps('hosts').domainJoinCredentials.userPrincipalName]",
+                "domainJoinUserPassword": "[if(equals(steps('hosts').domainJoinCredentials.passwordSource, 'keyVault'), parse(concat('{\"reference\":{\"keyVault\":{\"id\":\"', steps('hosts').domainJoinCredentials.keyVault.id, '\"},\"secretName\":\"', steps('hosts').domainJoinCredentials.passwordSecretName, '\"}}')), steps('hosts').domainJoinCredentials.password)]",
+                "domainJoinUserPrincipalName": "[if(equals(steps('hosts').domainJoinCredentials.passwordSource, 'keyVault'), parse(concat('{\"reference\":{\"keyVault\":{\"id\":\"', steps('hosts').domainJoinCredentials.keyVault.id, '\"},\"secretName\":\"', steps('hosts').domainJoinCredentials.userPrincipalNameSecretName, '\"}}')), steps('hosts').domainJoinCredentials.userPrincipalName)]",
                 "domainName": "[steps('hosts').identity.domainName]",
                 "drainMode": "[steps('hosts').drainMode]",
                 "environmentShortName": "[steps('basics').naming.environmentShortName]",
@@ -2385,9 +2515,9 @@
                 "tags": "[steps('tags').tags]",
                 "hostPoolValidationEnvironment": "[steps('controlPlane').hostPool.validation]",
                 "virtualMachineNamePrefix": "[steps('hosts').virtualMachineNamePrefix]",
-                "virtualMachineAdminPassword": "[steps('hosts').localAdminCredentials.password]",
+                "virtualMachineAdminPassword": "[if(equals(steps('hosts').localAdminCredentials.passwordSource, 'keyVault'), parse(concat('{\"reference\":{\"keyVault\":{\"id\":\"', steps('hosts').localAdminCredentials.keyVault.id, '\"},\"secretName\":\"', steps('hosts').localAdminCredentials.passwordSecretName, '\"}}')),steps('hosts').localAdminCredentials.password)]",
                 "virtualMachineSize": "[steps('hosts').specs.size]",
-                "virtualMachineAdminUserName": "[steps('hosts').localAdminCredentials.username]",
+                "virtualMachineAdminUserName": "[if(equals(steps('hosts').localAdminCredentials.passwordSource, 'keyVault'), parse(concat('{\"reference\":{\"keyVault\":{\"id\":\"', steps('hosts').localAdminCredentials.keyVault.id, '\"},\"secretName\":\"', steps('hosts').localAdminCredentials.userNameSecretName, '\"}}')), steps('hosts').localAdminCredentials.username)]",
 				"desktopFriendlyName": "[steps('controlPlane').naming.desktopFriendlyName]",
                 "workspaceFriendlyName": "[steps('controlPlane').naming.workspaceFriendlyName]"
             },
