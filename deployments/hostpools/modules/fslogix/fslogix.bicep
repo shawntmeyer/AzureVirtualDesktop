@@ -11,10 +11,6 @@ param customerManagedKeysEnabled bool
 param deploymentUserAssignedIdentityClientId string
 param delegatedSubnetId string
 param dnsServers string
-@secure()
-param domainJoinUserPassword string
-@secure()
-param domainJoinUserPrincipalName string
 param domainName string
 param enableIncreaseQuotaAutomation bool
 param encryptionUserAssignedIdentityResourceId string
@@ -23,6 +19,7 @@ param shareSizeInGB int
 param containerType string
 param storageService string
 param kerberosEncryption string
+param keyVaultName string
 param keyVaultUri string
 param location string
 param logAnalyticsWorkspaceResourceId string
@@ -58,6 +55,11 @@ param timeZone string
 param virtualNetwork string
 param virtualNetworkResourceGroup string
 
+resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' existing = if (contains(identitySolution, 'DomainServices')) {
+  name: keyVaultName
+  scope: resourceGroup(resourceGroupManagement)
+}
+
 // Azure NetApp files for fslogix
 module azureNetAppFiles 'azureNetAppFiles.bicep' = if (storageSolution == 'AzureNetAppFiles' && contains(identitySolution, 'DomainServices')) {
   name: 'AzureNetAppFiles_${timeStamp}'
@@ -68,8 +70,8 @@ module azureNetAppFiles 'azureNetAppFiles.bicep' = if (storageSolution == 'Azure
     artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
     delegatedSubnetId: delegatedSubnetId
     dnsServers: dnsServers
-    domainJoinUserPassword: domainJoinUserPassword
-    domainJoinUserPrincipalName: domainJoinUserPrincipalName
+    domainJoinUserPassword: keyVault.getSecret('domainJoinUserPassword')
+    domainJoinUserPrincipalName: keyVault.getSecret('domainJoinUserPrincipalName')
     domainName: domainName
     fileShares: fileShares
     fslogixContainerType: containerType
@@ -101,8 +103,8 @@ module azureFiles 'azureFiles/azureFiles.bicep' = if (storageSolution == 'AzureF
     azureFilesPrivateDnsZoneResourceId: azureFilesPrivateDnsZoneResourceId
     deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
     customerManagedKeysEnabled: customerManagedKeysEnabled
-    domainJoinUserPassword: domainJoinUserPassword
-    domainJoinUserPrincipalName: domainJoinUserPrincipalName
+    domainJoinUserPassword: contains(identitySolution, 'DomainServices') ? keyVault.getSecret('domainJoinUserPassword') : ''
+    domainJoinUserPrincipalName: contains(identitySolution, 'DomainServices') ? keyVault.getSecret('domainJoinUserPrincipalName') : ''
     enableIncreaseQuotaAutomation: enableIncreaseQuotaAutomation
     encryptionUserAssignedIdentityResourceId: encryptionUserAssignedIdentityResourceId
     fileShares: fileShares

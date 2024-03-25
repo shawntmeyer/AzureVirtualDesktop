@@ -241,7 +241,7 @@ module policy 'policy.bicep' = if (contains(hostPoolType, 'Pooled') || recoveryS
   }
 }
 
-module secretsKeyVault 'keyVault.bicep' =  {
+module secretsKeyVault 'keyVault.bicep' = if(!empty(virtualMachineAdminPassword) || !empty(virtualMachineAdminUserName) || !empty(domainJoinUserPassword) || !empty(domainJoinUserPrincipalName)) {
   name: 'KeyVault_Secrets_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
@@ -277,8 +277,8 @@ module virtualMachine 'virtualMachine.bicep' = {
     azModuleBlobName: azModuleBlobName
     diskName: virtualMachineDiskName
     diskSku: diskSku
-    domainJoinUserPassword: !empty(domainJoinUserPassword) ? domainJoinUserPassword : contains(identitySolution, 'DomainServices') ? keyVault_Ref.getSecret('domainJoinUserPassword') : ''
-    domainJoinUserPrincipalName: !empty(domainJoinUserPrincipalName) ? domainJoinUserPrincipalName : contains(identitySolution, 'DomainServices') ? keyVault_Ref.getSecret('domainJoinUserPrincipalName') : ''
+    domainJoinUserPassword: contains(identitySolution, 'DomainServices') ? keyVault_Ref.getSecret('domainJoinUserPassword') : ''
+    domainJoinUserPrincipalName: contains(identitySolution, 'DomainServices') ? keyVault_Ref.getSecret('domainJoinUserPrincipalName') : ''
     domainName: domainName
     encryptionAtHost: encryptionAtHost
     location: locationVirtualMachines
@@ -294,8 +294,8 @@ module virtualMachine 'virtualMachine.bicep' = {
       '${deploymentUserAssignedIdentity.outputs.resourceId}' : {}
      }
     virtualMachineName: virtualMachineName
-    virtualMachineAdminPassword: virtualMachineAdminPassword
-    virtualMachineAdminUserName: virtualMachineAdminUserName
+    virtualMachineAdminPassword: keyVault_Ref.getSecret('virtualMachineAdminPassword')
+    virtualMachineAdminUserName: keyVault_Ref.getSecret('virtualMachineAdminUserName')
   }
 }
 

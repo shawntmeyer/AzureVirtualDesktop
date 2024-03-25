@@ -20,6 +20,7 @@ param userAssignedIdentitiesResourceIds object
 param virtualMachineName string
 @secure()
 param virtualMachineAdminPassword string
+@secure()
 param virtualMachineAdminUserName string
 
 resource networkInterface 'Microsoft.Network/networkInterfaces@2020-05-01' = {

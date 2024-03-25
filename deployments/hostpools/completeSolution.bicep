@@ -443,11 +443,6 @@ resource vmVirtualNetwork 'Microsoft.Network/virtualNetworks@2023-04-01' existin
   scope: resourceGroup(split(virtualMachineSubnetResourceId, '/')[2], split(virtualMachineSubnetResourceId, '/')[4])
 }
 
-resource keyVault_Reference 'Microsoft.KeyVault/vaults@2021-06-01-preview' existing = if(contains(identitySolution,'DomainServices') && (empty(domainJoinUserPassword) || empty(domainJoinUserPrincipalName)) || empty(virtualMachineAdminPassword) || empty(virtualMachineAdminUserName))  {
-  name: resourceNames.outputs.keyVaultNames.VMSecrets
-  scope: resourceGroup(resourceNames.outputs.resourceGroupManagement)
-}
-
 // Resource Names
 module resourceNames 'modules/resourceNames.bicep' = {
   name: 'ResourceNames_${timeStamp}'
@@ -580,9 +575,9 @@ module management 'modules/management/management.bicep' = {
     virtualMachineName: resourceNames.outputs.mgmtVirtualMachineName
     virtualMachineNICName: resourceNames.outputs.mgmtVirtualMachineNicName
     virtualMachineDiskName: resourceNames.outputs.mgmtVirtualMachineDiskName
-    virtualMachineAdminPassword: empty(virtualMachineAdminPassword) ? keyVault_Reference.getSecret(virtualMachineAdminPassword) : virtualMachineAdminPassword
+    virtualMachineAdminPassword: virtualMachineAdminPassword
     virtualMachineSize: virtualMachineSize
-    virtualMachineAdminUserName: empty(virtualMachineAdminUserName) ? keyVault_Reference.getSecret(virtualMachineAdminUserName) : virtualMachineAdminUserName
+    virtualMachineAdminUserName: virtualMachineAdminUserName
     virtualMachineSubnetResourceId: virtualMachineSubnetResourceId
     workspaceName: resourceNames.outputs.workspaceName
     globalFeedWorkspaceName: resourceNames.outputs.globalFeedWorkspaceName
@@ -677,8 +672,6 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (deployFSLogixStorage) {
     deploymentUserAssignedIdentityClientId: management.outputs.deploymentUserAssignedIdentityClientId
     delegatedSubnetId: management.outputs.validateANFSubnetId
     dnsServers: management.outputs.validateANFDnsServers
-    domainJoinUserPassword: empty(domainJoinUserPassword) ? contains(identitySolution, 'DomainServices') ? keyVault_Reference.getSecret(domainJoinUserPassword) : '' : domainJoinUserPassword
-    domainJoinUserPrincipalName: empty(domainJoinUserPrincipalName) ? contains(identitySolution, 'DomainServices') ? keyVault_Reference.getSecret(domainJoinUserPrincipalName) : '' : domainJoinUserPrincipalName
     domainName: domainName
     enableIncreaseQuotaAutomation: enableIncreaseQuotaAutomation
     encryptionUserAssignedIdentityResourceId: management.outputs.encryptionUserAssignedIdentityResourceId
@@ -688,6 +681,7 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (deployFSLogixStorage) {
     storageService: fslogixStorageService
     identitySolution: identitySolution
     kerberosEncryption: fslogixStorageAccountADKerberosEncryption
+    keyVaultName: resourceNames.outputs.keyVaultNames.VMSecrets
     keyVaultUri: management.outputs.storageEncryptionKeyKeyVaultUri
     location: locationVirtualMachines
     logAnalyticsWorkspaceResourceId: enableMonitoring ? monitoring.outputs.logAnalyticsWorkspaceResourceId : ''
@@ -762,8 +756,6 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     diskNamePrefix: resourceNames.outputs.diskNamePrefix
     diskSku: diskSku
     divisionRemainderValue: logic.outputs.divisionRemainderValue
-    domainJoinUserPassword: empty(domainJoinUserPassword) ? contains(identitySolution, 'DomainServices') ? keyVault_Reference.getSecret(domainJoinUserPassword) : '' : domainJoinUserPassword
-    domainJoinUserPrincipalName: empty(domainJoinUserPrincipalName) ? contains(identitySolution, 'DomainServices') ? keyVault_Reference.getSecret(domainJoinUserPrincipalName) : '' : domainJoinUserPrincipalName
     domainName: domainName
     drainMode: drainMode
     drainModeUserAssignedIdentityClientId: management.outputs.deploymentUserAssignedIdentityClientId
@@ -777,6 +769,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     imageOffer: imageOffer
     imagePublisher: imagePublisher
     imageSku: imageSku
+    keyVaultName: resourceNames.outputs.keyVaultNames.VMSecrets
     location: vmVirtualNetwork.location
     managementVirtualMachineName: management.outputs.virtualMachineName
     maxResourcesPerTemplateDeployment: logic.outputs.maxResourcesPerTemplateDeployment
@@ -803,9 +796,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     tags: deployScalingPlan ? logic.outputs.tags : tags
     timeStamp: timeStamp
     virtualMachineNamePrefix: resourceNames.outputs.virtualMachineNamePrefix
-    virtualMachineAdminPassword: empty(virtualMachineAdminPassword) ? keyVault_Reference.getSecret(virtualMachineAdminPassword) : virtualMachineAdminPassword
     virtualMachineSize: virtualMachineSize
-    virtualMachineAdminUserName: empty(virtualMachineAdminUserName) ? keyVault_Reference.getSecret(virtualMachineAdminUserName) : virtualMachineAdminUserName 
   }
   dependsOn: [
     rgs

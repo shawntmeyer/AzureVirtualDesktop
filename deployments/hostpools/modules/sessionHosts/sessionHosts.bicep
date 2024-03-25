@@ -13,6 +13,7 @@ param confidentialVMOSDiskEncryptionType string
 param cseMasterScript string
 param cseScriptAddDynParameters string
 param cseUris array
+param customImageResourceId string
 param dataCollectionEndpointResourceId string
 param avdInsightsDataCollectionRulesResourceId string
 param vmInsightsDataCollectionRulesResourceId string
@@ -20,10 +21,6 @@ param diskEncryptionSetResourceId string
 param diskNamePrefix string
 param diskSku string
 param divisionRemainderValue int
-@secure()
-param domainJoinUserPassword string
-@secure()
-param domainJoinUserPrincipalName string
 param domainName string
 param drainMode bool
 param drainModeUserAssignedIdentityClientId string
@@ -37,7 +34,7 @@ param identitySolution string
 param imageOffer string
 param imagePublisher string
 param imageSku string
-param customImageResourceId string
+param keyVaultName string
 param location string
 param managementVirtualMachineName string
 param maxResourcesPerTemplateDeployment int
@@ -62,16 +59,18 @@ param subnetResourceId string
 param tags object
 param timeStamp string
 param virtualMachineNamePrefix string
-@secure()
-param virtualMachineAdminPassword string
 param virtualMachineSize string
-@secure()
-param virtualMachineAdminUserName string
+
 
 var tagsAvailabilitySets = union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroupControlPlane}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'}, contains(tags, 'Microsoft.Compute/availabilitySets') ? tags['Microsoft.Compute/availabilitySets'] : {})
 var tagsNetworkInterfaces = union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroupControlPlane}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'}, contains(tags, 'Microsoft.Network/networkInterfaces') ? tags['Microsoft.Network/networkInterfaces'] : {})
 var tagsRecoveryServicesVault = union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroupControlPlane}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'}, contains(tags, 'Microsoft.recoveryServices/vaults') ? tags['Microsoft.recoveryServices/vaults'] : {})
 var tagsVirtualMachines = union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroupControlPlane}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'}, contains(tags, 'Microsoft.Compute/virtualMachines') ? tags['Microsoft.Compute/virtualMachines'] : {})
+
+resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' existing = {
+  name: keyVaultName
+  scope: resourceGroup(resourceGroupManagement)
+}
 
 module fslogixStorageAccountResourceIds 'fslogix/resolveStorageAccountResourceIds.bicep' = if(fslogixConfigureSessionHosts && (!empty(fslogixDeployedStorageAccountResourceIds) || !empty(fslogixExistingStorageAccountResourceIds))) {
   name: 'Fslogix_Storage_Logic_${timeStamp}'
@@ -130,8 +129,8 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     diskEncryptionSetResourceId: diskEncryptionSetResourceId
     diskNamePrefix: diskNamePrefix
     diskSku: diskSku
-    domainJoinUserPassword: domainJoinUserPassword
-    domainJoinUserPrincipalName: domainJoinUserPrincipalName
+    domainJoinUserPassword: contains(identitySolution, 'DomainServices') ? keyVault.getSecret('domainJoinUserPassword') : ''
+    domainJoinUserPrincipalName: contains(identitySolution, 'DomainServices') ? keyVault.getSecret('domainJoinUserPrincipalName') : ''
     domainName: domainName
     drainMode: drainMode
     drainModeUserAssignedIdentityClientId: drainModeUserAssignedIdentityClientId
@@ -162,10 +161,10 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     tagsNetworkInterfaces: tagsNetworkInterfaces
     tagsVirtualMachines: tagsVirtualMachines
     timeStamp: timeStamp
+    virtualMachineAdminPassword: keyVault.getSecret('virtualMachineAdminPassword')
+    virtualMachineAdminUserName: keyVault.getSecret('virtualMachineAdminUserName')
     virtualMachineNamePrefix: virtualMachineNamePrefix
-    virtualMachineAdminPassword: virtualMachineAdminPassword
     virtualMachineSize: virtualMachineSize
-    virtualMachineAdminUserName: virtualMachineAdminUserName
   }
   dependsOn: [
     availabilitySets

@@ -5,6 +5,7 @@ param delegatedSubnetId string
 param dnsServers string
 @secure()
 param domainJoinUserPassword string
+@secure()
 param domainJoinUserPrincipalName string
 param domainName string
 param fileShares array

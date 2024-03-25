@@ -1551,50 +1551,7 @@
                                         "hideConfirmation": true
                                     },
 									"visible": "[equals(steps('hosts').domainJoinCredentials.passwordSource, 'manual')]"
-                                },
-								{
-									"name": "keyVault",
-									"type": "Microsoft.Solutions.ResourceSelector",
-									"label": "Select Key Vault",
-									"resourceType": "Microsoft.KeyVault/vaults",
-									"toolTip": "Select a key vault with the secrets",
-									"scope": {
-										"subscriptionId": "[steps('basics').scope.subscription.subscriptionId]",
-										"location": "[steps('basics').scope.location.name]"
-									},
-									"constraints": {
-										"required": true
-									},
-									"visible": "[equals(steps('hosts').domainJoinCredentials.passwordSource, 'keyVault')]"
-								},
-								{
-									"name": "userPrincipalNameSecretName",
-									"type": "Microsoft.Common.TextBox",
-									"label": "Domain join user principal name secret name",
-									"placeholder": "",
-									"defaultValue": "domainJoinUserPrincipalName",
-									"toolTip": "Use only allowed characters",
-									"constraints": {
-										"required": true,
-										"regex": "^[a-z0-9A-Z]{1,30}$",
-										"validationMessage": "Only alphanumeric characters are allowed, and the value must be 1-30 characters long."
-									},
-									"visible": "[equals(steps('hosts').domainJoinCredentials.passwordSource, 'keyVault')]"
-								},
-								{
-									"name": "passwordSecretName",
-									"type": "Microsoft.Common.TextBox",
-									"label": "Domain join user password secret name",
-									"placeholder": "",
-									"defaultValue": "domainJoinUserPassword",
-									"toolTip": "Use only allowed characters",
-									"constraints": {
-										"required": true,
-										"regex": "^[a-z0-9A-Z]{1,30}$",
-										"validationMessage": "Only alphanumeric characters are allowed, and the value must be 1-30 characters long."
-									},
-									"visible": "[equals(steps('hosts').domainJoinCredentials.passwordSource, 'keyVault')]"
-								}
+                                }
                             ]
                         },
                         {
@@ -1606,8 +1563,8 @@
 								{
 									"name": "passwordSource",
 									"type": "Microsoft.Common.OptionsGroup",
-									"label": "Domain Join User and Password Source",
-									"defaultValue": "[steps('hosts').domainJoinCredentials.passwordsource]",
+									"label": "Local Admin Account and Password Source",
+									"defaultValue": "[if(equals(steps('hosts').identity.solution, 'EntraId'), 'Manual Entry', steps('hosts').domainJoinCredentials.passwordsource)]",
 									"toolTip": "",
 									"constraints": {
 										"allowedValues": [
@@ -1654,50 +1611,7 @@
                                         "hideConfirmation": false
                                     },
                                     "visible": "[equals(steps('hosts').localAdminCredentials.passwordSource, 'manual')]"
-                                },
-								{
-									"name": "keyVault",
-									"type": "Microsoft.Solutions.ResourceSelector",
-									"label": "Select Key Vault",
-									"resourceType": "Microsoft.KeyVault/vaults",
-									"toolTip": "Select a key vault with the secrets",
-									"scope": {
-										"subscriptionId": "[steps('basics').scope.subscription.subscriptionId]",
-										"location": "[steps('basics').scope.location.name]"
-									},
-									"constraints": {
-										"required": true
-									},
-									"visible": "[equals(steps('hosts').localAdminCredentials.passwordSource, 'keyVault')]"
-								},
-								{
-									"name": "userNameSecretName",
-									"type": "Microsoft.Common.TextBox",
-									"label": "Virtual machine admin user username secret name",
-									"placeholder": "",
-									"defaultValue": "virtualMachineAdminUserName",
-									"toolTip": "Use only allowed characters",
-									"constraints": {
-										"required": true,
-										"regex": "^[a-z0-9A-Z]{1,30}$",
-										"validationMessage": "Only alphanumeric characters are allowed, and the value must be 1-30 characters long."
-									},
-									"visible": "[equals(steps('hosts').localAdminCredentials.passwordSource, 'keyVault')]"
-								},
-								{
-									"name": "passwordSecretName",
-									"type": "Microsoft.Common.TextBox",
-									"label": "Virtual machine admin password secret name",
-									"placeholder": "",
-									"defaultValue": "virtualMachineAdminPassword",
-									"toolTip": "Use only allowed characters",
-									"constraints": {
-										"required": true,
-										"regex": "^[a-z0-9A-Z]{1,30}$",
-										"validationMessage": "Only alphanumeric characters are allowed, and the value must be 1-30 characters long."
-									},
-									"visible": "[equals(steps('hosts').localAdminCredentials.passwordSource, 'keyVault')]"
-								}
+                                }
                             ]
                         },
 						{
@@ -2464,8 +2378,8 @@
 				"virtualMachineSecurityType": "[steps('hosts').security.securityType]",
 				"deployScalingPlan": "[steps('controlPlane').scalingPlan.deployScalingPlan]",
                 "diskSku": "[steps('hosts').specs.diskSku]",
-                "domainJoinUserPassword": "[if(equals(steps('hosts').domainJoinCredentials.passwordSource, 'keyVault'), parse(concat('{\"reference\":{\"keyVault\":{\"id\":\"', steps('hosts').domainJoinCredentials.keyVault.id, '\"},\"secretName\":\"', steps('hosts').domainJoinCredentials.passwordSecretName, '\"}}')), steps('hosts').domainJoinCredentials.password)]",
-                "domainJoinUserPrincipalName": "[if(equals(steps('hosts').domainJoinCredentials.passwordSource, 'keyVault'), parse(concat('{\"reference\":{\"keyVault\":{\"id\":\"', steps('hosts').domainJoinCredentials.keyVault.id, '\"},\"secretName\":\"', steps('hosts').domainJoinCredentials.userPrincipalNameSecretName, '\"}}')), steps('hosts').domainJoinCredentials.userPrincipalName)]",
+                "domainJoinUserPassword": "[if(equals(steps('hosts').domainJoinCredentials.passwordSource, 'manual'), steps('hosts').domainJoinCredentials.password, '')]",
+                "domainJoinUserPrincipalName": "[if(equals(steps('hosts').domainJoinCredentials.passwordSource, 'manual'), steps('hosts').domainJoinCredentials.userPrincipalName, '')]",
                 "domainName": "[steps('hosts').identity.domainName]",
                 "drainMode": "[steps('hosts').drainMode]",
                 "environmentShortName": "[steps('basics').naming.environmentShortName]",
@@ -2515,9 +2429,9 @@
                 "tags": "[steps('tags').tags]",
                 "hostPoolValidationEnvironment": "[steps('controlPlane').hostPool.validation]",
                 "virtualMachineNamePrefix": "[steps('hosts').virtualMachineNamePrefix]",
-                "virtualMachineAdminPassword": "[if(equals(steps('hosts').localAdminCredentials.passwordSource, 'keyVault'), parse(concat('{\"reference\":{\"keyVault\":{\"id\":\"', steps('hosts').localAdminCredentials.keyVault.id, '\"},\"secretName\":\"', steps('hosts').localAdminCredentials.passwordSecretName, '\"}}')),steps('hosts').localAdminCredentials.password)]",
+                "virtualMachineAdminPassword": "[if(equals(steps('hosts').localAdminCredentials.passwordSource, 'manual'), steps('hosts').localAdminCredentials.password, '')]",
                 "virtualMachineSize": "[steps('hosts').specs.size]",
-                "virtualMachineAdminUserName": "[if(equals(steps('hosts').localAdminCredentials.passwordSource, 'keyVault'), parse(concat('{\"reference\":{\"keyVault\":{\"id\":\"', steps('hosts').localAdminCredentials.keyVault.id, '\"},\"secretName\":\"', steps('hosts').localAdminCredentials.userNameSecretName, '\"}}')), steps('hosts').localAdminCredentials.username)]",
+                "virtualMachineAdminUserName": "[if(equals(steps('hosts').localAdminCredentials.passwordSource, 'manual'), steps('hosts').localAdminCredentials.username, '')]",
 				"desktopFriendlyName": "[steps('controlPlane').naming.desktopFriendlyName]",
                 "workspaceFriendlyName": "[steps('controlPlane').naming.workspaceFriendlyName]"
             },

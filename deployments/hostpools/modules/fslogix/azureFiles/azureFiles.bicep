@@ -7,6 +7,7 @@ param azureFilesPrivateDnsZoneResourceId string
 param deploymentUserAssignedIdentityClientId string
 @secure()
 param domainJoinUserPassword string
+@secure()
 param domainJoinUserPrincipalName string
 param customerManagedKeysEnabled bool
 param enableIncreaseQuotaAutomation bool

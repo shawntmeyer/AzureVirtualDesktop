@@ -278,6 +278,46 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2022-11-01' = [for i 
   ]
 }]
 
+resource extension_JsonADDomainExtension 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): if (contains(identitySolution, 'DomainServices')) {
+  parent: virtualMachine[i]
+  name: 'JsonADDomainExtension'
+  location: location
+  tags: tagsVirtualMachines
+  properties: {
+    forceUpdateTag: timeStamp
+    publisher: 'Microsoft.Compute'
+    type: 'JsonADDomainExtension'
+    typeHandlerVersion: '1.3'
+    autoUpgradeMinorVersion: true
+    settings: {
+      Name: domainName
+      User: domainJoinUserPrincipalName
+      Restart: 'true'
+      Options: '3'
+      OUPath: ouPath
+    }
+    protectedSettings: {
+      Password: domainJoinUserPassword
+    }
+  }
+}]
+
+resource extension_AADLoginForWindows 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): if (!contains(identitySolution, 'DomainServices')) {
+  parent: virtualMachine[i]
+  name: 'AADLoginForWindows'
+  location: location
+  tags: tagsVirtualMachines
+  properties: {
+    publisher: 'Microsoft.Azure.ActiveDirectory'
+    type: 'AADLoginForWindows'
+    typeHandlerVersion: '1.0'
+    autoUpgradeMinorVersion: true
+    settings: intune ? {
+      mdmId: '0000000a-0000-0000-c000-000000000000'
+    } : null
+  }
+}]
+
 resource extension_IaasAntimalware 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): if(environment().name != 'USNAT') {
   parent: virtualMachine[i]
   name: 'IaaSAntimalware'
@@ -302,6 +342,10 @@ resource extension_IaasAntimalware 'Microsoft.Compute/virtualMachines/extensions
       } : {}
     }
   }
+  dependsOn: [
+    extension_AADLoginForWindows
+    extension_JsonADDomainExtension
+  ]
 }]
 
 resource extension_AzureMonitorWindowsAgent 'Microsoft.Compute/virtualMachines/extensions@2023-03-01' = [for i in range(0, sessionHostCount): if (enableMonitoring) {
@@ -317,6 +361,8 @@ resource extension_AzureMonitorWindowsAgent 'Microsoft.Compute/virtualMachines/e
     enableAutomaticUpgrade: true
   }
   dependsOn: [
+    extension_AADLoginForWindows
+    extension_JsonADDomainExtension
     extension_IaasAntimalware
   ]
 }]
@@ -393,6 +439,47 @@ resource extension_MicrosoftMonitoringAgent 'Microsoft.Compute/virtualMachines/e
   ]
 }]
 
+resource extension_AmdGpuDriverWindows 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): if (amdVmSize) {
+  parent: virtualMachine[i]
+  name: 'AmdGpuDriverWindows'
+  location: location
+  tags: tagsVirtualMachines
+  properties: {
+    publisher: 'Microsoft.HpcCompute'
+    type: 'AmdGpuDriverWindows'
+    typeHandlerVersion: '1.0'
+    autoUpgradeMinorVersion: true
+    settings: {}
+  }
+  dependsOn: [
+    extension_AADLoginForWindows
+    extension_JsonADDomainExtension
+    extension_IaasAntimalware
+    extension_AzureMonitorWindowsAgent
+    extension_MicrosoftMonitoringAgent
+  ]
+}]
+
+resource extension_NvidiaGpuDriverWindows 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): if (nvidiaVmSize) {
+  parent: virtualMachine[i]
+  name: 'NvidiaGpuDriverWindows'
+  location: location
+  tags: tagsVirtualMachines
+  properties: {
+    publisher: 'Microsoft.HpcCompute'
+    type: 'NvidiaGpuDriverWindows'
+    typeHandlerVersion: '1.2'
+    autoUpgradeMinorVersion: true
+    settings: {}
+  }
+  dependsOn: [
+    extension_AADLoginForWindows
+    extension_JsonADDomainExtension
+    extension_AzureMonitorWindowsAgent
+    extension_MicrosoftMonitoringAgent
+  ]
+}]
+
 resource extension_CustomScriptExtension 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): {
   parent: virtualMachine[i]
   name: 'CustomScriptExtension'
@@ -435,7 +522,7 @@ module setDrainMode '../common/customScriptExtensions.bicep' = if (drainMode) {
     ]
     scriptFileName: 'Set-AvdDrainMode.ps1'
     location: location
-    parameters: '-environmentShortName ${environment().name} -hostPoolName ${hostPoolName} -HostPoolResourceGroupName ${resourceGroupControlPlane} -sessionHostCount ${sessionHostCount} -sessionHostIndex ${sessionHostIndex} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -userAssignedIdentityClientId ${drainModeUserAssignedIdentityClientId} -virtualMachineNamePrefix ${virtualMachineNamePrefix}'
+    parameters: '-Environment ${environment().name} -HostPoolName ${hostPoolName} -HostPoolResourceGroupName ${resourceGroupControlPlane} -SessionHostCount ${sessionHostCount} -SessionHostIndex ${sessionHostIndex} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${drainModeUserAssignedIdentityClientId} -VirtualMachineNamePrefix ${virtualMachineNamePrefix}'
     tags: tagsVirtualMachines
     userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
     virtualMachineName: managementVirtualMachineName
@@ -444,79 +531,3 @@ module setDrainMode '../common/customScriptExtensions.bicep' = if (drainMode) {
     extension_CustomScriptExtension
   ]
 }
-
-resource extension_JsonADDomainExtension 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): if (contains(identitySolution, 'DomainServices')) {
-  parent: virtualMachine[i]
-  name: 'JsonADDomainExtension'
-  location: location
-  tags: tagsVirtualMachines
-  properties: {
-    forceUpdateTag: timeStamp
-    publisher: 'Microsoft.Compute'
-    type: 'JsonADDomainExtension'
-    typeHandlerVersion: '1.3'
-    autoUpgradeMinorVersion: true
-    settings: {
-      Name: domainName
-      User: domainJoinUserPrincipalName
-      Restart: 'true'
-      Options: '3'
-      OUPath: ouPath
-    }
-    protectedSettings: {
-      Password: domainJoinUserPassword
-    }
-  }
-}]
-
-resource extension_AADLoginForWindows 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): if (!contains(identitySolution, 'DomainServices')) {
-  parent: virtualMachine[i]
-  name: 'AADLoginForWindows'
-  location: location
-  tags: tagsVirtualMachines
-  properties: {
-    publisher: 'Microsoft.Azure.ActiveDirectory'
-    type: 'AADLoginForWindows'
-    typeHandlerVersion: '1.0'
-    autoUpgradeMinorVersion: true
-    settings: intune ? {
-      mdmId: '0000000a-0000-0000-c000-000000000000'
-    } : null
-  }
-}]
-
-resource extension_AmdGpuDriverWindows 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): if (amdVmSize) {
-  parent: virtualMachine[i]
-  name: 'AmdGpuDriverWindows'
-  location: location
-  tags: tagsVirtualMachines
-  properties: {
-    publisher: 'Microsoft.HpcCompute'
-    type: 'AmdGpuDriverWindows'
-    typeHandlerVersion: '1.0'
-    autoUpgradeMinorVersion: true
-    settings: {}
-  }
-  dependsOn: [
-    extension_AADLoginForWindows
-    extension_JsonADDomainExtension
-  ]
-}]
-
-resource extension_NvidiaGpuDriverWindows 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): if (nvidiaVmSize) {
-  parent: virtualMachine[i]
-  name: 'NvidiaGpuDriverWindows'
-  location: location
-  tags: tagsVirtualMachines
-  properties: {
-    publisher: 'Microsoft.HpcCompute'
-    type: 'NvidiaGpuDriverWindows'
-    typeHandlerVersion: '1.2'
-    autoUpgradeMinorVersion: true
-    settings: {}
-  }
-  dependsOn: [
-    extension_AADLoginForWindows
-    extension_JsonADDomainExtension
-  ]
-}]
