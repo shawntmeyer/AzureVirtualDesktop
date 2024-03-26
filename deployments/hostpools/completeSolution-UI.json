@@ -1368,7 +1368,7 @@
                                     "name": "offer",
                                     "type": "Microsoft.Common.DropDown",
                                     "label": "Offer",
-                                    "defaultValue": "Windows 11",
+                                    "defaultValue": "Office 365",
                                     "toolTip": "Select the desired marketplace image offer.",
                                     "constraints": {
                                         "allowedValues": [
@@ -1401,7 +1401,7 @@
                                     "name": "sku",
                                     "type": "Microsoft.Common.DropDown",
                                     "label": "SKU",
-                                    "defaultValue": "win11-22h2-avd",
+                                    "defaultValue": "win11-23h2-avd-m365",
                                     "toolTip": "Select the desired marketplace image SKU.",
                                     "constraints": {
                                         "allowedValues": "[map(steps('hosts').image.skuApi, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.name, '\"}')))]",
@@ -1541,14 +1541,15 @@
                                     "name": "password",
                                     "type": "Microsoft.Common.PasswordBox",
                                     "label": {
-                                        "password": "Password"
+                                        "password": "Password",
+										"confirmPassword": "Confirm Password"
                                     },
                                     "toolTip": "Enter a password that is alphanumeric, contains at least 12 characters, 1 letter, 1 number and 1 special character.",
                                     "constraints": {
                                         "required": true
                                     },
                                     "options": {
-                                        "hideConfirmation": true
+                                        "hideConfirmation": false
                                     },
 									"visible": "[equals(steps('hosts').domainJoinCredentials.passwordSource, 'manual')]"
                                 }
@@ -1564,7 +1565,7 @@
 									"name": "passwordSource",
 									"type": "Microsoft.Common.OptionsGroup",
 									"label": "Local Admin Account and Password Source",
-									"defaultValue": "[if(equals(steps('hosts').identity.solution, 'EntraId'), 'Manual Entry', steps('hosts').domainJoinCredentials.passwordsource)]",
+									"defaultValue": "Manual Entry",
 									"toolTip": "",
 									"constraints": {
 										"allowedValues": [
@@ -2042,17 +2043,25 @@
 								{
 									"name": "notDeployedCCTextBox",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(equals(steps('userProfiles').deployStorage, 'No'), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]",
+									"visible": "[and(equals(steps('userProfiles').deployStorage, false), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]",
 									"options": {
-										"text": "To enable cross-region high availability of user profiles using FSLogix CloudCache enter up to 4 storage accounts which are from unique regions to be added to the fslogix container paths. Enter the values in the order of preference with the first one list located in the region where the virtual machines were deployed."
+										"text": "Pick up to two storage accounts below, listing the storage account in the same region as the virtual machines first and then for high availability you can select an additional storage account in another region."
 									}
 								},
 								{
 									"name": "deployedCCTextBox",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(equals(steps('userProfiles').deployStorage, 'Yes'), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]",
+									"visible": "[and(steps('userProfiles').deployStorage, contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]",
 									"options": {
-										"text": "To enable cross-region high availability of user profiles using FSLogix CloudCache select up to 3 additional storage accounts which are not from the region where you deployed the virtual machines but are also from unique regions to be added to the fslogix container paths. Enter the values in the order of preference."
+										"text": "To enable cross-region high availability of user profiles using FSLogix CloudCache select an additional storage account that is not from the region where you deployed the virtual machines."
+									}
+								},
+								{
+									"name": "notDeployedVHDTextBox",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": "[and(equals(steps('userProfiles').deployStorage, false), not(contains(steps('userProfiles').fslogixContainerType, 'CloudCache')))]",
+									"options": {
+										"text": "Pick the local storage account below to which user profiles are stored."
 									}
 								},
 								{
@@ -2073,7 +2082,7 @@
 										"rows": {
 											"count": {
 												"min": 0,
-												"max": 4
+												"max": 2
 											}
 										},
 										"columns": [
@@ -2085,31 +2094,40 @@
 													"type": "Microsoft.Common.DropDown",
 													"multiLine": true,
 													"constraints": {
-														"allowedValues": "[if(equals(steps('userProfiles').deployStorage, 'Yes'), map(filter(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi.value, (item) => not(equals(item.location, steps('basics').scope.location.name))), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Location: ', item.location, '\", \"value\":\"', item.id, '\"}'))), map(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\", \"description\":\"Location: ', item.location, '\", \"value\":\"', item.id, '\"}'))))]"
+														"allowedValues": "[if(steps('userProfiles').deployStorage, map(filter(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi.value, (item) => not(equals(item.location, steps('basics').scope.location.name))), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Location: ', item.location, '\", \"value\":\"', item.id, '\"}'))), if(not(contains(steps('userProfiles').fslogixContainerType, 'CloudCache')), map(filter(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi.value, (item) => equals(item.location, steps('basics').scope.location.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Location: ', item.location, '\", \"value\":\"', item.id, '\"}'))), map(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\", \"description\":\"Location: ', item.location, '\", \"value\":\"', item.id, '\"}')))))]"
 													}
 												}
 											}
 										],
 										"required": false
 									},									
-									"visible": "[or(equals(steps('userProfiles').deployStorage, 'No'), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]"
+									"visible": "[or(equals(steps('userProfiles').deployStorage, false), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]"
 								},
 								{
-									"name": "tooManyStorageAccountsCCErrorBox",
+									"name": "deployedTooManyStorageAccountsCCErrorBox",
 									"type": "Microsoft.Common.InfoBox",
-									"visible": "[if(equals(steps('userProfiles').deployStorage, 'Yes'), greater(length(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts), 3), false)]",
+									"visible": "[if(and(steps('userProfiles').deployStorage, contains(steps('userProfiles').fslogixContainerType, 'CloudCache')), greater(length(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts), 1), false)]",
 									"options": {
 										"icon": "Error",
-										"text": "You have provided too many storage account resource Ids. You can only specify 3 existing resource Ids when deploying storage resources."
+										"text": "You have provided too many storage account resource Ids. You can only specify 1 existing resource Id for a storage account in a region other than the region where you deployed virtual machines."
+									}
+								},
+								{
+									"name": "notDeployedTooManyStorageAccountsCCErrorBox",
+									"type": "Microsoft.Common.InfoBox",
+									"visible": "[if(and(equals(steps('userProfiles').deployStorage, false), contains(steps('userProfiles').fslogixContainerType, 'CloudCache')), greater(length(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts), 2), false)]",
+									"options": {
+										"icon": "Error",
+										"text": "You have provided too many storage account resource Ids. You can only specify 2 existing storage accounts - on in the same region as your virtual machines and one in a region other than the region where you deployed virtual machines."
 									}
 								},
 								{
 									"name": "tooManyStorageAccountsVHDxErrorBox",
 									"type": "Microsoft.Common.InfoBox",
-									"visible": "[if(and(equals(steps('userProfiles').deployStorage, 'No'), not(contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))), greater(length(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts), 1), false)]",
+									"visible": "[if(and(equals(steps('userProfiles').deployStorage, false), not(contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))), greater(length(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts), 1), false)]",
 									"options": {
 										"icon": "Error",
-										"text": "You have provided too many storage account resource Ids. You can only specify 1 existing resource Ids when specifying a standard VHDx container type (i.e., no Cloud Cache)."
+										"text": "You have provided too many storage accounts. You can only specify 1 existing storage account when specifying a standard VHDx container type (i.e., no Cloud Cache)."
 									}
 								}
 							]
