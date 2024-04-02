@@ -112,6 +112,7 @@ ForEach($File in $Files) {
         Write-Log -category Info -message "Adding $($File.FullName) to list of scripts to execute with PowerShell."
         $PSScriptsToExecute += $File.FullName
     } ElseIf ($File.Extension -eq '.zip') {
+        Unblock-File -Path $File.FullName
         $destinationPath = Join-Path $DirTemp -ChildPath $File.BaseName
         Write-Log -category Info -message "Unpacking $($File.FullName)"
         Expand-Archive -Path $File.FullName -DestinationPath $destinationPath -Force | Out-Null
@@ -147,7 +148,7 @@ Remove-Item -Path $DirTemp -Recurse -Force -ErrorAction SilentlyContinue | Out-N
 Write-Log -category Info -message "Ending '$PSCommandPath'."
 
 $Output = [pscustomobject][ordered]@{
-    script = $Script:Name
+    scripts = $PsScriptsToExecute
 }
 $JsonOutput = $Output | ConvertTo-Json
 return $JsonOutput
