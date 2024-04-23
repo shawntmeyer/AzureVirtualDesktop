@@ -1,20 +1,41 @@
-# Introduction 
-TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. 
+# Azure Virtual Desktop Solution
 
-# Getting Started
-TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
-1.	Installation process
-2.	Software dependencies
-3.	Latest releases
-4.	API references
+[**Home**](./README.md) | [**Features**](./docs/features.md) | [**Design**](./docs/design.md) | [**Prerequisites**](./docs/prerequisites.md) | [**Troubleshooting**](./docs/troubleshooting.md)
 
-# Build and Test
-TODO: Describe and show how to build your code and run the tests. 
+This solution will deploy a fully operational Azure Virtual Desktop hostpool along with associated resources adhereing to the [Zero Trust principles](https://learn.microsoft.com/security/zero-trust/azure-infrastructure-avd). Many of the [common features](./docs/features.md) used with AVD have been automated in this solution for your convenience.
 
-# Contribute
-TODO: Explain how other users and developers can contribute to make your code better. 
+## Deployment Options
 
-If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
-- [ASP.NET Core](https://github.com/aspnet/Home)
-- [Visual Studio Code](https://github.com/Microsoft/vscode)
-- [Chakra Core](https://github.com/Microsoft/ChakraCore)
+> [!WARNING]
+> Failure to complete the [prerequisites](./docs/prerequisites.md) will result in an unsuccessful deployment.
+
+### Blue Buttons
+
+This option opens the deployment UI for the solution in the Azure Portal. Be sure to select the button for the correct cloud. If your desired cloud is not listed, please use the template spec option below.
+
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#blade/Microsoft_Azure_CreateUIDef/CustomDeploymentBlade/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fshawntmeyer%2Fazurevirtualdesktop%2Fmaster%2F%2Fdeployments%2Fhostpools%2FcompleteSolution.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2Fshawntmeyer%2Fazurevirtualdesktop%2Fmaster%2F%2Fdeployments%2Fhostpools%2FcompleteSolution-UI.json)
+[![Deploy to Azure Gov](https://aka.ms/deploytoazuregovbutton)](https://portal.azure.us/#blade/Microsoft_Azure_CreateUIDef/CustomDeploymentBlade/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fshawntmeyer%2Fazurevirtualdesktop%2Fmaster%2F%2Fdeployments%2Fhostpools%2FcompleteSolution.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2Fshawntmeyer%2Fazurevirtualdesktop%2Fmaster%2F%2Fdeployments%2Fhostpools%2FcompleteSolution-UI.json)
+
+### Template Spec
+
+This option creates a template spec in Azure to deploy the solution and is the preferred option for air-gapped clouds. Once you create the template spec, open it in the portal and click the "Deploy" button.
+
+````powershell
+$Location = '<Azure Location>'
+$ResourceGroupName = 'rg-ts-<Environment Abbreviation>-<Location Abbreviation>'
+$TemplateSpecName = 'ts-avd-<Environment Abbreviation>-<Location Abbreviation>'
+
+New-AzResourceGroup `
+    -Name $ResourceGroupName `
+    -Location $Location `
+    -Force
+
+New-AzTemplateSpec `
+    -ResourceGroupName $ResourceGroupName `
+    -Name $TemplateSpecName `
+    -Version 1.0 `
+    -Location $Location `
+    -TemplateFile '.\deployments\hostpools\completeSolution.json' `
+    -UIFormDefinitionFile '.\deployments\hostpools\completeSolution-UI.json' `
+    -Force
+````
