@@ -184,11 +184,6 @@ resource roleAssignment_validation 'Microsoft.Authorization/roleAssignments@2022
   }
 }
 
-resource keyVault_Ref 'Microsoft.KeyVault/vaults@2023-07-01' existing = if(contains(identitySolution,'DomainServices') && (empty(domainJoinUserPassword) || empty(domainJoinUserPrincipalName)) || empty(virtualMachineAdminPassword) || empty(virtualMachineAdminUserName)) {
-  name: keyVaultNames.VMSecrets
-  scope: resourceGroup(resourceGroupManagement)
-}
-
 resource existingArtifactsUserAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = if(!empty(artifactsUserAssignedIdentityResourceId)) {
   name: last(split(artifactsUserAssignedIdentityResourceId, '/'))
   scope: resourceGroup(split(artifactsUserAssignedIdentityResourceId, '/')[2], split(artifactsUserAssignedIdentityResourceId, '/')[4])
@@ -241,6 +236,11 @@ module policy 'policy.bicep' = if (contains(hostPoolType, 'Pooled') || recoveryS
   }
 }
 
+resource keyVault_Ref 'Microsoft.KeyVault/vaults@2023-07-01' existing = if(contains(identitySolution,'DomainServices') && (empty(domainJoinUserPassword) || empty(domainJoinUserPrincipalName)) || empty(virtualMachineAdminPassword) || empty(virtualMachineAdminUserName)) {
+  name: keyVaultNames.VMSecrets
+  scope: resourceGroup(resourceGroupManagement)
+}
+
 module secretsKeyVault 'keyVault.bicep' = if(!empty(virtualMachineAdminPassword) || !empty(virtualMachineAdminUserName) || !empty(domainJoinUserPassword) || !empty(domainJoinUserPrincipalName)) {
   name: 'KeyVault_Secrets_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
@@ -277,8 +277,8 @@ module virtualMachine 'virtualMachine.bicep' = {
     azModuleBlobName: azModuleBlobName
     diskName: virtualMachineDiskName
     diskSku: diskSku
-    domainJoinUserPassword: contains(identitySolution, 'DomainServices') ? keyVault_Ref.getSecret('domainJoinUserPassword') : ''
-    domainJoinUserPrincipalName: contains(identitySolution, 'DomainServices') ? keyVault_Ref.getSecret('domainJoinUserPrincipalName') : ''
+    domainJoinUserPassword: !contains(identitySolution, 'DomainServices') ? '' : !empty(domainJoinUserPassword) ? domainJoinUserPassword : keyVault_Ref.getSecret('domainJoinUserPassword')
+    domainJoinUserPrincipalName: !contains(identitySolution, 'DomainServices') ? '' : !empty(domainJoinUserPrincipalName) ? domainJoinUserPrincipalName : keyVault_Ref.getSecret('domainJoinUserPrincipalName')
     domainName: domainName
     encryptionAtHost: encryptionAtHost
     location: locationVirtualMachines
@@ -294,8 +294,8 @@ module virtualMachine 'virtualMachine.bicep' = {
       '${deploymentUserAssignedIdentity.outputs.resourceId}' : {}
      }
     virtualMachineName: virtualMachineName
-    virtualMachineAdminPassword: keyVault_Ref.getSecret('virtualMachineAdminPassword')
-    virtualMachineAdminUserName: keyVault_Ref.getSecret('virtualMachineAdminUserName')
+    virtualMachineAdminPassword: !empty(virtualMachineAdminPassword) ? virtualMachineAdminPassword : keyVault_Ref.getSecret('virtualMachineAdminPassword')
+    virtualMachineAdminUserName: !empty(virtualMachineAdminUserName) ? virtualMachineAdminUserName : keyVault_Ref.getSecret('virtualMachineAdminUserName')
   }
 }
 

@@ -98,7 +98,7 @@
             "APIUrl": "",
             "GitHubRepo": "Azure/azure-powershell",
             "GitHubFileNamePattern": "Az-Cmdlets-*-x64.msi",
-            "DestinationFilePath": "PowerShell-Az-Module/PowerShell-Az.msi"
+            "DestinationFilePath": "PowerShell-Az.msi"
         },
         {
             "Name": "Powershell Core",

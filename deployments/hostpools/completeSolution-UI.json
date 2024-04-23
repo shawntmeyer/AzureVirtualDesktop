@@ -1054,9 +1054,10 @@
 						{
 							"name": "virtualMachineNamePrefix",
 							"type": "Microsoft.Common.TextBox",
-							"label": "Custom VM Name Prefix",
-							"toolTip": "Provide a custom VM Name prefix consisting of alphanumeric and dashes up to 12 characters long. A three character numeric suffix will be appended to the name padded with zeros (0).",
+							"label": "Virtual Machine Name Prefix",
+							"toolTip": "Provide a Virtual Machine name prefix consisting of alphanumeric and dashes up to 12 characters long. A three character numeric suffix will be appended to the name padded with zeros (0).",
 							"constraints": {
+								"required": true,
 								"regex": "^(?:[a-zA-Z0-9][a-zA-Z0-9-]{0,11})?$",
 								"validationMessage": "The prefix must begin with an alphanumeric character and then contain only alphanumeric characters and dashes. The value must also be less than 12 characters long."
 							},
@@ -1095,7 +1096,7 @@
                                     "type": "Microsoft.Common.DropDown",
                                     "label": "Virtual Network",
                                     "multiLine": true,
-                                    "toolTip": "Select the virtual network where the AVD Private Link Private Endpoints will be created.",
+                                    "toolTip": "Select the virtual network containing the subnet to which the session hosts will be attached.",
                                     "constraints": {
                                         "required": true,
                                         "allowedValues": "[map(filter(steps('hosts').network.virtualNetworksApi.value, (item) => equals(item.location, steps('basics').scope.location.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
@@ -1502,13 +1503,14 @@
                             "type": "Microsoft.Common.Section",
                             "label": "Domain Join Credentials",
                             "visible": "[not(equals(steps('hosts').identity.solution, 'EntraId'))]",
-                            "elements": [
+                            "elements": [	
+
 								{
 									"name": "passwordSource",
 									"type": "Microsoft.Common.OptionsGroup",
 									"label": "Domain Join User and Password Source",
 									"defaultValue": "Manual Entry",
-									"toolTip": "",
+									"toolTip": "Select 'Manual Entry' to specify the Domain Join User and Password or 'Key Vault' to reference the 'domainJoinUserPassword' and 'domainJoinUserPrincipalName' secrets stored in the management key vault.",
 									"constraints": {
 										"allowedValues": [
 											{
@@ -1566,7 +1568,7 @@
 									"type": "Microsoft.Common.OptionsGroup",
 									"label": "Local Admin Account and Password Source",
 									"defaultValue": "Manual Entry",
-									"toolTip": "",
+									"toolTip": "Select 'Manual Entry' to specify the VM Admin UserName and Password or 'Key Vault' to reference the 'virtualMachineAdminUserName' and 'virtualMachineAdminPassword' secrets stored in the management key vault.",
 									"constraints": {
 										"allowedValues": [
 											{
@@ -2254,7 +2256,7 @@
                                     "label": "Virtual Network",
                                     "defaultValue": "[last(split(steps('userProfiles').privateEndpoints.virtualNetwork.name), '/')]",
 									"multiLine": true,
-                                    "toolTip": "Select the virtual network where the AVD Private Link Private Endpoints will be created.",
+                                    "toolTip": "Select the virtual network containing the subnets to which the AVD Private Link Private Endpoints will be attached.",
                                     "constraints": {
                                         "required": true,
                                         "allowedValues": "[map(filter(steps('management').privateEndpoints.virtualNetworksApi.value, (item) => equals(item.location, steps('basics').scope.location.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
