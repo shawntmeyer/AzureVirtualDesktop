@@ -1747,7 +1747,6 @@
 						{
 							"name": "deployStorage",
 							"type": "Microsoft.Common.CheckBox",
-							"defaultValue": true,
 							"visible": "[equals(steps('userProfiles').profileSolution, 'FSLogix')]",
 							"label": "Deploy FSLogix Storage Resources",
 							"toolTip": "Check this box to deploy the required storage resources for FSLogix Profiles."
@@ -1756,7 +1755,6 @@
 							"name": "configureSessionHosts",
 							"type": "Microsoft.Common.CheckBox",
 							"label": "Configure FSLogix Settings on Session Hosts",
-							"defaultValue": true,
 							"toolTip": "Check this box if you desire to run automatically configure the FSLogix settings on the Session Hosts.",
 							"visible": "[and(equals(steps('hosts').identity.solution, 'EntraId'), equals(steps('userProfiles').profileSolution, 'FSLogix'))]"
 						},				
