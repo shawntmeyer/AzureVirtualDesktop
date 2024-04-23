@@ -1,5 +1,3 @@
-targetScope = 'subscription'
-
 @description('Required. The Image Management Resource Group Name')
 param ImageManagementResourceGroupName string
 
@@ -103,7 +101,6 @@ var PrivateEndpoint = empty(PrivateEndpointSubnetResourceId) ? false : CreatePri
 var RoleDefinitionId = resourceId('Microsoft.Authorization/roleDefinitions', '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1') // Storage Blob Data Reader
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
-  scope: ImageManagementResourceGroupName
   name: StorageAccountName
   location: Location
   tags: TagsStorageAccounts
