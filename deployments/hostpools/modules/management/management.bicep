@@ -184,14 +184,14 @@ resource roleAssignment_validation 'Microsoft.Authorization/roleAssignments@2022
   }
 }
 
-resource existingArtifactsUserAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = if(!empty(artifactsUserAssignedIdentityResourceId)) {
-  name: last(split(artifactsUserAssignedIdentityResourceId, '/'))
-  scope: resourceGroup(split(artifactsUserAssignedIdentityResourceId, '/')[2], split(artifactsUserAssignedIdentityResourceId, '/')[4])
-}
-
 resource keyVault_Ref 'Microsoft.KeyVault/vaults@2023-07-01' existing = if(contains(identitySolution,'DomainServices') && (empty(domainJoinUserPassword) || empty(domainJoinUserPrincipalName)) || empty(virtualMachineAdminPassword) || empty(virtualMachineAdminUserName)) {
   name: keyVaultNames.VMSecrets
   scope: resourceGroup(resourceGroupManagement)
+}
+
+resource existingArtifactsUserAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = if(!empty(artifactsUserAssignedIdentityResourceId)) {
+  name: last(split(artifactsUserAssignedIdentityResourceId, '/'))
+  scope: resourceGroup(split(artifactsUserAssignedIdentityResourceId, '/')[2], split(artifactsUserAssignedIdentityResourceId, '/')[4])
 }
 
 module artifactsUserAssignedIdentity 'userAssignedIdentity.bicep' = if(empty(artifactsUserAssignedIdentityResourceId)) {
@@ -204,13 +204,13 @@ module artifactsUserAssignedIdentity 'userAssignedIdentity.bicep' = if(empty(art
   }
 }
 module artifactsRoleAssignment 'artifactsRoleAssignment.bicep' = if(empty(artifactsUserAssignedIdentityResourceId)) {
-  scope: resourceGroup(split(artifactsStorageAccountResourceId, '/')[4], split(artifactsStorageAccountResourceId, '/')[8])
+  scope: resourceGroup(split(artifactsStorageAccountResourceId, '/')[2], split(artifactsStorageAccountResourceId, '/')[4])
   name: 'RoleAssignment_StorageBlobReader_${timeStamp}'
   params: {
     roleDefinitionId: roleDefinitions.StorageBlobDataReader
     storageName: last(split(artifactsStorageAccountResourceId, '/'))
     userAssignedIdentityName: artifactsUserAssignedIdentityName
-    userAssignedIdentityPrincipalId: empty(artifactsUserAssignedIdentityResourceId)? artifactsUserAssignedIdentity.outputs.principalId : ''
+    userAssignedIdentityPrincipalId: empty(artifactsUserAssignedIdentityResourceId) ? artifactsUserAssignedIdentity.outputs.principalId : ''
   }
 }
 

@@ -21,7 +21,7 @@ param(
     # The Azure Environment containing the storage account.
     [Parameter(ParameterSetName='Deploy')]
     [Parameter(ParameterSetName='UpdateOnly')]
-    [ValidateSet("AzureCloud,AzureUSGovernment")]
+    [ValidateSet("AzureCloud","AzureUSGovernment")]
     [string]$AzureEnvironment = 'AzureCloud',
     # the folder containing the artifact sources
     [Parameter(ParameterSetName='Deploy', Mandatory=$false)]
