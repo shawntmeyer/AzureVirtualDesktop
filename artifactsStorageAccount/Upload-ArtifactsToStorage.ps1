@@ -23,10 +23,6 @@ param(
     [Parameter(ParameterSetName='UpdateOnly')]
     [ValidateSet("AzureCloud","AzureUSGovernment")]
     [string]$AzureEnvironment = 'AzureCloud',
-    # the folder containing the artifact sources
-    [Parameter(ParameterSetName='Deploy', Mandatory=$false)]
-    [Parameter(ParameterSetName='UpdateOnly', Mandatory=$false)]
-    [string] $ArtifactsDir = "$PSScriptRoot\artifacts",
     # the temp folder to where the artifact sources are prepared to be uploaded to the storage account.
     [Parameter(ParameterSetName='Deploy', Mandatory=$false)]
     [Parameter(ParameterSetName='UpdateOnly')]
@@ -60,6 +56,7 @@ param(
 
 $Time = Get-Date -Format 'yyyyMMddhhmmss'
 Write-Output $Time
+$ArtifactsDir = Join-Path -Path  $PSScriptRoot -ChildPath '..\.common\artifacts'
 $FunctionsPath = Join-Path -Path $PSScriptRoot -ChildPath '..\.common\powerShellFunctions'
 Write-Output $PSSCriptRoot
 Write-Output $FunctionsPath
