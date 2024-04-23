@@ -14,6 +14,7 @@ To successfully deploy this solution, you will need to ensure the following prer
   - [AVD Agent Boot Loader](https://query.prod.cms.rt.microsoft.com/cms/api/am/binary/RWrxrH)
   - [Azure PowerShell AZ Module](https://github.com/Azure/azure-powershell/releases/latest). Download the 64-bit MSI located under Assets.
   - [PowerShell Scripts](../.common/artifacts)
+  This solution includes a helper script to automatically download these files and and upload them to a storage account. See [Upload-ArtifactsToStorage.ps1](../artifactsStorageAccount/Upload-ArtifactsToStorage.ps1).
 - **Azure Permissions:** ensure the principal deploying the solution has "Owner" and "Key Vault Administrator" roles assigned on the target Azure subscription. This solution contains many role assignments at different scopes and deploys a key vault with keys and secrets to enhance security.
 - **Security Group:** create a security group for your AVD users.
   - AD DS: create the group in ADUC and ensure the group has synchronized to Azure AD.
