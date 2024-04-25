@@ -1771,12 +1771,14 @@
 							"type": "Microsoft.Common.CheckBox",
 							"visible": "[equals(steps('userProfiles').profileSolution, 'FSLogix')]",
 							"label": "Deploy FSLogix Storage Resources",
+							"defaultValue": true,
 							"toolTip": "Check this box to deploy the required storage resources for FSLogix Profiles."
 						},
 						{
 							"name": "configureSessionHosts",
 							"type": "Microsoft.Common.CheckBox",
 							"label": "Configure FSLogix Settings on Session Hosts",
+							"defaultValue": false,
 							"toolTip": "Check this box if you desire to run automatically configure the FSLogix settings on the Session Hosts.",
 							"visible": "[and(equals(steps('hosts').identity.solution, 'EntraId'), equals(steps('userProfiles').profileSolution, 'FSLogix'))]"
 						},				
@@ -2045,21 +2047,7 @@
 							"type": "Microsoft.Common.Section",
 							"label": "Session Host Configuration",
 							"visible": "[and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').configureSessionHosts)]",
-							"elements": [
-								{
-                                    "name": "fslogixBlob",
-                                    "type": "Microsoft.Storage.StorageBlobSelector",
-                                    "toolTip": "Select FsLogix Configuration Script blob. 'Configure-FSLogix.zip' is used by default.",
-                                    "label": "FsLogix Configuration Script Blob (.zip)",
-                                    "options": {
-                                        "text": "Select zip file"
-                                    },
-                                    "constraints": {
-                                        "allowedFileExtensions": [
-                                            "zip"
-                                        ]
-                                    }
-                                },											
+							"elements": [								
 								{
 									"name": "notDeployedCCTextBox",
 									"type": "Microsoft.Common.TextBlock",
@@ -2121,7 +2109,7 @@
 										],
 										"required": false
 									},									
-									"visible": "[or(equals(steps('userProfiles').deployStorage, false), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]"
+									"visible": "[or(not(steps('userProfiles').deployStorage), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]"
 								},
 								{
 									"name": "deployedTooManyStorageAccountsCCErrorBox",
@@ -2422,9 +2410,8 @@
                 "drainMode": "[steps('hosts').drainMode]",
                 "environmentShortName": "[steps('basics').naming.environmentShortName]",
                 "enableIncreaseQuotaAutomation": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').deployStorage, equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles'), equals(steps('userProfiles').fslogixStorage.storageSku, 'Premium')), steps('userProfiles').fslogixStorage.increaseFileShareQuota, false)]",
-				"deployFSLogixStorage": "[if(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').deployStorage, false)]",
+				"deployFSLogixStorage": "[steps('userProfiles').deployStorage]",
 				"fslogixConfigureSessionHosts": "[if(and(equals(steps('hosts').identity.solution, 'EntraId'), equals(steps('userProfiles').profileSolution, 'FSLogix')), steps('userProfiles').configureSessionHosts, false)]",
-				"fslogixConfigurationBlobName": "[if(steps('userProfiles').configureSessionHosts, steps('userProfiles').fslogixSessionHostConfig.fslogixBlob.blobName , '')]",
 				"fslogixContainerType": "[if(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').fslogixContainerType, 'ProfileContainer')]",
 				"fslogixExistingStorageAccountResourceIds": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').configureSessionHosts, or(equals(steps('userProfiles').deployStorage, false), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))), map(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts, (item) => item.resourceId), parse('[]'))]",
                 "fslogixShareSizeInGB": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').deployStorage), steps('userProfiles').fslogixStorage.storageShareSize, 100)]",

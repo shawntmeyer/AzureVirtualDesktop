@@ -170,7 +170,7 @@ param enableIncreaseQuotaAutomation bool = false
 param fslogixConfigureSessionHosts bool = false
 
 @description('Optional. The name of the blob that contains the FSLogix Configuration Script.')
-param fslogixConfigurationBlobName string = 'FSLogix-Configure.zip'
+param fslogixConfigurationBlobName string = 'Set-FSLogixSessionHostConfiguration.ps1'
 
 @description('''Optional. Existing FSLogix Storage Account Resource Ids. Only used when fslogixConfigureSessionHosts = "true".
 This list will be added to any storage accounts created when setting "fslogixStorageService" to any of the AzureFiles options. 
@@ -299,7 +299,6 @@ param availability string = 'availabilityZones'
 
 @description('Optional. The name of the blob containing the AVDAgent Agent installers and script.')
 param avdAgentInstallersBlobName string = 'Set-SessionHostConfiguration.zip'
-
 
 @description('''Array of script (or other artifact) names or full uris that will be downloaded by the Custom Script Extension on each Session Host Virtual Machine.
 Either specify the entire URL or just the name of the blob if is located at the fqdn specified by the [artifactsUri] parameter.

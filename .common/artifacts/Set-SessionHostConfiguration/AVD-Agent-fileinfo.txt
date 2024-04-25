@@ -1,20 +1,20 @@
 DownloadUrl = https://query.prod.cms.rt.microsoft.com/cms/api/am/binary/RWrmXv
-Download File = Microsoft.RDInfra.RDAgent.Installer-x64-1.0.7909.2600.msi
+Download File = Microsoft.RDInfra.RDAgent.Installer-x64-1.0.8431.2300.msi
 
 File                   : {AVD-Agent.msi}
-UpgradeCode            : {ECD2CF56-6646-4A89-A542-43CB72BD0BB7}
+UpgradeCode            : {9A941FF9-0A61-4441-B0D3-CD6CFAFC523F}
 WixUIRMOption          : UseRM
 REGISTRATIONTOKEN      : INVALID_TOKEN
 ALLUSERS               : 1
 HOSTPOOLTYPE           : Default
 MsiLogging             : v
-RDAGENT_VERSION        : RDAgent_1.0.7909.2600
+RDAGENT_VERSION        : RDAgent_1.0.8431.2300
 RDSHINSTALLED          : 0
 Manufacturer           : Microsoft Corporation
-ProductCode            : {01BC8C1A-4BFC-4C9F-B65E-3E76809B6290}
+ProductCode            : {42EF9214-0AAC-49CC-B16B-4253CEAF362A}
 ProductLanguage        : 1033
 ProductName            : Remote Desktop Services Infrastructure Agent
-ProductVersion         : 1.0.7909.2600
+ProductVersion         : 1.0.8431.2300
 DefaultUIFont          : WixUI_Font_Normal
 WixUI_Mode             : Mondo
 ErrorDialog            : ErrorDlg

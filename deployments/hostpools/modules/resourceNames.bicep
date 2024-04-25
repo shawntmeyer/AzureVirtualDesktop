@@ -53,7 +53,7 @@ var nameConv_Shared_Resources = nameConvResTypeAtEnd ? ( !empty(busUnitId) ? '${
 
 // monitoring resources
 var nameConv_Monitoring_ResGroup = centralAVDMonitoring ? ( nameConvResTypeAtEnd ? 'resGroupPurpose-${nameConvSuffix}' : 'resourceType-resGroupPurpose-${nameConvSuffix}' ) : nameConv_Shared_ResGroups
-var nameConv_Monitoring_Resources = centralAVDMonitoring ? ( nameConvResTypeAtEnd ? '${nameConvSuffix}' : 'resourceType-${nameConvSuffix}' ) : nameConv_Shared_Resources
+var nameConv_Monitoring_Resources = centralAVDMonitoring ? ( nameConvResTypeAtEnd ? 'avd-${nameConvSuffix}' : 'resourceType-avd-${nameConvSuffix}' ) : ( nameConvResTypeAtEnd ? ( !empty(busUnitId) ? '${busUnitId}-avd-${nameConvSuffix}' : 'avd-${nameConvSuffix}' ) : ( !empty(busUnitId) ? 'resourceType-${busUnitId}-avd-${nameConvSuffix}' : 'resourceType-avd-${nameConvSuffix}' ) )
 
 // Global Feed Resources
 var globalFeedResourceGroupName = replace(replace((nameConvResTypeAtEnd ? 'avd-global-feed-${nameConvSuffix}' : 'resourceType-avd-global-feed-${nameConvSuffix}'), 'location', '${locations[locationVirtualMachines].abbreviation}'), 'resourceType', '${resourceAbbreviations.resourceGroups}')
@@ -111,6 +111,7 @@ var resourceGroupMonitoring = replace(replace(replace(nameConv_Monitoring_ResGro
 var dataCollectionEndpointName = replace(replace(nameConv_Monitoring_Resources, 'resourceType', resourceAbbreviations.dataCollectionEndpoints), 'location', locations[locationVirtualMachines].abbreviation)
 // the AVD Insights data collection rule must start with 'microsoft-avdi-'
 var dataCollectionRulesNameConv = replace(replace(nameConv_Monitoring_Resources, 'resourceType', resourceAbbreviations.dataCollectionRules), 'location', locations[locationVirtualMachines].abbreviation)
+
 var logAnalyticsWorkspaceName = replace(replace(nameConv_Monitoring_Resources, 'resourceType', resourceAbbreviations.logAnalyticsWorkspaces), 'location', locations[locationVirtualMachines].abbreviation)
 
 output availabilitySetNamePrefix string = availabilitySetNamePrefix

@@ -21,14 +21,14 @@
             "DestinationFilePath": "VisualC++Redistributables/vc_redist.x64.exe"
         },
         {
-            "Name": "FSLogix Installers",
+            "Name": "FSLogix",
             "DownloadUrl": "https://aka.ms/fslogix_download",
             "WebSiteUrl": "",
             "SearchString": "",
             "APIUrl": "",
             "GitHubRepo": "",
             "GitHubFileNamePattern": "",
-            "DestinationFilePath": "Install-FSLogix/FSLogix.zip"
+            "DestinationFilePath": "FSLogix/FSLogix.zip"
         },
         {
             "Name": "Office 365 Deployment Tool",
@@ -51,7 +51,7 @@
             "DestinationFilePath": "Office365-Configuration/AdminTemplates_x64.exe"
         },
         {
-            "Name": "OneDrive Setup",
+            "Name": "OneDrive",
             "DownloadUrl": "https://go.microsoft.com/fwlink/p/?linkid=2121808",
             "WebSiteUrl": "",
             "SearchString": "",

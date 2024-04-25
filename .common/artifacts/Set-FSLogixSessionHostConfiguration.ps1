@@ -564,13 +564,15 @@ Write-Log -message '* End Calculated Values *'
 [array]$defenderShareExclusionPaths = $($OfficeContainerPaths; $ProfileContainerPaths)
 
 [array]$Settings = @()
-
+# from https://learn.microsoft.com/en-us/microsoftteams/new-teams-vdi-requirements-deploy#recommended-for-exclusion
+# only specifying the folders that do not affect performance per article
 $redirectionsXMLContent = @'
 <?xml version="1.0" encoding="UTF-8"?>
 <FrxProfileFolderRedirection ExcludeCommonFolders="0">
 <Excludes>
-<Exclude Copy="0">AppData\Roaming\Microsoft\Teams\media-stack</Exclude>
-<Exclude Copy="0">AppData\Local\Microsoft\Teams\meeting-addin\Cache</Exclude>
+<Exclude Copy="0">AppData\Local\Packages\MSTeams_8wekyb3d8bbwe\LocalCache\Microsoft\MSTeams\Logs</Exclude>
+<Exclude Copy="0">AppData\Local\Packages\MSTeams_8wekyb3d8bbwe\LocalCache\Microsoft\MSTeams\PerfLog</Exclude>
+<Exclude Copy="0">AppData\Local\Packages\MSTeams_8wekyb3d8bbwe\LocalCache\Microsoft\MSTeams\EBWebView\WV2Profile_tfw\GPUCache</Exclude>
 </Excludes>
 <Includes>
 </Includes>
