@@ -63,12 +63,10 @@ $Time = Get-Date -Format 'yyyyMMddhhmmss'
 Write-Output $Time
 $ArtifactsDir = Join-Path -Path  $PSScriptRoot -ChildPath '..\.common\artifacts'
 $FunctionsPath = Join-Path -Path $PSScriptRoot -ChildPath '..\.common\powerShellFunctions'
-Write-Output $PSSCriptRoot
-Write-Output $FunctionsPath
-Start-Sleep -Seconds 5
-$BicepPath = Join-Path -Path $PSScriptRoot -ChildPath 'artifactsStorageAccount'
-$Template = Join-Path -Path $BicepPath -ChildPath 'storage.bicep'
-$Parameters = Join-Path -Path $BicepPath -ChildPath 'storage.parameters.json'
+Write-Output "Working Directory: '$PSScriptRoot'"
+$BicepPath = $PSScriptRoot
+$Template = Join-Path -Path $BicepPath -ChildPath 'deploy.bicep'
+$Parameters = Join-Path -Path $BicepPath -ChildPath 'parameters' -ChildPath 'imagemanagement.parameters.json'
 
 #endregion Variables
 
@@ -186,8 +184,7 @@ if ($DownloadNewSources -and (Test-Path -Path $downloadFilePath)) {
                     $DownloadUrl = Get-InternetUrl -WebSiteUrl $WebSiteUrl -searchstring $SearchString
                     $DownloadUrl = $DownloadUrl -replace '.exe', '.msi'
                  }
-            }
-                        
+            }                        
         }
 
         If (($DownloadUrl -ne '') -and ($null -ne $DownloadUrl)) {
