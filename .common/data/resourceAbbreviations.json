@@ -22,5 +22,6 @@
     "storageAccounts": "sa",
     "userAssignedIdentities": "uai",
     "virtualMachines": "vm",
-    "workspaces": "vdws"
+    "workspaces": "vdws",
+    "imageDefinitions": "vmid"
 }

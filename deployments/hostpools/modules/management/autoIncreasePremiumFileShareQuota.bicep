@@ -21,16 +21,17 @@ resource automationAccount 'Microsoft.Automation/automationAccounts@2022-08-08' 
   name: automationAccountName
 }
 
-module runbook '../common/customScriptExtensions.bicep' = {
+module runbook '../../../sharedModules/custom/customScriptExtension.bicep' = {
   name: 'Runbook_QuotaScaling_${timeStamp}'
   params: {
-    fileUris: [
-      '${artifactsUri}${runbookFileName}'
-      '${artifactsUri}${scriptFileName}'
+    artifactsLocation: artifactsUri
+    files: [
+      '${runbookFileName}'
+      '${scriptFileName}'
     ]
     location: location
-    parameters: '-AutomationAccountName ${automationAccountName} -Environment ${environment().name} -ResourceGroupName ${resourceGroup().name} -RunbookFileName ${runbookFileName} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentityClientId}'
-    scriptFileName: scriptFileName
+    scriptParameters: '-AutomationAccountName ${automationAccountName} -Environment ${environment().name} -ResourceGroupName ${resourceGroup().name} -RunbookFileName ${runbookFileName} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentityClientId}'
+    powerShellScriptName: scriptFileName
     tags: contains(tags, 'Microsoft.Compute/virtualMachines') ? tags['Microsoft.Compute/virtualMachines'] : {}
     userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
     virtualMachineName: managementVirtualMachineName
@@ -65,12 +66,12 @@ module jobSchedules 'jobSchedules.bicep' = [for i in range(fslogixStorageIndex, 
   ]
 }]
 
-module roleAssignment '../common/roleAssignment.bicep' = {
+module roleAssignment '../../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = {
   name: 'RoleAssignment_${storageResourceGroupName}_${timeStamp}'
   scope: resourceGroup(storageResourceGroupName)
   params: {
-    PrincipalId: automationAccount.identity.principalId
-    PrincipalType: 'ServicePrincipal'
-    RoleDefinitionId: '17d1049b-9a84-46fb-8f53-869881c3d3ab' // Storage Account Contributor
+    principalId: automationAccount.identity.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: '17d1049b-9a84-46fb-8f53-869881c3d3ab' // Storage Account Contributor
   }
 }

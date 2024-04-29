@@ -161,18 +161,17 @@ resource jobSchedules 'Microsoft.Automation/automationAccounts/jobSchedules@2022
   }
 }]
 
-module runbook 'customScriptExtensions.bicep' = {
+module runbook '../../../sharedModules/custom/customScriptExtension.bicep' = {
   name: 'Runbook_${timeStamp}'  
   params:{
-    artifactsUri: artifactsUri
-    executeScript: 'Update-RunbookviaCSE.ps1'
+    artifactsLocation: artifactsUri
+    powerShellScriptName: 'Update-RunbookviaCSE.ps1'
     files: [
       'Update-RunbookviaCSE.ps1'
       'Set-HostPoolScaling.ps1'
     ]
     location: location
-    output: true
-    parameters: ScriptParams
+    scriptParameters: ScriptParams
     tags: tags
     userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
     virtualMachineName: managementVMName
@@ -180,12 +179,12 @@ module runbook 'customScriptExtensions.bicep' = {
 }
 
 // Gives the Automation Account the "Desktop Virtualization Power On Off Contributor" role on the resource groups containing the hosts and host pool
-module roleAssignment '../roleAssignment.bicep' = [for i in range(0, length(RoleAssignments)): {
+module roleAssignment '../../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = [for i in range(0, length(RoleAssignments)): {
   name: 'RoleAssignment_${i}_${RoleAssignments[i]}'
   scope: resourceGroup(RoleAssignments[i])
   params: {
-    PrincipalId: automationAccount.identity.principalId
-    PrincipalType: 'ServicePrincipal'
-    RoleDefinitionId: '40c5ff49-9181-41f8-ae61-143b0e78555e' // Desktop Virtualization Power On Off Contributor
+    principalId: automationAccount.identity.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: '40c5ff49-9181-41f8-ae61-143b0e78555e' // Desktop Virtualization Power On Off Contributor
   }
 }]

@@ -61,8 +61,8 @@
             "DestinationFilePath": "Microsoft-OneDrive/OneDriveSetup.exe"
         },
         {
-            "Name": "Teams for Windows 64-bit",
-            "DownloadUrl": "https://teams.microsoft.com/downloads/desktopurl?env=production&plat=windows&arch=x64&managedInstaller=true&download=true",
+            "Name": "Teams Classic for Windows 64-bit",
+            "DownloadUrl": "",
             "WebSiteUrl": "",
             "SearchString": "",
             "APIUrl": "",
@@ -149,6 +149,16 @@
             "GitHubRepo": "",
             "GitHubFileNamePattern": "",
             "DestinationFilePath": "STIGs_Client/STIGs.zip"
-        }        
+        },
+        {
+            "Name": "Virtual Desktop Optimization Tool (VDOT)",
+            "DownloadUrl": "https://github.com/The-Virtual-Desktop-Team/Virtual-Desktop-Optimization-Tool/archive/refs/heads/main.zip",
+            "WebsiteUrl": "",
+            "SearchString": "",
+            "APIUrl": "",
+            "GitHubRepo": "",
+            "GitHubFileNamePattern": "",
+            "DestinationFilePath": "VDOT.zip"
+        }          
     ]
 }

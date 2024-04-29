@@ -19,16 +19,17 @@ param tags object
 param timeStamp string
 param workspaceName string
 
-module addApplicationGroups '../common/customScriptExtensions.bicep' = if (existingWorkspace) {
+module addApplicationGroups '../../../sharedModules/custom/customScriptExtension.bicep' = if (existingWorkspace) {
   scope: resourceGroup(resourceGroupManagement)
   name: 'AddApplicationGroupReferences_${timeStamp}'
   params: {
-    fileUris: [
-      '${artifactsUri}Update-AvdWorkspace.ps1'
+    artifactsLocation: artifactsUri
+    files: [
+      'Update-AvdWorkspace.ps1'
     ]
     location: locationVirtualMachines
-    parameters: '-ApplicationGroupReferences "${applicationGroupReferences}" -Environment ${environment().name} -ResourceGroupName ${resourceGroup().name} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentityClientId} -WorkspaceName ${workspaceName}'
-    scriptFileName: 'Update-AvdWorkspace.ps1'
+    scriptParameters: '-ApplicationGroupReferences "${applicationGroupReferences}" -Environment ${environment().name} -ResourceGroupName ${resourceGroup().name} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentityClientId} -WorkspaceName ${workspaceName}'
+    powerShellScriptName: 'Update-AvdWorkspace.ps1'
     tags: contains(tags, 'Microsoft.Compute/virtualMachines') ? tags['Microsoft.Compute/virtualMachines'] : {}    
     userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
     virtualMachineName: managementVirtualMachineName

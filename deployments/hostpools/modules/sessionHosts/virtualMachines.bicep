@@ -513,16 +513,17 @@ resource extension_CustomScriptExtension 'Microsoft.Compute/virtualMachines/exte
 }]
 
 // Enables drain mode on the session hosts so users cannot login to hosts immediately after the deployment
-module setDrainMode '../common/customScriptExtensions.bicep' = if (drainMode) {
+module setDrainMode '../../../sharedModules/custom/customScriptExtension.bicep' = if (drainMode) {
   name: 'CSE_DrainMode_${batchCount}_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
-    fileUris: [
-      '${artifactsUri}Set-AvdDrainMode.ps1'
+    artifactsLocation: artifactsUri
+    files: [
+      'Set-AvdDrainMode.ps1'
     ]
-    scriptFileName: 'Set-AvdDrainMode.ps1'
+    powerShellScriptName: 'Set-AvdDrainMode.ps1'
     location: location
-    parameters: '-Environment ${environment().name} -HostPoolName ${hostPoolName} -HostPoolResourceGroupName ${resourceGroupControlPlane} -SessionHostCount ${sessionHostCount} -SessionHostIndex ${sessionHostIndex} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${drainModeUserAssignedIdentityClientId} -VirtualMachineNamePrefix ${virtualMachineNamePrefix}'
+    scriptParameters: '-Environment ${environment().name} -HostPoolName ${hostPoolName} -HostPoolResourceGroupName ${resourceGroupControlPlane} -SessionHostCount ${sessionHostCount} -SessionHostIndex ${sessionHostIndex} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${drainModeUserAssignedIdentityClientId} -VirtualMachineNamePrefix ${virtualMachineNamePrefix}'
     tags: tagsVirtualMachines
     userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
     virtualMachineName: managementVirtualMachineName

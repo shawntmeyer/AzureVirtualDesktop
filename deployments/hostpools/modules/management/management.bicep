@@ -163,13 +163,13 @@ module deploymentUserAssignedIdentity 'userAssignedIdentity.bicep' = {
   }
 }
 
-module roleAssignments_deployment '../common/roleAssignment.bicep' = [for i in range(0, length(roleAssignments)): {
+module roleAssignments_deployment '../../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = [for i in range(0, length(roleAssignments)): {
   scope: resourceGroup(roleAssignments[i].subscription, roleAssignments[i].resourceGroup)
   name: 'RoleAssignment_${roleAssignments[i].roleShortName}_${timeStamp}'
   params: {
-    PrincipalId: deploymentUserAssignedIdentity.outputs.principalId
-    PrincipalType: 'ServicePrincipal'
-    RoleDefinitionId: roleAssignments[i].roleDefinitionId
+    principalId: deploymentUserAssignedIdentity.outputs.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: roleAssignments[i].roleDefinitionId
   }
 }]
 
@@ -301,16 +301,17 @@ module virtualMachine 'virtualMachine.bicep' = {
 
 // Deployment Validations
 // This module validates the selected parameter values and collects required data
-module validations '../common/customScriptExtensions.bicep' = {
+module validations '../../../sharedModules/custom/customScriptExtension.bicep' = {
   scope: resourceGroup(resourceGroupManagement)
   name: 'Validations_${timeStamp}'
   params: {
-    fileUris: [
-      '${artifactsUri}Get-Validations.ps1'
+    artifactsLocation: artifactsUri
+    files: [
+      'Get-Validations.ps1'
     ]
-    scriptFileName: 'Get-Validations.ps1'
+    powerShellScriptName: 'Get-Validations.ps1'
     location: locationVirtualMachines
-    parameters: validationScriptParameters
+    scriptParameters: validationScriptParameters
     tags: contains(tags, 'Microsoft.Compute/virtualMachines') ? tags['Microsoft.Compute/virtualMachines'] : {}
     userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
     virtualMachineName: virtualMachine.outputs.Name

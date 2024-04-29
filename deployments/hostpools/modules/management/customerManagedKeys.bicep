@@ -60,16 +60,17 @@ module rsa_key_disks 'keyVaultKeys.bicep' = if (!confidentialVMOSDiskEncryption)
   }
 }
 
-module rsahsm_key_disks '../common/customScriptExtensions.bicep' = if(confidentialVMOSDiskEncryption) {
+module rsahsm_key_disks '../../../sharedModules/custom/customScriptExtension.bicep' = if(confidentialVMOSDiskEncryption) {
   name: 'EncryptionKey_ConfidentialVMOSDisk_${timeStamp}'
   params: {
-    fileUris: [
-      '${artifactsUri}Create-ConfidentialVMOSDiskEncryptionKey.ps1'
+    artifactsLocation: artifactsUri
+    files: [
+      'Create-ConfidentialVMOSDiskEncryptionKey.ps1'
     ]
-    scriptFileName: 'Create-ConfidentialVMOSDiskEncryptionKey.ps1'
+    powerShellScriptName: 'Create-ConfidentialVMOSDiskEncryptionKey.ps1'
     location: location
-    parameters: confidentialVMOSDiskEncryption ? '-keyVaultName ${last(split(confidentialVMEncryptionKeysVault.outputs.keyVaultResourceId, '/'))} -keyName ConfidentialVMOSDiskEncryptionKey -Environment ${environment().name} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentityClientId}' : ''
-    tags: {}
+    scriptParameters: confidentialVMOSDiskEncryption ? '-keyVaultName ${last(split(confidentialVMEncryptionKeysVault.outputs.keyVaultResourceId, '/'))} -keyName ConfidentialVMOSDiskEncryptionKey -Environment ${environment().name} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentityClientId}' : ''
+    tags: contains(tags, 'Microsoft.Compute/virtualMachines/extensions') ? tags['Microsoft.Compute/virtualMachines/extensions'] : {}
     userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
     virtualMachineName: managementVirtualMachineName
   }
@@ -95,30 +96,30 @@ module userAssignedIdentity 'userAssignedIdentity.bicep' = {
   }
 }
 
-module roleAssignment_UAI_EncryptUser '../common/roleAssignment.bicep' = {
+module roleAssignment_UAI_EncryptUser '../../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = {
   name: 'RoleAssignment_Encryption_UAI_EncryptUser_${timeStamp}'
   params: {
-    PrincipalId: userAssignedIdentity.outputs.principalId
-    PrincipalType: 'ServicePrincipal'
-    RoleDefinitionId: 'e147488a-f6f5-4113-8e2d-b22465e65bf6' // Key Vault Crypto Service Encryption User
+    principalId: userAssignedIdentity.outputs.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: 'e147488a-f6f5-4113-8e2d-b22465e65bf6' // Key Vault Crypto Service Encryption User
   }
 }
 
-module roleAssignment_ConfVMOrchestrator_EncryptUser '../common/roleAssignment.bicep' = if (confidentialVMOSDiskEncryption) {
+module roleAssignment_ConfVMOrchestrator_EncryptUser '../../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = if (confidentialVMOSDiskEncryption) {
   name: 'RoleAssignment_ConfVMOrchestrator_EncryptUser_${timeStamp}'
   params: {
-    PrincipalId: confidentialVMOrchestratorObjectId
-    PrincipalType: 'ServicePrincipal'
-    RoleDefinitionId: 'e147488a-f6f5-4113-8e2d-b22465e65bf6' // Key Vault Crypto Service Encryption User
+    principalId: confidentialVMOrchestratorObjectId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: 'e147488a-f6f5-4113-8e2d-b22465e65bf6' // Key Vault Crypto Service Encryption User
   }
 }
 
-module roleAssignment_ConfVMOrchestrator_ReleaseUser '../common/roleAssignment.bicep' = if (confidentialVMOSDiskEncryption) {
+module roleAssignment_ConfVMOrchestrator_ReleaseUser '../../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = if (confidentialVMOSDiskEncryption) {
   name: 'RoleAssignment_ConfVMOrchestrator_ReleaseUser_${timeStamp}'
   params: {
-    PrincipalId: confidentialVMOrchestratorObjectId
-    PrincipalType: 'ServicePrincipal'
-    RoleDefinitionId: '08bbd89e-9f13-488c-ac41-acfcb10c90ab' // Key Vault Crypto Service Release User
+    principalId: confidentialVMOrchestratorObjectId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: '08bbd89e-9f13-488c-ac41-acfcb10c90ab' // Key Vault Crypto Service Release User
   }
 }
 

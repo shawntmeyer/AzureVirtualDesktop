@@ -28,12 +28,12 @@ resource diskEncryptionSet 'Microsoft.Compute/diskEncryptionSets@2022-07-02' = {
   }
 }
 
-module roleAssignment '../common/roleAssignment.bicep' = {
+module roleAssignment '../../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = {
   name: 'RoleAssignment_Encryption_${timeStamp}'
   params: {
-    PrincipalId: diskEncryptionSet.identity.principalId
-    PrincipalType: 'ServicePrincipal'
-    RoleDefinitionId: 'e147488a-f6f5-4113-8e2d-b22465e65bf6' // Key Vault Crypto Service Encryption User
+    principalId: diskEncryptionSet.identity.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: 'e147488a-f6f5-4113-8e2d-b22465e65bf6' // Key Vault Crypto Service Encryption User
   }
 }
 
