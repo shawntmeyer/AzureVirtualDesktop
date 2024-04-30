@@ -305,13 +305,12 @@ module validations '../../../sharedModules/custom/customScriptExtension.bicep' =
   scope: resourceGroup(resourceGroupManagement)
   name: 'Validations_${timeStamp}'
   params: {
-    artifactsLocation: artifactsUri
-    files: [
-      'Get-Validations.ps1'
+    commandToExecute: 'powershell.exe -ExecutionPolicy Bypass -command .\\Get-Validations.ps1 ${validationScriptParameters}'
+    fileUris: [
+      '${artifactsUri}Get-Validations.ps1'
     ]
-    powerShellScriptName: 'Get-Validations.ps1'
     location: locationVirtualMachines
-    scriptParameters: validationScriptParameters
+    output: true
     tags: contains(tags, 'Microsoft.Compute/virtualMachines') ? tags['Microsoft.Compute/virtualMachines'] : {}
     userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
     virtualMachineName: virtualMachine.outputs.Name
@@ -349,7 +348,6 @@ module customerManagedKeys 'customerManagedKeys.bicep' = if (keyManagementDisksA
     validations
   ]
 }
-
 
 // Automation Account required for the Auto Increase Premium File Share Quota solution
 module automationAccount 'automationAccount.bicep' = if (enableIncreaseQuotaAutomation && fslogixStorageService == 'AzureFiles Premium') {

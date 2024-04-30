@@ -517,13 +517,11 @@ module setDrainMode '../../../sharedModules/custom/customScriptExtension.bicep' 
   name: 'CSE_DrainMode_${batchCount}_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
-    artifactsLocation: artifactsUri
-    files: [
-      'Set-AvdDrainMode.ps1'
+    commandToExecute: 'powershell -ExecutionPolicy Unrestricted -command .\\Set-AvdDrainMode.ps1 -Environment ${environment().name} -HostPoolName ${hostPoolName} -HostPoolResourceGroupName ${resourceGroupControlPlane} -SessionHostCount ${sessionHostCount} -SessionHostIndex ${sessionHostIndex} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${drainModeUserAssignedIdentityClientId} -VirtualMachineNamePrefix ${virtualMachineNamePrefix}'
+    fileUris: [
+      '${artifactsUri}Set-AvdDrainMode.ps1'
     ]
-    powerShellScriptName: 'Set-AvdDrainMode.ps1'
     location: location
-    scriptParameters: '-Environment ${environment().name} -HostPoolName ${hostPoolName} -HostPoolResourceGroupName ${resourceGroupControlPlane} -SessionHostCount ${sessionHostCount} -SessionHostIndex ${sessionHostIndex} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${drainModeUserAssignedIdentityClientId} -VirtualMachineNamePrefix ${virtualMachineNamePrefix}'
     tags: tagsVirtualMachines
     userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
     virtualMachineName: managementVirtualMachineName

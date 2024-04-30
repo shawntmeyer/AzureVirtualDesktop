@@ -13,10 +13,6 @@ param tags object
 param timeStamp string
 param timeZone string
 
-var runbookFileName = 'Set-FileShareScaling.ps1'
-var scriptFileName = 'Set-AutomationRunbook.ps1'
-var subscriptionId = subscription().subscriptionId
-
 resource automationAccount 'Microsoft.Automation/automationAccounts@2022-08-08' existing = {
   name: automationAccountName
 }
@@ -24,14 +20,13 @@ resource automationAccount 'Microsoft.Automation/automationAccounts@2022-08-08' 
 module runbook '../../../sharedModules/custom/customScriptExtension.bicep' = {
   name: 'Runbook_QuotaScaling_${timeStamp}'
   params: {
-    artifactsLocation: artifactsUri
-    files: [
-      '${runbookFileName}'
-      '${scriptFileName}'
+    commandToExecute: 'powershell.exe -ExecutionPolicy Bypass -command .\\Set-AutomationRunbook.ps1 -AutomationAccountName ${automationAccountName} -Environment ${environment().name} -ResourceGroupName ${resourceGroup().name} -RunbookFileName Set-FileShareScaling.ps1 -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentityClientId}'
+    fileUris: [
+      '${artifactsUri}Set-FileShareScaling.ps1'
+      '${artifactsUri}Set-AutomationRunbook.ps1'    
     ]
     location: location
-    scriptParameters: '-AutomationAccountName ${automationAccountName} -Environment ${environment().name} -ResourceGroupName ${resourceGroup().name} -RunbookFileName ${runbookFileName} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentityClientId}'
-    powerShellScriptName: scriptFileName
+    output: false
     tags: contains(tags, 'Microsoft.Compute/virtualMachines') ? tags['Microsoft.Compute/virtualMachines'] : {}
     userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
     virtualMachineName: managementVirtualMachineName
@@ -57,7 +52,7 @@ module jobSchedules 'jobSchedules.bicep' = [for i in range(fslogixStorageIndex, 
     runbookName: 'Set-FileShareScaling'
     resourceGroupName: storageResourceGroupName
     storageAccountName: '${storageAccountNamePrefix}${padLeft(i, 2, '0')}'
-    subscriptionId: subscriptionId
+    subscriptionId: subscription().subscriptionId
     timeStamp: timeStamp
   }
   dependsOn: [

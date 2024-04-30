@@ -65,7 +65,7 @@ $ArtifactsDir = Join-Path -Path  $PSScriptRoot -ChildPath '..\.common\artifacts'
 $FunctionsPath = Join-Path -Path $PSScriptRoot -ChildPath '..\.common\powerShellFunctions'
 Write-Output "Working Directory: '$PSScriptRoot'"
 $BicepPath = $PSScriptRoot
-$Template = Join-Path -Path $BicepPath -ChildPath 'deploy.bicep'
+$Template = Join-Path -Path $BicepPath -ChildPath 'imageManagement.bicep'
 $Parameters = Join-Path -Path $BicepPath -ChildPath 'parameters' -ChildPath 'imagemanagement.parameters.json'
 
 #endregion Variables

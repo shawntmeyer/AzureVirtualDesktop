@@ -23,13 +23,11 @@ module addApplicationGroups '../../../sharedModules/custom/customScriptExtension
   scope: resourceGroup(resourceGroupManagement)
   name: 'AddApplicationGroupReferences_${timeStamp}'
   params: {
-    artifactsLocation: artifactsUri
-    files: [
-      'Update-AvdWorkspace.ps1'
+    commandToExecute: 'powershell.exe -ExecutionPolicy Unrestricted -command .\\Update-AvdWorkspace.ps1 -ApplicationGroupReferences "${applicationGroupReferences}" -Environment ${environment().name} -ResourceGroupName ${resourceGroup().name} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentityClientId} -WorkspaceName ${workspaceName}'
+    fileUris: [
+      '${artifactsUri}Update-AvdWorkspace.ps1'
     ]
     location: locationVirtualMachines
-    scriptParameters: '-ApplicationGroupReferences "${applicationGroupReferences}" -Environment ${environment().name} -ResourceGroupName ${resourceGroup().name} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentityClientId} -WorkspaceName ${workspaceName}'
-    powerShellScriptName: 'Update-AvdWorkspace.ps1'
     tags: contains(tags, 'Microsoft.Compute/virtualMachines') ? tags['Microsoft.Compute/virtualMachines'] : {}    
     userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
     virtualMachineName: managementVirtualMachineName

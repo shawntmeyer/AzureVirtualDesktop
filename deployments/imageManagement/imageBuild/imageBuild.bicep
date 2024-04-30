@@ -323,6 +323,9 @@ var imageVersionReplicationRegions = !empty(imageVersionTargetRegions) ? imageVe
 var imageVmName = take('vmimg-${uniqueString(timeStamp)}', 15)
 var managementVmName = take('vmmgt-${uniqueString(timeStamp)}', 15)
 
+var validationScriptParameters = !empty(imageDefinitionResourceId) ? validationScriptExDefParameters : validationScriptNewDefParameters
+var getImageVersionSourceParameters = !empty(imageDefinitionResourceId) ? '${cseScriptCommonParameters} -ImageDefinitionResourceId "${imageDefinitionResourceId}" -VmName ${imageVm.outputs.name} -ResourceGroupName ${imageBuildRg.name} -Location ${deploymentLocation}' : '${cseScriptCommonParameters} -ImageDefinitionResourceId "${imageDefinition.outputs.resourceId}" -VmName ${imageVm.outputs.name} -ResourceGroupName ${imageBuildRg.name} -Location ${deploymentLocation}'
+
 // * RESOURCES * //
 
 resource artifactsStorageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' existing = {
@@ -427,13 +430,12 @@ module imageDefinitionValidation '../../sharedModules/custom/customScriptExtensi
   name: '${depPrefix}Image-Definition-Validation-${timeStamp}'
   scope: resourceGroup(imageBuildRg.name)
   params: {
-    artifactsLocation: artifactsContainerUri
-    powerShellScriptName: 'Get-ImageBuildValidations.ps1'
-    scriptParameters: !empty(imageDefinitionResourceId) ? validationScriptExDefParameters : validationScriptNewDefParameters
-    files: [
-      'Get-ImageBuildValidations.ps1'
+    commandToExecute: 'powershell.exe -ExecutionPolicy Unrestricted -command .\\Get-ImageBuildValidations.ps1 ${validationScriptParameters}'
+    fileUris: [
+      '${artifactsContainerUri}Get-ImageBuildValidations.ps1'
     ]
     location: computeLocation
+    output: true
     userAssignedIdentityClientId: managedIdentity.properties.clientId
     virtualMachineName: managementVm.outputs.name
   }
@@ -655,12 +657,11 @@ module getImageSource '../../sharedModules/custom/customScriptExtension.bicep' =
   name: '${depPrefix}Get-ImageVersion-Source-${timeStamp}'
   scope: resourceGroup(imageBuildRg.name)
   params: {
-    artifactsLocation: artifactsContainerUri
-    powerShellScriptName: 'Get-ImageVersionSource.ps1'
-    scriptParameters: !empty(imageDefinitionResourceId) ? '${cseScriptCommonParameters} -ImageDefinitionResourceId "${imageDefinitionResourceId}" -VmName ${imageVm.outputs.name} -ResourceGroupName ${imageBuildRg.name} -Location ${deploymentLocation}' : '${cseScriptCommonParameters} -ImageDefinitionResourceId "${imageDefinition.outputs.resourceId}" -VmName ${imageVm.outputs.name} -ResourceGroupName ${imageBuildRg.name} -Location ${deploymentLocation}'
-    files: [
-      'Get-ImageVersionSource.ps1'
+    commandToExecute: 'powershell.exe -ExecutionPolicy Unrestricted -command .\\Get-ImageVersionSource.ps1 ${getImageVersionSourceParameters}'
+    fileUris: [
+      '${artifactsContainerUri}Get-ImageVersionSource.ps1'
     ]
+    output: true
     location: computeLocation
     userAssignedIdentityClientId: managedIdentity.properties.clientId
     virtualMachineName: managementVm.outputs.name

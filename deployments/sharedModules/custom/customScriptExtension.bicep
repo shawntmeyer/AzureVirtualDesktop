@@ -1,16 +1,20 @@
-param artifactsLocation string
-param files array
-param powerShellScriptName string = ''
+param fileUris array
+param commandToExecute string 
 param location string
-param scriptParameters string = ''
+param output bool = false
 param tags object = {}
 param timeStamp string = utcNow('yyyyMMddhhmmss')
-param userAssignedIdentityClientId string
+param userAssignedIdentityClientId string = ''
 param virtualMachineName string
 
-var commandToExecute = empty(scriptParameters) ? 'powershell -ExecutionPolicy Unrestricted -command .\\${powerShellScriptName}' : 'powershell -ExecutionPolicy Unrestricted -command .\\${powerShellScriptName} ${scriptParameters}'
-var fileNames = !empty(powerShellScriptName) ? union(['${powerShellScriptName}}'], files) : files
-var fileUris = [for file in fileNames: '${artifactsLocation}${file}']
+//var commandToExecute = empty(scriptParameters) ? 'powershell -ExecutionPolicy Unrestricted -command .\\${powerShellScriptName}' : 'powershell -ExecutionPolicy Unrestricted -command .\\${powerShellScriptName} ${scriptParameters}'
+//var fileNames = !empty(powerShellScriptName) ? union(['${powerShellScriptName}}'], files) : files
+//var fileUris = [for file in fileNames: '${artifactsLocation}${file}']
+
+var defaultOutputValue =  {
+  TimeStamp: timeStamp
+  Downloads: fileUris 
+}
 
 resource virtualMachine 'Microsoft.Compute/virtualMachines@2023-03-01' existing = {
   name: virtualMachineName
@@ -30,7 +34,7 @@ resource customScriptExtension 'Microsoft.Compute/virtualMachines/extensions@202
       timestamp: timeStamp
       fileUris: fileUris
     }
-    protectedSettings: contains(artifactsLocation, environment().suffixes.storage) ? {
+    protectedSettings: !empty(userAssignedIdentityClientId) ? {
       commandToExecute: commandToExecute
       managedIdentity: {
         clientId: userAssignedIdentityClientId
@@ -41,4 +45,4 @@ resource customScriptExtension 'Microsoft.Compute/virtualMachines/extensions@202
   }
 }
 
-output value object = json(filter(customScriptExtension.properties.instanceView.substatuses, item => item.code == 'ComponentStatus/StdOut/succeeded')[0].message)
+output value object = output ? json(filter(customScriptExtension.properties.instanceView.substatuses, item => item.code == 'ComponentStatus/StdOut/succeeded')[0].message) : defaultOutputValue

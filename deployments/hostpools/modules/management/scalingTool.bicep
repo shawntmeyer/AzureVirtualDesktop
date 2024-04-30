@@ -1,6 +1,5 @@
 param artifactsUri string
 param artifactsUserAssignedIdentityClientId string
-//param artifactsStorageAccountResourceId string
 param automationAccountName string
 param BeginPeakTime string
 param EndPeakTime string
@@ -38,9 +37,9 @@ var accountSasProperties = {
 }
 */
 
-var RunBookName = 'Scaling-Tool'
+var runBookName = 'Scaling-Tool'
 
-var ScriptParams = '-automationAccountName ${automationAccountName} -ResourceGroupName ${resourceGroup().name} -RunBookName ${RunBookName} -ScriptPath \'Set-HostPoolScaling.ps1\' -environmentShortName ${environment().name} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -userAssignedIdentityClientId ${runBookUpdateUserAssignedIdentityClientId}'
+var scriptParams = '-automationAccountName ${automationAccountName} -ResourceGroupName ${resourceGroup().name} -RunBookName ${runBookName} -ScriptPath \'Set-HostPoolScaling.ps1\' -environmentShortName ${environment().name} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -userAssignedIdentityClientId ${runBookUpdateUserAssignedIdentityClientId}'
 
 //var CommandToExecute = 'Powershell.exe -executionpolicy bypass -command .\\Update-RunbookviaCSE.ps1 ${ScriptParams}'
 
@@ -133,7 +132,7 @@ resource schedules 'Microsoft.Automation/automationAccounts/schedules@2022-08-08
 resource jobSchedules 'Microsoft.Automation/automationAccounts/jobSchedules@2022-08-08' = [for i in range(0, 4): {
   parent: automationAccount
   #disable-next-line use-stable-resource-identifiers
-  name: guid(Time, RunBookName, hostPoolName, string(i))
+  name: guid(Time, runBookName, hostPoolName, string(i))
   properties: {
     parameters: {
       BeginPeakTime: BeginPeakTime
@@ -164,14 +163,13 @@ resource jobSchedules 'Microsoft.Automation/automationAccounts/jobSchedules@2022
 module runbook '../../../sharedModules/custom/customScriptExtension.bicep' = {
   name: 'Runbook_${timeStamp}'  
   params:{
-    artifactsLocation: artifactsUri
-    powerShellScriptName: 'Update-RunbookviaCSE.ps1'
-    files: [
-      'Update-RunbookviaCSE.ps1'
-      'Set-HostPoolScaling.ps1'
+    commandToExecute: 'Powershell.exe -executionpolicy bypass -command .\\Update-RunbookviaCSE.ps1 ${scriptParams}'
+    fileUris: [
+      '${artifactsUri}Update-RunbookviaCSE.ps1'
+      '${artifactsUri}Set-HostPoolScaling.ps1'
     ]
     location: location
-    scriptParameters: ScriptParams
+    output: false
     tags: tags
     userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
     virtualMachineName: managementVMName

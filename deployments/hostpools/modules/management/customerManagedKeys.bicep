@@ -17,6 +17,8 @@ param tags object
 param timeStamp string
 param userAssignedIdentityNameConv string
 
+var cseScriptParameters = confidentialVMOSDiskEncryption ? '-keyVaultName ${last(split(confidentialVMEncryptionKeysVault.outputs.keyVaultResourceId, '/'))} -keyName ConfidentialVMOSDiskEncryptionKey -Environment ${environment().name} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentityClientId}' : ''
+
 module encryptionKeysVault 'keyVault.bicep' = {
   name: 'KV_Encryption_${timeStamp}'
   params: {
@@ -63,13 +65,12 @@ module rsa_key_disks 'keyVaultKeys.bicep' = if (!confidentialVMOSDiskEncryption)
 module rsahsm_key_disks '../../../sharedModules/custom/customScriptExtension.bicep' = if(confidentialVMOSDiskEncryption) {
   name: 'EncryptionKey_ConfidentialVMOSDisk_${timeStamp}'
   params: {
-    artifactsLocation: artifactsUri
-    files: [
-      'Create-ConfidentialVMOSDiskEncryptionKey.ps1'
+    commandToExecute: 'powershell.exe -executionpolicy Bypass -command .\\Create-ConfidentialVMOSDiskEncryptionKey.ps1 ${cseScriptParameters}'
+    fileUris: [
+      '${artifactsUri}Create-ConfidentialVMOSDiskEncryptionKey.ps1'
     ]
-    powerShellScriptName: 'Create-ConfidentialVMOSDiskEncryptionKey.ps1'
     location: location
-    scriptParameters: confidentialVMOSDiskEncryption ? '-keyVaultName ${last(split(confidentialVMEncryptionKeysVault.outputs.keyVaultResourceId, '/'))} -keyName ConfidentialVMOSDiskEncryptionKey -Environment ${environment().name} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentityClientId}' : ''
+    output: true
     tags: contains(tags, 'Microsoft.Compute/virtualMachines/extensions') ? tags['Microsoft.Compute/virtualMachines/extensions'] : {}
     userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
     virtualMachineName: managementVirtualMachineName

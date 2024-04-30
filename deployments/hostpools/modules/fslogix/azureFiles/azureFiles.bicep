@@ -210,11 +210,11 @@ module ntfsPermissions '../../../../sharedModules/custom/customScriptExtension.b
   name: 'FslogixNtfsPermissions_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
+    commandToExecute: 'powershell.exe -ExecutionPolicy Unrestricted -command .\\Set-NtfsPermissions.ps1 -ClientId ${deploymentUserAssignedIdentityClientId} -DomainJoinUserPassword "${domainJoinUserPassword}" -DomainJoinUserPrincipalName ${domainJoinUserPrincipalName} -ActiveDirectorySolution ${identitySolution} -Environment ${environment().name} -FslogixContainerType ${fslogixContainerType} -KerberosEncryptionType ${kerberosEncryption} -Netbios ${netbios} -OUPath "${ouPath}" -SecurityPrincipalNames "${securityPrincipalNames}" -StorageAccountPrefix ${storageAccountNamePrefix} -StorageAccountResourceGroupName ${resourceGroupStorage} -StorageCount ${storageCount} -StorageIndex ${storageIndex} -StorageSolution ${storageSolution} -StorageSuffix ${environment().suffixes.storage} -SubscriptionId ${subscription().subscriptionId} -TenantId ${subscription().tenantId}'
+    fileUris: [
+      '${artifactsUri}Set-NtfsPermissions.ps1'
+    ]
     location: location
-    artifactsLocation: artifactsUri
-    files: ['Set-NtfsPermissions.ps1']
-    scriptParameters: '-ClientId ${deploymentUserAssignedIdentityClientId} -DomainJoinUserPassword "${domainJoinUserPassword}" -DomainJoinUserPrincipalName ${domainJoinUserPrincipalName} -ActiveDirectorySolution ${identitySolution} -Environment ${environment().name} -FslogixContainerType ${fslogixContainerType} -KerberosEncryptionType ${kerberosEncryption} -Netbios ${netbios} -OUPath "${ouPath}" -SecurityPrincipalNames "${securityPrincipalNames}" -StorageAccountPrefix ${storageAccountNamePrefix} -StorageAccountResourceGroupName ${resourceGroupStorage} -StorageCount ${storageCount} -StorageIndex ${storageIndex} -StorageSolution ${storageSolution} -StorageSuffix ${environment().suffixes.storage} -SubscriptionId ${subscription().subscriptionId} -TenantId ${subscription().tenantId}'
-    powerShellScriptName: 'Set-NtfsPermissions.ps1'
     tags: tagsVirtualMachines
     userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
     virtualMachineName: managementVirtualMachineName
