@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.26.170.59819",
-      "templateHash": "8257240961124159259"
+      "templateHash": "12502044575693933402"
     },
     "name": "Zero Trust Architecture Custom Windows Image Builder",
     "description": "This solution allows you to create a custom image much like Azure VM Image Builder, but utilizes zero trust architecture and does not require that service.",
@@ -918,7 +918,7 @@
     "cloud": "[environment().name]",
     "subscriptionId": "[subscription().subscriptionId]",
     "tenantId": "[tenant().tenantId]",
-    "locations": "[variables('$fxv#0')]",
+    "locations": "[variables('$fxv#0')[environment().name]]",
     "resourceAbbreviations": "[variables('$fxv#1')]",
     "depPrefix": "[if(not(empty(parameters('deploymentPrefix'))), format('{0}-', parameters('deploymentPrefix')), '')]",
     "imageBuildResourceGroupName": "[if(empty(parameters('imageBuildResourceGroupId')), if(empty(parameters('customBuildResourceGroupName')), if(not(empty(parameters('envClassification'))), format('{0}-image-builder-{1}-{2}', variables('resourceAbbreviations').resourceGroups, parameters('envClassification'), variables('locations')[parameters('deploymentLocation')].abbreviation), format('{0}-image-builder-{1}', variables('resourceAbbreviations').resourceGroups, variables('locations')[parameters('deploymentLocation')].abbreviation)), parameters('customBuildResourceGroupName')), last(split(parameters('imageBuildResourceGroupId'), '/')))]",
@@ -1362,7 +1362,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.26.170.59819",
-              "templateHash": "11798266075052376864"
+              "templateHash": "16655721621683609925"
             },
             "name": "Virtual Machines",
             "description": "This module deploys a Virtual Machine with one or multiple NICs and optionally one or multiple public IPs.",
@@ -1398,7 +1398,12 @@
             },
             "securityType": {
               "type": "string",
-              "defaultValue": "",
+              "defaultValue": "Standard",
+              "allowedValues": [
+                "TrustedLaunch",
+                "ConfidentialVM",
+                "Standard"
+              ],
               "metadata": {
                 "description": "Optional. Specifies the SecurityType of the virtual machine. It is set as TrustedLaunch to enable UefiSettings."
               }
@@ -1981,8 +1986,8 @@
                 },
                 "securityProfile": {
                   "encryptionAtHost": "[if(parameters('encryptionAtHost'), parameters('encryptionAtHost'), null())]",
-                  "securityType": "[parameters('securityType')]",
-                  "uefiSettings": "[if(equals(parameters('securityType'), 'TrustedLaunch'), createObject('secureBootEnabled', parameters('secureBootEnabled'), 'vTpmEnabled', parameters('vTpmEnabled')), null())]"
+                  "securityType": "[if(not(equals(parameters('securityType'), 'Standard')), parameters('securityType'), null())]",
+                  "uefiSettings": "[if(not(equals(parameters('securityType'), 'Standard')), createObject('secureBootEnabled', parameters('secureBootEnabled'), 'vTpmEnabled', parameters('vTpmEnabled')), null())]"
                 },
                 "storageProfile": {
                   "copy": [
@@ -7837,7 +7842,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.26.170.59819",
-              "templateHash": "11798266075052376864"
+              "templateHash": "16655721621683609925"
             },
             "name": "Virtual Machines",
             "description": "This module deploys a Virtual Machine with one or multiple NICs and optionally one or multiple public IPs.",
@@ -7873,7 +7878,12 @@
             },
             "securityType": {
               "type": "string",
-              "defaultValue": "",
+              "defaultValue": "Standard",
+              "allowedValues": [
+                "TrustedLaunch",
+                "ConfidentialVM",
+                "Standard"
+              ],
               "metadata": {
                 "description": "Optional. Specifies the SecurityType of the virtual machine. It is set as TrustedLaunch to enable UefiSettings."
               }
@@ -8456,8 +8466,8 @@
                 },
                 "securityProfile": {
                   "encryptionAtHost": "[if(parameters('encryptionAtHost'), parameters('encryptionAtHost'), null())]",
-                  "securityType": "[parameters('securityType')]",
-                  "uefiSettings": "[if(equals(parameters('securityType'), 'TrustedLaunch'), createObject('secureBootEnabled', parameters('secureBootEnabled'), 'vTpmEnabled', parameters('vTpmEnabled')), null())]"
+                  "securityType": "[if(not(equals(parameters('securityType'), 'Standard')), parameters('securityType'), null())]",
+                  "uefiSettings": "[if(not(equals(parameters('securityType'), 'Standard')), createObject('secureBootEnabled', parameters('secureBootEnabled'), 'vTpmEnabled', parameters('vTpmEnabled')), null())]"
                 },
                 "storageProfile": {
                   "copy": [

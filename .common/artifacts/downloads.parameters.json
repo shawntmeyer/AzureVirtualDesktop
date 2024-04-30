@@ -28,7 +28,7 @@
             "APIUrl": "",
             "GitHubRepo": "",
             "GitHubFileNamePattern": "",
-            "DestinationFilePath": "FSLogix/FSLogix.zip"
+            "DestinationFilePath": "FSLogix.zip"
         },
         {
             "Name": "Office 365 Deployment Tool",
@@ -38,7 +38,7 @@
             "APIUrl": "",
             "GitHubRepo": "",
             "GitHubFileNamePattern": "",
-            "DestinationFilePath": "Office365-Install/OfficeDeploymentTool.exe"
+            "DestinationFilePath": "Office365DeploymentTool.exe"
         },
         {
             "Name": "Office 365 Administrative Templates",
@@ -58,7 +58,7 @@
             "APIUrl": "",
             "GitHubRepo": "",
             "GitHubFileNamePattern": "",
-            "DestinationFilePath": "Microsoft-OneDrive/OneDriveSetup.exe"
+            "DestinationFilePath": "OneDriveSetup.exe"
         },
         {
             "Name": "Teams Classic for Windows 64-bit",
@@ -79,6 +79,16 @@
             "GitHubRepo": "",
             "GitHubFileNamePattern": "",
             "DestinationFilePath": "Microsoft-Teams/Websocket.msi"
+        },
+        {
+            "Name": "Visual Studio Redistributables (Latest)",
+            "DownloadUrl": "https://aka.ms/vs/17/release/vc_redist.x64.exe",
+            "WebSiteUrl": "",
+            "SearchString": "",
+            "APIUrl": "",
+            "GitHubRepo": "",
+            "GitHubFileNamePattern": "",
+            "DestinationFilePath": "Microsoft-Teams/vc_redist.x64.exe"
         },
         {
             "Name": "Edge Enterprise Administrative Templates",

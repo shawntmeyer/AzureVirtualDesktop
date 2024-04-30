@@ -20,7 +20,9 @@ param centralizedImageManagement bool = false
 param nameConvResTypeAtEnd bool = false
 
 @description('Optional. The custom name of the Image Gallery to Deploy.')
-param customComputeGalleryName string = ''
+@minLength(3)
+@maxLength(128)
+param customComputeGalleryName string = 'none'
 
 @minLength(3)
 @maxLength(128)
@@ -128,7 +130,7 @@ param timeStamp string = utcNow('yyyyMMddhhmm')
 
 // Naming conventions
 
-var locations = loadJsonContent('../../.common/data/locations.json')
+var locations = loadJsonContent('../../.common/data/locations.json')[environment().name]
 var resourceAbbreviations = loadJsonContent('../../.common/data/resourceAbbreviations.json')
 var busUnitId = toLower(businessUnitIdentifier)
 var nameConv_Suffix_withoutResType = !empty(environmentShortName) ? '${environmentShortName}-location' : 'location'
@@ -137,13 +139,14 @@ var nameConv_Shared_ResGroups = nameConvResTypeAtEnd ? ( !empty(busUnitId) ? '${
 var nameConv_ImageManagement_ResGroup = centralizedImageManagement ? ( nameConvResTypeAtEnd ? 'resGroupPurpose-${nameConvSuffix}' : 'resourceType-resGroupPurpose-${nameConvSuffix}' ) : nameConv_Shared_ResGroups
 var nameConv_ImageManagement_Resources = centralizedImageManagement ? ( nameConvResTypeAtEnd ? 'image-management-${nameConvSuffix}' : 'resourceType-image-management-${nameConvSuffix}' ) : ( nameConvResTypeAtEnd ? ( !empty(busUnitId) ? '${busUnitId}-image-management-${nameConvSuffix}' : 'image-management-${nameConvSuffix}' ) : ( !empty(busUnitId) ? 'resourceType-${busUnitId}-image-management-${nameConvSuffix}' : 'resourceType-image-managmeent-${nameConvSuffix}' ) )
 
-var resourceGroupName = !empty(customResourceGroupName) ? customResourceGroupName : replace(replace(replace(nameConv_ImageManagement_ResGroup, 'resGroupPurpose', 'image-management'), 'location', locations[location].abbreviation), 'resourceType', resourceAbbreviations.resourceGroups)
+var resourceGroupName = customResourceGroupName != 'none' ? customResourceGroupName : replace(replace(replace(nameConv_ImageManagement_ResGroup, 'resGroupPurpose', 'image-management'), 'location', locations[location].abbreviation), 'resourceType', resourceAbbreviations.resourceGroups)
 var blobContainerName = replace(replace(toLower(artifactsBlobContainerName), '_', '-'), ' ', '-')
-var galleryName = !empty(customComputeGalleryName) ? customComputeGalleryName : replace(replace(nameConv_ImageManagement_Resources, 'resourceType', resourceAbbreviations.computeGalleries), 'location', locations[location].abbreviation)
+var galleryName = customComputeGalleryName != 'none' ? customComputeGalleryName : replace(replace(nameConv_ImageManagement_Resources, 'resourceType', resourceAbbreviations.computeGalleries), 'location', locations[location].abbreviation)
+var computeGalleryName = replace(galleryName, '-', '_')
 var identityName = customManagedIdentityName != 'none' ? customManagedIdentityName : replace(replace(nameConv_ImageManagement_Resources, 'resourceType', resourceAbbreviations.userAssignedIdentities), 'location', locations[location].abbreviation)
-var privateEndpointNameConv = replace('${nameConvResTypeAtEnd ? 'resource-subresource-resourceType-uniqueString' : 'resourceType-resource-subresource-uniqueString'}', 'resourceType', resourceAbbreviations.privateEndpoints)
-var privateEndpointName = replace(replace(replace(privateEndpointNameConv, 'resource', storageName), 'subresource', 'blob'), '-uniqueString', '.${uniqueString(privateEndpointSubnetResourceId)}')
-var storageName = customArtifactsStorageAccountName != 'none' ? customArtifactsStorageAccountName : !empty(environmentShortName) ? '${resourceAbbreviations.storageAccounts}imageassets${environmentShortName}${locations[location].abbreviation}' : '${resourceAbbreviations.storageAccounts}imageassets${locations[location].abbreviation}'
+var privateEndpointNameConv = replace('${nameConvResTypeAtEnd ? 'resource-subResource-subnetId-resourceType' : 'resourceType-resource-subResource-subnetId'}', 'resourceType', resourceAbbreviations.privateEndpoints)
+var privateEndpointName = replace(replace(replace(privateEndpointNameConv, 'resource', storageName), 'subResource', 'blob'), 'subnetId', '${uniqueString(privateEndpointSubnetResourceId)}')
+var storageName = customArtifactsStorageAccountName != 'none' ? customArtifactsStorageAccountName : !empty(environmentShortName) ? take('${resourceAbbreviations.storageAccounts}imageassets${environmentShortName}${locations[location].abbreviation}${uniqueString(resourceGroupName)}', 24) : take('${resourceAbbreviations.storageAccounts}imageassets${locations[location].abbreviation}${uniqueString(resourceGroupName)}', 24)
 
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   name: resourceGroupName
@@ -158,7 +161,7 @@ module resources 'resources.bicep' = {
     azureBlobPrivateDnsZoneResourceId: azureBlobPrivateDnsZoneResourceId
     location: location
     logAnalyticsWorkspaceId: logAnalyticsWorkspaceResourceId
-    galleryName: galleryName
+    computeGalleryName: computeGalleryName
     storageAccountName: storageName
     blobContainerName: blobContainerName
     managedIdentityName: identityName

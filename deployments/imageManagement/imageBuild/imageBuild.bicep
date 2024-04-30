@@ -80,7 +80,7 @@ param vmSize string
 param installFsLogix bool = false
 
 @description('Conditional. The name of the blob that contains the FSlogix zip.')
-param fslogixBlobName string = ''
+param fslogixBlobName string = 'FSLogix.zip'
 
 @description('Optional. Install Microsoft Access.')
 param installAccess bool = false
@@ -91,8 +91,8 @@ param installExcel bool = false
 @description('Optional. Install OneDrive Per Machine.')
 param installOneDrive bool = false
 
-@description('Conditional. The name of the zip blob containing OneDriveSetup.exe.')
-param onedriveBlobName string = ''
+@description('Conditional. The name of the blob containing OneDriveSetup.exe.')
+param onedriveBlobName string = 'OneDriveSetup.exe'
 
 @description('Optional. Install Microsoft OneNote.')
 param installOneNote bool = false
@@ -118,20 +118,20 @@ param installVisio bool = false
 @description('Optional. Install Microsoft Word.')
 param installWord bool = false
 
-@description('Conditional. The name of the zip blob containing the Office Deployment Tool.')
-param officeBlobName string = ''
+@description('Optional. The name of the blob containing the Office Deployment Tool.')
+param officeBlobName string = 'Office365DeploymentTool.exe'
 
 @description('Optional. Install Microsoft Teams.')
 param installTeams bool = false
 
-@description('Conditional. The name of the zip blob containing the VC++Redistributables, MSRDC WebRTC Redirector, and Teams installer.')
-param teamsBlobName string = ''
+@description('Optional. The name of the zip blob containing the VC++Redistributables, MSRDC WebRTC Redirector, and Teams installer.')
+param teamsBlobName string = 'Microsoft-Teams.zip'
 
 @description('Optional. Apply the Virtual Desktop Optimization Tool customizations.')
 param installVirtualDesktopOptimizationTool bool = false
 
 @description('Conditional. The name of the zip blob containing the Virtual Desktop Optimization Tool Script and files.')
-param vDotBlobName string = ''
+param vDotBlobName string = 'VDOT.zip'
 
 @description('''An array of image customizations consisting of the blob name and parameters.
 BICEP example:
@@ -219,7 +219,7 @@ param imageDefinitionIsHigherStoragePerformanceSupported bool = false
   'TrustedLaunchSupported'
   'TrustedLaunchAndConfidentialVMSupported'
 ])
-param imageDefinitionSecurityType string = 'TrustedLaunchSupported'
+param imageDefinitionSecurityType string = 'TrustedLaunch'
 
 @description('Automatically generated Image Version name.')
 param autoImageVersionName string = utcNow('yy.MMdd.hhmm')
@@ -279,7 +279,7 @@ var customizers = union(customizations, installers)
 var cloud = environment().name
 var subscriptionId = subscription().subscriptionId
 var tenantId = tenant().tenantId
-var locations = loadJsonContent('../../../.common/data/locations.json')
+var locations = loadJsonContent('../../../.common/data/locations.json')[environment().name]
 var resourceAbbreviations = loadJsonContent('../../../.common/data/resourceAbbreviations.json')
 
 var computeLocation = vnet.location

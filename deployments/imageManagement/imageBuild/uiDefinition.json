@@ -517,22 +517,7 @@
 										],
 										"required": false
 									}
-								},
-								{
-									"name": "fslogixBlob",
-									"type": "Microsoft.Storage.StorageBlobSelector",
-									"visible": "[steps('imageCustomizations').fslogix.installFsLogix]",
-									"toolTip": "Select FsLogix Agent blob",
-									"label": "FsLogix Agent Blob (.zip)",
-									"options": {
-										"text": "Select Package"
-									},
-									"constraints": {
-										"allowedFileExtensions": [
-											"zip"
-										]
-									}
-								}
+								}								
 							]
 						},
 						{
@@ -559,304 +544,91 @@
 										],
 										"required": false
 									}
-								},
-								{
-									"name": "officeBlob",
-									"type": "Microsoft.Storage.StorageBlobSelector",
-									"visible": "[steps('imageCustomizations').office.installOffice]",
-									"toolTip": "Select Microsoft Office Customization Tool blob",
-									"label": "Office Deployment Tool (.zip)",
-									"options": {
-										"text": "Select Package"
-									},
-									"constraints": {
-										"allowedFileExtensions": [
-											"zip"
-										]
-									}
-								},
+								},								
 								{
 									"name": "installAccess",
-									"type": "Microsoft.Common.OptionsGroup",
+									"type": "Microsoft.Common.CheckBox",
 									"label": "Install Access",
-									"defaultValue": "No",
-									"toolTip": "Select 'Yes' to install Access",
-									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Yes",
-												"value": true
-											},
-											{
-												"label": "No",
-												"value": false
-											}
-										],
-										"required": false
-									},
+									"defaultValue": true,
 									"visible": "[steps('imageCustomizations').office.installOffice]"
 								},
 								{
 									"name": "installExcel",
-									"type": "Microsoft.Common.OptionsGroup",
+									"type": "Microsoft.Common.CheckBox",
 									"label": "Install Excel",
-									"defaultValue": "No",
-									"toolTip": "Select 'Yes' to install Excel",
-									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Yes",
-												"value": true
-											},
-											{
-												"label": "No",
-												"value": false
-											}
-										],
-										"required": false
-									},
+									"defaultValue": true,
 									"visible": "[steps('imageCustomizations').office.installOffice]"
 								},
 								{
 									"name": "installOneNote",
-									"type": "Microsoft.Common.OptionsGroup",
+									"type": "Microsoft.Common.CheckBox",
 									"label": "Install OneNote",
-									"defaultValue": "No",
-									"toolTip": "Select 'Yes' to install OneNote",
-									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Yes",
-												"value": true
-											},
-											{
-												"label": "No",
-												"value": false
-											}
-										],
-										"required": false
-									},
+									"defaultValue": true,
 									"visible": "[steps('imageCustomizations').office.installOffice]"
 								},
 								{
 									"name": "installOutlook",
-									"type": "Microsoft.Common.OptionsGroup",
+									"type": "Microsoft.Common.CheckBox",
 									"label": "Install Outlook",
-									"defaultValue": "No",
-									"toolTip": "Select 'Yes' to install Outlook",
-									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Yes",
-												"value": true
-											},
-											{
-												"label": "No",
-												"value": false
-											}
-										],
-										"required": false
-									},
+									"defaultValue": true,
 									"visible": "[steps('imageCustomizations').office.installOffice]"
 								},
 								{
 									"name": "installPowerPoint",
-									"type": "Microsoft.Common.OptionsGroup",
+									"type": "Microsoft.Common.CheckBox",
 									"label": "Install PowerPoint",
-									"defaultValue": "No",
-									"toolTip": "Select 'Yes' to Install PowerPoint",
-									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Yes",
-												"value": true
-											},
-											{
-												"label": "No",
-												"value": false
-											}
-										],
-										"required": false
-									},
+									"defaultValue": true,
 									"visible": "[steps('imageCustomizations').office.installOffice]"
 								},
 								{
 									"name": "installProject",
-									"type": "Microsoft.Common.OptionsGroup",
+									"type": "Microsoft.Common.CheckBox",
 									"label": "Install Project",
-									"defaultValue": "No",
-									"toolTip": "Select 'Yes' to install Project",
-									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Yes",
-												"value": true
-											},
-											{
-												"label": "No",
-												"value": false
-											}
-										],
-										"required": false
-									},
+									"defaultValue": false,
 									"visible": "[steps('imageCustomizations').office.installOffice]"
 								},
 								{
 									"name": "installPublisher",
-									"type": "Microsoft.Common.OptionsGroup",
+									"type": "Microsoft.Common.CheckBox",
 									"label": "Install Publisher",
-									"defaultValue": "No",
-									"toolTip": "Select 'Yes' to install Publisher",
-									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Yes",
-												"value": true
-											},
-											{
-												"label": "No",
-												"value": false
-											}
-										],
-										"required": false
-									},
+									"defaultValue": false,
 									"visible": "[steps('imageCustomizations').office.installOffice]"
-								},
+								},								
 								{
 									"name": "installSkypeForBusiness",
-									"type": "Microsoft.Common.OptionsGroup",
-									"label": "Install Skype For Business",
-									"defaultValue": "No",
-									"toolTip": "Select 'Yes' to install Skype For Business",
-									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Yes",
-												"value": true
-											},
-											{
-												"label": "No",
-												"value": false
-											}
-										],
-										"required": false
-									},
+									"type": "Microsoft.Common.CheckBox",
+									"label": "Install Skype for Business",
+									"defaultValue": false,
 									"visible": "[steps('imageCustomizations').office.installOffice]"
 								},
 								{
 									"name": "installVisio",
-									"type": "Microsoft.Common.OptionsGroup",
+									"type": "Microsoft.Common.CheckBox",
 									"label": "Install Visio",
-									"defaultValue": "No",
-									"toolTip": "Select 'Yes' to install Visio",
-									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Yes",
-												"value": true
-											},
-											{
-												"label": "No",
-												"value": false
-											}
-										],
-										"required": false
-									},
+									"defaultValue": false,
 									"visible": "[steps('imageCustomizations').office.installOffice]"
 								},
 								{
 									"name": "installWord",
-									"type": "Microsoft.Common.OptionsGroup",
+									"type": "Microsoft.Common.CheckBox",
 									"label": "Install Word",
-									"defaultValue": "No",
-									"toolTip": "Select 'Yes' to install Word",
-									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Yes",
-												"value": true
-											},
-											{
-												"label": "No",
-												"value": false
-											}
-										],
-										"required": false
-									},
+									"defaultValue": true,
 									"visible": "[steps('imageCustomizations').office.installOffice]"
 								},
 								{
 									"name": "installOneDrive",
-									"type": "Microsoft.Common.OptionsGroup",
+									"type": "Microsoft.Common.CheckBox",
 									"label": "Install OneDrive (Per Machine)",
-									"defaultValue": "No",
-									"toolTip": "Select 'Yes' to install OneDrive (Per-Machine)",
-									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Yes",
-												"value": true
-											},
-											{
-												"label": "No",
-												"value": false
-											}
-										],
-										"required": false
-									},
+									"defaultValue": true,
 									"visible": true
-								},
-								{
-									"name": "onedriveBlob",
-									"type": "Microsoft.Storage.StorageBlobSelector",
-									"visible": "[steps('imageCustomizations').office.installOneDrive]",
-									"toolTip": "Select Mirosoft OneDrive blob",
-									"label": "OneDrive Setup (.zip)",
-									"options": {
-										"text": "Select Package"
-									},
-									"constraints": {
-										"allowedFileExtensions": [
-											"zip"
-										]
-									}
-								},
+								},							
 								{
 									"name": "installTeams",
-									"type": "Microsoft.Common.OptionsGroup",
+									"type": "Microsoft.Common.CheckBox",
 									"label": "Install Teams",
-									"defaultValue": "No",
-									"toolTip": "Select 'True' to install Teams",
-									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Yes",
-												"value": true
-											},
-											{
-												"label": "No",
-												"value": false
-											}
-										],
-										"required": false
-									},
+									"defaultValue": true,
 									"visible": true
-								},
-								{
-									"name": "teamsBlob",
-									"type": "Microsoft.Storage.StorageBlobSelector",
-									"visible": "[steps('imageCustomizations').office.installTeams]",
-									"toolTip": "Select Mirosoft Teams blob",
-									"label": "Teams Installers (.zip)",
-									"options": {
-										"text": "Select Package"
-									},
-									"constraints": {
-										"allowedFileExtensions": [
-											"zip"
-										]
-									}
-								}
+								}						
 							]
 						},
 						{
@@ -884,22 +656,7 @@
 										"required": false
 									},
 									"visible": true
-								},
-								{
-									"name": "vDotBlob",
-									"type": "Microsoft.Storage.StorageBlobSelector",
-									"visible": "[steps('imageCustomizations').customizations.installVirtualDesktopOptimizationTool]",
-									"toolTip": "Select vDot blob",
-									"label": "VDOT Package (.zip)",
-									"options": {
-										"text": "Select Package"
-									},
-									"constraints": {
-										"allowedFileExtensions": [
-											"zip"
-										]
-									}
-								}
+								}								
 							]
 						},
 						{
@@ -1375,7 +1132,7 @@
 									"name": "securityType",
 									"type": "Microsoft.Common.DropDown",
 									"label": "Security type",
-									"defaultValue": "Trusted Launch Supported",
+									"defaultValue": "Trusted Launch",
 									"toolTip": "Choose a type of security that matches your needs: Standard includes basic protections at no additional cost. Trusted launch virtual machines provide additional security features on Gen2 virtual machines to protect against persistent and advanced attacks.",
 									"constraints": {
 										"required": false,
@@ -1707,7 +1464,6 @@
 				"sku": "[steps('imageVm').imageSource.sku]",
 				"customizations": "[if(equals(steps('imageCustomizations').customSoftware.addCustomSoftware, true), steps('imageCustomizations').customSoftware.customizations, '')]",
 				"installFsLogix": "[if(equals(steps('imageCustomizations').fslogix.installFsLogix, true), steps('imageCustomizations').fslogix.installFsLogix,'false')]",
-				"fslogixBlobName": "[if(equals(steps('imageCustomizations').fslogix.installFsLogix, true), steps('imageCustomizations').fslogix.fslogixBlob.blobName,'')]",
 				"installAccess": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installAccess,'false')]",
 				"installExcel": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installExcel,'false')]",
 				"installOneDrive": "[steps('imageCustomizations').office.installOneDrive]",
@@ -1718,13 +1474,9 @@
 				"installPublisher": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installPublisher,'false')]",
 				"installSkypeForBusiness": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installSkypeForBusiness,'false')]",
 				"installTeams": "[steps('imageCustomizations').office.installTeams]",
-				"teamsBlobName": "[if(equals(steps('imageCustomizations').office.installTeams, true), steps('imageCustomizations').office.teamsBlob.blobName,'')]",
 				"installVirtualDesktopOptimizationTool": "[steps('imageCustomizations').customizations.installVirtualDesktopOptimizationTool]",
 				"installVisio": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installVisio,'false')]",
 				"installWord": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installWord,'false')]",
-				"vDotBlobName": "[if(equals(steps('imageCustomizations').customizations.installVirtualDesktopOptimizationTool, true), steps('imageCustomizations').customizations.vDotBlob.blobName,'')]",
-				"officeBlobName": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.officeBlob.blobName,'')]",
-				"onedriveBlobName": "[if(equals(steps('imageCustomizations').office.installOneDrive, true), steps('imageCustomizations').office.onedriveBlob.blobName,'')]",
 				"installUpdates": "[steps('imageCustomizations').updates.installUpdates]",
 				"updateService": "[steps('imageCustomizations').updates.updateService]",
 				"wsusServer": "[if(equals(steps('imageCustomizations').updates.updateService, 'WSUS'), steps('imageCustomizations').updates.wsusServer, '')]",

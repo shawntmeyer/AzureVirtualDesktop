@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.26.170.59819",
-      "templateHash": "14632857642891024862"
+      "templateHash": "13900713088635789810"
     }
   },
   "parameters": {
@@ -777,7 +777,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.26.170.59819",
-              "templateHash": "6720186593355015373"
+              "templateHash": "6001875934492876897"
             }
           },
           "parameters": {
@@ -1284,7 +1284,7 @@
             "netAppAccountName": "[replace(replace(variables('nameConv_HP_Resources'), 'resourceType', variables('resourceAbbreviations').netAppAccounts), 'location', variables('locations')[parameters('locationVirtualMachines')].abbreviation)]",
             "netAppCapacityPoolName": "[replace(replace(variables('nameConv_HP_Resources'), 'resourceType', variables('resourceAbbreviations').netAppCapacityPools), 'location', variables('locations')[parameters('locationVirtualMachines')].abbreviation)]",
             "storageAccountNamePrefix": "[if(empty(parameters('fslogixStorageCustomPrefix')), toLower(format('{0}', replace(replace(replace(replace(replace(variables('nameConv_HP_Resources'), 'resourceType', variables('resourceAbbreviations').storageAccounts), variables('hostPoolBaseName'), format('{0}fsl', variables('hostPoolBaseName'))), 'location', variables('locations')[parameters('locationVirtualMachines')].abbreviation), 'avd-', ''), '-', ''))), toLower(parameters('fslogixStorageCustomPrefix')))]",
-            "privateEndpointNameConv": "[replace(format('{0}', if(parameters('nameConvResTypeAtEnd'), 'resource-subresource-resourceType-uniqueString', 'resourceType-resource-subresource-uniqueString')), 'resourceType', variables('resourceAbbreviations').privateEndpoints)]",
+            "privateEndpointNameConv": "[replace(format('{0}', if(parameters('nameConvResTypeAtEnd'), 'resource-subresource-subnetId-resourceType', 'resourceType-resource-subresource-subnetId')), 'resourceType', variables('resourceAbbreviations').privateEndpoints)]",
             "resourceGroupMonitoring": "[replace(replace(replace(variables('nameConv_Monitoring_ResGroup'), 'resGroupPurpose', 'avd-monitoring'), 'location', variables('locations')[parameters('locationVirtualMachines')].abbreviation), 'resourceType', variables('resourceAbbreviations').resourceGroups)]",
             "dataCollectionEndpointName": "[replace(replace(variables('nameConv_Monitoring_Resources'), 'resourceType', variables('resourceAbbreviations').dataCollectionEndpoints), 'location', variables('locations')[parameters('locationVirtualMachines')].abbreviation)]",
             "dataCollectionRulesNameConv": "[replace(replace(variables('nameConv_Monitoring_Resources'), 'resourceType', variables('resourceAbbreviations').dataCollectionRules), 'location', variables('locations')[parameters('locationVirtualMachines')].abbreviation)]",
@@ -2132,7 +2132,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.26.170.59819",
-              "templateHash": "2863810859952420230"
+              "templateHash": "10249871096814372710"
             }
           },
           "parameters": {
@@ -2982,7 +2982,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.26.170.59819",
-                      "templateHash": "12561143252898544802"
+                      "templateHash": "16033908195212554012"
                     }
                   },
                   "parameters": {
@@ -3082,7 +3082,7 @@
                       "condition": "[parameters('privateEndpoint')]",
                       "type": "Microsoft.Network/privateEndpoints",
                       "apiVersion": "2020-05-01",
-                      "name": "[replace(replace(replace(parameters('privateEndpointNameConv'), 'subresource', 'vault'), 'resource', parameters('keyVaultName')), '-uniqueString', format('.{0}', uniqueString(parameters('privateEndpointSubnetId'))))]",
+                      "name": "[replace(replace(replace(parameters('privateEndpointNameConv'), 'subresource', 'vault'), 'resource', parameters('keyVaultName')), 'uniqueString', uniqueString(parameters('privateEndpointSubnetId')))]",
                       "location": "[parameters('location')]",
                       "tags": "[parameters('tagsPrivateEndpoints')]",
                       "properties": {
@@ -3109,7 +3109,7 @@
                       "condition": "[and(parameters('privateEndpoint'), not(empty(parameters('keyVaultPrivateDnsZoneResourceId'))))]",
                       "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
                       "apiVersion": "2021-08-01",
-                      "name": "[format('{0}/{1}', replace(replace(replace(parameters('privateEndpointNameConv'), 'subresource', 'vault'), 'resource', parameters('keyVaultName')), '-uniqueString', format('.{0}', uniqueString(parameters('privateEndpointSubnetId')))), parameters('keyVaultName'))]",
+                      "name": "[format('{0}/{1}', replace(replace(replace(parameters('privateEndpointNameConv'), 'subresource', 'vault'), 'resource', parameters('keyVaultName')), 'uniqueString', uniqueString(parameters('privateEndpointSubnetId'))), parameters('keyVaultName'))]",
                       "properties": {
                         "privateDnsZoneConfigs": [
                           {
@@ -3121,7 +3121,7 @@
                         ]
                       },
                       "dependsOn": [
-                        "[resourceId('Microsoft.Network/privateEndpoints', replace(replace(replace(parameters('privateEndpointNameConv'), 'subresource', 'vault'), 'resource', parameters('keyVaultName')), '-uniqueString', format('.{0}', uniqueString(parameters('privateEndpointSubnetId')))))]"
+                        "[resourceId('Microsoft.Network/privateEndpoints', replace(replace(replace(parameters('privateEndpointNameConv'), 'subresource', 'vault'), 'resource', parameters('keyVaultName')), 'uniqueString', uniqueString(parameters('privateEndpointSubnetId'))))]"
                       ]
                     },
                     {
@@ -3726,7 +3726,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.26.170.59819",
-                      "templateHash": "15527899526606579689"
+                      "templateHash": "12993397538479770420"
                     }
                   },
                   "parameters": {
@@ -3830,7 +3830,7 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.26.170.59819",
-                              "templateHash": "12561143252898544802"
+                              "templateHash": "16033908195212554012"
                             }
                           },
                           "parameters": {
@@ -3930,7 +3930,7 @@
                               "condition": "[parameters('privateEndpoint')]",
                               "type": "Microsoft.Network/privateEndpoints",
                               "apiVersion": "2020-05-01",
-                              "name": "[replace(replace(replace(parameters('privateEndpointNameConv'), 'subresource', 'vault'), 'resource', parameters('keyVaultName')), '-uniqueString', format('.{0}', uniqueString(parameters('privateEndpointSubnetId'))))]",
+                              "name": "[replace(replace(replace(parameters('privateEndpointNameConv'), 'subresource', 'vault'), 'resource', parameters('keyVaultName')), 'uniqueString', uniqueString(parameters('privateEndpointSubnetId')))]",
                               "location": "[parameters('location')]",
                               "tags": "[parameters('tagsPrivateEndpoints')]",
                               "properties": {
@@ -3957,7 +3957,7 @@
                               "condition": "[and(parameters('privateEndpoint'), not(empty(parameters('keyVaultPrivateDnsZoneResourceId'))))]",
                               "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
                               "apiVersion": "2021-08-01",
-                              "name": "[format('{0}/{1}', replace(replace(replace(parameters('privateEndpointNameConv'), 'subresource', 'vault'), 'resource', parameters('keyVaultName')), '-uniqueString', format('.{0}', uniqueString(parameters('privateEndpointSubnetId')))), parameters('keyVaultName'))]",
+                              "name": "[format('{0}/{1}', replace(replace(replace(parameters('privateEndpointNameConv'), 'subresource', 'vault'), 'resource', parameters('keyVaultName')), 'uniqueString', uniqueString(parameters('privateEndpointSubnetId'))), parameters('keyVaultName'))]",
                               "properties": {
                                 "privateDnsZoneConfigs": [
                                   {
@@ -3969,7 +3969,7 @@
                                 ]
                               },
                               "dependsOn": [
-                                "[resourceId('Microsoft.Network/privateEndpoints', replace(replace(replace(parameters('privateEndpointNameConv'), 'subresource', 'vault'), 'resource', parameters('keyVaultName')), '-uniqueString', format('.{0}', uniqueString(parameters('privateEndpointSubnetId')))))]"
+                                "[resourceId('Microsoft.Network/privateEndpoints', replace(replace(replace(parameters('privateEndpointNameConv'), 'subresource', 'vault'), 'resource', parameters('keyVaultName')), 'uniqueString', uniqueString(parameters('privateEndpointSubnetId'))))]"
                               ]
                             },
                             {
@@ -4083,7 +4083,7 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.26.170.59819",
-                              "templateHash": "12561143252898544802"
+                              "templateHash": "16033908195212554012"
                             }
                           },
                           "parameters": {
@@ -4183,7 +4183,7 @@
                               "condition": "[parameters('privateEndpoint')]",
                               "type": "Microsoft.Network/privateEndpoints",
                               "apiVersion": "2020-05-01",
-                              "name": "[replace(replace(replace(parameters('privateEndpointNameConv'), 'subresource', 'vault'), 'resource', parameters('keyVaultName')), '-uniqueString', format('.{0}', uniqueString(parameters('privateEndpointSubnetId'))))]",
+                              "name": "[replace(replace(replace(parameters('privateEndpointNameConv'), 'subresource', 'vault'), 'resource', parameters('keyVaultName')), 'uniqueString', uniqueString(parameters('privateEndpointSubnetId')))]",
                               "location": "[parameters('location')]",
                               "tags": "[parameters('tagsPrivateEndpoints')]",
                               "properties": {
@@ -4210,7 +4210,7 @@
                               "condition": "[and(parameters('privateEndpoint'), not(empty(parameters('keyVaultPrivateDnsZoneResourceId'))))]",
                               "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
                               "apiVersion": "2021-08-01",
-                              "name": "[format('{0}/{1}', replace(replace(replace(parameters('privateEndpointNameConv'), 'subresource', 'vault'), 'resource', parameters('keyVaultName')), '-uniqueString', format('.{0}', uniqueString(parameters('privateEndpointSubnetId')))), parameters('keyVaultName'))]",
+                              "name": "[format('{0}/{1}', replace(replace(replace(parameters('privateEndpointNameConv'), 'subresource', 'vault'), 'resource', parameters('keyVaultName')), 'uniqueString', uniqueString(parameters('privateEndpointSubnetId'))), parameters('keyVaultName'))]",
                               "properties": {
                                 "privateDnsZoneConfigs": [
                                   {
@@ -4222,7 +4222,7 @@
                                 ]
                               },
                               "dependsOn": [
-                                "[resourceId('Microsoft.Network/privateEndpoints', replace(replace(replace(parameters('privateEndpointNameConv'), 'subresource', 'vault'), 'resource', parameters('keyVaultName')), '-uniqueString', format('.{0}', uniqueString(parameters('privateEndpointSubnetId')))))]"
+                                "[resourceId('Microsoft.Network/privateEndpoints', replace(replace(replace(parameters('privateEndpointNameConv'), 'subresource', 'vault'), 'resource', parameters('keyVaultName')), 'uniqueString', uniqueString(parameters('privateEndpointSubnetId'))))]"
                               ]
                             },
                             {
@@ -5482,7 +5482,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.26.170.59819",
-                      "templateHash": "10585029963125116564"
+                      "templateHash": "6245830687377941116"
                     }
                   },
                   "parameters": {
@@ -5518,7 +5518,7 @@
                     }
                   },
                   "variables": {
-                    "privateEndpointName": "[replace(replace(replace(parameters('privateEndpointNameConv'), 'subresource', 'DSCAndHybridWorker'), 'resource', parameters('automationAccountName')), '-uniqueString', format('.{0}', uniqueString(parameters('subnetResourceId'))))]"
+                    "privateEndpointName": "[replace(replace(replace(parameters('privateEndpointNameConv'), 'subresource', 'DSCAndHybridWorker'), 'resource', parameters('automationAccountName')), 'uniqueString', uniqueString(parameters('subnetResourceId')))]"
                   },
                   "resources": [
                     {
@@ -6579,7 +6579,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.26.170.59819",
-              "templateHash": "16921371191444308022"
+              "templateHash": "14946787280672801317"
             }
           },
           "parameters": {
@@ -6711,9 +6711,9 @@
             }
           },
           "variables": {
-            "feedPrivateEndpointName": "[replace(replace(replace(parameters('privateEndpointNameConv'), 'subresource', 'feed'), 'resource', parameters('workspaceName')), '-uniqueString', format('.{0}', uniqueString(parameters('privateEndpointSubnetResourceId'))))]",
-            "globalFeedPrivateEndpointName": "[replace(replace(replace(parameters('privateEndpointNameConv'), 'subresource', 'global'), 'resource', parameters('workspaceName')), '-uniqueString', format('.{0}', uniqueString(parameters('privateEndpointSubnetResourceId'))))]",
-            "hostPoolPrivateEndpointName": "[replace(replace(replace(parameters('privateEndpointNameConv'), 'subresource', 'connection'), 'resource', parameters('hostPoolName')), '-uniqueString', format('.{0}', uniqueString(parameters('privateEndpointSubnetResourceId'))))]"
+            "feedPrivateEndpointName": "[replace(replace(replace(parameters('privateEndpointNameConv'), 'subresource', 'feed'), 'resource', parameters('workspaceName')), 'subnetId', uniqueString(parameters('privateEndpointSubnetResourceId')))]",
+            "globalFeedPrivateEndpointName": "[replace(replace(replace(parameters('privateEndpointNameConv'), 'subresource', 'global'), 'resource', parameters('workspaceName')), 'subnetId', uniqueString(parameters('privateEndpointSubnetResourceId')))]",
+            "hostPoolPrivateEndpointName": "[replace(replace(replace(parameters('privateEndpointNameConv'), 'subresource', 'connection'), 'resource', parameters('hostPoolName')), 'subnetId', uniqueString(parameters('privateEndpointSubnetResourceId')))]"
           },
           "resources": [
             {
@@ -8407,7 +8407,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.26.170.59819",
-              "templateHash": "2403946415194959978"
+              "templateHash": "3447024212451173141"
             }
           },
           "parameters": {
@@ -9076,7 +9076,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.26.170.59819",
-                      "templateHash": "3094985014169427229"
+                      "templateHash": "14096723499566764404"
                     }
                   },
                   "parameters": {
@@ -9335,7 +9335,7 @@
                       "condition": "[parameters('privateEndpoint')]",
                       "type": "Microsoft.Network/privateEndpoints",
                       "apiVersion": "2020-05-01",
-                      "name": "[replace(replace(replace(parameters('privateEndpointNameConv'), 'subresource', 'file'), 'resource', format('{0}{1}', parameters('storageAccountNamePrefix'), padLeft(add(range(0, parameters('storageCount'))[copyIndex()], parameters('storageIndex')), 2, '0'))), '-uniqueString', format('.{0}', uniqueString(variables('privateEndpointSubnetId'))))]",
+                      "name": "[replace(replace(replace(parameters('privateEndpointNameConv'), 'subresource', 'file'), 'resource', format('{0}{1}', parameters('storageAccountNamePrefix'), padLeft(add(range(0, parameters('storageCount'))[copyIndex()], parameters('storageIndex')), 2, '0'))), 'subnetId', uniqueString(variables('privateEndpointSubnetId')))]",
                       "location": "[parameters('location')]",
                       "tags": "[parameters('tagsPrivateEndpoints')]",
                       "properties": {
@@ -9368,7 +9368,7 @@
                       "condition": "[and(parameters('privateEndpoint'), not(empty(parameters('azureFilesPrivateDnsZoneResourceId'))))]",
                       "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
                       "apiVersion": "2021-08-01",
-                      "name": "[format('{0}/{1}', replace(replace(replace(parameters('privateEndpointNameConv'), 'subresource', 'file'), 'resource', format('{0}{1}', parameters('storageAccountNamePrefix'), padLeft(add(range(0, parameters('storageCount'))[range(0, parameters('storageCount'))[copyIndex()]], parameters('storageIndex')), 2, '0'))), '-uniqueString', format('.{0}', uniqueString(variables('privateEndpointSubnetId')))), format('{0}{1}', parameters('storageAccountNamePrefix'), padLeft(add(range(0, parameters('storageCount'))[copyIndex()], parameters('storageIndex')), 2, '0')))]",
+                      "name": "[format('{0}/{1}', replace(replace(replace(parameters('privateEndpointNameConv'), 'subresource', 'file'), 'resource', format('{0}{1}', parameters('storageAccountNamePrefix'), padLeft(add(range(0, parameters('storageCount'))[range(0, parameters('storageCount'))[copyIndex()]], parameters('storageIndex')), 2, '0'))), 'subnetId', uniqueString(variables('privateEndpointSubnetId'))), format('{0}{1}', parameters('storageAccountNamePrefix'), padLeft(add(range(0, parameters('storageCount'))[copyIndex()], parameters('storageIndex')), 2, '0')))]",
                       "properties": {
                         "privateDnsZoneConfigs": [
                           {
@@ -9380,7 +9380,7 @@
                         ]
                       },
                       "dependsOn": [
-                        "[resourceId('Microsoft.Network/privateEndpoints', replace(replace(replace(parameters('privateEndpointNameConv'), 'subresource', 'file'), 'resource', format('{0}{1}', parameters('storageAccountNamePrefix'), padLeft(add(range(0, parameters('storageCount'))[range(0, parameters('storageCount'))[copyIndex()]], parameters('storageIndex')), 2, '0'))), '-uniqueString', format('.{0}', uniqueString(variables('privateEndpointSubnetId')))))]",
+                        "[resourceId('Microsoft.Network/privateEndpoints', replace(replace(replace(parameters('privateEndpointNameConv'), 'subresource', 'file'), 'resource', format('{0}{1}', parameters('storageAccountNamePrefix'), padLeft(add(range(0, parameters('storageCount'))[range(0, parameters('storageCount'))[copyIndex()]], parameters('storageIndex')), 2, '0'))), 'subnetId', uniqueString(variables('privateEndpointSubnetId'))))]",
                         "storageAccounts"
                       ]
                     },

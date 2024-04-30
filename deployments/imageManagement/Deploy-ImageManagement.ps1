@@ -26,7 +26,7 @@ param(
     # the temp folder to where the artifact sources are prepared to be uploaded to the storage account.
     [Parameter(ParameterSetName='Deploy', Mandatory=$false)]
     [Parameter(ParameterSetName='UpdateOnly')]
-    [string] $TempDir = "$PSScriptRoot\temp",
+    [string] $TempDir = "$Env:Temp\Artifacts",
     [Parameter(ParameterSetName='Deploy', Mandatory=$false)]
     [Parameter(ParameterSetName='UpdateOnly', Mandatory=$false)]
     [bool] $DownloadNewSources = $true,
@@ -61,12 +61,10 @@ param(
 
 $Time = Get-Date -Format 'yyyyMMddhhmmss'
 Write-Output $Time
-$ArtifactsDir = Join-Path -Path  $PSScriptRoot -ChildPath '..\.common\artifacts'
-$FunctionsPath = Join-Path -Path $PSScriptRoot -ChildPath '..\.common\powerShellFunctions'
+$ArtifactsDir = (Get-Item -Path (Join-Path -Path  $PSScriptRoot -ChildPath '..\..\.common\artifacts')).FullName
+$FunctionsPath = (Get-Item -Path (Join-Path -Path $PSScriptRoot -ChildPath '..\..\.common\powerShellFunctions')).FullName
 Write-Output "Working Directory: '$PSScriptRoot'"
-$BicepPath = $PSScriptRoot
-$Template = Join-Path -Path $BicepPath -ChildPath 'imageManagement.bicep'
-$Parameters = Join-Path -Path $BicepPath -ChildPath 'parameters' -ChildPath 'imagemanagement.parameters.json'
+
 
 #endregion Variables
 
@@ -84,8 +82,11 @@ Write-Verbose "#################################################################
 Write-Verbose "## 1 - Deploy/Update Storage Account and gather variables                ##"
 Write-Verbose "###########################################################################"
 
-If ($DeployImageManagementResources) {   
-    Write-Output "Deploying Image Management Resources using BICEP template and parameter file." 
+If ($DeployImageManagementResources) {
+    $BicepPath = $PSScriptRoot
+    $Template = (Get-ChildItem -Path $BicepPath -filter 'imageManagement.bicep').FullName
+    $Parameters = (Get-ChildItem -Path (Join-Path -Path $BicepPath -ChildPath 'parameters') -Filter 'imagemanagement.parameters.json').FullName   
+    Write-Output "Deploying Image Management Resources using BICEP template and parameter file."
     New-AzDeployment -Name "ImageManagement-$Time" -Location $Location -TemplateFile $Template -TemplateParameterFile $Parameters -verbose
 
     $DeploymentOutputs = (Get-AzSubscriptionDeployment -Name "ImageManagement-$Time").Outputs

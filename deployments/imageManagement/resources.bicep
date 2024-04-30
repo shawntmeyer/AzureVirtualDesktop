@@ -4,7 +4,7 @@ param azureBlobPrivateDnsZoneResourceId string = ''
 param location string = resourceGroup().location
 
 @description('Optional. The name of the compute gallery to create.')
-param galleryName string = ''
+param computeGalleryName string = ''
 
 @maxLength(24)
 @description('Required. Name of the Storage Account.')
@@ -96,7 +96,7 @@ var virtualNetworkRules = [for subnetId in storageServiceEndpointSubnetResourceI
 var roleDefinitionId = resourceId('Microsoft.Authorization/roleDefinitions', '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1') // Storage Blob Data Reader
 
 resource gallery 'Microsoft.Compute/galleries@2023-07-03' = {
-  name: galleryName
+  name: computeGalleryName
   location: location
   tags: contains(tags, 'Microsoft.Compute/galleries') ? tags['Microsoft.Compute/galleries'] : {}
 }

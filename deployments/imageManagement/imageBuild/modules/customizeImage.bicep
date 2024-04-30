@@ -38,7 +38,7 @@ var buildDir = 'c:\\BuildDir'
 var apiVersion = environment().name == 'USNat' ? '2017-08-01' : '2018-02-01'
 
 var customizers = [for customization in customizations: {
-  name: customization.name
+  name: replace(customization.name, ' ', '-')
   blobName: customization.blobName
   arguments: contains(customization, 'arguments') ? customization.arguments : ''
 } ]
@@ -77,7 +77,7 @@ resource createBuildDirs 'Microsoft.Compute/virtualMachines/runCommands@2023-03-
 
 @batchSize(1)
 resource applications 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = [for customizer in customizers: {
-  name: '${customizer.name}'
+  name: customizer.name
   location: location
   parent: imageVm
   properties: {
@@ -147,9 +147,9 @@ resource applications 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01'
         $WebClient.Headers.Add('x-ms-version', '2017-11-09')
         $webClient.Headers.Add("Authorization", "Bearer $AccessToken")
         $webClient.DownloadFile("$StorageEndpoint$ContainerName/$BlobName", "$InstallDir\$BlobName")
+        Start-Sleep -Seconds 10
+        If (!(Test-Path -Path $DestFile)) { Write-Error "Failed to download $BlobName"; Exit 1 }
         Write-Output 'Finished downloading'
-      
-        Start-Sleep -Seconds 10        
         Set-Location -Path $InstallDir
         if($Blobname -like '*.exe') {
           If ($Arguments) {
@@ -269,15 +269,17 @@ resource fslogix 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = if
         $AccessToken = ((Invoke-WebRequest -Headers @{Metadata=$true} -Uri $TokenUri -UseBasicParsing).Content | ConvertFrom-Json).access_token
         $appDir = Join-Path -Path $BuildDir -ChildPath $SoftwareName
         New-Item -Path $appDir -ItemType Directory -Force | Out-Null
-        $destFile = Join-Path -Path $appDir -ChildPath $BlobName
+        $DestFile = Join-Path -Path $appDir -ChildPath $BlobName
         Write-Output "Downloading $BlobName from storage."
-        Invoke-WebRequest -Headers @{"x-ms-version"="2017-11-09"; Authorization ="Bearer $AccessToken"} -Uri "$StorageEndpoint$ContainerName/$BlobName" -OutFile $destFile
+        $WebClient = New-Object System.Net.WebClient
+        $WebClient.Headers.Add('x-ms-version', '2017-11-09')
+        $webClient.Headers.Add("Authorization", "Bearer $AccessToken")
+        $webClient.DownloadFile("$StorageEndpoint$ContainerName/$BlobName", "$destFile")
         Start-Sleep -seconds 10
+        If (!(Test-Path -Path $DestFile)) { Write-Error "Failed to download $BlobName"; Exit 1 }
+        Unblock-File -Path $DestFile
         Write-Output "Extracting Contents of Zip File"
-        Expand-Archive -Path $destFile -DestinationPath "$appDir\Temp" -Force
-        $FSLogixZip = (Get-ChildItem -Path "$appDir\Temp" -filter '*.zip').FullName
-        Write-Output "Found FSLogix Source files: [$FSLogixZip], Extracting contents..."
-        Expand-Archive -Path $FSLogixZip -DestinationPath $appDir -Force
+        Expand-Archive -Path $destFile -DestinationPath "$appDir" -Force
         $Installer = (Get-ChildItem -Path $appDir -File -Recurse -Filter 'FSLogixAppsSetup.exe' | Where-Object { $_.FullName -like '*x64*' }).FullName
         Write-Output "Installation file found: [$Installer], executing installation."
         $Install = Start-Process -FilePath $Installer -ArgumentList "/install /quiet /norestart" -Wait -PassThru
@@ -409,17 +411,16 @@ resource office 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if(
         $appDir = Join-Path -Path $BuildDir -ChildPath $SoftwareName
         New-Item -Path $appDir -ItemType Directory -Force | Out-Null  
         $ErrorActionPreference = "Stop"
-        $destFile = Join-Path -Path $appDir -ChildPath $BlobName
-        Invoke-WebRequest -Headers @{"x-ms-version" = "2017-11-09"; Authorization = "Bearer $AccessToken" } -Uri "$StorageEndpoint$ContainerName/$BlobName" -OutFile $destFile
-        Start-Sleep -Seconds 10
-        Expand-Archive -Path $destFile -DestinationPath "$appDir\Temp" -Force
-        $Setup = (Get-ChildItem -Path "$appDir\Temp" -Filter 'setup*.exe' -Recurse -File).FullName
-        If (-not($Setup)) {
-          $DeploymentTool = (Get-ChildItem -Path $appDir\Temp -Filter 'OfficeDeploymentTool*.exe' -Recurse -File).FullName
-          Start-Process -FilePath $DeploymentTool -ArgumentList "/extract:`"$appDir\ODT`" /quiet /passive /norestart" -Wait -PassThru | Out-Null
-          Write-Output "Downloaded & extracted the Office 365 Deployment Toolkit"
-          $setup = (Get-ChildItem -Path "$appDir\ODT" -Filter '*setup*.exe').FullName
-        }
+        $DestFile = Join-Path -Path $appDir -ChildPath $BlobName
+        $WebClient = New-Object System.Net.WebClient
+        $WebClient.Headers.Add('x-ms-version', '2017-11-09')
+        $webClient.Headers.Add("Authorization", "Bearer $AccessToken")
+        $webClient.DownloadFile("$StorageEndpoint$ContainerName/$BlobName", "$DestFile")
+        Start-Sleep -seconds 10
+        If (!(Test-Path -Path $DestFile)) { Write-Error "Failed to download $BlobName"; Exit 1 }
+        Start-Process -FilePath $destFile -ArgumentList "/extract:`"$appDir\ODT`" /quiet /passive /norestart" -Wait -PassThru | Out-Null
+        Write-Output "Downloaded & extracted the Office 365 Deployment Toolkit"
+        $setup = (Get-ChildItem -Path "$appDir\ODT" -Filter '*setup*.exe').FullName
         Write-Output "Dynamically creating $SoftwareName configuration file for setup."
         $configFile = Join-Path -Path $appDir -ChildPath 'office365x64.xml'
         $null = Set-Content $configFile '<Configuration>'
@@ -552,12 +553,15 @@ resource onedrive 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = i
           $AccessToken = ((Invoke-WebRequest -Headers @{Metadata=$true} -Uri $TokenUri -UseBasicParsing).Content | ConvertFrom-Json).access_token
           $appDir = Join-Path -Path $BuildDir -ChildPath 'OneDrive'
           New-Item -Path $appDir -ItemType Directory -Force | Out-Null
-          $destFile = Join-Path -Path $appDir -ChildPath 'OneDrive.zip'
+          $DestFile = Join-Path -Path $appDir -ChildPath $BlobName
           Write-Output "Downloading $BlobName from storage."
-          Invoke-WebRequest -Headers @{"x-ms-version"="2017-11-09"; Authorization ="Bearer $AccessToken"} -Uri "$StorageEndpoint$ContainerName/$BlobName" -OutFile $destFile
-          Start-Sleep -Seconds 10
-          Expand-Archive -Path $destFile -DestinationPath $appDir -Force
-          $onedrivesetup = (Get-ChildItem -Path $appDir -filter 'OneDrive*.exe' -Recurse).FullName
+          $WebClient = New-Object System.Net.WebClient
+          $WebClient.Headers.Add('x-ms-version', '2017-11-09')
+          $webClient.Headers.Add("Authorization", "Bearer $AccessToken")
+          $webClient.DownloadFile("$StorageEndpoint$ContainerName/$BlobName", "$destFile")
+          Start-Sleep -seconds 10
+          If (!(Test-Path -Path $DestFile)) { Write-Error "Failed to download $BlobName"; Exit 1 }
+          $OneDriveSetup = $DestFile
           #Find existing OneDriveSetup
           $RegPath = 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\OneDriveSetup.exe'
           If (Test-Path -Path $RegPath) {
@@ -580,7 +584,7 @@ resource onedrive 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = i
           Write-Output "Setting registry values to indicate a per-machine (AllUsersInstall)"
           New-Item -Path "HKLM:\SOFTWARE\Microsoft\OneDrive" -Force | Out-Null
           New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\OneDrive" -Name AllUsersInstall -PropertyType DWORD -Value 1 -Force | Out-Null
-          $Install = Start-Process -FilePath $onedrivesetup -ArgumentList '/allusers' -Wait -Passthru
+          $Install = Start-Process -FilePath $OneDriveSetup -ArgumentList '/allusers' -Wait -Passthru
           If ($($Install.ExitCode) -eq 0) {
             Write-Output "'$SoftwareName' installed successfully."
           }
@@ -660,8 +664,12 @@ resource teams 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (
         $appDir = Join-Path -Path $BuildDir -ChildPath $SoftwareName
         New-Item -Path $appDir -ItemType Directory -Force | Out-Null
         $destFile = Join-Path -Path $appDir -ChildPath $BlobName
-        Invoke-WebRequest -Headers @{"x-ms-version"="2017-11-09"; Authorization ="Bearer $AccessToken"} -Uri "$StorageEndpoint$ContainerName/$BlobName" -OutFile $destFile
-        Start-Sleep -Seconds 10
+        $WebClient = New-Object System.Net.WebClient
+        $WebClient.Headers.Add('x-ms-version', '2017-11-09')
+        $webClient.Headers.Add("Authorization", "Bearer $AccessToken")
+        $webClient.DownloadFile("$StorageEndpoint$ContainerName/$BlobName", "$destFile")
+        Start-Sleep -seconds 10
+        If (!(Test-Path -Path $DestFile)) { Write-Error "Failed to download $BlobName"; Exit 1 }
         Expand-Archive -Path $destFile -DestinationPath $appDir -Force
         $vcRedistFile = (Get-ChildItem -Path $appDir -filter 'vc*.exe' -Recurse).FullName
         $webRTCFile = (Get-ChildItem -Path $appDir -filter '*WebRTC*.msi' -Recurse).FullName
@@ -1049,12 +1057,16 @@ resource vdot 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (i
         Start-Transcript -Path "$env:SystemRoot\Logs\ImageBuild\VDOT.log" -Force
         $TokenUri = "http://169.254.169.254/metadata/identity/oauth2/token?api-version=$APIVersion&resource=$StorageEndpoint&client_id=$UserAssignedIdentityClientId"
         $AccessToken = ((Invoke-WebRequest -Headers @{Metadata=$true} -Uri $TokenUri -UseBasicParsing).Content | ConvertFrom-Json).access_token
-        $ZIP = Join-Path -Path $BuildDir -ChildPath $BlobName
-        Invoke-WebRequest -Headers @{"x-ms-version"="2017-11-09"; Authorization ="Bearer $AccessToken"} -Uri "$StorageEndpoint$ContainerName/$BlobName" -OutFile $ZIP
-        Start-Sleep -Seconds 10
-        Unblock-File -Path $ZIP
+        $DestFile = Join-Path -Path $BuildDir -ChildPath $BlobName
+        $WebClient = New-Object System.Net.WebClient
+        $WebClient.Headers.Add('x-ms-version', '2017-11-09')
+        $webClient.Headers.Add("Authorization", "Bearer $AccessToken")
+        $webClient.DownloadFile("$StorageEndpoint$ContainerName/$BlobName", "$DestFile")
+        Start-Sleep -seconds 10
+        If (!(Test-Path -Path $DestFile)) { Write-Error "Failed to download $BlobName"; Exit 1 }
+        Unblock-File -Path $DestFile
         $VDOTDir = Join-Path -Path $BuildDir -ChildPath 'VDOT'
-        Expand-Archive -LiteralPath $ZIP -DestinationPath $VDOTDir -Force
+        Expand-Archive -LiteralPath $DestFile -DestinationPath $VDOTDir -Force
         $Path = (Get-ChildItem -Path $VDOTDir -Recurse | Where-Object {$_.Name -eq "Windows_VDOT.ps1"}).FullName
         $Script = Get-Content -Path $Path
         $ScriptUpdate = $Script.Replace("Set-NetAdapterAdvancedProperty","#Set-NetAdapterAdvancedProperty")

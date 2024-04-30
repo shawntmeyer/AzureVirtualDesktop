@@ -9,7 +9,7 @@ param subnetResourceId string
 param tags object
 param virtualMachineName string
 
-var privateEndpointName = replace(replace(replace(privateEndpointNameConv, 'subresource', 'DSCAndHybridWorker'), 'resource', automationAccountName), '-uniqueString', '.${uniqueString(subnetResourceId)}')
+var privateEndpointName = replace(replace(replace(privateEndpointNameConv, 'subresource', 'DSCAndHybridWorker'), 'resource', automationAccountName), 'uniqueString', uniqueString(subnetResourceId))
 
 resource virtualMachine 'Microsoft.Compute/virtualMachines@2023-07-01' existing = {
   name: virtualMachineName

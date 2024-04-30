@@ -4,7 +4,7 @@ param privateEndpointNameConv string
 param subnetResourceId string
 param tags object
 
-var privateEndpointName = replace(replace(privateEndpointNameConv, 'resource', diskAccessName), '-uniqueString', '.${uniqueString(subnetResourceId)}')
+var privateEndpointName = replace(replace(privateEndpointNameConv, 'resource', diskAccessName), 'uniqueString', uniqueString(subnetResourceId))
 
 resource diskAccess 'Microsoft.Compute/diskAccesses@2021-04-01' = {
   name: diskAccessName

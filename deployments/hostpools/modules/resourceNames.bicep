@@ -104,7 +104,7 @@ var netAppCapacityPoolName = replace(replace(nameConv_HP_Resources, 'resourceTyp
 var storageAccountNamePrefix = empty(fslogixStorageCustomPrefix) ? toLower('${replace(replace(replace(replace(replace(nameConv_HP_Resources, 'resourceType', resourceAbbreviations.storageAccounts), hostPoolBaseName, '${hostPoolBaseName}fsl'), 'location', locations[locationVirtualMachines].abbreviation), 'avd-', ''), '-', '')}') : toLower(fslogixStorageCustomPrefix)
 
 // Private Endpoints
-var privateEndpointNameConv = replace('${nameConvResTypeAtEnd ? 'resource-subresource-resourceType-uniqueString' : 'resourceType-resource-subresource-uniqueString'}', 'resourceType', resourceAbbreviations.privateEndpoints)
+var privateEndpointNameConv = replace('${nameConvResTypeAtEnd ? 'resource-subresource-subnetId-resourceType' : 'resourceType-resource-subresource-subnetId'}', 'resourceType', resourceAbbreviations.privateEndpoints)
 
 // Monitoring Resources
 var resourceGroupMonitoring = replace(replace(replace(nameConv_Monitoring_ResGroup, 'resGroupPurpose', 'avd-monitoring'), 'location', locations[locationVirtualMachines].abbreviation), 'resourceType', resourceAbbreviations.resourceGroups)
