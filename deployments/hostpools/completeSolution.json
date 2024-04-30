@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.26.170.59819",
-      "templateHash": "9249628371193973626"
+      "templateHash": "14632857642891024862"
     }
   },
   "parameters": {
@@ -291,7 +291,7 @@
     },
     "fslogixConfigurationBlobName": {
       "type": "string",
-      "defaultValue": "FSLogix-Configure.zip",
+      "defaultValue": "Set-FSLogixSessionHostConfiguration.ps1",
       "metadata": {
         "description": "Optional. The name of the blob that contains the FSLogix Configuration Script."
       }
@@ -777,7 +777,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.26.170.59819",
-              "templateHash": "8045799673407200066"
+              "templateHash": "6720186593355015373"
             }
           },
           "parameters": {
@@ -1218,7 +1218,8 @@
               "storageAccounts": "sa",
               "userAssignedIdentities": "uai",
               "virtualMachines": "vm",
-              "workspaces": "vdws"
+              "workspaces": "vdws",
+              "imageDefinitions": "vmid"
             },
             "centralAVDMonitoring": "[if(not(empty(parameters('businessUnitIdentifier'))), parameters('centralizedAVDMonitoring'), true())]",
             "fileShareNames": {
@@ -1250,7 +1251,7 @@
             "nameConv_Shared_ResGroups": "[if(parameters('nameConvResTypeAtEnd'), if(not(empty(variables('busUnitId'))), format('{0}-resGroupPurpose-{1}', variables('busUnitId'), variables('nameConvSuffix')), format('resGroupPurpose-{0}', variables('nameConvSuffix'))), if(not(empty(variables('busUnitId'))), format('resourceType-{0}-resGroupPurpose-{1}', variables('busUnitId'), variables('nameConvSuffix')), format('resourceType-resGroupPurpose-{0}', variables('nameConvSuffix'))))]",
             "nameConv_Shared_Resources": "[if(parameters('nameConvResTypeAtEnd'), if(not(empty(variables('busUnitId'))), format('{0}-{1}', variables('busUnitId'), variables('nameConvSuffix')), format('{0}', variables('nameConvSuffix'))), if(not(empty(variables('busUnitId'))), format('resourceType-{0}-{1}', variables('busUnitId'), variables('nameConvSuffix')), format('resourceType-{0}', variables('nameConvSuffix'))))]",
             "nameConv_Monitoring_ResGroup": "[if(variables('centralAVDMonitoring'), if(parameters('nameConvResTypeAtEnd'), format('resGroupPurpose-{0}', variables('nameConvSuffix')), format('resourceType-resGroupPurpose-{0}', variables('nameConvSuffix'))), variables('nameConv_Shared_ResGroups'))]",
-            "nameConv_Monitoring_Resources": "[if(variables('centralAVDMonitoring'), if(parameters('nameConvResTypeAtEnd'), format('{0}', variables('nameConvSuffix')), format('resourceType-{0}', variables('nameConvSuffix'))), variables('nameConv_Shared_Resources'))]",
+            "nameConv_Monitoring_Resources": "[if(variables('centralAVDMonitoring'), if(parameters('nameConvResTypeAtEnd'), format('avd-{0}', variables('nameConvSuffix')), format('resourceType-avd-{0}', variables('nameConvSuffix'))), if(parameters('nameConvResTypeAtEnd'), if(not(empty(variables('busUnitId'))), format('{0}-avd-{1}', variables('busUnitId'), variables('nameConvSuffix')), format('avd-{0}', variables('nameConvSuffix'))), if(not(empty(variables('busUnitId'))), format('resourceType-{0}-avd-{1}', variables('busUnitId'), variables('nameConvSuffix')), format('resourceType-avd-{0}', variables('nameConvSuffix')))))]",
             "globalFeedResourceGroupName": "[replace(replace(if(parameters('nameConvResTypeAtEnd'), format('avd-global-feed-{0}', variables('nameConvSuffix')), format('resourceType-avd-global-feed-{0}', variables('nameConvSuffix'))), 'location', format('{0}', variables('locations')[parameters('locationVirtualMachines')].abbreviation)), 'resourceType', format('{0}', variables('resourceAbbreviations').resourceGroups))]",
             "globalFeedWorkspaceName": "[replace(if(parameters('nameConvResTypeAtEnd'), 'avd-global-feed-resourceType', 'resourceType-avd-global-feed'), 'resourceType', variables('resourceAbbreviations').workspaces)]",
             "desktopApplicationGroupName": "[replace(replace(format('{0}-{1}', variables('hostPoolPrefix'), variables('nameConvSuffix')), 'resourceType', variables('resourceAbbreviations').desktopApplicationGroups), 'location', variables('locations')[parameters('locationControlPlane')].abbreviation)]",
@@ -2131,7 +2132,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.26.170.59819",
-              "templateHash": "9502077333904433146"
+              "templateHash": "2863810859952420230"
             }
           },
           "parameters": {
@@ -2479,13 +2480,13 @@
                 },
                 "mode": "Incremental",
                 "parameters": {
-                  "PrincipalId": {
+                  "principalId": {
                     "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupManagement')), 'Microsoft.Resources/deployments', format('UserAssignedIdentity_Deployment_{0}', parameters('timeStamp'))), '2022-09-01').outputs.principalId.value]"
                   },
-                  "PrincipalType": {
+                  "principalType": {
                     "value": "ServicePrincipal"
                   },
-                  "RoleDefinitionId": {
+                  "roleDefinitionId": {
                     "value": "[variables('roleAssignments')[range(0, length(variables('roleAssignments')))[copyIndex()]].roleDefinitionId]"
                   }
                 },
@@ -2496,32 +2497,135 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.26.170.59819",
-                      "templateHash": "5728032733712964701"
-                    }
+                      "templateHash": "16017160030106373381"
+                    },
+                    "name": "Role Assignments (Resource Group scope)",
+                    "description": "This module deploys a Role Assignment at a Resource Group scope.",
+                    "owner": "Azure/module-maintainers"
                   },
                   "parameters": {
-                    "PrincipalId": {
-                      "type": "string"
+                    "roleDefinitionId": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Required. You can provide either the role definition GUID or its fully qualified ID in the following format: \\'/providers/Microsoft.Authorization/roleDefinitions/c2f4ef07-c644-48eb-af81-4b1b4947fb11\\'.\r\nYou can find the GUIDs in the ID column on the table at https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles.\r\n"
+                      }
                     },
-                    "PrincipalType": {
-                      "type": "string"
+                    "principalId": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Required. The Principal or Object ID of the Security Principal (User, Group, Service Principal, Managed Identity)."
+                      }
                     },
-                    "RoleDefinitionId": {
-                      "type": "string"
+                    "resourceGroupName": {
+                      "type": "string",
+                      "defaultValue": "[resourceGroup().name]",
+                      "metadata": {
+                        "description": "Optional. Name of the Resource Group to assign the RBAC role to. If not provided, will use the current scope for deployment."
+                      }
+                    },
+                    "subscriptionId": {
+                      "type": "string",
+                      "defaultValue": "[subscription().subscriptionId]",
+                      "metadata": {
+                        "description": "Optional. Subscription ID of the subscription to assign the RBAC role to. If not provided, will use the current scope for deployment."
+                      }
+                    },
+                    "description": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Optional. The description of the role assignment."
+                      }
+                    },
+                    "delegatedManagedIdentityResourceId": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Optional. ID of the delegated managed identity resource."
+                      }
+                    },
+                    "condition": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Optional. The conditions on the role assignment. This limits the resources it can be assigned to."
+                      }
+                    },
+                    "conditionVersion": {
+                      "type": "string",
+                      "defaultValue": "2.0",
+                      "allowedValues": [
+                        "2.0"
+                      ],
+                      "metadata": {
+                        "description": "Optional. Version of the condition. Currently accepted value is \"2.0\"."
+                      }
+                    },
+                    "principalType": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "allowedValues": [
+                        "ServicePrincipal",
+                        "Group",
+                        "User",
+                        "ForeignGroup",
+                        "Device",
+                        ""
+                      ],
+                      "metadata": {
+                        "description": "Optional. The principal type of the assigned principal ID."
+                      }
                     }
+                  },
+                  "variables": {
+                    "roleDefinitionIdVar": "[if(contains(parameters('roleDefinitionId'), '/providers/Microsoft.Authorization/roleDefinitions/'), parameters('roleDefinitionId'), format('/providers/Microsoft.Authorization/roleDefinitions/{0}', parameters('roleDefinitionId')))]"
                   },
                   "resources": [
                     {
                       "type": "Microsoft.Authorization/roleAssignments",
                       "apiVersion": "2022-04-01",
-                      "name": "[guid(parameters('PrincipalId'), parameters('RoleDefinitionId'), resourceGroup().id)]",
+                      "name": "[guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId'))]",
                       "properties": {
-                        "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', parameters('RoleDefinitionId'))]",
-                        "principalId": "[parameters('PrincipalId')]",
-                        "principalType": "[parameters('PrincipalType')]"
+                        "roleDefinitionId": "[variables('roleDefinitionIdVar')]",
+                        "principalId": "[parameters('principalId')]",
+                        "description": "[if(not(empty(parameters('description'))), parameters('description'), null())]",
+                        "principalType": "[if(not(empty(parameters('principalType'))), parameters('principalType'), null())]",
+                        "delegatedManagedIdentityResourceId": "[if(not(empty(parameters('delegatedManagedIdentityResourceId'))), parameters('delegatedManagedIdentityResourceId'), null())]",
+                        "conditionVersion": "[if(and(not(empty(parameters('conditionVersion'))), not(empty(parameters('condition')))), parameters('conditionVersion'), null())]",
+                        "condition": "[if(not(empty(parameters('condition'))), parameters('condition'), null())]"
                       }
                     }
-                  ]
+                  ],
+                  "outputs": {
+                    "name": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "The GUID of the Role Assignment."
+                      },
+                      "value": "[guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId'))]"
+                    },
+                    "resourceId": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "The resource ID of the Role Assignment."
+                      },
+                      "value": "[resourceId('Microsoft.Authorization/roleAssignments', guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId')))]"
+                    },
+                    "resourceGroupName": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "The name of the resource group the role assignment was applied at."
+                      },
+                      "value": "[resourceGroup().name]"
+                    },
+                    "scope": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "The scope this Role Assignment applies to."
+                      },
+                      "value": "[resourceGroup().id]"
+                    }
+                  }
                 }
               },
               "dependsOn": [
@@ -3448,18 +3552,20 @@
                 },
                 "mode": "Incremental",
                 "parameters": {
+                  "commandToExecute": {
+                    "value": "[format('powershell.exe -ExecutionPolicy Bypass -command .\\Get-Validations.ps1 {0}', if(empty(parameters('securityType')), replace(format('{0} {1}', format('-ActiveDirectorySolution {0} -CpuCountMax {1} -CpuCountMin {2} -Environment {3} -GlobalWorkspaceName {4} -GlobalWorkspaceResourceGroupName {5} -Location {6} -SessionHostCount {7} -StorageAccountPrefix {8} -StorageSolution {9} -SubscriptionId {10} -TenantId {11} -UserAssignedIdentityClientId {12} -VirtualMachineSize {13} -WorkspaceName {14} -WorkspaceResourceGroupName {15}', parameters('identitySolution'), variables('cpuCountMax'), variables('cpuCountMin'), environment().name, parameters('globalFeedWorkspaceName'), parameters('globalFeedWorkspaceResourceGroupName'), parameters('locationVirtualMachines'), parameters('sessionHostCount'), parameters('fslogixStorageAccountNamePrefix'), parameters('fslogixStorageSolution'), subscription().subscriptionId, tenant().tenantId, reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupManagement')), 'Microsoft.Resources/deployments', format('UserAssignedIdentity_Deployment_{0}', parameters('timeStamp'))), '2022-09-01').outputs.clientId.value, parameters('virtualMachineSize'), parameters('workspaceName'), parameters('resourceGroupControlPlane')), variables('optionalValidationScriptParameters')), '  ', ' '), replace(format('{0} {1} -SecurityType {2}', format('-ActiveDirectorySolution {0} -CpuCountMax {1} -CpuCountMin {2} -Environment {3} -GlobalWorkspaceName {4} -GlobalWorkspaceResourceGroupName {5} -Location {6} -SessionHostCount {7} -StorageAccountPrefix {8} -StorageSolution {9} -SubscriptionId {10} -TenantId {11} -UserAssignedIdentityClientId {12} -VirtualMachineSize {13} -WorkspaceName {14} -WorkspaceResourceGroupName {15}', parameters('identitySolution'), variables('cpuCountMax'), variables('cpuCountMin'), environment().name, parameters('globalFeedWorkspaceName'), parameters('globalFeedWorkspaceResourceGroupName'), parameters('locationVirtualMachines'), parameters('sessionHostCount'), parameters('fslogixStorageAccountNamePrefix'), parameters('fslogixStorageSolution'), subscription().subscriptionId, tenant().tenantId, reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupManagement')), 'Microsoft.Resources/deployments', format('UserAssignedIdentity_Deployment_{0}', parameters('timeStamp'))), '2022-09-01').outputs.clientId.value, parameters('virtualMachineSize'), parameters('workspaceName'), parameters('resourceGroupControlPlane')), variables('optionalValidationScriptParameters'), parameters('securityType')), '  ', ' ')))]"
+                  },
                   "fileUris": {
                     "value": [
                       "[format('{0}Get-Validations.ps1', parameters('artifactsUri'))]"
                     ]
                   },
-                  "scriptFileName": {
-                    "value": "Get-Validations.ps1"
-                  },
                   "location": {
                     "value": "[parameters('locationVirtualMachines')]"
                   },
-                  "parameters": "[if(empty(parameters('securityType')), createObject('value', replace(format('{0} {1}', format('-ActiveDirectorySolution {0} -CpuCountMax {1} -CpuCountMin {2} -Environment {3} -GlobalWorkspaceName {4} -GlobalWorkspaceResourceGroupName {5} -Location {6} -SessionHostCount {7} -StorageAccountPrefix {8} -StorageSolution {9} -SubscriptionId {10} -TenantId {11} -UserAssignedIdentityClientId {12} -VirtualMachineSize {13} -WorkspaceName {14} -WorkspaceResourceGroupName {15}', parameters('identitySolution'), variables('cpuCountMax'), variables('cpuCountMin'), environment().name, parameters('globalFeedWorkspaceName'), parameters('globalFeedWorkspaceResourceGroupName'), parameters('locationVirtualMachines'), parameters('sessionHostCount'), parameters('fslogixStorageAccountNamePrefix'), parameters('fslogixStorageSolution'), subscription().subscriptionId, tenant().tenantId, reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupManagement')), 'Microsoft.Resources/deployments', format('UserAssignedIdentity_Deployment_{0}', parameters('timeStamp'))), '2022-09-01').outputs.clientId.value, parameters('virtualMachineSize'), parameters('workspaceName'), parameters('resourceGroupControlPlane')), variables('optionalValidationScriptParameters')), '  ', ' ')), createObject('value', replace(format('{0} {1} -SecurityType {2}', format('-ActiveDirectorySolution {0} -CpuCountMax {1} -CpuCountMin {2} -Environment {3} -GlobalWorkspaceName {4} -GlobalWorkspaceResourceGroupName {5} -Location {6} -SessionHostCount {7} -StorageAccountPrefix {8} -StorageSolution {9} -SubscriptionId {10} -TenantId {11} -UserAssignedIdentityClientId {12} -VirtualMachineSize {13} -WorkspaceName {14} -WorkspaceResourceGroupName {15}', parameters('identitySolution'), variables('cpuCountMax'), variables('cpuCountMin'), environment().name, parameters('globalFeedWorkspaceName'), parameters('globalFeedWorkspaceResourceGroupName'), parameters('locationVirtualMachines'), parameters('sessionHostCount'), parameters('fslogixStorageAccountNamePrefix'), parameters('fslogixStorageSolution'), subscription().subscriptionId, tenant().tenantId, reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupManagement')), 'Microsoft.Resources/deployments', format('UserAssignedIdentity_Deployment_{0}', parameters('timeStamp'))), '2022-09-01').outputs.clientId.value, parameters('virtualMachineSize'), parameters('workspaceName'), parameters('resourceGroupControlPlane')), variables('optionalValidationScriptParameters'), parameters('securityType')), '  ', ' ')))]",
+                  "output": {
+                    "value": true
+                  },
                   "tags": "[if(contains(parameters('tags'), 'Microsoft.Compute/virtualMachines'), createObject('value', parameters('tags')['Microsoft.Compute/virtualMachines']), createObject('value', createObject()))]",
                   "userAssignedIdentityClientId": "[if(empty(parameters('artifactsUserAssignedIdentityResourceId')), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupManagement')), 'Microsoft.Resources/deployments', format('UserAssignedIdentity_Artifacts_{0}', parameters('timeStamp'))), '2022-09-01').outputs.clientId.value), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('artifactsUserAssignedIdentityResourceId'), '/')[2], split(parameters('artifactsUserAssignedIdentityResourceId'), '/')[4]), 'Microsoft.ManagedIdentity/userAssignedIdentities', last(split(parameters('artifactsUserAssignedIdentityResourceId'), '/'))), '2023-01-31').clientId))]",
                   "virtualMachineName": {
@@ -3473,38 +3579,43 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.26.170.59819",
-                      "templateHash": "11134840655240251012"
+                      "templateHash": "13135978661573219399"
                     }
                   },
                   "parameters": {
                     "fileUris": {
                       "type": "array"
                     },
+                    "commandToExecute": {
+                      "type": "string"
+                    },
                     "location": {
                       "type": "string"
                     },
                     "output": {
                       "type": "bool",
-                      "defaultValue": true
-                    },
-                    "parameters": {
-                      "type": "string"
-                    },
-                    "scriptFileName": {
-                      "type": "string"
+                      "defaultValue": false
                     },
                     "tags": {
-                      "type": "object"
+                      "type": "object",
+                      "defaultValue": {}
                     },
                     "timeStamp": {
                       "type": "string",
                       "defaultValue": "[utcNow('yyyyMMddhhmmss')]"
                     },
                     "userAssignedIdentityClientId": {
-                      "type": "string"
+                      "type": "string",
+                      "defaultValue": ""
                     },
                     "virtualMachineName": {
                       "type": "string"
+                    }
+                  },
+                  "variables": {
+                    "defaultOutputValue": {
+                      "TimeStamp": "[parameters('timeStamp')]",
+                      "Downloads": "[parameters('fileUris')]"
                     }
                   },
                   "resources": [
@@ -3520,22 +3631,17 @@
                         "typeHandlerVersion": "1.10",
                         "autoUpgradeMinorVersion": true,
                         "settings": {
-                          "timeStamp": "[parameters('timeStamp')]"
+                          "timestamp": "[parameters('timeStamp')]",
+                          "fileUris": "[parameters('fileUris')]"
                         },
-                        "protectedSettings": {
-                          "commandToExecute": "[format('powershell -ExecutionPolicy Unrestricted -File {0} {1}', parameters('scriptFileName'), parameters('parameters'))]",
-                          "fileUris": "[parameters('fileUris')]",
-                          "managedIdentity": {
-                            "clientId": "[parameters('userAssignedIdentityClientId')]"
-                          }
-                        }
+                        "protectedSettings": "[if(not(empty(parameters('userAssignedIdentityClientId'))), createObject('commandToExecute', parameters('commandToExecute'), 'managedIdentity', createObject('clientId', parameters('userAssignedIdentityClientId'))), createObject('commandToExecute', parameters('commandToExecute')))]"
                       }
                     }
                   ],
                   "outputs": {
                     "value": {
                       "type": "object",
-                      "value": "[if(parameters('output'), json(filter(reference(resourceId('Microsoft.Compute/virtualMachines/extensions', parameters('virtualMachineName'), 'CustomScriptExtension'), '2021-03-01').instanceView.substatuses, lambda('item', equals(lambdaVariables('item').code, 'ComponentStatus/StdOut/succeeded')))[0].message), null())]"
+                      "value": "[if(parameters('output'), json(filter(reference(resourceId('Microsoft.Compute/virtualMachines/extensions', parameters('virtualMachineName'), 'CustomScriptExtension'), '2021-03-01').instanceView.substatuses, lambda('item', equals(lambdaVariables('item').code, 'ComponentStatus/StdOut/succeeded')))[0].message), variables('defaultOutputValue'))]"
                     }
                   }
                 }
@@ -3620,7 +3726,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.26.170.59819",
-                      "templateHash": "547840944053319061"
+                      "templateHash": "15527899526606579689"
                     }
                   },
                   "parameters": {
@@ -4295,21 +4401,21 @@
                         },
                         "mode": "Incremental",
                         "parameters": {
+                          "commandToExecute": {
+                            "value": "[format('powershell.exe -executionpolicy Bypass -command .\\Create-ConfidentialVMOSDiskEncryptionKey.ps1 {0}', if(parameters('confidentialVMOSDiskEncryption'), format('-keyVaultName {0} -keyName ConfidentialVMOSDiskEncryptionKey -Environment {1} -SubscriptionId {2} -TenantId {3} -UserAssignedIdentityClientId {4}', last(split(reference(resourceId('Microsoft.Resources/deployments', format('KV_ConfidentialVM_Encryption_{0}', parameters('timeStamp'))), '2022-09-01').outputs.keyVaultResourceId.value, '/')), environment().name, subscription().subscriptionId, tenant().tenantId, parameters('deploymentUserAssignedIdentityClientId')), ''))]"
+                          },
                           "fileUris": {
                             "value": [
                               "[format('{0}Create-ConfidentialVMOSDiskEncryptionKey.ps1', parameters('artifactsUri'))]"
                             ]
                           },
-                          "scriptFileName": {
-                            "value": "Create-ConfidentialVMOSDiskEncryptionKey.ps1"
-                          },
                           "location": {
                             "value": "[parameters('location')]"
                           },
-                          "parameters": "[if(parameters('confidentialVMOSDiskEncryption'), createObject('value', format('-keyVaultName {0} -keyName ConfidentialVMOSDiskEncryptionKey -Environment {1} -SubscriptionId {2} -TenantId {3} -UserAssignedIdentityClientId {4}', last(split(reference(resourceId('Microsoft.Resources/deployments', format('KV_ConfidentialVM_Encryption_{0}', parameters('timeStamp'))), '2022-09-01').outputs.keyVaultResourceId.value, '/')), environment().name, subscription().subscriptionId, tenant().tenantId, parameters('deploymentUserAssignedIdentityClientId'))), createObject('value', ''))]",
-                          "tags": {
-                            "value": {}
+                          "output": {
+                            "value": true
                           },
+                          "tags": "[if(contains(parameters('tags'), 'Microsoft.Compute/virtualMachines/extensions'), createObject('value', parameters('tags')['Microsoft.Compute/virtualMachines/extensions']), createObject('value', createObject()))]",
                           "userAssignedIdentityClientId": {
                             "value": "[parameters('artifactsUserAssignedIdentityClientId')]"
                           },
@@ -4324,38 +4430,43 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.26.170.59819",
-                              "templateHash": "11134840655240251012"
+                              "templateHash": "13135978661573219399"
                             }
                           },
                           "parameters": {
                             "fileUris": {
                               "type": "array"
                             },
+                            "commandToExecute": {
+                              "type": "string"
+                            },
                             "location": {
                               "type": "string"
                             },
                             "output": {
                               "type": "bool",
-                              "defaultValue": true
-                            },
-                            "parameters": {
-                              "type": "string"
-                            },
-                            "scriptFileName": {
-                              "type": "string"
+                              "defaultValue": false
                             },
                             "tags": {
-                              "type": "object"
+                              "type": "object",
+                              "defaultValue": {}
                             },
                             "timeStamp": {
                               "type": "string",
                               "defaultValue": "[utcNow('yyyyMMddhhmmss')]"
                             },
                             "userAssignedIdentityClientId": {
-                              "type": "string"
+                              "type": "string",
+                              "defaultValue": ""
                             },
                             "virtualMachineName": {
                               "type": "string"
+                            }
+                          },
+                          "variables": {
+                            "defaultOutputValue": {
+                              "TimeStamp": "[parameters('timeStamp')]",
+                              "Downloads": "[parameters('fileUris')]"
                             }
                           },
                           "resources": [
@@ -4371,22 +4482,17 @@
                                 "typeHandlerVersion": "1.10",
                                 "autoUpgradeMinorVersion": true,
                                 "settings": {
-                                  "timeStamp": "[parameters('timeStamp')]"
+                                  "timestamp": "[parameters('timeStamp')]",
+                                  "fileUris": "[parameters('fileUris')]"
                                 },
-                                "protectedSettings": {
-                                  "commandToExecute": "[format('powershell -ExecutionPolicy Unrestricted -File {0} {1}', parameters('scriptFileName'), parameters('parameters'))]",
-                                  "fileUris": "[parameters('fileUris')]",
-                                  "managedIdentity": {
-                                    "clientId": "[parameters('userAssignedIdentityClientId')]"
-                                  }
-                                }
+                                "protectedSettings": "[if(not(empty(parameters('userAssignedIdentityClientId'))), createObject('commandToExecute', parameters('commandToExecute'), 'managedIdentity', createObject('clientId', parameters('userAssignedIdentityClientId'))), createObject('commandToExecute', parameters('commandToExecute')))]"
                               }
                             }
                           ],
                           "outputs": {
                             "value": {
                               "type": "object",
-                              "value": "[if(parameters('output'), json(filter(reference(resourceId('Microsoft.Compute/virtualMachines/extensions', parameters('virtualMachineName'), 'CustomScriptExtension'), '2021-03-01').instanceView.substatuses, lambda('item', equals(lambdaVariables('item').code, 'ComponentStatus/StdOut/succeeded')))[0].message), null())]"
+                              "value": "[if(parameters('output'), json(filter(reference(resourceId('Microsoft.Compute/virtualMachines/extensions', parameters('virtualMachineName'), 'CustomScriptExtension'), '2021-03-01').instanceView.substatuses, lambda('item', equals(lambdaVariables('item').code, 'ComponentStatus/StdOut/succeeded')))[0].message), variables('defaultOutputValue'))]"
                             }
                           }
                         }
@@ -4568,13 +4674,13 @@
                         },
                         "mode": "Incremental",
                         "parameters": {
-                          "PrincipalId": {
+                          "principalId": {
                             "value": "[reference(resourceId('Microsoft.Resources/deployments', format('UAI_Encryption_{0}', parameters('timeStamp'))), '2022-09-01').outputs.principalId.value]"
                           },
-                          "PrincipalType": {
+                          "principalType": {
                             "value": "ServicePrincipal"
                           },
-                          "RoleDefinitionId": {
+                          "roleDefinitionId": {
                             "value": "e147488a-f6f5-4113-8e2d-b22465e65bf6"
                           }
                         },
@@ -4585,32 +4691,135 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.26.170.59819",
-                              "templateHash": "5728032733712964701"
-                            }
+                              "templateHash": "16017160030106373381"
+                            },
+                            "name": "Role Assignments (Resource Group scope)",
+                            "description": "This module deploys a Role Assignment at a Resource Group scope.",
+                            "owner": "Azure/module-maintainers"
                           },
                           "parameters": {
-                            "PrincipalId": {
-                              "type": "string"
+                            "roleDefinitionId": {
+                              "type": "string",
+                              "metadata": {
+                                "description": "Required. You can provide either the role definition GUID or its fully qualified ID in the following format: \\'/providers/Microsoft.Authorization/roleDefinitions/c2f4ef07-c644-48eb-af81-4b1b4947fb11\\'.\r\nYou can find the GUIDs in the ID column on the table at https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles.\r\n"
+                              }
                             },
-                            "PrincipalType": {
-                              "type": "string"
+                            "principalId": {
+                              "type": "string",
+                              "metadata": {
+                                "description": "Required. The Principal or Object ID of the Security Principal (User, Group, Service Principal, Managed Identity)."
+                              }
                             },
-                            "RoleDefinitionId": {
-                              "type": "string"
+                            "resourceGroupName": {
+                              "type": "string",
+                              "defaultValue": "[resourceGroup().name]",
+                              "metadata": {
+                                "description": "Optional. Name of the Resource Group to assign the RBAC role to. If not provided, will use the current scope for deployment."
+                              }
+                            },
+                            "subscriptionId": {
+                              "type": "string",
+                              "defaultValue": "[subscription().subscriptionId]",
+                              "metadata": {
+                                "description": "Optional. Subscription ID of the subscription to assign the RBAC role to. If not provided, will use the current scope for deployment."
+                              }
+                            },
+                            "description": {
+                              "type": "string",
+                              "defaultValue": "",
+                              "metadata": {
+                                "description": "Optional. The description of the role assignment."
+                              }
+                            },
+                            "delegatedManagedIdentityResourceId": {
+                              "type": "string",
+                              "defaultValue": "",
+                              "metadata": {
+                                "description": "Optional. ID of the delegated managed identity resource."
+                              }
+                            },
+                            "condition": {
+                              "type": "string",
+                              "defaultValue": "",
+                              "metadata": {
+                                "description": "Optional. The conditions on the role assignment. This limits the resources it can be assigned to."
+                              }
+                            },
+                            "conditionVersion": {
+                              "type": "string",
+                              "defaultValue": "2.0",
+                              "allowedValues": [
+                                "2.0"
+                              ],
+                              "metadata": {
+                                "description": "Optional. Version of the condition. Currently accepted value is \"2.0\"."
+                              }
+                            },
+                            "principalType": {
+                              "type": "string",
+                              "defaultValue": "",
+                              "allowedValues": [
+                                "ServicePrincipal",
+                                "Group",
+                                "User",
+                                "ForeignGroup",
+                                "Device",
+                                ""
+                              ],
+                              "metadata": {
+                                "description": "Optional. The principal type of the assigned principal ID."
+                              }
                             }
+                          },
+                          "variables": {
+                            "roleDefinitionIdVar": "[if(contains(parameters('roleDefinitionId'), '/providers/Microsoft.Authorization/roleDefinitions/'), parameters('roleDefinitionId'), format('/providers/Microsoft.Authorization/roleDefinitions/{0}', parameters('roleDefinitionId')))]"
                           },
                           "resources": [
                             {
                               "type": "Microsoft.Authorization/roleAssignments",
                               "apiVersion": "2022-04-01",
-                              "name": "[guid(parameters('PrincipalId'), parameters('RoleDefinitionId'), resourceGroup().id)]",
+                              "name": "[guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId'))]",
                               "properties": {
-                                "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', parameters('RoleDefinitionId'))]",
-                                "principalId": "[parameters('PrincipalId')]",
-                                "principalType": "[parameters('PrincipalType')]"
+                                "roleDefinitionId": "[variables('roleDefinitionIdVar')]",
+                                "principalId": "[parameters('principalId')]",
+                                "description": "[if(not(empty(parameters('description'))), parameters('description'), null())]",
+                                "principalType": "[if(not(empty(parameters('principalType'))), parameters('principalType'), null())]",
+                                "delegatedManagedIdentityResourceId": "[if(not(empty(parameters('delegatedManagedIdentityResourceId'))), parameters('delegatedManagedIdentityResourceId'), null())]",
+                                "conditionVersion": "[if(and(not(empty(parameters('conditionVersion'))), not(empty(parameters('condition')))), parameters('conditionVersion'), null())]",
+                                "condition": "[if(not(empty(parameters('condition'))), parameters('condition'), null())]"
                               }
                             }
-                          ]
+                          ],
+                          "outputs": {
+                            "name": {
+                              "type": "string",
+                              "metadata": {
+                                "description": "The GUID of the Role Assignment."
+                              },
+                              "value": "[guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId'))]"
+                            },
+                            "resourceId": {
+                              "type": "string",
+                              "metadata": {
+                                "description": "The resource ID of the Role Assignment."
+                              },
+                              "value": "[resourceId('Microsoft.Authorization/roleAssignments', guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId')))]"
+                            },
+                            "resourceGroupName": {
+                              "type": "string",
+                              "metadata": {
+                                "description": "The name of the resource group the role assignment was applied at."
+                              },
+                              "value": "[resourceGroup().name]"
+                            },
+                            "scope": {
+                              "type": "string",
+                              "metadata": {
+                                "description": "The scope this Role Assignment applies to."
+                              },
+                              "value": "[resourceGroup().id]"
+                            }
+                          }
                         }
                       },
                       "dependsOn": [
@@ -4628,13 +4837,13 @@
                         },
                         "mode": "Incremental",
                         "parameters": {
-                          "PrincipalId": {
+                          "principalId": {
                             "value": "[parameters('confidentialVMOrchestratorObjectId')]"
                           },
-                          "PrincipalType": {
+                          "principalType": {
                             "value": "ServicePrincipal"
                           },
-                          "RoleDefinitionId": {
+                          "roleDefinitionId": {
                             "value": "e147488a-f6f5-4113-8e2d-b22465e65bf6"
                           }
                         },
@@ -4645,32 +4854,135 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.26.170.59819",
-                              "templateHash": "5728032733712964701"
-                            }
+                              "templateHash": "16017160030106373381"
+                            },
+                            "name": "Role Assignments (Resource Group scope)",
+                            "description": "This module deploys a Role Assignment at a Resource Group scope.",
+                            "owner": "Azure/module-maintainers"
                           },
                           "parameters": {
-                            "PrincipalId": {
-                              "type": "string"
+                            "roleDefinitionId": {
+                              "type": "string",
+                              "metadata": {
+                                "description": "Required. You can provide either the role definition GUID or its fully qualified ID in the following format: \\'/providers/Microsoft.Authorization/roleDefinitions/c2f4ef07-c644-48eb-af81-4b1b4947fb11\\'.\r\nYou can find the GUIDs in the ID column on the table at https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles.\r\n"
+                              }
                             },
-                            "PrincipalType": {
-                              "type": "string"
+                            "principalId": {
+                              "type": "string",
+                              "metadata": {
+                                "description": "Required. The Principal or Object ID of the Security Principal (User, Group, Service Principal, Managed Identity)."
+                              }
                             },
-                            "RoleDefinitionId": {
-                              "type": "string"
+                            "resourceGroupName": {
+                              "type": "string",
+                              "defaultValue": "[resourceGroup().name]",
+                              "metadata": {
+                                "description": "Optional. Name of the Resource Group to assign the RBAC role to. If not provided, will use the current scope for deployment."
+                              }
+                            },
+                            "subscriptionId": {
+                              "type": "string",
+                              "defaultValue": "[subscription().subscriptionId]",
+                              "metadata": {
+                                "description": "Optional. Subscription ID of the subscription to assign the RBAC role to. If not provided, will use the current scope for deployment."
+                              }
+                            },
+                            "description": {
+                              "type": "string",
+                              "defaultValue": "",
+                              "metadata": {
+                                "description": "Optional. The description of the role assignment."
+                              }
+                            },
+                            "delegatedManagedIdentityResourceId": {
+                              "type": "string",
+                              "defaultValue": "",
+                              "metadata": {
+                                "description": "Optional. ID of the delegated managed identity resource."
+                              }
+                            },
+                            "condition": {
+                              "type": "string",
+                              "defaultValue": "",
+                              "metadata": {
+                                "description": "Optional. The conditions on the role assignment. This limits the resources it can be assigned to."
+                              }
+                            },
+                            "conditionVersion": {
+                              "type": "string",
+                              "defaultValue": "2.0",
+                              "allowedValues": [
+                                "2.0"
+                              ],
+                              "metadata": {
+                                "description": "Optional. Version of the condition. Currently accepted value is \"2.0\"."
+                              }
+                            },
+                            "principalType": {
+                              "type": "string",
+                              "defaultValue": "",
+                              "allowedValues": [
+                                "ServicePrincipal",
+                                "Group",
+                                "User",
+                                "ForeignGroup",
+                                "Device",
+                                ""
+                              ],
+                              "metadata": {
+                                "description": "Optional. The principal type of the assigned principal ID."
+                              }
                             }
+                          },
+                          "variables": {
+                            "roleDefinitionIdVar": "[if(contains(parameters('roleDefinitionId'), '/providers/Microsoft.Authorization/roleDefinitions/'), parameters('roleDefinitionId'), format('/providers/Microsoft.Authorization/roleDefinitions/{0}', parameters('roleDefinitionId')))]"
                           },
                           "resources": [
                             {
                               "type": "Microsoft.Authorization/roleAssignments",
                               "apiVersion": "2022-04-01",
-                              "name": "[guid(parameters('PrincipalId'), parameters('RoleDefinitionId'), resourceGroup().id)]",
+                              "name": "[guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId'))]",
                               "properties": {
-                                "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', parameters('RoleDefinitionId'))]",
-                                "principalId": "[parameters('PrincipalId')]",
-                                "principalType": "[parameters('PrincipalType')]"
+                                "roleDefinitionId": "[variables('roleDefinitionIdVar')]",
+                                "principalId": "[parameters('principalId')]",
+                                "description": "[if(not(empty(parameters('description'))), parameters('description'), null())]",
+                                "principalType": "[if(not(empty(parameters('principalType'))), parameters('principalType'), null())]",
+                                "delegatedManagedIdentityResourceId": "[if(not(empty(parameters('delegatedManagedIdentityResourceId'))), parameters('delegatedManagedIdentityResourceId'), null())]",
+                                "conditionVersion": "[if(and(not(empty(parameters('conditionVersion'))), not(empty(parameters('condition')))), parameters('conditionVersion'), null())]",
+                                "condition": "[if(not(empty(parameters('condition'))), parameters('condition'), null())]"
                               }
                             }
-                          ]
+                          ],
+                          "outputs": {
+                            "name": {
+                              "type": "string",
+                              "metadata": {
+                                "description": "The GUID of the Role Assignment."
+                              },
+                              "value": "[guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId'))]"
+                            },
+                            "resourceId": {
+                              "type": "string",
+                              "metadata": {
+                                "description": "The resource ID of the Role Assignment."
+                              },
+                              "value": "[resourceId('Microsoft.Authorization/roleAssignments', guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId')))]"
+                            },
+                            "resourceGroupName": {
+                              "type": "string",
+                              "metadata": {
+                                "description": "The name of the resource group the role assignment was applied at."
+                              },
+                              "value": "[resourceGroup().name]"
+                            },
+                            "scope": {
+                              "type": "string",
+                              "metadata": {
+                                "description": "The scope this Role Assignment applies to."
+                              },
+                              "value": "[resourceGroup().id]"
+                            }
+                          }
                         }
                       }
                     },
@@ -4685,13 +4997,13 @@
                         },
                         "mode": "Incremental",
                         "parameters": {
-                          "PrincipalId": {
+                          "principalId": {
                             "value": "[parameters('confidentialVMOrchestratorObjectId')]"
                           },
-                          "PrincipalType": {
+                          "principalType": {
                             "value": "ServicePrincipal"
                           },
-                          "RoleDefinitionId": {
+                          "roleDefinitionId": {
                             "value": "08bbd89e-9f13-488c-ac41-acfcb10c90ab"
                           }
                         },
@@ -4702,32 +5014,135 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.26.170.59819",
-                              "templateHash": "5728032733712964701"
-                            }
+                              "templateHash": "16017160030106373381"
+                            },
+                            "name": "Role Assignments (Resource Group scope)",
+                            "description": "This module deploys a Role Assignment at a Resource Group scope.",
+                            "owner": "Azure/module-maintainers"
                           },
                           "parameters": {
-                            "PrincipalId": {
-                              "type": "string"
+                            "roleDefinitionId": {
+                              "type": "string",
+                              "metadata": {
+                                "description": "Required. You can provide either the role definition GUID or its fully qualified ID in the following format: \\'/providers/Microsoft.Authorization/roleDefinitions/c2f4ef07-c644-48eb-af81-4b1b4947fb11\\'.\r\nYou can find the GUIDs in the ID column on the table at https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles.\r\n"
+                              }
                             },
-                            "PrincipalType": {
-                              "type": "string"
+                            "principalId": {
+                              "type": "string",
+                              "metadata": {
+                                "description": "Required. The Principal or Object ID of the Security Principal (User, Group, Service Principal, Managed Identity)."
+                              }
                             },
-                            "RoleDefinitionId": {
-                              "type": "string"
+                            "resourceGroupName": {
+                              "type": "string",
+                              "defaultValue": "[resourceGroup().name]",
+                              "metadata": {
+                                "description": "Optional. Name of the Resource Group to assign the RBAC role to. If not provided, will use the current scope for deployment."
+                              }
+                            },
+                            "subscriptionId": {
+                              "type": "string",
+                              "defaultValue": "[subscription().subscriptionId]",
+                              "metadata": {
+                                "description": "Optional. Subscription ID of the subscription to assign the RBAC role to. If not provided, will use the current scope for deployment."
+                              }
+                            },
+                            "description": {
+                              "type": "string",
+                              "defaultValue": "",
+                              "metadata": {
+                                "description": "Optional. The description of the role assignment."
+                              }
+                            },
+                            "delegatedManagedIdentityResourceId": {
+                              "type": "string",
+                              "defaultValue": "",
+                              "metadata": {
+                                "description": "Optional. ID of the delegated managed identity resource."
+                              }
+                            },
+                            "condition": {
+                              "type": "string",
+                              "defaultValue": "",
+                              "metadata": {
+                                "description": "Optional. The conditions on the role assignment. This limits the resources it can be assigned to."
+                              }
+                            },
+                            "conditionVersion": {
+                              "type": "string",
+                              "defaultValue": "2.0",
+                              "allowedValues": [
+                                "2.0"
+                              ],
+                              "metadata": {
+                                "description": "Optional. Version of the condition. Currently accepted value is \"2.0\"."
+                              }
+                            },
+                            "principalType": {
+                              "type": "string",
+                              "defaultValue": "",
+                              "allowedValues": [
+                                "ServicePrincipal",
+                                "Group",
+                                "User",
+                                "ForeignGroup",
+                                "Device",
+                                ""
+                              ],
+                              "metadata": {
+                                "description": "Optional. The principal type of the assigned principal ID."
+                              }
                             }
+                          },
+                          "variables": {
+                            "roleDefinitionIdVar": "[if(contains(parameters('roleDefinitionId'), '/providers/Microsoft.Authorization/roleDefinitions/'), parameters('roleDefinitionId'), format('/providers/Microsoft.Authorization/roleDefinitions/{0}', parameters('roleDefinitionId')))]"
                           },
                           "resources": [
                             {
                               "type": "Microsoft.Authorization/roleAssignments",
                               "apiVersion": "2022-04-01",
-                              "name": "[guid(parameters('PrincipalId'), parameters('RoleDefinitionId'), resourceGroup().id)]",
+                              "name": "[guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId'))]",
                               "properties": {
-                                "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', parameters('RoleDefinitionId'))]",
-                                "principalId": "[parameters('PrincipalId')]",
-                                "principalType": "[parameters('PrincipalType')]"
+                                "roleDefinitionId": "[variables('roleDefinitionIdVar')]",
+                                "principalId": "[parameters('principalId')]",
+                                "description": "[if(not(empty(parameters('description'))), parameters('description'), null())]",
+                                "principalType": "[if(not(empty(parameters('principalType'))), parameters('principalType'), null())]",
+                                "delegatedManagedIdentityResourceId": "[if(not(empty(parameters('delegatedManagedIdentityResourceId'))), parameters('delegatedManagedIdentityResourceId'), null())]",
+                                "conditionVersion": "[if(and(not(empty(parameters('conditionVersion'))), not(empty(parameters('condition')))), parameters('conditionVersion'), null())]",
+                                "condition": "[if(not(empty(parameters('condition'))), parameters('condition'), null())]"
                               }
                             }
-                          ]
+                          ],
+                          "outputs": {
+                            "name": {
+                              "type": "string",
+                              "metadata": {
+                                "description": "The GUID of the Role Assignment."
+                              },
+                              "value": "[guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId'))]"
+                            },
+                            "resourceId": {
+                              "type": "string",
+                              "metadata": {
+                                "description": "The resource ID of the Role Assignment."
+                              },
+                              "value": "[resourceId('Microsoft.Authorization/roleAssignments', guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId')))]"
+                            },
+                            "resourceGroupName": {
+                              "type": "string",
+                              "metadata": {
+                                "description": "The name of the resource group the role assignment was applied at."
+                              },
+                              "value": "[resourceGroup().name]"
+                            },
+                            "scope": {
+                              "type": "string",
+                              "metadata": {
+                                "description": "The scope this Role Assignment applies to."
+                              },
+                              "value": "[resourceGroup().id]"
+                            }
+                          }
                         }
                       }
                     },
@@ -4763,7 +5178,7 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.26.170.59819",
-                              "templateHash": "10612919677824854689"
+                              "templateHash": "11385097401830864250"
                             }
                           },
                           "parameters": {
@@ -4823,13 +5238,13 @@
                                 },
                                 "mode": "Incremental",
                                 "parameters": {
-                                  "PrincipalId": {
+                                  "principalId": {
                                     "value": "[reference(resourceId('Microsoft.Compute/diskEncryptionSets', parameters('diskEncryptionSetName')), '2022-07-02', 'full').identity.principalId]"
                                   },
-                                  "PrincipalType": {
+                                  "principalType": {
                                     "value": "ServicePrincipal"
                                   },
-                                  "RoleDefinitionId": {
+                                  "roleDefinitionId": {
                                     "value": "e147488a-f6f5-4113-8e2d-b22465e65bf6"
                                   }
                                 },
@@ -4840,32 +5255,135 @@
                                     "_generator": {
                                       "name": "bicep",
                                       "version": "0.26.170.59819",
-                                      "templateHash": "5728032733712964701"
-                                    }
+                                      "templateHash": "16017160030106373381"
+                                    },
+                                    "name": "Role Assignments (Resource Group scope)",
+                                    "description": "This module deploys a Role Assignment at a Resource Group scope.",
+                                    "owner": "Azure/module-maintainers"
                                   },
                                   "parameters": {
-                                    "PrincipalId": {
-                                      "type": "string"
+                                    "roleDefinitionId": {
+                                      "type": "string",
+                                      "metadata": {
+                                        "description": "Required. You can provide either the role definition GUID or its fully qualified ID in the following format: \\'/providers/Microsoft.Authorization/roleDefinitions/c2f4ef07-c644-48eb-af81-4b1b4947fb11\\'.\r\nYou can find the GUIDs in the ID column on the table at https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles.\r\n"
+                                      }
                                     },
-                                    "PrincipalType": {
-                                      "type": "string"
+                                    "principalId": {
+                                      "type": "string",
+                                      "metadata": {
+                                        "description": "Required. The Principal or Object ID of the Security Principal (User, Group, Service Principal, Managed Identity)."
+                                      }
                                     },
-                                    "RoleDefinitionId": {
-                                      "type": "string"
+                                    "resourceGroupName": {
+                                      "type": "string",
+                                      "defaultValue": "[resourceGroup().name]",
+                                      "metadata": {
+                                        "description": "Optional. Name of the Resource Group to assign the RBAC role to. If not provided, will use the current scope for deployment."
+                                      }
+                                    },
+                                    "subscriptionId": {
+                                      "type": "string",
+                                      "defaultValue": "[subscription().subscriptionId]",
+                                      "metadata": {
+                                        "description": "Optional. Subscription ID of the subscription to assign the RBAC role to. If not provided, will use the current scope for deployment."
+                                      }
+                                    },
+                                    "description": {
+                                      "type": "string",
+                                      "defaultValue": "",
+                                      "metadata": {
+                                        "description": "Optional. The description of the role assignment."
+                                      }
+                                    },
+                                    "delegatedManagedIdentityResourceId": {
+                                      "type": "string",
+                                      "defaultValue": "",
+                                      "metadata": {
+                                        "description": "Optional. ID of the delegated managed identity resource."
+                                      }
+                                    },
+                                    "condition": {
+                                      "type": "string",
+                                      "defaultValue": "",
+                                      "metadata": {
+                                        "description": "Optional. The conditions on the role assignment. This limits the resources it can be assigned to."
+                                      }
+                                    },
+                                    "conditionVersion": {
+                                      "type": "string",
+                                      "defaultValue": "2.0",
+                                      "allowedValues": [
+                                        "2.0"
+                                      ],
+                                      "metadata": {
+                                        "description": "Optional. Version of the condition. Currently accepted value is \"2.0\"."
+                                      }
+                                    },
+                                    "principalType": {
+                                      "type": "string",
+                                      "defaultValue": "",
+                                      "allowedValues": [
+                                        "ServicePrincipal",
+                                        "Group",
+                                        "User",
+                                        "ForeignGroup",
+                                        "Device",
+                                        ""
+                                      ],
+                                      "metadata": {
+                                        "description": "Optional. The principal type of the assigned principal ID."
+                                      }
                                     }
+                                  },
+                                  "variables": {
+                                    "roleDefinitionIdVar": "[if(contains(parameters('roleDefinitionId'), '/providers/Microsoft.Authorization/roleDefinitions/'), parameters('roleDefinitionId'), format('/providers/Microsoft.Authorization/roleDefinitions/{0}', parameters('roleDefinitionId')))]"
                                   },
                                   "resources": [
                                     {
                                       "type": "Microsoft.Authorization/roleAssignments",
                                       "apiVersion": "2022-04-01",
-                                      "name": "[guid(parameters('PrincipalId'), parameters('RoleDefinitionId'), resourceGroup().id)]",
+                                      "name": "[guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId'))]",
                                       "properties": {
-                                        "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', parameters('RoleDefinitionId'))]",
-                                        "principalId": "[parameters('PrincipalId')]",
-                                        "principalType": "[parameters('PrincipalType')]"
+                                        "roleDefinitionId": "[variables('roleDefinitionIdVar')]",
+                                        "principalId": "[parameters('principalId')]",
+                                        "description": "[if(not(empty(parameters('description'))), parameters('description'), null())]",
+                                        "principalType": "[if(not(empty(parameters('principalType'))), parameters('principalType'), null())]",
+                                        "delegatedManagedIdentityResourceId": "[if(not(empty(parameters('delegatedManagedIdentityResourceId'))), parameters('delegatedManagedIdentityResourceId'), null())]",
+                                        "conditionVersion": "[if(and(not(empty(parameters('conditionVersion'))), not(empty(parameters('condition')))), parameters('conditionVersion'), null())]",
+                                        "condition": "[if(not(empty(parameters('condition'))), parameters('condition'), null())]"
                                       }
                                     }
-                                  ]
+                                  ],
+                                  "outputs": {
+                                    "name": {
+                                      "type": "string",
+                                      "metadata": {
+                                        "description": "The GUID of the Role Assignment."
+                                      },
+                                      "value": "[guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId'))]"
+                                    },
+                                    "resourceId": {
+                                      "type": "string",
+                                      "metadata": {
+                                        "description": "The resource ID of the Role Assignment."
+                                      },
+                                      "value": "[resourceId('Microsoft.Authorization/roleAssignments', guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId')))]"
+                                    },
+                                    "resourceGroupName": {
+                                      "type": "string",
+                                      "metadata": {
+                                        "description": "The name of the resource group the role assignment was applied at."
+                                      },
+                                      "value": "[resourceGroup().name]"
+                                    },
+                                    "scope": {
+                                      "type": "string",
+                                      "metadata": {
+                                        "description": "The scope this Role Assignment applies to."
+                                      },
+                                      "value": "[resourceGroup().id]"
+                                    }
+                                  }
                                 }
                               },
                               "dependsOn": [
@@ -6061,7 +6579,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.26.170.59819",
-              "templateHash": "6236104530115879778"
+              "templateHash": "16921371191444308022"
             }
           },
           "parameters": {
@@ -6508,7 +7026,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.26.170.59819",
-                      "templateHash": "7959178504263630007"
+                      "templateHash": "11692522144659465702"
                     }
                   },
                   "parameters": {
@@ -6588,7 +7106,7 @@
                       "condition": "[not(empty(parameters('desktopFriendlyName')))]",
                       "type": "Microsoft.Resources/deployments",
                       "apiVersion": "2022-09-01",
-                      "name": "[format('ApplicationFriendlyName_{0}', parameters('timeStamp'))]",
+                      "name": "[format('DesktopFriendlyName_{0}', parameters('timeStamp'))]",
                       "resourceGroup": "[parameters('resourceGroupManagement')]",
                       "properties": {
                         "expressionEvaluationOptions": {
@@ -6596,6 +7114,9 @@
                         },
                         "mode": "Incremental",
                         "parameters": {
+                          "commandToExecute": {
+                            "value": "[format('powershell.exe -ExecutionPolicy Bypass -Command .\\Update-AvdDesktop.ps1 -ApplicationGroupName {0} -Environment {1} -FriendlyName \"{2}\" -ResourceGroupName {3} -SubscriptionId {4} -Tenant {5} -UserAssignedIdentityClientId {6}', parameters('desktopApplicationGroupName'), environment().name, parameters('desktopFriendlyName'), resourceGroup().name, subscription().subscriptionId, tenant().tenantId, parameters('deploymentUserAssignedIdentityClientId'))]"
+                          },
                           "fileUris": {
                             "value": [
                               "[format('{0}Update-AvdDesktop.ps1', parameters('artifactsUri'))]"
@@ -6604,11 +7125,8 @@
                           "location": {
                             "value": "[parameters('locationVirtualMachines')]"
                           },
-                          "parameters": {
-                            "value": "[format('-ApplicationGroupName {0} -Environment {1} -FriendlyName \"{2}\" -ResourceGroupName {3} -SubscriptionId {4} -Tenant {5} -UserAssignedIdentityClientId {6}', parameters('desktopApplicationGroupName'), environment().name, parameters('desktopFriendlyName'), resourceGroup().name, subscription().subscriptionId, tenant().tenantId, parameters('deploymentUserAssignedIdentityClientId'))]"
-                          },
-                          "scriptFileName": {
-                            "value": "Update-AvdDesktop.ps1"
+                          "output": {
+                            "value": true
                           },
                           "tags": {
                             "value": "[union(createObject('cm-resource-parent', parameters('hostPoolResourceId')), if(contains(parameters('tags'), 'Microsoft.Compute/virtualMachines'), parameters('tags')['Microsoft.Compute/virtualMachines'], createObject()))]"
@@ -6627,38 +7145,43 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.26.170.59819",
-                              "templateHash": "11134840655240251012"
+                              "templateHash": "13135978661573219399"
                             }
                           },
                           "parameters": {
                             "fileUris": {
                               "type": "array"
                             },
+                            "commandToExecute": {
+                              "type": "string"
+                            },
                             "location": {
                               "type": "string"
                             },
                             "output": {
                               "type": "bool",
-                              "defaultValue": true
-                            },
-                            "parameters": {
-                              "type": "string"
-                            },
-                            "scriptFileName": {
-                              "type": "string"
+                              "defaultValue": false
                             },
                             "tags": {
-                              "type": "object"
+                              "type": "object",
+                              "defaultValue": {}
                             },
                             "timeStamp": {
                               "type": "string",
                               "defaultValue": "[utcNow('yyyyMMddhhmmss')]"
                             },
                             "userAssignedIdentityClientId": {
-                              "type": "string"
+                              "type": "string",
+                              "defaultValue": ""
                             },
                             "virtualMachineName": {
                               "type": "string"
+                            }
+                          },
+                          "variables": {
+                            "defaultOutputValue": {
+                              "TimeStamp": "[parameters('timeStamp')]",
+                              "Downloads": "[parameters('fileUris')]"
                             }
                           },
                           "resources": [
@@ -6674,22 +7197,17 @@
                                 "typeHandlerVersion": "1.10",
                                 "autoUpgradeMinorVersion": true,
                                 "settings": {
-                                  "timeStamp": "[parameters('timeStamp')]"
+                                  "timestamp": "[parameters('timeStamp')]",
+                                  "fileUris": "[parameters('fileUris')]"
                                 },
-                                "protectedSettings": {
-                                  "commandToExecute": "[format('powershell -ExecutionPolicy Unrestricted -File {0} {1}', parameters('scriptFileName'), parameters('parameters'))]",
-                                  "fileUris": "[parameters('fileUris')]",
-                                  "managedIdentity": {
-                                    "clientId": "[parameters('userAssignedIdentityClientId')]"
-                                  }
-                                }
+                                "protectedSettings": "[if(not(empty(parameters('userAssignedIdentityClientId'))), createObject('commandToExecute', parameters('commandToExecute'), 'managedIdentity', createObject('clientId', parameters('userAssignedIdentityClientId'))), createObject('commandToExecute', parameters('commandToExecute')))]"
                               }
                             }
                           ],
                           "outputs": {
                             "value": {
                               "type": "object",
-                              "value": "[if(parameters('output'), json(filter(reference(resourceId('Microsoft.Compute/virtualMachines/extensions', parameters('virtualMachineName'), 'CustomScriptExtension'), '2021-03-01').instanceView.substatuses, lambda('item', equals(lambdaVariables('item').code, 'ComponentStatus/StdOut/succeeded')))[0].message), null())]"
+                              "value": "[if(parameters('output'), json(filter(reference(resourceId('Microsoft.Compute/virtualMachines/extensions', parameters('virtualMachineName'), 'CustomScriptExtension'), '2021-03-01').instanceView.substatuses, lambda('item', equals(lambdaVariables('item').code, 'ComponentStatus/StdOut/succeeded')))[0].message), variables('defaultOutputValue'))]"
                             }
                           }
                         }
@@ -6800,7 +7318,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.26.170.59819",
-                      "templateHash": "633762025769051565"
+                      "templateHash": "6343447623004751246"
                     }
                   },
                   "parameters": {
@@ -6970,6 +7488,9 @@
                         },
                         "mode": "Incremental",
                         "parameters": {
+                          "commandToExecute": {
+                            "value": "[format('powershell.exe -ExecutionPolicy Unrestricted -Command .\\Update-AvdWorkspace.ps1 -ApplicationGroupReferences \"{0}\" -Environment {1} -ResourceGroupName {2} -SubscriptionId {3} -TenantId {4} -UserAssignedIdentityClientId {5} -WorkspaceName {6}', parameters('applicationGroupReferences'), environment().name, resourceGroup().name, subscription().subscriptionId, tenant().tenantId, parameters('deploymentUserAssignedIdentityClientId'), parameters('workspaceName'))]"
+                          },
                           "fileUris": {
                             "value": [
                               "[format('{0}Update-AvdWorkspace.ps1', parameters('artifactsUri'))]"
@@ -6978,11 +7499,8 @@
                           "location": {
                             "value": "[parameters('locationVirtualMachines')]"
                           },
-                          "parameters": {
-                            "value": "[format('-ApplicationGroupReferences \"{0}\" -Environment {1} -ResourceGroupName {2} -SubscriptionId {3} -TenantId {4} -UserAssignedIdentityClientId {5} -WorkspaceName {6}', parameters('applicationGroupReferences'), environment().name, resourceGroup().name, subscription().subscriptionId, tenant().tenantId, parameters('deploymentUserAssignedIdentityClientId'), parameters('workspaceName'))]"
-                          },
-                          "scriptFileName": {
-                            "value": "Update-AvdWorkspace.ps1"
+                          "output": {
+                            "value": true
                           },
                           "tags": "[if(contains(parameters('tags'), 'Microsoft.Compute/virtualMachines'), createObject('value', parameters('tags')['Microsoft.Compute/virtualMachines']), createObject('value', createObject()))]",
                           "userAssignedIdentityClientId": {
@@ -6999,38 +7517,43 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.26.170.59819",
-                              "templateHash": "11134840655240251012"
+                              "templateHash": "13135978661573219399"
                             }
                           },
                           "parameters": {
                             "fileUris": {
                               "type": "array"
                             },
+                            "commandToExecute": {
+                              "type": "string"
+                            },
                             "location": {
                               "type": "string"
                             },
                             "output": {
                               "type": "bool",
-                              "defaultValue": true
-                            },
-                            "parameters": {
-                              "type": "string"
-                            },
-                            "scriptFileName": {
-                              "type": "string"
+                              "defaultValue": false
                             },
                             "tags": {
-                              "type": "object"
+                              "type": "object",
+                              "defaultValue": {}
                             },
                             "timeStamp": {
                               "type": "string",
                               "defaultValue": "[utcNow('yyyyMMddhhmmss')]"
                             },
                             "userAssignedIdentityClientId": {
-                              "type": "string"
+                              "type": "string",
+                              "defaultValue": ""
                             },
                             "virtualMachineName": {
                               "type": "string"
+                            }
+                          },
+                          "variables": {
+                            "defaultOutputValue": {
+                              "TimeStamp": "[parameters('timeStamp')]",
+                              "Downloads": "[parameters('fileUris')]"
                             }
                           },
                           "resources": [
@@ -7046,22 +7569,17 @@
                                 "typeHandlerVersion": "1.10",
                                 "autoUpgradeMinorVersion": true,
                                 "settings": {
-                                  "timeStamp": "[parameters('timeStamp')]"
+                                  "timestamp": "[parameters('timeStamp')]",
+                                  "fileUris": "[parameters('fileUris')]"
                                 },
-                                "protectedSettings": {
-                                  "commandToExecute": "[format('powershell -ExecutionPolicy Unrestricted -File {0} {1}', parameters('scriptFileName'), parameters('parameters'))]",
-                                  "fileUris": "[parameters('fileUris')]",
-                                  "managedIdentity": {
-                                    "clientId": "[parameters('userAssignedIdentityClientId')]"
-                                  }
-                                }
+                                "protectedSettings": "[if(not(empty(parameters('userAssignedIdentityClientId'))), createObject('commandToExecute', parameters('commandToExecute'), 'managedIdentity', createObject('clientId', parameters('userAssignedIdentityClientId'))), createObject('commandToExecute', parameters('commandToExecute')))]"
                               }
                             }
                           ],
                           "outputs": {
                             "value": {
                               "type": "object",
-                              "value": "[if(parameters('output'), json(filter(reference(resourceId('Microsoft.Compute/virtualMachines/extensions', parameters('virtualMachineName'), 'CustomScriptExtension'), '2021-03-01').instanceView.substatuses, lambda('item', equals(lambdaVariables('item').code, 'ComponentStatus/StdOut/succeeded')))[0].message), null())]"
+                              "value": "[if(parameters('output'), json(filter(reference(resourceId('Microsoft.Compute/virtualMachines/extensions', parameters('virtualMachineName'), 'CustomScriptExtension'), '2021-03-01').instanceView.substatuses, lambda('item', equals(lambdaVariables('item').code, 'ComponentStatus/StdOut/succeeded')))[0].message), variables('defaultOutputValue'))]"
                             }
                           }
                         }
@@ -7420,7 +7938,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.26.170.59819",
-                      "templateHash": "633762025769051565"
+                      "templateHash": "6343447623004751246"
                     }
                   },
                   "parameters": {
@@ -7590,6 +8108,9 @@
                         },
                         "mode": "Incremental",
                         "parameters": {
+                          "commandToExecute": {
+                            "value": "[format('powershell.exe -ExecutionPolicy Unrestricted -Command .\\Update-AvdWorkspace.ps1 -ApplicationGroupReferences \"{0}\" -Environment {1} -ResourceGroupName {2} -SubscriptionId {3} -TenantId {4} -UserAssignedIdentityClientId {5} -WorkspaceName {6}', parameters('applicationGroupReferences'), environment().name, resourceGroup().name, subscription().subscriptionId, tenant().tenantId, parameters('deploymentUserAssignedIdentityClientId'), parameters('workspaceName'))]"
+                          },
                           "fileUris": {
                             "value": [
                               "[format('{0}Update-AvdWorkspace.ps1', parameters('artifactsUri'))]"
@@ -7598,11 +8119,8 @@
                           "location": {
                             "value": "[parameters('locationVirtualMachines')]"
                           },
-                          "parameters": {
-                            "value": "[format('-ApplicationGroupReferences \"{0}\" -Environment {1} -ResourceGroupName {2} -SubscriptionId {3} -TenantId {4} -UserAssignedIdentityClientId {5} -WorkspaceName {6}', parameters('applicationGroupReferences'), environment().name, resourceGroup().name, subscription().subscriptionId, tenant().tenantId, parameters('deploymentUserAssignedIdentityClientId'), parameters('workspaceName'))]"
-                          },
-                          "scriptFileName": {
-                            "value": "Update-AvdWorkspace.ps1"
+                          "output": {
+                            "value": true
                           },
                           "tags": "[if(contains(parameters('tags'), 'Microsoft.Compute/virtualMachines'), createObject('value', parameters('tags')['Microsoft.Compute/virtualMachines']), createObject('value', createObject()))]",
                           "userAssignedIdentityClientId": {
@@ -7619,38 +8137,43 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.26.170.59819",
-                              "templateHash": "11134840655240251012"
+                              "templateHash": "13135978661573219399"
                             }
                           },
                           "parameters": {
                             "fileUris": {
                               "type": "array"
                             },
+                            "commandToExecute": {
+                              "type": "string"
+                            },
                             "location": {
                               "type": "string"
                             },
                             "output": {
                               "type": "bool",
-                              "defaultValue": true
-                            },
-                            "parameters": {
-                              "type": "string"
-                            },
-                            "scriptFileName": {
-                              "type": "string"
+                              "defaultValue": false
                             },
                             "tags": {
-                              "type": "object"
+                              "type": "object",
+                              "defaultValue": {}
                             },
                             "timeStamp": {
                               "type": "string",
                               "defaultValue": "[utcNow('yyyyMMddhhmmss')]"
                             },
                             "userAssignedIdentityClientId": {
-                              "type": "string"
+                              "type": "string",
+                              "defaultValue": ""
                             },
                             "virtualMachineName": {
                               "type": "string"
+                            }
+                          },
+                          "variables": {
+                            "defaultOutputValue": {
+                              "TimeStamp": "[parameters('timeStamp')]",
+                              "Downloads": "[parameters('fileUris')]"
                             }
                           },
                           "resources": [
@@ -7666,22 +8189,17 @@
                                 "typeHandlerVersion": "1.10",
                                 "autoUpgradeMinorVersion": true,
                                 "settings": {
-                                  "timeStamp": "[parameters('timeStamp')]"
+                                  "timestamp": "[parameters('timeStamp')]",
+                                  "fileUris": "[parameters('fileUris')]"
                                 },
-                                "protectedSettings": {
-                                  "commandToExecute": "[format('powershell -ExecutionPolicy Unrestricted -File {0} {1}', parameters('scriptFileName'), parameters('parameters'))]",
-                                  "fileUris": "[parameters('fileUris')]",
-                                  "managedIdentity": {
-                                    "clientId": "[parameters('userAssignedIdentityClientId')]"
-                                  }
-                                }
+                                "protectedSettings": "[if(not(empty(parameters('userAssignedIdentityClientId'))), createObject('commandToExecute', parameters('commandToExecute'), 'managedIdentity', createObject('clientId', parameters('userAssignedIdentityClientId'))), createObject('commandToExecute', parameters('commandToExecute')))]"
                               }
                             }
                           ],
                           "outputs": {
                             "value": {
                               "type": "object",
-                              "value": "[if(parameters('output'), json(filter(reference(resourceId('Microsoft.Compute/virtualMachines/extensions', parameters('virtualMachineName'), 'CustomScriptExtension'), '2021-03-01').instanceView.substatuses, lambda('item', equals(lambdaVariables('item').code, 'ComponentStatus/StdOut/succeeded')))[0].message), null())]"
+                              "value": "[if(parameters('output'), json(filter(reference(resourceId('Microsoft.Compute/virtualMachines/extensions', parameters('virtualMachineName'), 'CustomScriptExtension'), '2021-03-01').instanceView.substatuses, lambda('item', equals(lambdaVariables('item').code, 'ComponentStatus/StdOut/succeeded')))[0].message), variables('defaultOutputValue'))]"
                             }
                           }
                         }
@@ -7889,7 +8407,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.26.170.59819",
-              "templateHash": "1191727418462506342"
+              "templateHash": "2403946415194959978"
             }
           },
           "parameters": {
@@ -8558,7 +9076,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.26.170.59819",
-                      "templateHash": "5755873636709970239"
+                      "templateHash": "3094985014169427229"
                     }
                   },
                   "parameters": {
@@ -9004,19 +9522,16 @@
                         },
                         "mode": "Incremental",
                         "parameters": {
-                          "location": {
-                            "value": "[parameters('location')]"
+                          "commandToExecute": {
+                            "value": "[format('powershell.exe -ExecutionPolicy Unrestricted -command .\\Set-NtfsPermissions.ps1 -ClientId {0} -DomainJoinUserPassword \"{1}\" -DomainJoinUserPrincipalName {2} -ActiveDirectorySolution {3} -Environment {4} -FslogixContainerType {5} -KerberosEncryptionType {6} -Netbios {7} -OUPath \"{8}\" -SecurityPrincipalNames \"{9}\" -StorageAccountPrefix {10} -StorageAccountResourceGroupName {11} -StorageCount {12} -StorageIndex {13} -StorageSolution {14} -StorageSuffix {15} -SubscriptionId {16} -TenantId {17}', parameters('deploymentUserAssignedIdentityClientId'), parameters('domainJoinUserPassword'), parameters('domainJoinUserPrincipalName'), parameters('identitySolution'), environment().name, parameters('fslogixContainerType'), parameters('kerberosEncryption'), parameters('netbios'), parameters('ouPath'), parameters('securityPrincipalNames'), parameters('storageAccountNamePrefix'), parameters('resourceGroupStorage'), parameters('storageCount'), parameters('storageIndex'), parameters('storageSolution'), environment().suffixes.storage, subscription().subscriptionId, subscription().tenantId)]"
                           },
                           "fileUris": {
                             "value": [
                               "[format('{0}Set-NtfsPermissions.ps1', parameters('artifactsUri'))]"
                             ]
                           },
-                          "parameters": {
-                            "value": "[format('-ClientId {0} -DomainJoinUserPassword \"{1}\" -DomainJoinUserPrincipalName {2} -ActiveDirectorySolution {3} -Environment {4} -FslogixContainerType {5} -KerberosEncryptionType {6} -Netbios {7} -OUPath \"{8}\" -SecurityPrincipalNames \"{9}\" -StorageAccountPrefix {10} -StorageAccountResourceGroupName {11} -StorageCount {12} -StorageIndex {13} -StorageSolution {14} -StorageSuffix {15} -SubscriptionId {16} -TenantId {17}', parameters('deploymentUserAssignedIdentityClientId'), parameters('domainJoinUserPassword'), parameters('domainJoinUserPrincipalName'), parameters('identitySolution'), environment().name, parameters('fslogixContainerType'), parameters('kerberosEncryption'), parameters('netbios'), parameters('ouPath'), parameters('securityPrincipalNames'), parameters('storageAccountNamePrefix'), parameters('resourceGroupStorage'), parameters('storageCount'), parameters('storageIndex'), parameters('storageSolution'), environment().suffixes.storage, subscription().subscriptionId, subscription().tenantId)]"
-                          },
-                          "scriptFileName": {
-                            "value": "Set-NtfsPermissions.ps1"
+                          "location": {
+                            "value": "[parameters('location')]"
                           },
                           "tags": {
                             "value": "[parameters('tagsVirtualMachines')]"
@@ -9035,38 +9550,43 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.26.170.59819",
-                              "templateHash": "11134840655240251012"
+                              "templateHash": "13135978661573219399"
                             }
                           },
                           "parameters": {
                             "fileUris": {
                               "type": "array"
                             },
+                            "commandToExecute": {
+                              "type": "string"
+                            },
                             "location": {
                               "type": "string"
                             },
                             "output": {
                               "type": "bool",
-                              "defaultValue": true
-                            },
-                            "parameters": {
-                              "type": "string"
-                            },
-                            "scriptFileName": {
-                              "type": "string"
+                              "defaultValue": false
                             },
                             "tags": {
-                              "type": "object"
+                              "type": "object",
+                              "defaultValue": {}
                             },
                             "timeStamp": {
                               "type": "string",
                               "defaultValue": "[utcNow('yyyyMMddhhmmss')]"
                             },
                             "userAssignedIdentityClientId": {
-                              "type": "string"
+                              "type": "string",
+                              "defaultValue": ""
                             },
                             "virtualMachineName": {
                               "type": "string"
+                            }
+                          },
+                          "variables": {
+                            "defaultOutputValue": {
+                              "TimeStamp": "[parameters('timeStamp')]",
+                              "Downloads": "[parameters('fileUris')]"
                             }
                           },
                           "resources": [
@@ -9082,22 +9602,17 @@
                                 "typeHandlerVersion": "1.10",
                                 "autoUpgradeMinorVersion": true,
                                 "settings": {
-                                  "timeStamp": "[parameters('timeStamp')]"
+                                  "timestamp": "[parameters('timeStamp')]",
+                                  "fileUris": "[parameters('fileUris')]"
                                 },
-                                "protectedSettings": {
-                                  "commandToExecute": "[format('powershell -ExecutionPolicy Unrestricted -File {0} {1}', parameters('scriptFileName'), parameters('parameters'))]",
-                                  "fileUris": "[parameters('fileUris')]",
-                                  "managedIdentity": {
-                                    "clientId": "[parameters('userAssignedIdentityClientId')]"
-                                  }
-                                }
+                                "protectedSettings": "[if(not(empty(parameters('userAssignedIdentityClientId'))), createObject('commandToExecute', parameters('commandToExecute'), 'managedIdentity', createObject('clientId', parameters('userAssignedIdentityClientId'))), createObject('commandToExecute', parameters('commandToExecute')))]"
                               }
                             }
                           ],
                           "outputs": {
                             "value": {
                               "type": "object",
-                              "value": "[if(parameters('output'), json(filter(reference(resourceId('Microsoft.Compute/virtualMachines/extensions', parameters('virtualMachineName'), 'CustomScriptExtension'), '2021-03-01').instanceView.substatuses, lambda('item', equals(lambdaVariables('item').code, 'ComponentStatus/StdOut/succeeded')))[0].message), null())]"
+                              "value": "[if(parameters('output'), json(filter(reference(resourceId('Microsoft.Compute/virtualMachines/extensions', parameters('virtualMachineName'), 'CustomScriptExtension'), '2021-03-01').instanceView.substatuses, lambda('item', equals(lambdaVariables('item').code, 'ComponentStatus/StdOut/succeeded')))[0].message), variables('defaultOutputValue'))]"
                             }
                           }
                         }
@@ -9356,7 +9871,7 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.26.170.59819",
-                              "templateHash": "9649165881676438204"
+                              "templateHash": "13759459369513264612"
                             }
                           },
                           "parameters": {
@@ -9403,11 +9918,6 @@
                               "type": "string"
                             }
                           },
-                          "variables": {
-                            "runbookFileName": "Set-FileShareScaling.ps1",
-                            "scriptFileName": "Set-AutomationRunbook.ps1",
-                            "subscriptionId": "[subscription().subscriptionId]"
-                          },
                           "resources": [
                             {
                               "type": "Microsoft.Resources/deployments",
@@ -9419,20 +9929,20 @@
                                 },
                                 "mode": "Incremental",
                                 "parameters": {
+                                  "commandToExecute": {
+                                    "value": "[format('powershell.exe -ExecutionPolicy Bypass -command .\\Set-AutomationRunbook.ps1 -AutomationAccountName {0} -Environment {1} -ResourceGroupName {2} -RunbookFileName Set-FileShareScaling.ps1 -SubscriptionId {3} -TenantId {4} -UserAssignedIdentityClientId {5}', parameters('automationAccountName'), environment().name, resourceGroup().name, subscription().subscriptionId, tenant().tenantId, parameters('deploymentUserAssignedIdentityClientId'))]"
+                                  },
                                   "fileUris": {
                                     "value": [
-                                      "[format('{0}{1}', parameters('artifactsUri'), variables('runbookFileName'))]",
-                                      "[format('{0}{1}', parameters('artifactsUri'), variables('scriptFileName'))]"
+                                      "[format('{0}Set-FileShareScaling.ps1', parameters('artifactsUri'))]",
+                                      "[format('{0}Set-AutomationRunbook.ps1', parameters('artifactsUri'))]"
                                     ]
                                   },
                                   "location": {
                                     "value": "[parameters('location')]"
                                   },
-                                  "parameters": {
-                                    "value": "[format('-AutomationAccountName {0} -Environment {1} -ResourceGroupName {2} -RunbookFileName {3} -SubscriptionId {4} -TenantId {5} -UserAssignedIdentityClientId {6}', parameters('automationAccountName'), environment().name, resourceGroup().name, variables('runbookFileName'), subscription().subscriptionId, tenant().tenantId, parameters('deploymentUserAssignedIdentityClientId'))]"
-                                  },
-                                  "scriptFileName": {
-                                    "value": "[variables('scriptFileName')]"
+                                  "output": {
+                                    "value": false
                                   },
                                   "tags": "[if(contains(parameters('tags'), 'Microsoft.Compute/virtualMachines'), createObject('value', parameters('tags')['Microsoft.Compute/virtualMachines']), createObject('value', createObject()))]",
                                   "userAssignedIdentityClientId": {
@@ -9449,38 +9959,43 @@
                                     "_generator": {
                                       "name": "bicep",
                                       "version": "0.26.170.59819",
-                                      "templateHash": "11134840655240251012"
+                                      "templateHash": "13135978661573219399"
                                     }
                                   },
                                   "parameters": {
                                     "fileUris": {
                                       "type": "array"
                                     },
+                                    "commandToExecute": {
+                                      "type": "string"
+                                    },
                                     "location": {
                                       "type": "string"
                                     },
                                     "output": {
                                       "type": "bool",
-                                      "defaultValue": true
-                                    },
-                                    "parameters": {
-                                      "type": "string"
-                                    },
-                                    "scriptFileName": {
-                                      "type": "string"
+                                      "defaultValue": false
                                     },
                                     "tags": {
-                                      "type": "object"
+                                      "type": "object",
+                                      "defaultValue": {}
                                     },
                                     "timeStamp": {
                                       "type": "string",
                                       "defaultValue": "[utcNow('yyyyMMddhhmmss')]"
                                     },
                                     "userAssignedIdentityClientId": {
-                                      "type": "string"
+                                      "type": "string",
+                                      "defaultValue": ""
                                     },
                                     "virtualMachineName": {
                                       "type": "string"
+                                    }
+                                  },
+                                  "variables": {
+                                    "defaultOutputValue": {
+                                      "TimeStamp": "[parameters('timeStamp')]",
+                                      "Downloads": "[parameters('fileUris')]"
                                     }
                                   },
                                   "resources": [
@@ -9496,22 +10011,17 @@
                                         "typeHandlerVersion": "1.10",
                                         "autoUpgradeMinorVersion": true,
                                         "settings": {
-                                          "timeStamp": "[parameters('timeStamp')]"
+                                          "timestamp": "[parameters('timeStamp')]",
+                                          "fileUris": "[parameters('fileUris')]"
                                         },
-                                        "protectedSettings": {
-                                          "commandToExecute": "[format('powershell -ExecutionPolicy Unrestricted -File {0} {1}', parameters('scriptFileName'), parameters('parameters'))]",
-                                          "fileUris": "[parameters('fileUris')]",
-                                          "managedIdentity": {
-                                            "clientId": "[parameters('userAssignedIdentityClientId')]"
-                                          }
-                                        }
+                                        "protectedSettings": "[if(not(empty(parameters('userAssignedIdentityClientId'))), createObject('commandToExecute', parameters('commandToExecute'), 'managedIdentity', createObject('clientId', parameters('userAssignedIdentityClientId'))), createObject('commandToExecute', parameters('commandToExecute')))]"
                                       }
                                     }
                                   ],
                                   "outputs": {
                                     "value": {
                                       "type": "object",
-                                      "value": "[if(parameters('output'), json(filter(reference(resourceId('Microsoft.Compute/virtualMachines/extensions', parameters('virtualMachineName'), 'CustomScriptExtension'), '2021-03-01').instanceView.substatuses, lambda('item', equals(lambdaVariables('item').code, 'ComponentStatus/StdOut/succeeded')))[0].message), null())]"
+                                      "value": "[if(parameters('output'), json(filter(reference(resourceId('Microsoft.Compute/virtualMachines/extensions', parameters('virtualMachineName'), 'CustomScriptExtension'), '2021-03-01').instanceView.substatuses, lambda('item', equals(lambdaVariables('item').code, 'ComponentStatus/StdOut/succeeded')))[0].message), variables('defaultOutputValue'))]"
                                     }
                                   }
                                 }
@@ -9647,7 +10157,7 @@
                                     "value": "[format('{0}{1}', parameters('storageAccountNamePrefix'), padLeft(range(parameters('fslogixStorageIndex'), parameters('fslogixStorageCount'))[copyIndex()], 2, '0'))]"
                                   },
                                   "subscriptionId": {
-                                    "value": "[variables('subscriptionId')]"
+                                    "value": "[subscription().subscriptionId]"
                                   },
                                   "timeStamp": {
                                     "value": "[parameters('timeStamp')]"
@@ -9760,13 +10270,13 @@
                                 },
                                 "mode": "Incremental",
                                 "parameters": {
-                                  "PrincipalId": {
+                                  "principalId": {
                                     "value": "[reference(resourceId('Microsoft.Automation/automationAccounts', parameters('automationAccountName')), '2022-08-08', 'full').identity.principalId]"
                                   },
-                                  "PrincipalType": {
+                                  "principalType": {
                                     "value": "ServicePrincipal"
                                   },
-                                  "RoleDefinitionId": {
+                                  "roleDefinitionId": {
                                     "value": "17d1049b-9a84-46fb-8f53-869881c3d3ab"
                                   }
                                 },
@@ -9777,32 +10287,135 @@
                                     "_generator": {
                                       "name": "bicep",
                                       "version": "0.26.170.59819",
-                                      "templateHash": "5728032733712964701"
-                                    }
+                                      "templateHash": "16017160030106373381"
+                                    },
+                                    "name": "Role Assignments (Resource Group scope)",
+                                    "description": "This module deploys a Role Assignment at a Resource Group scope.",
+                                    "owner": "Azure/module-maintainers"
                                   },
                                   "parameters": {
-                                    "PrincipalId": {
-                                      "type": "string"
+                                    "roleDefinitionId": {
+                                      "type": "string",
+                                      "metadata": {
+                                        "description": "Required. You can provide either the role definition GUID or its fully qualified ID in the following format: \\'/providers/Microsoft.Authorization/roleDefinitions/c2f4ef07-c644-48eb-af81-4b1b4947fb11\\'.\r\nYou can find the GUIDs in the ID column on the table at https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles.\r\n"
+                                      }
                                     },
-                                    "PrincipalType": {
-                                      "type": "string"
+                                    "principalId": {
+                                      "type": "string",
+                                      "metadata": {
+                                        "description": "Required. The Principal or Object ID of the Security Principal (User, Group, Service Principal, Managed Identity)."
+                                      }
                                     },
-                                    "RoleDefinitionId": {
-                                      "type": "string"
+                                    "resourceGroupName": {
+                                      "type": "string",
+                                      "defaultValue": "[resourceGroup().name]",
+                                      "metadata": {
+                                        "description": "Optional. Name of the Resource Group to assign the RBAC role to. If not provided, will use the current scope for deployment."
+                                      }
+                                    },
+                                    "subscriptionId": {
+                                      "type": "string",
+                                      "defaultValue": "[subscription().subscriptionId]",
+                                      "metadata": {
+                                        "description": "Optional. Subscription ID of the subscription to assign the RBAC role to. If not provided, will use the current scope for deployment."
+                                      }
+                                    },
+                                    "description": {
+                                      "type": "string",
+                                      "defaultValue": "",
+                                      "metadata": {
+                                        "description": "Optional. The description of the role assignment."
+                                      }
+                                    },
+                                    "delegatedManagedIdentityResourceId": {
+                                      "type": "string",
+                                      "defaultValue": "",
+                                      "metadata": {
+                                        "description": "Optional. ID of the delegated managed identity resource."
+                                      }
+                                    },
+                                    "condition": {
+                                      "type": "string",
+                                      "defaultValue": "",
+                                      "metadata": {
+                                        "description": "Optional. The conditions on the role assignment. This limits the resources it can be assigned to."
+                                      }
+                                    },
+                                    "conditionVersion": {
+                                      "type": "string",
+                                      "defaultValue": "2.0",
+                                      "allowedValues": [
+                                        "2.0"
+                                      ],
+                                      "metadata": {
+                                        "description": "Optional. Version of the condition. Currently accepted value is \"2.0\"."
+                                      }
+                                    },
+                                    "principalType": {
+                                      "type": "string",
+                                      "defaultValue": "",
+                                      "allowedValues": [
+                                        "ServicePrincipal",
+                                        "Group",
+                                        "User",
+                                        "ForeignGroup",
+                                        "Device",
+                                        ""
+                                      ],
+                                      "metadata": {
+                                        "description": "Optional. The principal type of the assigned principal ID."
+                                      }
                                     }
+                                  },
+                                  "variables": {
+                                    "roleDefinitionIdVar": "[if(contains(parameters('roleDefinitionId'), '/providers/Microsoft.Authorization/roleDefinitions/'), parameters('roleDefinitionId'), format('/providers/Microsoft.Authorization/roleDefinitions/{0}', parameters('roleDefinitionId')))]"
                                   },
                                   "resources": [
                                     {
                                       "type": "Microsoft.Authorization/roleAssignments",
                                       "apiVersion": "2022-04-01",
-                                      "name": "[guid(parameters('PrincipalId'), parameters('RoleDefinitionId'), resourceGroup().id)]",
+                                      "name": "[guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId'))]",
                                       "properties": {
-                                        "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', parameters('RoleDefinitionId'))]",
-                                        "principalId": "[parameters('PrincipalId')]",
-                                        "principalType": "[parameters('PrincipalType')]"
+                                        "roleDefinitionId": "[variables('roleDefinitionIdVar')]",
+                                        "principalId": "[parameters('principalId')]",
+                                        "description": "[if(not(empty(parameters('description'))), parameters('description'), null())]",
+                                        "principalType": "[if(not(empty(parameters('principalType'))), parameters('principalType'), null())]",
+                                        "delegatedManagedIdentityResourceId": "[if(not(empty(parameters('delegatedManagedIdentityResourceId'))), parameters('delegatedManagedIdentityResourceId'), null())]",
+                                        "conditionVersion": "[if(and(not(empty(parameters('conditionVersion'))), not(empty(parameters('condition')))), parameters('conditionVersion'), null())]",
+                                        "condition": "[if(not(empty(parameters('condition'))), parameters('condition'), null())]"
                                       }
                                     }
-                                  ]
+                                  ],
+                                  "outputs": {
+                                    "name": {
+                                      "type": "string",
+                                      "metadata": {
+                                        "description": "The GUID of the Role Assignment."
+                                      },
+                                      "value": "[guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId'))]"
+                                    },
+                                    "resourceId": {
+                                      "type": "string",
+                                      "metadata": {
+                                        "description": "The resource ID of the Role Assignment."
+                                      },
+                                      "value": "[resourceId('Microsoft.Authorization/roleAssignments', guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId')))]"
+                                    },
+                                    "resourceGroupName": {
+                                      "type": "string",
+                                      "metadata": {
+                                        "description": "The name of the resource group the role assignment was applied at."
+                                      },
+                                      "value": "[resourceGroup().name]"
+                                    },
+                                    "scope": {
+                                      "type": "string",
+                                      "metadata": {
+                                        "description": "The scope this Role Assignment applies to."
+                                      },
+                                      "value": "[resourceGroup().id]"
+                                    }
+                                  }
                                 }
                               }
                             }
@@ -10033,7 +10646,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.26.170.59819",
-              "templateHash": "10073330741656983982"
+              "templateHash": "7819526055088342866"
             }
           },
           "parameters": {
@@ -10456,13 +11069,13 @@
                 },
                 "mode": "Incremental",
                 "parameters": {
-                  "PrincipalId": {
+                  "principalId": {
                     "value": "[parameters('securityPrincipalObjectIds')[range(0, length(parameters('securityPrincipalObjectIds')))[copyIndex()]]]"
                   },
-                  "PrincipalType": {
+                  "principalType": {
                     "value": "Group"
                   },
-                  "RoleDefinitionId": {
+                  "roleDefinitionId": {
                     "value": "[parameters('roleDefinitions').VirtualMachineUserLogin]"
                   }
                 },
@@ -10473,32 +11086,135 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.26.170.59819",
-                      "templateHash": "5728032733712964701"
-                    }
+                      "templateHash": "16017160030106373381"
+                    },
+                    "name": "Role Assignments (Resource Group scope)",
+                    "description": "This module deploys a Role Assignment at a Resource Group scope.",
+                    "owner": "Azure/module-maintainers"
                   },
                   "parameters": {
-                    "PrincipalId": {
-                      "type": "string"
+                    "roleDefinitionId": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Required. You can provide either the role definition GUID or its fully qualified ID in the following format: \\'/providers/Microsoft.Authorization/roleDefinitions/c2f4ef07-c644-48eb-af81-4b1b4947fb11\\'.\r\nYou can find the GUIDs in the ID column on the table at https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles.\r\n"
+                      }
                     },
-                    "PrincipalType": {
-                      "type": "string"
+                    "principalId": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Required. The Principal or Object ID of the Security Principal (User, Group, Service Principal, Managed Identity)."
+                      }
                     },
-                    "RoleDefinitionId": {
-                      "type": "string"
+                    "resourceGroupName": {
+                      "type": "string",
+                      "defaultValue": "[resourceGroup().name]",
+                      "metadata": {
+                        "description": "Optional. Name of the Resource Group to assign the RBAC role to. If not provided, will use the current scope for deployment."
+                      }
+                    },
+                    "subscriptionId": {
+                      "type": "string",
+                      "defaultValue": "[subscription().subscriptionId]",
+                      "metadata": {
+                        "description": "Optional. Subscription ID of the subscription to assign the RBAC role to. If not provided, will use the current scope for deployment."
+                      }
+                    },
+                    "description": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Optional. The description of the role assignment."
+                      }
+                    },
+                    "delegatedManagedIdentityResourceId": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Optional. ID of the delegated managed identity resource."
+                      }
+                    },
+                    "condition": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Optional. The conditions on the role assignment. This limits the resources it can be assigned to."
+                      }
+                    },
+                    "conditionVersion": {
+                      "type": "string",
+                      "defaultValue": "2.0",
+                      "allowedValues": [
+                        "2.0"
+                      ],
+                      "metadata": {
+                        "description": "Optional. Version of the condition. Currently accepted value is \"2.0\"."
+                      }
+                    },
+                    "principalType": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "allowedValues": [
+                        "ServicePrincipal",
+                        "Group",
+                        "User",
+                        "ForeignGroup",
+                        "Device",
+                        ""
+                      ],
+                      "metadata": {
+                        "description": "Optional. The principal type of the assigned principal ID."
+                      }
                     }
+                  },
+                  "variables": {
+                    "roleDefinitionIdVar": "[if(contains(parameters('roleDefinitionId'), '/providers/Microsoft.Authorization/roleDefinitions/'), parameters('roleDefinitionId'), format('/providers/Microsoft.Authorization/roleDefinitions/{0}', parameters('roleDefinitionId')))]"
                   },
                   "resources": [
                     {
                       "type": "Microsoft.Authorization/roleAssignments",
                       "apiVersion": "2022-04-01",
-                      "name": "[guid(parameters('PrincipalId'), parameters('RoleDefinitionId'), resourceGroup().id)]",
+                      "name": "[guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId'))]",
                       "properties": {
-                        "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', parameters('RoleDefinitionId'))]",
-                        "principalId": "[parameters('PrincipalId')]",
-                        "principalType": "[parameters('PrincipalType')]"
+                        "roleDefinitionId": "[variables('roleDefinitionIdVar')]",
+                        "principalId": "[parameters('principalId')]",
+                        "description": "[if(not(empty(parameters('description'))), parameters('description'), null())]",
+                        "principalType": "[if(not(empty(parameters('principalType'))), parameters('principalType'), null())]",
+                        "delegatedManagedIdentityResourceId": "[if(not(empty(parameters('delegatedManagedIdentityResourceId'))), parameters('delegatedManagedIdentityResourceId'), null())]",
+                        "conditionVersion": "[if(and(not(empty(parameters('conditionVersion'))), not(empty(parameters('condition')))), parameters('conditionVersion'), null())]",
+                        "condition": "[if(not(empty(parameters('condition'))), parameters('condition'), null())]"
                       }
                     }
-                  ]
+                  ],
+                  "outputs": {
+                    "name": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "The GUID of the Role Assignment."
+                      },
+                      "value": "[guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId'))]"
+                    },
+                    "resourceId": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "The resource ID of the Role Assignment."
+                      },
+                      "value": "[resourceId('Microsoft.Authorization/roleAssignments', guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId')))]"
+                    },
+                    "resourceGroupName": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "The name of the resource group the role assignment was applied at."
+                      },
+                      "value": "[resourceGroup().name]"
+                    },
+                    "scope": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "The scope this Role Assignment applies to."
+                      },
+                      "value": "[resourceGroup().id]"
+                    }
+                  }
                 }
               }
             },
@@ -10689,7 +11405,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.26.170.59819",
-                      "templateHash": "4253343963968575880"
+                      "templateHash": "508660643631400515"
                     }
                   },
                   "parameters": {
@@ -11354,19 +12070,16 @@
                         },
                         "mode": "Incremental",
                         "parameters": {
+                          "commandToExecute": {
+                            "value": "[format('powershell -ExecutionPolicy Unrestricted -command .\\Set-AvdDrainMode.ps1 -Environment {0} -HostPoolName {1} -HostPoolResourceGroupName {2} -SessionHostCount {3} -SessionHostIndex {4} -SubscriptionId {5} -TenantId {6} -UserAssignedIdentityClientId {7} -VirtualMachineNamePrefix {8}', environment().name, parameters('hostPoolName'), parameters('resourceGroupControlPlane'), parameters('sessionHostCount'), parameters('sessionHostIndex'), subscription().subscriptionId, tenant().tenantId, parameters('drainModeUserAssignedIdentityClientId'), parameters('virtualMachineNamePrefix'))]"
+                          },
                           "fileUris": {
                             "value": [
                               "[format('{0}Set-AvdDrainMode.ps1', parameters('artifactsUri'))]"
                             ]
                           },
-                          "scriptFileName": {
-                            "value": "Set-AvdDrainMode.ps1"
-                          },
                           "location": {
                             "value": "[parameters('location')]"
-                          },
-                          "parameters": {
-                            "value": "[format('-Environment {0} -HostPoolName {1} -HostPoolResourceGroupName {2} -SessionHostCount {3} -SessionHostIndex {4} -SubscriptionId {5} -TenantId {6} -UserAssignedIdentityClientId {7} -VirtualMachineNamePrefix {8}', environment().name, parameters('hostPoolName'), parameters('resourceGroupControlPlane'), parameters('sessionHostCount'), parameters('sessionHostIndex'), subscription().subscriptionId, tenant().tenantId, parameters('drainModeUserAssignedIdentityClientId'), parameters('virtualMachineNamePrefix'))]"
                           },
                           "tags": {
                             "value": "[parameters('tagsVirtualMachines')]"
@@ -11385,38 +12098,43 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.26.170.59819",
-                              "templateHash": "11134840655240251012"
+                              "templateHash": "13135978661573219399"
                             }
                           },
                           "parameters": {
                             "fileUris": {
                               "type": "array"
                             },
+                            "commandToExecute": {
+                              "type": "string"
+                            },
                             "location": {
                               "type": "string"
                             },
                             "output": {
                               "type": "bool",
-                              "defaultValue": true
-                            },
-                            "parameters": {
-                              "type": "string"
-                            },
-                            "scriptFileName": {
-                              "type": "string"
+                              "defaultValue": false
                             },
                             "tags": {
-                              "type": "object"
+                              "type": "object",
+                              "defaultValue": {}
                             },
                             "timeStamp": {
                               "type": "string",
                               "defaultValue": "[utcNow('yyyyMMddhhmmss')]"
                             },
                             "userAssignedIdentityClientId": {
-                              "type": "string"
+                              "type": "string",
+                              "defaultValue": ""
                             },
                             "virtualMachineName": {
                               "type": "string"
+                            }
+                          },
+                          "variables": {
+                            "defaultOutputValue": {
+                              "TimeStamp": "[parameters('timeStamp')]",
+                              "Downloads": "[parameters('fileUris')]"
                             }
                           },
                           "resources": [
@@ -11432,22 +12150,17 @@
                                 "typeHandlerVersion": "1.10",
                                 "autoUpgradeMinorVersion": true,
                                 "settings": {
-                                  "timeStamp": "[parameters('timeStamp')]"
+                                  "timestamp": "[parameters('timeStamp')]",
+                                  "fileUris": "[parameters('fileUris')]"
                                 },
-                                "protectedSettings": {
-                                  "commandToExecute": "[format('powershell -ExecutionPolicy Unrestricted -File {0} {1}', parameters('scriptFileName'), parameters('parameters'))]",
-                                  "fileUris": "[parameters('fileUris')]",
-                                  "managedIdentity": {
-                                    "clientId": "[parameters('userAssignedIdentityClientId')]"
-                                  }
-                                }
+                                "protectedSettings": "[if(not(empty(parameters('userAssignedIdentityClientId'))), createObject('commandToExecute', parameters('commandToExecute'), 'managedIdentity', createObject('clientId', parameters('userAssignedIdentityClientId'))), createObject('commandToExecute', parameters('commandToExecute')))]"
                               }
                             }
                           ],
                           "outputs": {
                             "value": {
                               "type": "object",
-                              "value": "[if(parameters('output'), json(filter(reference(resourceId('Microsoft.Compute/virtualMachines/extensions', parameters('virtualMachineName'), 'CustomScriptExtension'), '2021-03-01').instanceView.substatuses, lambda('item', equals(lambdaVariables('item').code, 'ComponentStatus/StdOut/succeeded')))[0].message), null())]"
+                              "value": "[if(parameters('output'), json(filter(reference(resourceId('Microsoft.Compute/virtualMachines/extensions', parameters('virtualMachineName'), 'CustomScriptExtension'), '2021-03-01').instanceView.substatuses, lambda('item', equals(lambdaVariables('item').code, 'ComponentStatus/StdOut/succeeded')))[0].message), variables('defaultOutputValue'))]"
                             }
                           }
                         }
