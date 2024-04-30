@@ -26,16 +26,16 @@ resource applicationGroup 'Microsoft.DesktopVirtualization/applicationGroups@202
 }
 
 // Adds a friendly name to the SessionDesktop application for the desktop application group
-module applicationFriendlyName '../common/customScriptExtensions.bicep' = if (!empty(desktopFriendlyName)) {
+module applicationFriendlyName '../../../sharedModules/custom/customScriptExtension.bicep' = if (!empty(desktopFriendlyName)) {
   scope: resourceGroup(resourceGroupManagement)
-  name: 'ApplicationFriendlyName_${timeStamp}'
+  name: 'DesktopFriendlyName_${timeStamp}'
   params : {
+    commandToExecute: 'powershell.exe -ExecutionPolicy Bypass -Command .\\Update-AvdDesktop.ps1 -ApplicationGroupName ${applicationGroup.name} -Environment ${environment().name} -FriendlyName "${desktopFriendlyName}" -ResourceGroupName ${resourceGroup().name} -SubscriptionId ${subscription().subscriptionId} -Tenant ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentityClientId}'
     fileUris: [
       '${artifactsUri}Update-AvdDesktop.ps1'
     ]
     location: locationVirtualMachines
-    parameters: '-ApplicationGroupName ${applicationGroup.name} -Environment ${environment().name} -FriendlyName "${desktopFriendlyName}" -ResourceGroupName ${resourceGroup().name} -SubscriptionId ${subscription().subscriptionId} -Tenant ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentityClientId}'
-    scriptFileName: 'Update-AvdDesktop.ps1'
+    output: true
     tags: union({
       'cm-resource-parent': hostPoolResourceId
     }, contains(tags, 'Microsoft.Compute/virtualMachines') ? tags['Microsoft.Compute/virtualMachines'] : {})
