@@ -14,9 +14,9 @@ The deployment utilizes the Cloud Adoption Framework naming conventions and orga
 
 - Centralized AVD Monitoring (**centralizedAVDMonitoring**): This *optional* boolean (defaults to True) parameter is only used when the Business Unit Identifier is specified. If set to true, then all monitoring resources are named without the Business Unit Identifier and thus will be shared subscription/region wide. When set to 'False', then the monitoring resources and resource groups are named with the Business Unit Identifier string located in the name and thus only shared across the Business Unit.
 
-![Identifiers](../images/identifiers.png)
+![ResourceGroupNaming](images/ResourceGroupNaming.png)
 
-Every AVD deployment within the same subscription will share the AVD global workspace.
+If AVD Private Link is configured, every AVD deployment within the same subscription will share the AVD global workspace.
 
 There will be one feed workspace deployed per region and per Business Unit Identifier (if specified).
 
