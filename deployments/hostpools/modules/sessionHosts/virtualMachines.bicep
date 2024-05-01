@@ -517,7 +517,7 @@ module setDrainMode '../../../sharedModules/custom/customScriptExtension.bicep' 
   name: 'CSE_DrainMode_${batchCount}_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
-    commandToExecute: 'powershell -ExecutionPolicy Unrestricted -command .\\Set-AvdDrainMode.ps1 -Environment ${environment().name} -HostPoolName ${hostPoolName} -HostPoolResourceGroupName ${resourceGroupControlPlane} -SessionHostCount ${sessionHostCount} -SessionHostIndex ${sessionHostIndex} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${drainModeUserAssignedIdentityClientId} -VirtualMachineNamePrefix ${virtualMachineNamePrefix}'
+    commandToExecute: 'powershell -ExecutionPolicy Unrestricted -File Set-AvdDrainMode.ps1 -Environment ${environment().name} -HostPoolName ${hostPoolName} -HostPoolResourceGroupName ${resourceGroupControlPlane} -SessionHostCount ${sessionHostCount} -SessionHostIndex ${sessionHostIndex} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${drainModeUserAssignedIdentityClientId} -VirtualMachineNamePrefix ${virtualMachineNamePrefix}'
     fileUris: [
       '${artifactsUri}Set-AvdDrainMode.ps1'
     ]

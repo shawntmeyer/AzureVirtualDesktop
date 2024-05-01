@@ -65,7 +65,7 @@ module rsa_key_disks 'keyVaultKeys.bicep' = if (!confidentialVMOSDiskEncryption)
 module rsahsm_key_disks '../../../sharedModules/custom/customScriptExtension.bicep' = if(confidentialVMOSDiskEncryption) {
   name: 'EncryptionKey_ConfidentialVMOSDisk_${timeStamp}'
   params: {
-    commandToExecute: 'powershell.exe -executionpolicy Bypass -command .\\Create-ConfidentialVMOSDiskEncryptionKey.ps1 ${cseScriptParameters}'
+    commandToExecute: 'powershell.exe -executionpolicy Bypass -File Create-ConfidentialVMOSDiskEncryptionKey.ps1 ${cseScriptParameters}'
     fileUris: [
       '${artifactsUri}Create-ConfidentialVMOSDiskEncryptionKey.ps1'
     ]

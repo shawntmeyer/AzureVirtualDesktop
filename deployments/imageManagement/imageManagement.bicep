@@ -139,7 +139,7 @@ var nameConv_Shared_ResGroups = nameConvResTypeAtEnd ? ( !empty(busUnitId) ? '${
 var nameConv_ImageManagement_ResGroup = centralizedImageManagement ? ( nameConvResTypeAtEnd ? 'resGroupPurpose-${nameConvSuffix}' : 'resourceType-resGroupPurpose-${nameConvSuffix}' ) : nameConv_Shared_ResGroups
 var nameConv_ImageManagement_Resources = centralizedImageManagement ? ( nameConvResTypeAtEnd ? 'image-management-${nameConvSuffix}' : 'resourceType-image-management-${nameConvSuffix}' ) : ( nameConvResTypeAtEnd ? ( !empty(busUnitId) ? '${busUnitId}-image-management-${nameConvSuffix}' : 'image-management-${nameConvSuffix}' ) : ( !empty(busUnitId) ? 'resourceType-${busUnitId}-image-management-${nameConvSuffix}' : 'resourceType-image-managmeent-${nameConvSuffix}' ) )
 
-var resourceGroupName = customResourceGroupName != 'none' ? customResourceGroupName : replace(replace(replace(nameConv_ImageManagement_ResGroup, 'resGroupPurpose', 'image-management'), 'location', locations[location].abbreviation), 'resourceType', resourceAbbreviations.resourceGroups)
+var resourceGroupName = customResourceGroupName != 'none' ? customResourceGroupName : replace(replace(replace(nameConv_ImageManagement_ResGroup, 'resGroupPurpose', 'avd-image-management'), 'location', locations[location].abbreviation), 'resourceType', resourceAbbreviations.resourceGroups)
 var blobContainerName = replace(replace(toLower(artifactsBlobContainerName), '_', '-'), ' ', '-')
 var galleryName = customComputeGalleryName != 'none' ? customComputeGalleryName : replace(replace(nameConv_ImageManagement_Resources, 'resourceType', resourceAbbreviations.computeGalleries), 'location', locations[location].abbreviation)
 var computeGalleryName = replace(galleryName, '-', '_')

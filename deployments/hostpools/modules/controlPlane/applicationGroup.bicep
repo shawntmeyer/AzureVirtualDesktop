@@ -30,7 +30,7 @@ module applicationFriendlyName '../../../sharedModules/custom/customScriptExtens
   scope: resourceGroup(resourceGroupManagement)
   name: 'DesktopFriendlyName_${timeStamp}'
   params : {
-    commandToExecute: 'powershell.exe -ExecutionPolicy Bypass -Command .\\Update-AvdDesktop.ps1 -ApplicationGroupName ${applicationGroup.name} -Environment ${environment().name} -FriendlyName "${desktopFriendlyName}" -ResourceGroupName ${resourceGroup().name} -SubscriptionId ${subscription().subscriptionId} -Tenant ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentityClientId}'
+    commandToExecute: 'powershell -ExecutionPolicy Unrestricted -File Update-AvdDesktop.ps1 -ApplicationGroupName ${applicationGroup.name} -Environment ${environment().name} -FriendlyName "${desktopFriendlyName}" -ResourceGroupName ${resourceGroup().name} -SubscriptionId ${subscription().subscriptionId} -Tenant ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentityClientId}'
     fileUris: [
       '${artifactsUri}Update-AvdDesktop.ps1'
     ]

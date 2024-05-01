@@ -7,10 +7,6 @@ param timeStamp string = utcNow('yyyyMMddhhmmss')
 param userAssignedIdentityClientId string = ''
 param virtualMachineName string
 
-//var commandToExecute = empty(scriptParameters) ? 'powershell -ExecutionPolicy Unrestricted -command .\\${powerShellScriptName}' : 'powershell -ExecutionPolicy Unrestricted -command .\\${powerShellScriptName} ${scriptParameters}'
-//var fileNames = !empty(powerShellScriptName) ? union(['${powerShellScriptName}}'], files) : files
-//var fileUris = [for file in fileNames: '${artifactsLocation}${file}']
-
 var defaultOutputValue =  {
   TimeStamp: timeStamp
   Downloads: fileUris 

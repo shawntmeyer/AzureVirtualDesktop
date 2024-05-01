@@ -2046,7 +2046,7 @@
 							"name": "fslogixSessionHostConfig",
 							"type": "Microsoft.Common.Section",
 							"label": "Session Host Configuration",
-							"visible": "[and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').configureSessionHosts)]",
+							"visible": "[and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').configureSessionHosts, or(not(steps('userProfiles').deployStorage), contains(steps('userProfiles').fslogixContainerType, 'CloudCache')))]",
 							"elements": [								
 								{
 									"name": "notDeployedCCTextBox",

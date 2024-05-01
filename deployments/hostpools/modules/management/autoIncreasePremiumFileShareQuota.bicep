@@ -20,7 +20,7 @@ resource automationAccount 'Microsoft.Automation/automationAccounts@2022-08-08' 
 module runbook '../../../sharedModules/custom/customScriptExtension.bicep' = {
   name: 'Runbook_QuotaScaling_${timeStamp}'
   params: {
-    commandToExecute: 'powershell.exe -ExecutionPolicy Bypass -command .\\Set-AutomationRunbook.ps1 -AutomationAccountName ${automationAccountName} -Environment ${environment().name} -ResourceGroupName ${resourceGroup().name} -RunbookFileName Set-FileShareScaling.ps1 -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentityClientId}'
+    commandToExecute: 'powershell.exe -ExecutionPolicy Bypass -File Set-AutomationRunbook.ps1 -AutomationAccountName ${automationAccountName} -Environment ${environment().name} -ResourceGroupName ${resourceGroup().name} -RunbookFileName Set-FileShareScaling.ps1 -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentityClientId}'
     fileUris: [
       '${artifactsUri}Set-FileShareScaling.ps1'
       '${artifactsUri}Set-AutomationRunbook.ps1'    

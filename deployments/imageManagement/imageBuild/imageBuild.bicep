@@ -430,7 +430,7 @@ module imageDefinitionValidation '../../sharedModules/custom/customScriptExtensi
   name: '${depPrefix}Image-Definition-Validation-${timeStamp}'
   scope: resourceGroup(imageBuildRg.name)
   params: {
-    commandToExecute: 'powershell.exe -ExecutionPolicy Unrestricted -command .\\Get-ImageBuildValidations.ps1 ${validationScriptParameters}'
+    commandToExecute: 'powershell.exe -ExecutionPolicy Unrestricted -File Get-ImageBuildValidations.ps1 ${validationScriptParameters}'
     fileUris: [
       '${artifactsContainerUri}Get-ImageBuildValidations.ps1'
     ]
@@ -657,7 +657,7 @@ module getImageSource '../../sharedModules/custom/customScriptExtension.bicep' =
   name: '${depPrefix}Get-ImageVersion-Source-${timeStamp}'
   scope: resourceGroup(imageBuildRg.name)
   params: {
-    commandToExecute: 'powershell.exe -ExecutionPolicy Unrestricted -command .\\Get-ImageVersionSource.ps1 ${getImageVersionSourceParameters}'
+    commandToExecute: 'powershell.exe -ExecutionPolicy Unrestricted -File Get-ImageVersionSource.ps1 ${getImageVersionSourceParameters}'
     fileUris: [
       '${artifactsContainerUri}Get-ImageVersionSource.ps1'
     ]

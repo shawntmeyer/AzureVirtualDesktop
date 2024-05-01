@@ -23,7 +23,7 @@ module addApplicationGroups '../../../sharedModules/custom/customScriptExtension
   scope: resourceGroup(resourceGroupManagement)
   name: 'AddApplicationGroupReferences_${timeStamp}'
   params: {
-    commandToExecute: 'powershell.exe -ExecutionPolicy Unrestricted -Command .\\Update-AvdWorkspace.ps1 -ApplicationGroupReferences "${applicationGroupReferences}" -Environment ${environment().name} -ResourceGroupName ${resourceGroup().name} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentityClientId} -WorkspaceName ${workspaceName}'
+    commandToExecute: 'powershell.exe -ExecutionPolicy Unrestricted -File Update-AvdWorkspace.ps1 -ApplicationGroupReferences "${applicationGroupReferences}" -Environment ${environment().name} -ResourceGroupName ${resourceGroup().name} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentityClientId} -WorkspaceName ${workspaceName}'
     fileUris: [
       '${artifactsUri}Update-AvdWorkspace.ps1'
     ]

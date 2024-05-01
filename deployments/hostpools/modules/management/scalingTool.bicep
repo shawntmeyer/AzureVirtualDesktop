@@ -163,7 +163,7 @@ resource jobSchedules 'Microsoft.Automation/automationAccounts/jobSchedules@2022
 module runbook '../../../sharedModules/custom/customScriptExtension.bicep' = {
   name: 'Runbook_${timeStamp}'  
   params:{
-    commandToExecute: 'Powershell.exe -executionpolicy bypass -command .\\Update-RunbookviaCSE.ps1 ${scriptParams}'
+    commandToExecute: 'powershell -ExecutionPolicy Unrestricted -File Update-RunbookviaCSE.ps1 ${scriptParams}'
     fileUris: [
       '${artifactsUri}Update-RunbookviaCSE.ps1'
       '${artifactsUri}Set-HostPoolScaling.ps1'
