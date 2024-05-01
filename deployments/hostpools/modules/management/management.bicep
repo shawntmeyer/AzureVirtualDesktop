@@ -305,7 +305,7 @@ module validations '../../../sharedModules/custom/customScriptExtension.bicep' =
   scope: resourceGroup(resourceGroupManagement)
   name: 'Validations_${timeStamp}'
   params: {
-    commandToExecute: 'powershell.exe -ExecutionPolicy Bypass -command .\\Get-Validations.ps1 ${validationScriptParameters}'
+    commandToExecute: 'powershell -ExecutionPolicy Unrestricted -File Get-Validations.ps1 ${validationScriptParameters}'
     fileUris: [
       '${artifactsUri}Get-Validations.ps1'
     ]
