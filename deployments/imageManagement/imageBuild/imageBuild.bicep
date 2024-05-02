@@ -125,7 +125,8 @@ param officeBlobName string = 'Office365DeploymentTool.exe'
 param installTeams bool = false
 
 @description('Optional. The name of the zip blob containing the VC++Redistributables, MSRDC WebRTC Redirector, and Teams installer.')
-param teamsBlobName string = 'Microsoft-Teams.zip'
+@allowed(['Classic', 'New'])
+param teamsVersion string = 'Classic'
 
 @description('Optional. Apply the Virtual Desktop Optimization Tool customizations.')
 param installVirtualDesktopOptimizationTool bool = false
@@ -272,6 +273,7 @@ param tags object = {}
 
 // * VARIABLE DECLARATIONS * //
 
+var teamsBlobName = teamsVersion == 'Classic' ? 'Microsoft-Teams-Classic.zip' : 'Microsoft-Teams.zip'
 var installers = []
 
 var customizers = union(customizations, installers)
@@ -600,6 +602,7 @@ module customizeImage 'modules/customizeImage.bicep' = {
     vDotBlobName: vDotBlobName
     officeBlobName: officeBlobName
     teamsBlobName: teamsBlobName
+    teamsVersion: teamsVersion
     logBlobContainerUri: collectLogs ? logContainerUri : ''
     installUpdates: installUpdates
     updateService: updateService
