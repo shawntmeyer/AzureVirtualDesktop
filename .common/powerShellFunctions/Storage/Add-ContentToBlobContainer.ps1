@@ -77,7 +77,7 @@ function Add-ContentToBlobContainer {
                 throw "Testing local paths FAILED: Cannot find content path to upload [$contentDirectory]"
             }
             Write-Verbose "Getting files to be uploaded..."
-            $scriptsToUpload = Get-ChildItem -Path $contentDirectory -ErrorAction 'Stop'
+            $scriptsToUpload = Get-ChildItem -Path $contentDirectory -File -ErrorAction 'Stop'
             Write-Verbose "Files to be uploaded:"
             Write-Verbose ($scriptsToUpload.Name | Format-List | Out-String)
 
