@@ -3,18 +3,6 @@
 Run this script to automatically download any required files from the internet and put them in their prescribed folders and
 then zip up all subfolders and upload all blobs to a storage account blob container for use by packer or Azure VM Image Builder.
 
-.DESCRIPTION
-Run the Post-Deployment for the storage account deployment
-- Upload required data to the storage account
-
-.PARAMETER FunctionsPath
-Path to the required functions
-
-.PARAMETER SourceDir
-The source directory where existing scripts and content are updated and copied to the DestinationDir
-
-.PARAMETER DestinationDir
-The directory to where the compressed zip files and standalone scripts are copied.
 #>
 
 param(
@@ -27,10 +15,15 @@ param(
     [Parameter(ParameterSetName='Deploy', Mandatory=$false)]
     [Parameter(ParameterSetName='UpdateOnly')]
     [string] $TempDir = "$Env:Temp\Artifacts",
+    # Determines whether or not to delete existing blobs in the storage account before uploading new blobs.
+    [Parameter(ParameterSetName='Deploy', Mandatory=$false)]
+    [Parameter(ParameterSetName='UpdateOnly', Mandatory=$false)]
+    [switch] $DeleteExistingBlobs,
+    # Determines whether or not to download new sources from the internet.
     [Parameter(ParameterSetName='Deploy', Mandatory=$false)]
     [Parameter(ParameterSetName='UpdateOnly', Mandatory=$false)]
     [bool] $DownloadNewSources = $true,
-    #SubscriptionId. If not provided then the default context is used for deployment.
+    # SubscriptionId. If not provided then the default context is used for deployment.
     [Parameter(ParameterSetName='Deploy')]
     [string]$SubscriptionId,
     # Determines whether or not to deploy/redeploy the storage account using BICEP and the parameter file contained in the storageAccount folder
@@ -44,9 +37,6 @@ param(
     [Parameter(ParameterSetName='UpdateOnly', Mandatory=$false)]
     [ValidateSet("Commercial","GovernmentCommunityCloud","GovernmentCommunityCloudHigh","DepartmentOfDefense")]
     [string] $TeamsTenantType = "Commercial",
-    # Whether or not to update the parameters file with the Artifacts Location and Storage Account Resource ID.
-    [Parameter(ParameterSetName='Deploy')]
-    [switch]$UpdateParameters,
     # The full resource ID of the existing storage account to update.
     [Parameter(ParameterSetName='UpdateOnly', Mandatory=$true)]
     [string]$StorageAccountResourceId,
@@ -60,21 +50,25 @@ param(
 #region Variables
 
 $Time = Get-Date -Format 'yyyyMMddhhmmss'
-Write-Output $Time
 $ArtifactsDir = (Get-Item -Path (Join-Path -Path  $PSScriptRoot -ChildPath '..\..\.common\artifacts')).FullName
 $FunctionsPath = (Get-Item -Path (Join-Path -Path $PSScriptRoot -ChildPath '..\..\.common\powerShellFunctions')).FullName
-Write-Output "Working Directory: '$PSScriptRoot'"
 
+If (Test-Path -Path $TempDir) {
+    Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue
+}
+New-Item -Path $TempDir -ItemType Directory -Force
 
 #endregion Variables
 
-Write-Verbose ("[{0} entered]" -f $MyInvocation.MyCommand)
+Write-Output ("[{0} entered]" -f $MyInvocation.MyCommand)
 
 . "$FunctionsPath\GeneralDeployment\Get-MSIInfo.ps1"
 . "$FunctionsPath\Storage\Compress-SubFolderContents.ps1"
 . "$FunctionsPath\Storage\Get-InternetFile.ps1"
 . "$FunctionsPath\Storage\Get-InternetUrl.ps1"
 . "$FunctionsPath\Storage\Add-ContentToBlobContainer.ps1"
+
+Write-Output "Working Directory: '$PSScriptRoot'"
 
 #region Storage Account Deployment/update
 
@@ -122,6 +116,8 @@ if ($DownloadNewSources -and (Test-Path -Path $downloadFilePath)) {
     Write-Verbose "###########################################################################"
     Write-Verbose "## 2 - Download New Source Files into the artifacts Directory            ##"
     Write-Verbose "###########################################################################"
+    $DownloadDir = Join-Path -Path $TempDir -ChildPath 'downloads'
+    New-Item -Path $DownloadDir -ItemType Directory -Force
     $downloadJson = Get-Content -Path $downloadFilePath -Raw -ErrorAction 'Stop'
     try {
         $Downloads = $downloadJson | ConvertFrom-Json -ErrorAction 'Stop'
@@ -132,8 +128,7 @@ if ($DownloadNewSources -and (Test-Path -Path $downloadFilePath)) {
     foreach ($Download in $Downloads.Artifacts) {
         $SoftwareName = $Download.Name
         Write-Output "--------------------------------------------------"
-        Write-Output "## Start - $SoftwareName ##"        
-        $OutputFile = Join-Path -Path $ArtifactsDir -ChildPath $Download.DestinationFilePath
+        Write-Output "## Start - $SoftwareName ##"
         If ($Download.DownloadUrl -ne '') {
             Write-Output "Download Url directly available."
             $DownloadUrl = $Download.DownloadUrl
@@ -173,7 +168,7 @@ if ($DownloadNewSources -and (Test-Path -Path $downloadFilePath)) {
             Write-Output "Retrieving the url of the latest version from '$Repo' Github repo."
             $DownloadUrl = ((Invoke-RestMethod -Method GET -Uri $ReleasesUri).assets | Where-Object name -like $FileNamePattern).browser_download_url
         }
-        ElseIf ($Download.Name -like 'Teams*') {
+        ElseIf ($Download.Name -like 'Teams Classic*') {
             Switch ($TeamsTenantType) {
                 "Commercial" { $DownloadUrl = "https://teams.microsoft.com/downloads/desktopurl?env=production&plat=windows&arch=x64&managedInstaller=true&download=true" }
                 "DepartmentOfDefense" { $DownloadUrl = "https://dod.teams.microsoft.us/downloads/desktopurl?env=production&plat=windows&arch=x64&managedInstaller=true&download=true" }
@@ -191,52 +186,58 @@ if ($DownloadNewSources -and (Test-Path -Path $downloadFilePath)) {
         If (($DownloadUrl -ne '') -and ($null -ne $DownloadUrl)) {
             Write-Output "Downloading '$SoftwareName'."
             Try {
-                If (Test-Path -Path $OutputFile) {
-                    Remove-Item -Path $OutputFile -Force
-                }
-                $DestDir = split-path $outputFile -parent
-                $DestFile = split-path $outputFile -leaf
+                $TempSoftwareDownloadDir = Join-Path -Path $DownloadDir -ChildPath ($SoftwareName.Replace(' ', '_'))
+                New-Item -Path $TempSoftwareDownloadDir -ItemType Directory -Force
+                $DestFileName = $Download.DestinationFileName
+                $DestFileFullName = Join-Path $TempSoftwareDownloadDir -ChildPath $DestFileName                
                 # Build Version File for Artifacts Directory
-                $versionFileName = [System.IO.Path]::GetFileNameWithoutExtension($OutputFile) + "-fileinfo.txt"
-                $VersionFilePath = Join-Path $DestDir -ChildPath $versionFileName
+                $VersionFileName = $DestFileName + "-fileinfo.txt"
+                $VersionFilePath = Join-Path $TempSoftwareDownloadDir -ChildPath $VersionFileName
                 $VersionText = @()
                 $VersionText += "DownloadUrl = $DownloadUrl"
-                If (!(Test-Path -Path $DestDir)) {
-                    New-Item -Path $DestDir -ItemType Directory -Force
-                }
                 Try {
                     # Not supplying the destination file name first so we can try to get the original file name that was downloaded for version information.
-                    $DownloadedFile = Get-InternetFile -Url $DownloadUrl -OutputDirectory $DestDir -Verbose
-                    If ($DownloadedFile -ne $OutputFile) {
-                        $VersionText += "Download File = $(split-path $DownloadedFile -leaf)"
-                        Rename-Item -Path $DownloadedFile -NewName $DestFile -Force
+                    $DownloadedFileFullName = Get-InternetFile -Url $DownloadUrl -OutputDirectory $TempSoftwareDownloadDir -Verbose
+                    $DownloadedFile = Split-Path -Path $DownloadedFileFullName -Leaf
+                    If ($DownloadedFileFullName -ne $DestFileFullName) {
+                        $VersionText += "Download File = $DownloadedFile"
+                        Rename-Item -Path $DownloadedFileFullName -NewName $DestFileName -Force
                     }
                 } Catch {
-                    $DownloadedFile = Get-InternetFile -Url $DownloadUrl -OutputDirectory $DestDir -OutputFileName $DestFile
-                    $VersionText += "Download File = $(split-path $DownloadedFile -leaf)"
+                    $DownloadedFileFullName = Get-InternetFile -Url $DownloadUrl -OutputDirectory $TempSoftwareDownloadDir -OutputFileName $DestFileName
+                    $VersionText += "Download File = $(split-path $DownloadedFileFullName -leaf)"
                 }
                 Write-Output "Finished downloading '$SoftwareName' from Internet."
-
                 Write-Output "Saving File Information to '$VersionFilePath'"
-
-                If ([System.IO.Path]::GetExtension($OutputFile) -eq '.msi') {
-                    $VersionText += Get-MSIInfo -Path $OutputFile
-                } Elseif ([System.IO.Path]::GetExtension($OutputFile) -eq '.exe') {
-                    $Version = (Get-ItemProperty -Path $OutputFile).VersionInfo | Select-Object ProductVersion, FileVersion
+                If ([System.IO.Path]::GetExtension($DestFileFullName) -eq '.msi') {
+                    $VersionText += Get-MSIInfo -Path $DestFileFullName
+                } Elseif ([System.IO.Path]::GetExtension($DestFileFullName) -eq '.exe') {
+                    $Version = (Get-ItemProperty -Path $DestFileFullName).VersionInfo | Select-Object ProductVersion, FileVersion
                     $VersionText += "$Version"
                 }
                 $VersionText | Out-File $VersionFilePath -Force
             }
             Catch {
-                Write-Warning "Error downloading software from '$DownloadUrl'."
+                Write-Error "Error downloading software from '$DownloadUrl'."
             }
+            Write-Output "Copying downloaded files to Artifacts Directory."
+            $DestFolders = @()
+            $DestFolders = $Download.DestinationFolders
+            ForEach ($DestFolder in $DestFolders) {
+                $DestinationDir = Join-Path -Path $ArtifactsDir -ChildPath $DestFolder
+                If (-not (Test-Path -Path $DestinationDir)) {
+                    New-Item -Path $DestinationDir -ItemType Directory -Force
+                }
+                Get-ChildItem -Path $TempSoftwareDownloadDir | Copy-Item -Destination $DestinationDir -Force
+            }    
         }
         Else {
-            Write-Warning "No Internet URL found for '$SoftwareName'."
+            Write-Error "No Internet URL found for '$SoftwareName'."
         }
         Write-Output "## End - $SoftwareName ##"
         Write-Output "--------------------------------------------------"             
     }
+    Get-Item -Path $DownloadDir | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 }
 else {
     Write-Verbose "No software configured to be downloaded"
@@ -246,13 +247,8 @@ else {
 #region Compress contents of Artifacts Subdirectories
 
 Write-Verbose "###########################################################################"
-Write-Verbose "## 3 - Create Zip files for all subfolders inside `$ArtifactsDir.        ##"
+Write-Verbose "## 3 - Create Zip files for all subfolders inside ArtifactsDir.          ##"
 Write-Verbose "###########################################################################"
-
-If (Test-Path -Path $TempDir) {
-    Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue
-}
-New-Item -Path $TempDir -ItemType Directory -Force
 
 if ($PSCmdlet.ShouldProcess("[$ArtifactsDir] subfolders as .zip and store them into [$TempDir]", "Compress")) {
     Compress-SubFolderContents -SourceFolderPath $ArtifactsDir -DestinationFolderPath $TempDir -Verbose
@@ -281,16 +277,6 @@ if ($PSCmdlet.ShouldProcess("storage account '$storageAccountName'", "Uploading 
 
 Get-ChildItem -Path $TempDir -Recurse -Force | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 
-#endregion
-
-#region Dynamically Update Parameters file
-If ($UpdateParameters) {
-    $ParametersFile = (Get-Item -Path "$PSScriptRoot\parameters.json").FullName
-    $JSON = Get-Content -Path $ParametersFile | ConvertFrom-Json
-    $JSON.parameters.ArtifactsLocation.value = $ArtifactsContainerUrl
-    $JSON.parameters.ArtifactsUserAssignedIdentityResourceId.value = $ManagedIdentityResourceId
-    $JSON | ConvertTo-Json -Depth 32 | Out-File $ParametersFile
-}
 #endregion
 
 #region Output Storage Account Information
