@@ -617,18 +617,63 @@
 								},
 								{
 									"name": "installOneDrive",
-									"type": "Microsoft.Common.CheckBox",
+									"type": "Microsoft.Common.OptionsGroup",
 									"label": "Install OneDrive (Per Machine)",
-									"defaultValue": true,
+									"defaultValue": "Yes",
+									"constraints": {
+										"allowedValues": [
+											{
+												"label": "Yes",
+												"value": true
+											},
+											{
+												"label": "No",
+												"value": false
+											}
+										]
+									},
 									"visible": true
 								},							
 								{
 									"name": "installTeams",
-									"type": "Microsoft.Common.CheckBox",
+									"type": "Microsoft.Common.OptionsGroup",
 									"label": "Install Teams",
-									"defaultValue": true,
+									"defaultValue": "Yes",
+									"constraints": {
+										"allowedValues": [
+											{
+												"label": "Yes",
+												"value": true
+											},
+											{
+												"label": "No",
+												"value": false
+											}
+										]
+									},
 									"visible": true
-								}						
+								},
+								{
+									"name": "teamsVersion",
+									"type": "Microsoft.Common.OptionsGroup",
+									"label": "Teams Version",
+									"defaultValue": "New",
+									"toolTip": "Select 'Classic' to install the Teams Version 1 or 'New' to install the new Teams client.",
+									"constraints": {
+										"allowedValues": [
+											{
+												"label": "New",
+												"value": "New"
+											},
+											{
+												"label": "Classic",
+												"value": "Classic"
+											}
+										],
+										"required": false
+									},
+									"visible": "[steps('imageCustomizations').office.installTeams]"
+								}							
 							]
 						},
 						{
@@ -1474,6 +1519,7 @@
 				"installPublisher": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installPublisher,'false')]",
 				"installSkypeForBusiness": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installSkypeForBusiness,'false')]",
 				"installTeams": "[steps('imageCustomizations').office.installTeams]",
+				"teamsVersion": "[if(steps('imageCustomizations').office.installTeams, steps('imageCustomizations').office.teamsVersion, 'New')]",
 				"installVirtualDesktopOptimizationTool": "[steps('imageCustomizations').customizations.installVirtualDesktopOptimizationTool]",
 				"installVisio": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installVisio,'false')]",
 				"installWord": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installWord,'false')]",
