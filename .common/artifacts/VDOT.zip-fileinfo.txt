@@ -1,0 +1,2 @@
+DownloadUrl = https://github.com/The-Virtual-Desktop-Team/Virtual-Desktop-Optimization-Tool/archive/refs/heads/main.zip
+Download File = main.zip

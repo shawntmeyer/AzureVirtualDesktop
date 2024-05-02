@@ -267,7 +267,7 @@ Write-Verbose "#################################################################
 if ($DeleteExistingBlobs) {
     Write-Output "Existing Blobs in Storage Account '$StorageAccountName' are now being deleted."
     $ctx = New-AzStorageContext -StorageAccountName $StorageAccountName -UseConnectedAccount
-    Get-AzStorageBlob -Container $AssetsContainerName -Context $ctx | Remove-AzStorageBlob -Force
+    Get-AzStorageBlob -Container $ArtifactsContainerName -Context $ctx | Remove-AzStorageBlob -Force
 }
 
 if ($PSCmdlet.ShouldProcess("storage account '$storageAccountName'", "Uploading Blobs to")) {
