@@ -8,17 +8,8 @@
             "APIUrl": "",
             "GitHubRepo": "",
             "GitHubFileNamePattern": "",
-            "DestinationFilePath": "LGPO/lgpo.zip"
-        },
-        {
-            "Name": "Visual Studio Redistributables (Latest)",
-            "DownloadUrl": "https://aka.ms/vs/17/release/vc_redist.x64.exe",
-            "WebSiteUrl": "",
-            "SearchString": "",
-            "APIUrl": "",
-            "GitHubRepo": "",
-            "GitHubFileNamePattern": "",
-            "DestinationFilePath": "VisualC++Redistributables/vc_redist.x64.exe"
+            "DestinationFileName": "lgpo.zip",
+            "DestinationFolders": ["LGPO"]
         },
         {
             "Name": "FSLogix",
@@ -28,7 +19,8 @@
             "APIUrl": "",
             "GitHubRepo": "",
             "GitHubFileNamePattern": "",
-            "DestinationFilePath": "FSLogix.zip"
+            "DestinationFileName": "FSLogix.zip",
+            "DestinationFolders": [""]
         },
         {
             "Name": "Office 365 Deployment Tool",
@@ -38,7 +30,8 @@
             "APIUrl": "",
             "GitHubRepo": "",
             "GitHubFileNamePattern": "",
-            "DestinationFilePath": "Office365DeploymentTool.exe"
+            "DestinationFileName": "Office365DeploymentTool.exe",
+            "DestinationFolders": [""]
         },
         {
             "Name": "Office 365 Administrative Templates",
@@ -48,7 +41,8 @@
             "APIUrl": "",
             "GitHubRepo": "",
             "GitHubFileNamePattern": "",
-            "DestinationFilePath": "Office365-Configuration/AdminTemplates_x64.exe"
+            "DestinationFileName": "AdminTemplates_x64.exe",
+            "DestinationFolders": ["Office365-Configuration"]
         },
         {
             "Name": "OneDrive",
@@ -58,17 +52,52 @@
             "APIUrl": "",
             "GitHubRepo": "",
             "GitHubFileNamePattern": "",
-            "DestinationFilePath": "OneDriveSetup.exe"
+            "DestinationFileName": "OneDriveSetup.exe",
+            "DestinationFolders": [""]
         },
         {
-            "Name": "Teams Classic for Windows 64-bit",
+            "Name": "Teams Bootstrapper",
+            "DownloadUrl": "https://go.microsoft.com/fwlink/?linkid=2243204&clcid=0x409",
+            "WebSiteUrl": "",
+            "SearchString": "",
+            "APIUrl": "",
+            "GitHubRepo": "",
+            "GitHubFileNamePattern": "",
+            "DestinationFileName": "teamsbootstrapper.exe",
+            "DestinationFolders": ["Microsoft-Teams"]
+        },
+        {
+            "Name": "Teams 64-bit MSIX",
+            "DownloadUrl": "https://go.microsoft.com/fwlink/?linkid=2196106",
+            "WebSiteUrl": "",
+            "SearchString": "",
+            "APIUrl": "",
+            "GitHubRepo": "",
+            "GitHubFileNamePattern": "",
+            "DestinationFileName": "MSTeams-x64.msix",
+            "DestinationFolders": ["Microsoft-Teams"]
+        },                
+        {
+            "Name": "Microsoft WebView2 Runtime",
+            "DownloadUrl": "https://go.microsoft.com/fwlink/?linkid=2124703",
+            "WebSiteUrl": "",
+            "SearchString": "",
+            "APIUrl": "",
+            "GitHubRepo": "",
+            "GitHubFileNamePattern": "",
+            "DestinationFileName": "WebView2.exe",
+            "DestinationFolders": ["Microsoft-Teams"]
+        },
+        {
+            "Name": "Teams Classic 64-bit MSI",
             "DownloadUrl": "",
             "WebSiteUrl": "",
             "SearchString": "",
             "APIUrl": "",
             "GitHubRepo": "",
             "GitHubFileNamePattern": "",
-            "DestinationFilePath": "Microsoft-Teams/Teams-windows-x64.msi"
+            "DestinationFileName": "Teams-windows-x64.msi",
+            "DestinationFolders": ["Microsoft-Teams-Classic"]
         },
         {
             "Name": "Remote Desktop WebRTC Redirector Service",
@@ -78,7 +107,11 @@
             "APIUrl": "",
             "GitHubRepo": "",
             "GitHubFileNamePattern": "",
-            "DestinationFilePath": "Microsoft-Teams/Websocket.msi"
+            "DestinationFileName": "Websocket.msi",
+            "DestinationFolders": [
+                "Microsoft-Teams",
+                "Microsoft-Teams-Classic"
+            ]
         },
         {
             "Name": "Visual Studio Redistributables (Latest)",
@@ -88,7 +121,12 @@
             "APIUrl": "",
             "GitHubRepo": "",
             "GitHubFileNamePattern": "",
-            "DestinationFilePath": "Microsoft-Teams/vc_redist.x64.exe"
+            "DestinationFileName": "vc_redist.x64.exe",
+            "DestinationFolders": [
+                "Microsoft-Teams-Classic",
+                "Microsoft-Teams",
+                "VisualC++Redistributables"
+            ]
         },
         {
             "Name": "Edge Enterprise Administrative Templates",
@@ -98,7 +136,8 @@
             "APIUrl": "https://edgeupdates.microsoft.com/api/products?view=enterprise", 
             "GitHubRepo": "",
             "GitHubFileNamePattern": "",
-            "DestinationFilePath": "Edge/MicrosoftEdgePolicyTemplates.cab"
+            "DestinationFileName": "EdgeEnterprisePolicyTemplates.cab",
+            "DestinationFolders": ["Edge"]
         },
         {
             "Name": "PowerShell Az Module",
@@ -108,7 +147,8 @@
             "APIUrl": "",
             "GitHubRepo": "Azure/azure-powershell",
             "GitHubFileNamePattern": "Az-Cmdlets-*-x64.msi",
-            "DestinationFilePath": "PowerShell-Az.msi"
+            "DestinationFileName": "PowerShell-Az.msi",
+            "DestinationFolders": [""]
         },
         {
             "Name": "Powershell Core",
@@ -118,7 +158,8 @@
             "APIUrl": "",
             "GitHubRepo": "PowerShell/PowerShell",
             "GitHubFileNamePattern": "*win-x64.msi",
-            "DestinationFilePath": "PowerShell-Core/Powershell.msi"
+            "DestinationFileName": "Powershell.msi",
+            "DestinationFolders": ["PowerShell-Core"]
         },
         {
             "Name": "VS Code (64-bit)",
@@ -128,7 +169,8 @@
             "APIUrl": "",
             "GitHubRepo": "",
             "GitHubFileNamePattern": "",
-            "DestinationFilePath": "VSCode/VSCodesetup.exe"
+            "DestinationFileName": "VSCodesetup.exe",
+            "DestinationFolders": ["VSCode"]
         },
         {
             "Name": "AVD Bootloader",
@@ -138,7 +180,8 @@
             "APIUrl": "",
             "GitHubRepo": "",
             "GitHubFileNamePattern": "",
-            "DestinationFilePath": "Set-SessionHostConfiguration/AVD-Bootloader.msi"
+            "DestinationFileName": "AVD-Bootloader.msi",
+            "DestinationFolders": ["Set-SessionHostConfiguration"]
         },
         {
             "Name": "AVD Agent",
@@ -148,7 +191,8 @@
             "APIUrl": "",
             "GitHubRepo": "",
             "GitHubFileNamePattern": "",
-            "DestinationFilePath": "Set-SessionHostConfiguration/AVD-Agent.msi"
+            "DestinationFileName": "AVD-Agent.msi",
+            "DestinationFolders": ["Set-SessionHostConfiguration"]
         },
         {
             "Name": "DoD STIG GPO Package",
@@ -158,7 +202,8 @@
             "APIUrl": "",
             "GitHubRepo": "",
             "GitHubFileNamePattern": "",
-            "DestinationFilePath": "STIGs_Client/STIGs.zip"
+            "DestinationFileName": "STIGs.zip",
+            "DestinationFolders": ["STIGs_Client"]
         },
         {
             "Name": "Virtual Desktop Optimization Tool (VDOT)",
@@ -168,7 +213,8 @@
             "APIUrl": "",
             "GitHubRepo": "",
             "GitHubFileNamePattern": "",
-            "DestinationFilePath": "VDOT.zip"
+            "DestinationFileName": "VDOT.zip",
+            "DestinationFolders": [""]
         }          
     ]
 }
