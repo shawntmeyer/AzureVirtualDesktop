@@ -1,6 +1,7 @@
 *.exe
 *.cab
 *.msi
+*.msix
 *.zip
 temp/**
 shmeyer.onmicrosoft.us.*
