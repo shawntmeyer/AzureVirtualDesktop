@@ -28,6 +28,7 @@ param customizations array
 param vDotBlobName string
 param officeBlobName string
 param teamsBlobName string
+param teamsVersion string
 param timeStamp string = utcNow('yyMMddhhmm')
 param installUpdates bool
 param updateService string
@@ -304,7 +305,7 @@ resource fslogix 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = if
 }
 
 resource office 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if(installAccess || installExcel || installOneNote || installOutlook || installPowerPoint || installProject || installPublisher || installSkypeForBusiness || installVisio || installWord) {
-  name: 'install-office'
+  name: 'm365Apps'
   location: location
   parent: imageVm
   properties: {
@@ -607,8 +608,8 @@ resource onedrive 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = i
   ]
 }
 
-resource teams 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (installTeams) {
-  name: 'teams'
+resource teamsClassic 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (installTeams && teamsVersion == 'Classic') {
+  name: 'teamsClassic'
   location: location
   parent: imageVm
   properties: {
@@ -705,6 +706,102 @@ resource teams 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (
   ]
 }
 
+resource teamsNew 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (installTeams && teamsVersion == 'New') {
+  name: 'teamsNew'
+  location: location
+  parent: imageVm
+  properties: {
+    errorBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
+      clientId: userAssignedIdentityClientId
+    }
+    errorBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-Teams-error-${timeStamp}.log' 
+    outputBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
+      clientId: userAssignedIdentityClientId
+    }
+    outputBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-Teams-output-${timeStamp}.log'
+    parameters: [
+      {
+        name: 'APIVersion'
+        value: apiVersion
+      }
+      {
+        name: 'BuildDir'
+        value: buildDir
+      }
+      {
+        name: 'UserAssignedIdentityClientId'
+        value: userAssignedIdentityClientId
+      }
+      {
+        name: 'ContainerName'
+        value: containerName
+      }
+      {
+        name: 'StorageEndpoint'
+        value: storageEndpoint
+      }
+      {
+        name: 'BlobName'
+        value: teamsBlobName
+      }
+    ]
+    source: {
+      script: '''
+        param(
+          [string]$APIVersion,
+          [string]$BuildDir,
+          [string]$UserAssignedIdentityClientId,
+          [string]$ContainerName,
+          [string]$StorageEndpoint,
+          [string]$BlobName
+        )
+        $SoftwareName = 'Teams'
+        Start-Transcript -Path "$env:SystemRoot\Logs\ImageBuild\$SoftwareName.log" -Force
+        $TokenUri = "http://169.254.169.254/metadata/identity/oauth2/token?api-version=$APIVersion&resource=$StorageEndpoint&client_id=$UserAssignedIdentityClientId"
+        $AccessToken = ((Invoke-WebRequest -Headers @{Metadata=$true} -Uri $TokenUri -UseBasicParsing).Content | ConvertFrom-Json).access_token
+        $sku = (Get-ComputerInfo).OsName
+        $appDir = Join-Path -Path $BuildDir -ChildPath $SoftwareName
+        New-Item -Path $appDir -ItemType Directory -Force | Out-Null
+        $destFile = Join-Path -Path $appDir -ChildPath $BlobName
+        $WebClient = New-Object System.Net.WebClient
+        $WebClient.Headers.Add('x-ms-version', '2017-11-09')
+        $webClient.Headers.Add("Authorization", "Bearer $AccessToken")
+        $webClient.DownloadFile("$StorageEndpoint$ContainerName/$BlobName", "$destFile")
+        Start-Sleep -seconds 10
+        If (!(Test-Path -Path $DestFile)) { Write-Error "Failed to download $BlobName"; Exit 1 }
+        Expand-Archive -Path $destFile -DestinationPath $appDir -Force
+        $WebView2 = (Get-ChildItem -Path $appDir -filter 'webview*' -Recurse).FullName
+        $vcRedistFile = (Get-ChildItem -Path $appDir -filter 'vc*.exe' -Recurse).FullName
+        $webRTCFile = (Get-ChildItem -Path $appDir -filter '*WebRTC*.msi' -Recurse).FullName
+        $BootStrapperFile = (Get-ChildItem -Path $appDir -filter '*bootstrapper.exe' -Recurse).FullName
+        $MSIXFile = (Get-ChildItem -Path $appDir -filter '*.msix' -Recurse).FullName
+        # Enable media optimizations for Team
+        New-Item -Path "HKLM:\SOFTWARE\Microsoft\Teams" -Force
+        New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Teams" -Name IsWVDEnvironment -PropertyType DWORD -Value 1 -Force
+        Write-Output "Enabled media optimizations for Teams"
+        $ErrorActionPreference = "Stop"
+        Start-Process -FilePath  $vcRedistFile -ArgumentList "/install /quiet /norestart" -Wait -PassThru | Out-Null
+        Write-Output "Installed the latest version of Microsoft Visual C++ Redistributable"
+        Start-Process -FilePath  $WebView2 -ArgumentList "/silent" -Wait -PassThru | Out-Null
+        Write-Output "Installed the latest version of the Microsoft WebView2 Runtime"
+        # install the Remote Desktop WebRTC Redirector Service
+        Start-Process -FilePath msiexec.exe -ArgumentList "/i  $webRTCFile /quiet /qn /norestart /passive" -Wait -PassThru | Out-Null
+        Write-Output "Installed the Remote Desktop WebRTC Redirector Service"
+        Start-Process -FilePath $BootStrapperFile -ArgumentList "-p -o $MSIXFile" -Wait -PassThru | Out-Null
+        Write-Output "Installed Teams"
+        Stop-Transcript
+      '''
+    }
+  }
+  dependsOn: [
+    createBuildDirs
+    applications
+    fslogix
+    office
+    onedrive
+  ]
+}
+
 resource firstImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
   name: 'restart-vm-1'
   location: location
@@ -758,12 +855,13 @@ resource firstImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023
     applications
     fslogix
     office
-    teams
+    teamsClassic
+    teamsNew
   ]
 }
 
 resource microsoftUpdates 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if(installUpdates) {
-  name: 'install-microsoft-updates'
+  name: 'microsoft-updates'
   location: location
   parent: imageVm
   properties: {
