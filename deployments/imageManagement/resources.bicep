@@ -95,7 +95,7 @@ var virtualNetworkRules = [for subnetId in storageServiceEndpointSubnetResourceI
 
 var roleDefinitionId = resourceId('Microsoft.Authorization/roleDefinitions', '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1') // Storage Blob Data Reader
 
-resource gallery 'Microsoft.Compute/galleries@2023-07-03' = {
+resource gallery 'Microsoft.Compute/galleries@2022-08-03' = {
   name: computeGalleryName
   location: location
   tags: contains(tags, 'Microsoft.Compute/galleries') ? tags['Microsoft.Compute/galleries'] : {}
