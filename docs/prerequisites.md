@@ -9,7 +9,7 @@ To successfully deploy this solution, you will need to ensure the following prer
 ### Required
 
 - **Licenses:** ensure you have the [required licensing for AVD](https://learn.microsoft.com/en-us/azure/virtual-desktop/overview#requirements).
-- **Image Management Resources:** the deployment of this solution depends on many artifacts that must be hosted in Azure Blob storage. This repo contains a helper script that should be used to deploy the image management resources and upload the artifacts to the created storage account. See [Deploy-ImageManagement.ps1](../deployments/imageManagement/Deploy-ImageManagement.ps1). 
+- **Image Management Resources:** the deployment of this solution depends on many artifacts that must be hosted in Azure Blob storage. This repo contains a helper script that should be used to deploy the image management resources and upload the artifacts to the created storage account. See [Deploy-ImageManagement.ps1](../deployments/imageManagement/Deploy-ImageManagement.ps1).
 - **Azure Permissions:** ensure the principal deploying the solution has "Owner" and "Key Vault Administrator" roles assigned on the target Azure subscription. This solution contains many role assignments at different scopes and deploys a key vault with keys and secrets to enhance security.
 - **Security Group:** create a security group for your AVD users.
   - AD DS: create the group in ADUC and ensure the group has synchronized to Azure AD.
