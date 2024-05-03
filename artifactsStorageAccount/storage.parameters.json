@@ -1,0 +1,48 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "BlobContainerName": {
+      "value": "artifacts"
+    },
+    "Kind": {
+      "value": "StorageV2"
+    },
+    "SkuName": {
+      "value": "Standard_LRS"
+    },
+    "AccessTier": {
+      "value": "Hot"
+    },
+    "AzureBlobPrivateDnsZoneResourceId": {
+      "value": "/subscriptions/6dc4ed51-16b9-4494-a406-4fb7a8330d95/resourceGroups/rg-networking-lab-eus/providers/Microsoft.Network/privateDnsZones/privatelink.blob.core.windows.net"
+    },
+    "PublicNetworkAccess": {
+      "value": "Enabled"
+    },
+    "CreatePrivateEndpoint": {
+      "value": true
+    },
+    "PrivateEndpointSubnetResourceId": {
+      "value": "/subscriptions/6dc4ed51-16b9-4494-a406-4fb7a8330d95/resourceGroups/rg-avd-networking-eastus/providers/Microsoft.Network/virtualNetworks/vnet-avd-eastus/subnets/PrivateEndpoints"
+    },
+    "PermittedIPs": {
+      "value": []
+    },
+    "ServiceEndpointSubnetResourceIds": {
+      "value": []
+    },
+    "TagsPrivateEndpoints": {
+      "value": {}
+    },
+    "TagsStorageAccounts": {
+      "value": {}
+    },
+    "AllowSharedKeyAccess": {
+      "value": true
+    },
+    "SASExpirationPeriod": {
+      "value": "180.00:00:00"
+    }
+  }
+}
