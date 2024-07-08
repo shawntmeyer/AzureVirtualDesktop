@@ -5,11 +5,12 @@ param logAnalyticsWorkspaceResourceId string
 param enableMonitoring bool
 param privateEndpoint bool
 param privateEndpointNameConv string
+param privateEndpointNICNameConv string
 param subnetResourceId string
 param tags object
 param virtualMachineName string
 
-var privateEndpointName = replace(replace(replace(privateEndpointNameConv, 'subresource', 'DSCAndHybridWorker'), 'resource', automationAccountName), 'subnetId', uniqueString(subnetResourceId))
+var privateEndpointName = replace(replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'DSCAndHybridWorker'), 'RESOURCE', automationAccountName), 'VNETID', '${split(subnetResourceId, '/')[8]}')
 
 resource virtualMachine 'Microsoft.Compute/virtualMachines@2023-07-01' existing = {
   name: virtualMachineName
@@ -46,7 +47,7 @@ resource automationAccountPrivateEndpoint 'Microsoft.Network/privateEndpoints@20
         }
       }
     ]
-    customNetworkInterfaceName: 'nic-${automationAccountName}'
+    customNetworkInterfaceName: replace(replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'DSCAndHybridWorker'), 'RESOURCE', automationAccountName), 'VNETID', '${split(subnetResourceId, '/')[8]}')
     subnet: {
       id: subnetResourceId
     }

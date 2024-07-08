@@ -17,7 +17,7 @@ param fslogixShareSizeInGB int
 param fslogixContainerType string
 param fslogixStorageService string
 param kerberosEncryption string
-param keyVaultUri string
+param encryptionKeyKeyVaultUris array
 param location string
 param logAnalyticsWorkspaceId string
 param managementVirtualMachineName string
@@ -25,6 +25,7 @@ param netbios string
 param ouPath string
 param privateEndpoint bool
 param privateEndpointNameConv string
+param privateEndpointNICNameConv string
 param recoveryServices bool
 param recoveryServicesVaultName string
 param resourceGroupManagement string
@@ -43,7 +44,6 @@ param tagsAutomationAccounts object
 param tagsPrivateEndpoints object
 param tagsRecoveryServicesVault object
 param tagsStorageAccounts object
-param tagsVirtualMachines object
 param timeStamp string
 param timeZone string
 param virtualNetwork string
@@ -107,7 +107,7 @@ resource storageAccounts 'Microsoft.Storage/storageAccounts@2022-09-01' = [for i
       keySource: customerManagedKeysEnabled ? 'Microsoft.KeyVault' : 'Microsoft.Storage'
       keyvaultproperties: customerManagedKeysEnabled ? {
         keyname: storageEncryptionKeyName
-        keyvaulturi: keyVaultUri
+        keyvaulturi: encryptionKeyKeyVaultUris[i]
       } : null
       requireInfrastructureEncryption: true
     }
@@ -166,11 +166,12 @@ module shares 'shares.bicep' = [for i in range(0, storageCount): {
   ]
 }]
 
-resource privateEndpoints 'Microsoft.Network/privateEndpoints@2020-05-01' = [for i in range(0, storageCount): if (privateEndpoint) {
-  name: replace(replace(replace(privateEndpointNameConv, 'subresource', 'file'), 'resource', '${storageAccountNamePrefix}${padLeft(i + storageIndex, 2, '0')}'), 'subnetId', uniqueString(privateEndpointSubnetId))
+resource privateEndpoints 'Microsoft.Network/privateEndpoints@2023-05-01' = [for i in range(0, storageCount): if (privateEndpoint) {
+  name: replace(replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'file'), 'RESOURCE', '${storageAccountNamePrefix}${padLeft(i + storageIndex, 2, '0')}'), 'VNETID', '${split(privateEndpointSubnetId, '/')[8]}')
   location: location
   tags: tagsPrivateEndpoints
   properties: {
+    customNetworkInterfaceName: replace(replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'file'), 'RESOURCE', '${storageAccountNamePrefix}${padLeft(i + storageIndex, 2, '0')}'), 'VNETID', '${split(privateEndpointSubnetId, '/')[8]}')
     subnet: {
       id: privateEndpointSubnetId
     }
@@ -215,7 +216,6 @@ module ntfsPermissions '../../../../sharedModules/custom/customScriptExtension.b
       '${artifactsUri}Set-NtfsPermissions.ps1'
     ]
     location: location
-    tags: tagsVirtualMachines
     userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
     virtualMachineName: managementVirtualMachineName
   }

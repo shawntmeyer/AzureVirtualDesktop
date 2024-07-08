@@ -124,7 +124,8 @@ ForEach($File in $Files) {
                 $PSScriptsToExecute += $Script
             }
         } Else {
-            Write-Log -category Warning "No PowerShell scripts found in the root of '$destinationPath'."
+            Write-Log -category Error "No PowerShell scripts found in the root of '$destinationPath'."
+            Throw "No PowerShell scripts found in the root of '$destinationPath'."
         }
     }
 }

@@ -133,11 +133,11 @@
 									}
 								},
 								{
-									"name": "envClassification",
+									"name": "envShortName",
 									"type": "Microsoft.Common.DropDown",
 									"label": "Env Classification",
 									"defaultValue": "Not Defined",
-									"toolTip": "Select the type of environment (Development (dev), Test (test), Production (prod)) for which this solution is being deployed. This information will be use as part of the resources naming. Select (or leave the value as) \"Not Specified\" to omit this option.",
+									"toolTip": "Select the type of environment (Development (d), Test (t), Production (p)) for which this solution is being deployed. This information will be use as part of the resources naming. Select (or leave the value as) \"Not Specified\" to omit this option.",
 									"constraints": {
 										"required": false,
 										"allowedValues": [
@@ -147,15 +147,15 @@
 											},
 											{
 												"label": "Development",
-												"value": "dev"
+												"value": "d"
 											},
 											{
 												"label": "Test",
-												"value": "test"
+												"value": "t"
 											},
 											{
 												"label": "Production",
-												"value": "prod"
+												"value": "p"
 											}
 										]
 									}
@@ -1483,6 +1483,24 @@
 							]
 						}
 					]
+				},
+				{
+                    "name": "tags",
+                    "label": "Tags",
+                    "elements": [
+						{
+							"name": "tags",
+							"type": "Microsoft.Common.TagsByResource",
+							"resources": [
+								"Microsoft.Resources/resourceGroups",						
+								"Microsoft.Compute/virtualMachines",
+								"Microsoft.Compute/galleries/images",
+								"Microsoft.Compute/galleries/images/versions",
+								"Microsoft.Storage/storageAccounts",
+								"Microsoft.Network/privateEndpoints"
+							]
+						}
+					]
 				}
 			]
 		},
@@ -1491,14 +1509,14 @@
 			"location": "[steps('basics').scope.location.name]",
 			"subscriptionId": "[steps('basics').scope.subscription.id]",
 			"parameters": {
-				"deploymentLocation": "[steps('basics').scope.location.name]",
+				"location": "[steps('basics').scope.location.name]",
 				"deploymentPrefix": "[steps('basics').deploymentSpecs.deploymentPrefix]",
-				"envClassification": "[steps('basics').deploymentSpecs.envClassification]",
+				"envShortName": "[steps('basics').deploymentSpecs.envShortName]",
 				"imageBuildResourceGroupId": "[if(equals(steps('basics').resGroup.useExResGroup, true), concat(steps('basics').scope.subscription.id, '/resourceGroups/',steps('basics').resGroup.resourceGroup), '')]",
 				"customBuildResourceGroupName": "[if(equals(steps('basics').resGroup.useExResGroup, false), steps('basics').resGroup.customBuildResourceGroupName, '')]",
 				"computeGalleryResourceId": "[steps('prereqs').gallery.gallery.id]",
 				"storageAccountResourceId": "[steps('prereqs').storage.storageAccount.id]",
-				"containerName": "[first(skip(split(steps('prereqs').storage.container, '/'), 12))]",
+				"artifactsContainerName": "[first(skip(split(steps('prereqs').storage.container, '/'), 12))]",
 				"userAssignedIdentityResourceId": "[steps('prereqs').storage.managedIdentity.id]",
 				"subnetResourceId": "[steps('prereqs').network.subnet]",
 				"vmSize": "[steps('imageVm').vmProps.vmSize]",
@@ -1546,7 +1564,8 @@
 				"imageVersionDefaultReplicaCount": "[steps('imageDest').imageVersion.replicaCount]",
 				"imageVersionDefaultStorageAccountType": "[steps('imageDest').imageVersion.storageAccountType]",
 				"imageVersionDefaultRegion": "[if(equals(steps('imageDest').imageVersion.specifyReplicationRegions, false), steps('imageDest').imageVersion.defaultReplicationRegion, '')]",
-				"imageVersionTargetRegions": "[if(equals(steps('imageDest').imageVersion.specifyReplicationRegions, true), steps('imageDest').imageVersion.replicationRegions, parse('[]'))]"
+				"imageVersionTargetRegions": "[if(equals(steps('imageDest').imageVersion.specifyReplicationRegions, true), steps('imageDest').imageVersion.replicationRegions, parse('[]'))]",
+				"tags": "[steps('tags').tags]"
 			}
 		}
 	}

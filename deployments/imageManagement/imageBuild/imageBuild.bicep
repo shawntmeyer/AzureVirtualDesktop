@@ -6,7 +6,7 @@ metadata author = 'shawn.meyer@microsoft.com'
 metadata version = '1.0.0'
 
 @description('Deployment location. Note that the compute resources will be deployed to the region where the subnet is location.')
-param deploymentLocation string = deployment().location
+param location string = deployment().location
 
 @description('Value to prepend to the deployment names.')
 @maxLength(6)
@@ -24,13 +24,13 @@ param guidValue string = newGuid()
 param azModuleBlobName string = 'PowerShell-Az.msi'
 
 @allowed([
-  'dev'
-  'test'
-  'prod'
+  'd'
+  't'
+  'p'
   ''
 ])
 @description('Optional. The environment for which the images are being created.')
-param envClassification string = ''
+param envShortName string = ''
 
 // Required Existing Resources
 @description('Azure Compute Gallery Resource Id.')
@@ -40,7 +40,7 @@ param computeGalleryResourceId string
 param storageAccountResourceId string
 
 @description('The name of the storage blob container which contains the artifacts (scripts, installers, etc) used during the image build.')
-param containerName string
+param artifactsContainerName string = 'artifacts'
 
 @description('The resource Id of the user assigned managed identity used to access the storage account.')
 param userAssignedIdentityResourceId string
@@ -287,16 +287,16 @@ var resourceAbbreviations = loadJsonContent('../../../.common/data/resourceAbbre
 var computeLocation = vnet.location
 var depPrefix = !empty(deploymentPrefix) ? '${deploymentPrefix}-' : ''
 
-var imageBuildResourceGroupName = empty(imageBuildResourceGroupId) ? (empty(customBuildResourceGroupName) ? (!empty(envClassification) ? '${resourceAbbreviations.resourceGroups}-image-builder-${envClassification}-${locations[deploymentLocation].abbreviation}' : '${resourceAbbreviations.resourceGroups}-image-builder-${locations[deploymentLocation].abbreviation}') : customBuildResourceGroupName) : last(split(imageBuildResourceGroupId, '/'))
+var imageBuildResourceGroupName = empty(imageBuildResourceGroupId) ? (empty(customBuildResourceGroupName) ? (!empty(envShortName) ? '${resourceAbbreviations.resourceGroups}-image-builder-${envShortName}-${locations[location].abbreviation}' : '${resourceAbbreviations.resourceGroups}-image-builder-${locations[location].abbreviation}') : customBuildResourceGroupName) : last(split(imageBuildResourceGroupId, '/'))
 
 var adminPw = '${toUpper(uniqueString(subscription().id))}-${guidValue}'
 var adminUserName = 'xadmin'
 var securityType = galleryImageDefinitionSecurityType == 'TrustedLaunch' || galleryImageDefinitionSecurityType == 'ConfidentialVM' ? galleryImageDefinitionSecurityType : 'Standard'
-var artifactsContainerUri = '${artifactsStorageAccount.properties.primaryEndpoints.blob}${containerName}/'
+var artifactsContainerUri = '${artifactsStorageAccount.properties.primaryEndpoints.blob}${artifactsContainerName}/'
 
 var cseScriptCommonParameters = '-environment ${cloud} -subscription ${subscriptionId} -tenant ${tenantId} -userAssignedIdentityClientId ${managedIdentity.properties.clientId}'
 var validationScriptExDefParameters = '${cseScriptCommonParameters} -imageDefinitionResourceId ${imageDefinitionResourceId} -SourceSku ${sku}'
-var validationScriptNewDefParameters = '${cseScriptCommonParameters} -imageGalleryResourceId ${computeGalleryResourceId} -imageLocation ${deploymentLocation} -imageName ${galleryImageDefinitionName} -ImageHyperVGeneration ${galleryImageDefinitionHyperVGeneration} -ImageSecurityType ${imageDefinitionSecurityType} -ImageIsHibernateSupported ${imageDefinitionIsHibernateSupported} -ImageIsAcceleratedNetworkSupported ${imageDefinitionIsAcceleratedNetworkSupported} -ImageIsHigherStoragePerformanceSupported ${imageDefinitionIsHigherStoragePerformanceSupported} -imagePublisher ${galleryImageDefinitionPublisher} -imageOffer ${galleryImageDefinitionOffer} -imageSku ${galleryImageDefinitionSku}'
+var validationScriptNewDefParameters = '${cseScriptCommonParameters} -imageGalleryResourceId ${computeGalleryResourceId} -imageLocation ${location} -imageName ${galleryImageDefinitionName} -ImageHyperVGeneration ${galleryImageDefinitionHyperVGeneration} -ImageSecurityType ${imageDefinitionSecurityType} -ImageIsHibernateSupported ${imageDefinitionIsHibernateSupported} -ImageIsAcceleratedNetworkSupported ${imageDefinitionIsAcceleratedNetworkSupported} -ImageIsHigherStoragePerformanceSupported ${imageDefinitionIsHigherStoragePerformanceSupported} -imagePublisher ${galleryImageDefinitionPublisher} -imageOffer ${galleryImageDefinitionOffer} -imageSku ${galleryImageDefinitionSku}'
 
 var collectLogs = collectCustomizationLogs && !empty(privateEndpointSubnetResourceId) && !empty(blobPrivateDnsZoneResourceId) ? true : false
 var logContainerName = 'image-customization-logs'
@@ -316,7 +316,7 @@ var imageVersionEndOfLifeDate = imageVersionEOLinDays > 0 ? dateTimeAdd(imageVer
 var imageVersionReplicationRegions = !empty(imageVersionTargetRegions) ? imageVersionTargetRegions : [
   {
     excludeFromLatest: imageVersionExcludeFromLatest
-    name: !empty(imageVersionDefaultRegion) ? imageVersionDefaultRegion : deploymentLocation
+    name: !empty(imageVersionDefaultRegion) ? imageVersionDefaultRegion : location
     regionalReplicaCount: imageVersionDefaultReplicaCount
     storageAccountType: imageVersionDefaultStorageAccountType
   }
@@ -326,7 +326,7 @@ var imageVmName = take('vmimg-${uniqueString(timeStamp)}', 15)
 var managementVmName = take('vmmgt-${uniqueString(timeStamp)}', 15)
 
 var validationScriptParameters = !empty(imageDefinitionResourceId) ? validationScriptExDefParameters : validationScriptNewDefParameters
-var getImageVersionSourceParameters = !empty(imageDefinitionResourceId) ? '${cseScriptCommonParameters} -ImageDefinitionResourceId "${imageDefinitionResourceId}" -VmName ${imageVm.outputs.name} -ResourceGroupName ${imageBuildRg.name} -Location ${deploymentLocation}' : '${cseScriptCommonParameters} -ImageDefinitionResourceId "${imageDefinition.outputs.resourceId}" -VmName ${imageVm.outputs.name} -ResourceGroupName ${imageBuildRg.name} -Location ${deploymentLocation}'
+var getImageVersionSourceParameters = !empty(imageDefinitionResourceId) ? '${cseScriptCommonParameters} -ImageDefinitionResourceId "${imageDefinitionResourceId}" -VmName ${imageVm.outputs.name} -ResourceGroupName ${imageBuildRg.name} -Location ${location}' : '${cseScriptCommonParameters} -ImageDefinitionResourceId "${imageDefinition.outputs.resourceId}" -VmName ${imageVm.outputs.name} -ResourceGroupName ${imageBuildRg.name} -Location ${location}'
 
 // * RESOURCES * //
 
@@ -342,7 +342,8 @@ resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-
 
 resource imageBuildRg 'Microsoft.Resources/resourceGroups@2023-07-01' = if(empty(imageBuildResourceGroupId)) {
   name: imageBuildResourceGroupName
-  location: deploymentLocation
+  location: location
+  tags: contains(tags, 'Microsoft.Resources/resourceGroups') ? tags['Microsoft.Resources/resourceGroups'] : {}
 }
 
 resource vnet 'Microsoft.Network/virtualNetworks@2023-05-01' existing = {
@@ -420,7 +421,7 @@ module managementVm '../../sharedModules/resources/compute/virtual-machine/main.
       }
     }
     osType: 'Windows'
-    tags: tags
+    tags: contains(tags, 'Microsoft.Compute/virtualMachines') ? tags['Microsoft.Compute/virtualMachines'] : {}
     userAssignedIdentities: {
       '${userAssignedIdentityResourceId}': {}
     }
@@ -494,7 +495,7 @@ module logsStorageAccount '../../sharedModules/resources/storage/storage-account
         }
         service: 'blob'
         subnetResourceId: privateEndpointSubnetResourceId
-        tags: tags
+        tags: contains(tags, 'Microsoft.Storage/storageAccounts') ? tags['Microsoft.Storage/storageAccounts'] : {}
       }
     ]
     publicNetworkAccess: 'Disabled'
@@ -560,7 +561,7 @@ module imageVm '../../sharedModules/resources/compute/virtual-machine/main.bicep
     securityType: securityType
     secureBootEnabled: securityType == 'TrustedLaunch' ? true : false
     vTpmEnabled: securityType == 'TrustedLaunch' ? true : false
-    tags: tags
+    tags: contains(tags, 'Microsoft.Compute/virtualMachines') ? tags['Microsoft.Compute/virtualMachines'] : {}
     userAssignedIdentities: {
       '${userAssignedIdentityResourceId}': {}
     }
@@ -577,7 +578,7 @@ module customizeImage 'modules/customizeImage.bicep' = {
   params: {
     cloud: cloud
     location: computeLocation
-    containerName: containerName
+    artifactsContainerName: artifactsContainerName
     customizations: customizers
     installFsLogix: installFsLogix
     fslogixBlobName: fslogixBlobName
@@ -634,7 +635,7 @@ module imageDefinition '../../sharedModules/resources/compute/gallery/image/main
   name: '${depPrefix}Gallery-Image-Definition-${timeStamp}'
   scope: resourceGroup(split(computeGalleryResourceId, '/')[2], split(computeGalleryResourceId, '/')[4])
   params: {
-    location: deploymentLocation
+    location: location
     galleryName: last(split(computeGalleryResourceId,'/'))
     name: galleryImageDefinitionName
     hyperVGeneration: galleryImageDefinitionHyperVGeneration
@@ -647,6 +648,7 @@ module imageDefinition '../../sharedModules/resources/compute/gallery/image/main
     publisher: galleryImageDefinitionPublisher
     offer: galleryImageDefinitionOffer
     sku: galleryImageDefinitionSku
+    tags: contains(tags, 'Microsoft.Compute/galleries/images') ? tags['Microsoft.Compute/galleries/images'] : {}
   }
   dependsOn: [
     imageDefinitionValidation
@@ -678,7 +680,7 @@ module imageVersion '../../sharedModules/resources/compute/gallery/image/version
   name: '${depPrefix}ImageVersion-${timeStamp}'
   scope: resourceGroup(split(computeGalleryResourceId, '/')[2], split(computeGalleryResourceId, '/')[4])
   params: {
-    location: deploymentLocation
+    location: location
     name: imageVersionName
     galleryName: last(split(computeGalleryResourceId, '/'))
     imageName: !empty(imageDefinitionResourceId) ? existingImageDefinition.name : imageDefinition.outputs.name
@@ -688,7 +690,7 @@ module imageVersion '../../sharedModules/resources/compute/gallery/image/version
     storageAccountType: imageVersionDefaultStorageAccountType
     sourceId: getImageSource.outputs.value.sourceId
     targetRegions: imageVersionReplicationRegions
-    tags: {}
+    tags: contains(tags, 'Microsoft.Compute/galleries/images/versions') ? tags['Microsoft.Compute/galleries/images/versions'] : {}
   }
 }
 

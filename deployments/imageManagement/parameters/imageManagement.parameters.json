@@ -23,13 +23,10 @@
     "customArtifactsStorageAccountName": {
       "value": "none"
     },
-    "artifactsBlobContainerName": {
-      "value": "artifacts"
-    },
     "logAnalyticsWorkspaceResourceId": {
       "value": ""
     },
-    "environmentShortName": {
+    "envShortName": {
       "value": ""
     },
     "storageKind": {
@@ -48,13 +45,13 @@
       "value": "180.00:00:00"
     },
     "azureBlobPrivateDnsZoneResourceId": {
-      "value": "/subscriptions/6dc4ed51-16b9-4494-a406-4fb7a8330d95/resourceGroups/rg-networking-lab-eus/providers/Microsoft.Network/privateDnsZones/privatelink.blob.core.windows.net"
+      "value": ""
     },
     "storagePublicNetworkAccess": {
       "value": "Enabled"
     },
     "privateEndpointSubnetResourceId": {
-      "value": "/subscriptions/6dc4ed51-16b9-4494-a406-4fb7a8330d95/resourceGroups/rg-avd-networking-eastus/providers/Microsoft.Network/virtualNetworks/vnet-avd-eastus/subnets/PrivateEndpoints"
+      "value": ""
     },
     "storagePermittedIPs": {
       "value": []

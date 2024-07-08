@@ -21,7 +21,6 @@ param smbServerLocation string
 param storageSku string
 param fslogixStorageSolution string
 param tagsNetAppAccount object
-param tagsVirtualMachines object
 param timeStamp string
 
 resource netAppAccount 'Microsoft.NetApp/netAppAccounts@2021-06-01' = {
@@ -141,7 +140,6 @@ module ntfsPermissions 'ntfsPermissions.bicep' = {
     commandToExecute: 'powershell -ExecutionPolicy Unrestricted -File Set-NtfsPermissions.ps1 -domainJoinUserPassword "${domainJoinUserPassword}" -domainJoinUserPrincipalName ${domainJoinUserPrincipalName} -fslogixContainerType ${fslogixContainerType} -securityPrincipalNames "${securityPrincipalNames}" -smbServerLocation ${smbServerLocation} -storageSolution ${fslogixStorageSolution}'
     location: location
     managementVirtualMachineName: managementVirtualMachineName
-    tagsVirtualMachines: tagsVirtualMachines
     timeStamp: timeStamp
   }
   dependsOn: [

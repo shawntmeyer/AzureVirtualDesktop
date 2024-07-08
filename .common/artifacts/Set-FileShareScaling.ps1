@@ -22,7 +22,9 @@ $ErrorActionPreference = 'Stop'
 Import-Module -Name 'Az.Accounts'
 Import-Module -Name 'Az.Storage'
 If ($Environment -eq 'USNat') {
-	Add-AzEnvironment -AutoDiscover -Uri 'https://management.azure.eaglex.ic.gov/metadata/endpoints?api-version=2022-06' | Out-Null
+	Add-AzEnvironment -AutoDiscover -Uri 'https://management.azure.eaglex.ic.gov/metadata/endpoints?api-version=2022-06' *> $null
+} ElseIf ($Environment -eq 'USSec') {
+	Add-AzEnvironment -AutoDiscover -Uri 'https://management.azure.microsoft.scloud/metadata/endpoints?api-version=2022-06' *> $null
 }
 Connect-AzAccount -Environment $Environment -Subscription $SubscriptionId -Identity | Out-Null
 

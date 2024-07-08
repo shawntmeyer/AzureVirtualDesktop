@@ -22,9 +22,11 @@ param domainJoinUserPrincipalName string
 param domainName string
 param enableIncreaseQuotaAutomation bool
 param encryptionAtHost bool
-param environmentShortName string
+param envShortName string
 param fslogix bool
 param fslogixStorageAccountNamePrefix string
+param fslogixStorageIndex int
+param fslogixStorageKeyManagement string
 param fslogixStorageService string
 param fslogixStorageSolution string
 param globalFeedWorkspaceResourceGroupName string
@@ -38,9 +40,11 @@ param locationVirtualMachines string
 param logAnalyticsWorkspaceResourceId string
 param enableMonitoring bool
 param netAppVnetResourceId string
-param keyManagementDisksAndStorage string
+param keyManagementDisks string
+param managementVmSize string
 param privateEndpoint bool
 param privateEndpointNameConv string
+param privateEndpointNICNameConv string
 param recoveryServices bool
 param recoveryServicesVaultName string
 param resourceGroupControlPlane string
@@ -50,6 +54,7 @@ param resourceGroupStorage string
 param roleDefinitions object
 param securityType string
 param sessionHostCount int
+param storageCount int
 param tags object
 param timeStamp string
 param timeZone string
@@ -68,20 +73,21 @@ param workspaceName string
 var cpuCountMax = contains(hostPoolType, 'Pooled') ? 32 : 128
 var cpuCountMin = contains(hostPoolType, 'Pooled') ? 4 : 2
 
-var artifactsUserAssignedIdentityName = replace(userAssignedIdentityNameConv, 'uaiPurpose', 'artifacts')
-var deploymentUserAssignedIdentityName = replace(userAssignedIdentityNameConv, 'uaiPurpose', 'avd-deployment')
+var artifactsUserAssignedIdentityName = replace(userAssignedIdentityNameConv, 'UAIPURPOSE', 'artifacts')
+var deploymentUserAssignedIdentityName = replace(userAssignedIdentityNameConv, 'UAIPURPOSE', 'avd-deployment')
 
 var confidentialVMOSDiskEncryption = confidentialVMOSDiskEncryptionType == 'DiskWithVMGuestState' ? true : false
-var diskEncryptionSetEncryptionType = confidentialVMOSDiskEncryption ? 'ConfidentialVmEncryptedWithCustomerKey' : ( keyManagementDisksAndStorage == 'CustomerManaged' ? 'EncryptionAtRestWithCustomerKey' : 'EncryptionAtRestWithPlatformAndCustomerKeys' )
+var diskEncryptionSetEncryptionType = confidentialVMOSDiskEncryption ? 'ConfidentialVmEncryptedWithCustomerKey' : ( !contains(keyManagementDisks, 'Platform')  ? 'EncryptionAtRestWithCustomerKey' : 'EncryptionAtRestWithPlatformAndCustomerKeys' )
 
 var netAppVirtualNetworkName = !empty(netAppVnetResourceId) ? (split(netAppVnetResourceId, '/')) : ''
 var netAppVirtualNetworkResourceGroupName = !empty(netAppVnetResourceId) ? split(netAppVnetResourceId, '/')[4] : ''
 
-var requiredValidationScriptParameters = '-ActiveDirectorySolution ${identitySolution} -CpuCountMax ${cpuCountMax} -CpuCountMin ${cpuCountMin} -Environment ${environment().name} -GlobalWorkspaceName ${globalFeedWorkspaceName} -GlobalWorkspaceResourceGroupName ${globalFeedWorkspaceResourceGroupName} -Location ${locationVirtualMachines} -SessionHostCount ${sessionHostCount} -StorageAccountPrefix ${fslogixStorageAccountNamePrefix} -StorageSolution ${fslogixStorageSolution} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentity.outputs.clientId} -VirtualMachineSize ${virtualMachineSize} -WorkspaceName ${workspaceName} -WorkspaceResourceGroupName ${resourceGroupControlPlane}'
-var netAppValidationScriptParameters = '-NetAppVirtualNetworkName ${netAppVirtualNetworkName} -NetAppVirtualNetworkResourceGroupName ${netAppVirtualNetworkResourceGroupName}'
-var domainServicesValidationScriptParameters = '-DomainName ${domainName} -KerberosEncryption ${kerberosEncryption}'
-var optionalValidationScriptParameters = identitySolution == 'EntraDomainServices' ? ( contains(fslogixStorageSolution, 'NetApp') ? '${domainServicesValidationScriptParameters} ${netAppValidationScriptParameters}' : domainServicesValidationScriptParameters ) : ( contains(fslogixStorageSolution, 'NetApp') ? netAppValidationScriptParameters : '' )
-var validationScriptParameters = empty(securityType) ? replace('${requiredValidationScriptParameters} ${optionalValidationScriptParameters}', '  ', ' ') : replace('${requiredValidationScriptParameters} ${optionalValidationScriptParameters} -SecurityType ${securityType}', '  ', ' ')
+var requiredValidationScriptParameters = '-ActiveDirectorySolution ${identitySolution} -CpuCountMax ${cpuCountMax} -CpuCountMin ${cpuCountMin} -Environment ${environment().name} -Location ${locationVirtualMachines} -SessionHostCount ${sessionHostCount} -StorageAccountPrefix ${fslogixStorageAccountNamePrefix} -StorageSolution ${fslogixStorageSolution} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentity.outputs.clientId} -VirtualMachineSize ${virtualMachineSize} -WorkspaceName ${workspaceName} -WorkspaceResourceGroupName ${resourceGroupControlPlane}'
+var avdPrivateLinkValidationScriptParameters = !empty(globalFeedWorkspaceName) && !empty(globalFeedWorkspaceResourceGroupName) ? ' -GlobalWorkspaceName ${globalFeedWorkspaceName} -GlobalWorkspaceResourceGroupName ${globalFeedWorkspaceResourceGroupName}' : ''
+var netAppValidationScriptParameters = contains(fslogixStorageSolution, 'NetApp') ? ' -NetAppVirtualNetworkName ${netAppVirtualNetworkName} -NetAppVirtualNetworkResourceGroupName ${netAppVirtualNetworkResourceGroupName}' : ''
+var domainServicesValidationScriptParameters = identitySolution == 'EntraDomainServices' ? ' -DomainName ${domainName} -KerberosEncryption ${kerberosEncryption}' : ''
+var securityTypeValidationScriptParameters = !empty(securityType) ? ' -securityType ${securityType}' : ''
+var validationScriptParameters = '${requiredValidationScriptParameters}${avdPrivateLinkValidationScriptParameters}${netAppValidationScriptParameters}${domainServicesValidationScriptParameters}${securityTypeValidationScriptParameters}'
 
 var roleAssignmentsCommon = [
   {
@@ -123,7 +129,7 @@ var roleAssignmentStorage = fslogix && !contains(identitySolution, 'EntraId')? [
     subscription: subscription().subscriptionId
   }
 ] : []
-var roleAssignmentKeyVault = confidentialVMOSDiskEncryption && keyManagementDisksAndStorage == 'CustomerManaged' ? [
+var roleAssignmentKeyVault = confidentialVMOSDiskEncryption && contains(keyManagementDisks, 'CustomerManaged') ? [
   {
     roleDefinitionId: roleDefinitions.KeyVaultReader // (Purpose: Retrieve the customer managed keys from the key vault for idempotent deployment)
     roleShortName: 'KeyVaultReader'
@@ -237,27 +243,27 @@ module policy 'policy.bicep' = if (contains(hostPoolType, 'Pooled') || recoveryS
 }
 
 resource keyVault_Ref 'Microsoft.KeyVault/vaults@2023-07-01' existing = if(contains(identitySolution,'DomainServices') && (empty(domainJoinUserPassword) || empty(domainJoinUserPrincipalName)) || empty(virtualMachineAdminPassword) || empty(virtualMachineAdminUserName)) {
-  name: keyVaultNames.VMSecrets
+  name: keyVaultNames.VMs
   scope: resourceGroup(resourceGroupManagement)
 }
 
-module secretsKeyVault 'keyVault.bicep' = if(!empty(virtualMachineAdminPassword) || !empty(virtualMachineAdminUserName) || !empty(domainJoinUserPassword) || !empty(domainJoinUserPrincipalName)) {
-  name: 'KeyVault_Secrets_${timeStamp}'
+module vmKeyVault 'keyVault.bicep' = if(!empty(virtualMachineAdminPassword) || !empty(virtualMachineAdminUserName) || !empty(domainJoinUserPassword) || !empty(domainJoinUserPrincipalName)) {
+  name: 'KeyVault_VMs_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
     domainJoinUserPassword: domainJoinUserPassword
     domainJoinUserPrincipalName: domainJoinUserPrincipalName
-    enabledForDeployment: true
     enabledForTemplateDeployment: true
-    enablePurgeProtection: false   
-    environmentShortName: environmentShortName
-    keyVaultName: keyVaultNames.VMSecrets
+    enablePurgeProtection: confidentialVMOSDiskEncryption || contains(keyManagementDisks, 'CustomerManaged') ? true : false   
+    envShortName: envShortName
+    keyVaultName: keyVaultNames.VMs
     keyVaultPrivateDnsZoneResourceId: keyVaultPrivateDnsZoneResourceId
     location: locationVirtualMachines
     privateEndpoint: privateEndpoint
     privateEndpointNameConv: privateEndpointNameConv
+    privateEndpointNICNameConv: privateEndpointNICNameConv
     privateEndpointSubnetId: privateEndpointSubnetResourceId
-    skuName: 'standard'
+    skuName: confidentialVMOSDiskEncryption || contains(keyManagementDisks, 'HSM') ? 'premium' : 'standard'
     tagsKeyVault: contains(tags, 'Microsoft.KeyVault/vaults') ? tags['Microsoft.KeyVault/vaults'] : {}
     tagsPrivateEndpoints: contains(tags, 'Microsoft.Network/privateEndpoints') ? tags['Microsoft.Network/privateEndpoints'] : {}
     virtualMachineAdminPassword: virtualMachineAdminPassword
@@ -296,6 +302,7 @@ module virtualMachine 'virtualMachine.bicep' = {
     virtualMachineName: virtualMachineName
     virtualMachineAdminPassword: !empty(virtualMachineAdminPassword) ? virtualMachineAdminPassword : keyVault_Ref.getSecret('virtualMachineAdminPassword')
     virtualMachineAdminUserName: !empty(virtualMachineAdminUserName) ? virtualMachineAdminUserName : keyVault_Ref.getSecret('virtualMachineAdminUserName')
+    vmSize: managementVmSize
   }
 }
 
@@ -321,7 +328,7 @@ module validations '../../../sharedModules/custom/customScriptExtension.bicep' =
   ]
 }
 
-module customerManagedKeys 'customerManagedKeys.bicep' = if (keyManagementDisksAndStorage != 'PlatformManaged') {
+module customerManagedKeys 'customerManagedKeys.bicep' = if (keyManagementDisks != 'PlatformManaged' || confidentialVMOSDiskEncryption || fslogixStorageKeyManagement != 'MicrosoftManaged') {
   name: 'CustomerManagedKeys_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
@@ -332,17 +339,23 @@ module customerManagedKeys 'customerManagedKeys.bicep' = if (keyManagementDisksA
     deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentity.outputs.clientId
     diskEncryptionSetEncryptionType: diskEncryptionSetEncryptionType
     diskEncryptionSetNames: diskEncryptionSetNames
-    keyVaultNames: keyVaultNames
+    fslogixStorageKeyManagement: fslogixStorageKeyManagement
+    keyManagementDisks: keyManagementDisks
+    vmKeyVaultName: last(split(vmKeyVault.outputs.keyVaultResourceId, '/'))
+    storageKeyVaultNameConv: keyVaultNames.StorageAccounts
+    storageIndex: fslogixStorageIndex
     keyVaultPrivateDnsZoneResourceId: keyVaultPrivateDnsZoneResourceId
-    environmentShortName: environmentShortName
+    envShortName: envShortName
     location: locationVirtualMachines
     managementVirtualMachineName: virtualMachine.outputs.Name
     privateEndpoint: privateEndpoint
     privateEndpointNameConv: privateEndpointNameConv
-    privateEndpointSubnetId: privateEndpointSubnetResourceId
+    privateEndpointNICNameConv: privateEndpointNICNameConv
+    privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
     tags: tags
     timeStamp: timeStamp
     userAssignedIdentityNameConv: userAssignedIdentityNameConv
+    storageCount: storageCount
   }
   dependsOn: [
     validations
@@ -362,6 +375,7 @@ module automationAccount 'automationAccount.bicep' = if (enableIncreaseQuotaAuto
     automationAccountPrivateDnsZoneResourceId: automationAccountPrivateDnsZoneResourceId
     privateEndpoint: privateEndpoint
     privateEndpointNameConv: privateEndpointNameConv
+    privateEndpointNICNameConv: privateEndpointNICNameConv
     subnetResourceId: privateEndpointSubnetResourceId
     virtualMachineName: virtualMachine.outputs.Name
   }
@@ -383,17 +397,17 @@ module recoveryServicesVault 'recoveryServicesVault.bicep' = if (recoveryService
 
 output artifactsUserAssignedIdentityClientId string = artifactsUserAssignedIdentityClientId
 output artifactsUserAssignedIdentityResourceId string = empty(artifactsUserAssignedIdentityResourceId) ? artifactsUserAssignedIdentity.outputs.resourceId : existingArtifactsUserAssignedIdentity.id
-output diskEncryptionSetResourceId string = keyManagementDisksAndStorage != 'PlatformManaged' ? customerManagedKeys.outputs.diskEncryptionSetResourceId : ''
-output encryptionUserAssignedIdentityResourceId string = keyManagementDisksAndStorage != 'PlatformManaged' ? customerManagedKeys.outputs.encryptionUserAssignedIdentityResourceId : ''
+output diskEncryptionSetResourceId string = keyManagementDisks != 'PlatformManaged' ? customerManagedKeys.outputs.diskEncryptionSetResourceId : ''
+output encryptionUserAssignedIdentityResourceId string = keyManagementDisks != 'PlatformManaged' ? customerManagedKeys.outputs.encryptionUserAssignedIdentityResourceId : ''
 output existingWorkspace bool = validations.outputs.value.existingWorkspace == 'true' ? true : false
 output existingGlobalWorkspace bool = validations.outputs.value.existingGlobalWorkspace == 'true' ? true : false
-output storageEncryptionKeyKeyVaultUri string = keyManagementDisksAndStorage != 'PlatformManaged' ? customerManagedKeys.outputs.storagestorageEncryptionKeyKeyVaultUri : ''
+output storageEncryptionKeyKeyVaultUris array = fslogixStorageKeyManagement != 'MicrosoftManaged' ? customerManagedKeys.outputs.storageEncryptionKeyKeyVaultUris : []
 output deploymentUserAssignedIdentityClientId string = deploymentUserAssignedIdentity.outputs.clientId
 output deploymentUserAssignedIdentityResourceId string = deploymentUserAssignedIdentity.outputs.resourceId
-output storageAccountEncryptionKeyName string = keyManagementDisksAndStorage != 'PlatformManaged' ? customerManagedKeys.outputs.storageKeyName : ''
+output storageAccountEncryptionKeyName string = fslogixStorageKeyManagement != 'MicrosoftManaged' ? customerManagedKeys.outputs.storageKeyName : ''
 output validateAcceleratedNetworking string = validations.outputs.value.acceleratedNetworking
-output validateANFfActiveDirectory string = validations.outputs.value.anfActiveDirectory
+output validateANFActiveDirectory string = validations.outputs.value.anfActiveDirectory
 output validateANFDnsServers string = validations.outputs.value.anfDnsServers
 output validateANFSubnetId string = validations.outputs.value.anfSubnetId
-output validateavailabilityZones array = availability == 'availabilityZones' ? validations.outputs.value.availabilityZones : [ '1' ]
+output validateavailabilityZones array = availability == 'availabilityZones' ? array(validations.outputs.value.availabilityZones) : [ '1' ]
 output virtualMachineName string = virtualMachine.outputs.Name

@@ -46,7 +46,7 @@ function Write-Log {
 $ErrorActionPreference = 'Stop'
 $WarningPreference = 'SilentlyContinue'
 
-Connect-AzAccount -Environment $Environment -Tenant $TenantId -Subscription $SubscriptionId -Identity -AccountId $UserAssignedIdentityClientId | Out-Null
+Connect-AzAccount -Environment $Environment -Tenant $TenantId -Subscription $SubscriptionId -Identity -AccountId $UserAssignedIdentityClientId *> $null
 
 $Vm = Get-AzVM -Name $VmName -ResourceGroupName $ResourceGroupName
 $ImageDefinition = Get-AzGalleryImageDefinition -ResourceId $ImageDefinitionResourceId
@@ -61,7 +61,7 @@ If ($SecurityType -like '*Supported') {
     $SourceId = $Vm.Id
 }
 
-Disconnect-AzAccount | Out-Null
+Disconnect-AzAccount *> $null
 
 $Output = [pscustomobject][ordered]@{
     SourceId = $SourceId

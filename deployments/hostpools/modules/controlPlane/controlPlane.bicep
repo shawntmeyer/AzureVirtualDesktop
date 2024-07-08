@@ -14,10 +14,10 @@ param desktopFriendlyName string
 param existingGlobalWorkspace bool
 param existingWorkspace bool
 param globalWorkspaceName string
-param globalWorkspacePublicNetworkAccess string
 param hostPoolName string
 param hostPoolType string
 param locationControlPlane string
+param locationGlobalFeed string
 param locationVirtualMachines string
 param logAnalyticsWorkspaceResourceId string
 param managementVirtualMachineName string
@@ -25,7 +25,10 @@ param hostPoolMaxSessionLimit int
 param hostPoolPublicNetworkAccess string
 param enableMonitoring bool
 param privateEndpointNameConv string
-param privateEndpointSubnetResourceId string
+param privateEndpointNICNameConv string
+param globalFeedPrivateEndpointSubnetResourceId string
+param feedPrivateEndpointSubnetResourceId string
+param hostPoolPrivateEndpointSubnetResourceId string
 param resourceGroupControlPlane string
 param resourceGroupGlobalFeed string
 param resourceGroupManagement string
@@ -43,9 +46,13 @@ param workspaceFriendlyName string
 param workspaceName string
 param workspacePublicNetworkAccess string
 
-var feedPrivateEndpointName = replace(replace(replace(privateEndpointNameConv, 'subresource', 'feed'), 'resource', workspaceName), 'subnetId', uniqueString(privateEndpointSubnetResourceId))
-var globalFeedPrivateEndpointName = replace(replace(replace(privateEndpointNameConv, 'subresource', 'global'), 'resource', workspaceName), 'subnetId', uniqueString(privateEndpointSubnetResourceId))
-var hostPoolPrivateEndpointName = replace(replace(replace(privateEndpointNameConv, 'subresource', 'connection'), 'resource', hostPoolName), 'subnetId', uniqueString(privateEndpointSubnetResourceId))
+var feedPrivateEndpointName = avdPrivateLink ? replace(replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'feed'), 'RESOURCE', workspaceName), 'VNETID', '${split(feedPrivateEndpointSubnetResourceId, '/')[8]}') : 'feedPrivateEndpointName'
+var feedPrivateEndpointNICName = avdPrivateLink ? replace(replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'feed'), 'RESOURCE', workspaceName), 'VNETID', '${split(feedPrivateEndpointSubnetResourceId, '/')[8]}') : 'feedPrivateEndpointName'
+var globalFeedPrivateEndpointName = avdPrivateLink ? replace(replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'global'), 'RESOURCE', workspaceName), 'VNETID', '${split(globalFeedPrivateEndpointSubnetResourceId, '/')[8]}') : 'globalFeedPrivateEndpointName'
+var globalFeedPrivateEndpointNICName = avdPrivateLink ? replace(replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'global'), 'RESOURCE', workspaceName), 'VNETID', '${split(globalFeedPrivateEndpointSubnetResourceId, '/')[8]}') : 'globalFeedPrivateEndpointName'
+var hostPoolPrivateEndpointName = avdPrivateLink ? replace(replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'connection'), 'RESOURCE', hostPoolName), 'VNETID', '${split(hostPoolPrivateEndpointSubnetResourceId, '/')[8]}') : 'hostPoolPrivateEndpointName'
+var hostPoolPrivateEndpointNICName = avdPrivateLink ? replace(replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'connection'), 'RESOURCE', hostPoolName), 'VNETID', '${split(hostPoolPrivateEndpointSubnetResourceId, '/')[8]}') : 'hostPoolPrivateEndpointName'
+
 
 module hostPool 'hostPool.bicep' = {
   name: 'HostPool_${timeStamp}'
@@ -64,7 +71,8 @@ module hostPool 'hostPool.bicep' = {
     hostPoolMaxSessionLimit: hostPoolMaxSessionLimit
     enableMonitoring: enableMonitoring    
     privateEndpointName: hostPoolPrivateEndpointName
-    privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
+    privateEndpointNICName: hostPoolPrivateEndpointNICName
+    privateEndpointSubnetResourceId: hostPoolPrivateEndpointSubnetResourceId
     tags: tags
     virtualMachineTemplate: virtualMachineTemplate
   }
@@ -85,6 +93,7 @@ module applicationGroup 'applicationGroup.bicep' = {
     deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
     desktopFriendlyName: desktopFriendlyName
     locationVirtualMachines: locationVirtualMachines
+    logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
     managementVirtualMachineName: managementVirtualMachineName
     resourceGroupManagement: resourceGroupManagement
     timeStamp: timeStamp
@@ -104,7 +113,8 @@ module feedWorkspace 'workspace.bicep' = {
     enableMonitoring: enableMonitoring
     privateDnsZoneResourceId: avdPrivateDnsZoneResourceId
     privateEndpointName: feedPrivateEndpointName
-    privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
+    privateEndpointNICName: feedPrivateEndpointNICName
+    privateEndpointSubnetResourceId: feedPrivateEndpointSubnetResourceId
     publicNetworkAccess: workspacePublicNetworkAccess
     tags: tags
     workspaceName: workspaceName
@@ -138,17 +148,17 @@ module globalWorkspace 'workspace.bicep' = if(!existingGlobalWorkspace && avdPri
   name: 'Global_Feed_Workspace_${timeStamp}'
   scope: resourceGroup(resourceGroupGlobalFeed)
   params: {
-    applicationGroupReferences: ['']
+    applicationGroupReferences: []
     avdPrivateLink: avdPrivateLink
     existingWorkspace: existingGlobalWorkspace
     friendlyName: ''
-    location: locationControlPlane
+    location: locationGlobalFeed
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
     enableMonitoring: enableMonitoring
     privateDnsZoneResourceId: avdGlobalFeedPrivateDnsZoneResourceId
     privateEndpointName: globalFeedPrivateEndpointName
-    privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
-    publicNetworkAccess: globalWorkspacePublicNetworkAccess
+    privateEndpointNICName: globalFeedPrivateEndpointNICName
+    privateEndpointSubnetResourceId: globalFeedPrivateEndpointSubnetResourceId
     tags: tags
     workspaceName: globalWorkspaceName
     artifactsUri: artifactsUri

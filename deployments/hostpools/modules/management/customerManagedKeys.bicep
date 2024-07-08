@@ -5,64 +5,44 @@ param confidentialVMOrchestratorObjectId string
 param deploymentUserAssignedIdentityClientId string
 param diskEncryptionSetNames object
 param diskEncryptionSetEncryptionType string
-param environmentShortName string
-param keyVaultNames object
+param envShortName string
+param fslogixStorageKeyManagement string
+param keyManagementDisks string
+param vmKeyVaultName string
+param storageIndex int
+param storageKeyVaultNameConv string
 param keyVaultPrivateDnsZoneResourceId string
 param location string
 param managementVirtualMachineName string
 param privateEndpoint bool
 param privateEndpointNameConv string
-param privateEndpointSubnetId string
+param privateEndpointNICNameConv string
+param privateEndpointSubnetResourceId string
+param storageCount int
 param tags object
 param timeStamp string
 param userAssignedIdentityNameConv string
 
-var cseScriptParameters = confidentialVMOSDiskEncryption ? '-keyVaultName ${last(split(confidentialVMEncryptionKeysVault.outputs.keyVaultResourceId, '/'))} -keyName ConfidentialVMOSDiskEncryptionKey -Environment ${environment().name} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentityClientId}' : ''
+var cseScriptParameters = confidentialVMOSDiskEncryption ? '-keyVaultName ${vmKeyVaultName} -keyName ConfidentialVMOSDiskEncryptionKey -Environment ${environment().name} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentityClientId}' : ''
 
-module encryptionKeysVault 'keyVault.bicep' = {
-  name: 'KV_Encryption_${timeStamp}'
-  params: {
-    location: location
-    environmentShortName: environmentShortName
-    keyVaultName: keyVaultNames.RSAKeys
-    keyVaultPrivateDnsZoneResourceId: keyVaultPrivateDnsZoneResourceId
-    privateEndpoint: privateEndpoint
-    privateEndpointNameConv: privateEndpointNameConv
-    privateEndpointSubnetId: privateEndpointSubnetId
-    skuName: 'standard'
-    tagsKeyVault: contains(tags, 'Microsoft.KeyVault/vaults') ? tags['Microsoft.KeyVault/vaults'] : {}
-    tagsPrivateEndpoints: contains(tags, 'Microsoft.Network/privateEndpoints') ? tags['Microsoft.Network/privateEndpoints'] : {}
-  }
+var storageAccountEncryptionKeyName = 'StorageAccountEncryptionKey'
+
+resource vmKeyVault 'Microsoft.KeyVault/vaults@2023-02-01' existing = {
+  name: vmKeyVaultName
 }
 
-module confidentialVMEncryptionKeysVault 'keyVault.bicep' = if (confidentialVMOSDiskEncryption) {
-  name: 'KV_ConfidentialVM_Encryption_${timeStamp}'
-  params: {
-    location: location
-    environmentShortName: environmentShortName
-    keyVaultName: keyVaultNames.RSAHSMKeys
-    keyVaultPrivateDnsZoneResourceId: keyVaultPrivateDnsZoneResourceId
-    privateEndpoint: privateEndpoint
-    privateEndpointNameConv: privateEndpointNameConv
-    privateEndpointSubnetId: privateEndpointSubnetId
-    skuName: 'premium'
-    tagsKeyVault: contains(tags, 'Microsoft.KeyVault/vaults') ? tags['Microsoft.KeyVault/vaults'] : {}
-    tagsPrivateEndpoints: contains(tags, 'Microsoft.Network/privateEndpoints') ? tags['Microsoft.Network/privateEndpoints'] : {}
-  }
-}
-
-module rsa_key_disks 'keyVaultKeys.bicep' = if (!confidentialVMOSDiskEncryption) {
+module encryption_key_disks 'keyVaultKeys.bicep' = if (!confidentialVMOSDiskEncryption) {
   name: 'EncryptionKey_VMDiskEncryption_${timeStamp}'
   params: {
     exportable: false
     keyName: 'VMOSDiskEncryptionKey'
-    keyType: 'RSA'
-    keyVaultName: last(split(encryptionKeysVault.outputs.keyVaultResourceId, '/'))
+    keyType: contains(keyManagementDisks, 'HSM') ? 'RSA-HSM' : 'RSA'
+    keyVaultName: vmKeyVaultName
     rotationPolicy: true
   }
 }
 
-module rsahsm_key_disks '../../../sharedModules/custom/customScriptExtension.bicep' = if(confidentialVMOSDiskEncryption) {
+module confidentialVM_key_disks '../../../sharedModules/custom/customScriptExtension.bicep' = if(confidentialVMOSDiskEncryption) {
   name: 'EncryptionKey_ConfidentialVMOSDisk_${timeStamp}'
   params: {
     commandToExecute: 'powershell.exe -executionpolicy Bypass -File Create-ConfidentialVMOSDiskEncryptionKey.ps1 ${cseScriptParameters}'
@@ -77,22 +57,41 @@ module rsahsm_key_disks '../../../sharedModules/custom/customScriptExtension.bic
   }
 }
 
-module key_storageAccounts 'keyVaultKeys.bicep' = {
-  name: 'EncryptionKey_StorageAccounts_${timeStamp}'
+module storageAccountKeyVaults 'keyVault.bicep' = [for i in range(0, storageCount): {
+  name: 'Storage_KeyVault_${padLeft(i + storageIndex, 2, '0')}_${timeStamp}'
+  params: {
+    envShortName: envShortName
+    keyVaultName: replace(storageKeyVaultNameConv, 'INDEX', padLeft(i + storageIndex, 2, '0'))
+    enabledForDiskEncryption: false
+    enablePurgeProtection: true
+    privateEndpoint: privateEndpoint
+    privateEndpointNameConv: privateEndpointNameConv
+    privateEndpointNICNameConv: privateEndpointNICNameConv
+    privateEndpointSubnetId: privateEndpointSubnetResourceId
+    keyVaultPrivateDnsZoneResourceId: keyVaultPrivateDnsZoneResourceId
+    location: location
+    skuName: contains(fslogixStorageKeyManagement, 'HSM') ? 'premium' : 'standard'
+    tagsKeyVault: contains(tags, 'Microsoft.KeyVault/vaults') ? tags['Microsoft.KeyVault/vaults'] : {}
+    tagsPrivateEndpoints: contains(tags, 'Microsoft.Network/privateEndpoints') ? tags['Microsoft.Network/privateEndpoints'] : {}
+  }
+}]
+
+module keysStorageAccounts 'keyVaultKeys.bicep' = [for i in range(0, storageCount): {
+  name: 'EncryptionKey_StorageAccount_${padLeft(i + storageIndex, 2, '0')}_${timeStamp}'
   params: {
     exportable: false
-    keyName: 'StorageAccountEncryptionKey'
-    keyType: 'RSA'
-    keyVaultName: last(split(encryptionKeysVault.outputs.keyVaultResourceId, '/'))
+    keyName: storageAccountEncryptionKeyName
+    keyType: contains(fslogixStorageKeyManagement, 'HSM') ? 'RSA-HSM' : 'RSA'
+    keyVaultName: last(split(storageAccountKeyVaults[i].outputs.keyVaultResourceId, '/')) 
     rotationPolicy: true
   }
-}
+}]
 
 module userAssignedIdentity 'userAssignedIdentity.bicep' = {
   name: 'UAI_Encryption_${timeStamp}'
   params: {
     location: location
-    name: replace(userAssignedIdentityNameConv, 'uaiPurpose', 'encryption')
+    name: replace(userAssignedIdentityNameConv, 'UAIPURPOSE', 'encryption')
     tags: contains(tags, 'Microsoft.ManagedIdentity/userAssignedIdentities') ? tags['Microsoft.ManagedIdentity/userAssignedIdentities'] : {}
   }
 }
@@ -130,8 +129,8 @@ module diskEncryptionSet 'diskEncryptionSet.bicep' = {
     autoKeyRotationEnabled: confidentialVMOSDiskEncryption ? false : true
     diskEncryptionSetName: confidentialVMOSDiskEncryption ? diskEncryptionSetNames.ConfidentialVMs : (diskEncryptionSetEncryptionType == 'EncryptionAtRestWithCustomerKey' ? diskEncryptionSetNames.CustomerManaged : diskEncryptionSetNames.PlatformAndCustomerManaged)
     encryptionType: diskEncryptionSetEncryptionType
-    keyUrl: confidentialVMOSDiskEncryption ? rsahsm_key_disks.outputs.value.KeyUriWithVersion : rsa_key_disks.outputs.keyUriWithVersion
-    keyVaultResourceId: confidentialVMOSDiskEncryption ? confidentialVMEncryptionKeysVault.outputs.keyVaultResourceId : encryptionKeysVault.outputs.keyVaultResourceId
+    keyUrl: confidentialVMOSDiskEncryption ? confidentialVM_key_disks.outputs.value.KeyUriWithVersion : encryption_key_disks.outputs.keyUriWithVersion
+    keyVaultResourceId: vmKeyVault.id
     location: location
     tags: contains(tags, 'Microsoft.Compute/diskEncryptionSets') ? tags['Microsoft.Compute/diskEncryptionSets'] : {}
     timeStamp: timeStamp
@@ -139,6 +138,6 @@ module diskEncryptionSet 'diskEncryptionSet.bicep' = {
 }
 
 output diskEncryptionSetResourceId string = diskEncryptionSet.outputs.resourceId
-output storagestorageEncryptionKeyKeyVaultUri string = encryptionKeysVault.outputs.keyVaultUri
-output storageKeyName string = key_storageAccounts.outputs.keyName
+output storageEncryptionKeyKeyVaultUris array = [for i in range(0, storageCount): storageAccountKeyVaults[i].outputs.keyVaultUri ]
+output storageKeyName string = storageAccountEncryptionKeyName
 output encryptionUserAssignedIdentityResourceId string = userAssignedIdentity.outputs.resourceId

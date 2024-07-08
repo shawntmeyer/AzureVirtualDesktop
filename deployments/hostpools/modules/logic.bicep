@@ -4,6 +4,8 @@ param identitySolution string
 param artifactsUri string
 param avdAgentInstallersBlobName string
 param avdPrivateLink bool
+param dedicatedHostGroupResourceId string
+param dedicatedHostResourceId string
 param deployScalingPlan bool = false
 param diskSku string
 param domainName string
@@ -42,6 +44,14 @@ param tags object
 param fslogixStorageCount int
 param virtualMachineNamePrefix string
 param virtualMachineSize string
+
+var dedicatedHostGroupName = !empty(dedicatedHostResourceId) ? split(dedicatedHostResourceId, '/')[8] : !empty(dedicatedHostGroupResourceId) ? last(split(dedicatedHostGroupResourceId, '/')) : '' 
+var dedicatedHostRG = !empty(dedicatedHostResourceId) ? split(dedicatedHostResourceId, '/')[4] : !empty(dedicatedHostGroupResourceId) ? split(dedicatedHostGroupResourceId, '/')[4] : '' 
+
+resource dedicatedHostGroup 'Microsoft.Compute/HostGroups@2020-12-01' existing = if(!empty(dedicatedHostGroupName)) {
+  scope: resourceGroup(dedicatedHostRG)
+  name: dedicatedHostGroupName
+}
 
 var scalingPlanSchedules = deployScalingPlan ? [
   {
@@ -161,6 +171,7 @@ var virtualMachineTemplate = '{"domain":"${domainName}","galleryImageOffer":"${i
 output availabilitySetsCount int = availabilitySetsCount
 output beginAvSetRange int = beginAvSetRange
 output cseUris array = cseUris
+output dedicatedHostGroupZones array = !empty(dedicatedHostGroupName) ? dedicatedHostGroup.zones : []
 output divisionRemainderValue int = divisionRemainderValue
 output fileShares array = fileShares
 output maxResourcesPerTemplateDeployment int = maxResourcesPerTemplateDeployment

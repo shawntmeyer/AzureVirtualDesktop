@@ -6,15 +6,10 @@ then zip up all subfolders and upload all blobs to a storage account blob contai
 #>
 
 param(
-    # The Azure Environment containing the storage account.
-    [Parameter(ParameterSetName='Deploy')]
-    [Parameter(ParameterSetName='UpdateOnly')]
-    [ValidateSet("AzureCloud","AzureUSGovernment","USNat", "USSec")]
-    [string]$AzureEnvironment = 'AzureCloud',
     # the temp folder to where the artifact sources are prepared to be uploaded to the storage account.
     [Parameter(ParameterSetName='Deploy', Mandatory=$false)]
     [Parameter(ParameterSetName='UpdateOnly')]
-    [string] $TempDir = "$Env:Temp\Artifacts",
+    [string] $TempDir = "$Env:Temp",
     # Determines whether or not to delete existing blobs in the storage account before uploading new blobs.
     [Parameter(ParameterSetName='Deploy', Mandatory=$false)]
     [Parameter(ParameterSetName='UpdateOnly', Mandatory=$false)]
@@ -22,10 +17,7 @@ param(
     # Determines whether or not to download new sources from the internet.
     [Parameter(ParameterSetName='Deploy', Mandatory=$false)]
     [Parameter(ParameterSetName='UpdateOnly', Mandatory=$false)]
-    [bool] $DownloadNewSources = $true,
-    # SubscriptionId. If not provided then the default context is used for deployment.
-    [Parameter(ParameterSetName='Deploy')]
-    [string]$SubscriptionId,
+    [switch] $SkipDownloadingNewSources,
     # Determines whether or not to deploy/redeploy the storage account using BICEP and the parameter file contained in the storageAccount folder
     [Parameter(ParameterSetName='Deploy')]
     [switch]$DeployImageManagementResources,
@@ -48,15 +40,37 @@ param(
 )
 
 #region Variables
+$ErrorActionPreference = 'Stop'
+
+$Context = Get-AzContext
+
+If ($null -eq $Context) {
+    Throw 'You are not logged in to Azure. Please login to azure before continuing'
+    Exit
+} Else {
+    $Environment = $Context.Environment.Name
+    If ($Environment -eq 'AzureCloud' -or $Environment -eq 'AzureUSGovernment') {
+        $downloadsParametersPrefix = 'public'
+    } Else {
+        $downloadsParametersPrefix = $Environment
+    }
+}
+
+if ([string]::IsNullOrEmpty($TempDir)) {
+    throw "The TempDir parameter cannot be null or empty."
+}
+
+$TempArtifactsDir = Join-Path -Path $TempDir -ChildPath 'Artifacts'
 
 $Time = Get-Date -Format 'yyyyMMddhhmmss'
 $ArtifactsDir = (Get-Item -Path (Join-Path -Path  $PSScriptRoot -ChildPath '..\..\.common\artifacts')).FullName
 $FunctionsPath = (Get-Item -Path (Join-Path -Path $PSScriptRoot -ChildPath '..\..\.common\powerShellFunctions')).FullName
 
-If (Test-Path -Path $TempDir) {
-    Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue
+If (Test-Path -Path $TempArtifactsDir) {
+    Remove-Item -Path $TempArtifactsDir -Recurse -Force -ErrorAction SilentlyContinue
 }
-New-Item -Path $TempDir -ItemType Directory -Force
+New-Item -Path $TempArtifactsDir -ItemType Directory -Force
+
 
 #endregion Variables
 
@@ -79,10 +93,9 @@ Write-Verbose "#################################################################
 If ($DeployImageManagementResources) {
     $BicepPath = $PSScriptRoot
     $Template = (Get-ChildItem -Path $BicepPath -filter 'imageManagement.bicep').FullName
-    $Parameters = (Get-ChildItem -Path (Join-Path -Path $BicepPath -ChildPath 'parameters') -Filter 'imagemanagement.parameters.json').FullName   
+    $Parameters = (Get-ChildItem -Path (Join-Path -Path $BicepPath -ChildPath 'parameters') -Filter 'imagemanagement.parameters.json').FullName  
     Write-Output "Deploying Image Management Resources using BICEP template and parameter file."
-    New-AzDeployment -Name "ImageManagement-$Time" -Location $Location -TemplateFile $Template -TemplateParameterFile $Parameters -verbose
-
+    New-AzDeployment -Name "ImageManagement-$Time" -Location $Location -TemplateFile $Template -TemplateParameterFile $Parameters -verbose -artifactsContainerName $ArtifactsContainerName
     $DeploymentOutputs = (Get-AzSubscriptionDeployment -Name "ImageManagement-$Time").Outputs
     $StorageAccountResourceId = $DeploymentOutputs.storageAccountResourceId.value
     $ManagedIdentityResourceId = $DeploymentOutputs.managedIdentityResourceId.value
@@ -111,12 +124,12 @@ Write-Output "`t`$ArtifactsContainerUrl = $ArtifactsContainerUrl"
 
 #region Download New Sources
 
-$downloadFilePath = (Join-Path -Path $ArtifactsDir -ChildPath "downloads.parameters.json")
-if ($DownloadNewSources -and (Test-Path -Path $downloadFilePath)) {
+$downloadFilePath = (Join-Path -Path $ArtifactsDir -ChildPath "$downloadsParametersPrefix.downloads.parameters.json")
+if ((!$SkipDownloadingNewSources) -and (Test-Path -Path $downloadFilePath)) {
     Write-Verbose "###########################################################################"
     Write-Verbose "## 2 - Download New Source Files into the artifacts Directory            ##"
     Write-Verbose "###########################################################################"
-    $DownloadDir = Join-Path -Path $TempDir -ChildPath 'downloads'
+    $DownloadDir = Join-Path -Path $TempArtifactsDir -ChildPath 'downloads'
     New-Item -Path $DownloadDir -ItemType Directory -Force
     $downloadJson = Get-Content -Path $downloadFilePath -Raw -ErrorAction 'Stop'
     try {
@@ -180,6 +193,12 @@ if ($DownloadNewSources -and (Test-Path -Path $downloadFilePath)) {
                     $DownloadUrl = Get-InternetUrl -WebSiteUrl $WebSiteUrl -searchstring $SearchString
                     $DownloadUrl = $DownloadUrl -replace '.exe', '.msi'
                  }
+                 "USSec" {
+                    $webSiteUrl = 'https://teams.microsoft.scloud/download'
+                    $SearchString = 'Teams 64-bit'
+                    $DownloadUrl = Get-InternetUrl -WebSiteUrl $WebSiteUrl -searchstring $SearchString
+                    $DownloadUrl = $DownloadUrl -replace '.exe', '.msi'
+                 }
             }                        
         }
 
@@ -218,7 +237,7 @@ if ($DownloadNewSources -and (Test-Path -Path $downloadFilePath)) {
                 $VersionText | Out-File $VersionFilePath -Force
             }
             Catch {
-                Write-Error "Error downloading software from '$DownloadUrl'."
+                Write-Error "Error downloading software from '$DownloadUrl': $_."
             }
             Write-Output "Copying downloaded files to Artifacts Directory."
             $DestFolders = @()
@@ -250,19 +269,19 @@ Write-Verbose "#################################################################
 Write-Verbose "## 3 - Create Zip files for all subfolders inside ArtifactsDir.          ##"
 Write-Verbose "###########################################################################"
 
-if ($PSCmdlet.ShouldProcess("[$ArtifactsDir] subfolders as .zip and store them into [$TempDir]", "Compress")) {
-    Compress-SubFolderContents -SourceFolderPath $ArtifactsDir -DestinationFolderPath $TempDir -Verbose
+if ($PSCmdlet.ShouldProcess("[$ArtifactsDir] subfolders as .zip and store them into [$TempArtifactsDir]", "Compress")) {
+    Compress-SubFolderContents -SourceFolderPath $ArtifactsDir -DestinationFolderPath $TempArtifactsDir -Verbose
     Write-Verbose "Artifact Source Files compression finished"
 }
-Write-Verbose "Copying files in root of '$ArtifactsDir' to '$TempDir'."
-Get-ChildItem -Path $ArtifactsDir -file | Where-Object {$_.FullName -ne "$downloadFilePath"} | Copy-Item -Destination $TempDir -Force
+Write-Verbose "Copying files in root of '$ArtifactsDir' to '$TempArtifactsDir'."
+Get-ChildItem -Path $ArtifactsDir -file | Where-Object {$_.FullName -ne "$downloadFilePath"} | Copy-Item -Destination $TempArtifactsDir -Force
 
 #endregion Compress Artifacts
 
 #region Upload Blobs to Storage Account
 
 Write-Verbose "###########################################################################"
-Write-Verbose "## 4 - Upload all files in `$TempDir to Storage Account.                 ##"
+Write-Verbose "## 4 - Upload all files in `$TempArtifactsDir to Storage Account.                 ##"
 Write-Verbose "###########################################################################"
 if ($DeleteExistingBlobs) {
     Write-Output "Existing Blobs in Storage Account '$StorageAccountName' are now being deleted."
@@ -271,11 +290,11 @@ if ($DeleteExistingBlobs) {
 }
 
 if ($PSCmdlet.ShouldProcess("storage account '$storageAccountName'", "Uploading Blobs to")) {
-    Add-ContentToBlobContainer -ResourceGroupName $StorageAccountResourceGroup -StorageAccountName $StorageAccountName -contentDirectories $TempDir -TargetContainer $ArtifactsContainerName -Verbose
+    Add-ContentToBlobContainer -ResourceGroupName $StorageAccountResourceGroup -StorageAccountName $StorageAccountName -contentDirectories $TempArtifactsDir -TargetContainer $ArtifactsContainerName -Verbose
     Write-Verbose "Storage account content upload invocation finished"
 }
 
-Get-ChildItem -Path $TempDir -Recurse -Force | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+Get-ChildItem -Path $TempArtifactsDir -Recurse -Force | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 
 #endregion
 

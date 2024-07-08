@@ -12,7 +12,8 @@ param managementVirtualMachineName string
 param enableMonitoring bool
 param privateDnsZoneResourceId string
 param privateEndpointName string
-param publicNetworkAccess string
+param privateEndpointNICName string
+param publicNetworkAccess string = 'Enabled'
 param privateEndpointSubnetResourceId string
 param resourceGroupManagement string
 param tags object
@@ -42,7 +43,7 @@ resource workspace 'Microsoft.DesktopVirtualization/workspaces@2023-09-05' = if 
     'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroup().name}/providers/Microsoft.DesktopVirtualization/Workspaces/${workspaceName}'
   }, contains(tags, 'Microsoft.DesktopVirtualization/Workspaces') ? tags['Microsoft.DesktopVirtualization/Workspaces'] : {})
   properties: {
-    applicationGroupReferences: applicationGroupReferences
+    applicationGroupReferences: !empty(applicationGroupReferences) ? applicationGroupReferences : null
     friendlyName: friendlyName
     publicNetworkAccess: publicNetworkAccess
   }
@@ -67,7 +68,7 @@ resource private_Endpoint 'Microsoft.Network/privateEndpoints@2023-05-01' = if (
         }
       }
     ]
-    customNetworkInterfaceName: 'nic-${workspaceName}'
+    customNetworkInterfaceName: privateEndpointNICName
     subnet: {
       id: privateEndpointSubnetResourceId
     }

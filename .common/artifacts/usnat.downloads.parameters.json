@@ -1,0 +1,37 @@
+{
+    "Artifacts": [
+        {
+            "Name": "OneDrive",
+            "DownloadUrl": "https://update.azure.odsync.eaglex.ic.gov/onedrivecontainer/Win/Installer64/OneDriveSetup.exe",
+            "WebSiteUrl": "",
+            "SearchString": "",
+            "APIUrl": "",
+            "GitHubRepo": "",
+            "GitHubFileNamePattern": "",
+            "DestinationFileName": "OneDriveSetup.exe",
+            "DestinationFolders": [""]
+        },        
+        {
+            "Name": "PowerShell Az Module",
+            "DownloadUrl": "",
+            "WebSiteUrl": "",
+            "SearchString": "",
+            "APIUrl": "",
+            "GitHubRepo": "Azure/azure-powershell",
+            "GitHubFileNamePattern": "Az-Cmdlets-*-x64.msi",
+            "DestinationFileName": "PowerShell-Az.msi",
+            "DestinationFolders": [""]
+        },
+        {
+            "Name": "Teams 64-bit MSIX",
+            "DownloadUrl": "https://statics.teams.eaglex.ic.gov/production-windows-x64/enterprise/webview2/lkg/MSTeams-x64.msix",
+            "WebSiteUrl": "",
+            "SearchString": "",
+            "APIUrl": "",
+            "GitHubRepo": "",
+            "GitHubFileNamePattern": "",
+            "DestinationFileName": "MSTeams-x64.msix",
+            "DestinationFolders": ["Microsoft-Teams"]
+        }
+    ]
+}

@@ -19,8 +19,8 @@ param shareSizeInGB int
 param containerType string
 param storageService string
 param kerberosEncryption string
-param keyVaultName string
-param keyVaultUri string
+param vmKeyVaultName string
+param storageEncryptionKeyVaultUris array
 param location string
 param logAnalyticsWorkspaceResourceId string
 param managementVirtualMachineName string
@@ -30,6 +30,7 @@ param netbios string
 param ouPath string
 param privateEndpoint bool
 param privateEndpointNameConv string
+param privateEndpointNICNameConv string
 param recoveryServices bool
 param recoveryServicesVaultName string
 param resourceGroupManagement string
@@ -49,14 +50,13 @@ param tagsNetAppAccount object
 param tagsPrivateEndpoints object
 param tagsRecoveryServicesVault object
 param tagsStorageAccounts object
-param tagsVirtualMachines object
 param timeStamp string
 param timeZone string
 param virtualNetwork string
 param virtualNetworkResourceGroup string
 
-resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' existing = if (contains(identitySolution, 'DomainServices')) {
-  name: keyVaultName
+resource vmKeyVault 'Microsoft.KeyVault/vaults@2022-07-01' existing = if (contains(identitySolution, 'DomainServices')) {
+  name: vmKeyVaultName
   scope: resourceGroup(resourceGroupManagement)
 }
 
@@ -70,8 +70,8 @@ module azureNetAppFiles 'azureNetAppFiles.bicep' = if (storageSolution == 'Azure
     artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
     delegatedSubnetId: delegatedSubnetId
     dnsServers: dnsServers
-    domainJoinUserPassword: keyVault.getSecret('domainJoinUserPassword')
-    domainJoinUserPrincipalName: keyVault.getSecret('domainJoinUserPrincipalName')
+    domainJoinUserPassword: vmKeyVault.getSecret('domainJoinUserPassword')
+    domainJoinUserPrincipalName: vmKeyVault.getSecret('domainJoinUserPrincipalName')
     domainName: domainName
     fileShares: fileShares
     fslogixContainerType: containerType
@@ -86,7 +86,6 @@ module azureNetAppFiles 'azureNetAppFiles.bicep' = if (storageSolution == 'Azure
     storageSku: storageSku
     fslogixStorageSolution: storageSolution
     tagsNetAppAccount: tagsNetAppAccount
-    tagsVirtualMachines: tagsVirtualMachines
     timeStamp: timeStamp
   }
 }
@@ -103,8 +102,8 @@ module azureFiles 'azureFiles/azureFiles.bicep' = if (storageSolution == 'AzureF
     azureFilesPrivateDnsZoneResourceId: azureFilesPrivateDnsZoneResourceId
     deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
     customerManagedKeysEnabled: customerManagedKeysEnabled
-    domainJoinUserPassword: contains(identitySolution, 'DomainServices') ? keyVault.getSecret('domainJoinUserPassword') : ''
-    domainJoinUserPrincipalName: contains(identitySolution, 'DomainServices') ? keyVault.getSecret('domainJoinUserPrincipalName') : ''
+    domainJoinUserPassword: contains(identitySolution, 'DomainServices') ? vmKeyVault.getSecret('domainJoinUserPassword') : ''
+    domainJoinUserPrincipalName: contains(identitySolution, 'DomainServices') ? vmKeyVault.getSecret('domainJoinUserPrincipalName') : ''
     enableIncreaseQuotaAutomation: enableIncreaseQuotaAutomation
     encryptionUserAssignedIdentityResourceId: encryptionUserAssignedIdentityResourceId
     fileShares: fileShares
@@ -113,7 +112,7 @@ module azureFiles 'azureFiles/azureFiles.bicep' = if (storageSolution == 'AzureF
     fslogixStorageService: storageService
     identitySolution: identitySolution
     kerberosEncryption: kerberosEncryption
-    keyVaultUri: keyVaultUri
+    encryptionKeyKeyVaultUris: storageEncryptionKeyVaultUris
     location: location
     logAnalyticsWorkspaceId: logAnalyticsWorkspaceResourceId
     managementVirtualMachineName: managementVirtualMachineName
@@ -121,6 +120,7 @@ module azureFiles 'azureFiles/azureFiles.bicep' = if (storageSolution == 'AzureF
     ouPath: ouPath
     privateEndpoint: privateEndpoint
     privateEndpointNameConv: privateEndpointNameConv
+    privateEndpointNICNameConv: privateEndpointNICNameConv
     recoveryServices: recoveryServices
     recoveryServicesVaultName: recoveryServicesVaultName
     resourceGroupManagement: resourceGroupManagement
@@ -138,7 +138,6 @@ module azureFiles 'azureFiles/azureFiles.bicep' = if (storageSolution == 'AzureF
     tagsPrivateEndpoints: tagsPrivateEndpoints
     tagsRecoveryServicesVault: tagsRecoveryServicesVault
     tagsStorageAccounts: tagsStorageAccounts
-    tagsVirtualMachines: tagsVirtualMachines
     timeStamp: timeStamp
     timeZone: timeZone
     virtualNetwork: virtualNetwork

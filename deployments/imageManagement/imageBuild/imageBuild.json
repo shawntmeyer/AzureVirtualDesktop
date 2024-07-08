@@ -4,8 +4,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.26.170.59819",
-      "templateHash": "5195709793444442502"
+      "version": "0.28.1.47646",
+      "templateHash": "5759319412024422182"
     },
     "name": "Zero Trust Architecture Custom Windows Image Builder",
     "description": "This solution allows you to create a custom image much like Azure VM Image Builder, but utilizes zero trust architecture and does not require that service.",
@@ -13,7 +13,7 @@
     "version": "1.0.0"
   },
   "parameters": {
-    "deploymentLocation": {
+    "location": {
       "type": "string",
       "defaultValue": "[deployment().location]",
       "metadata": {
@@ -53,13 +53,13 @@
         "description": "The name of the blob that contains the Az module installer."
       }
     },
-    "envClassification": {
+    "envShortName": {
       "type": "string",
       "defaultValue": "",
       "allowedValues": [
-        "dev",
-        "test",
-        "prod",
+        "d",
+        "t",
+        "p",
         ""
       ],
       "metadata": {
@@ -78,8 +78,9 @@
         "description": "The resource Id of the storage account containing the artifacts (scripts, installers, etc) used during the image build."
       }
     },
-    "containerName": {
+    "artifactsContainerName": {
       "type": "string",
+      "defaultValue": "artifacts",
       "metadata": {
         "description": "The name of the storage blob container which contains the artifacts (scripts, installers, etc) used during the image build."
       }
@@ -260,9 +261,13 @@
         "description": "Optional. Install Microsoft Teams."
       }
     },
-    "teamsBlobName": {
+    "teamsVersion": {
       "type": "string",
-      "defaultValue": "Microsoft-Teams.zip",
+      "defaultValue": "Classic",
+      "allowedValues": [
+        "Classic",
+        "New"
+      ],
       "metadata": {
         "description": "Optional. The name of the zip blob containing the VC++Redistributables, MSRDC WebRTC Redirector, and Teams installer."
       }
@@ -913,6 +918,7 @@
       "workspaces": "vdws",
       "imageDefinitions": "vmid"
     },
+    "teamsBlobName": "[if(equals(parameters('teamsVersion'), 'Classic'), 'Microsoft-Teams-Classic.zip', 'Microsoft-Teams.zip')]",
     "installers": [],
     "customizers": "[union(parameters('customizations'), variables('installers'))]",
     "cloud": "[environment().name]",
@@ -921,7 +927,7 @@
     "locations": "[variables('$fxv#0')[environment().name]]",
     "resourceAbbreviations": "[variables('$fxv#1')]",
     "depPrefix": "[if(not(empty(parameters('deploymentPrefix'))), format('{0}-', parameters('deploymentPrefix')), '')]",
-    "imageBuildResourceGroupName": "[if(empty(parameters('imageBuildResourceGroupId')), if(empty(parameters('customBuildResourceGroupName')), if(not(empty(parameters('envClassification'))), format('{0}-image-builder-{1}-{2}', variables('resourceAbbreviations').resourceGroups, parameters('envClassification'), variables('locations')[parameters('deploymentLocation')].abbreviation), format('{0}-image-builder-{1}', variables('resourceAbbreviations').resourceGroups, variables('locations')[parameters('deploymentLocation')].abbreviation)), parameters('customBuildResourceGroupName')), last(split(parameters('imageBuildResourceGroupId'), '/')))]",
+    "imageBuildResourceGroupName": "[if(empty(parameters('imageBuildResourceGroupId')), if(empty(parameters('customBuildResourceGroupName')), if(not(empty(parameters('envShortName'))), format('{0}-image-builder-{1}-{2}', variables('resourceAbbreviations').resourceGroups, parameters('envShortName'), variables('locations')[parameters('location')].abbreviation), format('{0}-image-builder-{1}', variables('resourceAbbreviations').resourceGroups, variables('locations')[parameters('location')].abbreviation)), parameters('customBuildResourceGroupName')), last(split(parameters('imageBuildResourceGroupId'), '/')))]",
     "adminPw": "[format('{0}-{1}', toUpper(uniqueString(subscription().id)), parameters('guidValue'))]",
     "adminUserName": "xadmin",
     "collectLogs": "[if(and(and(parameters('collectCustomizationLogs'), not(empty(parameters('privateEndpointSubnetResourceId')))), not(empty(parameters('blobPrivateDnsZoneResourceId')))), true(), false())]",
@@ -933,7 +939,7 @@
     "galleryImageDefinitionName": "[if(empty(parameters('imageDefinitionResourceId')), if(empty(parameters('customImageDefinitionName')), format('{0}', replace(format('{0}-{1}-{2}-{3}', variables('resourceAbbreviations').imageDefinitions, replace(variables('galleryImageDefinitionPublisher'), '-', ''), replace(variables('galleryImageDefinitionOffer'), '-', ''), replace(variables('galleryImageDefinitionSku'), '-', '')), ' ', '')), parameters('customImageDefinitionName')), last(split(parameters('imageDefinitionResourceId'), '/')))]",
     "imageVersionName": "[if(and(and(not(equals(parameters('imageMajorVersion'), -1)), not(equals(parameters('imageMajorVersion'), -1))), not(equals(parameters('imagePatch'), -1))), format('{0}.{1}.{2}', parameters('imageMajorVersion'), parameters('imageMinorVersion'), parameters('imagePatch')), parameters('autoImageVersionName'))]",
     "imageVersionEndOfLifeDate": "[if(greater(parameters('imageVersionEOLinDays'), 0), dateTimeAdd(parameters('imageVersionCreationTime'), format('P{0}D', parameters('imageVersionEOLinDays'))), '')]",
-    "imageVersionReplicationRegions": "[if(not(empty(parameters('imageVersionTargetRegions'))), parameters('imageVersionTargetRegions'), createArray(createObject('excludeFromLatest', parameters('imageVersionExcludeFromLatest'), 'name', if(not(empty(parameters('imageVersionDefaultRegion'))), parameters('imageVersionDefaultRegion'), parameters('deploymentLocation')), 'regionalReplicaCount', parameters('imageVersionDefaultReplicaCount'), 'storageAccountType', parameters('imageVersionDefaultStorageAccountType'))))]",
+    "imageVersionReplicationRegions": "[if(not(empty(parameters('imageVersionTargetRegions'))), parameters('imageVersionTargetRegions'), createArray(createObject('excludeFromLatest', parameters('imageVersionExcludeFromLatest'), 'name', if(not(empty(parameters('imageVersionDefaultRegion'))), parameters('imageVersionDefaultRegion'), parameters('location')), 'regionalReplicaCount', parameters('imageVersionDefaultReplicaCount'), 'storageAccountType', parameters('imageVersionDefaultStorageAccountType'))))]",
     "imageVmName": "[take(format('vmimg-{0}', uniqueString(parameters('timeStamp'))), 15)]",
     "managementVmName": "[take(format('vmmgt-{0}', uniqueString(parameters('timeStamp'))), 15)]"
   },
@@ -943,7 +949,8 @@
       "type": "Microsoft.Resources/resourceGroups",
       "apiVersion": "2023-07-01",
       "name": "[variables('imageBuildResourceGroupName')]",
-      "location": "[parameters('deploymentLocation')]"
+      "location": "[parameters('location')]",
+      "tags": "[if(contains(parameters('tags'), 'Microsoft.Resources/resourceGroups'), parameters('tags')['Microsoft.Resources/resourceGroups'], createObject())]"
     },
     {
       "type": "Microsoft.Resources/deployments",
@@ -969,8 +976,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.26.170.59819",
-              "templateHash": "16017160030106373381"
+              "version": "0.28.1.47646",
+              "templateHash": "12493508845996963886"
             },
             "name": "Role Assignments (Resource Group scope)",
             "description": "This module deploys a Role Assignment at a Resource Group scope.",
@@ -1130,8 +1137,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.26.170.59819",
-              "templateHash": "16017160030106373381"
+              "version": "0.28.1.47646",
+              "templateHash": "12493508845996963886"
             },
             "name": "Role Assignments (Resource Group scope)",
             "description": "This module deploys a Role Assignment at a Resource Group scope.",
@@ -1294,7 +1301,7 @@
               "enabled": true,
               "fileData": [
                 {
-                  "uri": "[format('{0}{1}', format('{0}{1}/', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('storageAccountResourceId'), '/')[2], split(parameters('storageAccountResourceId'), '/')[4]), 'Microsoft.Storage/storageAccounts', last(split(parameters('storageAccountResourceId'), '/'))), '2022-09-01').primaryEndpoints.blob, parameters('containerName')), parameters('azModuleBlobName'))]"
+                  "uri": "[format('{0}{1}', format('{0}{1}/', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('storageAccountResourceId'), '/')[2], split(parameters('storageAccountResourceId'), '/')[4]), 'Microsoft.Storage/storageAccounts', last(split(parameters('storageAccountResourceId'), '/'))), '2022-09-01').primaryEndpoints.blob, parameters('artifactsContainerName')), parameters('azModuleBlobName'))]"
                 }
               ]
             }
@@ -1343,9 +1350,7 @@
           "osType": {
             "value": "Windows"
           },
-          "tags": {
-            "value": "[parameters('tags')]"
-          },
+          "tags": "[if(contains(parameters('tags'), 'Microsoft.Compute/virtualMachines'), createObject('value', parameters('tags')['Microsoft.Compute/virtualMachines']), createObject('value', createObject()))]",
           "userAssignedIdentities": {
             "value": {
               "[format('{0}', parameters('userAssignedIdentityResourceId'))]": {}
@@ -1361,8 +1366,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.26.170.59819",
-              "templateHash": "16655721621683609925"
+              "version": "0.28.1.47646",
+              "templateHash": "12591709603485473974"
             },
             "name": "Virtual Machines",
             "description": "This module deploys a Virtual Machine with one or multiple NICs and optionally one or multiple public IPs.",
@@ -2147,8 +2152,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.26.170.59819",
-                      "templateHash": "5042423114972993902"
+                      "version": "0.28.1.47646",
+                      "templateHash": "4536045829877652199"
                     }
                   },
                   "parameters": {
@@ -2281,8 +2286,8 @@
                           "metadata": {
                             "_generator": {
                               "name": "bicep",
-                              "version": "0.26.170.59819",
-                              "templateHash": "6416248906861990507"
+                              "version": "0.28.1.47646",
+                              "templateHash": "10203666220544612213"
                             },
                             "name": "Public IP Addresses",
                             "description": "This module deploys a Public IP Address.",
@@ -2629,8 +2634,8 @@
                           "metadata": {
                             "_generator": {
                               "name": "bicep",
-                              "version": "0.26.170.59819",
-                              "templateHash": "17311452809381653760"
+                              "version": "0.28.1.47646",
+                              "templateHash": "9855604162322858513"
                             },
                             "name": "Network Interface",
                             "description": "This module deploys a Network Interface.",
@@ -2921,8 +2926,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.26.170.59819",
-                      "templateHash": "10869031112151204890"
+                      "version": "0.28.1.47646",
+                      "templateHash": "16584284829340549925"
                     },
                     "name": "Virtual Machine Extensions",
                     "description": "This module deploys a Virtual Machine Extension.",
@@ -3115,8 +3120,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.26.170.59819",
-                      "templateHash": "10869031112151204890"
+                      "version": "0.28.1.47646",
+                      "templateHash": "16584284829340549925"
                     },
                     "name": "Virtual Machine Extensions",
                     "description": "This module deploys a Virtual Machine Extension.",
@@ -3304,8 +3309,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.26.170.59819",
-                      "templateHash": "10869031112151204890"
+                      "version": "0.28.1.47646",
+                      "templateHash": "16584284829340549925"
                     },
                     "name": "Virtual Machine Extensions",
                     "description": "This module deploys a Virtual Machine Extension.",
@@ -3498,8 +3503,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.26.170.59819",
-                      "templateHash": "10869031112151204890"
+                      "version": "0.28.1.47646",
+                      "templateHash": "16584284829340549925"
                     },
                     "name": "Virtual Machine Extensions",
                     "description": "This module deploys a Virtual Machine Extension.",
@@ -3682,8 +3687,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.26.170.59819",
-                      "templateHash": "10869031112151204890"
+                      "version": "0.28.1.47646",
+                      "templateHash": "16584284829340549925"
                     },
                     "name": "Virtual Machine Extensions",
                     "description": "This module deploys a Virtual Machine Extension.",
@@ -3866,8 +3871,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.26.170.59819",
-                      "templateHash": "10869031112151204890"
+                      "version": "0.28.1.47646",
+                      "templateHash": "16584284829340549925"
                     },
                     "name": "Virtual Machine Extensions",
                     "description": "This module deploys a Virtual Machine Extension.",
@@ -4054,8 +4059,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.26.170.59819",
-                      "templateHash": "10869031112151204890"
+                      "version": "0.28.1.47646",
+                      "templateHash": "16584284829340549925"
                     },
                     "name": "Virtual Machine Extensions",
                     "description": "This module deploys a Virtual Machine Extension.",
@@ -4250,8 +4255,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.26.170.59819",
-                      "templateHash": "10869031112151204890"
+                      "version": "0.28.1.47646",
+                      "templateHash": "16584284829340549925"
                     },
                     "name": "Virtual Machine Extensions",
                     "description": "This module deploys a Virtual Machine Extension.",
@@ -4439,8 +4444,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.26.170.59819",
-                      "templateHash": "10869031112151204890"
+                      "version": "0.28.1.47646",
+                      "templateHash": "16584284829340549925"
                     },
                     "name": "Virtual Machine Extensions",
                     "description": "This module deploys a Virtual Machine Extension.",
@@ -4630,8 +4635,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.26.170.59819",
-                      "templateHash": "2393851439891433510"
+                      "version": "0.28.1.47646",
+                      "templateHash": "4311417160342913977"
                     },
                     "name": "Recovery Service Vaults Protection Container Protected Item",
                     "description": "This module deploys a Recovery Services Vault Protection Container Protected Item.",
@@ -4800,11 +4805,11 @@
         "mode": "Incremental",
         "parameters": {
           "commandToExecute": {
-            "value": "[format('powershell.exe -ExecutionPolicy Unrestricted -command .\\Get-ImageBuildValidations.ps1 {0}', if(not(empty(parameters('imageDefinitionResourceId'))), format('{0} -imageDefinitionResourceId {1} -SourceSku {2}', format('-environment {0} -subscription {1} -tenant {2} -userAssignedIdentityClientId {3}', variables('cloud'), variables('subscriptionId'), variables('tenantId'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('userAssignedIdentityResourceId'), '/')[2], split(parameters('userAssignedIdentityResourceId'), '/')[4]), 'Microsoft.ManagedIdentity/userAssignedIdentities', last(split(parameters('userAssignedIdentityResourceId'), '/'))), '2023-01-31').clientId), parameters('imageDefinitionResourceId'), parameters('sku')), format('{0} -imageGalleryResourceId {1} -imageLocation {2} -imageName {3} -ImageHyperVGeneration {4} -ImageSecurityType {5} -ImageIsHibernateSupported {6} -ImageIsAcceleratedNetworkSupported {7} -ImageIsHigherStoragePerformanceSupported {8} -imagePublisher {9} -imageOffer {10} -imageSku {11}', format('-environment {0} -subscription {1} -tenant {2} -userAssignedIdentityClientId {3}', variables('cloud'), variables('subscriptionId'), variables('tenantId'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('userAssignedIdentityResourceId'), '/')[2], split(parameters('userAssignedIdentityResourceId'), '/')[4]), 'Microsoft.ManagedIdentity/userAssignedIdentities', last(split(parameters('userAssignedIdentityResourceId'), '/'))), '2023-01-31').clientId), parameters('computeGalleryResourceId'), parameters('deploymentLocation'), variables('galleryImageDefinitionName'), variables('galleryImageDefinitionHyperVGeneration'), parameters('imageDefinitionSecurityType'), parameters('imageDefinitionIsHibernateSupported'), parameters('imageDefinitionIsAcceleratedNetworkSupported'), parameters('imageDefinitionIsHigherStoragePerformanceSupported'), variables('galleryImageDefinitionPublisher'), variables('galleryImageDefinitionOffer'), variables('galleryImageDefinitionSku'))))]"
+            "value": "[format('powershell.exe -ExecutionPolicy Unrestricted -File Get-ImageBuildValidations.ps1 {0}', if(not(empty(parameters('imageDefinitionResourceId'))), format('{0} -imageDefinitionResourceId {1} -SourceSku {2}', format('-environment {0} -subscription {1} -tenant {2} -userAssignedIdentityClientId {3}', variables('cloud'), variables('subscriptionId'), variables('tenantId'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('userAssignedIdentityResourceId'), '/')[2], split(parameters('userAssignedIdentityResourceId'), '/')[4]), 'Microsoft.ManagedIdentity/userAssignedIdentities', last(split(parameters('userAssignedIdentityResourceId'), '/'))), '2023-01-31').clientId), parameters('imageDefinitionResourceId'), parameters('sku')), format('{0} -imageGalleryResourceId {1} -imageLocation {2} -imageName {3} -ImageHyperVGeneration {4} -ImageSecurityType {5} -ImageIsHibernateSupported {6} -ImageIsAcceleratedNetworkSupported {7} -ImageIsHigherStoragePerformanceSupported {8} -imagePublisher {9} -imageOffer {10} -imageSku {11}', format('-environment {0} -subscription {1} -tenant {2} -userAssignedIdentityClientId {3}', variables('cloud'), variables('subscriptionId'), variables('tenantId'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('userAssignedIdentityResourceId'), '/')[2], split(parameters('userAssignedIdentityResourceId'), '/')[4]), 'Microsoft.ManagedIdentity/userAssignedIdentities', last(split(parameters('userAssignedIdentityResourceId'), '/'))), '2023-01-31').clientId), parameters('computeGalleryResourceId'), parameters('location'), variables('galleryImageDefinitionName'), variables('galleryImageDefinitionHyperVGeneration'), parameters('imageDefinitionSecurityType'), parameters('imageDefinitionIsHibernateSupported'), parameters('imageDefinitionIsAcceleratedNetworkSupported'), parameters('imageDefinitionIsHigherStoragePerformanceSupported'), variables('galleryImageDefinitionPublisher'), variables('galleryImageDefinitionOffer'), variables('galleryImageDefinitionSku'))))]"
           },
           "fileUris": {
             "value": [
-              "[format('{0}Get-ImageBuildValidations.ps1', format('{0}{1}/', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('storageAccountResourceId'), '/')[2], split(parameters('storageAccountResourceId'), '/')[4]), 'Microsoft.Storage/storageAccounts', last(split(parameters('storageAccountResourceId'), '/'))), '2022-09-01').primaryEndpoints.blob, parameters('containerName')))]"
+              "[format('{0}Get-ImageBuildValidations.ps1', format('{0}{1}/', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('storageAccountResourceId'), '/')[2], split(parameters('storageAccountResourceId'), '/')[4]), 'Microsoft.Storage/storageAccounts', last(split(parameters('storageAccountResourceId'), '/'))), '2022-09-01').primaryEndpoints.blob, parameters('artifactsContainerName')))]"
             ]
           },
           "location": {
@@ -4826,8 +4831,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.26.170.59819",
-              "templateHash": "13135978661573219399"
+              "version": "0.28.1.47646",
+              "templateHash": "4217346631862922393"
             }
           },
           "parameters": {
@@ -4975,7 +4980,7 @@
                 },
                 "service": "blob",
                 "subnetResourceId": "[parameters('privateEndpointSubnetResourceId')]",
-                "tags": "[parameters('tags')]"
+                "tags": "[if(contains(parameters('tags'), 'Microsoft.Storage/storageAccounts'), parameters('tags')['Microsoft.Storage/storageAccounts'], createObject())]"
               }
             ]
           },
@@ -4998,8 +5003,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.26.170.59819",
-              "templateHash": "11441299835027461164"
+              "version": "0.28.1.47646",
+              "templateHash": "11055012940129241720"
             },
             "name": "Storage Accounts",
             "description": "This module deploys a Storage Account.",
@@ -5501,8 +5506,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.26.170.59819",
-                      "templateHash": "5546369977371073220"
+                      "version": "0.28.1.47646",
+                      "templateHash": "10085157972896928891"
                     },
                     "name": "Private Endpoints",
                     "description": "This module deploys a Private Endpoint.",
@@ -5641,8 +5646,8 @@
                           "metadata": {
                             "_generator": {
                               "name": "bicep",
-                              "version": "0.26.170.59819",
-                              "templateHash": "15579424575532963300"
+                              "version": "0.28.1.47646",
+                              "templateHash": "8661907155223407544"
                             },
                             "name": "Private Endpoint Private DNS Zone Groups",
                             "description": "This module deploys a Private Endpoint Private DNS Zone Group.",
@@ -5785,8 +5790,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.26.170.59819",
-                      "templateHash": "1979365395970765113"
+                      "version": "0.28.1.47646",
+                      "templateHash": "7799274631689198152"
                     },
                     "name": "Storage Account Management Policies",
                     "description": "This module deploys a Storage Account Management Policy.",
@@ -5889,8 +5894,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.26.170.59819",
-                      "templateHash": "48709015547913522"
+                      "version": "0.28.1.47646",
+                      "templateHash": "2384810785399912079"
                     },
                     "name": "Storage Account Local Users",
                     "description": "This module deploys a Storage Account Local User, which is used for SFTP authentication.",
@@ -6037,8 +6042,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.26.170.59819",
-                      "templateHash": "3113970785565566624"
+                      "version": "0.28.1.47646",
+                      "templateHash": "8891889978206148882"
                     },
                     "name": "Storage Account blob Services",
                     "description": "This module deploys a Storage Account Blob Service.",
@@ -6348,8 +6353,8 @@
                           "metadata": {
                             "_generator": {
                               "name": "bicep",
-                              "version": "0.26.170.59819",
-                              "templateHash": "8042687269497581390"
+                              "version": "0.28.1.47646",
+                              "templateHash": "5138122600681193710"
                             },
                             "name": "Storage Account Blob Containers",
                             "description": "This module deploys a Storage Account Blob Container.",
@@ -6480,8 +6485,8 @@
                                   "metadata": {
                                     "_generator": {
                                       "name": "bicep",
-                                      "version": "0.26.170.59819",
-                                      "templateHash": "12849754295459852309"
+                                      "version": "0.28.1.47646",
+                                      "templateHash": "2543276032744560941"
                                     },
                                     "name": "Storage Account Blob Container Immutability Policies",
                                     "description": "This module deploys a Storage Account Blob Container Immutability Policy.",
@@ -6651,8 +6656,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.26.170.59819",
-                      "templateHash": "4269441866314313626"
+                      "version": "0.28.1.47646",
+                      "templateHash": "11077155464707391519"
                     },
                     "name": "Storage Account File Share Services",
                     "description": "This module deploys a Storage Account File Share Service.",
@@ -6845,8 +6850,8 @@
                           "metadata": {
                             "_generator": {
                               "name": "bicep",
-                              "version": "0.26.170.59819",
-                              "templateHash": "3179594059731236922"
+                              "version": "0.28.1.47646",
+                              "templateHash": "8526479258023832363"
                             },
                             "name": "Storage Account File Shares",
                             "description": "This module deploys a Storage Account File Share.",
@@ -7017,8 +7022,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.26.170.59819",
-                      "templateHash": "15878098374910523953"
+                      "version": "0.28.1.47646",
+                      "templateHash": "380289872392086765"
                     },
                     "name": "Storage Account Queue Services",
                     "description": "This module deploys a Storage Account Queue Service.",
@@ -7179,8 +7184,8 @@
                           "metadata": {
                             "_generator": {
                               "name": "bicep",
-                              "version": "0.26.170.59819",
-                              "templateHash": "11158219367898055611"
+                              "version": "0.28.1.47646",
+                              "templateHash": "13090679976146848467"
                             },
                             "name": "Storage Account Queues",
                             "description": "This module deploys a Storage Account Queue.",
@@ -7302,8 +7307,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.26.170.59819",
-                      "templateHash": "15682231009606019215"
+                      "version": "0.28.1.47646",
+                      "templateHash": "534021011350960649"
                     },
                     "name": "Storage Account Table Services",
                     "description": "This module deploys a Storage Account Table Service.",
@@ -7463,8 +7468,8 @@
                           "metadata": {
                             "_generator": {
                               "name": "bicep",
-                              "version": "0.26.170.59819",
-                              "templateHash": "5836188851127848706"
+                              "version": "0.28.1.47646",
+                              "templateHash": "14247380451591245659"
                             },
                             "name": "Storage Account Table",
                             "description": "This module deploys a Storage Account Table.",
@@ -7625,8 +7630,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.26.170.59819",
-              "templateHash": "16017160030106373381"
+              "version": "0.28.1.47646",
+              "templateHash": "12493508845996963886"
             },
             "name": "Role Assignments (Resource Group scope)",
             "description": "This module deploys a Role Assignment at a Resource Group scope.",
@@ -7823,9 +7828,7 @@
           "securityType": "[if(or(equals(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}Image-Definition-Validation-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.value.value.securityType), 'TrustedLaunch'), equals(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}Image-Definition-Validation-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.value.value.securityType), 'ConfidentialVM')), if(empty(parameters('imageDefinitionResourceId')), createObject('value', parameters('imageDefinitionSecurityType')), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}Image-Definition-Validation-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.value.value.securityType)), createObject('value', 'Standard'))]",
           "secureBootEnabled": "[if(equals(if(or(equals(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}Image-Definition-Validation-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.value.value.securityType), 'TrustedLaunch'), equals(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}Image-Definition-Validation-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.value.value.securityType), 'ConfidentialVM')), if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}Image-Definition-Validation-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.value.value.securityType), 'Standard'), 'TrustedLaunch'), createObject('value', true()), createObject('value', false()))]",
           "vTpmEnabled": "[if(equals(if(or(equals(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}Image-Definition-Validation-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.value.value.securityType), 'TrustedLaunch'), equals(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}Image-Definition-Validation-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.value.value.securityType), 'ConfidentialVM')), if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}Image-Definition-Validation-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.value.value.securityType), 'Standard'), 'TrustedLaunch'), createObject('value', true()), createObject('value', false()))]",
-          "tags": {
-            "value": "[parameters('tags')]"
-          },
+          "tags": "[if(contains(parameters('tags'), 'Microsoft.Compute/virtualMachines'), createObject('value', parameters('tags')['Microsoft.Compute/virtualMachines']), createObject('value', createObject()))]",
           "userAssignedIdentities": {
             "value": {
               "[format('{0}', parameters('userAssignedIdentityResourceId'))]": {}
@@ -7841,8 +7844,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.26.170.59819",
-              "templateHash": "16655721621683609925"
+              "version": "0.28.1.47646",
+              "templateHash": "12591709603485473974"
             },
             "name": "Virtual Machines",
             "description": "This module deploys a Virtual Machine with one or multiple NICs and optionally one or multiple public IPs.",
@@ -8627,8 +8630,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.26.170.59819",
-                      "templateHash": "5042423114972993902"
+                      "version": "0.28.1.47646",
+                      "templateHash": "4536045829877652199"
                     }
                   },
                   "parameters": {
@@ -8761,8 +8764,8 @@
                           "metadata": {
                             "_generator": {
                               "name": "bicep",
-                              "version": "0.26.170.59819",
-                              "templateHash": "6416248906861990507"
+                              "version": "0.28.1.47646",
+                              "templateHash": "10203666220544612213"
                             },
                             "name": "Public IP Addresses",
                             "description": "This module deploys a Public IP Address.",
@@ -9109,8 +9112,8 @@
                           "metadata": {
                             "_generator": {
                               "name": "bicep",
-                              "version": "0.26.170.59819",
-                              "templateHash": "17311452809381653760"
+                              "version": "0.28.1.47646",
+                              "templateHash": "9855604162322858513"
                             },
                             "name": "Network Interface",
                             "description": "This module deploys a Network Interface.",
@@ -9401,8 +9404,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.26.170.59819",
-                      "templateHash": "10869031112151204890"
+                      "version": "0.28.1.47646",
+                      "templateHash": "16584284829340549925"
                     },
                     "name": "Virtual Machine Extensions",
                     "description": "This module deploys a Virtual Machine Extension.",
@@ -9595,8 +9598,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.26.170.59819",
-                      "templateHash": "10869031112151204890"
+                      "version": "0.28.1.47646",
+                      "templateHash": "16584284829340549925"
                     },
                     "name": "Virtual Machine Extensions",
                     "description": "This module deploys a Virtual Machine Extension.",
@@ -9784,8 +9787,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.26.170.59819",
-                      "templateHash": "10869031112151204890"
+                      "version": "0.28.1.47646",
+                      "templateHash": "16584284829340549925"
                     },
                     "name": "Virtual Machine Extensions",
                     "description": "This module deploys a Virtual Machine Extension.",
@@ -9978,8 +9981,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.26.170.59819",
-                      "templateHash": "10869031112151204890"
+                      "version": "0.28.1.47646",
+                      "templateHash": "16584284829340549925"
                     },
                     "name": "Virtual Machine Extensions",
                     "description": "This module deploys a Virtual Machine Extension.",
@@ -10162,8 +10165,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.26.170.59819",
-                      "templateHash": "10869031112151204890"
+                      "version": "0.28.1.47646",
+                      "templateHash": "16584284829340549925"
                     },
                     "name": "Virtual Machine Extensions",
                     "description": "This module deploys a Virtual Machine Extension.",
@@ -10346,8 +10349,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.26.170.59819",
-                      "templateHash": "10869031112151204890"
+                      "version": "0.28.1.47646",
+                      "templateHash": "16584284829340549925"
                     },
                     "name": "Virtual Machine Extensions",
                     "description": "This module deploys a Virtual Machine Extension.",
@@ -10534,8 +10537,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.26.170.59819",
-                      "templateHash": "10869031112151204890"
+                      "version": "0.28.1.47646",
+                      "templateHash": "16584284829340549925"
                     },
                     "name": "Virtual Machine Extensions",
                     "description": "This module deploys a Virtual Machine Extension.",
@@ -10730,8 +10733,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.26.170.59819",
-                      "templateHash": "10869031112151204890"
+                      "version": "0.28.1.47646",
+                      "templateHash": "16584284829340549925"
                     },
                     "name": "Virtual Machine Extensions",
                     "description": "This module deploys a Virtual Machine Extension.",
@@ -10919,8 +10922,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.26.170.59819",
-                      "templateHash": "10869031112151204890"
+                      "version": "0.28.1.47646",
+                      "templateHash": "16584284829340549925"
                     },
                     "name": "Virtual Machine Extensions",
                     "description": "This module deploys a Virtual Machine Extension.",
@@ -11110,8 +11113,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.26.170.59819",
-                      "templateHash": "2393851439891433510"
+                      "version": "0.28.1.47646",
+                      "templateHash": "4311417160342913977"
                     },
                     "name": "Recovery Service Vaults Protection Container Protected Item",
                     "description": "This module deploys a Recovery Services Vault Protection Container Protected Item.",
@@ -11286,8 +11289,8 @@
           "location": {
             "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('subnetResourceId'), '/')[2], split(parameters('subnetResourceId'), '/')[4]), 'Microsoft.Network/virtualNetworks', split(parameters('subnetResourceId'), '/')[8]), '2023-05-01', 'full').location]"
           },
-          "containerName": {
-            "value": "[parameters('containerName')]"
+          "artifactsContainerName": {
+            "value": "[parameters('artifactsContainerName')]"
           },
           "customizations": {
             "value": "[variables('customizers')]"
@@ -11359,7 +11362,10 @@
             "value": "[parameters('officeBlobName')]"
           },
           "teamsBlobName": {
-            "value": "[parameters('teamsBlobName')]"
+            "value": "[variables('teamsBlobName')]"
+          },
+          "teamsVersion": {
+            "value": "[parameters('teamsVersion')]"
           },
           "logBlobContainerUri": "[if(variables('collectLogs'), if(variables('collectLogs'), createObject('value', format('{0}{1}/', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}Logs-StorageAccount-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.primaryBlobEndpoint.value, variables('logContainerName'))), createObject('value', '')), createObject('value', ''))]",
           "installUpdates": {
@@ -11378,8 +11384,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.26.170.59819",
-              "templateHash": "2828649053780381597"
+              "version": "0.28.1.47646",
+              "templateHash": "15347458254443728808"
             }
           },
           "parameters": {
@@ -11399,7 +11405,7 @@
             "storageEndpoint": {
               "type": "string"
             },
-            "containerName": {
+            "artifactsContainerName": {
               "type": "string"
             },
             "managementVmName": {
@@ -11466,6 +11472,9 @@
               "type": "string"
             },
             "teamsBlobName": {
+              "type": "string"
+            },
+            "teamsVersion": {
               "type": "string"
             },
             "timeStamp": {
@@ -11548,7 +11557,7 @@
                   },
                   {
                     "name": "ContainerName",
-                    "value": "[parameters('containerName')]"
+                    "value": "[parameters('artifactsContainerName')]"
                   },
                   {
                     "name": "StorageEndpoint",
@@ -11601,7 +11610,7 @@
                   },
                   {
                     "name": "ContainerName",
-                    "value": "[parameters('containerName')]"
+                    "value": "[parameters('artifactsContainerName')]"
                   },
                   {
                     "name": "StorageEndpoint",
@@ -11625,7 +11634,7 @@
               "condition": "[or(or(or(or(or(or(or(or(or(parameters('installAccess'), parameters('installExcel')), parameters('installOneNote')), parameters('installOutlook')), parameters('installPowerPoint')), parameters('installProject')), parameters('installPublisher')), parameters('installSkypeForBusiness')), parameters('installVisio')), parameters('installWord'))]",
               "type": "Microsoft.Compute/virtualMachines/runCommands",
               "apiVersion": "2023-03-01",
-              "name": "[format('{0}/{1}', parameters('imageVmName'), 'install-office')]",
+              "name": "[format('{0}/{1}', parameters('imageVmName'), 'm365Apps')]",
               "location": "[parameters('location')]",
               "properties": {
                 "errorBlobManagedIdentity": "[if(empty(parameters('logBlobContainerUri')), null(), createObject('clientId', parameters('userAssignedIdentityClientId')))]",
@@ -11640,6 +11649,10 @@
                   {
                     "name": "BuildDir",
                     "value": "[variables('buildDir')]"
+                  },
+                  {
+                    "name": "Environment",
+                    "value": "[parameters('cloud')]"
                   },
                   {
                     "name": "InstallAccess",
@@ -11687,7 +11700,7 @@
                   },
                   {
                     "name": "ContainerName",
-                    "value": "[parameters('containerName')]"
+                    "value": "[parameters('artifactsContainerName')]"
                   },
                   {
                     "name": "StorageEndpoint",
@@ -11699,7 +11712,7 @@
                   }
                 ],
                 "source": {
-                  "script": "      \r\n        param(\r\n          [string]$APIVersion,\r\n          [string]$BuildDir,\r\n          [string]$InstallAccess,\r\n          [string]$InstallExcel,\r\n          [string]$InstallOutlook,\r\n          [string]$InstallProject,\r\n          [string]$InstallPublisher,\r\n          [string]$InstallSkypeForBusiness,\r\n          [string]$InstallVisio,\r\n          [string]$InstallWord,\r\n          [string]$InstallOneNote,\r\n          [string]$InstallPowerPoint,\r\n          [string]$UserAssignedIdentityClientId,\r\n          [string]$ContainerName,\r\n          [string]$StorageEndpoint,\r\n          [string]$BlobName\r\n        )\r\n        $SoftwareName = 'Office-365'\r\n        Start-Transcript -Path \"$env:SystemRoot\\Logs\\ImageBuild\\$SoftwareName.log\" -Force\r\n        Write-Output \"Installing '$SoftwareName'.\"\r\n        $TokenUri = \"http://169.254.169.254/metadata/identity/oauth2/token?api-version=$APIVersion&resource=$StorageEndpoint&client_id=$UserAssignedIdentityClientId\"\r\n        $AccessToken = ((Invoke-WebRequest -Headers @{Metadata = $true } -Uri $TokenUri -UseBasicParsing).Content | ConvertFrom-Json).access_token\r\n        $sku = (Get-ComputerInfo).OsName\r\n        $appDir = Join-Path -Path $BuildDir -ChildPath $SoftwareName\r\n        New-Item -Path $appDir -ItemType Directory -Force | Out-Null  \r\n        $ErrorActionPreference = \"Stop\"\r\n        $DestFile = Join-Path -Path $appDir -ChildPath $BlobName\r\n        $WebClient = New-Object System.Net.WebClient\r\n        $WebClient.Headers.Add('x-ms-version', '2017-11-09')\r\n        $webClient.Headers.Add(\"Authorization\", \"Bearer $AccessToken\")\r\n        $webClient.DownloadFile(\"$StorageEndpoint$ContainerName/$BlobName\", \"$DestFile\")\r\n        Start-Sleep -seconds 10\r\n        If (!(Test-Path -Path $DestFile)) { Write-Error \"Failed to download $BlobName\"; Exit 1 }\r\n        Start-Process -FilePath $destFile -ArgumentList \"/extract:`\"$appDir\\ODT`\" /quiet /passive /norestart\" -Wait -PassThru | Out-Null\r\n        Write-Output \"Downloaded & extracted the Office 365 Deployment Toolkit\"\r\n        $setup = (Get-ChildItem -Path \"$appDir\\ODT\" -Filter '*setup*.exe').FullName\r\n        Write-Output \"Dynamically creating $SoftwareName configuration file for setup.\"\r\n        $configFile = Join-Path -Path $appDir -ChildPath 'office365x64.xml'\r\n        $null = Set-Content $configFile '<Configuration>'\r\n        $null = Add-Content $configFile '  <Add OfficeClientEdition=\"64\" Channel=\"MonthlyEnterprise\">'\r\n        $null = Add-Content $configFile '    <Product ID=\"O365ProPlusRetail\">'\r\n        $null = Add-Content $configFile '      <Language ID=\"en-us\" />'\r\n        $null = Add-Content $configFile '      <ExcludeApp ID=\"Groove\" />'\r\n        $null = Add-Content $configFile '      <ExcludeApp ID=\"OneDrive\" />'\r\n        $null = Add-Content $configFile '      <ExcludeApp ID=\"Teams\" />'\r\n        if ($InstallAccess -ne 'True') {\r\n          $null = Add-Content $configFile '      <ExcludeApp ID=\"Access\" />'\r\n        }\r\n        if ($InstallExcel -ne 'True') {\r\n          $null = Add-Content $configFile '      <ExcludeApp ID=\"Excel\" />'\r\n        }\r\n        if ($InstallOneNote -ne 'True') {\r\n          $null = Add-Content $configFile '      <ExcludeApp ID=\"OneNote\" />'\r\n        }\r\n        if ($InstallOutlook -ne 'True') {\r\n          $null = Add-Content $configFile '      <ExcludeApp ID=\"Outlook\" />'\r\n        }\r\n        if ($InstallPowerPoint -ne 'True') {\r\n          $null = Add-Content $configFile '      <ExcludeApp ID=\"PowerPoint\" />'\r\n        }\r\n        if ($InstallPublisher -ne 'True') {\r\n          $null = Add-Content $configFile '      <ExcludeApp ID=\"Publisher\" />'\r\n        }\r\n        if ($InstallSkypeForBusiness -ne 'True') {\r\n          $null = Add-Content $configFile '      <ExcludeApp ID=\"Lync\" />'\r\n        }\r\n        if ($InstallWord -ne 'True') {\r\n          $null = Add-Content $configFile '      <ExcludeApp ID=\"Word\" />'\r\n        }\r\n        $null = Add-Content $configFile '    </Product>'\r\n        if ($InstallProject -eq 'True') {\r\n          $null = Add-Content $configFile '    <Product ID=\"ProjectProRetail\"><Language ID=\"en-us\" /></Product>'\r\n        }\r\n        if ($InstallVisio -eq 'True') {\r\n          $null = Add-Content $configFile '    <Product ID=\"VisioProRetail\"><Language ID=\"en-us\" /></Product>'\r\n        }\r\n        $null = Add-Content $configFile '  </Add>'\r\n        if (($Sku).Contains(\"multi\") -eq \"true\") {\r\n          $null = Add-Content $configFile '  <Property Name=\"SharedComputerLicensing\" Value=\"1\" />'\r\n        }\r\n        $null = Add-Content $configFile '  <Property Name=\"FORCEAPPSHUTDOWN\" Value=\"TRUE\" />'\r\n        $null = Add-Content $configFile '  <Updates Enabled=\"FALSE\" />'\r\n        $null = Add-Content $configFile '  <Display Level=\"None\" AcceptEULA=\"TRUE\" />'\r\n        $null = Add-Content $configFile '</Configuration>'\r\n        Write-Output \"Starting setup process.\"\r\n        $Install = Start-Process -FilePath $setup -ArgumentList \"/configure `\"$configFile`\"\" -Wait -PassThru -ErrorAction \"Stop\"\r\n        If ($($Install.ExitCode) -eq 0) {\r\n          Write-Output \"'$SoftwareName' installed successfully.\"\r\n        }\r\n        Else {\r\n          Write-Error \"'$SoftwareName' install exit code is $($Install.ExitCode)\"\r\n        }\r\n        Stop-Transcript\r\n      "
+                  "script": "      \r\n        param(\r\n          [string]$APIVersion,\r\n          [string]$BuildDir,\r\n          [string]$Environment,\r\n          [string]$InstallAccess,\r\n          [string]$InstallExcel,\r\n          [string]$InstallOutlook,\r\n          [string]$InstallProject,\r\n          [string]$InstallPublisher,\r\n          [string]$InstallSkypeForBusiness,\r\n          [string]$InstallVisio,\r\n          [string]$InstallWord,\r\n          [string]$InstallOneNote,\r\n          [string]$InstallPowerPoint,\r\n          [string]$UserAssignedIdentityClientId,\r\n          [string]$ContainerName,\r\n          [string]$StorageEndpoint,\r\n          [string]$BlobName\r\n        )\r\n        $SoftwareName = 'Office-365'\r\n        Start-Transcript -Path \"$env:SystemRoot\\Logs\\ImageBuild\\$SoftwareName.log\" -Force\r\n        Write-Output \"Installing '$SoftwareName'.\"\r\n        $TokenUri = \"http://169.254.169.254/metadata/identity/oauth2/token?api-version=$APIVersion&resource=$StorageEndpoint&client_id=$UserAssignedIdentityClientId\"\r\n        $AccessToken = ((Invoke-WebRequest -Headers @{Metadata = $true } -Uri $TokenUri -UseBasicParsing).Content | ConvertFrom-Json).access_token\r\n        $sku = (Get-ComputerInfo).OsName\r\n        $appDir = Join-Path -Path $BuildDir -ChildPath $SoftwareName\r\n        New-Item -Path $appDir -ItemType Directory -Force | Out-Null  \r\n        $ErrorActionPreference = \"Stop\"\r\n        $DestFile = Join-Path -Path $appDir -ChildPath $BlobName\r\n        $WebClient = New-Object System.Net.WebClient\r\n        $WebClient.Headers.Add('x-ms-version', '2017-11-09')\r\n        $webClient.Headers.Add(\"Authorization\", \"Bearer $AccessToken\")\r\n        $webClient.DownloadFile(\"$StorageEndpoint$ContainerName/$BlobName\", \"$DestFile\")\r\n        Start-Sleep -seconds 10\r\n        If (!(Test-Path -Path $DestFile)) { Write-Error \"Failed to download $BlobName\"; Exit 1 }\r\n        Start-Process -FilePath $destFile -ArgumentList \"/extract:`\"$appDir\\ODT`\" /quiet /passive /norestart\" -Wait -PassThru | Out-Null\r\n        Write-Output \"Downloaded & extracted the Office 365 Deployment Toolkit\"\r\n        $setup = (Get-ChildItem -Path \"$appDir\\ODT\" -Filter '*setup*.exe').FullName\r\n        Write-Output \"Dynamically creating $SoftwareName configuration file for setup.\"\r\n        $configFile = Join-Path -Path $appDir -ChildPath 'office365x64.xml'\r\n        $null = Set-Content $configFile '<Configuration>'\r\n        Switch ($Environment) {\r\n            \"USSec\" {\r\n                $null = Add-Content $configFile '  <Add AllowCdnFallback=\"TRUE\" SourcePath=\"https://officexo.azurefd.microsoft.scloud/prsstelecontainer/55336b82-a18d-4dd6-b5f6-9e5095c314a6/\" Channel=\"MonthlyEnterprise\" OfficeClientEdition=\"64\">'\r\n            }\r\n            \"USNat\" { \r\n                $null = Add-Content $configFile '  <Add AllowCdnFallback=\"TRUE\" SourcePath=\"https://officexo.azurefd.eaglex.ic.gov/prsstelecontainer/55336b82-a18d-4dd6-b5f6-9e5095c314a6/\" Channel=\"MonthlyEnterprise\" OfficeClientEdition=\"64\">'\r\n            }\r\n            Else {\r\n                $null = Add-Content $configFile '  <Add OfficeClientEdition=\"64\" Channel=\"MonthlyEnterprise\">'\r\n            }\r\n        }        \r\n        $null = Add-Content $configFile '    <Product ID=\"O365ProPlusRetail\">'\r\n        $null = Add-Content $configFile '      <Language ID=\"en-us\" />'\r\n        $null = Add-Content $configFile '      <ExcludeApp ID=\"Groove\" />'\r\n        $null = Add-Content $configFile '      <ExcludeApp ID=\"OneDrive\" />'\r\n        $null = Add-Content $configFile '      <ExcludeApp ID=\"Teams\" />'\r\n        if ($InstallAccess -ne 'True') {\r\n          $null = Add-Content $configFile '      <ExcludeApp ID=\"Access\" />'\r\n        }\r\n        if ($InstallExcel -ne 'True') {\r\n          $null = Add-Content $configFile '      <ExcludeApp ID=\"Excel\" />'\r\n        }\r\n        if ($InstallOneNote -ne 'True') {\r\n          $null = Add-Content $configFile '      <ExcludeApp ID=\"OneNote\" />'\r\n        }\r\n        if ($InstallOutlook -ne 'True') {\r\n          $null = Add-Content $configFile '      <ExcludeApp ID=\"Outlook\" />'\r\n        }\r\n        if ($InstallPowerPoint -ne 'True') {\r\n          $null = Add-Content $configFile '      <ExcludeApp ID=\"PowerPoint\" />'\r\n        }\r\n        if ($InstallPublisher -ne 'True') {\r\n          $null = Add-Content $configFile '      <ExcludeApp ID=\"Publisher\" />'\r\n        }\r\n        if ($InstallSkypeForBusiness -ne 'True') {\r\n          $null = Add-Content $configFile '      <ExcludeApp ID=\"Lync\" />'\r\n        }\r\n        if ($InstallWord -ne 'True') {\r\n          $null = Add-Content $configFile '      <ExcludeApp ID=\"Word\" />'\r\n        }\r\n        $null = Add-Content $configFile '    </Product>'\r\n        if ($InstallProject -eq 'True') {\r\n          $null = Add-Content $configFile '    <Product ID=\"ProjectProRetail\"><Language ID=\"en-us\" /></Product>'\r\n        }\r\n        if ($InstallVisio -eq 'True') {\r\n          $null = Add-Content $configFile '    <Product ID=\"VisioProRetail\"><Language ID=\"en-us\" /></Product>'\r\n        }\r\n        $null = Add-Content $configFile '  </Add>'\r\n        if (($Sku).Contains(\"multi\") -eq \"true\") {\r\n          $null = Add-Content $configFile '  <Property Name=\"SharedComputerLicensing\" Value=\"1\" />'\r\n        }\r\n        $null = Add-Content $configFile '  <Property Name=\"FORCEAPPSHUTDOWN\" Value=\"TRUE\" />'\r\n        $null = Add-Content $configFile '  <Updates Enabled=\"FALSE\" />'\r\n        $null = Add-Content $configFile '  <Display Level=\"None\" AcceptEULA=\"TRUE\" />'\r\n        $null = Add-Content $configFile '</Configuration>'\r\n        Write-Output \"Starting setup process.\"\r\n        $Install = Start-Process -FilePath $setup -ArgumentList \"/configure `\"$configFile`\"\" -Wait -PassThru -ErrorAction \"Stop\"\r\n        If ($($Install.ExitCode) -eq 0) {\r\n          Write-Output \"'$SoftwareName' installed successfully.\"\r\n        }\r\n        Else {\r\n          Write-Error \"'$SoftwareName' install exit code is $($Install.ExitCode)\"\r\n        }\r\n        Stop-Transcript\r\n      "
                 }
               },
               "dependsOn": [
@@ -11734,7 +11747,7 @@
                   },
                   {
                     "name": "ContainerName",
-                    "value": "[parameters('containerName')]"
+                    "value": "[parameters('artifactsContainerName')]"
                   },
                   {
                     "name": "StorageEndpoint",
@@ -11753,14 +11766,14 @@
                 "applications",
                 "[resourceId('Microsoft.Compute/virtualMachines/runCommands', parameters('imageVmName'), 'create-BuildDir-and-LogDir')]",
                 "[resourceId('Microsoft.Compute/virtualMachines/runCommands', parameters('imageVmName'), 'fslogix')]",
-                "[resourceId('Microsoft.Compute/virtualMachines/runCommands', parameters('imageVmName'), 'install-office')]"
+                "[resourceId('Microsoft.Compute/virtualMachines/runCommands', parameters('imageVmName'), 'm365Apps')]"
               ]
             },
             {
-              "condition": "[parameters('installTeams')]",
+              "condition": "[and(parameters('installTeams'), equals(parameters('teamsVersion'), 'Classic'))]",
               "type": "Microsoft.Compute/virtualMachines/runCommands",
               "apiVersion": "2023-03-01",
-              "name": "[format('{0}/{1}', parameters('imageVmName'), 'teams')]",
+              "name": "[format('{0}/{1}', parameters('imageVmName'), 'teamsClassic')]",
               "location": "[parameters('location')]",
               "properties": {
                 "errorBlobManagedIdentity": "[if(empty(parameters('logBlobContainerUri')), null(), createObject('clientId', parameters('userAssignedIdentityClientId')))]",
@@ -11777,12 +11790,16 @@
                     "value": "[variables('buildDir')]"
                   },
                   {
+                    "name": "Environment",
+                    "value": "[parameters('cloud')]"
+                  },
+                  {
                     "name": "UserAssignedIdentityClientId",
                     "value": "[parameters('userAssignedIdentityClientId')]"
                   },
                   {
                     "name": "ContainerName",
-                    "value": "[parameters('containerName')]"
+                    "value": "[parameters('artifactsContainerName')]"
                   },
                   {
                     "name": "StorageEndpoint",
@@ -11794,14 +11811,67 @@
                   }
                 ],
                 "source": {
-                  "script": "        param(\r\n          [string]$APIVersion,\r\n          [string]$BuildDir,\r\n          [string]$UserAssignedIdentityClientId,\r\n          [string]$ContainerName,\r\n          [string]$StorageEndpoint,\r\n          [string]$BlobName\r\n        )\r\n        $SoftwareName = 'Teams'\r\n        Start-Transcript -Path \"$env:SystemRoot\\Logs\\ImageBuild\\$SoftwareName.log\" -Force\r\n        $TokenUri = \"http://169.254.169.254/metadata/identity/oauth2/token?api-version=$APIVersion&resource=$StorageEndpoint&client_id=$UserAssignedIdentityClientId\"\r\n        $AccessToken = ((Invoke-WebRequest -Headers @{Metadata=$true} -Uri $TokenUri -UseBasicParsing).Content | ConvertFrom-Json).access_token\r\n        $sku = (Get-ComputerInfo).OsName\r\n        $appDir = Join-Path -Path $BuildDir -ChildPath $SoftwareName\r\n        New-Item -Path $appDir -ItemType Directory -Force | Out-Null\r\n        $destFile = Join-Path -Path $appDir -ChildPath $BlobName\r\n        $WebClient = New-Object System.Net.WebClient\r\n        $WebClient.Headers.Add('x-ms-version', '2017-11-09')\r\n        $webClient.Headers.Add(\"Authorization\", \"Bearer $AccessToken\")\r\n        $webClient.DownloadFile(\"$StorageEndpoint$ContainerName/$BlobName\", \"$destFile\")\r\n        Start-Sleep -seconds 10\r\n        If (!(Test-Path -Path $DestFile)) { Write-Error \"Failed to download $BlobName\"; Exit 1 }\r\n        Expand-Archive -Path $destFile -DestinationPath $appDir -Force\r\n        $vcRedistFile = (Get-ChildItem -Path $appDir -filter 'vc*.exe' -Recurse).FullName\r\n        $webRTCFile = (Get-ChildItem -Path $appDir -filter '*WebRTC*.msi' -Recurse).FullName\r\n        $teamsFile = (Get-ChildItem -Path $appDir -filter '*Teams*.msi' -Recurse).FullName\r\n        # Enable media optimizations for Team\r\n        New-Item -Path \"HKLM:\\SOFTWARE\\Microsoft\\Teams\" -Force\r\n        New-ItemProperty -Path \"HKLM:\\SOFTWARE\\Microsoft\\Teams\" -Name IsWVDEnvironment -PropertyType DWORD -Value 1 -Force\r\n        Write-Output \"Enabled media optimizations for Teams\"\r\n        $ErrorActionPreference = \"Stop\"\r\n        Start-Process -FilePath  $vcRedistFile -ArgumentList \"/install /quiet /norestart\" -Wait -PassThru | Out-Null\r\n        Write-Output \"Installed the latest version of Microsoft Visual C++ Redistributable\"\r\n        # install the Remote Desktop WebRTC Redirector Service\r\n        Start-Process -FilePath msiexec.exe -ArgumentList \"/i  $webRTCFile /quiet /qn /norestart /passive\" -Wait -PassThru | Out-Null\r\n        Write-Output \"Installed the Remote Desktop WebRTC Redirector Service\"\r\n        # Install Teams\r\n        if(($Sku).Contains('multi')){\r\n            $msiArgs = 'ALLUSER=1 ALLUSERS=1'\r\n        } else {\r\n            $msiArgs = 'ALLUSERS=1'\r\n        }\r\n        Start-Process -FilePath msiexec.exe -ArgumentList \"/i $teamsFile /quiet /qn /norestart /passive $msiArgs\" -Wait -PassThru | Out-Null\r\n        Write-Output \"Installed Teams\"\r\n        Stop-Transcript\r\n      "
+                  "script": "        param(\r\n          [string]$APIVersion,\r\n          [string]$BuildDir,\r\n          [string]$Environment,\r\n          [string]$UserAssignedIdentityClientId,\r\n          [string]$ContainerName,\r\n          [string]$StorageEndpoint,\r\n          [string]$BlobName\r\n        )\r\n        $SoftwareName = 'Teams'\r\n        Start-Transcript -Path \"$env:SystemRoot\\Logs\\ImageBuild\\$SoftwareName.log\" -Force\r\n        $TokenUri = \"http://169.254.169.254/metadata/identity/oauth2/token?api-version=$APIVersion&resource=$StorageEndpoint&client_id=$UserAssignedIdentityClientId\"\r\n        $AccessToken = ((Invoke-WebRequest -Headers @{Metadata=$true} -Uri $TokenUri -UseBasicParsing).Content | ConvertFrom-Json).access_token\r\n        $sku = (Get-ComputerInfo).OsName\r\n        $appDir = Join-Path -Path $BuildDir -ChildPath $SoftwareName\r\n        New-Item -Path $appDir -ItemType Directory -Force | Out-Null\r\n        $destFile = Join-Path -Path $appDir -ChildPath $BlobName\r\n        $WebClient = New-Object System.Net.WebClient\r\n        $WebClient.Headers.Add('x-ms-version', '2017-11-09')\r\n        $webClient.Headers.Add(\"Authorization\", \"Bearer $AccessToken\")\r\n        $webClient.DownloadFile(\"$StorageEndpoint$ContainerName/$BlobName\", \"$destFile\")\r\n        Start-Sleep -seconds 10\r\n        If (!(Test-Path -Path $DestFile)) { Write-Error \"Failed to download $BlobName\"; Exit 1 }\r\n        Expand-Archive -Path $destFile -DestinationPath $appDir -Force\r\n        $vcRedistFile = (Get-ChildItem -Path $appDir -filter 'vc*.exe' -Recurse).FullName\r\n        $webRTCFile = (Get-ChildItem -Path $appDir -filter '*WebRTC*.msi' -Recurse).FullName\r\n        $teamsFile = (Get-ChildItem -Path $appDir -filter '*Teams*.msi' -Recurse).FullName\r\n        # Enable media optimizations for Team\r\n        New-Item -Path \"HKLM:\\SOFTWARE\\Microsoft\\Teams\" -Force\r\n        New-ItemProperty -Path \"HKLM:\\SOFTWARE\\Microsoft\\Teams\" -Name IsWVDEnvironment -PropertyType DWORD -Value 1 -Force\r\n        Write-Output \"Enabled media optimizations for Teams\"\r\n        $ErrorActionPreference = \"Stop\"\r\n        Start-Process -FilePath  $vcRedistFile -ArgumentList \"/install /quiet /norestart\" -Wait -PassThru | Out-Null\r\n        Write-Output \"Installed the latest version of Microsoft Visual C++ Redistributable\"\r\n        # install the Remote Desktop WebRTC Redirector Service\r\n        Start-Process -FilePath msiexec.exe -ArgumentList \"/i  $webRTCFile /quiet /qn /norestart /passive\" -Wait -PassThru | Out-Null\r\n        Write-Output \"Installed the Remote Desktop WebRTC Redirector Service\"\r\n        # Install Teams\r\n        if(($Sku).Contains('multi')){\r\n          $msiArgs = 'ALLUSER=1 ALLUSERS=1'\r\n        } else {\r\n          $msiArgs = 'ALLUSERS=1'\r\n        }\r\n        Start-Process -FilePath msiexec.exe -ArgumentList \"/i $teamsFile /quiet /qn /norestart /passive $msiArgs\" -Wait -PassThru | Out-Null\r\n        Switch($Environment) {\r\n          \"USSec\" {\r\n            $CloudType = 5\r\n          }\r\n          \"USNat\" {\r\n            $CloudType = 6\r\n          }\r\n        }\r\n        If ($CloudType) {\r\n            Start-Process -FilePath reg.exe -ArgumentList \"LOAD HKLM\\Default $env:SystemDrive\\Users\\Default\\ntuser.dat\" -Wait\r\n            $Result = Start-Process -FilePath reg.exe -ArgumentList \"ADD HKLM\\Default\\SOFTWARE\\Microsoft\\Office\\16.0\\Teams /n CloudType /t REG_DWORD /v $CloudType /f\" -Wait -PassThru\r\n            $Result.Handle.Close()\r\n            [gc]::Collect()\r\n            $Result = Start-Process -FilePath reg.exe -ArgumentList \"UNLOAD HKLM\\Default\" -Wait -PassThru\r\n        }\r\n        Write-Output \"Installed Teams\"\r\n        Stop-Transcript\r\n      "
                 }
               },
               "dependsOn": [
                 "applications",
                 "[resourceId('Microsoft.Compute/virtualMachines/runCommands', parameters('imageVmName'), 'create-BuildDir-and-LogDir')]",
                 "[resourceId('Microsoft.Compute/virtualMachines/runCommands', parameters('imageVmName'), 'fslogix')]",
-                "[resourceId('Microsoft.Compute/virtualMachines/runCommands', parameters('imageVmName'), 'install-office')]",
+                "[resourceId('Microsoft.Compute/virtualMachines/runCommands', parameters('imageVmName'), 'm365Apps')]",
+                "[resourceId('Microsoft.Compute/virtualMachines/runCommands', parameters('imageVmName'), 'onedrive')]"
+              ]
+            },
+            {
+              "condition": "[and(parameters('installTeams'), equals(parameters('teamsVersion'), 'New'))]",
+              "type": "Microsoft.Compute/virtualMachines/runCommands",
+              "apiVersion": "2023-03-01",
+              "name": "[format('{0}/{1}', parameters('imageVmName'), 'teamsNew')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "errorBlobManagedIdentity": "[if(empty(parameters('logBlobContainerUri')), null(), createObject('clientId', parameters('userAssignedIdentityClientId')))]",
+                "errorBlobUri": "[if(empty(parameters('logBlobContainerUri')), null(), format('{0}{1}-Teams-error-{2}.log', parameters('logBlobContainerUri'), parameters('imageVmName'), parameters('timeStamp')))]",
+                "outputBlobManagedIdentity": "[if(empty(parameters('logBlobContainerUri')), null(), createObject('clientId', parameters('userAssignedIdentityClientId')))]",
+                "outputBlobUri": "[if(empty(parameters('logBlobContainerUri')), null(), format('{0}{1}-Teams-output-{2}.log', parameters('logBlobContainerUri'), parameters('imageVmName'), parameters('timeStamp')))]",
+                "parameters": [
+                  {
+                    "name": "APIVersion",
+                    "value": "[variables('apiVersion')]"
+                  },
+                  {
+                    "name": "BuildDir",
+                    "value": "[variables('buildDir')]"
+                  },
+                  {
+                    "name": "Environment",
+                    "value": "[parameters('cloud')]"
+                  },
+                  {
+                    "name": "UserAssignedIdentityClientId",
+                    "value": "[parameters('userAssignedIdentityClientId')]"
+                  },
+                  {
+                    "name": "ContainerName",
+                    "value": "[parameters('artifactsContainerName')]"
+                  },
+                  {
+                    "name": "StorageEndpoint",
+                    "value": "[parameters('storageEndpoint')]"
+                  },
+                  {
+                    "name": "BlobName",
+                    "value": "[parameters('teamsBlobName')]"
+                  }
+                ],
+                "source": {
+                  "script": "        param(\r\n          [string]$APIVersion,\r\n          [string]$BuildDir,\r\n          [string]$Environment,\r\n          [string]$UserAssignedIdentityClientId,\r\n          [string]$ContainerName,\r\n          [string]$StorageEndpoint,\r\n          [string]$BlobName\r\n        )\r\n        $SoftwareName = 'Teams'\r\n        Start-Transcript -Path \"$env:SystemRoot\\Logs\\ImageBuild\\$SoftwareName.log\" -Force\r\n        $TokenUri = \"http://169.254.169.254/metadata/identity/oauth2/token?api-version=$APIVersion&resource=$StorageEndpoint&client_id=$UserAssignedIdentityClientId\"\r\n        $AccessToken = ((Invoke-WebRequest -Headers @{Metadata=$true} -Uri $TokenUri -UseBasicParsing).Content | ConvertFrom-Json).access_token\r\n        $sku = (Get-ComputerInfo).OsName\r\n        $appDir = Join-Path -Path $BuildDir -ChildPath $SoftwareName\r\n        New-Item -Path $appDir -ItemType Directory -Force | Out-Null\r\n        $destFile = Join-Path -Path $appDir -ChildPath $BlobName\r\n        $WebClient = New-Object System.Net.WebClient\r\n        $WebClient.Headers.Add('x-ms-version', '2017-11-09')\r\n        $webClient.Headers.Add(\"Authorization\", \"Bearer $AccessToken\")\r\n        $webClient.DownloadFile(\"$StorageEndpoint$ContainerName/$BlobName\", \"$destFile\")\r\n        Start-Sleep -seconds 10\r\n        If (!(Test-Path -Path $DestFile)) { Write-Error \"Failed to download $BlobName\"; Exit 1 }\r\n        Expand-Archive -Path $destFile -DestinationPath $appDir -Force\r\n        $WebView2 = (Get-ChildItem -Path $appDir -filter 'webview*' -Recurse).FullName\r\n        $vcRedistFile = (Get-ChildItem -Path $appDir -filter 'vc*.exe' -Recurse).FullName\r\n        $webRTCFile = (Get-ChildItem -Path $appDir -filter '*WebRTC*.msi' -Recurse).FullName\r\n        $BootStrapperFile = (Get-ChildItem -Path $appDir -filter '*bootstrapper.exe' -Recurse).FullName\r\n        $MSIXFile = (Get-ChildItem -Path $appDir -filter '*.msix' -Recurse).FullName\r\n        # Enable media optimizations for Team\r\n        New-Item -Path \"HKLM:\\SOFTWARE\\Microsoft\\Teams\" -Force\r\n        New-ItemProperty -Path \"HKLM:\\SOFTWARE\\Microsoft\\Teams\" -Name IsWVDEnvironment -PropertyType DWORD -Value 1 -Force\r\n        Write-Output \"Enabled media optimizations for Teams\"\r\n        $ErrorActionPreference = \"Stop\"\r\n        Start-Process -FilePath  $vcRedistFile -ArgumentList \"/install /quiet /norestart\" -Wait -PassThru | Out-Null\r\n        Write-Output \"Installed the latest version of Microsoft Visual C++ Redistributable\"\r\n        Start-Process -FilePath  $WebView2 -ArgumentList \"/silent\" -Wait -PassThru | Out-Null\r\n        Write-Output \"Installed the latest version of the Microsoft WebView2 Runtime\"\r\n        # install the Remote Desktop WebRTC Redirector Service\r\n        Start-Process -FilePath msiexec.exe -ArgumentList \"/i  $webRTCFile /quiet /qn /norestart /passive\" -Wait -PassThru | Out-Null\r\n        Write-Output \"Installed the Remote Desktop WebRTC Redirector Service\"\r\n        Start-Process -FilePath $BootStrapperFile -ArgumentList \"-p -o $MSIXFile\" -Wait -PassThru | Out-Null\r\n        Switch($Environment) {\r\n          \"USSec\" {\r\n            $CloudType = 5\r\n          }\r\n          \"USNat\" {\r\n            $CloudType = 6\r\n          }\r\n        }\r\n        If ($CloudType) {\r\n            Start-Process -FilePath reg.exe -ArgumentList \"LOAD HKLM\\Default $env:SystemDrive\\Users\\Default\\ntuser.dat\" -Wait\r\n            $Result = Start-Process -FilePath reg.exe -ArgumentList \"ADD HKLM\\Default\\SOFTWARE\\Microsoft\\Office\\16.0\\Teams /n CloudType /t REG_DWORD /v $CloudType /f\" -Wait -PassThru\r\n            $Result.Handle.Close()\r\n            [gc]::Collect()\r\n            $Result = Start-Process -FilePath reg.exe -ArgumentList \"UNLOAD HKLM\\Default\" -Wait -PassThru\r\n        }\r\n        Write-Output \"Installed Teams\"\r\n        Stop-Transcript\r\n      "
+                }
+              },
+              "dependsOn": [
+                "applications",
+                "[resourceId('Microsoft.Compute/virtualMachines/runCommands', parameters('imageVmName'), 'create-BuildDir-and-LogDir')]",
+                "[resourceId('Microsoft.Compute/virtualMachines/runCommands', parameters('imageVmName'), 'fslogix')]",
+                "[resourceId('Microsoft.Compute/virtualMachines/runCommands', parameters('imageVmName'), 'm365Apps')]",
                 "[resourceId('Microsoft.Compute/virtualMachines/runCommands', parameters('imageVmName'), 'onedrive')]"
               ]
             },
@@ -11839,15 +11909,16 @@
                 "applications",
                 "[resourceId('Microsoft.Compute/virtualMachines/runCommands', parameters('imageVmName'), 'create-BuildDir-and-LogDir')]",
                 "[resourceId('Microsoft.Compute/virtualMachines/runCommands', parameters('imageVmName'), 'fslogix')]",
-                "[resourceId('Microsoft.Compute/virtualMachines/runCommands', parameters('imageVmName'), 'install-office')]",
-                "[resourceId('Microsoft.Compute/virtualMachines/runCommands', parameters('imageVmName'), 'teams')]"
+                "[resourceId('Microsoft.Compute/virtualMachines/runCommands', parameters('imageVmName'), 'm365Apps')]",
+                "[resourceId('Microsoft.Compute/virtualMachines/runCommands', parameters('imageVmName'), 'teamsClassic')]",
+                "[resourceId('Microsoft.Compute/virtualMachines/runCommands', parameters('imageVmName'), 'teamsNew')]"
               ]
             },
             {
               "condition": "[parameters('installUpdates')]",
               "type": "Microsoft.Compute/virtualMachines/runCommands",
               "apiVersion": "2023-03-01",
-              "name": "[format('{0}/{1}', parameters('imageVmName'), 'install-microsoft-updates')]",
+              "name": "[format('{0}/{1}', parameters('imageVmName'), 'microsoft-updates')]",
               "location": "[parameters('location')]",
               "properties": {
                 "asyncExecution": false,
@@ -11897,7 +11968,7 @@
                 }
               },
               "dependsOn": [
-                "[resourceId('Microsoft.Compute/virtualMachines/runCommands', parameters('imageVmName'), 'install-microsoft-updates')]"
+                "[resourceId('Microsoft.Compute/virtualMachines/runCommands', parameters('imageVmName'), 'microsoft-updates')]"
               ]
             },
             {
@@ -11923,7 +11994,7 @@
                   },
                   {
                     "name": "ContainerName",
-                    "value": "[parameters('containerName')]"
+                    "value": "[parameters('artifactsContainerName')]"
                   },
                   {
                     "name": "StorageEndpoint",
@@ -12067,8 +12138,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.26.170.59819",
-              "templateHash": "3291254612801285640"
+              "version": "0.28.1.47646",
+              "templateHash": "566939147026680743"
             }
           },
           "parameters": {
@@ -12144,7 +12215,7 @@
         "mode": "Incremental",
         "parameters": {
           "location": {
-            "value": "[parameters('deploymentLocation')]"
+            "value": "[parameters('location')]"
           },
           "galleryName": {
             "value": "[last(split(parameters('computeGalleryResourceId'), '/'))]"
@@ -12179,7 +12250,8 @@
           },
           "sku": {
             "value": "[variables('galleryImageDefinitionSku')]"
-          }
+          },
+          "tags": "[if(contains(parameters('tags'), 'Microsoft.Compute/galleries/images'), createObject('value', parameters('tags')['Microsoft.Compute/galleries/images']), createObject('value', createObject()))]"
         },
         "template": {
           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -12187,8 +12259,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.26.170.59819",
-              "templateHash": "1578542132309762849"
+              "version": "0.28.1.47646",
+              "templateHash": "1044899981743915249"
             },
             "name": "Compute Galleries Image Definitions",
             "description": "This module deploys an Azure Compute Gallery Image Definition.",
@@ -12523,11 +12595,11 @@
         "mode": "Incremental",
         "parameters": {
           "commandToExecute": {
-            "value": "[format('powershell.exe -ExecutionPolicy Unrestricted -command .\\Get-ImageVersionSource.ps1 {0}', if(not(empty(parameters('imageDefinitionResourceId'))), format('{0} -ImageDefinitionResourceId \"{1}\" -VmName {2} -ResourceGroupName {3} -Location {4}', format('-environment {0} -subscription {1} -tenant {2} -userAssignedIdentityClientId {3}', variables('cloud'), variables('subscriptionId'), variables('tenantId'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('userAssignedIdentityResourceId'), '/')[2], split(parameters('userAssignedIdentityResourceId'), '/')[4]), 'Microsoft.ManagedIdentity/userAssignedIdentities', last(split(parameters('userAssignedIdentityResourceId'), '/'))), '2023-01-31').clientId), parameters('imageDefinitionResourceId'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}Image-VM-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.name.value, variables('imageBuildResourceGroupName'), parameters('deploymentLocation')), format('{0} -ImageDefinitionResourceId \"{1}\" -VmName {2} -ResourceGroupName {3} -Location {4}', format('-environment {0} -subscription {1} -tenant {2} -userAssignedIdentityClientId {3}', variables('cloud'), variables('subscriptionId'), variables('tenantId'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('userAssignedIdentityResourceId'), '/')[2], split(parameters('userAssignedIdentityResourceId'), '/')[4]), 'Microsoft.ManagedIdentity/userAssignedIdentities', last(split(parameters('userAssignedIdentityResourceId'), '/'))), '2023-01-31').clientId), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('computeGalleryResourceId'), '/')[2], split(parameters('computeGalleryResourceId'), '/')[4]), 'Microsoft.Resources/deployments', format('{0}Gallery-Image-Definition-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.resourceId.value, reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}Image-VM-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.name.value, variables('imageBuildResourceGroupName'), parameters('deploymentLocation'))))]"
+            "value": "[format('powershell.exe -ExecutionPolicy Unrestricted -File Get-ImageVersionSource.ps1 {0}', if(not(empty(parameters('imageDefinitionResourceId'))), format('{0} -ImageDefinitionResourceId \"{1}\" -VmName {2} -ResourceGroupName {3} -Location {4}', format('-environment {0} -subscription {1} -tenant {2} -userAssignedIdentityClientId {3}', variables('cloud'), variables('subscriptionId'), variables('tenantId'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('userAssignedIdentityResourceId'), '/')[2], split(parameters('userAssignedIdentityResourceId'), '/')[4]), 'Microsoft.ManagedIdentity/userAssignedIdentities', last(split(parameters('userAssignedIdentityResourceId'), '/'))), '2023-01-31').clientId), parameters('imageDefinitionResourceId'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}Image-VM-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.name.value, variables('imageBuildResourceGroupName'), parameters('location')), format('{0} -ImageDefinitionResourceId \"{1}\" -VmName {2} -ResourceGroupName {3} -Location {4}', format('-environment {0} -subscription {1} -tenant {2} -userAssignedIdentityClientId {3}', variables('cloud'), variables('subscriptionId'), variables('tenantId'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('userAssignedIdentityResourceId'), '/')[2], split(parameters('userAssignedIdentityResourceId'), '/')[4]), 'Microsoft.ManagedIdentity/userAssignedIdentities', last(split(parameters('userAssignedIdentityResourceId'), '/'))), '2023-01-31').clientId), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('computeGalleryResourceId'), '/')[2], split(parameters('computeGalleryResourceId'), '/')[4]), 'Microsoft.Resources/deployments', format('{0}Gallery-Image-Definition-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.resourceId.value, reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}Image-VM-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.name.value, variables('imageBuildResourceGroupName'), parameters('location'))))]"
           },
           "fileUris": {
             "value": [
-              "[format('{0}Get-ImageVersionSource.ps1', format('{0}{1}/', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('storageAccountResourceId'), '/')[2], split(parameters('storageAccountResourceId'), '/')[4]), 'Microsoft.Storage/storageAccounts', last(split(parameters('storageAccountResourceId'), '/'))), '2022-09-01').primaryEndpoints.blob, parameters('containerName')))]"
+              "[format('{0}Get-ImageVersionSource.ps1', format('{0}{1}/', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('storageAccountResourceId'), '/')[2], split(parameters('storageAccountResourceId'), '/')[4]), 'Microsoft.Storage/storageAccounts', last(split(parameters('storageAccountResourceId'), '/'))), '2022-09-01').primaryEndpoints.blob, parameters('artifactsContainerName')))]"
             ]
           },
           "output": {
@@ -12549,8 +12621,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.26.170.59819",
-              "templateHash": "13135978661573219399"
+              "version": "0.28.1.47646",
+              "templateHash": "4217346631862922393"
             }
           },
           "parameters": {
@@ -12638,7 +12710,7 @@
         "mode": "Incremental",
         "parameters": {
           "location": {
-            "value": "[parameters('deploymentLocation')]"
+            "value": "[parameters('location')]"
           },
           "name": {
             "value": "[variables('imageVersionName')]"
@@ -12665,9 +12737,7 @@
           "targetRegions": {
             "value": "[variables('imageVersionReplicationRegions')]"
           },
-          "tags": {
-            "value": {}
-          }
+          "tags": "[if(contains(parameters('tags'), 'Microsoft.Compute/galleries/images/versions'), createObject('value', parameters('tags')['Microsoft.Compute/galleries/images/versions']), createObject('value', createObject()))]"
         },
         "template": {
           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -12675,8 +12745,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.26.170.59819",
-              "templateHash": "12439821720268124327"
+              "version": "0.28.1.47646",
+              "templateHash": "7901203601434008078"
             },
             "name": "Compute Galleries Image Version",
             "description": "This module deploys an Azure Compute Gallery Image Definition Version",
@@ -12953,8 +13023,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.26.170.59819",
-              "templateHash": "10606946144155421671"
+              "version": "0.28.1.47646",
+              "templateHash": "8137536028716713999"
             }
           },
           "parameters": {

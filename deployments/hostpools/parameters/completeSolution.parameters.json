@@ -1,0 +1,61 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "artifactsContainerName": {
+      "value": "artifacts"
+    },
+    "artifactsStorageAccountResourceId": {
+      "value": ""
+    },
+    "artifactsUserAssignedIdentityResourceId" :{
+      "value": ""
+    },
+    "identitySolution": {
+      "value": "EntraId"
+    },
+    "availability": {
+      "value": "availabilityZones" 
+    },
+    "AvdObjectId": {
+      "value": ""
+    },
+    "managementPrivateEndpoints": {
+      "value": false
+    },
+    "storagePrivateEndpoints": {
+      "value": false
+    },
+    "hostPoolIdentifier": {
+      "value": ""
+    },
+    "virtualMachineSubnetResourceId": {
+      "value": ""
+    },
+    "securityPrincipals": {
+      "value": [
+      ]
+    },
+    "sessionHostCount": {
+      "value": 3
+    },
+    "sessionHostIndex": {
+      "value": 1
+    },
+    "virtualMachineNamePrefix": {
+      "value": ""
+    },
+    "VirtualMachineAdminPassword": {
+      "value": ""
+    },
+    "VirtualMachineAdminUsername": {
+      "value": ""
+    },
+    "workspaceFriendlyName": {
+      "value": ""
+    },
+    "securityDataCollectionRulesResourceId": {
+      "value": ""
+    }
+  }
+}

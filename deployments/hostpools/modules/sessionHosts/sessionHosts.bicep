@@ -15,6 +15,9 @@ param cseScriptAddDynParameters string
 param cseUris array
 param customImageResourceId string
 param dataCollectionEndpointResourceId string
+param dedicatedHostGroupResourceId string
+param dedicatedHostGroupZones array
+param dedicatedHostResourceId string
 param avdInsightsDataCollectionRulesResourceId string
 param vmInsightsDataCollectionRulesResourceId string
 param diskEncryptionSetResourceId string
@@ -126,6 +129,9 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     cseUris: cseUris
     customImageResourceId: customImageResourceId
     dataCollectionEndpointResourceId: dataCollectionEndpointResourceId
+    dedicatedHostGroupResourceId: dedicatedHostGroupResourceId
+    dedicatedHostGroupZones: dedicatedHostGroupZones
+    dedicatedHostResourceId: dedicatedHostResourceId
     diskEncryptionSetResourceId: diskEncryptionSetResourceId
     diskNamePrefix: diskNamePrefix
     diskSku: diskSku

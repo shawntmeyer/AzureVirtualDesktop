@@ -5,7 +5,7 @@ param location string = resourceGroup().location
 param userAssignedIdentityClientId string
 param logBlobContainerUri string
 param storageEndpoint string
-param containerName string
+param artifactsContainerName string
 param managementVmName string
 param imageVmName string
 param installFsLogix bool
@@ -106,7 +106,7 @@ resource applications 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01'
       }
       {
         name: 'ContainerName'
-        value: containerName
+        value: artifactsContainerName
       }
       {
         name: 'StorageEndpoint'
@@ -143,7 +143,7 @@ resource applications 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01'
         $AccessToken = ((Invoke-WebRequest -Headers @{Metadata=$true} -Uri $TokenUri -UseBasicParsing).Content | ConvertFrom-Json).access_token
         $InstallDir = Join-Path $BuildDir -ChildPath $Installer
         New-Item -Path $InstallDir -ItemType Directory -Force | Out-Null
-        Write-Output "Downloading $BlobName from $ContainerName with to $InstallDir"
+        Write-Output "Downloading '$BlobName' to '$InstallDir'."
         $WebClient = New-Object System.Net.WebClient
         $WebClient.Headers.Add('x-ms-version', '2017-11-09')
         $webClient.Headers.Add("Authorization", "Bearer $AccessToken")
@@ -154,13 +154,13 @@ resource applications 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01'
         Set-Location -Path $InstallDir
         if($Blobname -like '*.exe') {
           If ($Arguments) {
-            Start-Process -FilePath $InstallDir\$Blobname -ArgumentList $Arguments -NoNewWindow -Wait -PassThru
+            Start-Process -FilePath "$InstallDir\$Blobname" -ArgumentList $Arguments -NoNewWindow -Wait -PassThru
           } Else {
-            Start-Process -FilePath $InstallDir\$Blobname -NoNewWindow -Wait -PassThru
+            Start-Process -FilePath "$InstallDir\$Blobname" -NoNewWindow -Wait -PassThru
           }
           $status = Get-WmiObject -Class Win32_Product | Where-Object Name -like "*$($installer)*"
           if($status) {
-            Write-Output $status.Name "is installed"
+            Write-Output $status.Name " is installed"
           } else {
             Write-Output "$Installer did not install properly, please check arguments"
           }
@@ -174,9 +174,9 @@ resource applications 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01'
           }
           $status = Get-WmiObject -Class Win32_Product | Where-Object Name -like "*$($installer)*"
           if($status) {
-            Write-Output $status.Name "is installed"
+            Write-Output $status.Name " is installed"
           } else {
-            Write-Output $Installer "did not install properly, please check arguments"
+            Write-Output "$Installer did not install properly, please check arguments"
           }
         }
         if($Blobname -like '*.bat') {
@@ -194,7 +194,7 @@ resource applications 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01'
           }
         }
         if($Blobname -like '*.zip') {
-          $destinationPath = Join-Path -Path $InstallDir -ChildPath $([System.IO.Path]::GetFileNameWithoutExtension($Blobname))
+          $destinationPath = Join-Path -Path "$InstallDir" -ChildPath $([System.IO.Path]::GetFileNameWithoutExtension($Blobname))
           Expand-Archive -Path $InstallDir\$Blobname -DestinationPath $destinationPath -Force
           $PSScript = (Get-ChildItem -Path $destinationPath -filter '*.ps1').FullName
           If ($PSScript.count -gt 1) { $PSScript = $PSScript[0] }
@@ -241,7 +241,7 @@ resource fslogix 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = if
       }
       {
         name: 'ContainerName'
-        value: containerName
+        value: artifactsContainerName
       }
       {
         name: 'StorageEndpoint'
@@ -327,6 +327,10 @@ resource office 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if(
         value: buildDir
       }
       {
+        name: 'Environment'
+        value: cloud
+      }
+      {
         name: 'InstallAccess'
         value: string(installAccess)
       }
@@ -372,7 +376,7 @@ resource office 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if(
       }
       {
         name: 'ContainerName'
-        value: containerName
+        value: artifactsContainerName
       }
       {
         name: 'StorageEndpoint'
@@ -388,6 +392,7 @@ resource office 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if(
         param(
           [string]$APIVersion,
           [string]$BuildDir,
+          [string]$Environment,
           [string]$InstallAccess,
           [string]$InstallExcel,
           [string]$InstallOutlook,
@@ -425,7 +430,17 @@ resource office 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if(
         Write-Output "Dynamically creating $SoftwareName configuration file for setup."
         $configFile = Join-Path -Path $appDir -ChildPath 'office365x64.xml'
         $null = Set-Content $configFile '<Configuration>'
-        $null = Add-Content $configFile '  <Add OfficeClientEdition="64" Channel="MonthlyEnterprise">'
+        Switch ($Environment) {
+            "USSec" {
+                $null = Add-Content $configFile '  <Add AllowCdnFallback="TRUE" SourcePath="https://officexo.azurefd.microsoft.scloud/prsstelecontainer/55336b82-a18d-4dd6-b5f6-9e5095c314a6/" Channel="MonthlyEnterprise" OfficeClientEdition="64">'
+            }
+            "USNat" { 
+                $null = Add-Content $configFile '  <Add AllowCdnFallback="TRUE" SourcePath="https://officexo.azurefd.eaglex.ic.gov/prsstelecontainer/55336b82-a18d-4dd6-b5f6-9e5095c314a6/" Channel="MonthlyEnterprise" OfficeClientEdition="64">'
+            }
+            Else {
+                $null = Add-Content $configFile '  <Add OfficeClientEdition="64" Channel="MonthlyEnterprise">'
+            }
+        }        
         $null = Add-Content $configFile '    <Product ID="O365ProPlusRetail">'
         $null = Add-Content $configFile '      <Language ID="en-us" />'
         $null = Add-Content $configFile '      <ExcludeApp ID="Groove" />'
@@ -517,7 +532,7 @@ resource onedrive 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = i
       }
       {
         name: 'ContainerName'
-        value: containerName
+        value: artifactsContainerName
       }
       {
         name: 'StorageEndpoint'
@@ -631,12 +646,16 @@ resource teamsClassic 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01'
         value: buildDir
       }
       {
+        name: 'Environment'
+        value: cloud
+      }
+      {
         name: 'UserAssignedIdentityClientId'
         value: userAssignedIdentityClientId
       }
       {
         name: 'ContainerName'
-        value: containerName
+        value: artifactsContainerName
       }
       {
         name: 'StorageEndpoint'
@@ -652,6 +671,7 @@ resource teamsClassic 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01'
         param(
           [string]$APIVersion,
           [string]$BuildDir,
+          [string]$Environment,
           [string]$UserAssignedIdentityClientId,
           [string]$ContainerName,
           [string]$StorageEndpoint,
@@ -687,11 +707,26 @@ resource teamsClassic 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01'
         Write-Output "Installed the Remote Desktop WebRTC Redirector Service"
         # Install Teams
         if(($Sku).Contains('multi')){
-            $msiArgs = 'ALLUSER=1 ALLUSERS=1'
+          $msiArgs = 'ALLUSER=1 ALLUSERS=1'
         } else {
-            $msiArgs = 'ALLUSERS=1'
+          $msiArgs = 'ALLUSERS=1'
         }
         Start-Process -FilePath msiexec.exe -ArgumentList "/i $teamsFile /quiet /qn /norestart /passive $msiArgs" -Wait -PassThru | Out-Null
+        Switch($Environment) {
+          "USSec" {
+            $CloudType = 5
+          }
+          "USNat" {
+            $CloudType = 6
+          }
+        }
+        If ($CloudType) {
+            Start-Process -FilePath reg.exe -ArgumentList "LOAD HKLM\Default $env:SystemDrive\Users\Default\ntuser.dat" -Wait
+            $Result = Start-Process -FilePath reg.exe -ArgumentList "ADD HKLM\Default\SOFTWARE\Microsoft\Office\16.0\Teams /n CloudType /t REG_DWORD /v $CloudType /f" -Wait -PassThru
+            $Result.Handle.Close()
+            [gc]::Collect()
+            $Result = Start-Process -FilePath reg.exe -ArgumentList "UNLOAD HKLM\Default" -Wait -PassThru
+        }
         Write-Output "Installed Teams"
         Stop-Transcript
       '''
@@ -706,8 +741,8 @@ resource teamsClassic 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01'
   ]
 }
 
-resource teamsNew 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (installTeams && teamsVersion == 'New') {
-  name: 'teamsNew'
+resource teams 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (installTeams && teamsVersion == 'New') {
+  name: 'teams'
   location: location
   parent: imageVm
   properties: {
@@ -729,12 +764,16 @@ resource teamsNew 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = i
         value: buildDir
       }
       {
+        name: 'Environment'
+        value: cloud
+      }     
+      {
         name: 'UserAssignedIdentityClientId'
         value: userAssignedIdentityClientId
       }
       {
         name: 'ContainerName'
-        value: containerName
+        value: artifactsContainerName
       }
       {
         name: 'StorageEndpoint'
@@ -750,6 +789,7 @@ resource teamsNew 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = i
         param(
           [string]$APIVersion,
           [string]$BuildDir,
+          [string]$Environment,
           [string]$UserAssignedIdentityClientId,
           [string]$ContainerName,
           [string]$StorageEndpoint,
@@ -780,14 +820,29 @@ resource teamsNew 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = i
         New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Teams" -Name IsWVDEnvironment -PropertyType DWORD -Value 1 -Force
         Write-Output "Enabled media optimizations for Teams"
         $ErrorActionPreference = "Stop"
-        Start-Process -FilePath  $vcRedistFile -ArgumentList "/install /quiet /norestart" -Wait -PassThru | Out-Null
+        Start-Process -FilePath $vcRedistFile -ArgumentList "/install /quiet /norestart" -Wait -PassThru | Out-Null
         Write-Output "Installed the latest version of Microsoft Visual C++ Redistributable"
-        Start-Process -FilePath  $WebView2 -ArgumentList "/silent" -Wait -PassThru | Out-Null
+        Start-Process -FilePath $WebView2 -ArgumentList "/silent" -Wait -PassThru | Out-Null
         Write-Output "Installed the latest version of the Microsoft WebView2 Runtime"
         # install the Remote Desktop WebRTC Redirector Service
-        Start-Process -FilePath msiexec.exe -ArgumentList "/i  $webRTCFile /quiet /qn /norestart /passive" -Wait -PassThru | Out-Null
+        Start-Process -FilePath msiexec.exe -ArgumentList "/i $webRTCFile /quiet /qn /norestart /passive" -Wait -PassThru | Out-Null
         Write-Output "Installed the Remote Desktop WebRTC Redirector Service"
-        Start-Process -FilePath $BootStrapperFile -ArgumentList "-p -o $MSIXFile" -Wait -PassThru | Out-Null
+        Start-Process -FilePath "$BootStrapperFile" -ArgumentList "-p -o `"$MSIXFile`"" -Wait -PassThru | Out-Null
+        Switch($Environment) {
+          "USSec" {
+            $CloudType = 5
+          }
+          "USNat" {
+            $CloudType = 6
+          }
+        }
+        If ($CloudType) {
+            $null = Start-Process -FilePath reg.exe -ArgumentList "LOAD HKLM\Default $env:SystemDrive\Users\Default\ntuser.dat" -Wait
+            $Result = Start-Process -FilePath reg.exe -ArgumentList "ADD HKLM\Default\SOFTWARE\Microsoft\Office\16.0\Teams /n CloudType /t REG_DWORD /v $CloudType /f" -Wait -PassThru
+            $Result.Handle.Close()
+            [gc]::Collect()
+            $null = Start-Process -FilePath reg.exe -ArgumentList "UNLOAD HKLM\Default" -Wait -PassThru
+        }
         Write-Output "Installed Teams"
         Stop-Transcript
       '''
@@ -856,7 +911,7 @@ resource firstImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023
     fslogix
     office
     teamsClassic
-    teamsNew
+    teams
   ]
 }
 
@@ -1127,7 +1182,7 @@ resource vdot 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (i
 
       {
         name: 'ContainerName'
-        value: containerName
+        value: artifactsContainerName
       }
       {
         name: 'StorageEndpoint'
@@ -1165,11 +1220,11 @@ resource vdot 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (i
         Unblock-File -Path $DestFile
         $VDOTDir = Join-Path -Path $BuildDir -ChildPath 'VDOT'
         Expand-Archive -LiteralPath $DestFile -DestinationPath $VDOTDir -Force
-        $Path = (Get-ChildItem -Path $VDOTDir -Recurse | Where-Object {$_.Name -eq "Windows_VDOT.ps1"}).FullName
-        $Script = Get-Content -Path $Path
-        $ScriptUpdate = $Script.Replace("Set-NetAdapterAdvancedProperty","#Set-NetAdapterAdvancedProperty")
-        $ScriptUpdate | Set-Content -Path $Path
-        & $Path -Optimizations @("AppxPackages","Autologgers","DefaultUserSettings","LGPO","NetworkOptimizations","ScheduledTasks","Services","WindowsMediaPlayer") -AdvancedOptimizations @("Edge","RemoveLegacyIE") -AcceptEULA
+        $ScriptPath = (Get-ChildItem -Path $VDOTDir -Recurse | Where-Object {$_.Name -eq "Windows_VDOT.ps1"}).FullName
+        $ScriptContents = Get-Content -Path $ScriptPath
+        $ScriptUpdate = $ScriptContents.Replace("Set-NetAdapterAdvancedProperty","#Set-NetAdapterAdvancedProperty")
+        $ScriptUpdate | Set-Content -Path $ScriptPath
+        & $ScriptPath -Optimizations @("AppxPackages","Autologgers","DefaultUserSettings","LGPO","NetworkOptimizations","ScheduledTasks","Services","WindowsMediaPlayer") -AdvancedOptimizations @("Edge","RemoveLegacyIE") -AcceptEULA
         Write-Output "Optimized the operating system using the Virtual Desktop Optimization Tool"
         Stop-Transcript
       '''

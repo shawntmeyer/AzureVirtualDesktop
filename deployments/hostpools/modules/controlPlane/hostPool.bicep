@@ -8,6 +8,7 @@ param hostPoolType string
 param location string
 param logAnalyticsWorkspaceResourceId string
 param privateEndpointName string
+param privateEndpointNICName string
 param privateEndpointSubnetResourceId string
 param hostPoolMaxSessionLimit int
 param enableMonitoring bool
@@ -69,7 +70,7 @@ resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' = {
   }
 }
 
-resource hostPoolPrivateEndpoint 'Microsoft.Network/privateEndpoints@2023-05-01' = if(avdPrivateLink) {
+resource hostPoolPrivateEndpoint 'Microsoft.Network/privateEndpoints@2023-05-01' = if(avdPrivateLink && !empty(privateEndpointName)) {
   name: privateEndpointName
   location: location
   tags: union({
@@ -88,7 +89,7 @@ resource hostPoolPrivateEndpoint 'Microsoft.Network/privateEndpoints@2023-05-01'
         }
       }
     ]
-    customNetworkInterfaceName: 'nic-${hostPoolName}'
+    customNetworkInterfaceName: privateEndpointNICName
     subnet: {
       id: privateEndpointSubnetResourceId
     }

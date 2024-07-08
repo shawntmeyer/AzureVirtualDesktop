@@ -9,7 +9,7 @@ If this is specified, then the "centralizedImageManagement" parameter determines
 ''')
 param businessUnitIdentifier string = ''
 
-@description('''Conditional. When the "businessUnitIdentifier" parameter is not empty, this parameter determines if the Image Management Resource Group and associated resources
+@description('''Optional. When the "businessUnitIdentifier" parameter is not empty, this parameter determines if the Image Management Resource Group and associated resources
 are created in a centralized resource group (does not include "businessUnitIdentifier" in the name) and management resources are named accordingly or if a Business unit
 specific image management resource group is created and management resources are named accordingly.
 If the "businessUnitIdentifier" parameter is left empty ("") then this value has no effect.
@@ -42,7 +42,7 @@ param customArtifactsStorageAccountName string = 'none'
 @minLength(3)
 @maxLength(63)
 @description('Optional. Blob Container Name. Must start with a letter. Can only contain lower case letters, numbers, and -.')
-param artifactsBlobContainerName string = 'artifacts'
+param artifactsContainerName string = 'artifacts'
 
 @description('Optional. Resource Id of an existing Log Analytics Workspace to which diagnostic logs will be sent.')
 param logAnalyticsWorkspaceResourceId string = ''
@@ -54,7 +54,7 @@ param logAnalyticsWorkspaceResourceId string = ''
   ''
 ])
 @description('Optional. The environment for which image management is being deployed. "d" = Development, "t" = Test, and "p" = Production. Leave blank to eliminate this field from the naming convention.')
-param environmentShortName string = ''
+param envShortName string = ''
 
 @allowed([
   'Storage'
@@ -96,12 +96,12 @@ param storageSASExpirationPeriod string = '180.00:00:00'
 @description('Optional. The Resource Id of the Private DNS Zone where the Private Endpoint (if configured) A record will be registered.')
 param azureBlobPrivateDnsZoneResourceId string = ''
 
-@description('Required. Whether or not public network access is allowed for this resource. To limit public network access, use the "PermittedIPs" and/or the "ServiceEndpointSubnetResourceIds" parameters.')
+@description('Optional. Whether or not public network access is allowed for this resource. To limit public network access, use the "PermittedIPs" and/or the "ServiceEndpointSubnetResourceIds" parameters.')
 @allowed([
   'Enabled'
   'Disabled'
 ])
-param storagePublicNetworkAccess string
+param storagePublicNetworkAccess string = 'Enabled'
 
 @description('Optional. The ResourceId of the private endpoint subnet.')
 param privateEndpointSubnetResourceId string = ''
@@ -133,20 +133,22 @@ param timeStamp string = utcNow('yyyyMMddhhmm')
 var locations = loadJsonContent('../../.common/data/locations.json')[environment().name]
 var resourceAbbreviations = loadJsonContent('../../.common/data/resourceAbbreviations.json')
 var busUnitId = toLower(businessUnitIdentifier)
-var nameConv_Suffix_withoutResType = !empty(environmentShortName) ? '${environmentShortName}-location' : 'location'
-var nameConvSuffix = nameConvResTypeAtEnd ? '${nameConv_Suffix_withoutResType}-resourceType' : nameConv_Suffix_withoutResType
-var nameConv_Shared_ResGroups = nameConvResTypeAtEnd ? ( !empty(busUnitId) ? '${busUnitId}-resGroupPurpose-${nameConvSuffix}' : 'resGroupPurpose-${nameConvSuffix}' ) : ( !empty(busUnitId) ? 'resourceType-${busUnitId}-resGroupPurpose-${nameConvSuffix}' : 'resourceType-resGroupPurpose-${nameConvSuffix}' )
-var nameConv_ImageManagement_ResGroup = centralizedImageManagement ? ( nameConvResTypeAtEnd ? 'resGroupPurpose-${nameConvSuffix}' : 'resourceType-resGroupPurpose-${nameConvSuffix}' ) : nameConv_Shared_ResGroups
-var nameConv_ImageManagement_Resources = centralizedImageManagement ? ( nameConvResTypeAtEnd ? 'image-management-${nameConvSuffix}' : 'resourceType-image-management-${nameConvSuffix}' ) : ( nameConvResTypeAtEnd ? ( !empty(busUnitId) ? '${busUnitId}-image-management-${nameConvSuffix}' : 'image-management-${nameConvSuffix}' ) : ( !empty(busUnitId) ? 'resourceType-${busUnitId}-image-management-${nameConvSuffix}' : 'resourceType-image-managmeent-${nameConvSuffix}' ) )
+var nameConv_Suffix_withoutResType = !empty(envShortName) ? '${envShortName}-LOCATION' : 'LOCATION'
+var nameConvSuffix = nameConvResTypeAtEnd ? '${nameConv_Suffix_withoutResType}-RESOURCETYPE' : nameConv_Suffix_withoutResType
+var nameConv_Shared_ResGroups = nameConvResTypeAtEnd ? ( !empty(busUnitId) ? '${busUnitId}-RESGROUPPURPOSE-${nameConvSuffix}' : 'RESGROUPPURPOSE-${nameConvSuffix}' ) : ( !empty(busUnitId) ? 'RESOURCETYPE-${busUnitId}-RESGROUPPURPOSE-${nameConvSuffix}' : 'RESOURCETYPE-RESGROUPPURPOSE-${nameConvSuffix}' )
+var nameConv_ImageManagement_ResGroup = centralizedImageManagement ? ( nameConvResTypeAtEnd ? 'RESGROUPPURPOSE-${nameConvSuffix}' : 'RESOURCETYPE-RESGROUPPURPOSE-${nameConvSuffix}' ) : nameConv_Shared_ResGroups
+var nameConv_ImageManagement_Resources = centralizedImageManagement ? ( nameConvResTypeAtEnd ? 'image-management-${nameConvSuffix}' : 'RESOURCETYPE-image-management-${nameConvSuffix}' ) : ( nameConvResTypeAtEnd ? ( !empty(busUnitId) ? '${busUnitId}-image-management-${nameConvSuffix}' : 'image-management-${nameConvSuffix}' ) : ( !empty(busUnitId) ? 'RESOURCETYPE-${busUnitId}-image-management-${nameConvSuffix}' : 'RESOURCETYPE-image-managmeent-${nameConvSuffix}' ) )
 
-var resourceGroupName = customResourceGroupName != 'none' ? customResourceGroupName : replace(replace(replace(nameConv_ImageManagement_ResGroup, 'resGroupPurpose', 'avd-image-management'), 'location', locations[location].abbreviation), 'resourceType', resourceAbbreviations.resourceGroups)
-var blobContainerName = replace(replace(toLower(artifactsBlobContainerName), '_', '-'), ' ', '-')
-var galleryName = customComputeGalleryName != 'none' ? customComputeGalleryName : replace(replace(nameConv_ImageManagement_Resources, 'resourceType', resourceAbbreviations.computeGalleries), 'location', locations[location].abbreviation)
+var resourceGroupName = customResourceGroupName != 'none' ? customResourceGroupName : replace(replace(replace(nameConv_ImageManagement_ResGroup, 'RESGROUPPURPOSE', 'avd-image-management'), 'LOCATION', locations[location].abbreviation), 'RESOURCETYPE', resourceAbbreviations.resourceGroups)
+var blobContainerName = replace(replace(toLower(artifactsContainerName), '_', '-'), ' ', '-')
+var galleryName = customComputeGalleryName != 'none' ? customComputeGalleryName : replace(replace(nameConv_ImageManagement_Resources, 'RESOURCETYPE', resourceAbbreviations.computeGalleries), 'LOCATION', locations[location].abbreviation)
 var computeGalleryName = replace(galleryName, '-', '_')
-var identityName = customManagedIdentityName != 'none' ? customManagedIdentityName : replace(replace(nameConv_ImageManagement_Resources, 'resourceType', resourceAbbreviations.userAssignedIdentities), 'location', locations[location].abbreviation)
-var privateEndpointNameConv = replace('${nameConvResTypeAtEnd ? 'resource-subResource-subnetId-resourceType' : 'resourceType-resource-subResource-subnetId'}', 'resourceType', resourceAbbreviations.privateEndpoints)
-var privateEndpointName = replace(replace(replace(privateEndpointNameConv, 'resource', storageName), 'subResource', 'blob'), 'subnetId', '${uniqueString(privateEndpointSubnetResourceId)}')
-var storageName = customArtifactsStorageAccountName != 'none' ? customArtifactsStorageAccountName : !empty(environmentShortName) ? take('${resourceAbbreviations.storageAccounts}imageassets${environmentShortName}${locations[location].abbreviation}${uniqueString(resourceGroupName)}', 24) : take('${resourceAbbreviations.storageAccounts}imageassets${locations[location].abbreviation}${uniqueString(resourceGroupName)}', 24)
+var identityName = customManagedIdentityName != 'none' ? customManagedIdentityName : replace(replace(nameConv_ImageManagement_Resources, 'RESOURCETYPE', resourceAbbreviations.userAssignedIdentities), 'LOCATION', locations[location].abbreviation)
+var vnetName = split(privateEndpointSubnetResourceId, '/')[8]
+var snetName = split(privateEndpointSubnetResourceId, '/')[10]
+var privateEndpointNameConv = replace('${nameConvResTypeAtEnd ? 'RESOURCE-SUBRESOURCE-${vnetName}-${snetName}-RESOURCETYPE' : 'RESOURCETYPE-RESOURCE-SUBRESOURCE-${vnetName}-${snetName}'}', 'RESOURCETYPE', resourceAbbreviations.privateEndpoints)
+var privateEndpointName = replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'blob'), 'RESOURCE', storageName)
+var storageName = customArtifactsStorageAccountName != 'none' ? customArtifactsStorageAccountName : !empty(envShortName) ? take('${resourceAbbreviations.storageAccounts}imageassets${envShortName}${locations[location].abbreviation}${uniqueString(subscription().subscriptionId, resourceGroupName)}', 24) : take('${resourceAbbreviations.storageAccounts}imageassets${locations[location].abbreviation}${uniqueString(subscription().subscriptionId, resourceGroupName)}', 24)
 
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   name: resourceGroupName

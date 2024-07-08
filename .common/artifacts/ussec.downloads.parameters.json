@@ -1,0 +1,26 @@
+{
+    "Artifacts": [
+        {
+            "Name": "OneDrive",
+            "DownloadUrl": "https://update.azure.odsync.microsoft.scloud/onedrivecontainer/Win/Installer64/OneDriveSetup.exe",
+            "WebSiteUrl": "",
+            "SearchString": "",
+            "APIUrl": "",
+            "GitHubRepo": "",
+            "GitHubFileNamePattern": "",
+            "DestinationFileName": "OneDriveSetup.exe",
+            "DestinationFolders": [""]
+        },        
+        {
+            "Name": "Teams 64-bit MSIX",
+            "DownloadUrl": "https://go.microsoft.com/fwlink/?linkid=2196106",
+            "WebSiteUrl": "",
+            "SearchString": "",
+            "APIUrl": "",
+            "GitHubRepo": "",
+            "GitHubFileNamePattern": "",
+            "DestinationFileName": "MSTeams-x64.msix",
+            "DestinationFolders": ["Microsoft-Teams"]
+        }
+    ]
+}

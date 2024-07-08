@@ -1,8 +1,10 @@
 # Azure Virtual Desktop Solution
 
-[**Home**](./README.md) | [**Features**](./docs/features.md) | [**Design**](./docs/design.md) | [**Prerequisites**](./docs/prerequisites.md) | [**Troubleshooting**](./docs/troubleshooting.md)
+[**Home**](./README.md) | [**Solution**](/docs/avd.md) 
 
-This solution will deploy a fully operational Azure Virtual Desktop hostpool and image management capability adhereing to the [Zero Trust principles](https://learn.microsoft.com/security/zero-trust/azure-infrastructure-avd). Many of the [common features](./docs/features.md) used with AVD have been automated in this solution for your convenience.
+This solution will deploy a fully operational Azure Virtual Desktop hostpool and image management capability adhering to the [Zero Trust principles](https://learn.microsoft.com/security/zero-trust/azure-infrastructure-avd). Many of the [common features](./docs/features.md) used with AVD have been automated in this solution for your convenience.
+
+Note:  refer to Scope section within the [**AVD**](/docs/avd.md) for full design/scope details for the solution.
 
 ## Deployment Options
 
@@ -39,3 +41,5 @@ New-AzTemplateSpec `
     -UIFormDefinitionFile '.\deployments\hostpools\completeSolution-UI.json' `
     -Force
 ````
+
+[def]: ./docs/scope [EOF]

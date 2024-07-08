@@ -12,6 +12,9 @@ param cseMasterScript string
 param cseUris array
 param cseScriptAddDynParameters string
 param dataCollectionEndpointResourceId string
+param dedicatedHostGroupResourceId string
+param dedicatedHostGroupZones array
+param dedicatedHostResourceId string
 param diskEncryptionSetResourceId string
 param diskNamePrefix string
 param diskSku string
@@ -203,7 +206,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2022-11-01' = [for i 
   name: '${virtualMachineNamePrefix}${padLeft((i + sessionHostIndex), 3, '0')}'
   location: location
   tags: tagsVirtualMachines
-  zones: availability == 'availabilityZones' ? [
+  zones: !empty(dedicatedHostResourceId) || !empty(dedicatedHostGroupResourceId) ? dedicatedHostGroupZones : availability == 'availabilityZones' ? [
     availabilityZones[i % length(availabilityZones)]
   ] : null
   identity: identity
@@ -214,6 +217,12 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2022-11-01' = [for i 
     hardwareProfile: {
       vmSize: virtualMachineSize
     }
+    host: !empty(dedicatedHostResourceId) ? {
+      id: dedicatedHostResourceId
+    } : null
+    hostGroup: !empty(dedicatedHostGroupResourceId) && empty(dedicatedHostResourceId) ? {
+      id: dedicatedHostGroupResourceId
+    } : null
     storageProfile: {
       imageReference: ImageReference
       osDisk: {
@@ -494,11 +503,9 @@ resource extension_CustomScriptExtension 'Microsoft.Compute/virtualMachines/exte
       fileUris: cseUris
       timeStamp: timeStamp
     }    
-    protectedSettings: contains(artifactsUri, environment().suffixes.storage) ? {
+    protectedSettings: {
       commandToExecute: cseCommandToExecute
       managedIdentity: { clientId: artifactsUserAssignedIdentityClientId }
-    } : {
-      commandToExecute: cseCommandToExecute
     }
   }
   dependsOn: [

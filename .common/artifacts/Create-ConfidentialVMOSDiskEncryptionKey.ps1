@@ -40,9 +40,11 @@ $PolicyContentJson = @"
 try 
 {
     If ($Environment -eq 'USNat') {
-        Add-AzEnvironment -AutoDiscover -Uri 'https://management.azure.eaglex.ic.gov/metadata/endpoints?api-version=2022-06' | Out-Null
+        Add-AzEnvironment -AutoDiscover -Uri 'https://management.azure.eaglex.ic.gov/metadata/endpoints?api-version=2022-06' *> $null
+    } ElseIf ($Environment -eq 'USSec') {
+        Add-AzEnvironment -AutoDiscover -Uri 'https://management.azure.microsoft.scloud/metadata/endpoints?api-version=2022-06' *> $null
     }
-    Connect-AzAccount -Environment $Environment -Tenant $TenantId -Subscription $SubscriptionId -Identity -AccountId $UserAssignedIdentityClientId | Out-Null
+    Connect-AzAccount -Environment $Environment -Tenant $TenantId -Subscription $SubscriptionId -Identity -AccountId $UserAssignedIdentityClientId *> $null
         
     $Key = Get-AzKeyVaultKey -VaultName $KeyVaultName | Where-Object { $_.Name -eq $KeyName }
     If ($Key) {

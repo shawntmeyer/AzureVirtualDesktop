@@ -22,6 +22,7 @@ param virtualMachineName string
 param virtualMachineAdminPassword string
 @secure()
 param virtualMachineAdminUserName string
+param vmSize string
 
 resource networkInterface 'Microsoft.Network/networkInterfaces@2020-05-01' = {
   name: networkInterfaceName
@@ -52,7 +53,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-11-01' = {
   tags: tagsVirtualMachines
   properties: {
     hardwareProfile: {
-      vmSize: 'Standard_B2s'
+      vmSize: vmSize
     }
     storageProfile: {
       imageReference: {

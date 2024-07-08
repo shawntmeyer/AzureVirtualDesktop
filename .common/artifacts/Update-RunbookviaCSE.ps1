@@ -59,9 +59,11 @@ try
         $ScriptPath = Get-ChildItem -Path $PSScriptRoot -Filter "$(Split-Path -Path $ScriptPath -Leaf)" -Recurse
     }
     If ($Environment -eq 'USNat') {
-        Add-AzEnvironment -AutoDiscover -Uri 'https://management.azure.eaglex.ic.gov/metadata/endpoints?api-version=2022-06' | Out-Null
+        Add-AzEnvironment -AutoDiscover -Uri 'https://management.azure.eaglex.ic.gov/metadata/endpoints?api-version=2022-06' *> $null
+    } ElseIf ($Environment -eq 'USSec') {
+        Add-AzEnvironment -AutoDiscover -Uri 'https://management.azure.microsoft.scloud/metadata/endpoints?api-version=2022-06' *> $null
     }
-    Connect-AzAccount -Environment $Environment -Tenant $TenantId -Subscription $SubscriptionId -Identity -AccountId $UserAssignedIdentityClientId | Out-Null
+    Connect-AzAccount -Environment $Environment -Tenant $TenantId -Subscription $SubscriptionId -Identity -AccountId $UserAssignedIdentityClientId *> $null
     Import-AzAutomationRunbook -Name $RunbookName -Path $ScriptPath -Type PowerShell -AutomationAccountName $AutomationAccountName -ResourceGroupName $ResourceGroupName -Published -Description 'This script automates host pool scaling.' -Force | Out-Null
     Write-Log -Message "Published RunBook: [$RunBookName] to Automation Account: [$AutomationAccountName]" -Type 'INFO'
     $Output = [pscustomobject][ordered]@{

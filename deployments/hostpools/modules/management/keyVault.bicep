@@ -5,13 +5,14 @@ param domainJoinUserPassword string = ''
 param enabledForDeployment bool = false
 param enabledForDiskEncryption bool = false
 param enabledForTemplateDeployment bool = false
-param enablePurgeProtection bool = true
-param environmentShortName string
+param enablePurgeProtection bool = false
+param envShortName string
 param keyVaultName string
 param keyVaultPrivateDnsZoneResourceId string
 param location string
 param privateEndpoint bool
 param privateEndpointNameConv string
+param privateEndpointNICNameConv string
 param privateEndpointSubnetId string
 param skuName string
 param tagsKeyVault object
@@ -21,7 +22,7 @@ param virtualMachineAdminUserName string = ''
 @secure()
 param virtualMachineAdminPassword string = ''
 
-resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' = {
+resource keyVault 'Microsoft.KeyVault/vaults@2023-02-01' = {
   name: keyVaultName
   location: location
   tags: tagsKeyVault
@@ -29,7 +30,7 @@ resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' = {
     enabledForDeployment: enabledForDeployment
     enabledForDiskEncryption: enabledForDiskEncryption
     enabledForTemplateDeployment: enabledForTemplateDeployment
-    enablePurgeProtection: enablePurgeProtection ? true : null
+    enablePurgeProtection: enablePurgeProtection ? enablePurgeProtection : null
     enableRbacAuthorization: true
     enableSoftDelete: true
     networkAcls: {
@@ -43,16 +44,17 @@ resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' = {
       family: 'A'
       name: skuName
     }
-    softDeleteRetentionInDays: environmentShortName == 'd' || environmentShortName == 't' ? 7 : 90
+    softDeleteRetentionInDays: envShortName == 'd' || envShortName == 't' ? 7 : 90
     tenantId: subscription().tenantId
   }
 }
 
-resource vaultPrivateEndpoint 'Microsoft.Network/privateEndpoints@2020-05-01' = if(privateEndpoint) { 
-  name: replace(replace(replace(privateEndpointNameConv, 'subresource', 'vault'), 'resource', keyVaultName), 'subnetId', uniqueString(privateEndpointSubnetId))
+resource vaultPrivateEndpoint 'Microsoft.Network/privateEndpoints@2023-05-01' = if(privateEndpoint) { 
+  name: replace(replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'vault'), 'RESOURCE', keyVaultName), 'VNETID', '${split(privateEndpointSubnetId, '/')[8]}')
   location: location
   tags: tagsPrivateEndpoints
   properties: {
+    customNetworkInterfaceName: replace(replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'vault'), 'RESOURCE', keyVaultName), 'VNETID', '${split(privateEndpointSubnetId, '/')[8]}')
     subnet: {
       id: privateEndpointSubnetId
     }

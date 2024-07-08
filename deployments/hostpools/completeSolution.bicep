@@ -1,13 +1,12 @@
 targetScope = 'subscription'
 
 // Resource and Resource Group naming and organization
-@description('Reverse the normal Cloud Adoption Framework naming convention by putting the resource type abbreviation at the end of the resource name.')
+@description('Optional. Reverse the normal Cloud Adoption Framework naming convention by putting the resource type abbreviation at the end of the resource name.')
 param nameConvResTypeAtEnd bool = false
 
 @maxLength(10)
-@description('''Identifier used to describe the business unit (or customer) utilizing AVD in your tenant.
+@description('''Optional. Identifier used to describe the business unit (or customer) utilizing AVD in your tenant.
 If not specified then centralized AVD Management is assumed and resources and resource groups are named accordingly.
-If this is specified, then the "centralizedAVDManagement" parameter determines how resources are organized and deployed.
 ''')
 param businessUnitIdentifier string = ''
 
@@ -19,7 +18,8 @@ If the "businessUnitIdentifier" parameter is left empty ("") then this value has
 param centralizedAVDMonitoring bool = false
 
 @maxLength(10)
-@description('An identifier used to distinquish each host pool. This can represent the user or use case.')
+@minLength(3)
+@description('Required. An identifier used to distinquish each host pool. This can represent the user or use case.')
 param hostPoolIdentifier string
 
 @allowed([
@@ -29,13 +29,13 @@ param hostPoolIdentifier string
   't' // Test
   '' // Not Defined
 ])
-@description('The target environment for the solution.')
-param environmentShortName string = ''
+@description('Optional. The target environment for the solution.')
+param envShortName string = ''
 
 // Access to scripts and other artifacts required for this deployment
 
-@description('Required. The name of the Azure Blobs container hosting the required artifacts.')
-param artifactsContainerName string
+@description('Optional. The name of the Azure Blobs container hosting the required artifacts.')
+param artifactsContainerName string = 'artifacts'
 
 @description('Required. The storage account resource Id where the artifacts used by this deployment are stored.')
 param artifactsStorageAccountResourceId string
@@ -58,7 +58,7 @@ param azModuleBlobName string = 'PowerShell-Az.msi'
   'EntraId' // User accounts and Session Hosts are located in Azure Active Directory Only (Cloud Only Scenario)
   'EntraIdIntuneEnrollment' // User accounts and Session Hosts are located in Azure Active Directory Only. Session Hosts are automatically enrolled in Intune. (Cloud Only Scenario)
 ])
-@description('The service providing domain services for Azure Virtual Desktop.  This is needed to properly configure the session hosts and if applicable, the Azure Storage Account.')
+@description('Required. The service providing domain services for Azure Virtual Desktop.  This is needed to properly configure the session hosts and if applicable, the Azure Storage Account.')
 param identitySolution string
 
 @secure()
@@ -83,9 +83,13 @@ param avdObjectId string
 @description('Optional. Determines if Azure Private Link with Azure Virtual Desktop is enabled. Selecting "true" requires that private endpoints are created for the global feed, workspace feed, and hostpool.')
 param avdPrivateLink bool = false
 
-@description('Optional. Applicable when "avdPrivateLink" is "true". "Enabled" allows the global AVD feed to be accessed from both public and private networks, "Disabled" allows this resource to only be accessed via private endpoints.')
-param globalWorkspacePublicNetworkAccess string = 'Enabled'
+@description('Optional. The resource Id of the subnet to which the global feed workspace private endpoint will be attached.')
+param globalFeedPrivateEndpointSubnetResourceId string = ''
 
+@allowed([
+  'Disabled'
+  'Enabled'
+])
 @description('Optional. Applicable when "avdPrivateLink" is "true". "Enabled" allows the AVD workspace to be accessed from both public and private networks, "Disabled" allows this resource to only be accessed via private endpoints.')
 param workspacePublicNetworkAccess string = 'Enabled'
 
@@ -93,33 +97,36 @@ param workspacePublicNetworkAccess string = 'Enabled'
   'Disabled'
   'Enabled'
   'EnabledForClientsOnly'
-  'EnabledForSessionHostsOnly'
 ])
 @description('''Optional. Applicable only when "avdPrivateLink is "true". Allow public access to the hostpool through the control plane.
 "Enabled" allows this resource to be accessed from both public and private networks.
 "Disabled" allows this resource to only be accessed via private endpoints.
+"EnabledForClientsOnly" allows this resource to be accessed only when the session hosts are configured to use private routes.
 ''')
 param hostPoolPublicNetworkAccess string = 'Enabled'
 
-@description('Optional. The resource ID for the subnet for the private endpoints for AVD Private Link.')
-param controlPlanePrivateEndpointSubnetResourceId string = ''
+@description('Optional. The resource ID of the subnet where the hostpool private endpoint will be attached.')
+param hostPoolPrivateEndpointSubnetResourceId string = ''
+
+@description('Optional. The resource id of the feed Private Endpoint Subnet.')
+param feedPrivateEndpointSubnetResourceId string = ''
 
 // Private Endpoints
-@description('Create private endpoints for all deployed resources where applicable.')
+@description('Optional. Create private endpoints for all deployed management resources where applicable.')
 param managementPrivateEndpoints bool = false
 
-@description('Create private endpoints for all deployed resources where applicable.')
+@description('Optional. Create private endpoints for all deployed storage resources where applicable.')
 param storagePrivateEndpoints bool = false
 
-@description('The Resource Id of the subnet on which to create the storage account, keyvault, and other resources private link. Required when "privateEndoints" = true.')
+@description('Conditional. The Resource Id of the subnet on which to create the storage account, keyvault, and other resources private link. Required when "privateEndoints" = true.')
 param managementPrivateEndpointSubnetResourceId string = ''
 
-@description('The Resource Id of the subnet on which to create the storage account, keyvault, and other resources private link. Required when "privateEndoints" = true.')
+@description('Conditional. The Resource Id of the subnet on which to create the storage account, keyvault, and other resources private link. Required when "privateEndoints" = true.')
 param storagePrivateEndpointSubnetResourceId string = ''
 
 // Private DNS Zones
 
-@description('If using private endpoints with Automation Accounts, input the Resource ID for the Private DNS Zone linked to your hub virtual network.')
+@description('Conditional. If using private endpoints with Automation Accounts, input the Resource ID for the Private DNS Zone linked to your hub virtual network.')
 param automationAccountPrivateDnsZoneResourceId string = ''
 
 @description('If using private endpoints with Azure files, input the Resource ID for the Private DNS Zone linked to your hub virtual network.')
@@ -137,7 +144,7 @@ param keyVaultPrivateDnsZoneResourceId string = ''
 // Profile Storage Configuration
 
 @description('Optional. Determines whether resources to support FSLogix profile storage are deployed.')
-param deployFSLogixStorage bool = true
+param deployFSLogixStorage bool = false
 
 @description('Optional. The custom prefix to use for the name of the Azure files storage accounts to use for FSLogix. If not specified, the name is generated automatically.')
 param fslogixStorageCustomPrefix string = ''
@@ -200,9 +207,17 @@ param fslogixStorageCount int = 1
 @description('Optional. The starting number for the storage accounts to support the required use case for the AVD stamp. https://docs.microsoft.com/en-us/azure/architecture/patterns/sharding')
 param fslogixStorageIndex int = 1
 
+@allowed([
+  'MicrosoftManaged'
+  'CustomerManaged'
+  'CustomerManagedHSM'
+])
+@description('Optional. The type of key management used for the Azure Files storage account encryption.')
+param fslogixStorageKeyManagement string = 'MicrosoftManaged'
+
 // Control Plane Configuration
 
-@description('Optional. The deployment location for the AVD management resources.')
+@description('Optional. The deployment location for the AVD Control Plane resources.')
 param locationControlPlane string = deployment().location
 
 @description('Optional. The friendly name for the AVD workspace that is displayed in the client.')
@@ -214,8 +229,8 @@ param desktopFriendlyName string = ''
 @description('Optional. Enable drain mode on new sessions hosts to prevent users from accessing them until they are validated.')
 param drainMode bool = false
 
-@description('Required. The maximum number of sessions per AVD session host.')
-param hostPoolMaxSessionLimit int
+@description('Optional. The maximum number of sessions per AVD session host.')
+param hostPoolMaxSessionLimit int = 4
 
 @description('''Optional. Input RDP properties to add or remove RDP functionality on the AVD host pool.
 Settings reference: https://learn.microsoft.com/windows-server/remote/remote-desktop-services/clients/rdp-files
@@ -234,7 +249,7 @@ param hostPoolType string = 'Pooled DepthFirst'
 @description('Optional. The value determines whether the hostPool should receive early AVD updates for testing.')
 param hostPoolValidationEnvironment bool = false
 
-@description('Required. An array of Security Principals with their object IDs and display names to assign to the AVD Application Group and FSLogix Storage.')
+@description('Optional. An array of Security Principals with their object IDs and display names to assign to the AVD Application Group and FSLogix Storage.')
 param securityPrincipals array = []
 
 @description('Optional. Determines if the scaling plan is deployed to the host pool.')
@@ -259,7 +274,7 @@ param scalingPlanPeakSchedule object = {
 
 @description('The scaling plan weekday rampdown schedule.')
 param scalingPlanRampDownSchedule object = {
-  startTime: '5:00'
+  startTime: '17:00'
   minimumHostsPct: 10
   capacityThresholdPct: 90
   loadBalancingAlgorithm: 'DepthFirst'
@@ -297,6 +312,14 @@ param sessionHostIndex int = 1
 @description('Set the desired availability / SLA with a pooled host pool.  The best practice is to deploy to availability Zones for resilency.')
 param availability string = 'availabilityZones'
 
+// Dedicated Host Usage
+
+@description('Optional. The resource Id of the Dedicated Host on which to deploy the Virtual Machines.')
+param dedicatedHostResourceId string = ''
+
+@description('Optional. The resource Id of the Dedicated Host Group on to which the Virtual Machines are to be deployed. The Dedicated Host Group must support Automatic Host Assignment for this value to be used.')
+param dedicatedHostGroupResourceId string = ''
+
 @description('Optional. The name of the blob containing the AVDAgent Agent installers and script.')
 param avdAgentInstallersBlobName string = 'Set-SessionHostConfiguration.zip'
 
@@ -330,16 +353,20 @@ param confidentialVMOrchestratorObjectId string = ''
 
 @allowed([
   'CustomerManaged'
+  'CustomerManagedHSM'
   'PlatformManaged'
   'PlatformManagedAndCustomerManaged'
+  'PlatformManagedAndCustomerManagedHSM'
 ])
-@description('''Optional. The type of encryption key management used for the OS disk. (Default: "PlatformManaged")
+@description('''Optional. The type of encryption key management used for the storage. (Default: "PlatformManaged")
 - Platform-managed keys (PMKs) are key encryption keys that are generated, stored, and managed entirely by Azure. Choose Platform Managed for the best balance of security and ease of use.
 - Customer-managed keys (CMKs) are key encryption keys that are generated, stored, and managed by you, the customer, in your Azure Key Vault. Choose Customer Managed if you need to meet specific compliance requirements.
+- Customer-managed keys (CMKs) storage in a premium KeyVault backed by a Hardware Security Module (HSM). The Hardware Security Module is FIPS 140 Level 3 validated.
 - Double encryption is 2 layers of encryption: an infrastructure encryption layer with platform managed keys and a disk encryption layer with customer managed keys defined by disk encryption sets.
 Choose Platform Managed and Customer Managed if you need double encryption. This option does not apply to confidential VMs.
+- Choose Platform Managed and Customer Managed with HSM if you must incorporate double encryption and protect the customer managed key with the Hardware Security Module. This option does not apply to confidential VMs.
 ''')
-param keyManagementDisksAndStorage string = 'PlatformManaged'
+param keyManagementDisks string = 'PlatformManaged'
 
 @allowed([
   'Standard_LRS'
@@ -382,6 +409,9 @@ param virtualMachineAdminUserName string
 
 @description('The VM SKU for the AVD session hosts.')
 param virtualMachineSize string = 'Standard_D4ads_v5'
+
+@description('The vm size of the management VM.')
+param managementVmSize string = 'Standard_B2s'
 
 @minLength(2)
 @maxLength(12)
@@ -430,28 +460,38 @@ param timeStamp string = utcNow('yyyyMMddhhmmss')
 var artifactsStorageAccountName = last(split(artifactsStorageAccountResourceId, '/'))
 var artifactsUri = 'https://${artifactsStorageAccountName}.blob.${environment().suffixes.storage}/${artifactsContainerName}/'
 var locationVirtualMachines = vmVirtualNetwork.location
+var locationGlobalFeed = !empty(globalFeedPrivateEndpointSubnetResourceId) ? avdPrivateLinkGlobalFeedNetwork.location : ''
+
 var confidentialVMOSDiskEncryptionType = confidentialVMOSDiskEncryption ? 'DiskWithVMGuestState' : 'VMGuestStateOnly'
 
 var resourceGroupsCount = 4 + (deployFSLogixStorage ? 1 : 0) + (avdPrivateLink ? 1 :0)
 
 var securityType = virtualMachineSecurityType == 'Standard' ? '' : virtualMachineSecurityType
 
-// Existing Virtual Network location
+// Existing Session Host Virtual Network location
 resource vmVirtualNetwork 'Microsoft.Network/virtualNetworks@2023-04-01' existing = {
   name: split(virtualMachineSubnetResourceId, '/')[8]
   scope: resourceGroup(split(virtualMachineSubnetResourceId, '/')[2], split(virtualMachineSubnetResourceId, '/')[4])
+}
+
+// Existing Global Feed Private Endpoint Virtual Network location
+resource avdPrivateLinkGlobalFeedNetwork 'Microsoft.Network/virtualNetworks@2023-04-01' existing = if (!empty(globalFeedPrivateEndpointSubnetResourceId)) {
+  name: split(globalFeedPrivateEndpointSubnetResourceId, '/')[8]
+  scope: resourceGroup(split(globalFeedPrivateEndpointSubnetResourceId, '/')[2], split(globalFeedPrivateEndpointSubnetResourceId, '/')[4])
 }
 
 // Resource Names
 module resourceNames 'modules/resourceNames.bicep' = {
   name: 'ResourceNames_${timeStamp}'
   params: {
-    environmentShortName: environmentShortName
+    avdPrivateLink: avdPrivateLink
+    envShortName: envShortName
     businessUnitIdentifier: businessUnitIdentifier
     centralizedAVDMonitoring: centralizedAVDMonitoring
     fslogixStorageCustomPrefix: fslogixStorageCustomPrefix
     hostPoolIdentifier: hostPoolIdentifier
     locationControlPlane: locationControlPlane
+    locationGlobalFeed: locationGlobalFeed
     locationVirtualMachines: locationVirtualMachines
     nameConvResTypeAtEnd: nameConvResTypeAtEnd
     virtualMachineNamePrefix: virtualMachineNamePrefix
@@ -467,6 +507,8 @@ module logic 'modules/logic.bicep' = {
     avdPrivateLink: avdPrivateLink
     cseBlobNames: cseBlobNames
     cseMasterScript: cseMasterScript
+    dedicatedHostGroupResourceId: dedicatedHostGroupResourceId
+    dedicatedHostResourceId: dedicatedHostResourceId
     deployFSLogixStorage: deployFSLogixStorage
     deployScalingPlan: deployScalingPlan
     diskSku: diskSku
@@ -510,7 +552,7 @@ module logic 'modules/logic.bicep' = {
 module rgs 'modules/resourceGroups.bicep' = [for i in range(0, resourceGroupsCount): {
   name: 'ResourceGroup_${i}_${timeStamp}'
   params: {
-    location: contains(logic.outputs.resourceGroupNames[i], 'controlPlane') || contains(logic.outputs.resourceGroupNames[i], 'global-feed') ? locationControlPlane : locationVirtualMachines
+    location: contains(logic.outputs.resourceGroupNames[i], 'controlPlane') ? locationControlPlane : ( contains(logic.outputs.resourceGroupNames[i], 'global-feed') ? locationGlobalFeed : locationVirtualMachines )
     resourceGroupName: logic.outputs.resourceGroupNames[i]
     tags: tags
   }
@@ -539,9 +581,11 @@ module management 'modules/management/management.bicep' = {
     domainName: domainName
     enableIncreaseQuotaAutomation: enableIncreaseQuotaAutomation
     encryptionAtHost: encryptionAtHost
-    environmentShortName: environmentShortName
+    envShortName: envShortName
     fslogix: deployFSLogixStorage
+    fslogixStorageIndex: fslogixStorageIndex
     fslogixStorageAccountNamePrefix: resourceNames.outputs.storageAccountNamePrefix
+    fslogixStorageKeyManagement: fslogixStorageKeyManagement
     fslogixStorageService: fslogixStorageService
     fslogixStorageSolution: logic.outputs.fslogixStorageSolution
     hostPoolType: hostPoolType
@@ -552,12 +596,14 @@ module management 'modules/management/management.bicep' = {
     locationControlPlane: locationControlPlane
     locationVirtualMachines: locationVirtualMachines
     logAnalyticsWorkspaceResourceId: enableMonitoring ? monitoring.outputs.logAnalyticsWorkspaceResourceId : ''
+    managementVmSize: managementVmSize
     enableMonitoring: enableMonitoring
     netAppVnetResourceId: fslogixNetAppVnetResourceId
-    keyManagementDisksAndStorage: keyManagementDisksAndStorage
+    keyManagementDisks: keyManagementDisks
     privateEndpointSubnetResourceId: managementPrivateEndpointSubnetResourceId
     privateEndpoint: managementPrivateEndpoints
     privateEndpointNameConv: resourceNames.outputs.privateEndpointNameConv
+    privateEndpointNICNameConv: resourceNames.outputs.privateEndpointNICNameConv
     recoveryServices: recoveryServices
     recoveryServicesVaultName: resourceNames.outputs.recoveryServicesVaultName
     resourceGroupHosts: resourceNames.outputs.resourceGroupHosts
@@ -567,6 +613,7 @@ module management 'modules/management/management.bicep' = {
     roleDefinitions: logic.outputs.roleDefinitions
     securityType: securityType
     sessionHostCount: sessionHostCount
+    storageCount: logic.outputs.fslogixStorageCount
     tags: tags
     timeStamp: timeStamp
     timeZone: logic.outputs.timeZone
@@ -606,7 +653,7 @@ module monitoring 'modules/monitoring/monitoring.bicep' = if(enableMonitoring) {
 }
 
 // AVD Control Plane Resources
-// This module deploys the host pool and desktop application group
+// This module deploys the workspace, host pool, and desktop application group
 module controlPlane 'modules/controlPlane/controlPlane.bicep' = {
   name: 'ControlPlane_${timeStamp}'
   params: {
@@ -621,22 +668,25 @@ module controlPlane 'modules/controlPlane/controlPlane.bicep' = {
     desktopFriendlyName: desktopFriendlyName
     existingGlobalWorkspace: management.outputs.existingGlobalWorkspace
     existingWorkspace: management.outputs.existingWorkspace
+    feedPrivateEndpointSubnetResourceId: feedPrivateEndpointSubnetResourceId
+    globalFeedPrivateEndpointSubnetResourceId: globalFeedPrivateEndpointSubnetResourceId
     globalWorkspaceName: resourceNames.outputs.globalFeedWorkspaceName
-    globalWorkspacePublicNetworkAccess: globalWorkspacePublicNetworkAccess
     hostPoolMaxSessionLimit: hostPoolMaxSessionLimit
     hostPoolName: resourceNames.outputs.hostPoolName
+    hostPoolPrivateEndpointSubnetResourceId: hostPoolPrivateEndpointSubnetResourceId
     hostPoolPublicNetworkAccess: hostPoolPublicNetworkAccess
     hostPoolRDPProperties: hostPoolRDPProperties
     hostPoolType: hostPoolType
     hostPoolValidationEnvironment: hostPoolValidationEnvironment
     identitySolution: identitySolution
     locationControlPlane: locationControlPlane
+    locationGlobalFeed: locationGlobalFeed
     locationVirtualMachines: locationVirtualMachines
     logAnalyticsWorkspaceResourceId: enableMonitoring ? monitoring.outputs.logAnalyticsWorkspaceResourceId : ''
     managementVirtualMachineName: management.outputs.virtualMachineName    
     enableMonitoring: enableMonitoring
     privateEndpointNameConv: resourceNames.outputs.privateEndpointNameConv
-    privateEndpointSubnetResourceId: controlPlanePrivateEndpointSubnetResourceId
+    privateEndpointNICNameConv: resourceNames.outputs.privateEndpointNICNameConv    
     resourceGroupControlPlane: resourceNames.outputs.resourceGroupControlPlane
     resourceGroupGlobalFeed: resourceNames.outputs.resourceGroupGlobalFeed
     resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
@@ -663,11 +713,11 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (deployFSLogixStorage) {
   params: {
     artifactsUri: artifactsUri
     artifactsUserAssignedIdentityClientId: management.outputs.artifactsUserAssignedIdentityClientId
-    activeDirectoryConnection: management.outputs.validateANFfActiveDirectory
+    activeDirectoryConnection: management.outputs.validateANFActiveDirectory
     automationAccountName: resourceNames.outputs.automationAccountName
     availability: availability
     azureFilesPrivateDnsZoneResourceId: azureFilesPrivateDnsZoneResourceId
-    customerManagedKeysEnabled: keyManagementDisksAndStorage != 'PlatformManaged' ? true : false
+    customerManagedKeysEnabled: fslogixStorageKeyManagement != 'MicrosoftManaged' ? true : false
     deploymentUserAssignedIdentityClientId: management.outputs.deploymentUserAssignedIdentityClientId
     delegatedSubnetId: management.outputs.validateANFSubnetId
     dnsServers: management.outputs.validateANFDnsServers
@@ -680,8 +730,8 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (deployFSLogixStorage) {
     storageService: fslogixStorageService
     identitySolution: identitySolution
     kerberosEncryption: fslogixStorageAccountADKerberosEncryption
-    keyVaultName: resourceNames.outputs.keyVaultNames.VMSecrets
-    keyVaultUri: management.outputs.storageEncryptionKeyKeyVaultUri
+    vmKeyVaultName: resourceNames.outputs.keyVaultNames.VMs
+    storageEncryptionKeyVaultUris: management.outputs.storageEncryptionKeyKeyVaultUris
     location: locationVirtualMachines
     logAnalyticsWorkspaceResourceId: enableMonitoring ? monitoring.outputs.logAnalyticsWorkspaceResourceId : ''
     managementVirtualMachineName: management.outputs.virtualMachineName
@@ -691,6 +741,7 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (deployFSLogixStorage) {
     ouPath: ouPath
     privateEndpoint: storagePrivateEndpoints
     privateEndpointNameConv: resourceNames.outputs.privateEndpointNameConv
+    privateEndpointNICNameConv: resourceNames.outputs.privateEndpointNICNameConv
     recoveryServices: recoveryServices
     recoveryServicesVaultName: resourceNames.outputs.recoveryServicesVaultName
     resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
@@ -720,9 +771,6 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (deployFSLogixStorage) {
     tagsRecoveryServicesVault: union({
         'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceNames.outputs.resourceGroupManagement}/providers/Microsoft.DesktopVirtualization/hostPools/${resourceNames.outputs.hostPoolName}'
       }, contains(tags, 'Microsoft.recoveryServices/vaults') ? tags['Microsoft.recoveryServices/vaults'] : {})
-    tagsVirtualMachines: union({
-        'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceNames.outputs.resourceGroupManagement}/providers/Microsoft.DesktopVirtualization/hostPools/${resourceNames.outputs.hostPoolName}'
-      }, contains(tags, 'Microsoft.Compute/virtualMachines') ? tags['Microsoft.Compute/virtualMachines'] : {})
     timeStamp: timeStamp
     timeZone: logic.outputs.timeZone
     virtualNetwork: split(storagePrivateEndpointSubnetResourceId, '/')[8]
@@ -750,7 +798,10 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     cseScriptAddDynParameters: cseScriptAddDynParameters
     cseUris: logic.outputs.cseUris
     customImageResourceId: customImageResourceId
-    dataCollectionEndpointResourceId: enableMonitoring ? monitoring.outputs.dataCollectionEndpointResourceId : ''    
+    dataCollectionEndpointResourceId: enableMonitoring ? monitoring.outputs.dataCollectionEndpointResourceId : ''
+    dedicatedHostGroupResourceId: dedicatedHostGroupResourceId
+    dedicatedHostGroupZones: logic.outputs.dedicatedHostGroupZones
+    dedicatedHostResourceId: dedicatedHostResourceId    
     diskEncryptionSetResourceId: management.outputs.diskEncryptionSetResourceId
     diskNamePrefix: resourceNames.outputs.diskNamePrefix
     diskSku: diskSku
@@ -768,7 +819,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     imageOffer: imageOffer
     imagePublisher: imagePublisher
     imageSku: imageSku
-    keyVaultName: resourceNames.outputs.keyVaultNames.VMSecrets
+    keyVaultName: resourceNames.outputs.keyVaultNames.VMs
     location: vmVirtualNetwork.location
     managementVirtualMachineName: management.outputs.virtualMachineName
     maxResourcesPerTemplateDeployment: logic.outputs.maxResourcesPerTemplateDeployment
