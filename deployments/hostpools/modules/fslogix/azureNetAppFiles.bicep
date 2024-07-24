@@ -1,8 +1,6 @@
 param artifactsUri string
 param artifactsUserAssignedIdentityClientId string
-param activeDirectoryConnection string
-param delegatedSubnetId string
-param dnsServers string
+param activeDirectoryConnection bool
 @secure()
 param domainJoinUserPassword string
 @secure()
@@ -14,6 +12,7 @@ param location string
 param managementVirtualMachineName string
 param netAppAccountName string
 param netAppCapacityPoolName string
+param netAppVolumesSubnetResourceId string
 param ouPath string
 param resourceGroupManagement string
 param securityPrincipalNames array
@@ -23,22 +22,27 @@ param fslogixStorageSolution string
 param tagsNetAppAccount object
 param timeStamp string
 
+resource vnet 'Microsoft.Network/virtualNetworks@2023-11-01' existing = {
+  scope: resourceGroup(split(netAppVolumesSubnetResourceId, '/')[2], split(netAppVolumesSubnetResourceId, '/')[4])
+  name: split(netAppVolumesSubnetResourceId, '/')[8]
+}
+
 resource netAppAccount 'Microsoft.NetApp/netAppAccounts@2021-06-01' = {
   name: netAppAccountName
   location: location
   tags: tagsNetAppAccount
   properties: {
-    activeDirectories: activeDirectoryConnection == 'false' ? null : [
+    activeDirectories: activeDirectoryConnection ? [
       {
         aesEncryption: false
         domain: domainName
-        dns: dnsServers
+        dns: string(vnet.properties.dhcpOptions.dnsServers)
         organizationalUnit: ouPath
         password: domainJoinUserPassword
         smbServerName: 'anf-${smbServerLocation}'
         username: split(domainJoinUserPrincipalName, '@')[0]
       }
-    ]
+    ] : null
     encryption: {
       keySource: 'Microsoft.NetApp'
     }
@@ -123,7 +127,7 @@ resource volumes 'Microsoft.NetApp/netAppAccounts/capacityPools/volumes@2021-06-
     smbEncryption: true
     snapshotDirectoryVisible: true
     // snapshotId: 'string'
-    subnetId: delegatedSubnetId
+    subnetId: netAppVolumesSubnetResourceId
     // throughputMibps: int
     // unixPermissions: 'string'
     usageThreshold: 107374182400

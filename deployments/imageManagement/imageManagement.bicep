@@ -57,16 +57,6 @@ param logAnalyticsWorkspaceResourceId string = ''
 param envShortName string = ''
 
 @allowed([
-  'Storage'
-  'StorageV2'
-  'BlobStorage'
-  'FileStorage'
-  'BlockBlobStorage'
-])
-@description('Optional. Type of Storage Account to create.')
-param storageKind string = 'StorageV2'
-
-@allowed([
   'Standard_LRS'
   'Standard_GRS'
   'Standard_RAGRS'
@@ -144,11 +134,12 @@ var blobContainerName = replace(replace(toLower(artifactsContainerName), '_', '-
 var galleryName = customComputeGalleryName != 'none' ? customComputeGalleryName : replace(replace(nameConv_ImageManagement_Resources, 'RESOURCETYPE', resourceAbbreviations.computeGalleries), 'LOCATION', locations[location].abbreviation)
 var computeGalleryName = replace(galleryName, '-', '_')
 var identityName = customManagedIdentityName != 'none' ? customManagedIdentityName : replace(replace(nameConv_ImageManagement_Resources, 'RESOURCETYPE', resourceAbbreviations.userAssignedIdentities), 'LOCATION', locations[location].abbreviation)
-var vnetName = split(privateEndpointSubnetResourceId, '/')[8]
-var snetName = split(privateEndpointSubnetResourceId, '/')[10]
+var vnetName = !empty(privateEndpointSubnetResourceId) ? split(privateEndpointSubnetResourceId, '/')[8] : ''
+var snetName = !empty(privateEndpointSubnetResourceId) ? split(privateEndpointSubnetResourceId, '/')[10] : ''
 var privateEndpointNameConv = replace('${nameConvResTypeAtEnd ? 'RESOURCE-SUBRESOURCE-${vnetName}-${snetName}-RESOURCETYPE' : 'RESOURCETYPE-RESOURCE-SUBRESOURCE-${vnetName}-${snetName}'}', 'RESOURCETYPE', resourceAbbreviations.privateEndpoints)
 var privateEndpointName = replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'blob'), 'RESOURCE', storageName)
 var storageName = customArtifactsStorageAccountName != 'none' ? customArtifactsStorageAccountName : !empty(envShortName) ? take('${resourceAbbreviations.storageAccounts}imageassets${envShortName}${locations[location].abbreviation}${uniqueString(subscription().subscriptionId, resourceGroupName)}', 24) : take('${resourceAbbreviations.storageAccounts}imageassets${locations[location].abbreviation}${uniqueString(subscription().subscriptionId, resourceGroupName)}', 24)
+var storageKind = 'StorageV2'
 
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   name: resourceGroupName

@@ -6,11 +6,15 @@ param enableMonitoring bool
 param privateEndpoint bool
 param privateEndpointNameConv string
 param privateEndpointNICNameConv string
-param subnetResourceId string
+param privateEndpointSubnetResourceId string
 param tags object
+param timeStamp string
 param virtualMachineName string
 
-var privateEndpointName = replace(replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'DSCAndHybridWorker'), 'RESOURCE', automationAccountName), 'VNETID', '${split(subnetResourceId, '/')[8]}')
+resource vnet 'Microsoft.Network/virtualNetworks@2023-11-01' existing = if (!empty(privateEndpointSubnetResourceId)) {
+  name: split(privateEndpointSubnetResourceId, '/')[8]
+  scope: resourceGroup(split(privateEndpointSubnetResourceId, '/')[2], split(privateEndpointSubnetResourceId, '/')[4])
+}
 
 resource virtualMachine 'Microsoft.Compute/virtualMachines@2023-07-01' existing = {
   name: virtualMachineName
@@ -31,41 +35,23 @@ resource automationAccount 'Microsoft.Automation/automationAccounts@2021-06-22' 
   }
 }
 
-resource automationAccountPrivateEndpoint 'Microsoft.Network/privateEndpoints@2023-05-01' = if(privateEndpoint) {
-  name: privateEndpointName
-  location: location
-  tags: contains(tags, 'Microsoft.Network/privateEndpoints') ? tags['Microsoft.Network/privateEndpoints'] : {}
-  properties: {
-    privateLinkServiceConnections: [
-      {
-        name: privateEndpointName
-        properties: {
-          privateLinkServiceId: automationAccount.id
-          groupIds: [
-            'DSCAndHybridWorker'
-          ]
-        }
-      }
+module automationAccount_privateEndpoint '../../../sharedModules/resources/network/private-endpoint/main.bicep' = if(privateEndpoint && !empty(privateEndpointSubnetResourceId)) {
+  name: 'automationAccount_privateEndpoint_${timeStamp}'
+  params: {
+    customNetworkInterfaceName: replace(replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'DSCAndHybridWorker'), 'RESOURCE', automationAccountName), 'VNETID', '${split(privateEndpointSubnetResourceId, '/')[8]}')
+    groupIds: [
+      'DSCAndHybridWorker'
     ]
-    customNetworkInterfaceName: replace(replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'DSCAndHybridWorker'), 'RESOURCE', automationAccountName), 'VNETID', '${split(subnetResourceId, '/')[8]}')
-    subnet: {
-      id: subnetResourceId
+    location: vnet.location
+    name: replace(replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'DSCAndHybridWorker'), 'RESOURCE', automationAccountName), 'VNETID', '${split(privateEndpointSubnetResourceId, '/')[8]}')
+    privateDnsZoneGroup: {
+      privateDNSResourceIds: [
+        automationAccountPrivateDnsZoneResourceId
+      ]
     }
-  }
-}
-
-resource privateDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2023-05-01' = if(!empty(automationAccountPrivateDnsZoneResourceId) && privateEndpoint) {
-  parent: automationAccountPrivateEndpoint
-  name: 'default'
-  properties: {
-    privateDnsZoneConfigs: [
-      {
-        name: !empty(automationAccountPrivateDnsZoneResourceId) ? replace(last(split(automationAccountPrivateDnsZoneResourceId, '/')), '.', '-') : ''
-        properties: {
-          privateDnsZoneId: !empty(automationAccountPrivateDnsZoneResourceId) ? automationAccountPrivateDnsZoneResourceId : ''
-        }
-      }
-    ]
+    serviceResourceId: automationAccount.id
+    subnetResourceId: privateEndpointSubnetResourceId
+    tags: contains(tags, 'Microsoft.Network/privateEndpoints') ? tags['Microsoft.Network/privateEndpoints'] : {}
   }
 }
 

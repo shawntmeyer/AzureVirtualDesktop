@@ -1,18 +1,6 @@
 # Azure Virtual Desktop
 
-## Table of Contents
-
-- [**Scope**](#scope)
-- [**Features**](#features)
-- [**Design**](#design)
-- [**Prerequisites**](#prerequisites)
-- [**Quickstart Guide**](#quickstart-guide)
-- [**Zero Trust Framework**](#zero-trust-framework)
-- [**IL5 Isolation**](#il5-isolation)
-- [**Troubleshooting**](#troubleshooting)
-- [**AVD Host Pool Deployment Parameters**](#avd-host-pool-deployment-parameters)
-- [**AVD Image Build Parameters**](#avd-image-build-parameters)
-- [**AVD Image Management Parameters**](#avd-image-management-parameters)
+[[_TOC_]]
 
 ## Scope
 
@@ -22,11 +10,11 @@ The Azure Virtual Desktop (AVD) solution offering will deploy fully operational 
 
 ![Solution Overview](images/Solutionoverview.png)
 
-The Solution will incorporate the 3 areas of Client, Azure Virtual Desktop and Azure VMs and Services as shown below:
+This solution incorporates the 3 areas of client, Azure Virtual Desktop control plane, and Azure VMs as shown below:
 
 ![Solution Areas](images/3bigpieces.png)
 
-The offering takes into account the elimination of most management infrastructure, session hosts provisioned into your subscriptions as needed, using native Windows 10 interface and enabling Office 365.  
+The offering takes into account the elimination of most management infrastructure, session hosts provisioned into your subscriptions as needed, using native Windows 11 interface and enablement of Office 365.  
 
 ![Solution Details](images/solutionoverviewdetails.png)
 
@@ -34,7 +22,7 @@ The offering takes into account the elimination of most management infrastructur
 
 #### Option 1
 
-Scope:  Implement with DevOps with lifecycle management based on custom images.
+Description: Implement with DevOps with lifecycle management based on custom images.
 
 Outcomes:
 
@@ -56,7 +44,9 @@ Outcomes:
 
 #### Option 2
 
-Implement with DevOps based on Marketplace images which includes:
+Description: Implement with DevOps based on Marketplace images.
+
+Outcomes:
 
 1. Deployment of an Azure Virtual Desktop (AVD) solution with Azure DevOps automation that includes:
 1. Provision up to 2 AVD host pools with up to 4 session host VMs each, based on Azure marketplace images.
@@ -74,20 +64,20 @@ Implement with DevOps based on Marketplace images which includes:
 
 #### Azure DevOps Automation
 
-![Decision](images/decision.png)  Do you already use Azure DevOps? Are you comfortable with using and modifying ARM templates, PowerShell scripts YAML pipelines?
+- [ ] Do you already use Azure DevOps? Are you comfortable with using and modifying BICEP files, PowerShell scripts, and YAML pipelines?
 
 If you already use Azure DevOps, we recommend the Azure Virtual Desktop Design and Implementation component to facilitate rapid deployment and/or code-based lifecycle management.
 Using the automation solution has significant benefits over manual deployment: it makes the process reliably repeatable and scalable.
 
-The true potential of this solution can only be unlocked if your teams are familiar with the tools used in the solution, such as: ARM templates, PowerShell scripts YAML pipelines – thus, the DevOps Automation solution can be leveraged beyond the initial deployment of the AVD environment in scope.
+The true potential of this solution can only be unlocked if your teams are familiar with the tools used in the solution, such as: BICEP files, PowerShell scripts, and YAML pipelines – thus, the DevOps Automation solution can be leveraged beyond the initial deployment of the AVD environment in scope.
 
 If the answer to the above question is yes, this AVD Design and Implementation solution is strongly recommended.
 
-If the answer is no, ISD can only assist you with building an automated solution based on ARM templates and PowerShell script, leveraging your choice of pipeline solution.
+If the answer is no, ISD can only assist you with building an automated solution based on BICEP templates and PowerShell scripts, leveraging your choice of pipeline solution.
 
 #### Azure Subscription and Domain Controller connectivity
 
-![Decision](images/decision.png)   Do you have an existing Azure subscription with connectivity to Domain Controllers?
+- [ ] Do you have an existing Azure subscription with connectivity to Domain Controllers?
 
 Implementing Azure Virtual Desktop requires an Azure subscription and access to Active Directory Domain Services. An existing domain is typically used but we can also use Entra ID Domain Services. Note, that Entra ID Domain Services has certain limitations, e.g. using custom GPO ADMX templates is not supported; you have to sync password hashes to Entra ID to leverage Entra ID Domain Services for AVD.
 
@@ -105,7 +95,7 @@ This approach provides you all capabilities of Active Directory, but you need to
 
 #### Azure Regions
 
-![Decision](images/decision.png)   Do you wish to deploy AVD in a single Azure region?
+- [ ] Do you wish to deploy AVD in a single Azure region?
 
 When deploying to a single Azure region, we can simply leverage a set of cloud file shares (Azure Files) and have the best experience when using Azure AD Domain Services (Azure ADDS) or on-premises Active Directory Domain Services (ADDS).
 
@@ -113,9 +103,9 @@ In case of a multi-region deployment, users’ profiles must be as close to the 
 
 #### Custom Images
 
-![Decision](images/decision.png)  In the cloud, would you leverage custom images to package applications and/or optimized OS/App configuration to facilitate rapid deployment?
+- [ ] In the cloud, would you leverage custom images to package applications and/or optimized OS/App configuration to facilitate rapid deployment?
 
-The default Azure Virtual Desktop deployment uses Azure Marketplace images (any supported Windows Server or Windows client OS). However, we can customize the deployment to use your own images and help manage your images using Azure Image Builder and Shared Image Galleries.
+The default Azure Virtual Desktop deployment uses Azure Marketplace images (any supported Windows Server or Windows client OS). However, we can customize the deployment to use your own images and help manage your images using Azure Image Builder (or the Zero Trust Compliant image build solution provided in this repo) and Shared Image Galleries.
 
 Using custom images to deliver Azure Virtual Desktop can speed up the resource deployment process, as (majority of) the application components are not installed on the VMs at deployment time.
 
@@ -127,7 +117,7 @@ NOTE: Microsoft can only assist with customizing images based on Azure native te
 
 #### Custom Image as Code
 
-![Decision](images/decision.png)  Would you like to leverage Azure DevOps and the custom image creation deployment capability to programmatically generate custom images, or do you already have an existing imaging solution for your desktops that you plan to use for AVD?
+- [ ] Would you like to leverage Azure DevOps and the custom image creation deployment capability to programmatically generate custom images, or do you already have an existing imaging solution for your desktops that you plan to use for AVD?
 
 If you would like to programmatically generate images using cloud native technologies, such as Azure DevOps pipelines, PowerShell scripts, and Azure Shared Image Gallery, we recommend you “Option 1: Implement with DevOps with lifecycle management based on custom images” of this AVD Design and Implementation solution.
 
@@ -137,7 +127,7 @@ Regardless of the chosen custom image management solution, the produced image mu
 
 #### Stateless or stateful VMs
 
-![Decision](images/decision.png)  Would you like to implement the concept of immutable VMs in your AVD environment?
+- [ ] Would you like to implement the concept of immutable VMs in your AVD environment?
 
 If you would like to leverage the true potential of Azure and DevOps automation, we recommend leveraging an automated lifecycle-management approach within the “Option 1: Implement with DevOps with lifecycle management based on custom images” solution option.
 
@@ -145,7 +135,7 @@ This approach allows you to treat your Virtual Machines as “cattle”, making 
 
 #### auto-scaling
 
-![Decision](images/decision.png)  Do you need auto-scaling?
+- [ ] Do you need auto-scaling?
 
 Our auto-scaling solution includes schedule-based scale out and scale in to help reduce costs.
 
@@ -155,7 +145,7 @@ NOTE: At this time, auto-scaling is still not available in USNat and USSec. Subj
 
 #### Session Hosts
 
-![Decision](images/decision.png)  How many Session Hosts, Desktops, and/or Apps will be published?
+- [ ] How many Session Hosts, Desktops, and/or Apps will be published?
 
 By default, the solution provides up to 2 Host Pools with up to 4 Session Hosts.
 
@@ -163,7 +153,8 @@ If you have more Desktop or Apps that need to be published, the design/planning 
 
 #### User Proflies
 
-![Decision](images/decision.png)  How many user profiles are anticipated?  Do you plan to use FSLogix Profile and/or Office containers?   Will Office 365 be deployed?
+- [ ] How many user profiles are anticipated?  Do you plan to use FSLogix Profile and/or Office containers?
+- [ ] Will Office 365 be deployed?
 
 Understanding the number of users (and therefore user profiles) helps define the scale of the profile infrastructure.
 
@@ -175,36 +166,13 @@ Office Container could optionally be used in conjunction with Profile Container,
 
 #### User Proflie backup
 
-![Decision](images/decision.png)  Would you like to secure your user profile data assets by backing up the centrally stored user profiles to Azure Recovery Services Vault (RSV)?
+- [ ] Would you like to secure your user profile data assets by backing up the centrally stored user profiles to Azure Recovery Services Vault (RSV)?
 
 Backing up valuable User profile data to Azure Recovery Services Vault (RSV) is recommended in most cases, since the data can be backed up in the same Azure where it is kept.
 
-### Federation Services Implementation
-
-![Decision](images/decision.png)  Do you have an existing Active Directory Federation Server (ADFS)?
-
-Azure Virtual Desktop currently does not support Active Directory Federation Services (ADFS) for SSO, although an incoming preview version it’s becoming available, with no service level agreement at the moment. Refer to the official documentation for more detailed information: Configure Azure Virtual Desktop AD FS single sign-on - Azure | Microsoft Docs
-
-Implementing SSO by leveraging ADFS is not part of the Azure Virtual Desktop Design and Implementation component.
-
-Other authentication mechanisms (also not included in this component) can provide SSO-like behavior but may have certain limitations.
-
-In case SSO or other options are needed, the Azure Platform Design and Implement component can support related activities.
-
-#### Remote Desktop Client
-
-![Decision](images/decision.png)  Do you currently have a mechanism to deploy Microsoft Store applications to your Windows desktops?
-
-The Microsoft Remote Desktop client is a Microsoft Store application. If you are already distributing Store applications in their environment, they can continue to leverage that mechanism to deploy the Remote Desktop client to their Windows 10 users. For instance, SCCM and Intune both can integrate with the Microsoft Store for Business to deliver applications.
-
-If you are not already distributing Store applications, additional effort may be required:
-    Is the Public Store available for Windows 10 users? If so, that is an option that requires no additional technical setup.
-    If Public Store is not available, is the Private Store an option for you? This would require Group Policy configuration to enable Private Store, as well as configuring the Store for Business.
-    If neither Public nor Private Store is available, the next option is to integrate Store for Business with SCCM or Intune to distribute the RD client to their end users. This would require additional effort.
-
 #### Monitoring
 
-![Decision](images/decision.png) Do you require enhanced logging of Azure Virtual Desktop diagnostics data?
+- [ ] Do you require enhanced logging of Azure Virtual Desktop diagnostics data?
 
 If yes, “Azure Virtual Desktop Enhanced Monitoring” additional tailored consulting is required.
 
@@ -219,8 +187,8 @@ Azure Virtual Desktop (control plane) is integrated with Azure Monitor. Diagnost
 - [**GPU Drivers & Settings**](#gpu-drivers--settings)
 - [**High Availability**](#high-availability)
 - [**Monitoring**](#monitoring)
-- [**Scaling Plan**](#scaling-plan)
-- [**Server-Side Encryption with Customer Managed Keys**](#server-side-encryption)
+- [**AutoScale Scaling Plan**](#autoscale-scaling-plan)
+- [**Customer Managed Keys for Encryption**](#customer-managed-keys-for-encryption)
 - [**SMB Multichannel**](#smb-multichannel)
 - [**Start VM On Connect**](#start-vm-on-connect)
 - [**Trusted Launch**](#trusted-launch)
@@ -272,7 +240,7 @@ When this optional feature is deployed, the sessions hosts will be put in drain 
   
 ### FSLogix
 
-If selected, this solution will deploy the required resources and configurations so that FSLogix is fully configured and ready for immediate use post deployment. Only Entra Domain Services and AD DS are supported in this solution. Entra ID support is in the backlog and will be added in a future release.
+If selected, this solution will deploy the required resources and configurations so that FSLogix is fully configured and ready for immediate use post deployment.
 
 Azure Files and Azure NetApp Files are the only two SMB storage services available in this solution.  A management VM is deployed to facilitate the domain join of Azure Files (AD DS only) and configures the NTFS permissions on the share(s). With this solution, FSLogix containers can be configured in multiple ways:
 
@@ -347,18 +315,15 @@ Autoscale lets you scale your session host virtual machines (VMs) in a host pool
 
 **Reference:** [AutoScale Scaling Plan - Microsoft Docs](https://learn.microsoft.com/en-us/azure/virtual-desktop/autoscale-create-assign-scaling-plan)
 
-### Server-Side Encryption with Customer Managed Keys
+### Customer Managed Keys for Encryption
 
-This optional feature deploys the required resources & configuration to enable server-side encryption encryption on the session hosts using a customer managed key. The configuration also enables double encryption which uses a platform managed key in combination with the customer managed key. Also, the temp and cache disks are encrypted using the "encryption at host" feature.
-
-> **NOTE**
-> If deploying a "pooled" host pool with FSLogix, the data in the profile and office containers are encrypted using encryption on the storage service, not the virtual machine.
+This optional feature deploys the required resources & configuration to enable virtual machine managed disk encryption on the session hosts using a customer managed key. The configuration also enables double encryption which uses a platform managed key in combination with the customer managed key. The FSLogix storage account can also be encrypted using Customer Managed Keys.
 
 **Reference:** [Azure Server-Side Encryption - Microsoft Docs](https://learn.microsoft.com/azure/virtual-machines/disk-encryption)
 
 **Deployed Resources:**
 
-- Key Vault
+- Key Vault (1 per host pool for VM disks, 1 for each fslogix storage account)
   - Key Encryption Key
 - Disk Encryption Set
 
@@ -407,8 +372,8 @@ Azure confidential VMs offer strong security and confidentiality for tenants. Th
 
 **Deployed Resources:**
 
-- [Azure Key Vault Managed HSM](https://learn.microsoft.com/en-us/azure/key-vault/managed-hsm/overview)
-  - Key Encryption Key
+- Azure Key Vault Premium
+  - Key Encryption Key protected by HSM
 - Disk Encryption Set
 
 ### Validation
@@ -425,7 +390,7 @@ This feature will validate your deployment selections to ensure you are deployin
 
 ### IL5 Isolation
 
-Azure Government supports applications that use Impact Level 5 (IL5) data in all available regions. IL5 requirements are defined in the [US Department of Defense (DoD) Cloud Computing Security Requirements Guide (SRG)](https://public.cyber.mil/dccs/dccs-documents/). IL5 workloads have a higher degree of impact to the DoD and must be secured to a higher standard. When you deploy this solution to the IL4 Azure Government regions (Arizona, Texas, Virginia), you can meet the IL5 isolation requirements by configuring the parameters to deploy the Virtual Machines to dedicated hosts and using Customer Managed Keys that are maintained in Azure Key Vault and stored in FIPS 140 Level 3 validated Hardware Security Modules (HSMs). 
+Azure Government supports applications that use Impact Level 5 (IL5) data in all available regions. IL5 requirements are defined in the [US Department of Defense (DoD) Cloud Computing Security Requirements Guide (SRG)](https://public.cyber.mil/dccs/dccs-documents/). IL5 workloads have a higher degree of impact to the DoD and must be secured to a higher standard. When you deploy this solution to the IL4 Azure Government regions (Arizona, Texas, Virginia), you can meet the IL5 isolation requirements by configuring the parameters to deploy the Virtual Machines to dedicated hosts and using Customer Managed Keys that are maintained in Azure Key Vault and stored in FIPS 140 Level 3 validated Hardware Security Modules (HSMs).
 
 **Reference:** [Azure Government isolation guidelines for Impact Level 5 - Azure Government | Microsoft Learn](https://learn.microsoft.com/en-us/azure/azure-government/documentation-government-impact-level-5)
 
@@ -435,9 +400,11 @@ You must have already deployed at least one dedicated host into a dedicated host
 
 #### Resources Deployed
 
-- [Azure Key Vault Managed HSM](https://learn.microsoft.com/en-us/azure/key-vault/managed-hsm/overview)
-  - Key Encryption Key
+- Azure Key Vault Premium (Virtual Machine Managed Disks - 1 per host pool)
+  - Customer Managed Key protected by HSM (Auto Rotate enabled)
 - Disk Encryption Set
+- Azure Key Vault Premium (FSLogix Storage Accounts - 1 per storage account)
+  - Customer Managed Key protected by HSM (Auto Rotate enabled)
 
 For an example of the required parameter values, see: [IL5 Isolation Requirements on IL4](#il5-isolation-requirements-on-il4)
 
@@ -493,7 +460,6 @@ To successfully deploy this solution, you will need to ensure the following prer
   - AD DS: create the group in ADUC and ensure the group has synchronized to Azure AD.
   - Azure AD: create the group.
   - Azure AD DS: create the group in Azure AD and ensure the group has synchronized to Azure AD DS.
-
 
 ### Optional
 
@@ -696,7 +662,7 @@ For the purposes of deploying a Proof of Concept where you do not have the prere
 
    1. imageManagement - 'privateEndpointSubnetResourceId'
 
-#### Private Endpoints
+#### Private DNS
 
 While utilizing a private endpoints is optional, it must be deployed in order to follow Zero Trust principles. Both the image management and AVD deployments can use private endpoints for the following:
 
@@ -786,7 +752,7 @@ The *deployments/imageManagement/Deploy-ImageManagement.ps1* is the easiest way 
 
     This script:
 
-    a. With the '-DeployImageManagementResources' switch, executes the *deployments/imageManagement/imageManagement.json* to create the following Azure resources in the Image Management resource group:
+    a. With the '-DeployImageManagementResources' switch, deploys the resources in the _deployments/imageManagement/imageManagement.bicep_ to create the following Azure resources in the Image Management resource group:
 
     - [Compute Gallery](https://learn.microsoft.com/en-us/azure/virtual-machines/azure-compute-gallery)
     - [Storage Account](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview)
@@ -808,7 +774,7 @@ A custom image may be required or desired by customers in order to pre-populate 
 
 This deployment can be done via Command Line or through a Template Spec UI in the Portal. The deployment is fully customizable using the parameters documented at [Image Build Parameters](#avd-image-build-parameters).
 
-##### Option 1: Using Command Line
+**Option 1: Using Command Line**
 
 1. Create a parameters file (imageBuild.parameters.json) by referencing the [Image Build Parameters Reference](#avd-image-build-parameters).
 
@@ -820,7 +786,7 @@ This deployment can be done via Command Line or through a Template Spec UI in th
     New-AzDeployment -Location $Location -Name $DeploymentName -TemplateFile '.\deployments\imageManagement\imageBuild\imageBuild.bicep' -TemplateParameterFile '.\deployments\imageManagement\imageBuild\parameters\imageBuild.parameters.json' -Verbose
     ```
 
-##### Option 2: Using a Template Spec and Portal Form
+**Option 2: Using a Template Spec and Portal Form**
 
 1. Create the Template Spec:
 
@@ -855,9 +821,9 @@ This deployment can be done via Command Line or through a Template Spec UI in th
 
 The AVD solution includes all necessary resources to deploy a usable virtual desktop experience within Azure. This includes a host pool, application group, virtual machine(s) as well as other auxilary resources such as monitoring and profile management.
 
-**Important**: When choosing the settings for the source image, make sure that all settings are compatible or the build may fail. For example, choose a VM size that is compatible with the storage type (ie. Premium_LRS)
+>**Important**: When choosing the settings for the source image, make sure that all settings are compatible or the build may fail. For example, choose a VM size that is compatible with the storage type (ie. Premium_LRS)
 
-##### Option 1: Using Command Line
+**Option 1: Using Command Line**
 
 1. Create a parameters file (completeSolution.parameters.json) by reviewing the documentation at [AVD Host Pool Parameters](#avd-host-pool-deployment-parameters).
 
@@ -869,7 +835,7 @@ The AVD solution includes all necessary resources to deploy a usable virtual des
     New-AzDeployment -Location $Location -Name $DeploymentName -TemplateFile '.\deployments\hostpools\completeSolution.bicep' -TemplateParameterFile '.\deployments\hostpools\parameters\completeSolution.parameters.json' -Verbose
     ```
 
-##### Option 2: Using a Template Spec and Portal Form
+**Option 2: Using a Template Spec and Portal Form**
 
 1. Create the Template Spec:
 
@@ -936,26 +902,28 @@ The Zero Trust model is a comprehensive security approach essential in the desig
 
 Every access request in the AVD project is treated with scrutiny, requiring explicit verification. This is achieved through:
 
-* Multifactor authentication (MFA) to ensure robust identity validation.
-* Conditional access policies that evaluate the context of each session.
-* Continuous assessment of the trustworthiness of each request, even from within the network.
+- Multifactor authentication (MFA) to ensure robust identity validation.
+- Conditional access policies that evaluate the context of each session.
+- Continuous assessment of the trustworthiness of each request, even from within the network.
 
 #### Use Least Privilege Access
 
-* The principle of least privilege is rigorously applied to limit exposure to sensitive resources:
-* Just-In-Time (JIT) and Just-Enough-Access (JEA) policies restrict access to what is necessary for the task at hand.
-* Role-Based Access Control (RBAC) ensures that users have access only to the resources they need.
+- The principle of least privilege is rigorously applied to limit exposure to sensitive resources:
+- Just-In-Time (JIT) and Just-Enough-Access (JEA) policies restrict access to what is necessary for the task at hand.
+- Role-Based Access Control (RBAC) ensures that users have access only to the resources they need.
 Segmentation of duties and micro-segmentation of the network further reduce the risk of unauthorized access.
 
 #### Assume Breach
 
 Operating under the assumption that a breach can occur, the AVD project is designed to minimize impact:
 
-* End-to-end encryption safeguards data in transit and at rest.
-* Analytics and threat detection mechanisms provide visibility and rapid response capabilities.
-* Automated threat detection and response are implemented to address potential security incidents swiftly.
+- End-to-end encryption safeguards data in transit and at rest.
+- Analytics and threat detection mechanisms provide visibility and rapid response capabilities.
+- Automated threat detection and response are implemented to address potential security incidents swiftly.
 
-The AVD project's design reflects these principles through its use of ***businessUnitIdentifier*** and ***hostpoolIdentifier*** to create a structured and secure resource hierarchy. The ***centralizedAVDMonitoring*** parameter allows for a unified security monitoring approach, enhancing the overall security posture.    Furthermore, the project’s design incorporates the Zero Trust principle of ‘least privilege access’ through its use of sharding to increase storage capacity. This approach ensures that each user assigned to the hostpool application groups only has access to one file share, thereby limiting their access and enhancing the security of the system. This means that a user can only access the data they need for their specific tasks and cannot access or modify data in other shards. This approach effectively limits each user's access, enhancing the security of the system by reducing the potential impact of a security breach. It also aligns with the Zero Trust principle of 'never trust, always verify' as each access request is treated as potentially risky and is therefore verified before access is granted.
+The AVD project's design reflects these principles through its use of the `businessUnitIdentifier` and `hostpoolIdentifier` to create a structured and secure resource hierarchy. The `centralizedAVDMonitoring` parameter allows for a unified security monitoring approach, enhancing the overall security posture.
+
+Furthermore, the project’s design incorporates the Zero Trust principle of ‘least privilege access’ through its use of sharding to increase storage capacity. This approach ensures that each user assigned to the hostpool application groups only has access to one file share, thereby limiting their access and enhancing the security of the system. This means that a user can only access the data they need for their specific tasks and cannot access or modify data in other shards. This approach effectively limits each user's access, enhancing the security of the system by reducing the potential impact of a security breach. It also aligns with the Zero Trust principle of 'never trust, always verify' as each access request is treated as potentially risky and is therefore verified before access is granted.
 
 In practice, the AVD project may deviate from standard Zero Trust practices to accommodate specific business needs or technical requirements. These deviations are carefully considered to maintain the integrity of the security model while providing the necessary flexibility for the project's success.
 
@@ -969,15 +937,15 @@ The design of the Azure Virtual Desktop (AVD) project is intrinsically linked to
 
 #### Business Unit Identifier
 
-The ***businessUnitIdentifier*** parameter plays a crucial role in resource segregation. It allows for the differentiation of resources across multiple business units within the same Azure subscription, ensuring that each unit's resources are isolated and secure.
+The `businessUnitIdentifier` parameter plays a crucial role in resource segregation. It allows for the differentiation of resources across multiple business units within the same Azure subscription, ensuring that each unit's resources are isolated and secure.
 
 #### Host Pool Identifer
 
-The ***hostpoolIdentifier*** is a fundamental aspect of the AVD design, providing a unique identity to each host pool. This specificity is vital for applying granular security policies and access controls, adhering to the Zero Trust mandate of explicit verification.
+The `hostpoolIdentifier` is a fundamental aspect of the AVD design, providing a unique identity to each host pool. This specificity is vital for applying granular security policies and access controls, adhering to the Zero Trust mandate of explicit verification.
 
 #### Centralized AVD Monitoring
 
-With the ***centralizedAVDMonitoring*** feature, the project can maintain a robust security posture by monitoring activities across all host pools. This centralized approach is essential for detecting and responding to potential security threats in real-time.
+With the `centralizedAVDMonitoring` feature, the project can maintain a robust security posture by monitoring activities across all host pools. This centralized approach is essential for detecting and responding to potential security threats in real-time.
 
 The AVD project includes several features that align with Zero Trust principles. One of these is the use of idempotent code, which means the core management resources are always updated and maintained consistently, no matter how many times the code is run. Another feature is the flexibility to deploy either personal or pooled host pools. Each type of host pool comes with its own set of security controls. These features help ensure that the project adheres to Zero Trust principles while meeting its specific needs.
 
@@ -987,25 +955,25 @@ The AVD project's implementation of Zero Trust principles is a comprehensive app
 
 #### Verification of Identities and Endpoints
 
-* Multifactor Authentication (MFA): Ensures strong authentication for user-backed identities, eliminating password expirations and moving towards a password less environment.
-* Device Health Validation: Requires all device types and operating systems to meet a minimum health state as a condition of access to any Microsoft resource.
+- Multifactor Authentication (MFA): Ensures strong authentication for user-backed identities, eliminating password expirations and moving towards a password less environment.
+- Device Health Validation: Requires all device types and operating systems to meet a minimum health state as a condition of access to any Microsoft resource.
 
 #### Least Privilege Access
 
-* Role-Based Access Control (RBAC): Confines access to session hosts and their data, allowing only necessary permissions to perform job functions.
-* Just-In-Time and Just-Enough-Access (JIT/JEA): Limits user access based on risk-based adaptive policies and data protection, ensuring users have access only when needed and only to the extent required.
+- Role-Based Access Control (RBAC): Confines access to session hosts and their data, allowing only necessary permissions to perform job functions.
+- Just-In-Time and Just-Enough-Access (JIT/JEA): Limits user access based on risk-based adaptive policies and data protection, ensuring users have access only when needed and only to the extent required.
 
 #### Breach Assumption and Segmentation
 
-* Azure Firewall: Specifies allowed network traffic flows between hub and spoke VNets, preventing traffic flows between workloads.
-* Defender for Storage: Provides automated threat detection and protection for storage resources.
-* Encryption: Utilizes server-side encryption with customer managed keys and double encryption for end-to-end encryption of virtual machines.
+- Azure Firewall: Specifies allowed network traffic flows between hub and spoke VNets, preventing traffic flows between workloads.
+- Defender for Storage: Provides automated threat detection and protection for storage resources.
+- Encryption: Utilizes server-side encryption with customer managed keys and double encryption for end-to-end encryption of virtual machines.
 
 #### Use of Azure Services to Enforce Zero Trust
 
-* Azure Firewall: Manages and monitors network traffic flows, ensuring secure communication between components.
-* Microsoft Defender for Servers: Offers threat detection capabilities for virtual machines.
-* Azure Virtual Desktop Security Features: Includes governance, management, and monitoring features to improve defenses and collect session host analytics.
+- Azure Firewall: Manages and monitors network traffic flows, ensuring secure communication between components.
+- Microsoft Defender for Servers: Offers threat detection capabilities for virtual machines.
+- Azure Virtual Desktop Security Features: Includes governance, management, and monitoring features to improve defenses and collect session host analytics.
 
 #### Deivations and Considerations
 
@@ -1013,15 +981,15 @@ In the context of the AVD project, certain deviations and considerations have be
 
 #### Deviations from Standard Zero Trust Practices
 
-* Sharding    for Increased Capacity: The AVD project introduces sharding to enhance storage capacity, which is not a customary practice in standard Zero Trust implementations. This allows for scaling up to Azure's subscription limitations and provides additional capacity to an AVD host pool.
-* Confidential VMs and Trusted Launch: The project leverages Azure confidential VMs and Trusted Launch features to create a hardware-enforced boundary and protect virtual machines from advanced threats, going beyond typical Zero Trust security measures.
+- Sharding for Increased Capacity: The AVD project introduces sharding to enhance storage capacity, which is not a customary practice in standard Zero Trust implementations. This allows for scaling up to Azure's subscription limitations and provides additional capacity to an AVD host pool.
+- Confidential VMs and Trusted Launch: The project leverages Azure confidential VMs and Trusted Launch features to create a hardware-enforced boundary and protect virtual machines from advanced threats, going beyond typical Zero Trust security measures.
 
 #### Project-Specific Considerations
 
-* Business Unit Identifier: The use of the optional ***businessUnitIdentifier*** parameter allows for resource segregation and ensures that resources are appropriately named and managed within a shared subscription, aligning with the Zero Trust principle of least privilege access.
-* Centralized AVD Monitoring: The choice between centralized monitoring and business unit-specific monitoring is a consideration that impacts the security posture and operational efficiency of the AVD deployment.
-* Automated Features: The AVD project automates several features such as Auto Increase Premium File Share Quota, Backups, and Drain Mode. "Drain Mode" is a feature that, when deployed, puts the session hosts in a state where end users cannot access them until they have been validated. This aligns with the Zero Trust principle of "assume breach" by proactively managing resources and user access to maintain a secure environment. In other words, it is like a security guard double-checking everyone's ID at the door, even if they are already inside the building. It ensures that only the right people have access to the right resources at the right times, which helps keep the system secure.
-* Attribute-Based Access Control (ABAC) Integration: With the future availability of ABAC, the AVD project can further enhance its security by providing more granular, attribute-based access control. This aligns well with the Zero Trust principles and can be integrated into the existing design and features of the solution. ABAC can help in verifying identities and endpoints, limiting user access, and assuming breach by minimizing the blast radius and segmenting access. It can also help reduce the number of role assignments and use attributes that have specific business meaning in access control.
+- Business Unit Identifier: The use of the optional `businessUnitIdentifier` parameter allows for resource segregation and ensures that resources are appropriately named and managed within a shared subscription, aligning with the Zero Trust principle of least privilege access.
+- Centralized AVD Monitoring: The choice between centralized monitoring and business unit-specific monitoring is a consideration that impacts the security posture and operational efficiency of the AVD deployment.
+- Automated Features: The AVD project automates several features such as Auto Increase Premium File Share Quota, Backups, and Drain Mode. "Drain Mode" is a feature that, when deployed, puts the session hosts in a state where end users cannot access them until they have been validated. This aligns with the Zero Trust principle of "assume breach" by proactively managing resources and user access to maintain a secure environment. In other words, it is like a security guard double-checking everyone's ID at the door, even if they are already inside the building. It ensures that only the right people have access to the right resources at the right times, which helps keep the system secure.
+- Attribute-Based Access Control (ABAC) Integration: With the future availability of ABAC, the AVD project can further enhance its security by providing more granular, attribute-based access control. This aligns well with the Zero Trust principles and can be integrated into the existing design and features of the solution. ABAC can help in verifying identities and endpoints, limiting user access, and assuming breach by minimizing the blast radius and segmenting access. It can also help reduce the number of role assignments and use attributes that have specific business meaning in access control.
 
 These deviations and considerations demonstrate the project's commitment to adhering to Zero Trust principles while also addressing the unique requirements of the AVD solution. By carefully balancing security, usability, and cost-effectiveness, the project ensures a practical and secure deployment for end-users. The integration of Zero Trust within this Azure Virtual Desktop environment serves as a benchmark for future cloud security strategies.
 
@@ -1037,17 +1005,17 @@ In conclusion, the AVD project not only delivers a secure and efficient virtual 
 
 ### References
 
-* Azure Devops - AVD Repo
+- Azure Devops - AVD Repo
 <https://dev.azure.com/AVDECIF/_git/AVD%20ECIF>
-* Apply Zero Trust principles to an Azure Virtual Desktop deployment
+- Apply Zero Trust principles to an Azure Virtual Desktop deployment
 <https://learn.microsoft.com/en-us/security/zero-trust/azure-infrastructure-avd>
-* What is Zero Trust?
+- What is Zero Trust?
 <https://learn.microsoft.com/en-us/security/zero-trust/zero-trust-overview>
-* Implementing a Zero Trust security model at Microsoft
+- Implementing a Zero Trust security model at Microsoft
 <https://www.microsoft.com/insidetrack/blog/implementing-a-zero-trust-security-model-at-microsoft/>
-* What is Azure attribute-based access control (Azure ABAC)?
+- What is Azure attribute-based access control (Azure ABAC)?
 <https://learn.microsoft.com/en-us/azure/role-based-access-control/conditions-overview>  
-* Zero Trust and the US Executive Order 14028 on Cybersecurity
+- Zero Trust and the US Executive Order 14028 on Cybersecurity
 <https://learn.microsoft.com/en-us/security/zero-trust/zero-trust-overview#zero-trust-and-the-us-executive-order-14028-on-cybersecurity>
 
 ## Troubleshooting
@@ -1067,7 +1035,101 @@ You might need to clear out the bicep exe which is located in the %USERPROFILE%.
 
 ## AVD Host Pool Deployment Parameters
 
-The following section provides usage examples for this template.
+### Required Parameters
+
+| Parameter | Description | Type | Allowed | Default |
+| --------- | ----------- | :--: | :-----: | ------- |
+| `artifactsStorageAccountResourceId` | The storage account resource Id where the artifacts used by this deployment are stored. | string | resource id | |
+| `avdObjectId` | The Object ID for the Azure Virtual Desktop application in Entra Id with Application Id = '9cdead84-a844-4324-93f2-b2e6bb768d07'.  The Object ID can found by selecting Microsoft Applications using the Application type filter in the Enterprise Applications blade of Entra Id. | string | object id | |
+| `hostPoolIdentifier` | An identifier used to distinquish each host pool. This can represent the user or use case. | string | 3- 10 characters | |
+| `identitySolution` | The service providing domain services for Azure Virtual Desktop.  This is needed to properly configure the session hosts and if applicable, the Azure Storage Account. | string | 'ActiveDirectoryDomainServices'<br/>'EntraDomainServices'<br/>'EntraId'<br/>'EntraIdIntuneEnrollment' | |
+| `virtualMachineAdminUserName` | The local administrator username. | secure string | | |
+| `virtualMachineAdminPassword` | The local administrator password. | secure string | | |
+| `virtualMachineNamePrefix` | The prefix of the virtual machine name. Virtual Machines are named based on the prefix with the 3 character index incremented at the end (i.e., prefix001, prefix002, etc.) | string | 2 - 12 characters | |
+| `virtualMachineSubnetResourceId` | The resource Id of the subnet onto which the Virtual Machines will be deployed. | string | resource id | |
+
+## Conditional Parameters
+
+| Parameter | Description | Type | Allowed | Default |
+| --------- | ----------- | :--: | :-----: | ------- |
+| `automationAccountPrivateDnsZoneResourceId` | The resource Id of the Azure Automation private DNS zone which is resolvable from the subnet where the session hosts are deployed. Required when `managementPrivateEndpoints` and `enableIncreaseQuotaAutomation` are set to true. | string | resource id | '' |
+| `avdGlobalFeedPrivateDnsZoneResourceId` | If using private endpoints with Azure Virtual Desktop, input the Resource Id for the Private DNS Zone used for initial feed discovery. (privatelink-global.wvd.microsoft.com) | string | resource id | '' |
+| `avdPrivateDnsZoneResourceId` | If using private endpoints with Azure Virtual Desktop, input the Resource ID for the Private DNS Zone used for feed download and connections to host pools. (privatelink.wvd.microsoft.com) | string | resource id | '' |
+| `azureFilesPrivateDnsZoneResourceId` | The resource Id of the Azure Files private DNS zone which is resolvable from the subnet where the session hosts are deployed. Required when `storagePrivateEndpoints` is set to true. | string | resource id | '' |
+| `confidentialVMOrchestratorObjectId` | The object ID of the Confidential VM Orchestrator enterprise application with application ID "bf7b6499-ff71-4aa2-97a4-f372087be7f0". Required when `confidentialVMOSDiskEncryption` is set to true.  You must create this application in your tenant before deploying this solution using the powershell provided at https://learn.microsoft.com/en-us/azure/confidential-computing/quick-create-confidential-vm-portal#prerequisites. | string | object id | '' |
+| `domainName` | The name of the domain that provides ADDS to the AVD session hosts and is synchronized with Azure AD. Required when `identitySolution` contains 'DomainServices'. | string | | '' |
+| `domainJoinUserPrincipalName` | The User Principal Name of the user with the rights to join the computer to the domain in the specified OU path. Required when `identitySolution` contains 'DomainServices'. | secure string | | '' |
+| `domainJoinUserPassword` | The password of the user with the rights to join the computer to the domain in the specified OU path. Required when `identitySolution` contains 'DomainServices'. | secure string | | '' |
+| `keyVaultPrivateDnsZoneResourceId` | The resource Id of the Azure Key Vault private dns zone which is resolvable from the subnet that the session hosts will be placed upon. Required when the `managementPrivateEndpoints` parameter is set to true. | string | resource id | '' |
+| `managementPrivateEndpointSubnetResourceId` | The resource id of the subnet on which to create the management resource private endpoints. Required when the `managementPrivateEndpoints` parameter is set to true. | string | resource id | '' |
+| `storagePrivateEndpointSubnetResourceId` | The resource id of the subnet on which the storage private endpoints will be attached. Required when the `storagePrivateEndpoints` parameter is set to true. | string | resource id | '' |
+| `hostPoolPrivateEndpointSubnetResourceId` | The resource ID of the subnet where the AVD Private Link endpoints will be created. Required when `avdPrivateLink` is set to True. | string | resource id | '' |
+| `feedPrivateEndpointSubnetResourceId` | The resource ID of the subnet where the AVD Private Link endpoints will be created. Required when `avdPrivateLink` is set to True. | string | resource id | '' |
+| `globalFeedPrivateEndpointSubnetResourceId` | The resource ID of the subnet where the Global Feed AVD Private Link endpoint will be created. Required when `avdPrivateLink` is set to True and `. | string | resource id | '' |
+| `securityPrincipals` | Array of objects containing the security principal display names and object ids. These principals will assigned to the default desktop application group and also be granted access to the FSLogix storage accounts when they are deployed. The number of security principals determines the number of storage accounts that are deployed. | array | | [] |
+
+## Optional Parameters
+
+| Parameter | Description | Type | Allowed | Default |
+| --------- | ----------- | :--: | :-----: | ------- |
+| `artifactsContainerName` | The name of the Azure Blobs container hosting the required artifacts. | string | all lowercase characters | 'artifacts' |
+| `artifactsUserAssignedIdentityResourceId` | The resource ID of the managed identity with Storage Blob Data Reader Access to the artifacts storage Account. If provided this identity will be used to access blobs. Otherwise, the managed identity created by this solution will be granted \'Storage Blob Data Reader\' rights on the storage account. | string | resource id | '' |
+| `availability` | Set the desired availability / SLA with a pooled host pool.  The best practice is to deploy to availability Zones for resilency. | string | 'none'<br/>'availabilitySets'<br/>'availabilityZones' | 'availabilityZones' |
+| `avdPrivateLink` | Determines if Azure Private Link with Azure Virtual Desktop is enabled. Selecting "true" requires that private endpoints are created for the global feed, workspace feed, and hostpool. See [AVD Private Link Setup](https://learn.microsoft.com/en-us/azure/virtual-desktop/private-link-setup?tabs=portal%2Cportal-2) for more information. | bool | true<br/>false | false |
+| `businessUnitIdentifier` | Identifier used to describe the business unit (or customer) utilizing AVD in your tenant. If not specified then centralized AVD Monitoring is assumed and resources and resource groups are named accordingly. If this is specified, then the "centralizedAVDMonitoring" parameter determines how resources are organized and deployed.| string | up to 10 characters | '' |
+| `centralizedAVDMonitoring` | When the `businessUnitIdentifier` parameter is not empty, this parameter determines if the AVD Monitoring Resource Group and associated resources are created in a centralized resource group (does not include "businessUnitIdentifier" in the name) and monitoring resources are named accordingly or if a Business unit specific AVD management resource group is created and monitoring resources are named accordingly. If the `businessUnitIdentifier` parameter is left empty ("") then this value has no effect.| bool | true<br/>false | false |
+| `confidentialVMOSDiskEncryption` | Confidential disk encryption is an additional layer of encryption which binds the disk encryption keys to the virtual machine TPM and makes the disk content accessible only to the VM. | bool | true<br/>false | false |
+| `cseBlobNames` | Array of script (or other artifact) names or full uris that will be downloaded by the Custom Script Extension on each Session Host Virtual Machine. Either specify the entire URL or just the name of the blob if is located within artifacts container of the artifacts storage account as defined in the `artifactsContainerName` and `artifactsStorageAccountResourceId` parameters.| array | | [] |
+| `cseScriptAddDynParameters` | Additional Custom Dynamic parameters passed to CSE Scripts. (ex: 'Script2Keys=@([pscustomobject]@{stringValue=\'storageAccountName\';booleanValue=\'false\'});Script3Keys=@([pscustomobject]@{intValue=\'10\'}') | string | | '' |
+| `customImageResourceId` | The resource ID for the Compute Gallery Image Version. Do not set this value if using a marketplace image. | string | resource id | '' |
+| `dedicatedHostResourceId` | The resource Id of a specific Dedicated Host on which to deploy the Virtual Machines. This parameter takes precedence over the `dedicatedHostGroupResourceId` parameter. | string | resource id | '' |
+| `dedicatedHostGroupResourceId` | The resource Id of the Dedicated Host Group on to which the Virtual Machines are to be deployed. The Dedicated Host Group must support Automatic Host Assignment for this value to be used. | string | resource id | '' |
+| `deployFSLogixStorage` | Determines whether resources to support FSLogix profile storage are deployed. | bool | true<br/>true| false |
+| `deployScalingPlan` | Determines if the scaling plan is deployed to the host pool. | bool | true<br/>false | false |
+| `scalingPlanExclusionTag` | The tag used to exclude virtual machines from the scaling plan. | string | | '' |
+| `desktopFriendlyName` | The friendly name for the Desktop in the AVD workspace. | string | | '' |
+| `workspaceFriendlyName` | The friendly name of the AVD Workspace. This name is displayed in the AVD client. | string | | '' |
+| `diskSku` | The storage SKU for the AVD session host disks.  Production deployments should use Premium_LRS. | string | 'Premium_LRS'<br/>'Standard_LRS'<br/>'StandardSSD_LRS' | 'Premium_LRS' |
+| `domainJoinUserPassword` | The password of the privileged account to domain join the AVD session hosts to your domain | string (secure) | | '' |
+| `domainJoinUserPrincipalName` | The UPN of the privileged account to domain join the AVD session hosts to your domain. This should be an account that resides within the domain you are joining. | string (secure) | | '' |
+| `ouPath` | The distinguished name of the target Organizational Unit in Domain Services where the session hosts computer accounts will be located. | string | distinguished name | '' |
+| `drainMode` | Enable drain mode on new sessions hosts to prevent users from accessing them until they are validated. | bool | true<br/>false | false |
+| `enableIncreaseQuotaAutomation` | Enable Automatic File Share Quota Increase for Azure Files Premium. | bool | true<br/>false | false |
+| `enableMonitoring` | Deploys the required monitoring resources to enable AVD and VM Insights. | bool | true<br/>false | true |
+| `encryptionAtHost` | Encryption at host encrypts temporary disks and ephemeral OS disks with platform-managed keys, OS and data disk caches with the key specified in the "keyManagementDisksAndStorage" parameter, and flows encrypted to the Storage service. | bool | true<br/>false | true |
+| `envShortName` | The target environment for the solution. 'd' for Development, 't' for Test, and 'p' for Production | string | ''<br/>'d'<br/>'t'<br/>'p' | '' |
+| `fslogixConfigureSessionHosts` | Configure FSLogix agent on the session hosts via local registry keys. Only applicable when `identitySolution` is "EntraId" or "EntraIdIntuneEnrollment". | bool | true<br/>false | false |
+| `fslogixContainerType` | The type of FSLogix containers to use for FSLogix. | string | 'CloudCacheProfileContainer'<br/>'CloudCacheProfileOfficeContainer'<br/>'ProfileContainer'<br/>'ProfileOfficeContainer' | 'ProfileContainer' |
+| `fslogixExistingStorageAccountResourceIds` | Existing FSLogix Storage Account Resource Ids. Only used when fslogixConfigureSessionHosts = "true". This list will be added to any storage accounts created when setting `fslogixStorageService` to any of the AzureFiles options. If `identitySolution` is set to "EntraId" or `EntraIdIntuneEnrollment` then only the first storage account listed will be used. | array | array of resource ids | [] |
+| `fslogixNetAppVnetResourceId` | The resource Id of the Virtual Network delegated for NetApp Volumes. Required when `fslogixStorageService` = "AzureNetAppFiles Standard" or "AzureNetAppFiles Premium". | string | resource id | '' |
+| `fslogixShareSizeInGB` | The file share size(s) in GB for the fslogix storage solution. | int | | 100 |
+| `fslogixStorageAccountADKerberosEncryption` | The Active Directory computer object Kerberos encryption type for the Azure Storage Account or Azure NetApp files Account. | string | 'AES256'<br/>'RC4' | 'AES256' |
+| `fslogixStorageCount` | The number of storage accounts to deploy to support the required use case for the AVD stamp. https://docs.microsoft.com/en-us/azure/architecture/patterns/sharding Note: Cannot utilize sharding with "identitySolution" = "AAD" so fslogixStorageCount will be set to 1 in variables. | int | 0 to 100. | 1 |
+| `fslogixStorageCustomPrefix` | The custom prefix to use for the name of the Azure files storage accounts to use for FSLogix. If not specified, the name is generated automatically. | string | max length 13 | '' |
+| `fslogixStorageIndex` | The starting number for the storage accounts to support the required use case for FSLogix. https://docs.microsoft.com/en-us/azure/architecture/patterns/sharding | int | 0 to 99 | 1 |
+| `fslogixStorageService` | The storage service to use for storing FSLogix containers. The service & SKU should provide sufficient IOPS for all of your users. https://docs.microsoft.com/en-us/azure/architecture/example-scenario/wvd/windows-virtual-desktop-fslogix#performance-requirements | string | 'AzureNetAppFiles Premium'<br/>'AzureNetAppFiles Standard'<br/>'AzureFiles Premium'<br/>'AzureFiles Standard' | 'AzureFiles Standard' |
+| `globalFeedPrivateEndpointSubnetResourceId` | The resource ID of the subnet where the global feed private endpoint will be created for AVD Private Link. | string | resource id | '' |
+| `workspacePublicNetworkAccess` | Determines if the AVD Workspace allows public network access when using AVD Private link. Applicable when `avdPrivateLink` is `true`. 'Enabled' allows the global AVD feed to be accessed from both public and private networks, 'Disabled' allows this resource to only be accessed via private endpoints. | string | 'Disabled'<br/>'Enabled' | 'Enabled' |
+| `hostPoolMaxSessionLimit` | The maximum number of sessions per AVD session host. | int | | 4 |
+| `hostPoolPublicNetworkAccess` | Applicable only when `avdPrivateLink` is `true`. Allow public access to the hostpool through the control plane. 'Enabled' allows this resource to be accessed from both public and private networks. 'Disabled' allows this resource to only be accessed via private endpoints. 'EnabledForClientsOnly' allows this resource to be accessed only when the session hosts are configured to use private routes. | string | 'Disabled'<br/>'Enabled'<br/>'EnabledForClientsOnly' | 'Enabled' |
+| `hostPoolRDPProperties` | The RDP properties to add or remove RDP functionality on the AVD host pool. Settings reference: https://learn.microsoft.com/windows-server/remote/remote-desktop-services/clients/rdp-files | string | | 'audiocapturemode:i:1;camerastoredirect:s:*;enablerdsaadauth:i:1' |
+| `hostPoolType` | These options specify the host pool type and depending on the type provides the load balancing options and assignment types. | string | 'Pooled DepthFirst'<br/>'Pooled BreadthFirst'<br/>'Personal Automatic'<br/>'Personal Direct' | 'Pooled DepthFirst' |
+| `hostPoolValidationEnvironment` | The value determines whether the hostPool should receive early AVD updates for testing. | bool | true<br/>false| false |
+| `imageOffer` | Offer for the virtual machine image. Required if `customImageResourceId` is not specified. | string | valid marketplace offer | 'office-365' |
+| `imagePublisher` | Publisher for the virtual machine image. Required if `customImageResourceId` is not specified. | string | valid marketplace publisher | 'MicrosoftWindowsDesktop' |
+| `imageSku` | SKU for the virtual machine image. Required if `customImageResourceId` is not specified. | string | valid marketplace sku | 'win11-23h2-avd-m365' |
+| `keyManagementDisks` | The type of encryption key management used for the OS disk. | string | 'PlatformManaged'<br/>'CustomerManaged'<br/>'<br/>'CustomerManagedHSM'<br/>'PlatformManagedAndCustomerManaged'<br/>'PlatformManagedAndCustomerManagedHSM' | 'PlatformManaged' |
+| `keyManagementFSLogixStorage` | The type of encryption key management used for the FSLogix storage accounts | string | 'MicrosoftManaged'<br/>'CustomerManaged'<br/>'CustomerManagedHSM' | 'MicrosoftManaged' |
+| `managementPrivateEndpoints` | Determines if private endpoints are created for all management resources (i.e., Automation Accounts, Key Vaults) | bool | true<br/>false | false |
+| `managementPrivateEndpointSubnetResourceId` | The resource id of the subnet on which to create the management resource private endpoints. | string | resource id | '' |
+| `storagePrivateEndpoints` | Determines if private endpoints are created for all storage resources. | bool | true<br/>false | false |
+| `nameConvResTypeAtEnd` | Reverse the normal Cloud Adoption Framework naming convention by putting the resource type abbreviation at the end of the resource name. | bool | true<br/>false | false |
+| `regionControlPlane` | The deployment location for the AVD Control Plane resources (i.e., Host Pool, Workspace, and Application Group). Is not used if you specify an existing `workspaceResourceId`. | string | valid region | deployment.location |
+| `securityLogAnalyticsWorkspaceResourceId` | The resource Id of an existing Log Analytics workspace for security monitoring. Setting this value will install the legacy Microsoft Monitoring Agent (Log Analytics Agent) on the Virtual Machines and connect it to this workspace for log collection. | string | resource id | '' |
+| `securityDataCollectionRulesResourceId` | The resource Id of an existing data collection rule designed to collect security relevant logs into a centralized Log Analytics workspace. Setting this value will install the Azure Monitor Agent on each virtual machine and associate the machine with the data collection rule. | string | resource id | '' |
+| `workspaceResourceId` | The resource Id of an existing Azure Virtual Desktop Workspace that will be updated with the new desktop application group. If specified, then the `regionControlPlane` is not used and instead the region and resource group where this workspace is located is used. | string | resource id | '' |
+
+## Examples
 
 ### Required Parameters Only
 
@@ -1110,8 +1172,6 @@ This instance deploys an AVD host pool with default values.
 
 This example shows a Zero Trust Compliant host pool that includes AVD Private Link, private endpoints for the key vault, automation account, and storage accounts. In addition, all secrets are retrieved from an existing Key Vault.
 
->**Note**: The blobName is case sensitive.
-
 ``` json
 {
     "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
@@ -1136,7 +1196,7 @@ This example shows a Zero Trust Compliant host pool that includes AVD Private Li
         "virtualMachineNamePrefix": {
             "value": "avd-hp1-eus-"
         },
-        // Get Secrets from a Key Vault
+        // Get Secrets from a Key Vault (Optional)
         "virtualMachineAdminUserName": {
             "reference": {
                 "keyVault": {
@@ -1152,8 +1212,8 @@ This example shows a Zero Trust Compliant host pool that includes AVD Private Li
                 },
                 "secretName": "virtualMachineAdminPassword"
             }
-        },
-        // Storage Private Endpoints
+        },    
+        // Storage Private Endpoints (required)
         "deployFSLogix": {
             "value": true
         },
@@ -1166,7 +1226,7 @@ This example shows a Zero Trust Compliant host pool that includes AVD Private Li
         "azureFilesPrivateDnsZoneResourceId": {
             "value": "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/rg-networking-lab-eus/providers/Microsoft.Network/privateDnsZones/privatelink.file.core.windows.net"
         },
-        // Management Private Endpoints
+        // Management Private Endpoints (required)
         "managementPrivateEndpoints": {
             "value": true
         },                        
@@ -1183,16 +1243,18 @@ This example shows a Zero Trust Compliant host pool that includes AVD Private Li
         "automationAccountPrivateDnsZoneResourceId": {
             "value": "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/rg-networking-lab-eus/providers/Microsoft.Network/privateDnsZones/privatelink.azure-automation.net" 
         },
-        // Encryption At Rest
-        "keyManagementDisksAndStorage": {
-            "value": "PlatformManagedAndCustomerManaged"
-        },
-        // AVD Private Link
+        // AVD Private Link (optional)
         "avdPrivateLink": {
             "value": true
         },
-        "controlPlanePrivateEndpointSubnetResourceId": {
+        "globalFeedPrivateEndpointSubnetResourceId": {
+            "value": "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/rg-hub-networking-eastus/providers/Microsoft.Network/virtualNetworks/vnet-hub-eastus/subnets/privateEndpoints"
+        },
+        "hostPoolPrivateEndpointSubnetResourceId": {
             "value": "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/rg-avd-networking-eastus/providers/Microsoft.Network/virtualNetworks/vnet-avd-eastus/subnets/privateEndpoints"
+        },
+        "feedPrivateEndpointSubnetResourceId": {
+            "value": "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/rg-hub-networking-eastus/providers/Microsoft.Network/virtualNetworks/vnet-hub-eastus/subnets/privateEndpoints"
         },
         "avdGlobalFeedPrivateDnsZoneResourceId": {
             "value": "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/rg-avd-networking-eastus/providers/Microsoft.Network/privateDnsZones/privatelink-global.wvd.microsoft.com"
@@ -1201,9 +1263,6 @@ This example shows a Zero Trust Compliant host pool that includes AVD Private Li
             "value": "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/rg-avd-networking-eastus/providers/Microsoft.Network/privateDnsZones/privatelink.wvd.microsoft.com"
         },
         "hostPoolPublicNetworkAccess": {
-            "value": "Disabled"
-        },
-        "globalWorkspacePublicNetworkAccess": {
             "value": "Disabled"
         },
         "workspacePublicNetworkAccess": {
@@ -1360,7 +1419,7 @@ This instance deploys a scaling plan and associates it with the host pool.
 
 This example shows a deployment to Azure US Government Regions which are IL4 that meets the isolation guidelines for IL5 workloads. This deployment includes Dedicated Hosts and Customer Managed Keys for the Virtual Machines and FSLogix Storage Accounts.
 
->**Note**: The blobName is case sensitive.
+>**Note:** The `virtualMachineSize` must be compatible with the Dedicated Host (or one of the Dedicated Hosts in the Dedicated Host Group).
 
 ```json
 {
@@ -1391,7 +1450,10 @@ This example shows a deployment to Azure US Government Regions which are IL4 tha
         },
         "virtualMachineAdminPassword": {
             "value": "<REDACTED>"
-        },   
+        },
+        "virtualMachineSize": {
+            "value": "Standard_D4ads_v5"
+        },
         // Storage Private Endpoints
         "deployFSLogix": {
             "value": true
@@ -1416,8 +1478,11 @@ This example shows a deployment to Azure US Government Regions which are IL4 tha
             "value": "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/rg-networking-usgva/providers/Microsoft.Network/privateDnsZones/privatelink.vaultcore.usgovcloudapi.net"
         },
         // Encryption At Rest (Storage Isolation Requirements)
-        "keyManagementDisksAndStorage": {
+        "keyManagementDisks": {
             "value": "PlatformManagedAndCustomerManagedHSM"
+        },
+        "keyManagementFSLogixStorage": {
+            "value": "CustomerManagedHSM"
         },
         // Dedicated Hosts (Compute Isolation Requirements)
         "dedicatedHostGroupResourceId": {
@@ -1427,214 +1492,83 @@ This example shows a deployment to Azure US Government Regions which are IL4 tha
 }
 ```
 
-## Parameters
-
-**Required Parameters**
-
-| Parameter | Description | Type | Default |
-| --- | --- | --- | --- |
-| `artifactsStorageAccountResourceId` | The storage account resource Id where the artifacts used by this deployment are stored. | string |  |
-| `avdObjectId` | The Object ID for the Azure Virtual Desktop application in Entra Id with Application Id = '9cdead84-a844-4324-93f2-b2e6bb768d07'.  The Object ID can found by selecting Microsoft Applications using the Application type filter in the Enterprise Applications blade of Entra Id. | string |  |
-| `hostPoolIdentifier` | An identifier used to distinquish each host pool. This can represent the user or use case. | string <br/> <br/>Character limit: 3-10 |  |
-| [`identitySolution`](#parameter-identitysolution) | The service providing domain services for Azure Virtual Desktop.  This is needed to properly configure the session hosts and if applicable, the Azure Storage Account. | string |  |
-| `virtualMachineAdminUserName` | The local administrator username. | secure string | |
-| `virtualMachineAdminPassword` | The local administrator password. | secure string | |
-| `virtualMachineNamePrefix` | The prefix of the virtual machine name. Accepts from 2-12 characters. Virtual Machines are named based on the prefix with the 3 character index incremented at the end (i.e., prefix001, prefix002, etc.) | string | |
-| `virtualMachineSubnetResourceId` | The resource Id of the subnet onto which the Virtual Machines will be deployed. | string | |
-
-**Conditional Parameters**
-
-| Parameter | Description | Type | Default |
-| --- | --- | --- | --- |
-| `automationAccountPrivateDnsZoneResourceId` | The resource Id of the Azure Automation private DNS zone which is resolvable from the subnet where the session hosts are deployed. Required when `managementPrivateEndpoints` and `enableIncreaseQuotaAutomation` are set to true. | string | '' |
-| `avdGlobalFeedPrivateDnsZoneResourceId` | If using private endpoints with Azure Virtual Desktop, input the Resource Id for the Private DNS Zone used for initial feed discovery. (privatelink-global.wvd.microsoft.com) | string | '' |
-| `avdPrivateDnsZoneResourceId` | If using private endpoints with Azure Virtual Desktop, input the Resource ID for the Private DNS Zone used for feed download and connections to host pools. (privatelink.wvd.microsoft.com) | string | '' |
-| `azureFilesPrivateDnsZoneResourceId` | The resource Id of the Azure Files private DNS zone which is resolvable from the subnet where the session hosts are deployed. Required when `storagePrivateEndpoints` is set to true. | string | '' |
-| [`confidentialVMOrchestratorObjectId`](#parameter-confidentialvmorchestratorobjectid) | The object ID of the Confidential VM Orchestrator enterprise application with application ID "bf7b6499-ff71-4aa2-97a4-f372087be7f0". Required when `confidentialVMOSDiskEncryption` is set to true. | string | '' |
-| `domainName` | The name of the domain that provides ADDS to the AVD session hosts and is synchronized with Azure AD. Required when `identitySolution` contains 'DomainServices'. | string | '' |
-| `domainJoinUserPrincipalName` | The User Principal Name of the user with the rights to join the computer to the domain in the specified OU path. Required when `identitySolution` contains 'DomainServices'. | secure string | |
-| `domainJoinUserPassword` | The password of the user with the rights to join the computer to the domain in the specified OU path. Required when `identitySolution` contains 'DomainServices'. | secure string | |
-| `keyVaultPrivateDnsZoneResourceId` | The resource Id of the Azure Key Vault private dns zone which is resolvable from the subnet that the session hosts will be placed upon. Required when the `managementPrivateEndpoints` parameter is set to true. | string | '' |
-| `managementPrivateEndpointSubnetResourceId` | The resource id of the subnet on which to create the management resource private endpoints. Required when the `managementPrivateEndpoints` parameter is set to true. | string | '' |
-| `storagePrivateEndpointSubnetResourceId` | The resource id of the subnet on which the storage private endpoints will be attached. Required when the `storagePrivateEndpoints` parameter is set to true. | string | '' |
-| `controlPlanePrivateEndpointSubnetResourceId` | The resource ID of the subnet where the AVD Private Link endpoints will be created. Required when `avdPrivateLink` is set to True. | string | '' |
-| `securityPrincipals` | Array of objects containing the security principal display names and object ids. These principals will assigned to the default desktop application group and also be granted access to the FSLogix storage accounts when they are deployed. The number of security principals determines the number of storage accounts that are deployed. | array | [] |
-
-**Optional Parameters**
-
-| Parameter | Description | Type | Default |
-| --- | --- | --- | --- |
-| `artifactsContainerName` | The name of the Azure Blobs container hosting the required artifacts. | string | 'artifacts' |
-| `locationControlPlane` | The deployment location for the AVD Control Plane resources (i.e., Host Pool, Workspace, and Application Group). | string | deployment location |
-| `artifactsUserAssignedIdentityResourceId` | The resource ID of the managed identity with Storage Blob Data Reader Access to the artifacts storage Account. If provided this identity will be used to access blobs. Otherwise, the managed identity created by this solution will be granted \'Storage Blob Data Reader\' rights on the storage account. | string | '' |
-| `availability` | Set the desired availability / SLA with a pooled host pool.  The best practice is to deploy to availability Zones for resilency. | string | 'availabilityZones' |
-| `avdPrivateLink` | Determines if Azure Private Link with Azure Virtual Desktop is enabled. Selecting "true" requires that private endpoints are created for the global feed, workspace feed, and hostpool. See [AVD Private Link Setup](https://learn.microsoft.com/en-us/azure/virtual-desktop/private-link-setup?tabs=portal%2Cportal-2) for more information. | bool | false |
-| `businessUnitIdentifier` | Identifier used to describe the business unit (or customer) utilizing AVD in your tenant. If not specified then centralized AVD Monitoring is assumed and resources and resource groups are named accordingly. If this is specified, then the "centralizedAVDMonitoring" parameter determines how resources are organized and deployed.| string <br/> <br/>Character limit: X-10 | '' |
-| `centralizedAVDMonitoring` | When the `businessUnitIdentifier` parameter is not empty, this parameter determines if the AVD Monitoring Resource Group and associated resources are created in a centralized resource group (does not include "businessUnitIdentifier" in the name) and monitoring resources are named accordingly or if a Business unit specific AVD management resource group is created and monitoring resources are named accordingly. If the `businessUnitIdentifier` parameter is left empty ("") then this value has no effect.| bool | false |
-| `confidentialVMOSDiskEncryption` | Confidential disk encryption is an additional layer of encryption which binds the disk encryption keys to the virtual machine TPM and makes the disk content accessible only to the VM. | bool | false |
-| [`cseBlobNames`](#parameter-cseblobnames) | Array of script (or other artifact) names or full uris that will be downloaded by the Custom Script Extension on each Session Host Virtual Machine. Either specify the entire URL or just the name of the blob if is located within artifacts container of the artifacts storage account as defined in the `artifactsContainerName` and `artifactsStorageAccountResourceId` parameters.| array | [] |
-| `cseScriptAddDynParameters` | Additional Custom Dynamic parameters passed to CSE Scripts. (ex: 'Script2Keys=@([pscustomobject]@{stringValue=\'storageAccountName\';booleanValue=\'false\'});Script3Keys=@([pscustomobject]@{intValue=\'10\'}') | string | '' |
-| `customImageResourceId` | The resource ID for the Compute Gallery Image Version. Do not set this value if using a marketplace image. | string | '' |
-| `deployFSLogixStorage` | Determines whether resources to support FSLogix profile storage are deployed. | bool | false |
-| `deployScalingPlan` | Determines if the scaling plan is deployed to the host pool. | bool | false |
-| `scalingPlanExclusionTag` | The tag used to exclude virtual machines from the scaling plan. | string | '' |
-| `desktopFriendlyName` | The friendly name for the Desktop in the AVD workspace. | string | '' |
-| `workspaceFriendlyName` | The friendly name of the AVD Workspace. This name is displayed in the AVD client. | string | '' |
-| `diskSku` | The storage SKU for the AVD session host disks.  Production deployments should use Premium_LRS. | string | 'Premium_LRS' |
-| `domainJoinUserPassword` | The password of the privileged account to domain join the AVD session hosts to your domain | string (secure) | '' |
-| `domainJoinUserPrincipalName` | The UPN of the privileged account to domain join the AVD session hosts to your domain. This should be an account that resides within the domain you are joining. | string (secure) | '' |
-| `ouPath` | The distinguished name of the target Organizational Unit in Domain Services where the session hosts computer accounts will be located. | '' |
-| `drainMode` | Enable drain mode on new sessions hosts to prevent users from accessing them until they are validated. | bool | false |
-| `enableIncreaseQuotaAutomation` | Enable Automatic File Share Quota Increase for Azure Files Premium. | bool | false |
-| `enableMonitoring` | Deploys the required monitoring resources to enable AVD and VM Insights and monitor features in the automation account. | bool | true |
-| `encryptionAtHost` | Encryption at host encrypts temporary disks and ephemeral OS disks with platform-managed keys, OS and data disk caches with the key specified in the "keyManagementDisksAndStorage" parameter, and flows encrypted to the Storage service. | bool | true |
-| [`envShortName`](#parameter-envshortname) | The target environment for the solution. | string | '' |
-| `fslogixConfigureSessionHosts` | Configure FSLogix agent on the session hosts via local registry keys. Only applicable when `identitySolution` is "EntraId" or "EntraIdIntuneEnrollment". | bool | false |
-| [`fslogixContainerType`](#parameter-fslogixcontainertype) | The type of FSLogix containers to use for FSLogix. | string | 'ProfileContainer' |
-| `fslogixExistingStorageAccountResourceIds` | Existing FSLogix Storage Account Resource Ids. Only used when fslogixConfigureSessionHosts = "true". This list will be added to any storage accounts created when setting `fslogixStorageService` to any of the AzureFiles options. If `identitySolution` is set to "EntraId" or `EntraIdIntuneEnrollment` then only the first storage account listed will be used. | array | [] |
-| `fslogixNetAppVnetResourceId` | The resource Id of the Virtual Network delegated for NetApp Volumes. Required when `fslogixStorageService` = "AzureNetAppFiles Standard" or "AzureNetAppFiles Premium". | string | '' |
-| `fslogixShareSizeInGB` | The file share size(s) in GB for the fslogix storage solution. | int | 100 |
-| `fslogixStorageAccountADKerberosEncryption` | The Active Directory computer object Kerberos encryption type for the Azure Storage Account or Azure NetApp files Account. | 'AES256' \| 'RC4' | 'AES256' |
-| `fslogixStorageCount` | The number of storage accounts to deploy to support the required use case for the AVD stamp. https://docs.microsoft.com/en-us/azure/architecture/patterns/sharding Note: Cannot utilize sharding with "identitySolution" = "AAD" so fslogixStorageCount will be set to 1 in variables. | int <br/> <br/>Accepted values: from 0 to 100. | 1 |
-| `fslogixStorageCustomPrefix` | The custom prefix to use for the name of the Azure files storage accounts to use for FSLogix. If not specified, the name is generated automatically. | string | '' |
-| `fslogixStorageIndex` | The starting number for the storage accounts to support the required use case for FSLogix. https://docs.microsoft.com/en-us/azure/architecture/patterns/sharding | int<br><br>Accepted values: from 0 to 99. | 1 |
-| [`fslogixStorageService`](#parameter-fslogixstorageservice) | The storage service to use for storing FSLogix containers. The service & SKU should provide sufficient IOPS for all of your users. https://docs.microsoft.com/en-us/azure/architecture/example-scenario/wvd/windows-virtual-desktop-fslogix#performance-requirements | string | 'AzureFiles Standard' |
-| [`globalWorkspacePublicNetworkAccess`](#parameter-globalworkspacepublicnetworkaccess) | Determines if the global AVD Workspace allows public network access when using AVD Private link. Applicable when "avdPrivateLink" is "true". "Enabled" allows the global AVD feed to be accessed from both public and private networks, "Disabled" allows this resource to only be accessed via private endpoints. | string | 'Enabled' |
-| [`workspacePublicNetworkAccess`](#parameter-workspacepublicnetworkaccess) | Determines if the AVD Workspace allows public network access when using AVD Private link. Applicable when "avdPrivateLink" is "true". "Enabled" allows the global AVD feed to be accessed from both public and private networks, "Disabled" allows this resource to only be accessed via private endpoints. | string | 'Enabled' |
-| `hostPoolMaxSessionLimit` | The maximum number of sessions per AVD session host. | int | 4 |
-| [`hostPoolPublicNetworkAccess`](#parameter-hostpoolpublicnetworkaccess) | Applicable only when "avdPrivateLink is "true". Allow public access to the hostpool through the control plane. "Enabled" allows this resource to be accessed from both public and private networks. "Disabled" allows this resource to only be accessed via private endpoints. | string | 'Enabled' |
-| `hostPoolRDPProperties` | The RDP properties to add or remove RDP functionality on the AVD host pool. Settings reference: https://learn.microsoft.com/windows-server/remote/remote-desktop-services/clients/rdp-files | string | 'audiocapturemode:i:1;camerastoredirect:s:*;enablerdsaadauth:i:1' |
-| [`hostPoolType`](#parameter-hostpooltype) | These options specify the host pool type and depending on the type provides the load balancing options and assignment types. | string | 'Pooled DepthFirst' |
-| `hostPoolValidationEnvironment` | The value determines whether the hostPool should receive early AVD updates for testing. | bool | false |
-| `imageOffer` | Offer for the virtual machine image. Required if `customImageResourceId` is not specified.  | string | 'office-365' |
-| `imagePublisher` | Publisher for the virtual machine image. Required if `customImageResourceId` is not specified. | string | 'MicrosoftWindowsDesktop' |
-| `imageSku` | SKU for the virtual machine image. Required if `customImageResourceId` is not specified. | string | 'win11-23h2-avd-m365' |
-| `keyManagementDisksAndStorage` | The type of encryption key management used for the OS disk. | string | 'PlatformManaged' |
-| `managementPrivateEndpoints` | Determines if private endpoints are created for all management resources (i.e., Automation Accounts, Key Vaults) | bool | false |
-| `managementPrivateEndpointSubnetResourceId` | The resource id of the subnet on which to create the management resource private endpoints. | string | '' |
-| `storagePrivateEndpoints` | Determines if private endpoints are created for all storage resources. | bool | false |
-| `nameConvResTypeAtEnd` | Reverse the normal Cloud Adoption Framework naming convention by putting the resource type abbreviation at the end of the resource name. | bool | false |
-| `securityLogAnalyticsWorkspaceResourceId` | The resource Id of an existing Log Analytics workspace for security monitoring. Setting this value will install the legacy Microsoft Monitoring Agent (Log Analytics Agent) on the Virtual Machines and connect it to this workspace for log collection. | string | '' |
-| `securityDataCollectionRulesResourceId` | The resource Id of an existing data collection rule designed to collect security relevant logs into a centralized Log Analytics workspace. Setting this value will install the Azure Monitor Agent on each virtual machine and associate the machine with the data collection rule. | string | '' |
-
-### Parameter: `identitySolution`
-
-The identity provider for AVD.
-
-- Required: Yes
-- Type: string
-- Default: N/A
-- Allowed: 'ActiveDirectoryDomainServices', 'EntraDomainServices', 'EntraId', or 'EntraIdIntuneEnrollment'
-
-### Parameter: `envShortName`
-
-The short name of the environment.
-
-- Required: No
-- Type: string
-- Default: ''
-- Allowed: 'd', 'p', 't', or ''
-
-### Parameter: `globalWorkspacePublicNetworkAccess`
-
-Applicable only when `avdPrivateLink` is set to true. Controls access to the global workspace feed through the control plane. 'Enabled' allows the global AVD feed to be accessed from both public and private networks. 'Disabled' allows this resource to only be accessed via private endpoints.
-
-- Required: No
-- Type: string
-- Default: 'Enabled'
-- Allowed: 'Enabled' or 'Disabled'
-
-### Parameter: `workspacePublicNetworkAccess`
-
-Applicable only when `avdPrivateLink` is set to true. Controls access to the workspace feed through the control plane. 'Enabled' allows the AVD workpace feed to be accessed from both public and private networks. 'Disabled' allows this resource to only be accessed via private endpoints.
-
-- Required: No
-- Type: string
-- Default: 'Enabled'
-- Allowed: 'Enabled' or 'Disabled'
-
-### Parameter: `hostpoolPublicNetworkAccess`
-
-Applicable only when "avdPrivateLink is true. Controls public access to the host pool through the control plane. 'Enabled' allows this resource to be accessed from both public and private networks. 'Disabled' allows this resource to only be accessed via private endpoints. 'EnabledForClientsOnly' allows the host pool to be accessed from the client side via the public endpoint while the session host side must be through the private endpoint only. 'EnabledForSessionHostsOnly' only allows the host pool to be accessed from the client side via a private endpoint while the session host may access the host pool via the public or private endpoint.
-
-- Required: No
-- Type: string
-- Default: 'Enabled'
-- Allowed: 'Enabled', 'EnabledForClientsOnly', 'EnabledForSessionHostsOnly', or 'Disabled'
-
-### Parameter: `fslogixContainerType`
-
-The type of FSLogix containers to use for FSLogix.
-
-- Required: No
-- Type: string
-- Default: 'ProfileContainer'
-- Allowed: 'CloudCacheProfileContainer', 'CloudCacheProfileOfficeContainer', 'ProfileContainer', or 'ProfileOfficeContainer'
-
-### Parameter: `fslogixStorageService`
-
-The type of storage service and performance used for FSLogix profile storage.
-
-- Required: No
-- Type: string
-- Default: 'AzureFiles Standard'
-- Allowed: 'AzureNetAppFiles Premium', 'AzureNetAppFiles Standard', 'AzureFiles Premium', 'AzureFiles Standard'
-
-### Parameter: `hostPoolType`
-
-The type of host pool and load balancing used for Pooled or assignment type for Personal.
-
-- Required: No
-- Type: string
-- Default: 'Pooled DepthFirst'
-- Allowed: 'Pooled DepthFirst', 'Pooled BreadthFirst', 'Personal Automatic', 'Personal Direct'
-
-### Parameter: `confidentialVMOrchestratorObjectId`
-
-The object ID of the Confidential VM Orchestrator enterprise application with application ID "bf7b6499-ff71-4aa2-97a4-f372087be7f0". You must create this application in your tenant before deploying this solution using the following:
-
-PowerShell:
-
-```powershell
-Connect-AzureAD -Tenant "your tenant ID"
-New-AzureADServicePrincipal -AppId bf7b6499-ff71-4aa2-97a4-f372087be7f0 -DisplayName "Confidential VM Orchestrator"
-```
-
-or Azure CLI:
-
-```azurecli
-az ad sp create --id bf7b6499-ff71-4aa2-97a4-f372087be7f0 --display-name "Confidential VM Orchestrator"
-```
-
-- Required: When 'confidentialVMDiskEncryption' is set to true.
-- Type: string
-- Default: ''
-
-## Parameter: `cseBlobNames`
-
-This is an array parameter of case-senstive blob names for any PowerShell scripts (*.ps1) or Zip files (.zip) that contain a single PowerShell script in the root of the file that will be executed on each deployed virtual machine in the order provided. You can use this parameter after uploading the contents to the Image Management storage account blob container to perform scripted actions on your session hosts such as:
-
-- install software or agents that won't survive a sysprep (Trellix Agent, BigFix Agent, etc)
-- configure settings
-- etc.
-
-- Required: No
-- Type: array (of strings)
-- Default: []
-
-## Parameter: `keyManagementDisksAndStorage`
-
-This string parameter determines the type of key management used for Server Side Encryption of the VM disks and FSLogix storage (when deployed).
-
-- Required: No
-- Type: string
-- Default: 'PlatformManaged'
-- Allowed: 'CustomerManaged', 'CustomerManagedHSM', 'PlatformManaged', 'PlatformManagedAndCustomerManaged', 'PlatformManagedAndCustomerManagedHSM'
-- Notes: To meet IL5 requirements, choose 'PlatformManagedAndCustomerManagedHSM' which deploys a premium Azure Key Vault and double-encrypts the storage using platform managed keys unlocked with Customer Managed Keys stored in FIPS 140 level 3 validated Hardware Security Modules.
-
 ## AVD Image Build Parameters
 
-    This template deploys a Storage Account with a blob container (optionally with a Private Endpoint) and an Azure Compute Gallery.
+This template deploys a Storage Account with a blob container (optionally with a Private Endpoint) and an Azure Compute Gallery.
+
+### Required Parameters
+
+| Parameter | Description | Type | Allowed | Default |
+| --- | --- | :---: | :---: | :---: |
+| `computeGalleryResourceId` | Azure Compute Gallery Resource Id. | string | resource id | |
+| `storageAccountResourceId` | The resource Id of the storage account containing the artifacts (scripts, installers, etc) used during the image build. | string | resource id |  |
+| `subnetResourceId` | The resource Id of the subnet to which the image build and management VMs will be attached. | string | resource id | |
+| `userAssignedIdentityResourceId` | The resource Id of the user assigned managed identity used to access the storage account. | string | resource id | |
+| `vmSize` | The size of the Image build and Management VMs. | string | valid vm size | |
+
+### Conditional Parameters
+
+| Parameter | Description | Type | Allowed | Default |
+| --- | --- | :---: | :---: | :---: |
+| `privateEndpointSubnetResourceId` | The resource id of the private endpoint subnet. Must be provided if `collectCustomizationLogs` is set to 'true'. | string | resource id | '' |
+| `blobPrivateDnsZoneResourceId` | The resource id of the existing Azure storage account blob service private dns zone. Must be provided if `collectCustomizationLogs` is set to "true". This zone must be linked to or resolvable from the vnet referenced in the `privateEndpointSubnetResourceId` parameter. | string | resource id | '' |
+| `customImageDefinitionName` | The name of the image Definition to create in the Compute Gallery. Only valid if `imageDefinitionResourceId` is not provided. If left blank, the image definition name will be built on Cloud Adoption Framework principals and based on the `imageDefinitonPublisher`, `imageDefinitionOffer`, and `imageDefinitionSku` values. | string | up to 80 characters | '' |
+| `imageDefinitionOffer` | The computer gallery image definition Offer. Required when the `imageDefinitionResourceId` is not defined. | string | up to 64 characters | '' |
+| `imageDefinitionPublisher` | The compute gallery image definition Publisher. Required when the `imageDefinitionResourceId` is not defined. | string | up to 128 characters | '' |
+| `imageDefinitionSku` | The compute gallery image definition Sku. Required when the `imageDefinitionResourceId` is not defined. | string | up to 64 characters | '' |
+| `imageVersionDefaultRegion` | Specifies the default replication region when imageVersionTargetRegions is not supplied. | string | valid region | '' |
+| `offer` | The Marketplace Image offer. Required when the `customSourceImageResourceId` is not defined. | string | valid marketplace offer | '' |
+| `publisher` | The Marketplace Image publisher. Required when the `customSourceImageResourceId` is not defined. | string | valid marketplace publisher | '' |
+| `sku` | The Marketplace Image sku. Required when the `customSourceImageResourceId` is not defined. | string | valid marketplace sku | '' |
+| `wsusServer` | The WSUS Server Url if `installUpdates` is true and `updateService` is set to 'WSUS'. (i.e., https://wsus.corp.contoso.com:8531) | string | valid url | '' |
+
+### Optional Parameters
+
+| Parameter | Description | Type | Allowed | Default |
+| --- | --- | :---: | :---: | :---: |
+| `artifactsContainerName` | The name of the storage blob container which contains the artifacts (scripts, installers, etc) used during the image build. | string | lowercase string | 'artifacts' |
+| `collectCustomizationLogs` | Collect image customization logs. | bool | true<br/>false | false |
+| `customBuildResourceGroupName` | The custom name of the resource group where the image build and management vms will be created. Leave blank to create a new resource group based on Cloud Adoption Framework naming principals. | string | valid resource group name | '' |
+| `customSourceImageResourceId` | The resource Id of the source image to use for the image build. If not provided, the latest image from the specified publisher, offer, and sku will be used. | string | resource id | '' |
+| `customizations` | This parameter is array of objects that define additional installations and customizations that will be applied to your image. **Important**, the "blobName" property is case sensitive. | array (of objects) | | [] |
+| `location` | Deployment location. Note that the compute resources will be deployed to the region where the subnet is located. | string | valid region | `deployment().location` |
+| `deploymentPrefix` | Value to prepend to the deployment names. | string | up to 6 characters | '' |
+| `encryptionAtHost` | Determines if "EncryptionAtHost" is enabled on the VMs. | bool | true<br/>false | true |
+| `envShortName` | The environment for which the images are being created. | string | ''<br/>'d'<br/>'t'<br/>'p' | '' |
+| `imageBuildResourceGroupId` | The resource Id of an existing resource group in which to create the vms to build the image. Leave blank to create a new resource group. | string | resource id |'' |
+| `imageDefinitionIsAcceleratedNetworkSupported` | Specifies whether the image definition supports the deployment of virtual machines with accelerated networking enabled. | bool | true<br/>false | false |
+| `imageDefinitionIsHibernateSupported` | Specifies whether the image definition supports creating VMs with support for hibernation. | bool | true<br/>false | false |
+| `imageDefinitionIsHigherStoragePerformanceSupported` | Specifies whether the image definition supports capturing images of NVMe disks or Virtual Machines. | bool | true<br/>false | false |
+| `imageDefinitionResourceId` | The resource id of an existing Image Definition in the Compute gallery. | string | resource id | '' |
+| `imageDefinitionSecurityType` | The security type of the image definition. | string | 'Standard'<br/>'ConfidentialVM'<br/>'ConfidentialVMSupported'<br/>'TrustedLaunch'<br/>'TrustedLaunchSupported'<br/>'TrustedLaunchAndConfidentialVMSupported' | 'TrustedLaunch' |
+| `imageMajorVersion` | The image major version from 0 - 9999. In order to specify a custom image version you must specify the [imageMajorVersion], [imageMinorVersion], and [imagePatch]. Leave the default to automatically generate the image version. | int | -1 to 9999 | -1 |
+| `imageMinorVersion` | The image minor version from 0 - 9999. In order to specify a custom image version you must specify the [imageMajorVersion], [imageMinorVersion], and [imagePatch]. Leave the default to automatically generate the image version. | int | -1 to 9999 | -1 |
+| `imagePatch` | The image patch version from 0 - 9999. In order to specify a custom image version you must specify the [imageMajorVersion], [imageMinorVersion], and [imagePatch]. Leave the default to automatically generate the image version. | int | -1 to 9999 | -1 |
+| `imageVersionDefaultReplicaCount` | The default image version replica count per region. This can be overwritten by the regional value. | int | 1 to 100. | 1 |
+| `imageVersionDefaultStorageAccountType` | Specifies the storage account type to be used to store the image. This property is not updatable. | string | 'Standard_LRS'<br/>'Premium_LRS'<br/>'Standard_ZRS' | 'Standard_LRS' |
+| `imageVersionEOLinDays` | The number of days from now that the image version will reach end of life. | int | 0 to 720 | 0 |
+| `imageVersionExcludeFromLatest` | Exclude this image version from the latest. This property can be overwritten by the regional value. | bool | true<br/>false | false |
+| `imageVersionTargetRegions` | The regions to which the image version will be replicated. (Default: deployment location with Standard_LRS storage and 1 replica.) | array | array of valid regions | [] |
+| `installAccess` | Install Microsoft Access. | bool | true<br/>false | false |
+| `installExcel` | Install Microsoft Excel. | bool | true<br/>false | false |
+| `installFsLogix` | Install FSLogix Agent. | bool | true<br/>false | false |
+| `installOneDrive` | Install OneDrive Per Machine. | bool | true<br/>false | false |
+| `installOneNote` | Install Microsoft OneNote. | bool | true<br/>false | false |
+| `installOutlook` | Install Microsoft Outlook. | bool | true<br/>false | false |
+| `installPowerPoint` | Install Microsoft PowerPoint. | bool | true<br/>false | false |
+| `installProject` | Install Microsoft Project. | bool | true<br/>false | false |
+| `installpublisher` | Install Microsoft Publisher. | bool | true<br/>false | false |
+| `installSkypeForBusiness` | Install Microsoft Skype for Business. | bool | true<br/>false | false |
+| `installTeams` | Install Microsoft Teams. | bool | true<br/>false | false |
+| `installUpdates` | Determines if the latest updates from the specified update service will be installed. | bool | true<br/>false | true |
+| `installVirtualDesktopOptimizationTool` | Apply the Virtual Desktop Optimization Tool customizations. | bool | true<br/>false | false |
+| `installVisio` | Install Microsoft Visio. | bool | true<br/>false | false |
+| `installWord` | Install Microsoft Word. | bool | true<br/>false | false |
+| `tags` | The tags to apply to all resources deployed by this template. | object | | {} |
+| `teamsVersion` | The Teams version | string | 'Classic'<br/>'New' | 'Classic' |
+| `updateService` | The update service. | string | 'WU'<br/>'MU'<br/>'WSUS'<br/>'DCAT'<br/>'STORE'<br/>'OTHER' | 'MU' |
+
+## Examples
 
 The following section provides usage examples for this template.
 
@@ -1857,92 +1791,37 @@ This instance creates a new image definition (with a name based on the provide P
 }
 ```
 
-## Parameters
-
-**Required Parameters**
-
-| Parameter | Description | Type | Default |
-| --- | --- | --- | --- |
-| `computeGalleryResourceId` | Azure Compute Gallery Resource Id. | string |  |
-| `storageAccountResourceId` | The resource Id of the storage account containing the artifacts (scripts, installers, etc) used during the image build. | string |  |
-| `subnetResourceId` | The resource Id of the subnet to which the image build and management VMs will be attached. | string |  |
-| `userAssignedIdentityResourceId` | The resource Id of the user assigned managed identity used to access the storage account. | string |  |
-| `vmSize` | The size of the Image build and Management VMs. | string |  |
-
-**Conditional Parameters**
-
-| Parameter | Description | Type | Default |
-| --- | --- | --- | --- |
-| `privateEndpointSubnetResourceId` | The resource id of the private endpoint subnet. Must be provided if `collectCustomizationLogs` is set to 'true'. | string | '' |
-| `blobPrivateDnsZoneResourceId` | The resource id of the existing Azure storage account blob service private dns zone. Must be provided if `collectCustomizationLogs` is set to "true". This zone must be linked to or resolvable from the vnet referenced in the `privateEndpointSubnetResourceId` parameter. | string | '' |
-| `customImageDefinitionName` | The name of the image Definition to create in the Compute Gallery. Only valid if `imageDefinitionResourceId` is not provided. If left blank, the image definition name will be built on Cloud Adoption Framework principals and based on the `imageDefinitonPublisher`, `imageDefinitionOffer`, and `imageDefinitionSku` values. | string <br/> <br/>Character limit: 0-80 | '' |
-| `imageDefinitionOffer` | The computer gallery image definition Offer. Required when the `imageDefinitionResourceId` is not defined. | string <br/> <br/>Character limit: 0-64 | '' |
-| `imageDefinitionPublisher` | The compute gallery image definition Publisher. Required when the `imageDefinitionResourceId` is not defined. | string <br/> <br/>Character limit: 0-128 | '' |
-| `imageDefinitionSku` | The compute gallery image definition Sku. Required when the `imageDefinitionResourceId` is not defined. | string <br/> <br/>Character limit: 0-64 | '' |
-| `imageVersionDefaultRegion` | Specifies the default replication region when imageVersionTargetRegions is not supplied. | string | '' |
-| `offer` | The Marketplace Image offer. Required when the `customSourceImageResourceId` is not defined. | string | |
-| `publisher` | The Marketplace Image publisher. Required when the `customSourceImageResourceId` is not defined. | string | |
-| `sku` | The Marketplace Image sku. Required when the `customSourceImageResourceId` is not defined. | string | |
-| `wsusServer` | The WSUS Server Url if `installUpdates` is true and `updateService` is set to 'WSUS'. (i.e., https://wsus.corp.contoso.com:8531) | string | '' |
-
-**Optional Parameters**
-
-| Parameter | Description | Type | Default |
-| --- | --- | --- | --- |
-| `artifactsContainerName` | The name of the storage blob container which contains the artifacts (scripts, installers, etc) used during the image build. | string | 'artifacts' |
-| `collectCustomizationLogs` | Collect image customization logs. | bool | false |
-| `customBuildResourceGroupName` | The custom name of the resource group where the image build and management vms will be created. Leave blank to create a new resource group based on Cloud Adoption Framework naming principals. | string | '' |
-| `customSourceImageResourceId` | The resource Id of the source image to use for the image build. If not provided, the latest image from the specified publisher, offer, and sku will be used. | string | '' |
-| `customizations` | This parameter is array of objects that define additional installations and customizations that will be applied to your image. **Important**, the "blobName" property is case sensitive. | array (or objects) | [] |
-| `location` | Deployment location. Note that the compute resources will be deployed to the region where the subnet is located. | string | `deployment().location` |
-| `deploymentPrefix` | Value to prepend to the deployment names. | string <br/> <br/>Character limit: 0-6 | '' |
-| `encryptionAtHost` | Determines if "EncryptionAtHost" is enabled on the VMs. | bool | true |
-| `envShortName` | The environment for which the images are being created. | string | '' |
-| `imageBuildResourceGroupId` | The resource Id of an existing resource group in which to create the vms to build the image. Leave blank to create a new resource group. | string | '' |
-| `imageDefinitionIsAcceleratedNetworkSupported` | Specifies whether the image definition supports the deployment of virtual machines with accelerated networking enabled. | bool | false |
-| `imageDefinitionIsHibernateSupported` | Specifies whether the image definition supports creating VMs with support for hibernation. | bool | false |
-| `imageDefinitionIsHigherStoragePerformanceSupported` | Specifies whether the image definition supports capturing images of NVMe disks or Virtual Machines. | bool | false |
-| `imageDefinitionResourceId` | The resource id of an existing Image Definition in the Compute gallery. | string | '' |
-| `imageDefinitionSecurityType` | The security type of the image definition. | string | 'TrustedLaunch' |
-| `imageMajorVersion` | The image major version from 0 - 9999. In order to specify a custom image version you must specify the [imageMajorVersion], [imageMinorVersion], and [imagePatch] integer from 0-9999. | int <br/> <br/>Accepted values: to 9999. | -1 |
-| `imageMinorVersion` | The image minor version from 0 - 9999. In order to specify a custom image version you must specify the [imageMajorVersion], [imageMinorVersion], and [imagePatch] integer from 0-9999. | int <br/> <br/>Accepted values: to 9999. | -1 |
-| `imagePatch` | The image patch version from 0 - 9999. In order to specify a custom image version you must specify the [imageMajorVersion], [imageMinorVersion], and [imagePatch] integer from 0-9999. | int <br/> <br/>Accepted values: to 9999. | -1 |
-| `imageVersionDefaultReplicaCount` | The default image version replica count per region. This can be overwritten by the regional value. | int <br/> <br/>Accepted values: from 1 to 100. | 1 |
-| `imageVersionDefaultStorageAccountType` | Specifies the storage account type to be used to store the image. This property is not updatable. | string | 'Standard_LRS' |
-| `imageVersionEOLinDays` | The number of days from now that the image version will reach end of life. | int | 0 |
-| `imageVersionExcludeFromLatest` | Exclude this image version from the latest. This property can be overwritten by the regional value. | bool | false |
-| `imageVersionTargetRegions` | The regions to which the image version will be replicated. (Default: deployment location with Standard_LRS storage and 1 replica.) | array | [] |
-| `installAccess` | Install Microsoft Access. | bool | false |
-| `installExcel` | Install Microsoft Excel. | bool | false |
-| `installFsLogix` | Install FSLogix Agent. | bool | false |
-| `installOneDrive` | Install OneDrive Per Machine. | bool | false |
-| `installOneNote` | Install Microsoft OneNote. | bool | false |
-| `installOutlook` | Install Microsoft Outlook. | bool | false |
-| `installPowerPoint` | Install Microsoft PowerPoint. | bool | false |
-| `installProject` | Install Microsoft Project. | bool | false |
-| `installpublisher` | Install Microsoft Publisher. | bool | false |
-| `installSkypeForBusiness` | Install Microsoft Skype for Business. | bool | false |
-| `installTeams` | Install Microsoft Teams. | bool | false |
-| `installUpdates` | Determines if the latest updates from the specified update service will be installed. | bool | true |
-| `installVirtualDesktopOptimizationTool` | Apply the Virtual Desktop Optimization Tool customizations. | bool | false |
-| `installVisio` | Install Microsoft Visio. | bool | false |
-| `installWord` | Install Microsoft Word. | bool | false |
-| `tags` | The tags to apply to all resources deployed by this template. | object | {} |
-| `teamsVersion` | The Teams version - either New or Classic. | 'Classic' \| 'New' | 'Classic' |
-| `updateService` | The update service. | string | 'MU' |
-
-### Parameter: `envShortName`
-
-The short name of the environment.
-
-- Required: No
-- Type: string
-- Default: `''`
-- Allowed: 'd', 'p', 't', or ''
-
 ## AVD Image Management Parameters
 
-    This template deploys a Storage Account with a blob container (optionally with a Private Endpoint) and an Azure Compute Gallery.
+This template deploys a Storage Account with a blob container (optionally with a Private Endpoint) and an Azure Compute Gallery.
+
+### Optional Parameters
+
+| Parameter | Description | Type | Allowed | Default |
+| --- | --- | :---: | :---: | :---: |
+| `artifactsContainerName` | Blob Container Name. Must start with a letter. Can only contain lower case letters, numbers, and -. | string | from 3 to 63 characters | 'artifacts' |
+| `azureBlobPrivateDnsZoneResourceId` | The Resource Id of the Private DNS Zone where the Private Endpoint (if configured) A record will be registered. | string | resource id | '' |
+| `businessUnitIdentifier` | Identifier used to describe the business unit (or customer) utilizing AVD images in your tenant. If not specified then centralized AVD Management is assumed and resources and resource groups are named accordingly. If this is specified, then the "centralizedImageManagement" parameter determines how resources are organized and deployed. | string | from 0 to 10 characters | '' |
+| `centralizedImageManagement` | When the "businessUnitIdentifier" parameter is not empty, this parameter determines if the Image Management Resource Group and associated resources are created in a centralized resource group (does not include "businessUnitIdentifier" in the name) and management resources are named accordingly or if a Business unit specific image management resource group is created and management resources are named accordingly. If the "businessUnitIdentifier" parameter is left empty ("") then this value has no effect. | bool | true<br/>false | false |
+| `customArtifactsStorageAccountName` | The name of the storage account to deploy. Must be at least 3 characters long. Should follow CAF naming conventions. If left as "none", then the storage account is named automatically. | string | 3 to 24 characters | 'none' |
+| `customComputeGalleryName` |  The custom name of the Image Gallery to Deploy. If left as "none", then the gallery is named automatically. | string | from 3 to 128 characters | 'none' |
+| `customManagedIdentityName` | The name of the User Assigned Managed Identity that will be created. If left as "none", then the managed identity is named automatically. The managed identity is granted Storage Blob Data Reader Rights to the storage account for the image artifacts. | string | from 3 to 128 characters | 'none' |
+| `customResourceGroupName` | The resource group name where the compute gallery, managed identity, and storage account will be created. If left as "none", then the resource group is named automatically in accordance with the businessUnitIdentifier, centralizedImageManagement and location parameters. | string | from 3 to 63 characters | 'none' |
+| `envShortName` | The environment for which image management is being deployed. "d" = Development, "t" = Test, and "p" = Production. Leave blank to eliminate this field from the naming convention. | string | ''<br/>'d'<br/>'p'<br/>'t' | '' |
+| `location` | The region where the image management resources are being deployed. | string | valid region | `deployment().location` |
+| `logAnalyticsWorkspaceResourceId` | Resource Id of an existing Log Analytics Workspace to which the storage account diagnostic logs will be sent. If not specified, then no diagnostic logs are collected. | string | resource id | '' |
+| `nameConvResTypeAtEnd` | Reverse the normal Cloud Adoption Framework naming convention by putting the resource type abbreviation at the end of the resource name. | bool | true<br/>false | false |
+| `privateEndpointSubnetResourceId` | The ResourceId of the private endpoint subnet to which the storage account private endpoint will be attached. | string | resource id | '' |
+| `storageAccessTier` | Required if the Storage Account kind is set to Blob Storage. The access tier is used for billing. The "Premium" access tier is the default value for premium block blobs storage account type and it cannot be changed for the premium block blobs storage account type. | string | 'Premium'<br/>'Hot'<br/>'Cool' | 'Hot' |
+| `storageAllowSharedKeyAccess` | Indicates whether the storage account permits requests to be authorized with the account access key via Shared Key. If false, then all requests, including shared access signatures, must be authorized with Azure Active Directory (Azure AD). The default value is null, which is equivalent to true. | bool | true<br/>false | true |
+| `storagePermittedIPs` | Array of permitted IPs or IP CIDR blocks that can access the storage account using the Public Endpoint. | array | | [] |
+| `storagePublicNetworkAccess` | Whether or not public network access is allowed for this resource. To limit public network access, use the "PermittedIPs" and/or the "ServiceEndpointSubnetResourceIds" parameters. | string | 'Disabled'<br/>'Enabled' | 'Enabled' |
+| `storageSASExpirationPeriod` | The SAS expiration period. DD.HH:MM:SS. | string | | '180.00:00:00' |
+| `storageServiceEndpointSubnetResourceIds` | An array of subnet resource IDs where Service Endpoints will be created to allow access to the storage account through the public endpoint. | array | resource id | [] |
+| `storageSkuName` | Storage Account Sku Name. | string | 'Standard_LRS'<br/>'Standard_GRS'<br/>'Standard_RAGRS'<br/>'Standard_ZRS'<br/>'Premium_LRS'<br/>'Premium_ZRS'<br/>'Standard_GZRS'<br/>'Standard_RAGZRS' | 'Standard_LRS' |
+| `tags` | The tags by resource type to apply to the resources created by this template. See [Tags Example](#tags) | object | | {} |
+
+## Examples
 
 The following section provides usage examples for this template.
 
@@ -2017,68 +1896,3 @@ This instance deploys the resources with their default settings and applies reso
     }
 }
 ```
-
-## Parameters
-
-**Optional Parameters**
-
-| Parameter | Description | Type | Default |
-| --- | --- | --- | --- |
-| `artifactsContainerName` | Blob Container Name. Must start with a letter. Can only contain lower case letters, numbers, and -. | string <br/> <br/>Character limit: 3-63 | 'artifacts' |
-| `azureBlobPrivateDnsZoneResourceId` | The Resource Id of the Private DNS Zone where the Private Endpoint (if configured) A record will be registered. | string | '' |
-| `businessUnitIdentifier` | Identifier used to describe the business unit (or customer) utilizing AVD images in your tenant. If not specified then centralized AVD Management is assumed and resources and resource groups are named accordingly. If this is specified, then the "centralizedImageManagement" parameter determines how resources are organized and deployed. | string <br/> <br/>Character limit: 0-10 | '' |
-| `centralizedImageManagement` | When the "businessUnitIdentifier" parameter is not empty, this parameter determines if the Image Management Resource Group and associated resources are created in a centralized resource group (does not include "businessUnitIdentifier" in the name) and management resources are named accordingly or if a Business unit specific image management resource group is created and management resources are named accordingly. If the "businessUnitIdentifier" parameter is left empty ("") then this value has no effect. | bool | false |
-| `customArtifactsStorageAccountName` | The name of the storage account to deploy. Must be at least 3 characters long. Should follow CAF naming conventions. If left as "none", then the storage account is named automatically. | string <br/> <br/>Character limit: 3-24 | 'none' |
-| `customComputeGalleryName` |  The custom name of the Image Gallery to Deploy. If left as "none", then the gallery is named automatically. | string <br/> <br/>Character limit: 3-128 | 'none' |
-| `customManagedIdentityName` | The name of the User Assigned Managed Identity that will be created. If left as "none", then the managed identity is named automatically.  The managed identity is granted Storage Blob Data Reader Rights to the storage account for the image artifacts. | string <br/> <br/>Character limit: 3-128 | 'none' |
-| `customResourceGroupName` | The resource group name where the compute gallery, managed identity, and storage account will be created. If left as "none", then the resource group is named automatically in accordance with the businessUnitIdentifier, centralizedImageManagement and location parameters. . | string <br/> <br/>Character limit: 3-63 | 'none' |
-| [`envShortName`](#parameter-envShortName) | The environment for which image management is being deployed. "d" = Development, "t" = Test, and "p" = Production. Leave blank to eliminate this field from the naming convention. | '' \| 'd' \| 'p' \| 't' | '' |
-| `location` | The region where the image management resources are being deployed. | string | `deployment().location` |
-| `logAnalyticsWorkspaceResourceId` | Resource Id of an existing Log Analytics Workspace to which the storage account diagnostic logs will be sent. If not specified, then no diagnostic logs are collected. | string | '' |
-| `nameConvResTypeAtEnd` | Reverse the normal Cloud Adoption Framework naming convention by putting the resource type abbreviation at the end of the resource name. | bool | false |
-| `privateEndpointSubnetResourceId` | The ResourceId of the private endpoint subnet to which the storage account private endpoint will be attached. | string | '' |
-| [`storageAccessTier`](#parameter-storageaccesstier) | Required if the Storage Account kind is set to Blob Storage. The access tier is used for billing. The "Premium" access tier is the default value for premium block blobs storage account type and it cannot be changed for the premium block blobs storage account type. | string | 'Hot' |
-| `storageAllowSharedKeyAccess` | Indicates whether the storage account permits requests to be authorized with the account access key via Shared Key. If false, then all requests, including shared access signatures, must be authorized with Azure Active Directory (Azure AD). The default value is null, which is equivalent to true. | bool | true |
-| [`storageKind`](#parameter-storagekind) | Type of Storage Account to create. | string | 'StorageV2' |
-| `storagePermittedIPs` | Array of permitted IPs or IP CIDR blocks that can access the storage account using the Public Endpoint. | array | [] |
-| `storagePublicNetworkAccess` | Whether or not public network access is allowed for this resource. To limit public network access, use the "PermittedIPs" and/or the "ServiceEndpointSubnetResourceIds" parameters. | 'Disabled' \| 'Enabled' |  |
-| `storageSASExpirationPeriod` | The SAS expiration period. DD.HH:MM:SS. | string | '180.00:00:00' |
-| `storageServiceEndpointSubnetResourceIds` | An array of subnet resource IDs where Service Endpoints will be created to allow access to the storage account through the public endpoint. | array | [] |
-| [`storageSkuName`](#parameter-storageSkuName) | Storage Account Sku Name. | string | 'Standard_LRS' |
-| `tags` | The tags by resource type to apply to the resources created by this template. See [Tags Example](#tags) | object | {} |
-
-### Parameter: `envShortName`
-
-The short name of the environment.
-
-- Required: No
-- Type: string
-- Default: `''`
-- Allowed: 'd', 'p', 't', or ''
-
-### Parameter: `storageAccessTier`
-
-The access tier used for billing. You must change this value to 'Premium' if you set the `storageKind` to 'Blob'.
-
-- Required: No
-- Type: string
-- Default: `'Hot'`
-- Allowed: 'Premium', 'Hot', or 'Cool'
-
-### Parameter: `storageKind`
-
-The type of Storage Account to create.
-
-- Required: No
-- Type: string
-- Default: `'StorageV2'`
-- Allowed: 'Storage', 'StorageV2', 'BlobStorage', 'FileStorage', or 'BlockBlobStorage'
-
-### Parameter: `storageSkuName`
-
-The Storage Account SKU Name.
-
-- Required: No
-- Type: string
-- Default: `'Standard_LRS'`
-- Allowed: 'Standard_LRS', 'Standard_GRS', 'Standard_RAGRS', 'Standard_ZRS', 'Premium_LRS', 'Premium_ZRS', 'Standard_GZRS', or 'Standard_RAGZRS'

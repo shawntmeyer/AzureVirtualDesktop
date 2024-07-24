@@ -25,7 +25,9 @@
 							"instanceDetailsLabel": "Deployment Details",
 							"location": {
 								"label": "Region (Session Hosts and Management Resources)",
-                                "resourceTypes": ["Microsoft.Compute/virtualmachines"]
+                                "resourceTypes": [
+                                    "Microsoft.resources/resourceGroups"
+                                ]
                             }
 						},
 						{
@@ -579,19 +581,35 @@
 									"visible": "[steps('controlPlane').avdPrivateLink.enablePrivateLink]"
 								},
 								{
-									"name": "hostpoolTextBlock0",
+									"name": "hostpoolOnlyTextBlock1",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[steps('controlPlane').avdPrivateLink.enablePrivateLink]",
+									"visible": "[and(steps('controlPlane').avdPrivateLink.enablePrivateLink, equals(steps('controlPlane').avdPrivateLink.avdPrivateLinkConfig, 'Hostpool'))]",
 									"options": {
 										"text": "<b>Remote Session Connections</b>"
 									}
 								},
 								{
-									"name": "hostpoolTextBlock1",
+									"name": "hostpoolandFeedTextBlock1",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[steps('controlPlane').avdPrivateLink.enablePrivateLink]",
+									"visible": "[and(steps('controlPlane').avdPrivateLink.enablePrivateLink, not(equals(steps('controlPlane').avdPrivateLink.avdPrivateLinkConfig, 'Hostpool')))]",
+									"options": {
+										"text": "<b>Remote Session Connections and Workspace Feed</b>"
+									}
+								},
+								{
+									"name": "hostpoolOnlyTextBlock2",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": "[and(steps('controlPlane').avdPrivateLink.enablePrivateLink, equals(steps('controlPlane').avdPrivateLink.avdPrivateLinkConfig, 'Hostpool'))]",
 									"options": {
 										"text": "Select the virtual network and subnet for the remote session connection private endpoint"
+									}
+								},
+								{
+									"name": "hostpoolandFeedTextBlock2",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": "[and(steps('controlPlane').avdPrivateLink.enablePrivateLink, not(equals(steps('controlPlane').avdPrivateLink.avdPrivateLinkConfig, 'Hostpool')))]",
+									"options": {
+										"text": "Select the virtual network and subnet for the remote session connection and Workspace Feed private endpoints"
 									}
 								},
 								{
@@ -603,33 +621,33 @@
 									}
 								},
                                 {
-                                    "name": "hpVirtualNetwork",
+                                    "name": "cpVirtualNetwork",
                                     "type": "Microsoft.Common.DropDown",
-                                    "label": "Remote session connection vnet",
+                                    "label": "Virtual Network",
 									"multiLine": true,
-                                    "toolTip": "Select the virtual network where the AVD Private Link hostpool Private Endpoints will be created. Note that only virtual networks located in the same region as the virtual machines are shown.",
+                                    "toolTip": "Select the virtual network where the AVD Private Link Hostpool Connection and Workspace Feed (If applicable) Private Endpoints will be created. Note that only virtual networks located in the same region as the control plane are shown.",
                                     "constraints": {
                                         "required": true,
-                                        "allowedValues": "[map(filter(steps('controlPlane').avdPrivateLink.virtualNetworksApi.value, (item) => equals(item.location, steps('basics').scope.location.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
+                                        "allowedValues": "[map(filter(steps('controlPlane').avdPrivateLink.virtualNetworksApi.value, (item) => equals(item.location, steps('basics').locationControlPlane.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
                                     },
 									"visible": "[steps('controlPlane').avdPrivateLink.enablePrivateLink]"
                                 },
                                 {
-                                    "name": "hpSubnetsApi",
+                                    "name": "cpSubnetsApi",
                                     "type": "Microsoft.Solutions.ArmApiControl",
                                     "request": {
                                         "method": "GET",
-                                        "path": "[concat(steps('controlPlane').avdPrivateLink.hpVirtualNetwork, '/subnets?api-version=2022-05-01')]"
+                                        "path": "[concat(steps('controlPlane').avdPrivateLink.cpVirtualNetwork, '/subnets?api-version=2022-05-01')]"
                                     }
                                 },
                                 {
-                                    "name": "hpSubnet",
+                                    "name": "cpSubnet",
                                     "type": "Microsoft.Common.DropDown",
-                                    "label": "Remote session connection subnet",
+                                    "label": "Subnet",
                                     "toolTip": "Select an existing subnet for the private Endpoints.",
                                     "constraints": {
                                         "required": true,
-                                        "allowedValues": "[map(steps('controlPlane').avdPrivateLink.hpSubnetsApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.id, '\"}')))]"
+                                        "allowedValues": "[map(steps('controlPlane').avdPrivateLink.cpSubnetsApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.id, '\"}')))]"
                                     },
 									"visible": "[steps('controlPlane').avdPrivateLink.enablePrivateLink]"
                                 },
@@ -675,56 +693,7 @@
 										"required": false
 									},
 									"visible": "[steps('controlPlane').avdPrivateLink.enablePrivateLink]"
-								},
-								{
-									"name": "feedTextBlock0",
-									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(steps('controlPlane').avdPrivateLink.enablePrivateLink, not(equals(steps('controlPlane').avdPrivateLink.avdPrivateLinkConfig, 'Hostpool')))]",
-									"options": {
-										"text": "<b>Workspace Feed</b>"
-									}
-								},
-								{
-									"name": "feedTextBlock1",
-									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(steps('controlPlane').avdPrivateLink.enablePrivateLink, not(equals(steps('controlPlane').avdPrivateLink.avdPrivateLinkConfig, 'Hostpool')))]",
-									"options": {
-										"text": "Select the virtual network and subnet for the workspace feed private endpoint."
-									}
-								},
-								{
-                                    "name": "feedVirtualNetwork",
-                                    "type": "Microsoft.Common.DropDown",
-                                    "label": "Workspace feed vnet",
-									"defaultValue": "[steps('controlPlane').avdPrivateLink.hpVirtualNetwork]",
-									"multiLine": true,
-                                    "toolTip": "Select the virtual network where the AVD Private Link hostpool Private Endpoints will be created. Note that only virtual networks in the Control Plane region are shown.",
-                                    "constraints": {
-                                        "required": true,
-                                        "allowedValues": "[map(steps('controlPlane').avdPrivateLink.virtualNetworksApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Location: ', item.location, '\",\"value\":\"', item.id, '\"}')))]"
-                                    },
-									"visible": "[and(steps('controlPlane').avdPrivateLink.enablePrivateLink, not(equals(steps('controlPlane').avdPrivateLink.avdPrivateLinkConfig, 'Hostpool')))]"
-                                },
-                                {
-                                    "name": "feedSubnetsApi",
-                                    "type": "Microsoft.Solutions.ArmApiControl",
-                                    "request": {
-                                        "method": "GET",
-                                        "path": "[concat(steps('controlPlane').avdPrivateLink.feedVirtualNetwork, '/subnets?api-version=2022-05-01')]"
-                                    }
-                                },
-                                {
-                                    "name": "feedSubnet",
-                                    "type": "Microsoft.Common.DropDown",
-                                    "label": "Workspace feed subnet",
-									"defaultValue": "[steps('controlPlane').avdPrivateLink.hpSubnet]",
-                                    "toolTip": "Select an existing subnet for the private Endpoints.",
-                                    "constraints": {
-                                        "required": true,
-                                        "allowedValues": "[map(steps('controlPlane').avdPrivateLink.feedSubnetsApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.id, '\"}')))]"
-                                    },
-									"visible": "[and(steps('controlPlane').avdPrivateLink.enablePrivateLink, not(equals(steps('controlPlane').avdPrivateLink.avdPrivateLinkConfig, 'Hostpool')))]"
-                                },
+								},						
 								{
 									"name": "feedDownloadPublicNetworkAccess",
 									"type": "Microsoft.Common.DropDown",
@@ -790,9 +759,9 @@
                                 {
                                     "name": "globalFeedVirtualNetwork",
                                     "type": "Microsoft.Common.DropDown",
-                                    "label": "Global Feed vnet",
+                                    "label": "Virtual Network",
 									"multiLine": true,
-                                    "toolTip": "Select the virtual network where the AVD Private Link Private Endpoints will be created.",
+                                    "toolTip": "Select the virtual network where the AVD Private Link Global Workspace Private Endpoint will be created.",
                                     "constraints": {
                                         "required": true,
                                         "allowedValues": "[map(steps('controlPlane').avdPrivateLink.globalFeedVirtualNetworksApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Location: ', item.location, '\",\"value\":\"', item.id, '\"}')))]"
@@ -810,7 +779,7 @@
                                 {
                                     "name": "globalFeedSubnet",
                                     "type": "Microsoft.Common.DropDown",
-                                    "label": "Global Feed subnet",
+                                    "label": "Subnet",
                                     "toolTip": "Select an existing subnet for the global Feed Private Endpoint.",
                                     "constraints": {
                                         "required": true,
@@ -1242,6 +1211,13 @@
                             "toolTip": "Enables drain mode on the AVD session hosts so the virtual machines cannot be accessed until they have been validated."
                         },
 						{
+							"name": "namingTextBlock1",
+							"type": "Microsoft.Common.TextBlock",
+							"options": {
+								"text": "<b>Naming</b>"
+							}
+						},
+						{
 							"name": "virtualMachineNamePrefix",
 							"type": "Microsoft.Common.TextBox",
 							"label": "Virtual Machine Name Prefix",
@@ -1473,7 +1449,7 @@
 						{
 							"name": "dedicatedHosts",
 							"type": "Microsoft.Common.Section",
-							"label": "Dedicated Host Option",
+							"label": "Dedicated Hosts",
 							"elements": [
 								{
 									"name": "hostGroupsApi",
@@ -1561,10 +1537,44 @@
 							"visible": true
 						},
 						{
+							"name": "availability",
+							"type": "Microsoft.Common.Section",
+							"label": "Availability",
+							"elements": [
+								{
+									"name": "availability",
+									"type": "Microsoft.Common.DropDown",
+									"label": "Availability Options",
+									"filter": true,
+									"defaultValue": "Availability Zones",
+									"toolTip": "Select the redundancy / resiliency for the virtual machines.",
+									"constraints": {
+										"required": true,
+										"allowedValues": [
+											{
+												"label": "Availability Sets",
+												"value": "AvailabilitySets"
+											},
+											{
+												"label": "Availability Zones",
+												"value": "AvailabilityZones"
+											},
+											{
+												"label": "No infrastructure redundancy required",
+												"value": "None"
+											}
+										]
+									}
+								}	
+							],
+							"visible": "[equals(steps('hosts').dedicatedHosts.deployToDedicatedHosts, false)]"
+						},
+						{
 							"name": "specs",
 							"type": "Microsoft.Common.Section",
-							"label": "Capacity, Performance, and Availability",
+							"label": "Capacity and Performance",
 							"elements": [
+								
 								{
 									"name": "count",
 									"type": "Microsoft.Common.Slider",
@@ -1575,32 +1585,6 @@
 									"max": 4999,
 									"showStepMarkers": true,
 									"constraints": {
-										"required": true
-									},
-									"visible": true
-								},
-								{
-									"name": "vmSizesApi",
-									"type": "Microsoft.Solutions.ArmApiControl",
-									"request": {
-										"method": "GET",
-										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Compute/locations/', steps('basics').scope.location.name, '/vmSizes?api-version=2023-03-01')]"
-									}
-								},
-								{
-									"name": "size",
-									"type": "Microsoft.Common.DropDown",
-									"label": "Virtual Machine Size",
-									"defaultValue": "[if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), 'Standard_DC4ads_v5' ,'Standard_D4ads_v5')]",
-									"toolTip": "Select the size of the virtual machines. Multi-session hosts should have 4 - 24 vCPUs. Single session host should have 2 or more vCPUs.",
-									"multiselect": false,
-									"selectAll": false,
-									"filter": true,
-									"filterPlaceholder": "Filter items ...",
-									"multiLine": true,
-									"defaultDescription": "",
-									"constraints": {
-										"allowedValues": "[if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), map(filter(steps('hosts').specs.vmSizesApi.value, (item) => and(or(startsWith(item.name, 'Standard_DC'), startsWith(item.name, 'Standard_EC')), endsWith(item.name, '5'))), (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.name, '\"}'))), map(steps('hosts').specs.vmSizesApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.name, '\"}'))))]",
 										"required": true
 									},
 									"visible": true
@@ -1629,36 +1613,55 @@
 											}
 										]
 									}
+								},
+								{
+									"name": "vmSizesApi",
+									"type": "Microsoft.Solutions.ArmApiControl",
+									"request": {
+										"method": "GET",
+										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Compute/locations/', steps('basics').scope.location.name, '/vmSizes?api-version=2023-03-01')]"
+									}
+								},
+								{
+									"name": "sizeGeneric",
+									"type": "Microsoft.Compute.SizeSelector",
+									"label": "Size",
+									"toolTip": "Select the size of the virtual machines. Multi-session hosts should have 4 - 24 vCPUs. Single session host should have 2 or more vCPUs.",
+									"recommendedSizes": [
+										"Standard_D4ads_v5"
+									],
+									"constraints": {
+										"allowedSizes": [],
+										"numAvailabilityZonesRequired": "[if(equals(steps('hosts').availability.availability, 'AvailabilityZones'), 3, 1)]"
+									},
+									"options": {
+										"hideDiskTypeFilter": "[if(equals(steps('hosts').specs.diskSku, 'Premium_LRS'), true, false)]"
+									},
+									"osPlatform": "Windows",
+									"count": "[steps('hosts').specs.count]",
+									"visible": "[not(equals(steps('hosts').security.securityType, 'ConfidentialVM'))]"
+								},
+								{
+									"name": "sizeConfidentialVM",
+									"type": "Microsoft.Common.DropDown",
+									"label": "Virtual Machine Size",
+									"defaultValue": "[if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), 'Standard_DC4ads_v5' ,'Standard_D4ads_v5')]",
+									"toolTip": "Select the size of the virtual machines. Multi-session hosts should have 4 - 24 vCPUs. Single session host should have 2 or more vCPUs.",
+									"multiselect": false,
+									"selectAll": false,
+									"filter": true,
+									"filterPlaceholder": "Filter items ...",
+									"multiLine": true,
+									"defaultDescription": "",
+									"constraints": {
+										"allowedValues": "[map(filter(steps('hosts').specs.vmSizesApi.value, (item) => or(startsWith(item.name, 'Standard_DC'), startsWith(item.name, 'Standard_EC'))), (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.name, '\"}')))]",
+										"required": true
+									},
+									"visible": "[equals(steps('hosts').security.securityType, 'ConfidentialVM')]"
 								}
+								
 							]
-						},				
-
-						{
-                            "name": "availability",
-                            "type": "Microsoft.Common.DropDown",
-                            "label": "Availability Options",
-                            "filter": true,
-                            "defaultValue": "Availability Zones",
-                            "toolTip": "Select the redundancy / resiliency for the virtual machines.",
-                            "constraints": {
-                                "required": true,
-                                "allowedValues": [
-                                    {
-                                        "label": "Availability Sets",
-                                        "value": "AvailabilitySets"
-                                    },
-                                    {
-                                        "label": "Availability Zones",
-                                        "value": "AvailabilityZones"
-                                    },
-                                    {
-                                        "label": "No infrastructure redundancy required",
-                                        "value": "None"
-                                    }
-                                ]
-                            },
-							"visible": "[equals(steps('hosts').dedicatedHosts.deployToDedicatedHosts, false)]"
-                        },					
+						},										
                         {
                             "name": "image",
                             "type": "Microsoft.Common.Section",
@@ -1824,8 +1827,7 @@
                             "type": "Microsoft.Common.Section",
                             "label": "Domain Join Credentials",
                             "visible": "[not(equals(steps('hosts').identity.solution, 'EntraId'))]",
-                            "elements": [	
-
+                            "elements": [
 								{
 									"name": "passwordSource",
 									"type": "Microsoft.Common.OptionsGroup",
@@ -2066,58 +2068,21 @@
                                     }
                                 ]
                             }
-                        },
-						{
-							"name": "deployStorage",
-							"type": "Microsoft.Common.OptionsGroup",
-							"label": "Deploy FSLogix Storage Resources",
-							"defaultValue": "No",
-							"toolTip": "Select whether or not to deploy storage resources required to support FSLogix user profile management.",
-							"constraints": {
-								"allowedValues": [
-									{
-										"label": "Yes",
-										"value": true
-									},
-									{
-										"label": "No",
-										"value": false
-									}
-								],
-								"required": true
-							},
-							"visible": "[equals(steps('userProfiles').profileSolution, 'FSLogix')]"
-						},
-						{
-							"name": "configureSessionHosts",
-							"type": "Microsoft.Common.OptionsGroup",
-							"label": "Configure FSLogix Settings on Session Hosts",
-							"defaultValue": "No",
-							"toolTip": "Select yes to configure the FSLogix Profile Management settings via registry keys on the session hosts.",
-							"constraints": {
-								"allowedValues": [
-									{
-										"label": "Yes",
-										"value": true
-									},
-									{
-										"label": "No",
-										"value": false
-									}
-								],
-								"required": true
-							},
-							"visible": "[and(equals(steps('hosts').identity.solution, 'EntraId'), equals(steps('userProfiles').profileSolution, 'FSLogix'))]"
-						},			
+                        },				
 						{
 							"name": "fslogixStorage",
 							"type": "Microsoft.Common.Section",
-							"label": "FSLogix Storage Deployment",
+							"label": "FSLogix Storage",
 							"elements": [
+								{
+									"name": "deployStorage",
+									"type": "Microsoft.Common.CheckBox",
+									"label": "Deploy FSLogix Storage Resources"
+								},
 								{
 									"name": "storageService",
 									"type": "Microsoft.Common.DropDown",
-									"visible": true,
+									"visible": "[steps('userProfiles').fslogixStorage.deployStorage]",
 									"label": "Storage Product",
 									"defaultValue": "Azure Files",
 									"toolTip": "Select the storage product for the SMB file share to support the use of FSLogix.",
@@ -2128,7 +2093,7 @@
 								{
 									"name": "storageSku",
 									"type": "Microsoft.Common.DropDown",
-									"visible": true,
+									"visible": "[steps('userProfiles').fslogixStorage.deployStorage]",
 									"label": "Storage SKU",
 									"toolTip": "Select the storage SKU for the SMB file shares to support the use of FSLogix.",
 									"constraints": {
@@ -2163,12 +2128,12 @@
 									"constraints": {
 										"required": true
 									},
-									"visible": true
+									"visible": "[steps('userProfiles').fslogixStorage.deployStorage]"
 								},
 								{
 									"name": "sliderTextBlock",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": true,
+									"visible": "[steps('userProfiles').fslogixStorage.deployStorage]",
 									"options": {
 										"text": "The number of storage accounts are automatically determined based on your choices from previous screens. The storage account names are automatically determined by combining a suffix with a 0-padded two digit suffix starting at the 'Storage Index' value."
 									}
@@ -2176,7 +2141,7 @@
 								{
 									"name": "entraIdTexBlock",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[equals(steps('hosts').identity.solution, 'EntraId')]",
+									"visible": "[and(equals(steps('hosts').identity.solution, 'EntraId'), steps('userProfiles').fslogixStorage.deployStorage)]",
 									"options": {
 										"text": "For the 'Entra Id' identity provider selected on the 'Session Host' screen, the storage account count value is limited to '1'. You can deploy a maximum of 1 storage account when the identity provider is 'EntraId' because sharding is not possible.",
 										"link": {
@@ -2188,7 +2153,7 @@
 								{
 									"name": "domainServiceTextBlock",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(not(equals(steps('hosts').identity.solution, 'EntraId')), or(not(startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache')), lessOrEquals(if(empty(steps('controlPlane').assignment.groupsApi), length(steps('controlPlane').assignment.groupsGrid), length(steps('controlPlane').assignment.groupsDropDown)), 4)))]",
+									"visible": "[and(steps('userProfiles').fslogixStorage.deployStorage, not(equals(steps('hosts').identity.solution, 'EntraId')), or(not(startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache')), lessOrEquals(if(empty(steps('controlPlane').assignment.groupsApi), length(steps('controlPlane').assignment.groupsGrid), length(steps('controlPlane').assignment.groupsDropDown)), 4)))]",
 									"options": {
 										"text": "For the 'Active Directory Domain Services' or 'Entra Id Domain Services' identity providers selected on the 'Session Host' screen, the number of storage accounts equals the number of security principals or groups you entered under the assignments section of the 'Control Plane' blade. A storage account is created for each security principal and permissions are assigned separately to each to enable storage sharding.",
 										"link": {
@@ -2200,7 +2165,7 @@
 								{
 									"name": "domainServiceWithCloudCacheErrorBox",
 									"type": "Microsoft.Common.InfoBox",
-									"visible": "[and(not(equals(steps('hosts').identity.solution, 'EntraId')) , startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache'), greater(if(empty(steps('controlPlane').assignment.groupsApi), length(steps('controlPlane').assignment.groupsGrid), length(steps('controlPlane').assignment.groupsDropDown)), 4))]",
+									"visible": "[and(steps('userProfiles').fslogixStorage.deployStorage, not(equals(steps('hosts').identity.solution, 'EntraId')) , startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache'), greater(if(empty(steps('controlPlane').assignment.groupsApi), length(steps('controlPlane').assignment.groupsGrid), length(steps('controlPlane').assignment.groupsDropDown)), 4))]",
 									"options": {
 										"icon": "Error",
 										"text": "You can deploy a maximum of 4 storage accounts when using Cloud Cache. The number of groups/principals assigned in the 'Assignment' pane is over 4. Either reduce the number of principals assigned, or do not use Cloud Cache as a container type.",
@@ -2312,33 +2277,19 @@
 									}
 								},
 								{
-									"name": "storageEndpoint",
-									"type": "Microsoft.Common.DropDown",
-									"visible": "[equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles')]",
-									"label": "Storage Endpoint",
-									"defaultValue": "Private",
-									"toolTip": "Select the storage endpoint for the SMB file shares to support the use of FSLogix.",
-									"constraints": {
-										"required": true,
-										"allowedValues": [
-											{
-												"label": "Private",
-												"value": "PrivateEndpoint"
-											},
-											{
-												"label": "Public",
-												"value": "PublicEndpoint"
-											}
-										]
-									}
-								},
-								{
 									"name": "privateEndpointHeader",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles'), equals(steps('userProfiles').fslogixStorage.storageEndpoint, 'PrivateEndpoint'))]",
+									"visible": "[equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles')]",
 									"options": {
 										"text": "<b>Private Endpoint Configuration</b>"
 									}
+								},
+								{
+									"name": "privateEndpoint",
+									"type": "Microsoft.Common.CheckBox",
+									"label": "Deploy Private Endpoint(s) for storage account(s)",
+									"defaultValue": true,
+									"visible": "[equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles')]"
 								},
 								{
 									"name": "virtualNetworksApi",
@@ -2358,7 +2309,7 @@
                                         "required": true,
                                         "allowedValues": "[map(filter(steps('userProfiles').fslogixStorage.virtualNetworksApi.value, (item) => equals(item.location, steps('basics').scope.location.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
                                     },
-									"visible": "[and(equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles'), equals(steps('userProfiles').fslogixStorage.storageEndpoint, 'PrivateEndpoint'))]"
+									"visible": "[and(equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles'), steps('userProfiles').fslogixStorage.privateEndpoint)]"
                                 },
                                 {
                                     "name": "subnetsApi",
@@ -2377,12 +2328,12 @@
                                         "required": true,
                                         "allowedValues": "[map(steps('userProfiles').fslogixStorage.subnetsApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.id, '\"}')))]"
                                     },
-									"visible": "[and(equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles'), equals(steps('userProfiles').fslogixStorage.storageEndpoint, 'PrivateEndpoint'))]"
+									"visible": "[and(equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles'), steps('userProfiles').fslogixStorage.privateEndpoint)]"
                                 },												
                                 {
                                     "name": "privateDnsZone",
                                     "type": "Microsoft.Common.DropDown",
-                                    "visible": "[and(equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles'), equals(steps('userProfiles').fslogixStorage.storageEndpoint, 'PrivateEndpoint'))]",
+                                    "visible": "[and(equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles'), steps('userProfiles').fslogixStorage.privateEndpoint)]",
                                     "label": "Private DNS Zone",
                                     "defaultValue": "",
                                     "multiLine": true,
@@ -2393,20 +2344,24 @@
                                     }
                                 }
 							],
-							"visible": "[and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').deployStorage)]"
-						},                       
-						
-						
+							"visible": "[equals(steps('userProfiles').profileSolution, 'FSLogix')]"
+						},                  												
 						{
 							"name": "fslogixSessionHostConfig",
 							"type": "Microsoft.Common.Section",
 							"label": "Session Host Configuration",
-							"visible": "[and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').configureSessionHosts, or(not(steps('userProfiles').deployStorage), contains(steps('userProfiles').fslogixContainerType, 'CloudCache')))]",
-							"elements": [								
+							"visible": "[and(equals(steps('hosts').identity.solution, 'EntraId'), equals(steps('userProfiles').profileSolution, 'FSLogix'))]",
+							"elements": [			
+								{
+									"name": "configureSessionHosts",
+									"type": "Microsoft.Common.CheckBox",
+									"label": "Configure Session Hosts via local registry",
+									"defaultValue": true
+								},				
 								{
 									"name": "notDeployedCCTextBox",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(equals(steps('userProfiles').deployStorage, false), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]",
+									"visible": "[and(steps('userProfiles').fslogixSessionHostConfig.configureSessionHosts, equals(steps('userProfiles').fslogixStorage.deployStorage, false), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]",
 									"options": {
 										"text": "Pick up to two storage accounts below, listing the storage account in the same region as the virtual machines first and then for high availability you can select an additional storage account in another region."
 									}
@@ -2414,7 +2369,7 @@
 								{
 									"name": "deployedCCTextBox",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(steps('userProfiles').deployStorage, contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]",
+									"visible": "[and(steps('userProfiles').fslogixSessionHostConfig.configureSessionHosts, steps('userProfiles').fslogixStorage.deployStorage, contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]",
 									"options": {
 										"text": "To enable cross-region high availability of user profiles using FSLogix CloudCache select an additional storage account that is not from the region where you deployed the virtual machines."
 									}
@@ -2422,9 +2377,9 @@
 								{
 									"name": "notDeployedVHDTextBox",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(equals(steps('userProfiles').deployStorage, false), not(contains(steps('userProfiles').fslogixContainerType, 'CloudCache')))]",
+									"visible": "[and(steps('userProfiles').fslogixSessionHostConfig.configureSessionHosts, equals(steps('userProfiles').fslogixStorage.deployStorage, false), not(contains(steps('userProfiles').fslogixContainerType, 'CloudCache')))]",
 									"options": {
-										"text": "Pick the local storage account below to which user profiles are stored."
+										"text": "Pick the local storage account below on which user profiles are stored."
 									}
 								},
 								{
@@ -2457,19 +2412,19 @@
 													"type": "Microsoft.Common.DropDown",
 													"multiLine": true,
 													"constraints": {
-														"allowedValues": "[if(steps('userProfiles').deployStorage, map(filter(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi.value, (item) => not(equals(item.location, steps('basics').scope.location.name))), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Location: ', item.location, '\", \"value\":\"', item.id, '\"}'))), if(not(contains(steps('userProfiles').fslogixContainerType, 'CloudCache')), map(filter(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi.value, (item) => equals(item.location, steps('basics').scope.location.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Location: ', item.location, '\", \"value\":\"', item.id, '\"}'))), map(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\", \"description\":\"Location: ', item.location, '\", \"value\":\"', item.id, '\"}')))))]"
+														"allowedValues": "[if(steps('userProfiles').fslogixStorage.deployStorage, map(filter(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi.value, (item) => not(equals(item.location, steps('basics').scope.location.name))), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Location: ', item.location, '\", \"value\":\"', item.id, '\"}'))), if(not(contains(steps('userProfiles').fslogixContainerType, 'CloudCache')), map(filter(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi.value, (item) => equals(item.location, steps('basics').scope.location.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Location: ', item.location, '\", \"value\":\"', item.id, '\"}'))), map(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\", \"description\":\"Location: ', item.location, '\", \"value\":\"', item.id, '\"}')))))]"
 													}
 												}
 											}
 										],
 										"required": false
 									},									
-									"visible": "[or(not(steps('userProfiles').deployStorage), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]"
+									"visible": "[and(steps('userProfiles').fslogixSessionHostConfig.configureSessionHosts, or(not(steps('userProfiles').fslogixStorage.deployStorage), contains(steps('userProfiles').fslogixContainerType, 'CloudCache')))]"
 								},
 								{
 									"name": "deployedTooManyStorageAccountsCCErrorBox",
 									"type": "Microsoft.Common.InfoBox",
-									"visible": "[if(and(steps('userProfiles').deployStorage, contains(steps('userProfiles').fslogixContainerType, 'CloudCache')), greater(length(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts), 1), false)]",
+									"visible": "[if(and(steps('userProfiles').fslogixSessionHostConfig.configureSessionHosts, steps('userProfiles').fslogixStorage.deployStorage, contains(steps('userProfiles').fslogixContainerType, 'CloudCache')), greater(length(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts), 1), false)]",
 									"options": {
 										"icon": "Error",
 										"text": "You have provided too many storage account resource Ids. You can only specify 1 existing resource Id for a storage account in a region other than the region where you deployed virtual machines."
@@ -2478,7 +2433,7 @@
 								{
 									"name": "notDeployedTooManyStorageAccountsCCErrorBox",
 									"type": "Microsoft.Common.InfoBox",
-									"visible": "[if(and(equals(steps('userProfiles').deployStorage, false), contains(steps('userProfiles').fslogixContainerType, 'CloudCache')), greater(length(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts), 2), false)]",
+									"visible": "[if(and(steps('userProfiles').fslogixSessionHostConfig.configureSessionHosts, equals(steps('userProfiles').fslogixStorage.deployStorage, false), contains(steps('userProfiles').fslogixContainerType, 'CloudCache')), greater(length(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts), 2), false)]",
 									"options": {
 										"icon": "Error",
 										"text": "You have provided too many storage account resource Ids. You can only specify 2 existing storage accounts - on in the same region as your virtual machines and one in a region other than the region where you deployed virtual machines."
@@ -2487,7 +2442,7 @@
 								{
 									"name": "tooManyStorageAccountsVHDxErrorBox",
 									"type": "Microsoft.Common.InfoBox",
-									"visible": "[if(and(equals(steps('userProfiles').deployStorage, false), not(contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))), greater(length(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts), 1), false)]",
+									"visible": "[if(and(steps('userProfiles').fslogixSessionHostConfig.configureSessionHosts, equals(steps('userProfiles').fslogixStorage.deployStorage, false), not(contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))), greater(length(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts), 1), false)]",
 									"options": {
 										"icon": "Error",
 										"text": "You have provided too many storage accounts. You can only specify 1 existing storage account when specifying a standard VHDx container type (i.e., no Cloud Cache)."
@@ -2585,25 +2540,10 @@
 							"elements": [
 								{
 									"name": "enabled",
-									"type": "Microsoft.Common.DropDown",
-									"label": "Enable private endpoints on management resources",
-									"placeholder": "",
-									"defaultValue": "Yes",
-									"toolTip": "Select 'Yes' to enable private endpoints on your management resources such as key vaults.",
-									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Yes",
-												"value": true
-											},
-											{
-												"label": "No",
-												"value": false
-											}
-										],
-										"required": true
-									},
-									"visible": true
+									"type": "Microsoft.Common.CheckBox",
+									"label": "Deploy private endpoints for management resources",
+									"defaultValue": true,
+									"toolTip": "Check this box to deploy private endpoints for your management resources such as key vaults."
 								},
 								{
 									"name": "virtualNetworksApi",
@@ -2617,7 +2557,7 @@
                                     "name": "virtualNetwork",
                                     "type": "Microsoft.Common.DropDown",
                                     "label": "Virtual Network",
-                                    "defaultValue": "[last(split(steps('userProfiles').privateEndpoints.virtualNetwork.name), '/')]",
+                                    "defaultValue": "[last(split(steps('userProfiles').fslogixStorage.virtualNetwork, '/'))]",
 									"multiLine": true,
                                     "toolTip": "Select the virtual network containing the subnets to which the management resource private endpoints will be attached.",
                                     "constraints": {
@@ -2638,7 +2578,7 @@
                                     "name": "subnet",
                                     "type": "Microsoft.Common.DropDown",
                                     "label": "Subnet",
-                                    "defaultValue": "[last(split(steps('userProfiles').privateEndpoints.subnet.name, '/'))]",
+                                    "defaultValue": "[last(split(steps('userProfiles').fslogixStorage.subnet, '/'))]",
                                     "toolTip": "Select an existing subnet for the private Endpoints.",
                                     "constraints": {
                                         "required": true,
@@ -2752,19 +2692,18 @@
 				"artifactsUserAssignedIdentityResourceId": "[if(not(empty(steps('basics').prereqs.managedIdentity)), steps('basics').prereqs.managedIdentity.id, parse('[]'))]",
 				"automationAccountPrivateDnsZoneResourceId": "[if(and(steps('userProfiles').fslogixStorage.increaseFileShareQuota, steps('management').privateEndpoints.enabled), steps('management').privateEndpoints.automationAccountPrivateDnsZone, '')]",
 				"avdPrivateLink": "[steps('controlPlane').avdPrivateLink.enablePrivateLink]",
-				"hostPoolPrivateEndpointSubnetResourceId": "[if(steps('controlPlane').avdPrivateLink.enablePrivateLink, steps('controlPlane').avdPrivateLink.hpSubnet, '')]",
+				"hostPoolandFeedPrivateEndpointSubnetResourceId": "[if(steps('controlPlane').avdPrivateLink.enablePrivateLink, steps('controlPlane').avdPrivateLink.cpSubnet, '')]",
 				"avdPrivateDnsZoneResourceId": "[if(steps('controlPlane').avdPrivateLink.enablePrivateLink, steps('controlPlane').avdPrivateLink.wvdPrivateLinkDnsZone, '')]",
 				"hostPoolPublicNetworkAccess": "[if(steps('controlPlane').avdPrivateLink.enablePrivateLink, steps('controlPlane').avdPrivateLink.hpPublicNetworkAccess, 'Enabled')]",
-				"feedPrivateEndpointSubnetResourceId": "[if(and(steps('controlPlane').avdPrivateLink.enablePrivateLink, not(equals(steps('controlPlane').avdPrivateLink.avdPrivateLinkConfig, 'Hostpool'))), steps('controlPlane').avdPrivateLink.feedSubnet, '')]",
 				"workspacePublicNetworkAccess": "[if(and(steps('controlPlane').avdPrivateLink.enablePrivateLink, not(equals(steps('controlPlane').avdPrivateLink.avdPrivateLinkConfig, 'Hostpool'))),steps('controlPlane').avdPrivateLink.feedDownloadPublicNetworkAccess, 'Enabled')]",
 				"globalFeedPrivateEndpointSubnetResourceId": "[if(and(steps('controlPlane').avdPrivateLink.enablePrivateLink, equals(steps('controlPlane').avdPrivateLink.avdPrivateLinkConfig, 'All')), steps('controlPlane').avdPrivateLink.globalFeedSubnet, '')]",
 				"avdGlobalFeedPrivateDnsZoneResourceId": "[if(and(steps('controlPlane').avdPrivateLink.enablePrivateLink, equals(steps('controlPlane').avdPrivateLink.avdPrivateLinkConfig, 'All')), steps('controlPlane').avdPrivateLink.globalFeedPrivateDnsZone, '')]",
 				"dedicatedHostGroupResourceId": "[if(steps('hosts').dedicatedHosts.deployToDedicatedHosts, steps('hosts').dedicatedHosts.dedicatedHostGroup, '')]",
 				"dedicatedHostResourceId": "[if(steps('hosts').dedicatedHosts.deployToDedicatedHosts, steps('hosts').dedicatedHosts.dedicatedHost, '')]",
                 "identitySolution": "[if(and(equals(steps('hosts').identity.solution, 'EntraId'), steps('hosts').identity.intune), 'EntraIdIntuneEnrollment', steps('hosts').identity.solution)]",
-                "availability": "[if(equals(steps('hosts').dedicatedHosts.deployToDedicatedHosts, false), steps('hosts').availability, 'none')]",
+                "availability": "[if(equals(steps('hosts').dedicatedHosts.deployToDedicatedHosts, false), steps('hosts').availability.availability, 'none')]",
                 "avdObjectId": "[if(empty(steps('basics').servicePrincipalApi), steps('basics').prereqs.avdObjectId, first(map(steps('basics').servicePrincipalApi.value, (item) => item.id)))]",
-                "azureFilesPrivateDnsZoneResourceId": "[if(and(equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles'), equals(steps('userProfiles').fslogixStorage.storageEndpoint, 'PrivateEndpoint')), steps('userProfiles').fslogixStorage.privateDnsZone, '')]",
+                "azureFilesPrivateDnsZoneResourceId": "[if(and(equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles'), steps('userProfiles').fslogixStorage.privateEndpoint), steps('userProfiles').fslogixStorage.privateDnsZone, '')]",
 				"businessUnitIdentifier": "[steps('basics').naming.businessUnitIdentifier]",
                 "centralizedAVDMonitoring": "[if(empty(steps('basics').naming.businessUnitIdentifier), true, steps('basics').naming.centralizedAVDMonitoring)]",
                 "confidentialVMOSDiskEncryption": "[steps('hosts').diskEncryption.confidentialVMOSDiskEncryption]",
@@ -2780,17 +2719,17 @@
                 "domainName": "[steps('hosts').identity.domainName]",
                 "drainMode": "[steps('hosts').drainMode]",
                 "envShortName": "[steps('basics').naming.envShortName]",
-				"deployFSLogixStorage": "[if(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').deployStorage, false)]",
-				"fslogixConfigureSessionHosts": "[if(and(equals(steps('hosts').identity.solution, 'EntraId'), equals(steps('userProfiles').profileSolution, 'FSLogix')), steps('userProfiles').configureSessionHosts, false)]",
+				"deployFSLogixStorage": "[if(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').fslogixStorage.deployStorage, false)]",
+				"fslogixConfigureSessionHosts": "[if(and(equals(steps('hosts').identity.solution, 'EntraId'), equals(steps('userProfiles').profileSolution, 'FSLogix')), steps('userProfiles').fslogixSessionHostConfig.configureSessionHosts, false)]",
 				"fslogixContainerType": "[if(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').fslogixContainerType, 'ProfileContainer')]",
-				"fslogixExistingStorageAccountResourceIds": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').configureSessionHosts, or(equals(steps('userProfiles').deployStorage, false), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))), map(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts, (item) => item.resourceId), parse('[]'))]",
-                "fslogixShareSizeInGB": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').deployStorage), steps('userProfiles').fslogixStorage.storageShareSize, 100)]",
-                "fslogixStorageAccountADKerberosEncryption": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').deployStorage, equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles')), steps('userProfiles').fslogixStorage.storageKerberosEncryption, 'RC4')]",                
-                "fslogixStorageService": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').deployStorage), concat(steps('userProfiles').fslogixStorage.storageService, ' ', steps('userProfiles').fslogixStorage.storageSku), 'AzureFiles Standard')]",
-				"fslogixStorageCount": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').deployStorage, equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles')), steps('userProfiles').fslogixStorage.storageCount, 0)]",
-				"fslogixStorageIndex": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').deployStorage, equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles')), steps('userProfiles').fslogixStorage.storageIndex, 0)]",
-                "fslogixStorageKeyManagement": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').deployStorage, equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles')), steps('userProfiles').fslogixStorage.keyManagement, 'CustomerManaged')]",
-				"enableIncreaseQuotaAutomation": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').deployStorage, equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles'), equals(steps('userProfiles').fslogixStorage.storageSku, 'Premium')), steps('userProfiles').fslogixStorage.increaseFileShareQuota, false)]",
+				"fslogixExistingStorageAccountResourceIds": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').fslogixSessionHostConfig.configureSessionHosts, or(equals(steps('userProfiles').fslogixStorage.deployStorage, false), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))), map(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts, (item) => item.resourceId), parse('[]'))]",
+                "fslogixShareSizeInGB": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').fslogixStorage.deployStorage), steps('userProfiles').fslogixStorage.storageShareSize, 100)]",
+                "fslogixStorageAccountADKerberosEncryption": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').fslogixStorage.deployStorage, equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles')), steps('userProfiles').fslogixStorage.storageKerberosEncryption, 'RC4')]",                
+                "fslogixStorageService": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').fslogixStorage.deployStorage), concat(steps('userProfiles').fslogixStorage.storageService, ' ', steps('userProfiles').fslogixStorage.storageSku), 'AzureFiles Standard')]",
+				"fslogixStorageCount": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').fslogixStorage.deployStorage, equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles')), steps('userProfiles').fslogixStorage.storageCount, 0)]",
+				"fslogixStorageIndex": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').fslogixStorage.deployStorage, equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles')), steps('userProfiles').fslogixStorage.storageIndex, 0)]",
+                "keyManagementFSLogixStorage": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').fslogixStorage.deployStorage, equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles')), steps('userProfiles').fslogixStorage.keyManagement, 'CustomerManaged')]",
+				"enableIncreaseQuotaAutomation": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').fslogixStorage.deployStorage, equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles'), equals(steps('userProfiles').fslogixStorage.storageSku, 'Premium')), steps('userProfiles').fslogixStorage.increaseFileShareQuota, false)]",
 				"hostPoolType": "[if(equals(steps('controlPlane').hostPool.type, 'Pooled'), concat(steps('controlPlane').hostPool.type, ' ', steps('controlPlane').hostPool.loadBalancerAlgorithm), concat(steps('controlPlane').hostPool.type, ' ', steps('controlPlane').hostPool.assignmentType))]",
                 "hostPoolIdentifier": "[steps('basics').naming.hostPoolIdentifier]",
                 "imageOffer": "[steps('hosts').image.offer]",
@@ -2821,14 +2760,14 @@
                 "SecurityLogAnalyticsWorkspaceResourceId": "[if(steps('management').monitoring.enableSecurity, steps('management').monitoring.logAnalyticsWorkspace.id, '')]",
                 "sessionHostCount": "[steps('hosts').specs.count]",
                 "sessionHostIndex": "[steps('hosts').index]",
-				"storagePrivateEndpoints": "[if(equals(steps('userProfiles').fslogixStorage.storageEndpoint, 'PrivateEndpoint'), true, false)]",
-                "storagePrivateEndpointSubnetResourceId": "[if(equals(steps('userProfiles').fslogixStorage.storageEndpoint, 'PrivateEndpoint'), steps('userProfiles').fslogixStorage.subnet, '')]",
+				"storagePrivateEndpoints": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').fslogixStorage.deployStorage, equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles')), steps('userProfiles').fslogixStorage.privateEndpoint, false)]",
+                "storagePrivateEndpointSubnetResourceId": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').fslogixStorage.deployStorage, equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles')), steps('userProfiles').fslogixStorage.subnet, '')]",
                 "virtualMachineSubnetResourceId": "[steps('hosts').network.subnet]",
                 "tags": "[steps('tags').tags]",
                 "hostPoolValidationEnvironment": "[steps('controlPlane').hostPool.validation]",
                 "virtualMachineNamePrefix": "[steps('hosts').virtualMachineNamePrefix]",
                 "virtualMachineAdminPassword": "[if(equals(steps('hosts').localAdminCredentials.passwordSource, 'manual'), steps('hosts').localAdminCredentials.password, '')]",
-                "virtualMachineSize": "[steps('hosts').specs.size]",
+                "virtualMachineSize": "[if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric)]",
                 "virtualMachineAdminUserName": "[if(equals(steps('hosts').localAdminCredentials.passwordSource, 'manual'), steps('hosts').localAdminCredentials.username, '')]",
 				"desktopFriendlyName": "[steps('controlPlane').naming.desktopFriendlyName]",
                 "workspaceFriendlyName": "[steps('controlPlane').naming.workspaceFriendlyName]"

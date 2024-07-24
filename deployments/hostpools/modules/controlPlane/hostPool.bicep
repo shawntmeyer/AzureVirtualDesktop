@@ -13,6 +13,7 @@ param privateEndpointSubnetResourceId string
 param hostPoolMaxSessionLimit int
 param enableMonitoring bool
 param tags object
+param timeStamp string
 param time string = utcNow('u')
 param hostPoolValidationEnvironment bool
 param virtualMachineTemplate string
@@ -46,11 +47,16 @@ var HostPoolLogs = [
   }
 ]
 
+resource vnet 'Microsoft.Network/virtualNetworks@2023-11-01' existing = if (!empty(privateEndpointSubnetResourceId)) {
+  name: split(privateEndpointSubnetResourceId, '/')[8]
+  scope: resourceGroup(split(privateEndpointSubnetResourceId, '/')[2], split(privateEndpointSubnetResourceId, '/')[4])
+}
+
 resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' = {
   name: hostPoolName
   location: location
   tags: union({
-    'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroup().name}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'
+    'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroup().name}/providers/Microsoft.DesktopVirtualization/hostPools/${hostPoolName}'
   }, contains(tags, 'Microsoft.DesktopVirtualization/hostPools') ? tags['Microsoft.DesktopVirtualization/hostPools'] : {})
   properties: {
     hostPoolType: split(hostPoolType, ' ')[0]
@@ -70,44 +76,25 @@ resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' = {
   }
 }
 
-resource hostPoolPrivateEndpoint 'Microsoft.Network/privateEndpoints@2023-05-01' = if(avdPrivateLink && !empty(privateEndpointName)) {
-  name: privateEndpointName
-  location: location
-  tags: union({
-    'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroup().name}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'
-  }, contains(tags, 'Microsoft.Network/privateEndpoints') ? tags['Microsoft.Network/privateEndpoints'] : {})
-  properties: {
-    privateLinkServiceConnections: [
-      {
-        name: privateEndpointName
-        id: resourceId('Microsoft.Network/privateEndpoints/privateLinkServiceConnections', privateEndpointName, privateEndpointName)
-        properties: {
-          privateLinkServiceId: hostPool.id
-          groupIds: [
-            'connection'
-          ]
-        }
-      }
-    ]
+module privateEndpoint '../../../sharedModules/resources/network/private-endpoint/main.bicep' = if(avdPrivateLink && !empty(privateEndpointSubnetResourceId)) {
+  name: '${hostPoolName}_privateEndpoint_${timeStamp}'
+  params: {
     customNetworkInterfaceName: privateEndpointNICName
-    subnet: {
-      id: privateEndpointSubnetResourceId
-    }
-  }
-}
-
-resource privateDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2023-05-01' = if(avdPrivateLink && !empty(hostPoolPrivateDnsZoneResourceId)) {
-  parent: hostPoolPrivateEndpoint
-  name: 'default'
-  properties: {
-    privateDnsZoneConfigs: [
-      {
-        name: replace(split(hostPoolPrivateDnsZoneResourceId, '/')[8], '.', '-')
-        properties: {
-          privateDnsZoneId: hostPoolPrivateDnsZoneResourceId
-        }
-      }
+    groupIds: [
+      'connection'
     ]
+    location: vnet.location
+    name: privateEndpointName
+    privateDnsZoneGroup: {
+      privateDNSResourceIds: [
+        hostPoolPrivateDnsZoneResourceId
+      ]
+    }
+    serviceResourceId: hostPool.id
+    subnetResourceId: privateEndpointSubnetResourceId
+    tags: union({
+      'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroup().name}/providers/Microsoft.DesktopVirtualization/hostPools/${hostPoolName}'
+    }, contains(tags, 'Microsoft.Network/privateEndpoints') ? tags['Microsoft.Network/privateEndpoints'] : {}) 
   }
 }
 
@@ -120,4 +107,5 @@ resource hostPoolDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-p
   }
 }
 
-output ResourceId string = hostPool.id
+output resourceId string = hostPool.id
+output registrationToken string = reference(hostPool.id).registrationInfo.token

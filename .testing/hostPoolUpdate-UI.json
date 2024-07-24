@@ -48,7 +48,7 @@
 							}
 						},
 						{
-									"name": "environmentShortName",
+									"name": "envShortName",
 									"type": "Microsoft.Common.DropDown",
 									"label": "Environment",
 									"placeholder": "",

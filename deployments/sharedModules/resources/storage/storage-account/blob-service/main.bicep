@@ -12,10 +12,10 @@ param automaticSnapshotPolicyEnabled bool = false
 @description('Optional. The blob service properties for change feed events. Indicates whether change feed event logging is enabled for the Blob service.')
 param changeFeedEnabled bool = true
 
-@minValue(0)
+@minValue(1)
 @maxValue(146000)
 @description('Optional. Indicates whether change feed event logging is enabled for the Blob service. Indicates the duration of changeFeed retention in days. A "0" value indicates an infinite retention of the change feed.')
-param changeFeedRetentionInDays int = 0
+param changeFeedRetentionInDays int?
 
 @description('Optional. The blob service properties for container soft delete. Indicates whether DeleteRetentionPolicy is enabled.')
 param containerDeleteRetentionPolicyEnabled bool = true
@@ -99,23 +99,29 @@ param diagnosticSettingsName string = ''
 // The name of the blob services
 var name = 'default'
 
-var diagnosticsLogsSpecified = [for category in filter(diagnosticLogCategoriesToEnable, item => item != 'allLogs' && item != ''): {
-  category: category
-  enabled: true
-}]
-
-var diagnosticsLogs = contains(diagnosticLogCategoriesToEnable, 'allLogs') ? [
-  {
-    categoryGroup: 'allLogs'
+var diagnosticsLogsSpecified = [
+  for category in filter(diagnosticLogCategoriesToEnable, item => item != 'allLogs' && item != ''): {
+    category: category
     enabled: true
   }
-] : contains(diagnosticLogCategoriesToEnable, '') ? [] : diagnosticsLogsSpecified
+]
 
-var diagnosticsMetrics = [for metric in diagnosticMetricsToEnable: {
-  category: metric
-  timeGrain: null
-  enabled: true
-}]
+var diagnosticsLogs = contains(diagnosticLogCategoriesToEnable, 'allLogs')
+  ? [
+      {
+        categoryGroup: 'allLogs'
+        enabled: true
+      }
+    ]
+  : contains(diagnosticLogCategoriesToEnable, '') ? [] : diagnosticsLogsSpecified
+
+var diagnosticsMetrics = [
+  for metric in diagnosticMetricsToEnable: {
+    category: metric
+    timeGrain: null
+    enabled: true
+  }
+]
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' existing = {
   name: storageAccountName
@@ -126,14 +132,18 @@ resource blobServices 'Microsoft.Storage/storageAccounts/blobServices@2022-09-01
   parent: storageAccount
   properties: {
     automaticSnapshotPolicyEnabled: automaticSnapshotPolicyEnabled
-    changeFeed: {
-      enabled: changeFeedEnabled
-      retentionInDays: changeFeedEnabled == true ? (changeFeedRetentionInDays != 0 ? changeFeedRetentionInDays : null) : null
-    }
+    changeFeed: changeFeedEnabled
+      ? {
+          enabled: true
+          retentionInDays: changeFeedRetentionInDays
+        }
+      : null
     containerDeleteRetentionPolicy: {
       enabled: containerDeleteRetentionPolicyEnabled
       days: containerDeleteRetentionPolicyEnabled == true ? containerDeleteRetentionPolicyDays : null
-      allowPermanentDelete: containerDeleteRetentionPolicyEnabled == true ? containerDeleteRetentionPolicyAllowPermanentDelete : null
+      allowPermanentDelete: containerDeleteRetentionPolicyEnabled == true
+        ? containerDeleteRetentionPolicyAllowPermanentDelete
+        : null
     }
     cors: {
       corsRules: corsRules
@@ -162,7 +172,9 @@ resource blobServices_diagnosticSettings 'Microsoft.Insights/diagnosticSettings@
   properties: {
     storageAccountId: !empty(diagnosticStorageAccountId) ? diagnosticStorageAccountId : null
     workspaceId: !empty(diagnosticWorkspaceId) ? diagnosticWorkspaceId : null
-    eventHubAuthorizationRuleId: !empty(diagnosticEventHubAuthorizationRuleId) ? diagnosticEventHubAuthorizationRuleId : null
+    eventHubAuthorizationRuleId: !empty(diagnosticEventHubAuthorizationRuleId)
+      ? diagnosticEventHubAuthorizationRuleId
+      : null
     eventHubName: !empty(diagnosticEventHubName) ? diagnosticEventHubName : null
     metrics: diagnosticsMetrics
     logs: diagnosticsLogs
@@ -170,21 +182,29 @@ resource blobServices_diagnosticSettings 'Microsoft.Insights/diagnosticSettings@
   scope: blobServices
 }
 
-module blobServices_container 'container/main.bicep' = [for (container, index) in containers: {
-  name: '${deployment().name}-Container-${index}'
-  params: {
-    storageAccountName: storageAccount.name
-    name: container.name
-    defaultEncryptionScope: contains(container, 'defaultEncryptionScope') ? container.defaultEncryptionScope : ''
-    denyEncryptionScopeOverride: contains(container, 'denyEncryptionScopeOverride') ? container.denyEncryptionScopeOverride : false
-    enableNfsV3AllSquash: contains(container, 'enableNfsV3AllSquash') ? container.enableNfsV3AllSquash : false
-    enableNfsV3RootSquash: contains(container, 'enableNfsV3RootSquash') ? container.enableNfsV3RootSquash : false
-    immutableStorageWithVersioningEnabled: contains(container, 'immutableStorageWithVersioningEnabled') ? container.immutableStorageWithVersioningEnabled : false
-    metadata: contains(container, 'metadata') ? container.metadata : {}
-    publicAccess: contains(container, 'publicAccess') ? container.publicAccess : 'None'
-    immutabilityPolicyProperties: contains(container, 'immutabilityPolicyProperties') ? container.immutabilityPolicyProperties : {}
+module blobServices_container 'container/main.bicep' = [
+  for (container, index) in containers: {
+    name: '${deployment().name}-Container-${index}'
+    params: {
+      storageAccountName: storageAccount.name
+      name: container.name
+      defaultEncryptionScope: contains(container, 'defaultEncryptionScope') ? container.defaultEncryptionScope : ''
+      denyEncryptionScopeOverride: contains(container, 'denyEncryptionScopeOverride')
+        ? container.denyEncryptionScopeOverride
+        : false
+      enableNfsV3AllSquash: contains(container, 'enableNfsV3AllSquash') ? container.enableNfsV3AllSquash : false
+      enableNfsV3RootSquash: contains(container, 'enableNfsV3RootSquash') ? container.enableNfsV3RootSquash : false
+      immutableStorageWithVersioningEnabled: contains(container, 'immutableStorageWithVersioningEnabled')
+        ? container.immutableStorageWithVersioningEnabled
+        : false
+      metadata: contains(container, 'metadata') ? container.metadata : {}
+      publicAccess: contains(container, 'publicAccess') ? container.publicAccess : 'None'
+      immutabilityPolicyProperties: contains(container, 'immutabilityPolicyProperties')
+        ? container.immutabilityPolicyProperties
+        : {}
+    }
   }
-}]
+]
 
 @description('The name of the deployed blob service.')
 output name string = blobServices.name

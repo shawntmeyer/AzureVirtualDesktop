@@ -38,7 +38,7 @@ module schedules 'schedules.bicep' = [for i in range(fslogixStorageIndex, fslogi
   params: {
     automationAccountName: automationAccount.name
     fslogixContainerType: fslogixContainerType
-    storageAccountName: '${storageAccountNamePrefix}${padLeft(i, 2, '0')}'
+    storageAccountName: '${storageAccountNamePrefix}${i}'
     timeZone: timeZone
   }
 }]
@@ -51,7 +51,7 @@ module jobSchedules 'jobSchedules.bicep' = [for i in range(fslogixStorageIndex, 
     fslogixContainerType: fslogixContainerType
     runbookName: 'Set-FileShareScaling'
     resourceGroupName: storageResourceGroupName
-    storageAccountName: '${storageAccountNamePrefix}${padLeft(i, 2, '0')}'
+    storageAccountName: '${storageAccountNamePrefix}${i}'
     subscriptionId: subscription().subscriptionId
     timeStamp: timeStamp
   }

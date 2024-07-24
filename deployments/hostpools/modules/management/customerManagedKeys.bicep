@@ -6,7 +6,7 @@ param deploymentUserAssignedIdentityClientId string
 param diskEncryptionSetNames object
 param diskEncryptionSetEncryptionType string
 param envShortName string
-param fslogixStorageKeyManagement string
+param keyManagementFSLogixStorage string
 param keyManagementDisks string
 param vmKeyVaultName string
 param storageIndex int
@@ -58,30 +58,31 @@ module confidentialVM_key_disks '../../../sharedModules/custom/customScriptExten
 }
 
 module storageAccountKeyVaults 'keyVault.bicep' = [for i in range(0, storageCount): {
-  name: 'Storage_KeyVault_${padLeft(i + storageIndex, 2, '0')}_${timeStamp}'
+  name: 'Storage_KeyVault_${i + storageIndex}_${timeStamp}'
   params: {
     envShortName: envShortName
-    keyVaultName: replace(storageKeyVaultNameConv, 'INDEX', padLeft(i + storageIndex, 2, '0'))
+    keyVaultName: replace(storageKeyVaultNameConv, 'INDEX', string(i + storageIndex))
     enabledForDiskEncryption: false
     enablePurgeProtection: true
     privateEndpoint: privateEndpoint
     privateEndpointNameConv: privateEndpointNameConv
     privateEndpointNICNameConv: privateEndpointNICNameConv
-    privateEndpointSubnetId: privateEndpointSubnetResourceId
+    privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
     keyVaultPrivateDnsZoneResourceId: keyVaultPrivateDnsZoneResourceId
     location: location
-    skuName: contains(fslogixStorageKeyManagement, 'HSM') ? 'premium' : 'standard'
+    skuName: contains(keyManagementFSLogixStorage, 'HSM') ? 'premium' : 'standard'
     tagsKeyVault: contains(tags, 'Microsoft.KeyVault/vaults') ? tags['Microsoft.KeyVault/vaults'] : {}
     tagsPrivateEndpoints: contains(tags, 'Microsoft.Network/privateEndpoints') ? tags['Microsoft.Network/privateEndpoints'] : {}
+    timeStamp: timeStamp
   }
 }]
 
 module keysStorageAccounts 'keyVaultKeys.bicep' = [for i in range(0, storageCount): {
-  name: 'EncryptionKey_StorageAccount_${padLeft(i + storageIndex, 2, '0')}_${timeStamp}'
+  name: 'EncryptionKey_StorageAccount_${string(i + storageIndex)}_${timeStamp}'
   params: {
     exportable: false
     keyName: storageAccountEncryptionKeyName
-    keyType: contains(fslogixStorageKeyManagement, 'HSM') ? 'RSA-HSM' : 'RSA'
+    keyType: contains(keyManagementFSLogixStorage, 'HSM') ? 'RSA-HSM' : 'RSA'
     keyVaultName: last(split(storageAccountKeyVaults[i].outputs.keyVaultResourceId, '/')) 
     rotationPolicy: true
   }

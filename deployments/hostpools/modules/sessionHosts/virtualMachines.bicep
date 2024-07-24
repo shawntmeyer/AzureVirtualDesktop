@@ -2,7 +2,6 @@ param identitySolution string
 param artifactsUri string
 param artifactsUserAssignedIdentityClientId string
 param artifactsUserAssignedIdentityResourceId string
-param acceleratedNetworking string
 param availability string
 param availabilitySetNamePrefix string
 param availabilityZones array
@@ -15,6 +14,7 @@ param dataCollectionEndpointResourceId string
 param dedicatedHostGroupResourceId string
 param dedicatedHostGroupZones array
 param dedicatedHostResourceId string
+param diskAccessId string
 param diskEncryptionSetResourceId string
 param diskNamePrefix string
 param diskSku string
@@ -25,11 +25,13 @@ param domainJoinUserPrincipalName string
 param domainName string
 param drainMode bool
 param drainModeUserAssignedIdentityClientId string
+param enableAcceleratedNetworking bool
 param encryptionAtHost bool
 param fslogixConfigureSessionHosts bool
 param fslogixContainerType string
 param fslogixStorageAccountResourceIds array
 param hostPoolName string
+param hostPoolRegistrationToken string
 param imageOffer string
 param imagePublisher string
 param imageSku string
@@ -116,9 +118,8 @@ var fslogixExclusionsProfile = ';${join(fslogixExclusionProfileContainers, ';')}
 var fslogixExclusions = '"%TEMP%\\*\\*.VHDX";"%Windir%\\TEMP\\*\\*.VHDX"${fslogixExclusionsCloudCache}${fslogixExclusionsProfile}${fslogixExclusionsOffice}'
 
 // Dynamic parameters for Set-SessionHostConfiguration.ps1
-//var hostPoolToken = hostPool.properties.registrationInfo.token
-var hostPoolToken = reference(resourceId(resourceGroupControlPlane, 'Microsoft.DesktopVirtualization/hostPools', hostPoolName), '2019-12-10-preview').registrationInfo.token
-var shcCommonString = 'ActiveDirectorySolution=\'${identitySolution}\';AmdVmSize=\'${amdVmSize}\';nvidiaVmSize=\'${nvidiaVmSize}\';HostPoolRegistrationToken=\'${hostPoolToken}\''
+
+var shcCommonString = 'ActiveDirectorySolution=\'${identitySolution}\';AmdVmSize=\'${amdVmSize}\';nvidiaVmSize=\'${nvidiaVmSize}\';HostPoolRegistrationToken=\'${hostPoolRegistrationToken}\''
 var shcCommonCustomObject = 'SHConfiguration=@([pscustomobject]@{${shcCommonString}})'
 
 // CSE Master Script Dynamic parameters - Built from any custom parameters provided via parameter and the FSLogix and SessionHostConfiguration parameters.
@@ -197,7 +198,7 @@ resource networkInterface 'Microsoft.Network/networkInterfaces@2020-05-01' = [fo
         }
       }
     ]
-    enableAcceleratedNetworking: acceleratedNetworking == 'True' ? true : false
+    enableAcceleratedNetworking: enableAcceleratedNetworking
     enableIPForwarding: false
   }
 }]
@@ -206,7 +207,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2022-11-01' = [for i 
   name: '${virtualMachineNamePrefix}${padLeft((i + sessionHostIndex), 3, '0')}'
   location: location
   tags: tagsVirtualMachines
-  zones: !empty(dedicatedHostResourceId) || !empty(dedicatedHostGroupResourceId) ? dedicatedHostGroupZones : availability == 'availabilityZones' ? [
+  zones: !empty(dedicatedHostResourceId) || !empty(dedicatedHostGroupResourceId) ? dedicatedHostGroupZones : availability == 'availabilityZones' && !empty(availabilityZones) ? [
     availabilityZones[i % length(availabilityZones)]
   ] : null
   identity: identity
@@ -517,6 +518,17 @@ resource extension_CustomScriptExtension 'Microsoft.Compute/virtualMachines/exte
     extension_AzureMonitorWindowsAgent
     extension_MicrosoftMonitoringAgent
   ]
+}]
+
+module updateOSDiskNetworkAccess 'getOSDisk.bicep' = [for i in range(0, sessionHostCount): {
+  name: 'Assoc_DiskAccess_${virtualMachine[i].name}_Stage1_${timeStamp}'
+  params: {
+    diskAccessId: diskAccessId
+    diskName: virtualMachine[i].properties.storageProfile.osDisk.name
+    location: location
+    timeStamp: timeStamp
+    vmName: virtualMachine[i].name
+  }
 }]
 
 // Enables drain mode on the session hosts so users cannot login to hosts immediately after the deployment

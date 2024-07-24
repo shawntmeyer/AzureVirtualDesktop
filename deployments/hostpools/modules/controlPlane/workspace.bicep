@@ -10,17 +10,23 @@ param locationVirtualMachines string
 param logAnalyticsWorkspaceResourceId string
 param managementVirtualMachineName string
 param enableMonitoring bool
+param groupIds array
 param privateDnsZoneResourceId string
 param privateEndpointName string
 param privateEndpointNICName string
-param publicNetworkAccess string = 'Enabled'
+param publicNetworkAccess string
 param privateEndpointSubnetResourceId string
 param resourceGroupManagement string
 param tags object
 param timeStamp string
 param workspaceName string
 
-module addApplicationGroups '../../../sharedModules/custom/customScriptExtension.bicep' = if (existingWorkspace) {
+resource vnet 'Microsoft.Network/virtualNetworks@2023-11-01' existing = if (!empty(privateEndpointSubnetResourceId)) {
+  name: split(privateEndpointSubnetResourceId, '/')[8]
+  scope: resourceGroup(split(privateEndpointSubnetResourceId, '/')[2], split(privateEndpointSubnetResourceId, '/')[4])
+}
+
+module addApplicationGroups '../../../sharedModules/custom/customScriptExtension.bicep' = if (existingWorkspace && !empty(applicationGroupReferences)) {
   scope: resourceGroup(resourceGroupManagement)
   name: 'AddApplicationGroupReferences_${timeStamp}'
   params: {
@@ -49,44 +55,23 @@ resource workspace 'Microsoft.DesktopVirtualization/workspaces@2023-09-05' = if 
   }
 }
 
-resource private_Endpoint 'Microsoft.Network/privateEndpoints@2023-05-01' = if (!existingWorkspace && avdPrivateLink) {
-  name: privateEndpointName
-  location: location
-  tags: union({
-    'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroup().name}/providers/Microsoft.DesktopVirtualization/Workspaces/${workspaceName}'
-  }, contains(tags, 'Microsoft.Network/privateEndpoints') ? tags['Microsoft.Network/privateEndpoints'] : {})
-  properties: {
-    privateLinkServiceConnections: [
-      {
-        name: privateEndpointName
-        id: resourceId('Microsoft.Network/privateEndpoints/privateLinkServiceConnections', privateEndpointName, privateEndpointName)
-        properties: {
-          privateLinkServiceId: workspace.id
-          groupIds: [
-            'feed'
-          ]
-        }
-      }
-    ]
+module privateEndpoint '../../../sharedModules/resources/network/private-endpoint/main.bicep' = if(avdPrivateLink && !empty(privateEndpointSubnetResourceId) && !empty(privateDnsZoneResourceId)) {
+  name: '${workspaceName}_privateEndpoint_${timeStamp}'
+  params: {
     customNetworkInterfaceName: privateEndpointNICName
-    subnet: {
-      id: privateEndpointSubnetResourceId
+    groupIds: groupIds
+    location: vnet.location
+    name: privateEndpointName
+    privateDnsZoneGroup: {
+      privateDNSResourceIds: [
+        privateDnsZoneResourceId
+      ]
     }
-  }
-}
-
-resource privateDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2023-05-01' = if (!existingWorkspace && !empty(privateDnsZoneResourceId)) {
-  parent: private_Endpoint
-  name: 'default'
-  properties: {
-    privateDnsZoneConfigs: [
-      {
-        name: replace(split(privateDnsZoneResourceId, '/')[8], '.', '-')
-        properties: {
-          privateDnsZoneId: privateDnsZoneResourceId
-        }
-      }
-    ]
+    serviceResourceId: existingWorkspace ? '' : workspace.id
+    subnetResourceId: privateEndpointSubnetResourceId
+    tags: union({
+      'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroup().name}/providers/Microsoft.DesktopVirtualization/hostpools/${workspaceName}'
+    }, contains(tags, 'Microsoft.Network/privateEndpoints') ? tags['Microsoft.Network/privateEndpoints'] : {}) 
   }
 }
 

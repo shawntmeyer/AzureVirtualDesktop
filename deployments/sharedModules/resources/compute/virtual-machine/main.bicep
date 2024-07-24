@@ -154,15 +154,6 @@ param nicdiagnosticMetricsToEnable array = [
   'AllMetrics'
 ]
 
-@description('Optional. Recovery service vault name to add VMs to backup.')
-param backupVaultName string = ''
-
-@description('Optional. Resource group of the backup recovery service vault. If not provided the current resource group name is considered by default.')
-param backupVaultResourceGroup string = resourceGroup().name
-
-@description('Optional. Backup policy the VMs should be using for backup. If not provided, it will use the DefaultPolicy from the backup recovery service vault.')
-param backupPolicyName string = 'DefaultPolicy'
-
 // Child resources
 @description('Optional. Specifies whether extension operations should be allowed on the virtual machine. This may only be set to False when no extensions are present on the virtual machine.')
 param allowExtensionOperations bool = true
@@ -650,30 +641,6 @@ module vm_azureDiskEncryptionExtension 'extension/main.bicep' = if (extensionAzu
   dependsOn: [
     vm_customScriptExtension
     vm_microsoftMonitoringAgentExtension
-  ]
-}
-
-module vm_backup '../../recovery-services/vault/backup-fabric/protection-container/protected-item/main.bicep' = if (!empty(backupVaultName)) {
-  name: '${uniqueString(deployment().name, location)}-VM-Backup'
-  params: {
-    location: location
-    name: 'vm;iaasvmcontainerv2;${resourceGroup().name};${vm.name}'
-    policyId: az.resourceId('Microsoft.RecoveryServices/vaults/backupPolicies', backupVaultName, backupPolicyName)
-    protectedItemType: 'Microsoft.Compute/virtualMachines'
-    protectionContainerName: 'iaasvmcontainer;iaasvmcontainerv2;${resourceGroup().name};${vm.name}'
-    recoveryVaultName: backupVaultName
-    sourceResourceId: vm.id
-  }
-  scope: az.resourceGroup(backupVaultResourceGroup)
-  dependsOn: [
-    vm_aadJoinExtension
-    vm_domainJoinExtension
-    vm_microsoftMonitoringAgentExtension
-    vm_microsoftAntiMalwareExtension
-    vm_networkWatcherAgentExtension
-    vm_dependencyAgentExtension
-    vm_desiredStateConfigurationExtension
-    vm_customScriptExtension
   ]
 }
 

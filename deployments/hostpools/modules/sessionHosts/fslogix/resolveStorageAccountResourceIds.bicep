@@ -8,6 +8,7 @@ param deployedStorageAccountResourceIds array
 param existingStorageAccountResourceIds array
 param location string
 param fslogixContainerType string
+param timeStamp string
 
 // There are 2 main scenarios to consider when determining the storage account resource ids for the fslogix configuration script.
 
@@ -26,7 +27,7 @@ resource storageAccounts 'Microsoft.Storage/storageAccounts@2023-01-01' existing
 
 // then create an array of objects containing the region and the storage account resource id
 module entraIdStorageAccounts 'filterUniqueRegion.bicep' = {
-  name: 'aadVhdStorageAccounts'
+  name: 'aadVhdStorageAccounts_${timeStamp}'
   params: {
     location: location
     storageAccounts: [for i in range(0,length(storageAccountResourceIds)): {

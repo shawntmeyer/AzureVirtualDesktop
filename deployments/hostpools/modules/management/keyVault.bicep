@@ -13,14 +13,20 @@ param location string
 param privateEndpoint bool
 param privateEndpointNameConv string
 param privateEndpointNICNameConv string
-param privateEndpointSubnetId string
+param privateEndpointSubnetResourceId string
 param skuName string
 param tagsKeyVault object
 param tagsPrivateEndpoints object
+param timeStamp string
 @secure()
 param virtualMachineAdminUserName string = ''
 @secure()
 param virtualMachineAdminPassword string = ''
+
+resource vnet 'Microsoft.Network/virtualNetworks@2023-11-01' existing = if (!empty(privateEndpointSubnetResourceId)) {
+  name: split(privateEndpointSubnetResourceId, '/')[8]
+  scope: resourceGroup(split(privateEndpointSubnetResourceId, '/')[2], split(privateEndpointSubnetResourceId, '/')[4])
+}
 
 resource keyVault 'Microsoft.KeyVault/vaults@2023-02-01' = {
   name: keyVaultName
@@ -49,41 +55,23 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-02-01' = {
   }
 }
 
-resource vaultPrivateEndpoint 'Microsoft.Network/privateEndpoints@2023-05-01' = if(privateEndpoint) { 
-  name: replace(replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'vault'), 'RESOURCE', keyVaultName), 'VNETID', '${split(privateEndpointSubnetId, '/')[8]}')
-  location: location
-  tags: tagsPrivateEndpoints
-  properties: {
-    customNetworkInterfaceName: replace(replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'vault'), 'RESOURCE', keyVaultName), 'VNETID', '${split(privateEndpointSubnetId, '/')[8]}')
-    subnet: {
-      id: privateEndpointSubnetId
+module vault_privateEndpoint '../../../sharedModules/resources/network/private-endpoint/main.bicep' = if(privateEndpoint && !empty(privateEndpointSubnetResourceId) && !empty(keyVaultPrivateDnsZoneResourceId)) {
+  name: '${keyVaultName}_privateEndpoint_${timeStamp}'
+  params: {
+    customNetworkInterfaceName: replace(replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'vault'), 'RESOURCE', keyVaultName), 'VNETID', '${split(privateEndpointSubnetResourceId, '/')[8]}')
+    groupIds: [
+      'vault'
+    ]
+    location: vnet.location
+    name: replace(replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'vault'), 'RESOURCE', keyVaultName), 'VNETID', '${split(privateEndpointSubnetResourceId, '/')[8]}')
+    privateDnsZoneGroup: {
+      privateDNSResourceIds: [
+        keyVaultPrivateDnsZoneResourceId
+      ]
     }
-    privateLinkServiceConnections: [
-      {
-        name: 'pe-${keyVaultName}_${guid(keyVaultName)}'
-        properties: {
-          privateLinkServiceId: keyVault.id
-          groupIds: [
-            'vault'
-          ]
-        }
-      }
-    ]
-  }
-}
-
-resource privateDnsZoneGroups 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2021-08-01' = if (privateEndpoint && !empty(keyVaultPrivateDnsZoneResourceId)) {
-  parent: vaultPrivateEndpoint
-  name: keyVaultName
-  properties: {
-    privateDnsZoneConfigs: [
-      {
-        name: 'ipconfig1'
-        properties: {
-          privateDnsZoneId: keyVaultPrivateDnsZoneResourceId
-        }
-      }
-    ]
+    serviceResourceId: keyVault.id
+    subnetResourceId: privateEndpointSubnetResourceId
+    tags: tagsPrivateEndpoints
   }
 }
 

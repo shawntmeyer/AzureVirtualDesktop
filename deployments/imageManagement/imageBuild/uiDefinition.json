@@ -673,7 +673,47 @@
 										"required": false
 									},
 									"visible": "[steps('imageCustomizations').office.installTeams]"
-								}							
+								},
+								{
+									"name": "teamsCloudType",
+									"type": "Microsoft.Common.OptionsGroup",
+									"label": "Teams Cloud Type",
+									"defaultValue": "Commercial",
+									"constraints": {
+										"allowedValues": [
+											{
+												"label": "Commercial",
+												"value": "Commercial"
+											},
+											{
+												"label": "GCC",
+												"value": "GCC"
+											},
+											{
+												"label": "GCC-High",
+												"value": "GCCH"
+											},
+											{
+												"label": "DoD",
+												"value": "DOD"
+											},
+											{
+												"label": "USSec",
+												"value": "USSec"
+											},
+											{
+												"label": "USNat",
+												"value": "USNat"
+											},
+											{
+												"label": "Gallatin",
+												"value": "Gallatin"
+											}
+										],
+										"required": false
+									},
+									"visible": "[and(steps('imageCustomizations').office.installTeams, equals(steps('imageCustomizations').office.teamsVersion, 'New'))]"
+								}										
 							]
 						},
 						{
@@ -900,35 +940,15 @@
 									}
 								},
 								{
-									"name": "warningBox",
-									"type": "Microsoft.Common.InfoBox",
-									"visible": true,
-									"options": {
-										"style": "Warning",
-										"text": "In order to collect logs from the customization scripts and installers you must provide the subnet where the storage account private endpoint will be created and the blob storage private dns zone.",
-										"uri": "https://www.microsoft.com"
-									}
+									"name": "collectLogs",
+									"type": "Microsoft.Common.CheckBox",
+									"label": "Collect customization logs in a storage container"
 								},
 								{
-									"name": "collectLogs",
-									"type": "Microsoft.Common.OptionsGroup",
-									"label": "Collect customization logs in a storage container",
-									"defaultValue": "No",
-									"toolTip": "",
-									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Yes",
-												"value": true
-											},
-											{
-												"label": "No",
-												"value": false
-											}
-										],
-										"required": false
-									},
-									"visible": true
+									"name": "privateEndpoint",
+									"type": "Microsoft.Common.CheckBox",
+									"label": "Deploy Private Endpoint for Storage Account",									
+									"visible":  "[steps('imageCustomizations').logging.collectLogs]"
 								},
 								{
 									"name": "virtualNetworksApi",
@@ -941,12 +961,12 @@
 								{
 									"name": "virtualNetwork",
 									"type": "Microsoft.Common.DropDown",
-									"visible": "[if(equals(steps('imageCustomizations').logging.collectLogs, true),true, false)]",
+									"visible": "[and(steps('imageCustomizations').logging.collectLogs, steps('imageCustomizations').logging.privateEndpoint)]",
 									"label": "Virtual Network",
 									"defaultValue": "",
 									"toolTip": "Select an existing virtual network for the storage account blob private endpoint. If the desired network isn't available be sure to change the region in the Deployment Details section above.",
 									"constraints": {
-										"required": true,
+										"required": false,
 										"allowedValues": "[map(filter(steps('imageCustomizations').logging.virtualNetworksApi.value, (item) => equals(item.location, steps('basics').scope.location.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
 									}
 								},
@@ -961,7 +981,7 @@
 								{
 									"name": "subnet",
 									"type": "Microsoft.Common.DropDown",
-									"visible": "[if(equals(steps('imageCustomizations').logging.collectLogs, true),true, false)]",
+									"visible": "[and(steps('imageCustomizations').logging.collectLogs, steps('imageCustomizations').logging.privateEndpoint)]",
 									"label": "Subnet",
 									"defaultValue": "",
 									"toolTip": "Select an existing subnet for the image capture.",
@@ -981,7 +1001,7 @@
 								{
 									"name": "blobPrivateDnsZone",
 									"type": "Microsoft.Common.DropDown",
-									"visible": "[if(equals(steps('imageCustomizations').logging.collectLogs, true),true, false)]",
+									"visible": "[and(steps('imageCustomizations').logging.collectLogs, steps('imageCustomizations').logging.privateEndpoint)]",
 									"label": "Blob Storage Private DNS Zone",
 									"defaultValue": "",
 									"multiLine": true,
@@ -1538,6 +1558,7 @@
 				"installSkypeForBusiness": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installSkypeForBusiness,'false')]",
 				"installTeams": "[steps('imageCustomizations').office.installTeams]",
 				"teamsVersion": "[if(steps('imageCustomizations').office.installTeams, steps('imageCustomizations').office.teamsVersion, 'New')]",
+				"teamsCloudType": "[if(and(steps('imageCustomizations').office.installTeams, equals(steps('imageCustomizations').office.teamsVersion, 'New')), steps('imageCustomizations').office.teamsCloudType, 'Commercial')]",
 				"installVirtualDesktopOptimizationTool": "[steps('imageCustomizations').customizations.installVirtualDesktopOptimizationTool]",
 				"installVisio": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installVisio,'false')]",
 				"installWord": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installWord,'false')]",
@@ -1545,8 +1566,8 @@
 				"updateService": "[steps('imageCustomizations').updates.updateService]",
 				"wsusServer": "[if(equals(steps('imageCustomizations').updates.updateService, 'WSUS'), steps('imageCustomizations').updates.wsusServer, '')]",
 				"collectCustomizationLogs": "[steps('imageCustomizations').logging.collectLogs]",
-				"privateEndpointSubnetResourceId": "[if(equals(steps('imageCustomizations').logging.collectLogs, true), steps('imageCustomizations').logging.subnet, '')]",
-				"blobPrivateDnsZoneResourceId": "[if(equals(steps('imageCustomizations').logging.collectLogs, true), steps('imageCustomizations').logging.blobPrivateDnsZone, '')]",
+				"privateEndpointSubnetResourceId": "[if(and(steps('imageCustomizations').logging.collectLogs, steps('imageCustomizations').logging.privateEndpoint), steps('imageCustomizations').logging.subnet, '')]",
+				"blobPrivateDnsZoneResourceId": "[if(and(steps('imageCustomizations').logging.collectLogs, steps('imageCustomizations').logging.privateEndpoint), steps('imageCustomizations').logging.blobPrivateDnsZone, '')]",
 				"imageDefinitionResourceId": "[if(equals(steps('imageDest').imageDefinition.useExImageDef, true), concat(steps('prereqs').gallery.gallery.id, '/images/', steps('imageDest').imageDefinition.imageDefinition), '')]",
 				"customImageDefinitionName": "[if(equals(steps('imageDest').imageDefinition.useExImageDef, false), steps('imageDest').imageDefinition.customImageDefinitionName, '')]",
 				"imageDefinitionPublisher": "[if(equals(steps('imageDest').imageDefinition.useExImageDef, false), steps('imageDest').imageDefinition.imageDefinitionPublisher, '')]",

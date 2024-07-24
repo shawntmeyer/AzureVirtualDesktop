@@ -129,7 +129,7 @@ resource publicIpAddress 'Microsoft.Network/publicIPAddresses@2023-04-01' = {
   properties: {
     dnsSettings: !empty(domainNameLabel) ? {
       domainNameLabel: domainNameLabel
-      domainNameLabelScope: domainNameLabelScope
+      domainNameLabelScope: !empty(domainNameLabelScope) ? domainNameLabelScope == 'NoReuse' ? 'NoReuse' : domainNameLabelScope == 'ResourceGroupReuse' ? 'ResourceGroupReuse' : domainNameLabelScope == 'SubscriptionReuse' ? 'SubscriptionReuse' : 'TenantReuse' : null
       fqdn: fqdn
       reverseFqdn: reverseFqdn
     } : null

@@ -29,9 +29,6 @@
     "envShortName": {
       "value": ""
     },
-    "storageKind": {
-      "value": "StorageV2"
-    },
     "storageSkuName": {
       "value": "Standard_LRS"
     },

@@ -1,7 +1,5 @@
-param identitySolution string
-param deployFSLogixStorage bool
-param fslogixConfigureSessionHosts bool
+targetScope = 'subscription'
 
-output identitySolution string = identitySolution
-output deployFSLogixStorage bool = deployFSLogixStorage
-output fslogixConfigureSessionHosts bool = fslogixConfigureSessionHosts
+param workSpaceResourceId string
+param regionControlPlane string
+param workspaceFriendlyName string = ''

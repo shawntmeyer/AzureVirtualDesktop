@@ -24,7 +24,7 @@ param osAccountType string = ''
 param zoneResilient bool = false
 
 @description('Optional. Gets the HyperVGenerationType of the VirtualMachine created from the image. - V1 or V2.')
-param hyperVGeneration string = 'V1'
+param hyperVGeneration string = 'V2'
 
 @description('Optional. Tags of the resource.')
 param tags object = {}
@@ -64,10 +64,10 @@ resource image 'Microsoft.Compute/images@2023-03-01' = {
   extendedLocation: !empty(extendedLocation) ? extendedLocation : null
   properties: {
     storageProfile: {
-      osDisk: {
+      osDisk: empty(sourceVirtualMachineResourceId) ? {
         osType: osType
-        blobUri: osDiskBlobUri
-        caching: osDiskCaching
+        blobUri: !empty(osDiskBlobUri) ? osDiskBlobUri : null
+        caching: !empty(osDiskCaching) ? osDiskCaching : null
         storageAccountType: osAccountType
         osState: osState
         diskEncryptionSet: !empty(diskEncryptionSetResourceId) ? {
@@ -80,8 +80,8 @@ resource image 'Microsoft.Compute/images@2023-03-01' = {
         snapshot: !empty(snapshotResourceId) ? {
           id: snapshotResourceId
         } : null
-      }
-      dataDisks: dataDisks
+      } : null
+      dataDisks: empty(dataDisks) ? null : dataDisks
       zoneResilient: zoneResilient
     }
     hyperVGeneration: hyperVGeneration

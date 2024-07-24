@@ -26,28 +26,26 @@ param ouPath string
 param privateEndpoint bool
 param privateEndpointNameConv string
 param privateEndpointNICNameConv string
+param privateEndpointSubnetResourceId string
 param recoveryServices bool
 param recoveryServicesVaultName string
 param resourceGroupManagement string
 param resourceGroupStorage string
 param securityPrincipalObjectIds array
 param securityPrincipalNames array
-@minLength(1)
+@minLength(2)
 param storageAccountNamePrefix string
 param storageEncryptionKeyName string = ''
 param storageCount int
 param storageIndex int
 param storageSku string
 param storageSolution string
-param subnet string
 param tagsAutomationAccounts object
 param tagsPrivateEndpoints object
 param tagsRecoveryServicesVault object
 param tagsStorageAccounts object
 param timeStamp string
 param timeZone string
-param virtualNetwork string
-param virtualNetworkResourceGroup string
 
 var roleDefinitionId = '0c867c2a-1d8c-454a-a3db-ab2ea1bdc8bb' // Storage File Data SMB Share Contributor  
 var smbMultiChannel = {
@@ -62,10 +60,14 @@ var smbSettings = {
   channelEncryption: 'AES-128-CCM;AES-128-GCM;AES-256-GCM;'
 }
 var storageRedundancy = availability == 'availabilityZones' ? '_ZRS' : '_LRS'
-var privateEndpointSubnetId = resourceId(virtualNetworkResourceGroup, 'Microsoft.Network/virtualNetworks/subnets', virtualNetwork, subnet)
+
+resource vnet 'Microsoft.Network/virtualNetworks@2023-11-01' existing = if (!empty(privateEndpointSubnetResourceId)) {
+  name: split(privateEndpointSubnetResourceId, '/')[8]
+  scope: resourceGroup(split(privateEndpointSubnetResourceId, '/')[2], split(privateEndpointSubnetResourceId, '/')[4])
+}
 
 resource storageAccounts 'Microsoft.Storage/storageAccounts@2022-09-01' = [for i in range(0, storageCount): {
-  name: '${storageAccountNamePrefix}${padLeft(i + storageIndex, 2, '0')}'
+  name: '${storageAccountNamePrefix}${i + storageIndex}'
   kind: storageSku == 'Standard' ? 'StorageV2' : 'FileStorage'
   location: location
   identity: customerManagedKeysEnabled ? {
@@ -130,16 +132,6 @@ resource storageAccounts 'Microsoft.Storage/storageAccounts@2022-09-01' = [for i
   tags: tagsStorageAccounts
 }]
 
-// Assigns the SMB Contributor role to the Storage Account so users can save their profiles to the file share using FSLogix
-resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for i in range(0, storageCount): if(!contains(identitySolution,'EntraId')) {
-  scope: storageAccounts[i]
-  name: guid(securityPrincipalObjectIds[i], roleDefinitionId, storageAccounts[i].id)
-  properties: {
-    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', roleDefinitionId)
-    principalId: securityPrincipalObjectIds[i]
-  }
-}]
-
 resource fileServices 'Microsoft.Storage/storageAccounts/fileServices@2022-09-01' = [for i in range(0, storageCount): {
   parent: storageAccounts[i]
   name: 'default'
@@ -150,6 +142,16 @@ resource fileServices 'Microsoft.Storage/storageAccounts/fileServices@2022-09-01
     shareDeleteRetentionPolicy: {
       enabled: false
     }
+  }
+}]
+
+// Assigns the SMB Contributor role to the Storage Account so users can save their profiles to the file share using FSLogix
+resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for i in range(0, storageCount): if(!contains(identitySolution,'EntraId')) {
+  scope: storageAccounts[i]
+  name: guid(securityPrincipalObjectIds[i], roleDefinitionId, storageAccounts[i].id)
+  properties: {
+    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', roleDefinitionId)
+    principalId: securityPrincipalObjectIds[i]
   }
 }]
 
@@ -166,45 +168,24 @@ module shares 'shares.bicep' = [for i in range(0, storageCount): {
   ]
 }]
 
-resource privateEndpoints 'Microsoft.Network/privateEndpoints@2023-05-01' = [for i in range(0, storageCount): if (privateEndpoint) {
-  name: replace(replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'file'), 'RESOURCE', '${storageAccountNamePrefix}${padLeft(i + storageIndex, 2, '0')}'), 'VNETID', '${split(privateEndpointSubnetId, '/')[8]}')
-  location: location
-  tags: tagsPrivateEndpoints
-  properties: {
-    customNetworkInterfaceName: replace(replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'file'), 'RESOURCE', '${storageAccountNamePrefix}${padLeft(i + storageIndex, 2, '0')}'), 'VNETID', '${split(privateEndpointSubnetId, '/')[8]}')
-    subnet: {
-      id: privateEndpointSubnetId
+module privateEndpoints '../../../../sharedModules/resources/network/private-endpoint/main.bicep' = [for i in range(0, storageCount): if(privateEndpoint) {
+  name: 'storageAccount_${i}_privateEndpoint_${timeStamp}'
+  params: {
+    customNetworkInterfaceName: replace(replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'file'), 'RESOURCE', '${storageAccountNamePrefix}${i + storageIndex}'), 'VNETID', '${split(privateEndpointSubnetResourceId, '/')[8]}')
+    groupIds: [
+      'file'
+    ]
+    location: vnet.location
+    name: replace(replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'file'), 'RESOURCE', '${storageAccountNamePrefix}${i + storageIndex}'), 'VNETID', '${split(privateEndpointSubnetResourceId, '/')[8]}')
+    privateDnsZoneGroup: {
+      privateDNSResourceIds: [
+        azureFilesPrivateDnsZoneResourceId
+      ]
     }
-    privateLinkServiceConnections: [
-      {
-        name: 'pe-${storageAccounts[i].name}_${guid(storageAccounts[i].name)}'
-        properties: {
-          privateLinkServiceId: storageAccounts[i].id
-          groupIds: [
-            'file'
-          ]
-        }
-      }
-    ]
+    serviceResourceId: storageAccounts[i].id
+    subnetResourceId: privateEndpointSubnetResourceId
+    tags: tagsPrivateEndpoints
   }
-}]
-
-resource privateDnsZoneGroups 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2021-08-01' = [for i in range(0, storageCount): if (privateEndpoint && !empty(azureFilesPrivateDnsZoneResourceId)) {
-  parent: privateEndpoints[i]
-  name: '${storageAccountNamePrefix}${padLeft(i + storageIndex, 2, '0')}'
-  properties: {
-    privateDnsZoneConfigs: [
-      {
-        name: 'ipconfig1'
-        properties: {
-          privateDnsZoneId: azureFilesPrivateDnsZoneResourceId
-        }
-      }
-    ]
-  }
-  dependsOn: [
-    storageAccounts
-  ]
 }]
 
 module ntfsPermissions '../../../../sharedModules/custom/customScriptExtension.bicep' = if (!contains(identitySolution, 'EntraId')) {
@@ -220,7 +201,6 @@ module ntfsPermissions '../../../../sharedModules/custom/customScriptExtension.b
     virtualMachineName: managementVirtualMachineName
   }
   dependsOn: [
-    privateDnsZoneGroups
     privateEndpoints
     shares
   ]
@@ -264,7 +244,7 @@ module autoIncreasePremiumFileShareQuota '../../management/autoIncreasePremiumFi
 }
 
 resource storageAccounts_diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = [for i in range(0, storageCount): if(!empty(logAnalyticsWorkspaceId)) {
-  name: '${storageAccountNamePrefix}${padLeft(i + storageIndex, 2, '0')}-diagnosticSettings'
+  name: '${storageAccountNamePrefix}${i + storageIndex}-diagnosticSettings'
   properties: {
     metrics: [
       {
@@ -278,7 +258,7 @@ resource storageAccounts_diagnosticSettings 'Microsoft.Insights/diagnosticSettin
 }]
 
 resource storageAccounts_file_diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = [for i in range(0, storageCount): if(!empty(logAnalyticsWorkspaceId)) {
-  name: '${storageAccountNamePrefix}${padLeft(i + storageIndex, 2, '0')}-file-diagnosticSettings'
+  name: '${storageAccountNamePrefix}${i + storageIndex}-file-diagnosticSettings'
   scope: fileServices[i]
   properties: {
     workspaceId: logAnalyticsWorkspaceId

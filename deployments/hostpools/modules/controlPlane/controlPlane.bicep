@@ -3,16 +3,15 @@ targetScope = 'subscription'
 param identitySolution string
 param artifactsUri string
 param artifactsUserAssignedIdentityClientId string
-param avdGlobalFeedPrivateDnsZoneResourceId string
 param avdPrivateDnsZoneResourceId string
-param avdPrivateLink bool
+param avdPrivateLinkPrivateRoutes string
 param hostPoolRDPProperties string
 param deployScalingPlan bool
 param deploymentUserAssignedIdentityClientId string
 param desktopApplicationGroupName string
 param desktopFriendlyName string
 param existingGlobalWorkspace bool
-param existingWorkspace bool
+param existingFeedWorkspaceResourceId string
 param globalWorkspaceName string
 param hostPoolName string
 param hostPoolType string
@@ -26,8 +25,8 @@ param hostPoolPublicNetworkAccess string
 param enableMonitoring bool
 param privateEndpointNameConv string
 param privateEndpointNICNameConv string
+param globalFeedPrivateDnsZoneResourceId string
 param globalFeedPrivateEndpointSubnetResourceId string
-param feedPrivateEndpointSubnetResourceId string
 param hostPoolPrivateEndpointSubnetResourceId string
 param resourceGroupControlPlane string
 param resourceGroupGlobalFeed string
@@ -44,14 +43,15 @@ param virtualMachineTemplate string
 param virtualMachinesTimeZone string
 param workspaceFriendlyName string
 param workspaceName string
+param workspaceFeedPrivateEndpointSubnetResourceId string
 param workspacePublicNetworkAccess string
 
-var feedPrivateEndpointName = avdPrivateLink ? replace(replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'feed'), 'RESOURCE', workspaceName), 'VNETID', '${split(feedPrivateEndpointSubnetResourceId, '/')[8]}') : 'feedPrivateEndpointName'
-var feedPrivateEndpointNICName = avdPrivateLink ? replace(replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'feed'), 'RESOURCE', workspaceName), 'VNETID', '${split(feedPrivateEndpointSubnetResourceId, '/')[8]}') : 'feedPrivateEndpointName'
-var globalFeedPrivateEndpointName = avdPrivateLink ? replace(replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'global'), 'RESOURCE', workspaceName), 'VNETID', '${split(globalFeedPrivateEndpointSubnetResourceId, '/')[8]}') : 'globalFeedPrivateEndpointName'
-var globalFeedPrivateEndpointNICName = avdPrivateLink ? replace(replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'global'), 'RESOURCE', workspaceName), 'VNETID', '${split(globalFeedPrivateEndpointSubnetResourceId, '/')[8]}') : 'globalFeedPrivateEndpointName'
-var hostPoolPrivateEndpointName = avdPrivateLink ? replace(replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'connection'), 'RESOURCE', hostPoolName), 'VNETID', '${split(hostPoolPrivateEndpointSubnetResourceId, '/')[8]}') : 'hostPoolPrivateEndpointName'
-var hostPoolPrivateEndpointNICName = avdPrivateLink ? replace(replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'connection'), 'RESOURCE', hostPoolName), 'VNETID', '${split(hostPoolPrivateEndpointSubnetResourceId, '/')[8]}') : 'hostPoolPrivateEndpointName'
+var feedPrivateEndpointName = avdPrivateLinkPrivateRoutes != 'None' || avdPrivateLinkPrivateRoutes != 'HostPool' ? replace(replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'feed'), 'RESOURCE', workspaceName), 'VNETID', '${split(workspaceFeedPrivateEndpointSubnetResourceId, '/')[8]}') : 'feedPrivateEndpointName'
+var feedPrivateEndpointNICName = avdPrivateLinkPrivateRoutes != 'None' || avdPrivateLinkPrivateRoutes != 'HostPool' ? replace(replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'feed'), 'RESOURCE', workspaceName), 'VNETID', '${split(workspaceFeedPrivateEndpointSubnetResourceId, '/')[8]}') : 'feedPrivateEndpointName'
+var globalFeedPrivateEndpointName = avdPrivateLinkPrivateRoutes == 'All' ? replace(replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'global'), 'RESOURCE', workspaceName), 'VNETID', '${split(globalFeedPrivateEndpointSubnetResourceId, '/')[8]}') : 'globalFeedPrivateEndpointName'
+var globalFeedPrivateEndpointNICName = avdPrivateLinkPrivateRoutes == 'All' ? replace(replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'global'), 'RESOURCE', workspaceName), 'VNETID', '${split(globalFeedPrivateEndpointSubnetResourceId, '/')[8]}') : 'globalFeedPrivateEndpointName'
+var hostPoolPrivateEndpointName = avdPrivateLinkPrivateRoutes != 'None' ? replace(replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'connection'), 'RESOURCE', hostPoolName), 'VNETID', '${split(hostPoolPrivateEndpointSubnetResourceId, '/')[8]}') : 'hostPoolPrivateEndpointName'
+var hostPoolPrivateEndpointNICName = avdPrivateLinkPrivateRoutes != 'None' ? replace(replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'connection'), 'RESOURCE', hostPoolName), 'VNETID', '${split(hostPoolPrivateEndpointSubnetResourceId, '/')[8]}') : 'hostPoolPrivateEndpointName'
 
 
 module hostPool 'hostPool.bicep' = {
@@ -59,7 +59,7 @@ module hostPool 'hostPool.bicep' = {
   scope: resourceGroup(resourceGroupControlPlane)
   params: {
     identitySolution: identitySolution
-    avdPrivateLink: avdPrivateLink
+    avdPrivateLink: avdPrivateLinkPrivateRoutes != 'None' ? true : false
     hostPoolRDPProperties: hostPoolRDPProperties
     hostPoolName: hostPoolName
     hostPoolPrivateDnsZoneResourceId: avdPrivateDnsZoneResourceId
@@ -74,6 +74,7 @@ module hostPool 'hostPool.bicep' = {
     privateEndpointNICName: hostPoolPrivateEndpointNICName
     privateEndpointSubnetResourceId: hostPoolPrivateEndpointSubnetResourceId
     tags: tags
+    timeStamp: timeStamp
     virtualMachineTemplate: virtualMachineTemplate
   }
 }
@@ -82,20 +83,20 @@ module applicationGroup 'applicationGroup.bicep' = {
   name: 'ApplicationGroup_${timeStamp}'
   scope: resourceGroup(resourceGroupControlPlane)
   params: {
-    desktopApplicationGroupName: desktopApplicationGroupName
-    hostPoolResourceId: hostPool.outputs.ResourceId
-    location: locationControlPlane
-    roleDefinitions: roleDefinitions
-    securityPrincipalObjectIds: securityPrincipalObjectIds
-    tags: tags 
     artifactsUri: artifactsUri
     artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
     deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
+    desktopApplicationGroupName: desktopApplicationGroupName
     desktopFriendlyName: desktopFriendlyName
+    hostPoolResourceId: hostPool.outputs.resourceId
+    location: locationControlPlane
     locationVirtualMachines: locationVirtualMachines
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
     managementVirtualMachineName: managementVirtualMachineName
     resourceGroupManagement: resourceGroupManagement
+    roleDefinitions: roleDefinitions
+    securityPrincipalObjectIds: securityPrincipalObjectIds
+    tags: tags  
     timeStamp: timeStamp
   }
 }
@@ -105,26 +106,27 @@ module feedWorkspace 'workspace.bicep' = {
   scope: resourceGroup(resourceGroupControlPlane)
   params: {
     applicationGroupReferences: applicationGroup.outputs.ApplicationGroupReference
-    avdPrivateLink: avdPrivateLink
-    existingWorkspace: existingWorkspace
-    friendlyName: workspaceFriendlyName
-    location: locationControlPlane
-    logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
+    artifactsUri: artifactsUri
+    artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
+    avdPrivateLink: avdPrivateLinkPrivateRoutes != 'None' || avdPrivateLinkPrivateRoutes != 'HostPool' ? true : false
+    deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
     enableMonitoring: enableMonitoring
+    existingWorkspace: !empty(existingFeedWorkspaceResourceId) ? true : false
+    friendlyName: workspaceFriendlyName
+    groupIds: ['feed']
+    location: locationControlPlane
+    locationVirtualMachines: locationVirtualMachines
+    logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
+    managementVirtualMachineName: managementVirtualMachineName
     privateDnsZoneResourceId: avdPrivateDnsZoneResourceId
     privateEndpointName: feedPrivateEndpointName
     privateEndpointNICName: feedPrivateEndpointNICName
-    privateEndpointSubnetResourceId: feedPrivateEndpointSubnetResourceId
+    privateEndpointSubnetResourceId: workspaceFeedPrivateEndpointSubnetResourceId
     publicNetworkAccess: workspacePublicNetworkAccess
-    tags: tags
-    workspaceName: workspaceName
-    artifactsUri: artifactsUri
-    artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
-    deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
-    locationVirtualMachines: locationVirtualMachines
-    managementVirtualMachineName: managementVirtualMachineName
     resourceGroupManagement: resourceGroupManagement
+    tags: tags
     timeStamp: timeStamp
+    workspaceName: workspaceName    
   }
 }
 
@@ -134,44 +136,47 @@ module scalingPlan 'scalingPlan.bicep' = if(deployScalingPlan && contains(hostPo
   params: {
     diagnosticWorkspaceId: logAnalyticsWorkspaceResourceId
     exclusionTag: scalingPlanExclusionTag
-    hostPoolResourceId: hostPool.outputs.ResourceId
+    hostPoolResourceId: hostPool.outputs.resourceId
     hostPoolType: split(hostPoolType, ' ')[0]
     location: locationVirtualMachines
     name: scalingPlanName
-    tags: tags
     schedules: scalingPlanSchedules
+    tags: tags
     timeZone: virtualMachinesTimeZone
   }
 } 
 
-module globalWorkspace 'workspace.bicep' = if(!existingGlobalWorkspace && avdPrivateLink && !empty(avdGlobalFeedPrivateDnsZoneResourceId)) {
+module globalWorkspace 'workspace.bicep' = if(!existingGlobalWorkspace && avdPrivateLinkPrivateRoutes == 'All' && !empty(globalFeedPrivateDnsZoneResourceId) && !empty(globalFeedPrivateEndpointSubnetResourceId)) {
   name: 'Global_Feed_Workspace_${timeStamp}'
   scope: resourceGroup(resourceGroupGlobalFeed)
   params: {
     applicationGroupReferences: []
-    avdPrivateLink: avdPrivateLink
+    artifactsUri: artifactsUri
+    artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
+    avdPrivateLink: true
+    deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
+    enableMonitoring: enableMonitoring
     existingWorkspace: existingGlobalWorkspace
     friendlyName: ''
+    groupIds: ['global']
     location: locationGlobalFeed
+    locationVirtualMachines: locationVirtualMachines
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
-    enableMonitoring: enableMonitoring
-    privateDnsZoneResourceId: avdGlobalFeedPrivateDnsZoneResourceId
+    managementVirtualMachineName: managementVirtualMachineName
+    privateDnsZoneResourceId: globalFeedPrivateDnsZoneResourceId
     privateEndpointName: globalFeedPrivateEndpointName
     privateEndpointNICName: globalFeedPrivateEndpointNICName
     privateEndpointSubnetResourceId: globalFeedPrivateEndpointSubnetResourceId
-    tags: tags
-    workspaceName: globalWorkspaceName
-    artifactsUri: artifactsUri
-    artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
-    deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
-    locationVirtualMachines: locationVirtualMachines
-    managementVirtualMachineName: managementVirtualMachineName
+    publicNetworkAccess: 'Enabled'  
     resourceGroupManagement: resourceGroupManagement
+    tags: tags
     timeStamp: timeStamp
+    workspaceName: globalWorkspaceName
   }
   dependsOn: [
     feedWorkspace
   ]
 }
 
-output hostPoolName string = last(split(hostPool.outputs.ResourceId, '/'))
+output hostPoolName string = last(split(hostPool.outputs.resourceId, '/'))
+output hostPoolRegistrationToken string = hostPool.outputs.registrationToken

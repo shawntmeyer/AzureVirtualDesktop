@@ -1,6 +1,5 @@
 targetScope = 'subscription'
 
-param acceleratedNetworking string
 param artifactsUri string
 param artifactsUserAssignedIdentityClientId string
 param artifactsUserAssignedIdentityResourceId string
@@ -9,6 +8,7 @@ param availabilitySetNamePrefix string
 param availabilitySetsCount int
 param availabilitySetsIndex int
 param availabilityZones array
+param avdInsightsDataCollectionRulesResourceId string
 param confidentialVMOSDiskEncryptionType string
 param cseMasterScript string
 param cseScriptAddDynParameters string
@@ -18,8 +18,8 @@ param dataCollectionEndpointResourceId string
 param dedicatedHostGroupResourceId string
 param dedicatedHostGroupZones array
 param dedicatedHostResourceId string
-param avdInsightsDataCollectionRulesResourceId string
-param vmInsightsDataCollectionRulesResourceId string
+param enableAcceleratedNetworking bool
+param diskAccessId string
 param diskEncryptionSetResourceId string
 param diskNamePrefix string
 param diskSku string
@@ -33,6 +33,7 @@ param fslogixExistingStorageAccountResourceIds array
 param fslogixContainerType string
 param fslogixDeployedStorageAccountResourceIds array
 param hostPoolName string
+param hostPoolRegistrationToken string
 param identitySolution string
 param imageOffer string
 param imagePublisher string
@@ -63,7 +64,7 @@ param tags object
 param timeStamp string
 param virtualMachineNamePrefix string
 param virtualMachineSize string
-
+param vmInsightsDataCollectionRulesResourceId string
 
 var tagsAvailabilitySets = union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroupControlPlane}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'}, contains(tags, 'Microsoft.Compute/availabilitySets') ? tags['Microsoft.Compute/availabilitySets'] : {})
 var tagsNetworkInterfaces = union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroupControlPlane}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'}, contains(tags, 'Microsoft.Network/networkInterfaces') ? tags['Microsoft.Network/networkInterfaces'] : {})
@@ -81,6 +82,7 @@ module fslogixStorageAccountResourceIds 'fslogix/resolveStorageAccountResourceId
     fslogixContainerType: fslogixContainerType
     deployedStorageAccountResourceIds: fslogixDeployedStorageAccountResourceIds
     existingStorageAccountResourceIds: fslogixExistingStorageAccountResourceIds
+    timeStamp: timeStamp
     location: location
   }
 }
@@ -114,7 +116,7 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
   name: 'VirtualMachines_${i - 1}_${timeStamp}'
   scope: resourceGroup(resourceGroupHosts)
   params: {
-    acceleratedNetworking: acceleratedNetworking
+    enableAcceleratedNetworking: enableAcceleratedNetworking
     identitySolution: identitySolution
     artifactsUri: artifactsUri
     artifactsUserAssignedIdentityResourceId: artifactsUserAssignedIdentityResourceId
@@ -132,6 +134,7 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     dedicatedHostGroupResourceId: dedicatedHostGroupResourceId
     dedicatedHostGroupZones: dedicatedHostGroupZones
     dedicatedHostResourceId: dedicatedHostResourceId
+    diskAccessId: diskAccessId
     diskEncryptionSetResourceId: diskEncryptionSetResourceId
     diskNamePrefix: diskNamePrefix
     diskSku: diskSku
@@ -145,6 +148,7 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     fslogixContainerType: fslogixContainerType
     fslogixStorageAccountResourceIds: fslogixConfigureSessionHosts && (!empty(fslogixDeployedStorageAccountResourceIds) || !empty(fslogixExistingStorageAccountResourceIds)) ? fslogixStorageAccountResourceIds.outputs.storageAccountResourceIds : []
     hostPoolName: hostPoolName
+    hostPoolRegistrationToken: hostPoolRegistrationToken
     imageOffer: imageOffer
     imagePublisher: imagePublisher
     imageSku: imageSku

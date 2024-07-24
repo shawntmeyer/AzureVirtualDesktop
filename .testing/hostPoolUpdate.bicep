@@ -19,7 +19,7 @@ param resourceGroupHosts string = ''
   '' // Not Defined
 ])
 @description('The target environment for the solution.')
-param environmentShortName string = ''
+param envShortName string = ''
 
 // Access to scripts and other artifacts required for this deployment
 
@@ -263,7 +263,7 @@ resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2022-09-09' existin
 module resourceNames 'modules/resourceNames.bicep' = {
   name: 'ResourceNames_${timeStamp}'
   params: {
-    environmentShortName: environmentShortName
+    envShortName: envShortName
     businessUnitIdentifier: ''
     centralizedAVDMonitoring: false
     fslogixStorageCustomPrefix: 'notused'

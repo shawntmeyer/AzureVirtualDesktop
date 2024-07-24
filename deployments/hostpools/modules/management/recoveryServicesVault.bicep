@@ -1,6 +1,8 @@
 param fslogix bool
 param hostPoolType string
 param location string
+//param privateEndpointNameConv string
+//param privateEndpointNICNameConv string
 param recoveryServicesVaultName string
 param fslogixStorageSolution string
 param tags object
@@ -81,16 +83,17 @@ resource backupPolicy_Vm 'Microsoft.recoveryServices/vaults/backupPolicies@2022-
     timeZone: timeZone
   }
 }
+
 /* for later
 resource privateEndpoint 'Microsoft.Network/privateEndpoints@2023-04-01' = {
-  name: recoveryServicesVaultPrivateEndpointName
+  name: replace(replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'AzureBackup'), 'RESOURCE', recoveryServicesVaultName), 'VNETID', '${split(subnetId, '/')[8]}')
   location: location
   tags: contains(tags, 'Microsoft.Network/privateEndpoints') ? tags['Microsoft.Network/privateEndpoints'] : {}
   properties: {
-    customNetworkInterfaceName: recoveryServicesVaultNetworkInterfaceName
+    customNetworkInterfaceName: replace(replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'AzureBackup'), 'RESOURCE', recoveryServicesVaultName), 'VNETID', '${split(subnetId, '/')[8]}')
     privateLinkServiceConnections: [
       {
-        name: recoveryServicesVaultPrivateEndpointName
+        name: '${recoveryServicesVaultName}-AzureBackup'
         properties: {
           privateLinkServiceId: vault.id
           groupIds: [

@@ -13,11 +13,11 @@ resource vault 'Microsoft.recoveryServices/vaults@2022-03-01' existing =  {
 }
 
 resource protectionContainers 'Microsoft.recoveryServices/vaults/backupFabrics/protectionContainers@2022-03-01' = [for i in range(0, fslogixStorageCount): {
-  name: '${vault.name}/Azure/storagecontainer;Storage;${resourceGroupStorage};${storageAccountNamePrefix}${padLeft(i + fslogixStorageIndex, 2, '0')}'
+  name: '${vault.name}/Azure/storagecontainer;Storage;${resourceGroupStorage};${storageAccountNamePrefix}${i + fslogixStorageIndex}'
   properties: {
     backupManagementType: 'AzureStorage'
     containerType: 'StorageContainer'
-    sourceResourceId: resourceId(resourceGroupStorage, 'Microsoft.Storage/storageAccounts', '${storageAccountNamePrefix}${padLeft(i + fslogixStorageIndex, 2, '0')}')
+    sourceResourceId: resourceId(resourceGroupStorage, 'Microsoft.Storage/storageAccounts', '${storageAccountNamePrefix}${i + fslogixStorageIndex}')
   }
 }]
 
@@ -33,7 +33,7 @@ module protectedItems_FileShares 'protectedItems.bicep' = [for i in range(0, fsl
     location: location
     ProtectionContainerName: protectionContainers[i].name
     PolicyId: backupPolicy_Storage.id
-    SourceResourceId: resourceId(resourceGroupStorage, 'Microsoft.Storage/storageAccounts', '${storageAccountNamePrefix}${padLeft(i + fslogixStorageIndex, 2, '0')}')
+    SourceResourceId: resourceId(resourceGroupStorage, 'Microsoft.Storage/storageAccounts', '${storageAccountNamePrefix}${i + fslogixStorageIndex}')
     tags: tagsRecoveryServicesVault
   }
 }]

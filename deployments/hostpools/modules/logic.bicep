@@ -3,9 +3,11 @@ targetScope = 'subscription'
 param identitySolution string
 param artifactsUri string
 param avdAgentInstallersBlobName string
-param avdPrivateLink bool
+param avdPrivateLinkPrivateRoutes string
+param globalFeedPrivateEndpointSubnetResourceId string
 param dedicatedHostGroupResourceId string
 param dedicatedHostResourceId string
+param deployMonitoring bool
 param deployScalingPlan bool = false
 param diskSku string
 param domainName string
@@ -44,6 +46,7 @@ param tags object
 param fslogixStorageCount int
 param virtualMachineNamePrefix string
 param virtualMachineSize string
+param workspaceResourceId string
 
 var dedicatedHostGroupName = !empty(dedicatedHostResourceId) ? split(dedicatedHostResourceId, '/')[8] : !empty(dedicatedHostGroupResourceId) ? last(split(dedicatedHostGroupResourceId, '/')) : '' 
 var dedicatedHostRG = !empty(dedicatedHostResourceId) ? split(dedicatedHostResourceId, '/')[4] : !empty(dedicatedHostGroupResourceId) ? split(dedicatedHostGroupResourceId, '/')[4] : '' 
@@ -122,25 +125,14 @@ var countStorage = identitySolution == 'EntraId' || identitySolution == 'EntraId
 var netbios = split(domainName, '.')[0]
 var pooledHostPool = split(hostPoolType, ' ')[0] == 'Pooled' ? true : false
 
-var resGroupHostPools = [
-  resourceGroupControlPlane
-  resourceGroupHosts
-]
+var resGroupHosts = [ resourceGroupHosts ]
+var resGroupControlPlane = empty(workspaceResourceId) ? [ resourceGroupControlPlane ] : []
+var resGroupGlobalFeed = avdPrivateLinkPrivateRoutes == 'All' && !empty(globalFeedPrivateEndpointSubnetResourceId) ? [ resourceGroupGlobalFeed ] : []
+var resGroupMonitoring = deployMonitoring ? [ resourceGroupMonitoring ] : []
+var resGroupManagement = !hostPoolOnly ? [ resourceGroupManagement ] : []
+var resGroupStorage = deployFSLogixStorage ? [ resourceGroupStorage ] : []
 
-var resGroupBase = deployFSLogixStorage ? [
-  resourceGroupControlPlane
-  resourceGroupHosts
-  resourceGroupManagement
-  resourceGroupMonitoring
-  resourceGroupStorage
-] : [
-  resourceGroupControlPlane
-  resourceGroupHosts
-  resourceGroupManagement
-  resourceGroupMonitoring
-]
-
-var resourceGroupNames = hostPoolOnly ? resGroupHostPools : ( avdPrivateLink ? union([resourceGroupGlobalFeed], resGroupBase) : resGroupBase )
+var resourceGroupNames = union(resGroupHosts, resGroupControlPlane, resGroupGlobalFeed, resGroupMonitoring, resGroupManagement, resGroupStorage)
 
 var roleDefinitions = {
   AutomationContributor: 'f353d9bd-d4a6-484e-a77a-8050b599b867'

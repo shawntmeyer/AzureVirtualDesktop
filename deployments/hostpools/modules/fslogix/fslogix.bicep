@@ -1,6 +1,6 @@
 targetScope = 'subscription'
 
-param activeDirectoryConnection string
+param activeDirectoryConnection bool
 param identitySolution string
 param artifactsUri string
 param artifactsUserAssignedIdentityClientId string
@@ -9,8 +9,7 @@ param availability string
 param azureFilesPrivateDnsZoneResourceId string
 param customerManagedKeysEnabled bool
 param deploymentUserAssignedIdentityClientId string
-param delegatedSubnetId string
-param dnsServers string
+param netAppVolumesSubnetResourceId string
 param domainName string
 param enableIncreaseQuotaAutomation bool
 param encryptionUserAssignedIdentityResourceId string
@@ -31,6 +30,7 @@ param ouPath string
 param privateEndpoint bool
 param privateEndpointNameConv string
 param privateEndpointNICNameConv string
+param privateEndpointSubnetResourceId string
 param recoveryServices bool
 param recoveryServicesVaultName string
 param resourceGroupManagement string
@@ -44,7 +44,6 @@ param storageEncryptionKeyName string
 param storageIndex int
 param storageSku string
 param storageSolution string
-param subnet string
 param tagsAutomationAccounts object
 param tagsNetAppAccount object
 param tagsPrivateEndpoints object
@@ -52,8 +51,6 @@ param tagsRecoveryServicesVault object
 param tagsStorageAccounts object
 param timeStamp string
 param timeZone string
-param virtualNetwork string
-param virtualNetworkResourceGroup string
 
 resource vmKeyVault 'Microsoft.KeyVault/vaults@2022-07-01' existing = if (contains(identitySolution, 'DomainServices')) {
   name: vmKeyVaultName
@@ -67,9 +64,7 @@ module azureNetAppFiles 'azureNetAppFiles.bicep' = if (storageSolution == 'Azure
   params: {
     activeDirectoryConnection: activeDirectoryConnection
     artifactsUri: artifactsUri
-    artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
-    delegatedSubnetId: delegatedSubnetId
-    dnsServers: dnsServers
+    artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId    
     domainJoinUserPassword: vmKeyVault.getSecret('domainJoinUserPassword')
     domainJoinUserPrincipalName: vmKeyVault.getSecret('domainJoinUserPrincipalName')
     domainName: domainName
@@ -79,6 +74,7 @@ module azureNetAppFiles 'azureNetAppFiles.bicep' = if (storageSolution == 'Azure
     managementVirtualMachineName: managementVirtualMachineName
     netAppAccountName: netAppAccountName
     netAppCapacityPoolName: netAppCapacityPoolName
+    netAppVolumesSubnetResourceId: netAppVolumesSubnetResourceId
     ouPath: ouPath
     resourceGroupManagement: resourceGroupManagement
     securityPrincipalNames: securityPrincipalNames
@@ -121,6 +117,7 @@ module azureFiles 'azureFiles/azureFiles.bicep' = if (storageSolution == 'AzureF
     privateEndpoint: privateEndpoint
     privateEndpointNameConv: privateEndpointNameConv
     privateEndpointNICNameConv: privateEndpointNICNameConv
+    privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
     recoveryServices: recoveryServices
     recoveryServicesVaultName: recoveryServicesVaultName
     resourceGroupManagement: resourceGroupManagement
@@ -133,15 +130,12 @@ module azureFiles 'azureFiles/azureFiles.bicep' = if (storageSolution == 'AzureF
     storageIndex: storageIndex
     storageSku: storageSku
     storageSolution: storageSolution
-    subnet: subnet
     tagsAutomationAccounts: tagsAutomationAccounts
     tagsPrivateEndpoints: tagsPrivateEndpoints
     tagsRecoveryServicesVault: tagsRecoveryServicesVault
     tagsStorageAccounts: tagsStorageAccounts
     timeStamp: timeStamp
     timeZone: timeZone
-    virtualNetwork: virtualNetwork
-    virtualNetworkResourceGroup: virtualNetworkResourceGroup
   }
 }
 

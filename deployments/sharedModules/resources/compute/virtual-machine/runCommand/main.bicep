@@ -106,6 +106,3 @@ resource runCommand 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' =
     treatFailureAsDeploymentFailure: treatFailureAsDeploymentFailure
   }
 }
-
-output outputStream string = runCommand.properties.instanceView.output
-output exitCode int = runCommand.properties.instanceView.exitCode
