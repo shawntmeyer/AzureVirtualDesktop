@@ -43,7 +43,6 @@ param securityPrincipals array
 param sessionHostCount int
 param sessionHostIndex int
 param tags object
-param fslogixStorageCount int
 param virtualMachineNamePrefix string
 param virtualMachineSize string
 param workspaceResourceId string
@@ -121,7 +120,7 @@ var cseUris = [ for artifact in cseArtifacts : contains(toLower(artifact), 'http
 
 var fileShares = fileShareNames[fslogixContainerType]
 // ONLY DEPLOY 1 storage account when Cloud Only identity is used because Sharding is not possible.
-var countStorage = identitySolution == 'EntraId' || identitySolution == 'EntraIdIntuneEnrollment' ? 1 : fslogixStorageCount
+var countStorage = identitySolution == 'EntraId' || identitySolution == 'EntraIdIntuneEnrollment' ? 1 : length(securityPrincipals)
 var netbios = split(domainName, '.')[0]
 var pooledHostPool = split(hostPoolType, ' ')[0] == 'Pooled' ? true : false
 

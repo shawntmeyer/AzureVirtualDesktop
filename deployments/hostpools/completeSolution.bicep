@@ -344,13 +344,6 @@ param fslogixExistingStorageAccountResourceIds array = []
 @description('Optional. The Active Directory computer object Kerberos encryption type for the Azure Storage Account or Azure NetApp files Account.')
 param fslogixStorageAccountADKerberosEncryption string = 'AES256'
 
-@maxValue(100)
-@minValue(0)
-@description('''Optional. The number of storage accounts to deploy to support the required use case for the AVD stamp. https://docs.microsoft.com/en-us/azure/architecture/patterns/sharding
-Note: Cannot utilize sharding with "identitySolution" = "AAD" so fslogixStorageCount will be set to 1 in variables.
-''')
-param fslogixStorageCount int = 1
-
 @maxValue(99)
 @minValue(0)
 @description('Optional. The starting number for the storage accounts to support the required use case for the AVD stamp. https://docs.microsoft.com/en-us/azure/architecture/patterns/sharding')
@@ -547,7 +540,6 @@ module logic 'modules/logic.bicep' = {
     fslogixConfigureSessionHosts: fslogixConfigureSessionHosts
     fslogixConfigurationBlobName: fslogixConfigurationBlobName
     fslogixContainerType: fslogixContainerType
-    fslogixStorageCount: fslogixStorageCount
     fslogixStorageService: fslogixStorageService
     hostPoolType: hostPoolType
     identitySolution: identitySolution
