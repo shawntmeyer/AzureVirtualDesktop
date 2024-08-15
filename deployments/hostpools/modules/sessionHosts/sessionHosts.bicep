@@ -22,6 +22,7 @@ param enableAcceleratedNetworking bool
 param diskAccessId string
 param diskEncryptionSetResourceId string
 param diskNamePrefix string
+param diskSizeGB int
 param diskSku string
 param divisionRemainderValue int
 param domainName string
@@ -32,12 +33,14 @@ param fslogixConfigureSessionHosts bool
 param fslogixExistingStorageAccountResourceIds array
 param fslogixContainerType string
 param fslogixDeployedStorageAccountResourceIds array
+param hibernationEnabled bool
 param hostPoolName string
 param hostPoolRegistrationToken string
 param identitySolution string
 param imageOffer string
 param imagePublisher string
 param imageSku string
+param integrityMonitoring bool
 param keyVaultName string
 param location string
 param managementVirtualMachineName string
@@ -56,6 +59,8 @@ param securityDataCollectionRulesResourceId string
 param securityPrincipalObjectIds array
 param securityLogAnalyticsWorkspaceResourceId string
 param securityType string
+param secureBootEnabled bool
+param vTpmEnabled bool
 param sessionHostBatchCount int
 param sessionHostIndex int
 param storageSuffix string
@@ -66,10 +71,10 @@ param virtualMachineNamePrefix string
 param virtualMachineSize string
 param vmInsightsDataCollectionRulesResourceId string
 
-var tagsAvailabilitySets = union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroupControlPlane}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'}, contains(tags, 'Microsoft.Compute/availabilitySets') ? tags['Microsoft.Compute/availabilitySets'] : {})
-var tagsNetworkInterfaces = union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroupControlPlane}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'}, contains(tags, 'Microsoft.Network/networkInterfaces') ? tags['Microsoft.Network/networkInterfaces'] : {})
-var tagsRecoveryServicesVault = union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroupControlPlane}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'}, contains(tags, 'Microsoft.recoveryServices/vaults') ? tags['Microsoft.recoveryServices/vaults'] : {})
-var tagsVirtualMachines = union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroupControlPlane}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'}, contains(tags, 'Microsoft.Compute/virtualMachines') ? tags['Microsoft.Compute/virtualMachines'] : {})
+var tagsAvailabilitySets = union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroupControlPlane}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'}, tags[?'Microsoft.Compute/availabilitySets'] ?? {})
+var tagsNetworkInterfaces = union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroupControlPlane}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'}, tags[?'Microsoft.Network/networkInterfaces'] ?? {})
+var tagsRecoveryServicesVault = union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroupControlPlane}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'}, tags[?'Microsoft.recoveryServices/vaults'] ?? {})
+var tagsVirtualMachines = union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroupControlPlane}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'}, tags[?'Microsoft.Compute/virtualMachines'] ?? {})
 
 resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' existing = {
   name: keyVaultName
@@ -137,6 +142,7 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     diskAccessId: diskAccessId
     diskEncryptionSetResourceId: diskEncryptionSetResourceId
     diskNamePrefix: diskNamePrefix
+    diskSizeGB: diskSizeGB
     diskSku: diskSku
     domainJoinUserPassword: contains(identitySolution, 'DomainServices') ? keyVault.getSecret('domainJoinUserPassword') : ''
     domainJoinUserPrincipalName: contains(identitySolution, 'DomainServices') ? keyVault.getSecret('domainJoinUserPrincipalName') : ''
@@ -147,11 +153,13 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     fslogixConfigureSessionHosts: fslogixConfigureSessionHosts
     fslogixContainerType: fslogixContainerType
     fslogixStorageAccountResourceIds: fslogixConfigureSessionHosts && (!empty(fslogixDeployedStorageAccountResourceIds) || !empty(fslogixExistingStorageAccountResourceIds)) ? fslogixStorageAccountResourceIds.outputs.storageAccountResourceIds : []
+    hibernationEnabled: hibernationEnabled
     hostPoolName: hostPoolName
     hostPoolRegistrationToken: hostPoolRegistrationToken
     imageOffer: imageOffer
     imagePublisher: imagePublisher
     imageSku: imageSku
+    integrityMonitoring: integrityMonitoring
     location: location
     managementVirtualMachineName: managementVirtualMachineName
     enableMonitoring: enableMonitoring
@@ -164,6 +172,8 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     securityDataCollectionRulesResourceId: securityDataCollectionRulesResourceId
     securityLogAnalyticsWorkspaceResourceId: securityLogAnalyticsWorkspaceResourceId
     securityType: securityType
+    secureBootEnabled: secureBootEnabled
+    vTpmEnabled: vTpmEnabled
     sessionHostCount: i == sessionHostBatchCount && divisionRemainderValue > 0 ? divisionRemainderValue : maxResourcesPerTemplateDeployment
     sessionHostIndex: i == 1 ? sessionHostIndex : ((i - 1) * maxResourcesPerTemplateDeployment) + sessionHostIndex
     storageSuffix: storageSuffix

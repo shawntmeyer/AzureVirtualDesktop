@@ -11,6 +11,7 @@ param keyVaultName string
 param keyVaultPrivateDnsZoneResourceId string
 param location string
 param privateEndpoint bool
+param privateEndpointLocation string
 param privateEndpointNameConv string
 param privateEndpointNICNameConv string
 param privateEndpointSubnetResourceId string
@@ -22,11 +23,6 @@ param timeStamp string
 param virtualMachineAdminUserName string = ''
 @secure()
 param virtualMachineAdminPassword string = ''
-
-resource vnet 'Microsoft.Network/virtualNetworks@2023-11-01' existing = if (!empty(privateEndpointSubnetResourceId)) {
-  name: split(privateEndpointSubnetResourceId, '/')[8]
-  scope: resourceGroup(split(privateEndpointSubnetResourceId, '/')[2], split(privateEndpointSubnetResourceId, '/')[4])
-}
 
 resource keyVault 'Microsoft.KeyVault/vaults@2023-02-01' = {
   name: keyVaultName
@@ -62,7 +58,7 @@ module vault_privateEndpoint '../../../sharedModules/resources/network/private-e
     groupIds: [
       'vault'
     ]
-    location: vnet.location
+    location: privateEndpointLocation
     name: replace(replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'vault'), 'RESOURCE', keyVaultName), 'VNETID', '${split(privateEndpointSubnetResourceId, '/')[8]}')
     privateDnsZoneGroup: {
       privateDNSResourceIds: [

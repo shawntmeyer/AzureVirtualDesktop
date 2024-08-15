@@ -27,7 +27,7 @@ module runbook '../../../sharedModules/custom/customScriptExtension.bicep' = {
     ]
     location: location
     output: false
-    tags: contains(tags, 'Microsoft.Compute/virtualMachines') ? tags['Microsoft.Compute/virtualMachines'] : {}
+    tags: tags[?'Microsoft.Compute/virtualMachines'] ?? {}
     userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
     virtualMachineName: managementVirtualMachineName
   }

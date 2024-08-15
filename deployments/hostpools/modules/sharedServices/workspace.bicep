@@ -22,7 +22,7 @@ resource workspace 'Microsoft.DesktopVirtualization/workspaces@2023-09-05' = {
   name: workspaceName
   tags: union({
     'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroup().name}/providers/Microsoft.DesktopVirtualization/Workspaces/${workspaceName}'
-  }, contains(tags, 'Microsoft.DesktopVirtualization/Workspaces') ? tags['Microsoft.DesktopVirtualization/Workspaces'] : {})
+  }, tags[?'Microsoft.DesktopVirtualization/Workspaces'] ?? {})
   properties: {
     applicationGroupReferences: applicationGroupReferences
     friendlyName: friendlyName
@@ -34,7 +34,7 @@ resource private_Endpoint 'Microsoft.Network/privateEndpoints@2023-05-01' = if (
   name: privateEndpointName
   tags: union({
     'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroup().name}/providers/Microsoft.DesktopVirtualization/Workspaces/${workspaceName}'
-  }, contains(tags, 'Microsoft.Network/privateEndpoints') ? tags['Microsoft.Network/privateEndpoints'] : {})
+  }, tags[?'Microsoft.Network/privateEndpoints'] ?? {})
   properties: {
     privateLinkServiceConnections: [
       {

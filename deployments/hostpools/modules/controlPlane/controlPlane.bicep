@@ -46,20 +46,39 @@ param workspaceName string
 param workspaceFeedPrivateEndpointSubnetResourceId string
 param workspacePublicNetworkAccess string
 
-var feedPrivateEndpointName = avdPrivateLinkPrivateRoutes != 'None' || avdPrivateLinkPrivateRoutes != 'HostPool' ? replace(replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'feed'), 'RESOURCE', workspaceName), 'VNETID', '${split(workspaceFeedPrivateEndpointSubnetResourceId, '/')[8]}') : 'feedPrivateEndpointName'
-var feedPrivateEndpointNICName = avdPrivateLinkPrivateRoutes != 'None' || avdPrivateLinkPrivateRoutes != 'HostPool' ? replace(replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'feed'), 'RESOURCE', workspaceName), 'VNETID', '${split(workspaceFeedPrivateEndpointSubnetResourceId, '/')[8]}') : 'feedPrivateEndpointName'
-var globalFeedPrivateEndpointName = avdPrivateLinkPrivateRoutes == 'All' ? replace(replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'global'), 'RESOURCE', workspaceName), 'VNETID', '${split(globalFeedPrivateEndpointSubnetResourceId, '/')[8]}') : 'globalFeedPrivateEndpointName'
-var globalFeedPrivateEndpointNICName = avdPrivateLinkPrivateRoutes == 'All' ? replace(replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'global'), 'RESOURCE', workspaceName), 'VNETID', '${split(globalFeedPrivateEndpointSubnetResourceId, '/')[8]}') : 'globalFeedPrivateEndpointName'
-var hostPoolPrivateEndpointName = avdPrivateLinkPrivateRoutes != 'None' ? replace(replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'connection'), 'RESOURCE', hostPoolName), 'VNETID', '${split(hostPoolPrivateEndpointSubnetResourceId, '/')[8]}') : 'hostPoolPrivateEndpointName'
-var hostPoolPrivateEndpointNICName = avdPrivateLinkPrivateRoutes != 'None' ? replace(replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'connection'), 'RESOURCE', hostPoolName), 'VNETID', '${split(hostPoolPrivateEndpointSubnetResourceId, '/')[8]}') : 'hostPoolPrivateEndpointName'
+var feedPrivateEndpointName = ( avdPrivateLinkPrivateRoutes != 'None' || avdPrivateLinkPrivateRoutes != 'HostPool' ) && !empty(workspaceFeedPrivateEndpointSubnetResourceId) ? replace(replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'feed'), 'RESOURCE', workspaceName), 'VNETID', '${split(workspaceFeedPrivateEndpointSubnetResourceId, '/')[8]}') : 'feedPrivateEndpointName'
+var feedPrivateEndpointNICName = ( avdPrivateLinkPrivateRoutes != 'None' || avdPrivateLinkPrivateRoutes != 'HostPool' )  && !empty(workspaceFeedPrivateEndpointSubnetResourceId) ? replace(replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'feed'), 'RESOURCE', workspaceName), 'VNETID', '${split(workspaceFeedPrivateEndpointSubnetResourceId, '/')[8]}') : 'feedPrivateEndpointName'
+var globalFeedPrivateEndpointName = avdPrivateLinkPrivateRoutes == 'All' && !empty(globalFeedPrivateEndpointSubnetResourceId) ? replace(replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'global'), 'RESOURCE', workspaceName), 'VNETID', '${split(globalFeedPrivateEndpointSubnetResourceId, '/')[8]}') : 'globalFeedPrivateEndpointName'
+var globalFeedPrivateEndpointNICName = avdPrivateLinkPrivateRoutes == 'All' && !empty(globalFeedPrivateEndpointSubnetResourceId) ? replace(replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'global'), 'RESOURCE', workspaceName), 'VNETID', '${split(globalFeedPrivateEndpointSubnetResourceId, '/')[8]}') : 'globalFeedPrivateEndpointName'
+var hostPoolPrivateEndpointName = avdPrivateLinkPrivateRoutes != 'None' && !empty(hostPoolPrivateEndpointSubnetResourceId) ? replace(replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'connection'), 'RESOURCE', hostPoolName), 'VNETID', '${split(hostPoolPrivateEndpointSubnetResourceId, '/')[8]}') : 'hostPoolPrivateEndpointName'
+var hostPoolPrivateEndpointNICName = avdPrivateLinkPrivateRoutes != 'None' && !empty(hostPoolPrivateEndpointSubnetResourceId) ? replace(replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'connection'), 'RESOURCE', hostPoolName), 'VNETID', '${split(hostPoolPrivateEndpointSubnetResourceId, '/')[8]}') : 'hostPoolPrivateEndpointName'
 
+module hostPoolPrivateEndpointVnet '../common/privateEndpointVnet.bicep' = if (avdPrivateLinkPrivateRoutes != 'None' && !empty(hostPoolPrivateEndpointSubnetResourceId)) {
+  name: 'HostPoolPrivateEndpointVnet_${timeStamp}'
+  params: {
+    privateEndpointSubnetResourceId: hostPoolPrivateEndpointSubnetResourceId
+  }
+}
+
+module workspaceFeedPrivateEndpointVnet '../common/privateEndpointVnet.bicep' = if ((avdPrivateLinkPrivateRoutes == 'All' || avdPrivateLinkPrivateRoutes == 'FeedAndHostPool') && !empty(workspaceFeedPrivateEndpointSubnetResourceId)) {
+  name: 'WorkspaceFeedPrivateEndpointVnet_${timeStamp}'
+  params: {
+    privateEndpointSubnetResourceId: workspaceFeedPrivateEndpointSubnetResourceId
+  }
+}
+
+module globalFeedPrivateEndpointVnet '../common/privateEndpointVnet.bicep' = if (avdPrivateLinkPrivateRoutes == 'All' && !empty(globalFeedPrivateEndpointSubnetResourceId)) {
+  name: 'GlobalFeedPrivateEndpointVnet_${timeStamp}'
+  params: {
+    privateEndpointSubnetResourceId: globalFeedPrivateEndpointSubnetResourceId
+  }
+}
 
 module hostPool 'hostPool.bicep' = {
   name: 'HostPool_${timeStamp}'
   scope: resourceGroup(resourceGroupControlPlane)
   params: {
-    identitySolution: identitySolution
-    avdPrivateLink: avdPrivateLinkPrivateRoutes != 'None' ? true : false
+    identitySolution: identitySolution    
     hostPoolRDPProperties: hostPoolRDPProperties
     hostPoolName: hostPoolName
     hostPoolPrivateDnsZoneResourceId: avdPrivateDnsZoneResourceId
@@ -69,7 +88,9 @@ module hostPool 'hostPool.bicep' = {
     location: locationControlPlane
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
     hostPoolMaxSessionLimit: hostPoolMaxSessionLimit
-    enableMonitoring: enableMonitoring    
+    enableMonitoring: enableMonitoring
+    privateEndpoint: avdPrivateLinkPrivateRoutes != 'None' ? true : false
+    privateEndpointLocation: avdPrivateLinkPrivateRoutes != 'None' && !empty(hostPoolPrivateEndpointSubnetResourceId) ? hostPoolPrivateEndpointVnet.outputs.location : ''    
     privateEndpointName: hostPoolPrivateEndpointName
     privateEndpointNICName: hostPoolPrivateEndpointNICName
     privateEndpointSubnetResourceId: hostPoolPrivateEndpointSubnetResourceId
@@ -108,7 +129,6 @@ module feedWorkspace 'workspace.bicep' = {
     applicationGroupReferences: applicationGroup.outputs.ApplicationGroupReference
     artifactsUri: artifactsUri
     artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
-    avdPrivateLink: avdPrivateLinkPrivateRoutes != 'None' || avdPrivateLinkPrivateRoutes != 'HostPool' ? true : false
     deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
     enableMonitoring: enableMonitoring
     existingWorkspace: !empty(existingFeedWorkspaceResourceId) ? true : false
@@ -119,6 +139,8 @@ module feedWorkspace 'workspace.bicep' = {
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
     managementVirtualMachineName: managementVirtualMachineName
     privateDnsZoneResourceId: avdPrivateDnsZoneResourceId
+    privateEndpoint: avdPrivateLinkPrivateRoutes != 'None' || avdPrivateLinkPrivateRoutes != 'HostPool' ? true : false
+    privateEndpointLocation: !empty(workspaceFeedPrivateEndpointSubnetResourceId) ? workspaceFeedPrivateEndpointVnet.outputs.location : ''
     privateEndpointName: feedPrivateEndpointName
     privateEndpointNICName: feedPrivateEndpointNICName
     privateEndpointSubnetResourceId: workspaceFeedPrivateEndpointSubnetResourceId
@@ -153,7 +175,6 @@ module globalWorkspace 'workspace.bicep' = if(!existingGlobalWorkspace && avdPri
     applicationGroupReferences: []
     artifactsUri: artifactsUri
     artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
-    avdPrivateLink: true
     deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
     enableMonitoring: enableMonitoring
     existingWorkspace: existingGlobalWorkspace
@@ -164,6 +185,8 @@ module globalWorkspace 'workspace.bicep' = if(!existingGlobalWorkspace && avdPri
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
     managementVirtualMachineName: managementVirtualMachineName
     privateDnsZoneResourceId: globalFeedPrivateDnsZoneResourceId
+    privateEndpoint: true
+    privateEndpointLocation: !empty(globalFeedPrivateEndpointSubnetResourceId) ? globalFeedPrivateEndpointVnet.outputs.location : ''
     privateEndpointName: globalFeedPrivateEndpointName
     privateEndpointNICName: globalFeedPrivateEndpointNICName
     privateEndpointSubnetResourceId: globalFeedPrivateEndpointSubnetResourceId

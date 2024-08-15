@@ -4,17 +4,13 @@ param location string
 param logAnalyticsWorkspaceResourceId string
 param enableMonitoring bool
 param privateEndpoint bool
+param privateEndpointLocation string
 param privateEndpointNameConv string
 param privateEndpointNICNameConv string
 param privateEndpointSubnetResourceId string
 param tags object
 param timeStamp string
 param virtualMachineName string
-
-resource vnet 'Microsoft.Network/virtualNetworks@2023-11-01' existing = if (!empty(privateEndpointSubnetResourceId)) {
-  name: split(privateEndpointSubnetResourceId, '/')[8]
-  scope: resourceGroup(split(privateEndpointSubnetResourceId, '/')[2], split(privateEndpointSubnetResourceId, '/')[4])
-}
 
 resource virtualMachine 'Microsoft.Compute/virtualMachines@2023-07-01' existing = {
   name: virtualMachineName
@@ -23,7 +19,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2023-07-01' existing 
 resource automationAccount 'Microsoft.Automation/automationAccounts@2021-06-22' = {
   name: automationAccountName
   location: location
-  tags: contains(tags, 'Microsoft.Automation/automationAccounts') ? tags['Microsoft.Automation/automationAccounts'] : {}
+  tags: tags[?'Microsoft.Automation/automationAccounts'] ?? {}
   identity: {
     type: 'SystemAssigned'
   }
@@ -42,7 +38,7 @@ module automationAccount_privateEndpoint '../../../sharedModules/resources/netwo
     groupIds: [
       'DSCAndHybridWorker'
     ]
-    location: vnet.location
+    location: privateEndpointLocation
     name: replace(replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'DSCAndHybridWorker'), 'RESOURCE', automationAccountName), 'VNETID', '${split(privateEndpointSubnetResourceId, '/')[8]}')
     privateDnsZoneGroup: {
       privateDNSResourceIds: [
@@ -51,7 +47,7 @@ module automationAccount_privateEndpoint '../../../sharedModules/resources/netwo
     }
     serviceResourceId: automationAccount.id
     subnetResourceId: privateEndpointSubnetResourceId
-    tags: contains(tags, 'Microsoft.Network/privateEndpoints') ? tags['Microsoft.Network/privateEndpoints'] : {}
+    tags: tags[?'Microsoft.Network/privateEndpoints'] ?? {}
   }
 }
 
@@ -95,7 +91,7 @@ resource extension_HybridWorker 'Microsoft.Compute/virtualMachines/extensions@20
   parent: virtualMachine
   name: 'HybridWorkerForWindows'
   location: location
-  tags: contains(tags, 'Microsoft.Compute/virtualMachines') ? tags['Microsoft.Compute/virtualMachines'] : {}
+  tags: tags[?'Microsoft.Compute/virtualMachines'] ?? {}
   properties: {
     publisher: 'Microsoft.Azure.Automation.HybridWorker'
     type: 'HybridWorkerForWindows'

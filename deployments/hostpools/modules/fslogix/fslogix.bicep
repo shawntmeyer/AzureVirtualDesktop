@@ -57,6 +57,13 @@ resource vmKeyVault 'Microsoft.KeyVault/vaults@2022-07-01' existing = if (contai
   scope: resourceGroup(resourceGroupManagement)
 }
 
+module privateEndpointVnet '../common/privateEndpointVnet.bicep' = if (privateEndpoint && !empty(privateEndpointSubnetResourceId)) {
+  name: 'PrivateEndpointVnet_${timeStamp}'
+  params: {
+    privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
+  }
+}
+
 // Azure NetApp files for fslogix
 module azureNetAppFiles 'azureNetAppFiles.bicep' = if (storageSolution == 'AzureNetAppFiles' && contains(identitySolution, 'DomainServices')) {
   name: 'AzureNetAppFiles_${timeStamp}'
@@ -115,6 +122,7 @@ module azureFiles 'azureFiles/azureFiles.bicep' = if (storageSolution == 'AzureF
     netbios: netbios
     ouPath: ouPath
     privateEndpoint: privateEndpoint
+    privateEndpointLocation: privateEndpointVnet.outputs.location
     privateEndpointNameConv: privateEndpointNameConv
     privateEndpointNICNameConv: privateEndpointNICNameConv
     privateEndpointSubnetResourceId: privateEndpointSubnetResourceId

@@ -161,9 +161,7 @@ module deploymentUserAssignedIdentity 'userAssignedIdentity.bicep' = {
   params: {
     location: locationVirtualMachines
     name: deploymentUserAssignedIdentityName
-    tags: contains(tags, 'Microsoft.ManagedIdentity/userAssignedIdentities')
-      ? tags['Microsoft.ManagedIdentity/userAssignedIdentities']
-      : {}
+    tags: tags[?'Microsoft.ManagedIdentity/userAssignedIdentities'] ?? {}
   }
 }
 
@@ -193,9 +191,7 @@ module artifactsUserAssignedIdentity 'userAssignedIdentity.bicep' = if (empty(ar
   params: {
     location: locationControlPlane
     name: artifactsUserAssignedIdentityName
-    tags: contains(tags, 'Microsoft.ManagedIdentity/userAssignedIdentities')
-      ? tags['Microsoft.ManagedIdentity/userAssignedIdentities']
-      : {}
+    tags: tags[?'Microsoft.ManagedIdentity/userAssignedIdentities'] ?? {}
   }
 }
 module artifactsRoleAssignment 'artifactsRoleAssignment.bicep' = if (empty(artifactsUserAssignedIdentityResourceId)) {
@@ -214,6 +210,13 @@ module artifactsRoleAssignment 'artifactsRoleAssignment.bicep' = if (empty(artif
   }
 }
 
+module privateEndpointVnet '../common/privateEndpointVnet.bicep' = if (privateEndpoint && !empty(privateEndpointSubnetResourceId)) {
+  name: 'PrivateEndpointVnet_${timeStamp}'
+  params: {
+    privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
+  }
+}
+
 module diskAccess 'diskAccess.bicep' = if(deployDiskAccessResource) {
   scope: resourceGroup(resourceGroupManagement)
   name: 'DiskAccess_${timeStamp}'
@@ -224,6 +227,7 @@ module diskAccess 'diskAccess.bicep' = if(deployDiskAccessResource) {
     privateEndpointNameConv: privateEndpointNameConv
     privateEndpointNICNameConv: privateEndpointNICNameConv
     privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
+    privateEndpointLocation: privateEndpointVnet.outputs.location
     tags: tags
     timeStamp: timeStamp
   }
@@ -256,12 +260,13 @@ module vmKeyVault 'keyVault.bicep' = if (!empty(virtualMachineAdminPassword) || 
     keyVaultPrivateDnsZoneResourceId: keyVaultPrivateDnsZoneResourceId
     location: locationVirtualMachines
     privateEndpoint: privateEndpoint
+    privateEndpointLocation: privateEndpoint && !empty(privateEndpointSubnetResourceId) ? privateEndpointVnet.outputs.location : ''
     privateEndpointNameConv: privateEndpointNameConv
     privateEndpointNICNameConv: privateEndpointNICNameConv
     privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
     skuName: confidentialVMOSDiskEncryption || contains(keyManagementDisks, 'HSM') ? 'premium' : 'standard'
-    tagsKeyVault: contains(tags, 'Microsoft.KeyVault/vaults') ? tags['Microsoft.KeyVault/vaults'] : {}
-    tagsPrivateEndpoints: contains(tags, 'Microsoft.Network/privateEndpoints') ? tags['Microsoft.Network/privateEndpoints'] : {}
+    tagsKeyVault: tags[?'Microsoft.KeyVault/vaults'] ?? {}
+    tagsPrivateEndpoints: tags[?'Microsoft.Network/privateEndpoints'] ?? {}
     timeStamp: timeStamp
     virtualMachineAdminPassword: virtualMachineAdminPassword
     virtualMachineAdminUserName: virtualMachineAdminUserName
@@ -293,12 +298,8 @@ module virtualMachine 'virtualMachine.bicep' = {
     location: locationVirtualMachines
     networkInterfaceName: virtualMachineNICName
     subnetResourceId: virtualMachineSubnetResourceId
-    tagsNetworkInterfaces: contains(tags, 'Microsoft.Network/networkInterfaces')
-      ? tags['Microsoft.Network/networkInterfaces']
-      : {}
-    tagsVirtualMachines: contains(tags, 'Microsoft.Compute/virtualMachines')
-      ? tags['Microsoft.Compute/virtualMachines']
-      : {}
+    tagsNetworkInterfaces: tags[?'Microsoft.Network/networkInterfaces'] ?? {}
+    tagsVirtualMachines: tags[?'Microsoft.Compute/virtualMachines'] ?? {}
     userAssignedIdentitiesResourceIds: empty(artifactsUserAssignedIdentityResourceId)
       ? {
           '${artifactsUserAssignedIdentity.outputs.resourceId}': {}
@@ -340,6 +341,7 @@ module customerManagedKeys 'customerManagedKeys.bicep' = if (keyManagementDisks 
     location: locationVirtualMachines
     managementVirtualMachineName: virtualMachine.outputs.Name
     privateEndpoint: privateEndpoint
+    privateEndpointLocation: privateEndpoint && !empty(privateEndpointSubnetResourceId) ? privateEndpointVnet.outputs.location : ''
     privateEndpointNameConv: privateEndpointNameConv
     privateEndpointNICNameConv: privateEndpointNICNameConv
     privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
@@ -362,6 +364,7 @@ module automationAccount 'automationAccount.bicep' = if (enableIncreaseQuotaAuto
     tags: tags
     automationAccountPrivateDnsZoneResourceId: automationAccountPrivateDnsZoneResourceId
     privateEndpoint: privateEndpoint
+    privateEndpointLocation: privateEndpoint && !empty(privateEndpointSubnetResourceId) ? privateEndpointVnet.outputs.location : ''
     privateEndpointNameConv: privateEndpointNameConv
     privateEndpointNICNameConv: privateEndpointNICNameConv
     privateEndpointSubnetResourceId: privateEndpointSubnetResourceId

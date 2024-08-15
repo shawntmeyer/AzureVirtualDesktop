@@ -11,7 +11,7 @@ param timeZone string
 resource vault 'Microsoft.recoveryServices/vaults@2022-03-01' = {
   name: recoveryServicesVaultName
   location: location
-  tags: contains(tags, 'Microsoft.RecoveryServices/vaults') ? tags['Microsoft.RecoveryServices/vaults'] : {}
+  tags: tags[?'Microsoft.RecoveryServices/vaults'] ?? {}
   sku: {
     name: 'RS0'
     tier: 'Standard'
@@ -23,7 +23,7 @@ resource backupPolicy_Storage 'Microsoft.recoveryServices/vaults/backupPolicies@
   parent: vault
   name: 'AvdPolicyStorage'
   location: location
-  tags: contains(tags, 'Microsoft.RecoveryServices/vaults') ? tags['Microsoft.RecoveryServices/vaults'] : {}
+  tags: tags[?'Microsoft.RecoveryServices/vaults'] ?? {}
   properties: {
     backupManagementType: 'AzureStorage'
     schedulePolicy: {
@@ -54,7 +54,7 @@ resource backupPolicy_Vm 'Microsoft.recoveryServices/vaults/backupPolicies@2022-
   parent: vault
   name: 'AvdPolicyVm'
   location: location
-  tags: contains(tags, 'Microsoft.RecoveryServices/vaults') ? tags['Microsoft.RecoveryServices/vaults'] : {}
+  tags: tags[?'Microsoft.RecoveryServices/vaults'] ?? {}
   properties: {
     backupManagementType: 'AzureIaasVM'
     instantRpRetentionRangeInDays: 2

@@ -92,6 +92,7 @@
 								{
 									"name": "containerApi",
 									"type": "Microsoft.Solutions.ArmApiControl",
+									"condition": "[not(empty(steps('basics').prereqs.storageAccount))]",
 									"request": {
 										"method": "GET",
 										"path": "[concat(steps('basics').prereqs.storageAccount.id, '/blobServices/default/containers?api-version=2023-01-01')]"
@@ -283,6 +284,7 @@
 						{
 							"name": "workspacesApi",
 							"type": "Microsoft.Solutions.ArmApiControl",
+							"condition": "[not(empty(steps('basics').scope.subscription))]",
 							"request": {
 								"method": "GET",
 								"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.DesktopVirtualization/workspaces?api-version=2022-02-10-preview')]"
@@ -970,7 +972,7 @@
 				{
 					"name": "hosts",
 					"label": "Session Hosts",
-					"elements": [						
+					"elements": [
 						{
 							"name": "drainMode",
 							"type": "Microsoft.Common.CheckBox",
@@ -1015,10 +1017,11 @@
 							"type": "Microsoft.Common.Section",
 							"label": "Network",
 							"visible": true,
-							"elements": [								
+							"elements": [
 								{
 									"name": "hostsVirtualNetworksApi",
 									"type": "Microsoft.Solutions.ArmApiControl",
+									"condition": "[not(empty(steps('basics').scope.subscription))]",
 									"request": {
 										"method": "GET",
 										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Network/virtualNetworks?api-version=2022-11-01')]"
@@ -1099,6 +1102,30 @@
 										"text": "Confidential VMs are not supported in all regions and require certain VM Skus.",
 										"uri": "https://learn.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview"
 									}
+								},
+								{
+									"name": "secureBootEnabled",
+									"type": "Microsoft.Common.CheckBox",
+									"label": "Enable Secure Boot",
+									"toolTip": "Secure boot helps protect your VMs against boot kits, rootkits, and kernel-level malware.",
+									"defaultValue": true,
+									"visible": "[not(equals(steps('hosts').security.securityType, 'Standard'))]"
+								},
+								{
+									"name": "vTpmEnabled",
+									"type": "Microsoft.Common.CheckBox",
+									"label": "Enable vTPM",
+									"toolTip": "Virtual Trusted Platform Module (vTPM) is TPM2.0 compliant and validates your VM boot integrity apart from securely storing keys and secrets.",
+									"defaultValue": true,
+									"visible": "[not(equals(steps('hosts').security.securityType, 'Standard'))]"
+								},
+								{
+									"name": "integrityMonitoring",
+									"type": "Microsoft.Common.CheckBox",
+									"label": "Integrity Monitoring",
+									"toolTip": "Integrity monitoring enables cryptographic attestation and verification of VM boot integrity along with monitoring alerts if the VM didn't boot because attestation failed with the defined baseline.",
+									"defaultValue": true,
+									"visible": "[not(equals(steps('hosts').security.securityType, 'Standard'))]"
 								}
 							]
 						},
@@ -1232,14 +1259,6 @@
 							"label": "Dedicated Hosts",
 							"elements": [
 								{
-									"name": "hostGroupsApi",
-									"type": "Microsoft.Solutions.ArmApiControl",
-									"request": {
-										"method": "GET",
-										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Compute/hostGroups?api-version=2023-09-01')]"
-									}
-								},
-								{
 									"name": "dedicatedHostsTextBlock1",
 									"type": "Microsoft.Common.TextBlock",
 									"visible": true,
@@ -1279,6 +1298,15 @@
 										}
 									}
 								},
+																{
+									"name": "hostGroupsApi",
+									"type": "Microsoft.Solutions.ArmApiControl",
+									"condition": "[and(not(empty(steps('basics').scope.subscription)), steps('hosts').dedicatedHosts.deployToDedicatedHosts)]",
+									"request": {
+										"method": "GET",
+										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Compute/hostGroups?api-version=2023-09-01')]"
+									}
+								},
 								{
 									"name": "dedicatedHostGroup",
 									"type": "Microsoft.Common.DropDown",
@@ -1293,7 +1321,7 @@
 								},
 								{
 									"name": "dedicatedHostsApi",
-                                    "condition": "[not(empty(steps('hosts').dedicatedHosts.dedicatedHostGroup))]",
+									"condition": "[not(empty(steps('hosts').dedicatedHosts.dedicatedHostGroup))]",
 									"type": "Microsoft.Solutions.ArmApiControl",
 									"request": {
 										"method": "GET",
@@ -1362,8 +1390,51 @@
 									}
 								},
 								{
+									"name": "diskSizeGB",
+									"type": "Microsoft.Common.DropDown",
+									"label": "OS Disk Size",
+									"placeholder": "",
+									"defaultValue": "Default from Image (Typically 128 GB)",
+									"toolTip": "",
+									"constraints": {
+										"allowedValues": [
+											{
+												"label": "Default from Image (Typically 128 GB)",
+												"value": 0
+											},
+											{
+												"label": "Resize to 64 GB (P6)",
+												"value": 64
+											},
+											{
+												"label": "Resize to 128 GB (P10)",
+												"value": 128
+											},
+											{
+												"label": "Resize to 256 GB (P15)",
+												"value": 256
+											},
+											{
+												"label": "Resize to 512 GB (P20)",
+												"value": 512
+											},
+											{
+												"label": "Resize to 1 TB (P30)",
+												"value": 1024
+											},
+											{
+												"label": "Resize to 2 TB (P40)",
+												"value": 2048
+											}
+										],
+										"required": true
+									},
+									"visible": true
+								},
+								{
 									"name": "vmSizesApi",
 									"type": "Microsoft.Solutions.ArmApiControl",
+									"condition": "[and(not(empty(steps('basics').scope.subscription)), not(empty(steps('basics').scope.location)))]",
 									"request": {
 										"method": "GET",
 										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Compute/locations/', steps('basics').scope.location.name, '/vmSizes?api-version=2023-03-01')]"
@@ -1411,11 +1482,19 @@
 								{
 									"name": "resourceSkusApi",
 									"type": "Microsoft.Solutions.ArmApiControl",
+									"condition": "[and(not(empty(steps('basics').scope.subscription)), not(empty(steps('basics').scope.location)))]",
 									"request": {
 										"method": "GET",
 										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Compute/skus?api-version=2021-07-01&$filter=location eq ', decodeUriComponent('%27'), steps('basics').scope.location.name, decodeUriComponent('%27'))]"
 									}
-								}
+								},
+								{
+									"name": "hibernationEnabled",
+									"type": "Microsoft.Common.CheckBox",
+									"label": "Enable Hibernation",
+									"toolTip": "Hibernation allows you to pause VMs that aren't being used and save on compute costs where the VMs don't need to run 24/7.",
+									"visible": "[bool(first(map(filter(first(map(filter(steps('hosts').specs.resourceSkusApi.value, (item) => contains(item.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (item) => item.capabilities)), (item) => equals(item.name, 'HibernationSupported')), (item) => item.value)))]"									
+								}								
 							]
 						},
 						{
@@ -1492,6 +1571,7 @@
 								{
 									"name": "skuApi",
 									"type": "Microsoft.Solutions.ArmApiControl",
+									"condition": "[and(not(empty(steps('basics').scope.subscription)), not(empty(steps('basics').scope.location)), not(empty(steps('hosts').image.offer)), equals(steps('hosts').image.source, 'marketplace'))]",
 									"request": {
 										"method": "GET",
 										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Compute/locations/', steps('basics').scope.location.name, '/publishers/MicrosoftWindowsDesktop/artifacttypes/vmimage/offers/', steps('hosts').image.offer, '/skus?api-version=2022-08-01')]"
@@ -1888,6 +1968,7 @@
 								{
 									"name": "storageVirtualNetworksApi",
 									"type": "Microsoft.Solutions.ArmApiControl",
+									"condition": "[and(not(empty(steps('basics').scope.subscription)), steps('userProfiles').fslogixStorage.deployStorage)]",
 									"request": {
 										"method": "GET",
 										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Network/virtualNetworks?api-version=2022-11-01')]"
@@ -2154,6 +2235,7 @@
 								{
 									"name": "storageAccountsApi",
 									"type": "Microsoft.Solutions.ArmApiControl",
+									"condition": "[and(not(empty(steps('basics').scope.subscription)), steps('userProfile').fslogixSessionHostConfig.configureSessionHosts)]",
 									"request": {
 										"method": "GET",
 										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Storage/storageAccounts?api-version=2023-01-01')]"
@@ -2403,6 +2485,7 @@
 								{
 									"name": "privateEndpointVirtualNetworksApi",
 									"type": "Microsoft.Solutions.ArmApiControl",
+									"condition": "[and(steps('zeroTrust').privateEndpoints.deployPrivateEndpoints, not(empty(steps('zeroTrust').privateEndpoints.privateEndpointVnetsSubscription)))]",
 									"request": {
 										"method": "GET",
 										"path": "[concat(steps('zeroTrust').privateEndpoints.privateEndpointVnetsSubscription.id, '/providers/Microsoft.Network/virtualNetworks?api-version=2022-11-01')]"
@@ -2457,7 +2540,7 @@
 								},
 								{
 									"name": "privateDNSZonesApi",
-									"condition": "[not(empty(steps('zeroTrust').privateEndpoints.privateDNSZonesSubscription))]",
+									"condition": "[and(steps('zeroTrust').privateEndpoints.deployPrivateEndpoints, not(empty(steps('zeroTrust').privateEndpoints.privateDNSZonesSubscription)))]",
 									"type": "Microsoft.Solutions.ArmApiControl",
 									"request": {
 										"method": "GET",
@@ -2633,7 +2716,7 @@
 								},
 								{
 									"name": "privateDNSZonesApi",
-									"condition": "[not(empty(steps('zeroTrust').avdPrivateLink.privateDNSZonesSubscription))]",
+									"condition": "[and(steps('zeroTrust').avdPrivateLink.enablePrivateLink, not(empty(steps('zeroTrust').avdPrivateLink.privateDNSZonesSubscription)))]",
 									"type": "Microsoft.Solutions.ArmApiControl",
 									"request": {
 										"method": "GET",
@@ -2675,7 +2758,7 @@
 								},
 								{
 									"name": "hostpoolVirtualNetworksApi",
-									"condition": "not(empty(steps('zeroTrust').avdPrivateLink.hostpoolVnetsSubscription))",
+									"condition": "[and(steps('zeroTrust').avdPrivateLink.enablePrivateLink, not(empty(steps('zeroTrust').avdPrivateLink.hostpoolVnetsSubscription)))]",
 									"type": "Microsoft.Solutions.ArmApiControl",
 									"request": {
 										"method": "GET",
@@ -2777,7 +2860,7 @@
 								},
 								{
 									"name": "feedWorkspaceVirtualNetworksApi",
-									"condition": "[not(empty(steps('zeroTrust').avdPrivateLink.feedWorkspaceVnetsSubscription))]",
+									"condition": "[and(steps('zeroTrust').avdPrivateLink.enablePrivateLink, not(empty(steps('zeroTrust').avdPrivateLink.feedWorkspaceVnetsSubscription)))]",
 									"type": "Microsoft.Solutions.ArmApiControl",
 									"request": {
 										"method": "GET",
@@ -2873,7 +2956,7 @@
 								},
 								{
 									"name": "globalFeedVirtualNetworksApi",
-									"condition": "[steps('zeroTrust').avdPrivateLink.globalFeedVnetSubscription]",
+									"condition": "[and(steps('zeroTrust').avdPrivateLink.enablePrivateLink, not(empty(steps('zeroTrust').avdPrivateLink.globalFeedVnetSubscription)))]",
 									"type": "Microsoft.Solutions.ArmApiControl",
 									"request": {
 										"method": "GET",
@@ -2986,7 +3069,7 @@
 				"centralizedAVDMonitoring": "[if(empty(steps('basics').naming.businessUnitIdentifier), true, steps('basics').naming.centralizedAVDMonitoring)]",
 				"envShortName": "[steps('basics').naming.envShortName]",
 				"nameConvResTypeAtEnd": "[steps('basics').naming.nameConvResTypeAtEnd]",
-				"locationControlPlane": "[steps('controlPlane').location]",
+				"locationControlPlane": "[steps('controlPlane').location.name]",
 				"existingFeedWorkspaceResourceId": "[if(equals(steps('controlPlane').workspace.createOption, 'update'), steps('controlPlane').workspace.existingWorkspace, '')]",
 				"workspaceFriendlyName": "[if(not(equals(steps('controlPlane').workspace.createOption, 'update')), steps('controlPlane').naming.workspaceFriendlyName, '')]",
 				"desktopFriendlyName": "[steps('controlPlane').naming.desktopFriendlyName]",
@@ -3008,7 +3091,9 @@
 				"sessionHostCount": "[steps('hosts').specs.count]",
 				"sessionHostIndex": "[steps('hosts').index]",
 				"virtualMachineSubnetResourceId": "[steps('hosts').network.hostsSubnet]",
-				"virtualMachineSecurityType": "[steps('hosts').security.securityType]",
+				"securityType": "[steps('hosts').security.securityType]",
+				"secureBootEnabled": "[if(equals(steps('hosts').security.securityType, 'Standard'), false, steps('hosts').security.secureBootEnabled)]",
+				"vTpmEnabled": "[if(equals(steps('hosts').security.securityType, 'Standard'), false, steps('hosts').security.vTpmEnabled)]",
 				"encryptionAtHost": "[steps('hosts').diskEncryption.encryptionAtHost]",
 				"keyManagementDisks": "[steps('hosts').diskEncryption.keyManagement]",
 				"confidentialVMOSDiskEncryption": "[steps('hosts').diskEncryption.confidentialVMOSDiskEncryption]",
@@ -3017,9 +3102,11 @@
 				"dedicatedHostResourceId": "[if(steps('hosts').dedicatedHosts.deployToDedicatedHosts, steps('hosts').dedicatedHosts.dedicatedHost, '')]",
 				"availability": "[if(equals(steps('hosts').dedicatedHosts.deployToDedicatedHosts, false), steps('hosts').availability.availability, 'none')]",
 				"diskSku": "[steps('hosts').specs.diskSku]",
+				"diskSizeGB": "[steps('hosts').specs.diskSizeGB]",
 				"virtualMachineSize": "[if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric)]",
 				"availabilityZones": "[first(map(first(map(filter(steps('hosts').specs.resourceSkusApi.value, (item) => contains(item.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (item) => item.locationInfo)), (item) => item.zones))]",
 				"enableAcceleratedNetworking": "[bool(first(map(filter(first(map(filter(steps('hosts').specs.resourceSkusApi.value, (item) => contains(item.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (item) => item.capabilities)), (item) => equals(item.name, 'AcceleratedNetworkingEnabled')), (item) => item.value)))]",
+				"hibernationEnabled": "[if(bool(first(map(filter(first(map(filter(steps('hosts').specs.resourceSkusApi.value, (item) => contains(item.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (item) => item.capabilities)), (item) => equals(item.name, 'HibernationSupported')), (item) => item.value))), steps('hosts').specs.hibernationEnabled, false)]",
 				"imageOffer": "[if(equals(steps('hosts').image.source, 'marketplace'), steps('hosts').image.offer, '')]",
 				"imagePublisher": "[if(equals(steps('hosts').image.source, 'marketplace'), 'MicrosoftWindowsDesktop', '')]",
 				"imageSku": "[if(equals(steps('hosts').image.source, 'marketplace'), steps('hosts').image.sku, '')]",

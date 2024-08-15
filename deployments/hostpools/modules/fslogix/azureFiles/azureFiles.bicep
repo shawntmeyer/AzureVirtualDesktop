@@ -24,6 +24,7 @@ param managementVirtualMachineName string
 param netbios string
 param ouPath string
 param privateEndpoint bool
+param privateEndpointLocation string
 param privateEndpointNameConv string
 param privateEndpointNICNameConv string
 param privateEndpointSubnetResourceId string
@@ -60,11 +61,6 @@ var smbSettings = {
   channelEncryption: 'AES-128-CCM;AES-128-GCM;AES-256-GCM;'
 }
 var storageRedundancy = availability == 'availabilityZones' ? '_ZRS' : '_LRS'
-
-resource vnet 'Microsoft.Network/virtualNetworks@2023-11-01' existing = if (!empty(privateEndpointSubnetResourceId)) {
-  name: split(privateEndpointSubnetResourceId, '/')[8]
-  scope: resourceGroup(split(privateEndpointSubnetResourceId, '/')[2], split(privateEndpointSubnetResourceId, '/')[4])
-}
 
 resource storageAccounts 'Microsoft.Storage/storageAccounts@2022-09-01' = [for i in range(0, storageCount): {
   name: '${storageAccountNamePrefix}${i + storageIndex}'
@@ -175,7 +171,7 @@ module privateEndpoints '../../../../sharedModules/resources/network/private-end
     groupIds: [
       'file'
     ]
-    location: vnet.location
+    location: !empty(privateEndpointLocation) ? privateEndpointLocation : location
     name: replace(replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'file'), 'RESOURCE', '${storageAccountNamePrefix}${i + storageIndex}'), 'VNETID', '${split(privateEndpointSubnetResourceId, '/')[8]}')
     privateDnsZoneGroup: {
       privateDNSResourceIds: [

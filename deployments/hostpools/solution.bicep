@@ -166,7 +166,16 @@ param virtualMachineSubnetResourceId string
   'TrustedLaunch'
 ])
 @description('Optional. The Security Type of the AVD Session Hosts.  ConfidentialVM and TrustedLaunch are only available in certain regions.')
-param virtualMachineSecurityType string = 'TrustedLaunch'
+param securityType string = 'TrustedLaunch'
+
+@description('Optional. Enable Secure Boot on the Trusted Luanch or Confidential VMs.')
+param secureBootEnabled bool = true
+
+@description('Optional. Enable the Virtual TPM on Trusted Launch or Confidential VMs.')
+param vTpmEnabled bool = true
+
+@description('Optional. Integrity monitoring enables cryptographic attestation and verification of VM boot integrity along with monitoring alerts if the VM did not boot because attestation failed with the defined baseline.')
+param integrityMonitoring bool = true
 
 @description('''Optional. Encryption at host encrypts temporary disks and ephemeral OS disks with platform-managed keys,
 OS and data disk caches with the key specified in the "keyManagementDisks" parameter, and flows encrypted to the Storage service.
@@ -207,6 +216,19 @@ param dedicatedHostResourceId string = ''
 param dedicatedHostGroupResourceId string = ''
 
 @allowed([
+  0
+  32
+  64
+  128
+  256
+  512
+  1024
+  2048
+])
+@description('Optional. The size of the OS disk in GB for the AVD session hosts. When set to 0 it defaults to the image size - typically 128 GB.')
+param diskSizeGB int = 0
+
+@allowed([
   'Standard_LRS'
   'StandardSSD_LRS'
   'Premium_LRS'
@@ -219,6 +241,9 @@ param virtualMachineSize string = 'Standard_D4ads_v5'
 
 @description('Optional. Determines whether or not to enable accelerated networking for the session host VMs.')
 param enableAcceleratedNetworking bool = true
+
+@description('Optional. Determines whether or not to enable hibernation for the session host VMs.')
+param hibernationEnabled bool = false
 
 @allowed([
   'availabilitySets'
@@ -484,9 +509,7 @@ var locationGlobalFeed = !empty(globalFeedPrivateEndpointSubnetResourceId) ? avd
 
 var confidentialVMOSDiskEncryptionType = confidentialVMOSDiskEncryption ? 'DiskWithVMGuestState' : 'VMGuestStateOnly'
 
-var resourceGroupsCount = 3 + (empty(existingFeedWorkspaceResourceId) ? 1 : 0) + (deployFSLogixStorage ? 1 : 0) + (avdPrivateLinkPrivateRoutes == 'All' ? 1 : 0)
-
-var securityType = virtualMachineSecurityType == 'Standard' ? '' : virtualMachineSecurityType
+var resourceGroupsCount = 3 + (empty(existingFeedWorkspaceResourceId) ? 1 : 0) + (deployFSLogixStorage ? 1 : 0) + (avdPrivateLinkPrivateRoutes == 'All' && !empty(globalFeedPrivateEndpointSubnetResourceId) ? 1 : 0)
 
 // Existing Session Host Virtual Network location
 resource vmVirtualNetwork 'Microsoft.Network/virtualNetworks@2023-04-01' existing = {
@@ -529,11 +552,13 @@ module logic 'modules/logic.bicep' = {
     globalFeedPrivateEndpointSubnetResourceId: globalFeedPrivateEndpointSubnetResourceId
     cseBlobNames: cseBlobNames
     cseMasterScript: cseMasterScript
+    customImageResourceId: customImageResourceId
     dedicatedHostGroupResourceId: dedicatedHostGroupResourceId
     dedicatedHostResourceId: dedicatedHostResourceId
     deployFSLogixStorage: deployFSLogixStorage
     deployMonitoring: enableMonitoring
     deployScalingPlan: deployScalingPlan
+    diskSizeGB: diskSizeGB
     diskSku: diskSku
     domainName: domainName
     fileShareNames: resourceNames.outputs.fileShareNames
@@ -541,6 +566,7 @@ module logic 'modules/logic.bicep' = {
     fslogixConfigurationBlobName: fslogixConfigurationBlobName
     fslogixContainerType: fslogixContainerType
     fslogixStorageService: fslogixStorageService
+    hibernationEnabled: hibernationEnabled
     hostPoolType: hostPoolType
     identitySolution: identitySolution
     imageOffer: imageOffer
@@ -564,6 +590,9 @@ module logic 'modules/logic.bicep' = {
     securityPrincipals: securityPrincipals
     sessionHostCount: sessionHostCount
     sessionHostIndex: sessionHostIndex
+    securityType: securityType
+    secureBootEnabled: secureBootEnabled
+    vTpmEnabled: vTpmEnabled
     tags: tags
     virtualMachineNamePrefix: resourceNames.outputs.virtualMachineNamePrefix
     virtualMachineSize: virtualMachineSize
@@ -773,19 +802,19 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (deployFSLogixStorage) {
     privateEndpointSubnetResourceId: managementAndStoragePrivateEndpointSubnetResourceId
     tagsAutomationAccounts: union({
         'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceNames.outputs.resourceGroupManagement}/providers/Microsoft.DesktopVirtualization/workspaces/${resourceNames.outputs.workspaceName}'
-      }, contains(tags, 'Microsoft.Automation/automationAccounts') ? tags['Microsoft.Automation/automationAccounts'] : {})
+      }, tags[?'Microsoft.Automation/automationAccounts'] ?? {})
     tagsNetAppAccount: union({
         'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceNames.outputs.resourceGroupManagement}/providers/Microsoft.DesktopVirtualization/hostPools/${resourceNames.outputs.hostPoolName}'
-      }, contains(tags, 'Microsoft.NetApp/netAppAccounts') ? tags['Microsoft.NetApp/netAppAccounts'] : {})
+      }, tags[?'Microsoft.NetApp/netAppAccounts'] ?? {})
     tagsPrivateEndpoints: union({
         'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceNames.outputs.resourceGroupManagement}/providers/Microsoft.DesktopVirtualization/hostPools/${resourceNames.outputs.hostPoolName}'
-      }, contains(tags, 'Microsoft.Network/privateEndpoints') ? tags['Microsoft.Network/privateEndpoints'] : {})
+      }, tags[?'Microsoft.Network/privateEndpoints'] ?? {})
     tagsStorageAccounts: union({
         'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceNames.outputs.resourceGroupManagement}/providers/Microsoft.DesktopVirtualization/hostPools/${resourceNames.outputs.hostPoolName}'
-      }, contains(tags, 'Microsoft.Storage/storageAccounts') ? tags['Microsoft.Storage/storageAccounts'] : {})
+      }, tags[?'Microsoft.Storage/storageAccounts'] ?? {})
     tagsRecoveryServicesVault: union({
         'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceNames.outputs.resourceGroupManagement}/providers/Microsoft.DesktopVirtualization/hostPools/${resourceNames.outputs.hostPoolName}'
-      }, contains(tags, 'Microsoft.recoveryServices/vaults') ? tags['Microsoft.recoveryServices/vaults'] : {})
+      }, tags[?'Microsoft.recoveryServices/vaults'] ?? {})
     timeStamp: timeStamp
     timeZone: logic.outputs.timeZone
   }
@@ -818,6 +847,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     diskAccessId: deployDiskAccessResource ? management.outputs.diskAccessResourceId : ''    
     diskEncryptionSetResourceId: management.outputs.diskEncryptionSetResourceId
     diskNamePrefix: resourceNames.outputs.diskNamePrefix
+    diskSizeGB: diskSizeGB
     diskSku: diskSku
     divisionRemainderValue: logic.outputs.divisionRemainderValue
     domainName: domainName
@@ -828,12 +858,14 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     fslogixContainerType: fslogixContainerType
     fslogixDeployedStorageAccountResourceIds: deployFSLogixStorage ? fslogix.outputs.storageAccountResourceIds : []
     fslogixExistingStorageAccountResourceIds: fslogixExistingStorageAccountResourceIds
+    hibernationEnabled: hibernationEnabled
     hostPoolName: controlPlane.outputs.hostPoolName
     hostPoolRegistrationToken: controlPlane.outputs.hostPoolRegistrationToken
     identitySolution: identitySolution
     imageOffer: imageOffer
     imagePublisher: imagePublisher
     imageSku: imageSku
+    integrityMonitoring: integrityMonitoring
     keyVaultName: resourceNames.outputs.keyVaultNames.VMs
     location: vmVirtualNetwork.location
     managementVirtualMachineName: management.outputs.virtualMachineName
@@ -854,6 +886,8 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     securityPrincipalObjectIds: map(securityPrincipals, item => item.objectId)
     securityLogAnalyticsWorkspaceResourceId: securityLogAnalyticsWorkspaceResourceId
     securityType: securityType
+    secureBootEnabled: secureBootEnabled
+    vTpmEnabled: vTpmEnabled
     sessionHostBatchCount: logic.outputs.sessionHostBatchCount
     sessionHostIndex: sessionHostIndex
     storageSuffix: logic.outputs.storageSuffix

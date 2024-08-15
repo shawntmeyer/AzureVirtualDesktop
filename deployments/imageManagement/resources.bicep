@@ -98,13 +98,13 @@ var roleDefinitionId = resourceId('Microsoft.Authorization/roleDefinitions', '2a
 resource gallery 'Microsoft.Compute/galleries@2022-08-03' = {
   name: computeGalleryName
   location: location
-  tags: contains(tags, 'Microsoft.Compute/galleries') ? tags['Microsoft.Compute/galleries'] : {}
+  tags: tags[?'Microsoft.Compute/galleries'] ?? {}
 }
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
   name: storageAccountName
   location: location
-  tags: contains(tags, 'Microsoft.Storage/storageAccounts') ? tags['Microsoft.Storage/storageAccounts'] : {}
+  tags: tags[?'Microsoft.Storage/storageAccounts'] ?? {}
   sku: {
     name: storageSkuName
   }
@@ -178,7 +178,7 @@ resource blobContainer 'Microsoft.Storage/storageAccounts/blobServices/container
 resource privateEndpoint 'Microsoft.Network/privateEndpoints@2020-05-01' = if (!empty(privateEndpointSubnetResourceId)) {
   name: privateEndpointName
   location: location
-  tags: contains(tags, 'Microsoft.Network/privateEndpoints') ? tags['Microsoft.Network/privateEndpoints'] : {}
+  tags: tags[?'Microsoft.Network/privateEndpoints'] ?? {}
   properties: {
     subnet: {
       id: privateEndpointSubnetResourceId
@@ -229,7 +229,7 @@ resource storageAccount_diagnosticSettings 'Microsoft.Insights/diagnosticSetting
 resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: managedIdentityName
   location: location
-  tags: contains(tags, 'Microsoft.ManagedIdentity/userAssignedIdentities') ? tags['Microsoft.ManagedIdentity/userAssignedIdentities'] : {}
+  tags: tags[?'Microsoft.ManagedIdentity/userAssignedIdentities'] ?? {}
 }
 
 resource storageBlobReaderAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {

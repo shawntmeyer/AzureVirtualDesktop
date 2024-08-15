@@ -797,7 +797,7 @@ This deployment can be done via Command Line or through a Template Spec UI in th
     $DisplayName = 'AVD Custom Image Build'
     $Version = '<#.#.#>'
     $TemplateFile = './deployments/imageManagement/imageBuild/imageBuild.bicep'
-    $UIFormDefinitionFile = './deployments/imageManagement/imageBuild/uiDefinition.json'
+    $UIFormDefinitionFile = './deployments/imageManagement/imageBuild/uiFormDefinition.json'
     New-AzTemplateSpec -ResourceGroupName $ResGroupName -Location $Location -Name $Name -DisplayName $DisplayName -TemplateFile $TemplateFile -UIFormDefinitionFile $UIFormDefinitionFile -Version $Version
     ```
 
@@ -832,7 +832,7 @@ The AVD solution includes all necessary resources to deploy a usable virtual des
     ``` powershell
     $Location = '<Region>'
     $DeploymentName = '<valid deployment name>'
-    New-AzDeployment -Location $Location -Name $DeploymentName -TemplateFile '.\deployments\hostpools\completeSolution.bicep' -TemplateParameterFile '.\deployments\hostpools\parameters\completeSolution.parameters.json' -Verbose
+    New-AzDeployment -Location $Location -Name $DeploymentName -TemplateFile '.\deployments\hostpools\solution.bicep' -TemplateParameterFile '.\deployments\hostpools\parameters\solution.parameters.json' -Verbose
     ```
 
 **Option 2: Using a Template Spec and Portal Form**
@@ -845,8 +845,8 @@ The AVD solution includes all necessary resources to deploy a usable virtual des
     $Name = 'AVDHostPoolDeployment'
     $DisplayName = 'AVD Host Pool Deployment'
     $Version = '<#.#.#>'
-    $TemplateFile = './deployments/hostpools/completeSolution.bicep'
-    $UIFormDefinitionFile = './deployments/hostpools/completeSolution.json'
+    $TemplateFile = './deployments/hostpools/solution.bicep'
+    $UIFormDefinitionFile = './deployments/hostpools/uiFormDefinition.json'
     New-AzTemplateSpec -ResourceGroupName $ResGroupName -Location $Location -Name $Name -DisplayName $DisplayName -TemplateFile $TemplateFile -UIFormDefinitionFile $UIFormDefinitionFile -Version $Version
     ```
 
@@ -1090,6 +1090,7 @@ You might need to clear out the bicep exe which is located in the %USERPROFILE%.
 | `desktopFriendlyName` | The friendly name for the Desktop in the AVD workspace. | string | | '' |
 | `workspaceFriendlyName` | The friendly name of the AVD Workspace. This name is displayed in the AVD client. | string | | '' |
 | `diskSku` | The storage SKU for the AVD session host disks.  Production deployments should use Premium_LRS. | string | 'Premium_LRS'<br/>'Standard_LRS'<br/>'StandardSSD_LRS' | 'Premium_LRS' |
+| `diskSizeGB` | The size of the OS Disk. | int | 0<br/>64<br/>128<br/>256<br/>512<br/>1024<br/>2048 | 0 (Defaults to Image Size) |
 | `domainJoinUserPassword` | The password of the privileged account to domain join the AVD session hosts to your domain | string (secure) | | '' |
 | `domainJoinUserPrincipalName` | The UPN of the privileged account to domain join the AVD session hosts to your domain. This should be an account that resides within the domain you are joining. | string (secure) | | '' |
 | `ouPath` | The distinguished name of the target Organizational Unit in Domain Services where the session hosts computer accounts will be located. | string | distinguished name | '' |
@@ -1110,6 +1111,7 @@ You might need to clear out the bicep exe which is located in the %USERPROFILE%.
 | `fslogixStorageService` | The storage service to use for storing FSLogix containers. The service & SKU should provide sufficient IOPS for all of your users. https://docs.microsoft.com/en-us/azure/architecture/example-scenario/wvd/windows-virtual-desktop-fslogix#performance-requirements | string | 'AzureNetAppFiles Premium'<br/>'AzureNetAppFiles Standard'<br/>'AzureFiles Premium'<br/>'AzureFiles Standard' | 'AzureFiles Standard' |
 | `globalFeedPrivateEndpointSubnetResourceId` | The resource ID of the subnet where the global feed private endpoint will be created for AVD Private Link. | string | resource id | '' |
 | `workspacePublicNetworkAccess` | Determines if the AVD Workspace allows public network access when using AVD Private link. Applicable when `avdPrivateLink` is `true`. 'Enabled' allows the global AVD feed to be accessed from both public and private networks, 'Disabled' allows this resource to only be accessed via private endpoints. | string | 'Disabled'<br/>'Enabled' | 'Enabled' |
+| `hibernationEnabled` | Hibernation allows you to pause VMs that aren't being used and save on compute costs where the VMs don't need to run 24/7. | bool | true<br/>false | false |
 | `hostPoolMaxSessionLimit` | The maximum number of sessions per AVD session host. | int | | 4 |
 | `hostPoolPublicNetworkAccess` | Applicable only when `avdPrivateLink` is `true`. Allow public access to the hostpool through the control plane. 'Enabled' allows this resource to be accessed from both public and private networks. 'Disabled' allows this resource to only be accessed via private endpoints. 'EnabledForClientsOnly' allows this resource to be accessed only when the session hosts are configured to use private routes. | string | 'Disabled'<br/>'Enabled'<br/>'EnabledForClientsOnly' | 'Enabled' |
 | `hostPoolRDPProperties` | The RDP properties to add or remove RDP functionality on the AVD host pool. Settings reference: https://learn.microsoft.com/windows-server/remote/remote-desktop-services/clients/rdp-files | string | | 'audiocapturemode:i:1;camerastoredirect:s:*;enablerdsaadauth:i:1' |
@@ -1118,6 +1120,7 @@ You might need to clear out the bicep exe which is located in the %USERPROFILE%.
 | `imageOffer` | Offer for the virtual machine image. Required if `customImageResourceId` is not specified. | string | valid marketplace offer | 'office-365' |
 | `imagePublisher` | Publisher for the virtual machine image. Required if `customImageResourceId` is not specified. | string | valid marketplace publisher | 'MicrosoftWindowsDesktop' |
 | `imageSku` | SKU for the virtual machine image. Required if `customImageResourceId` is not specified. | string | valid marketplace sku | 'win11-23h2-avd-m365' |
+| `integrityMonitoring` | Integrity monitoring enables cryptographic attestation and verification of VM boot integrity along with monitoring alerts if the VM didn't boot because attestation failed with the defined baseline. | bool | true<br/>false | true |
 | `keyManagementDisks` | The type of encryption key management used for the OS disk. | string | 'PlatformManaged'<br/>'CustomerManaged'<br/>'<br/>'CustomerManagedHSM'<br/>'PlatformManagedAndCustomerManaged'<br/>'PlatformManagedAndCustomerManagedHSM' | 'PlatformManaged' |
 | `keyManagementFSLogixStorage` | The type of encryption key management used for the FSLogix storage accounts | string | 'MicrosoftManaged'<br/>'CustomerManaged'<br/>'CustomerManagedHSM' | 'MicrosoftManaged' |
 | `managementPrivateEndpoints` | Determines if private endpoints are created for all management resources (i.e., Automation Accounts, Key Vaults) | bool | true<br/>false | false |
@@ -1125,8 +1128,11 @@ You might need to clear out the bicep exe which is located in the %USERPROFILE%.
 | `storagePrivateEndpoints` | Determines if private endpoints are created for all storage resources. | bool | true<br/>false | false |
 | `nameConvResTypeAtEnd` | Reverse the normal Cloud Adoption Framework naming convention by putting the resource type abbreviation at the end of the resource name. | bool | true<br/>false | false |
 | `regionControlPlane` | The deployment location for the AVD Control Plane resources (i.e., Host Pool, Workspace, and Application Group). Is not used if you specify an existing `workspaceResourceId`. | string | valid region | deployment.location |
+| `secureBootEnabled` | Secure boot helps protect your VMs against boot kits, rootkits, and kernel-level malware. | bool | true<br/>false | true |
 | `securityLogAnalyticsWorkspaceResourceId` | The resource Id of an existing Log Analytics workspace for security monitoring. Setting this value will install the legacy Microsoft Monitoring Agent (Log Analytics Agent) on the Virtual Machines and connect it to this workspace for log collection. | string | resource id | '' |
 | `securityDataCollectionRulesResourceId` | The resource Id of an existing data collection rule designed to collect security relevant logs into a centralized Log Analytics workspace. Setting this value will install the Azure Monitor Agent on each virtual machine and associate the machine with the data collection rule. | string | resource id | '' |
+| `securityType` | The Security Type of the Azure Virtual Machine. | string | 'Standard'<br/>'TrustedLaunch'<br/>'ConfidentialVM' | 'TrustedLaunch' |
+| `vTpmEnabled` | Virtual Trusted Platform Module (vTPM) is TPM2.0 compliant and validates your VM boot integrity apart from securely storing keys and secrets. | bool | true<br/>false | true |
 | `workspaceResourceId` | The resource Id of an existing Azure Virtual Desktop Workspace that will be updated with the new desktop application group. If specified, then the `regionControlPlane` is not used and instead the region and resource group where this workspace is located is used. | string | resource id | '' |
 
 ## Examples

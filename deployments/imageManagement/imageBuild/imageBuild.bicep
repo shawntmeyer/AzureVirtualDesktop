@@ -351,7 +351,7 @@ module imageDefinition '../../sharedModules/resources/compute/gallery/image/main
     publisher: galleryImageDefinitionPublisher
     offer: galleryImageDefinitionOffer
     sku: galleryImageDefinitionSku
-    tags: contains(tags, 'Microsoft.Compute/galleries/images') ? tags['Microsoft.Compute/galleries/images'] : {}
+    tags: tags[?'Microsoft.Compute/galleries/images'] ?? {}
   }
 }
 
@@ -360,7 +360,7 @@ module imageDefinition '../../sharedModules/resources/compute/gallery/image/main
 resource imageBuildRg 'Microsoft.Resources/resourceGroups@2023-07-01' = if(empty(imageBuildResourceGroupId)) {
   name: imageBuildResourceGroupName
   location: location
-  tags: contains(tags, 'Microsoft.Resources/resourceGroups') ? tags['Microsoft.Resources/resourceGroups'] : {}
+  tags: tags[?'Microsoft.Resources/resourceGroups'] ?? {}
 }
 
 // * Role Assignments * //
@@ -424,7 +424,7 @@ module logsStorageAccount '../../sharedModules/resources/storage/storage-account
         }
         service: 'blob'
         subnetResourceId: privateEndpointSubnetResourceId
-        tags: contains(tags, 'Microsoft.Storage/storageAccounts') ? tags['Microsoft.Storage/storageAccounts'] : {}
+        tags: tags[?'Microsoft.Storage/storageAccounts'] ?? {}
       }
     ] : null
     publicNetworkAccess: !empty(privateEndpointSubnetResourceId) && !empty(blobPrivateDnsZoneResourceId) ? 'Disabled' : 'Enabled'
@@ -486,7 +486,7 @@ module managementVm '../../sharedModules/resources/compute/virtual-machine/main.
       }
     }
     osType: 'Windows'
-    tags: contains(tags, 'Microsoft.Compute/virtualMachines') ? tags['Microsoft.Compute/virtualMachines'] : {}
+    tags: tags[?'Microsoft.Compute/virtualMachines'] ?? {}
     userAssignedIdentities: {
       '${userAssignedIdentityResourceId}': {}
     }
@@ -543,7 +543,7 @@ module imageVm '../../sharedModules/resources/compute/virtual-machine/main.bicep
     securityType: securityType
     secureBootEnabled: securityType == 'TrustedLaunch' ? true : false
     vTpmEnabled: securityType == 'TrustedLaunch' ? true : false
-    tags: contains(tags, 'Microsoft.Compute/virtualMachines') ? tags['Microsoft.Compute/virtualMachines'] : {}
+    tags: tags[?'Microsoft.Compute/virtualMachines'] ?? {}
     userAssignedIdentities: {
       '${userAssignedIdentityResourceId}': {}
     }

@@ -17,6 +17,7 @@ param dedicatedHostResourceId string
 param diskAccessId string
 param diskEncryptionSetResourceId string
 param diskNamePrefix string
+param diskSizeGB int
 param diskSku string
 @secure()
 param domainJoinUserPassword string
@@ -30,11 +31,13 @@ param encryptionAtHost bool
 param fslogixConfigureSessionHosts bool
 param fslogixContainerType string
 param fslogixStorageAccountResourceIds array
+param hibernationEnabled bool
 param hostPoolName string
 param hostPoolRegistrationToken string
 param imageOffer string
 param imagePublisher string
 param imageSku string
+param integrityMonitoring bool
 param customImageResourceId string
 param location string
 param managementVirtualMachineName string
@@ -48,6 +51,8 @@ param resourceGroupManagement string
 param securityDataCollectionRulesResourceId string
 param securityLogAnalyticsWorkspaceResourceId string
 param securityType string
+param secureBootEnabled bool
+param vTpmEnabled bool
 param sessionHostCount int
 param sessionHostIndex int
 param storageSuffix string
@@ -212,6 +217,9 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2022-11-01' = [for i 
   ] : null
   identity: identity
   properties: {
+    additionalCapabilities: {
+      hibernationEnabled: hibernationEnabled
+    }
     availabilitySet: availability == 'AvailabilitySets' ? {
       id: resourceId('Microsoft.Compute/availabilitySets', '${availabilitySetNamePrefix}-${(i + sessionHostIndex) / 200}')
     } : null
@@ -227,6 +235,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2022-11-01' = [for i 
     storageProfile: {
       imageReference: ImageReference
       osDisk: {
+        diskSizeGB: diskSizeGB != 0 ? diskSizeGB : null
         name: '${diskNamePrefix}${padLeft((i + sessionHostIndex), 3, '0')}'
         osType: 'Windows'
         createOption: 'FromImage'
@@ -270,10 +279,10 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2022-11-01' = [for i 
     }
     securityProfile: {
       encryptionAtHost: encryptionAtHost
-      securityType: !empty(securityType) ? securityType : null
-      uefiSettings: !empty(securityType) ? {
-        secureBootEnabled: true
-        vTpmEnabled: true
+      securityType: securityType != 'Standard' ? securityType : null
+      uefiSettings: securityType != 'Standard' ? {
+        secureBootEnabled: secureBootEnabled
+        vTpmEnabled: vTpmEnabled
       } : null 
     }
     diagnosticsProfile: {
@@ -446,6 +455,40 @@ resource extension_MicrosoftMonitoringAgent 'Microsoft.Compute/virtualMachines/e
     extension_IaasAntimalware
     extension_AADLoginForWindows
     extension_JsonADDomainExtension
+  ]
+}]
+
+resource extension_GuestAttestation 'Microsoft.Compute/virtualMachines/extensions@2023-09-01' = [for i in range(0, sessionHostCount): if (integrityMonitoring) {
+  parent: virtualMachine[i]
+  name: 'GuestAttestation'
+  location: location
+  tags: tagsVirtualMachines
+  properties: {
+    publisher: 'Microsoft.Azure.Security.WindowsAttestation'
+    type: 'GuestAttestation'
+    typeHandlerVersion: '1.0'
+    autoUpgradeMinorVersion: true
+    settings: {
+      AttestationConfig: {
+        MaaSettings: {
+          maaEndpoint: ''
+          maaTenantName: 'GuestAttestation'
+        }
+        AscSettings: {
+          ascReportingEndpoint: ''
+          ascReportingFrequency: ''
+        }
+        useCustomToken: 'false'
+        disableAlerts: 'false'
+      }
+    }
+  }
+  dependsOn: [
+    extension_AADLoginForWindows
+    extension_JsonADDomainExtension
+    extension_IaasAntimalware
+    extension_AzureMonitorWindowsAgent
+    extension_MicrosoftMonitoringAgent
   ]
 }]
 

@@ -4,11 +4,13 @@ param identitySolution string
 param artifactsUri string
 param avdAgentInstallersBlobName string
 param avdPrivateLinkPrivateRoutes string
+param customImageResourceId string
 param globalFeedPrivateEndpointSubnetResourceId string
 param dedicatedHostGroupResourceId string
 param dedicatedHostResourceId string
 param deployMonitoring bool
 param deployScalingPlan bool = false
+param diskSizeGB int
 param diskSku string
 param domainName string
 param cseBlobNames array
@@ -19,6 +21,7 @@ param fslogixConfigureSessionHosts bool
 param fslogixConfigurationBlobName string
 param fslogixContainerType string
 param fslogixStorageService string
+param hibernationEnabled bool
 param hostPoolOnly bool = false
 param hostPoolType string = 'Pooled DepthFirst'
 param imageOffer string
@@ -42,59 +45,88 @@ param scalingPlanMinsBeforeLogoff int = 0
 param securityPrincipals array
 param sessionHostCount int
 param sessionHostIndex int
+param securityType string
+param secureBootEnabled bool
+param vTpmEnabled bool
 param tags object
 param virtualMachineNamePrefix string
 param virtualMachineSize string
 param workspaceResourceId string
 
-var dedicatedHostGroupName = !empty(dedicatedHostResourceId) ? split(dedicatedHostResourceId, '/')[8] : !empty(dedicatedHostGroupResourceId) ? last(split(dedicatedHostGroupResourceId, '/')) : '' 
-var dedicatedHostRG = !empty(dedicatedHostResourceId) ? split(dedicatedHostResourceId, '/')[4] : !empty(dedicatedHostGroupResourceId) ? split(dedicatedHostGroupResourceId, '/')[4] : '' 
+var dedicatedHostGroupName = !empty(dedicatedHostResourceId)
+  ? split(dedicatedHostResourceId, '/')[8]
+  : !empty(dedicatedHostGroupResourceId) ? last(split(dedicatedHostGroupResourceId, '/')) : ''
+var dedicatedHostRG = !empty(dedicatedHostResourceId)
+  ? split(dedicatedHostResourceId, '/')[4]
+  : !empty(dedicatedHostGroupResourceId) ? split(dedicatedHostGroupResourceId, '/')[4] : ''
 
-resource dedicatedHostGroup 'Microsoft.Compute/HostGroups@2020-12-01' existing = if(!empty(dedicatedHostGroupName)) {
+resource dedicatedHostGroup 'Microsoft.Compute/HostGroups@2020-12-01' existing = if (!empty(dedicatedHostGroupName)) {
   scope: resourceGroup(dedicatedHostRG)
   name: dedicatedHostGroupName
 }
 
-var scalingPlanSchedules = deployScalingPlan ? [
-  {
-    rampUpStartTime: {
-      hour: first(split(scalingPlanRampUpSchedule.startTime, ':')[0]) == '0' ? int(last(split(scalingPlanRampUpSchedule.startTime, ':')[0])) : int(split(scalingPlanRampUpSchedule.startTime, ':')[0])
-      minute: first(split(scalingPlanRampUpSchedule.startTime, ':')[1]) == '0' ? int(last(split(scalingPlanRampUpSchedule.startTime, ':')[1])) : int(split(scalingPlanRampUpSchedule.startTime, ':')[1])
-    }
-    peakStartTime: {
-      hour: first(split(scalingPlanPeakSchedule.startTime, ':')[0]) == '0' ? int(last(split(scalingPlanPeakSchedule.startTime, ':')[0])) : int(split(scalingPlanPeakSchedule.startTime, ':')[0])
-      minute: first(split(scalingPlanPeakSchedule.startTime, ':')[1]) == '0' ? int(last(split(scalingPlanPeakSchedule.startTime, ':')[1])) : int(split(scalingPlanPeakSchedule.startTime, ':')[1])
-    }
-    rampDownStartTime: {
-      hour: first(split(scalingPlanRampDownSchedule.startTime, ':')[0]) == '0' ? int(last(split(scalingPlanRampDownSchedule.startTime, ':')[0])) : int(split(scalingPlanRampDownSchedule.startTime, ':')[0])
-      minute: first(split(scalingPlanRampDownSchedule.startTime, ':')[1]) == '0' ? int(last(split(scalingPlanRampDownSchedule.startTime, ':')[1])) : int(split(scalingPlanRampDownSchedule.startTime, ':')[1])
-    }
-    offPeakStartTime: {
-      hour: first(split(scalingPlanOffPeakSchedule.startTime, ':')[0]) == '0' ? int(last(split(scalingPlanOffPeakSchedule.startTime, ':')[0])) : int(split(scalingPlanOffPeakSchedule.startTime, ':')[0])
-      minute: first(split(scalingPlanOffPeakSchedule.startTime, ':')[1]) == '0' ? int(last(split(scalingPlanOffPeakSchedule.startTime, ':')[1])) : int(split(scalingPlanOffPeakSchedule.startTime, ':')[1])
-    }
-    name: 'weekdays_schedule'
-    daysOfWeek: [ 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday' ]
-    rampUpLoadBalancingAlgorithm: scalingPlanRampUpSchedule.loadBalancingAlgorithm
-    rampUpMinimumHostsPct: scalingPlanRampUpSchedule.minimumHostsPct
-    rampUpCapacityThresholdPct: scalingPlanRampUpSchedule.capacityThresholdPct
-    peakLoadBalancingAlgorithm: scalingPlanPeakSchedule.loadBalancingAlgorithm
-    rampDownLoadBalancingAlgorithm: scalingPlanRampDownSchedule.loadBalancingAlgorithm
-    rampDownMinimumHostsPct: scalingPlanRampDownSchedule.minimumHostsPct
-    rampDownCapacityThresholdPct: scalingPlanRampDownSchedule.capacityThresholdPct
-    rampDownForceLogoffUsers: scalingPlanForceLogoff
-    rampDownWaitTimeMinutes:  scalingPlanMinsBeforeLogoff
-    rampDownNotificationMessage: scalingPlanForceLogoff ? 'You will be logged off in ${scalingPlanMinsBeforeLogoff} minutes. Make sure to save your work.' : null
-    rampDownStopHostsWhen: 'ZeroSessions'
-    offPeakLoadBalancingAlgorithm: scalingPlanOffPeakSchedule.loadBalancingAlgorithm
-  }
-] : []
+var scalingPlanSchedules = deployScalingPlan
+  ? [
+      {
+        rampUpStartTime: {
+          hour: first(split(scalingPlanRampUpSchedule.startTime, ':')[0]) == '0'
+            ? int(last(split(scalingPlanRampUpSchedule.startTime, ':')[0]))
+            : int(split(scalingPlanRampUpSchedule.startTime, ':')[0])
+          minute: first(split(scalingPlanRampUpSchedule.startTime, ':')[1]) == '0'
+            ? int(last(split(scalingPlanRampUpSchedule.startTime, ':')[1]))
+            : int(split(scalingPlanRampUpSchedule.startTime, ':')[1])
+        }
+        peakStartTime: {
+          hour: first(split(scalingPlanPeakSchedule.startTime, ':')[0]) == '0'
+            ? int(last(split(scalingPlanPeakSchedule.startTime, ':')[0]))
+            : int(split(scalingPlanPeakSchedule.startTime, ':')[0])
+          minute: first(split(scalingPlanPeakSchedule.startTime, ':')[1]) == '0'
+            ? int(last(split(scalingPlanPeakSchedule.startTime, ':')[1]))
+            : int(split(scalingPlanPeakSchedule.startTime, ':')[1])
+        }
+        rampDownStartTime: {
+          hour: first(split(scalingPlanRampDownSchedule.startTime, ':')[0]) == '0'
+            ? int(last(split(scalingPlanRampDownSchedule.startTime, ':')[0]))
+            : int(split(scalingPlanRampDownSchedule.startTime, ':')[0])
+          minute: first(split(scalingPlanRampDownSchedule.startTime, ':')[1]) == '0'
+            ? int(last(split(scalingPlanRampDownSchedule.startTime, ':')[1]))
+            : int(split(scalingPlanRampDownSchedule.startTime, ':')[1])
+        }
+        offPeakStartTime: {
+          hour: first(split(scalingPlanOffPeakSchedule.startTime, ':')[0]) == '0'
+            ? int(last(split(scalingPlanOffPeakSchedule.startTime, ':')[0]))
+            : int(split(scalingPlanOffPeakSchedule.startTime, ':')[0])
+          minute: first(split(scalingPlanOffPeakSchedule.startTime, ':')[1]) == '0'
+            ? int(last(split(scalingPlanOffPeakSchedule.startTime, ':')[1]))
+            : int(split(scalingPlanOffPeakSchedule.startTime, ':')[1])
+        }
+        name: 'weekdays_schedule'
+        daysOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+        rampUpLoadBalancingAlgorithm: scalingPlanRampUpSchedule.loadBalancingAlgorithm
+        rampUpMinimumHostsPct: scalingPlanRampUpSchedule.minimumHostsPct
+        rampUpCapacityThresholdPct: scalingPlanRampUpSchedule.capacityThresholdPct
+        peakLoadBalancingAlgorithm: scalingPlanPeakSchedule.loadBalancingAlgorithm
+        rampDownLoadBalancingAlgorithm: scalingPlanRampDownSchedule.loadBalancingAlgorithm
+        rampDownMinimumHostsPct: scalingPlanRampDownSchedule.minimumHostsPct
+        rampDownCapacityThresholdPct: scalingPlanRampDownSchedule.capacityThresholdPct
+        rampDownForceLogoffUsers: scalingPlanForceLogoff
+        rampDownWaitTimeMinutes: scalingPlanMinsBeforeLogoff
+        rampDownNotificationMessage: scalingPlanForceLogoff
+          ? 'You will be logged off in ${scalingPlanMinsBeforeLogoff} minutes. Make sure to save your work.'
+          : null
+        rampDownStopHostsWhen: 'ZeroSessions'
+        offPeakLoadBalancingAlgorithm: scalingPlanOffPeakSchedule.loadBalancingAlgorithm
+      }
+    ]
+  : []
 
-var exclusionTag = !empty(scalingPlanExclusionTag) ? {
-  'Microsoft.Compute/virtualMachines': {
-    '${scalingPlanExclusionTag}': ''
-  }
-} : {}
+var exclusionTag = !empty(scalingPlanExclusionTag)
+  ? {
+      'Microsoft.Compute/virtualMachines': {
+        '${scalingPlanExclusionTag}': ''
+      }
+    }
+  : {}
 
 var varTags = !empty(exclusionTag) ? union(tags, exclusionTag) : tags
 
@@ -115,23 +147,38 @@ var availabilitySetsCount = length(range(beginAvSetRange, (endAvSetRange - begin
 // OTHER LOGIC & COMPUTED VALUES
 // fslogix will not be configured on session hosts if identity solution is not EntraId. Decision made to lower complexity and to avoid potential issues. Assumes the use of Group Policy to configure FSlogix with Domain Services identity solution.
 var fslogixConfigureHosts = identitySolution != 'EntraId' ? false : fslogixConfigureSessionHosts
-var cseArtifacts = fslogixConfigureHosts ? union(['${cseMasterScript}'], ['${avdAgentInstallersBlobName}'], cseBlobNames, ['${fslogixConfigurationBlobName}']) : union(['${cseMasterScript}'], ['${avdAgentInstallersBlobName}'], cseBlobNames)
-var cseUris = [ for artifact in cseArtifacts : contains(toLower(artifact), 'http') ? artifact : '${artifactsUri}${artifact}' ]
+var cseArtifacts = fslogixConfigureHosts
+  ? union(['${cseMasterScript}'], ['${avdAgentInstallersBlobName}'], cseBlobNames, ['${fslogixConfigurationBlobName}'])
+  : union(['${cseMasterScript}'], ['${avdAgentInstallersBlobName}'], cseBlobNames)
+var cseUris = [
+  for artifact in cseArtifacts: contains(toLower(artifact), 'http') ? artifact : '${artifactsUri}${artifact}'
+]
 
 var fileShares = fileShareNames[fslogixContainerType]
 // ONLY DEPLOY 1 storage account when Cloud Only identity is used because Sharding is not possible.
-var countStorage = identitySolution == 'EntraId' || identitySolution == 'EntraIdIntuneEnrollment' ? 1 : length(securityPrincipals)
+var countStorage = identitySolution == 'EntraId' || identitySolution == 'EntraIdIntuneEnrollment'
+  ? 1
+  : length(securityPrincipals)
 var netbios = split(domainName, '.')[0]
 var pooledHostPool = split(hostPoolType, ' ')[0] == 'Pooled' ? true : false
 
-var resGroupHosts = [ resourceGroupHosts ]
-var resGroupControlPlane = empty(workspaceResourceId) ? [ resourceGroupControlPlane ] : []
-var resGroupGlobalFeed = avdPrivateLinkPrivateRoutes == 'All' && !empty(globalFeedPrivateEndpointSubnetResourceId) ? [ resourceGroupGlobalFeed ] : []
-var resGroupMonitoring = deployMonitoring ? [ resourceGroupMonitoring ] : []
-var resGroupManagement = !hostPoolOnly ? [ resourceGroupManagement ] : []
-var resGroupStorage = deployFSLogixStorage ? [ resourceGroupStorage ] : []
+var resGroupHosts = [resourceGroupHosts]
+var resGroupControlPlane = empty(workspaceResourceId) ? [resourceGroupControlPlane] : []
+var resGroupGlobalFeed = avdPrivateLinkPrivateRoutes == 'All' && !empty(globalFeedPrivateEndpointSubnetResourceId)
+  ? [resourceGroupGlobalFeed]
+  : []
+var resGroupMonitoring = deployMonitoring ? [resourceGroupMonitoring] : []
+var resGroupManagement = !hostPoolOnly ? [resourceGroupManagement] : []
+var resGroupStorage = deployFSLogixStorage ? [resourceGroupStorage] : []
 
-var resourceGroupNames = union(resGroupHosts, resGroupControlPlane, resGroupGlobalFeed, resGroupMonitoring, resGroupManagement, resGroupStorage)
+var resourceGroupNames = union(
+  resGroupHosts,
+  resGroupControlPlane,
+  resGroupGlobalFeed,
+  resGroupMonitoring,
+  resGroupManagement,
+  resGroupStorage
+)
 
 var roleDefinitions = {
   AutomationContributor: 'f353d9bd-d4a6-484e-a77a-8050b599b867'
@@ -157,7 +204,10 @@ var fslogixStorageSolution = split(fslogixStorageService, ' ')[0]
 var storageSuffix = environment().suffixes.storage
 var timeDifference = locations[locationVirtualMachines].timeDifference
 var timeZone = locations[locationVirtualMachines].timeZone
-var virtualMachineTemplate = '{"domain":"${domainName}","galleryImageOffer":"${imageOffer}","galleryImagePublisher":"${imagePublisher}","galleryImageSKU":"${imageSku}","imageType":"Gallery","imageUri":null,"customImageId":null,"namePrefix":"${virtualMachineNamePrefix}","osDiskType":"${diskSku}","useManagedDisks":true,"virtualMachineSize":{"id":"${virtualMachineSize}","cores":null,"ram":null},"galleryItemId":"${imagePublisher}.${imageOffer}${imageSku}"}'
+var virtualMachineTemplateImage = empty(customImageResourceId) ? '"galleryImageOffer":"${imageOffer}","galleryImagePublisher":"${imagePublisher}","galleryImageSKU":"${imageSku}","imageType":"Gallery","imageUri":null,"customImageId":null' : '"galleryImageOffer":null,"galleryImagePublisher":null,"galleryImageSKU":null,"imageType":"CustomImage","imageUri":null,"customImageId":"${customImageResourceId}"'
+var virtualMachineTemplateGalleryItem = empty(customImageResourceId) ? '"galleryItemId":"${imagePublisher}.${imageOffer}${imageSku}"' : '"galleryItemId":null'
+var virtualMachineSecurityConfig = securityType != 'Standard' ? '"securityType":"${securityType}","secureBoot":${secureBootEnabled},"vTPM":${vTpmEnabled}' : '"securityType":"${securityType}", "secureBoot":false, "vTPM":false'
+var virtualMachineTemplate = '{"domain":"${domainName}",${virtualMachineTemplateImage},"namePrefix":"${virtualMachineNamePrefix}","osDiskType":"${diskSku}","useManagedDisks":true,"virtualMachineSize":{"id":"${virtualMachineSize}","cores":null,"ram":null},${virtualMachineTemplateGalleryItem},"hibernate":${hibernationEnabled},"diskSizeGB":${diskSizeGB},${virtualMachineSecurityConfig},"vmInfrastructureType":"Cloud","virtualProcessorCount":null,"memoryGB":null,"maximumMemoryGB":null,"minimumMemoryGB":null,"dynamicMemoryConfig":false}'
 
 output availabilitySetsCount int = availabilitySetsCount
 output beginAvSetRange int = beginAvSetRange

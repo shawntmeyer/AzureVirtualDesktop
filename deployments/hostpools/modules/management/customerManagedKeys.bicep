@@ -15,6 +15,7 @@ param keyVaultPrivateDnsZoneResourceId string
 param location string
 param managementVirtualMachineName string
 param privateEndpoint bool
+param privateEndpointLocation string
 param privateEndpointNameConv string
 param privateEndpointNICNameConv string
 param privateEndpointSubnetResourceId string
@@ -51,7 +52,7 @@ module confidentialVM_key_disks '../../../sharedModules/custom/customScriptExten
     ]
     location: location
     output: true
-    tags: contains(tags, 'Microsoft.Compute/virtualMachines/extensions') ? tags['Microsoft.Compute/virtualMachines/extensions'] : {}
+    tags: tags[?'Microsoft.Compute/virtualMachines/extensions'] ?? {}
     userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
     virtualMachineName: managementVirtualMachineName
   }
@@ -65,14 +66,15 @@ module storageAccountKeyVaults 'keyVault.bicep' = [for i in range(0, storageCoun
     enabledForDiskEncryption: false
     enablePurgeProtection: true
     privateEndpoint: privateEndpoint
+    privateEndpointLocation: privateEndpointLocation
     privateEndpointNameConv: privateEndpointNameConv
     privateEndpointNICNameConv: privateEndpointNICNameConv
     privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
     keyVaultPrivateDnsZoneResourceId: keyVaultPrivateDnsZoneResourceId
     location: location
     skuName: contains(keyManagementFSLogixStorage, 'HSM') ? 'premium' : 'standard'
-    tagsKeyVault: contains(tags, 'Microsoft.KeyVault/vaults') ? tags['Microsoft.KeyVault/vaults'] : {}
-    tagsPrivateEndpoints: contains(tags, 'Microsoft.Network/privateEndpoints') ? tags['Microsoft.Network/privateEndpoints'] : {}
+    tagsKeyVault: tags[?'Microsoft.KeyVault/vaults'] ?? {}
+    tagsPrivateEndpoints: tags[?'Microsoft.Network/privateEndpoints'] ?? {}
     timeStamp: timeStamp
   }
 }]
@@ -93,7 +95,7 @@ module userAssignedIdentity 'userAssignedIdentity.bicep' = {
   params: {
     location: location
     name: replace(userAssignedIdentityNameConv, 'UAIPURPOSE', 'encryption')
-    tags: contains(tags, 'Microsoft.ManagedIdentity/userAssignedIdentities') ? tags['Microsoft.ManagedIdentity/userAssignedIdentities'] : {}
+    tags: tags[?'Microsoft.ManagedIdentity/userAssignedIdentities'] ?? {}
   }
 }
 
@@ -133,7 +135,7 @@ module diskEncryptionSet 'diskEncryptionSet.bicep' = {
     keyUrl: confidentialVMOSDiskEncryption ? confidentialVM_key_disks.outputs.value.KeyUriWithVersion : encryption_key_disks.outputs.keyUriWithVersion
     keyVaultResourceId: vmKeyVault.id
     location: location
-    tags: contains(tags, 'Microsoft.Compute/diskEncryptionSets') ? tags['Microsoft.Compute/diskEncryptionSets'] : {}
+    tags: tags[?'Microsoft.Compute/diskEncryptionSets'] ?? {}
     timeStamp: timeStamp
   }
 }
