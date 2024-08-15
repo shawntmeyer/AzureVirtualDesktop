@@ -9,7 +9,7 @@ Note:  refer to Scope section within the [**AVD**](/docs/avd.md) for full design
 ## Deployment Options
 
 > [!WARNING]
-> Failure to complete the [prerequisites](./docs/avd.md) will result in an unsuccessful deployment.
+> Failure to complete the [prerequisites](./docs/prerequisites.md) will result in an unsuccessful deployment.
 
 ### Blue Buttons
 

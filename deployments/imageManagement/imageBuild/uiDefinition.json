@@ -57,6 +57,7 @@
 								{
 									"name": "resourceGroupsApi",
 									"type": "Microsoft.Solutions.ArmApiControl",
+									"condition": "[not(empty(steps('basics').scope.subscription))]",
 									"request": {
 										"method": "GET",
 										"path": "[concat(steps('basics').scope.subscription.id, '/resourceGroups?api-version=2021-04-01')]"
@@ -90,8 +91,18 @@
 							]
 						},
 						{
+							"name": "virtualNetworksApi",
+							"type": "Microsoft.Solutions.ArmApiControl",
+							"condition": "[not(empty(steps('basics').scope.subscription))]",
+							"request": {
+								"method": "GET",
+								"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Network/virtualNetworks?api-version=2022-11-01')]"
+							}
+						},
+						{
 							"name": "computeApi",
 							"type": "Microsoft.Solutions.ArmApiControl",
+							"condition": "[not(empty(steps('basics').scope.subscription))]",
 							"request": {
 								"method": "GET",
 								"path": "[concat(steps('basics').scope.subscription.id,'/providers/Microsoft.Compute/resourceTypes?api-version=2021-04-01')]"
@@ -100,6 +111,7 @@
 						{
 							"name": "locationsApi",
 							"type": "Microsoft.Solutions.ArmApiControl",
+							"condition": "[not(empty(steps('basics').scope.subscription))]",
 							"request": {
 								"method": "GET",
 								"path": "[concat(steps('basics').scope.subscription.id,'/locations?api-version=2020-01-01')]"
@@ -108,6 +120,7 @@
 						{
 							"name": "storageApi",
 							"type": "Microsoft.Solutions.ArmApiControl",
+							"condition": "[not(empty(steps('basics').scope.subscription))]",
 							"request": {
 								"method": "GET",
 								"path": "[concat(steps('basics').scope.subscription.id,'/providers/Microsoft.Storage/resourceTypes?api-version=2021-04-01')]"
@@ -200,6 +213,7 @@
 								{
 									"name": "containerApi",
 									"type": "Microsoft.Solutions.ArmApiControl",
+									"condition": "[not(empty(steps('prereqs').storage.storageAccount))]",
 									"request": {
 										"method": "GET",
 										"path": "[concat(steps('prereqs').storage.storageAccount.id, '/blobServices/default/containers?api-version=2023-01-01')]"
@@ -251,31 +265,24 @@
 									}
 								},
 								{
-									"name": "virtualNetworksApi",
-									"type": "Microsoft.Solutions.ArmApiControl",
-									"request": {
-										"method": "GET",
-										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Network/virtualNetworks?api-version=2022-11-01')]"
-									}
-								},
-								{
 									"name": "virtualNetwork",
-									"type": "Microsoft.Common.DropDown",
-									"visible": true,
+									"type": "Microsoft.Solutions.ResourceSelector",
 									"label": "Image Capture Virtual Network",
-									"defaultValue": "",
-									"toolTip": "Select an existing virtual network to attach the VM for image capture. If the desired network isn't available be sure to change the region in the Deployment Details section above.",
-									"constraints": {
-										"required": true,
-										"allowedValues": "[map(filter(steps('prereqs').network.virtualNetworksApi.value, (item) => equals(item.location, steps('basics').scope.location.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
+									"resourceType": "Microsoft.Network/virtualNetworks",
+									"options": {
+										"filter": {
+											"subscription": "onBasics",
+											"location": "onBasics"
+										}
 									}
 								},
 								{
 									"name": "subnetsApi",
 									"type": "Microsoft.Solutions.ArmApiControl",
+									"condition": "[not(empty(steps('prereqs').network.virtualNetwork))]",
 									"request": {
 										"method": "GET",
-										"path": "[concat(steps('prereqs').network.virtualNetwork, '/subnets?api-version=2022-05-01')]"
+										"path": "[concat(steps('prereqs').network.virtualNetwork.id, '/subnets?api-version=2022-05-01')]"
 									}
 								},
 								{
@@ -319,6 +326,7 @@
 								{
 									"name": "vmSizesApi",
 									"type": "Microsoft.Solutions.ArmApiControl",
+									"condition": "[not(empty(steps('basics').scope.subscription))]",
 									"request": {
 										"method": "GET",
 										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Compute/locations/', steps('basics').scope.location.name, '/vmSizes?api-version=2023-03-01')]"
@@ -412,6 +420,7 @@
 								{
 									"name": "offersApi",
 									"type": "Microsoft.Solutions.ArmApiControl",
+									"condition": "[not(empty(steps('basics').scope.subscription))]",
 									"request": {
 										"method": "GET",
 										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Compute/locations/', steps('basics').scope.location.name, '/publishers/', steps('imageVm').imageSource.publisher, '/artifacttypes/vmimage/offers?api-version=2023-07-01')]"
@@ -432,6 +441,7 @@
 								{
 									"name": "skusApi",
 									"type": "Microsoft.Solutions.ArmApiControl",
+									"condition": "[not(empty(steps('basics').scope.subscription))]",
 									"request": {
 										"method": "GET",
 										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Compute/locations/', steps('basics').scope.location.name, '/publishers/', steps('imageVm').imageSource.publisher, '/artifacttypes/vmimage/offers/', steps('imageVm').imageSource.offer, '/skus?api-version=2023-07-01')]"
@@ -459,6 +469,7 @@
 								{
 									"name": "imageDefinitionApi",
 									"type": "Microsoft.Solutions.ArmApiControl",
+									"condition": "[not(empty(steps('imageVm').imageSource.gallery))]",
 									"request": {
 										"method": "GET",
 										"path": "[concat(steps('imageVm').imageSource.gallery.id, '/images?api-version=2022-03-03')]"
@@ -517,7 +528,7 @@
 										],
 										"required": false
 									}
-								}								
+								}
 							]
 						},
 						{
@@ -544,7 +555,7 @@
 										],
 										"required": false
 									}
-								},								
+								},
 								{
 									"name": "installAccess",
 									"type": "Microsoft.Common.CheckBox",
@@ -593,7 +604,7 @@
 									"label": "Install Publisher",
 									"defaultValue": false,
 									"visible": "[steps('imageCustomizations').office.installOffice]"
-								},								
+								},
 								{
 									"name": "installSkypeForBusiness",
 									"type": "Microsoft.Common.CheckBox",
@@ -633,7 +644,7 @@
 										]
 									},
 									"visible": true
-								},							
+								},
 								{
 									"name": "installTeams",
 									"type": "Microsoft.Common.OptionsGroup",
@@ -713,7 +724,7 @@
 										"required": false
 									},
 									"visible": "[and(steps('imageCustomizations').office.installTeams, equals(steps('imageCustomizations').office.teamsVersion, 'New'))]"
-								}										
+								}
 							]
 						},
 						{
@@ -741,7 +752,7 @@
 										"required": false
 									},
 									"visible": true
-								}								
+								}
 							]
 						},
 						{
@@ -947,32 +958,25 @@
 								{
 									"name": "privateEndpoint",
 									"type": "Microsoft.Common.CheckBox",
-									"label": "Deploy Private Endpoint for Storage Account",									
-									"visible":  "[steps('imageCustomizations').logging.collectLogs]"
-								},
-								{
-									"name": "virtualNetworksApi",
-									"type": "Microsoft.Solutions.ArmApiControl",
-									"request": {
-										"method": "GET",
-										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Network/virtualNetworks?api-version=2022-11-01')]"
-									}
+									"label": "Deploy Private Endpoint for Storage Account",
+									"visible": "[steps('imageCustomizations').logging.collectLogs]"
 								},
 								{
 									"name": "virtualNetwork",
 									"type": "Microsoft.Common.DropDown",
 									"visible": "[and(steps('imageCustomizations').logging.collectLogs, steps('imageCustomizations').logging.privateEndpoint)]",
 									"label": "Virtual Network",
-									"defaultValue": "",
+									"defaultValue": "[steps('prereqs').network.virtualNetwork.name]",
 									"toolTip": "Select an existing virtual network for the storage account blob private endpoint. If the desired network isn't available be sure to change the region in the Deployment Details section above.",
 									"constraints": {
 										"required": false,
-										"allowedValues": "[map(filter(steps('imageCustomizations').logging.virtualNetworksApi.value, (item) => equals(item.location, steps('basics').scope.location.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
+										"allowedValues": "[map(filter(steps('basics').virtualNetworksApi.value, (item) => equals(item.location, steps('basics').scope.location.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]"
 									}
 								},
 								{
 									"name": "subnetsApi",
 									"type": "Microsoft.Solutions.ArmApiControl",
+									"condition": "[not(empty(steps('imageCustomizations').logging.virtualNetwork))]",
 									"request": {
 										"method": "GET",
 										"path": "[concat(steps('imageCustomizations').logging.virtualNetwork, '/subnets?api-version=2022-05-01')]"
@@ -993,6 +997,7 @@
 								{
 									"name": "privateDNSZonesApi",
 									"type": "Microsoft.Solutions.ArmApiControl",
+									"condition": "[not(empty(steps('basics').scope.subscription))]",
 									"request": {
 										"method": "GET",
 										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Network/privateDnsZones?api-version=2018-09-01')]"
@@ -1070,6 +1075,7 @@
 								{
 									"name": "imagesApi",
 									"type": "Microsoft.Solutions.ArmApiControl",
+									"condition": "[not(empty(steps('prereqs').gallery.gallery))]",
 									"request": {
 										"method": "GET",
 										"path": "[concat(steps('prereqs').gallery.gallery.id, '/images?api-version=2022-03-03')]"
@@ -1505,14 +1511,14 @@
 					]
 				},
 				{
-                    "name": "tags",
-                    "label": "Tags",
-                    "elements": [
+					"name": "tags",
+					"label": "Tags",
+					"elements": [
 						{
 							"name": "tags",
 							"type": "Microsoft.Common.TagsByResource",
 							"resources": [
-								"Microsoft.Resources/resourceGroups",						
+								"Microsoft.Resources/resourceGroups",
 								"Microsoft.Compute/virtualMachines",
 								"Microsoft.Compute/galleries/images",
 								"Microsoft.Compute/galleries/images/versions",

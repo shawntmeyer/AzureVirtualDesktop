@@ -1,0 +1,133 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2021-09-09/uiFormDefinition.schema.json",
+    "view": {
+        "kind": "Form",
+        "properties": {
+            "title": "Azure Virtual Desktop",
+            "steps": [
+                {
+                    "name": "basics",
+                    "label": "Deployment Basics",
+                    "elements": [
+                        {
+                            "name": "scope",
+                            "type": "Microsoft.Common.ResourceScope",
+                            "instanceDetailsLabel": "Deployment Details",
+                            "location": {
+                                "label": "Region (Session Hosts and Management Resources)",
+                                "resourceTypes": [
+                                    "Microsoft.resources/resourceGroups"
+                                ]
+                            }
+                        },
+                        {
+                            "name": "subscriptionsApi",
+                            "type": "Microsoft.Solutions.ArmApiControl",
+                            "request": {
+                                "method": "GET",
+                                "path": "/subscriptions?api-version=2022-12-01"
+                            }
+                        }                   
+                    ]
+                },
+                {
+                    "name": "hosts",
+                    "label": "Hosts",
+                    "elements": [
+                        {
+                            "name": "network",
+                            "type": "Microsoft.Common.Section",
+                            "label": "Network",
+                            "visible": true,
+                            "elements": [
+                                {
+                                    "name": "virtualNetworksApi",
+                                    "type": "Microsoft.Solutions.ArmApiControl",
+                                    "request": {
+                                        "method": "GET",                                                                                               
+                                        "path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Network/virtualNetworks?api-version=2024-01-01')]"
+                                    }
+                                },
+                                {
+                                    "name": "virtualNetwork",
+                                    "type": "Microsoft.Common.DropDown",
+                                    "label": "Virtual Network",
+                                    "multiLine": true,
+                                    "toolTip": "Select the virtual network containing the subnet to which the session hosts will be attached.",
+                                    "constraints": {
+                                        "required": false,
+                                        "allowedValues": "[map(steps('hosts').network.virtualNetworksApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.id, '\"}')))]"
+                                    },
+                                    "visible": true
+                                },
+                                {
+                                    "name": "subnetsApi",
+                                    "type": "Microsoft.Solutions.ArmApiControl",
+                                    "request": {
+                                        "method": "GET",
+                                        "path": "[concat(steps('hosts').network.virtualNetwork, '/subnets?api-version=2024-01-01')]"
+                                    }
+                                },
+                                {
+                                    "name": "subnet",
+                                    "type": "Microsoft.Common.DropDown",
+                                    "visible": true,
+                                    "label": "Subnet",
+                                    "defaultValue": "",
+                                    "toolTip": "Select an existing subnet for the AVD session hosts.",
+                                    "constraints": {
+                                        "required": false,
+                                        "allowedValues": "[map(steps('hosts').network.subnetsApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.id, '\"}')))]"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+				{
+                    "name": "tags",
+                    "label": "Tags",
+                    "elements": [
+                        {
+                            "name": "tags",
+                            "type": "Microsoft.Common.TagsByResource",
+                            "resources": [
+                                "Microsoft.Automation/automationAccounts",
+                                "Microsoft.Compute/availabilitySets",
+								"Microsoft.Compute/diskAccesses",
+                                "Microsoft.Compute/diskEncryptionSets",
+                                "Microsoft.Compute/hostGroups",
+                                "Microsoft.Compute/hostGroups/hosts",
+                                "Microsoft.Compute/virtualMachines",
+                                "Microsoft.DesktopVirtualization/applicationGroups",
+                                "Microsoft.DesktopVirtualization/hostPools",
+                                "Microsoft.DesktopVirtualization/scalingPlans",
+                                "Microsoft.DesktopVirtualization/workspaces",
+                                "Microsoft.Insights/dataCollectionEndpoints",
+								"Microsoft.Insights/dataCollectionRules",
+                                "Microsoft.KeyVault/vaults",
+                                "Microsoft.ManagedIdentity/userAssignedIdentities",
+                                "Microsoft.NetApp/netAppAccounts",
+                                "Microsoft.Network/networkInterfaces",
+                                "Microsoft.Network/privateEndpoints",
+                                "Microsoft.OperationalInsights/workspaces",
+                                "Microsoft.RecoveryServices/vaults",
+                                "Microsoft.Resources/resourceGroups",
+                                "Microsoft.Storage/storageAccounts"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        "outputs": {
+            "parameters": {
+                "subscriptionResourceId": "[steps('basics').scope.subscription.id]",
+				"virtualNetworksApi": "[steps('hosts').network.virtualNetworkApi]"			
+            },
+            "kind": "Subscription",
+            "location": "[steps('basics').scope.location.name]",
+            "subscriptionId": "[steps('basics').scope.subscription.id]"
+        }
+    }
+}
