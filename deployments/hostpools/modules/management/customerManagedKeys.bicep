@@ -1,5 +1,3 @@
-param artifactsUri string
-param artifactsUserAssignedIdentityClientId string
 param confidentialVMOSDiskEncryption bool
 param confidentialVMOrchestratorObjectId string
 param deploymentUserAssignedIdentityClientId string
@@ -24,9 +22,8 @@ param tags object
 param timeStamp string
 param userAssignedIdentityNameConv string
 
-var cseScriptParameters = confidentialVMOSDiskEncryption ? '-keyVaultName ${vmKeyVaultName} -keyName ConfidentialVMOSDiskEncryptionKey -Environment ${environment().name} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentityClientId}' : ''
-
 var storageAccountEncryptionKeyName = 'StorageAccountEncryptionKey'
+var confidentialVMEncryptionKeyName = 'ConfidentialVMOSDiskEncryptionKey'
 
 resource vmKeyVault 'Microsoft.KeyVault/vaults@2023-02-01' existing = {
   name: vmKeyVaultName
@@ -40,22 +37,48 @@ module encryption_key_disks 'keyVaultKeys.bicep' = if (!confidentialVMOSDiskEncr
     keyType: contains(keyManagementDisks, 'HSM') ? 'RSA-HSM' : 'RSA'
     keyVaultName: vmKeyVaultName
     rotationPolicy: true
+    tags: tags[?'Microsoft.KeyVault/vaults/keys'] ?? {}
+  }
+
+}
+
+module set_confidentialVM_key_disks '../../../sharedModules/resources/compute/virtual-machine/runCommand/main.bicep' = if(confidentialVMOSDiskEncryption) {
+  name: 'Set_EncryptionKey_ConfidentialVMOSDisk_${timeStamp}'
+  params: {
+    name: 'Set_confidentialVM_key_disks'
+    parameters: [
+      {
+        name: 'KeyName'
+        value: confidentialVMEncryptionKeyName
+      }
+      {
+        name: 'Tags'
+        value: string(tags[?'Microsoft.KeyVault/vaults/keys'] ?? {})
+      }
+      {
+        name: 'UserAssignedIdentityClientId'
+        value: deploymentUserAssignedIdentityClientId
+      }
+      {
+        name: 'VaultUri'
+        value: vmKeyVault.properties.vaultUri
+      }
+    ]
+    script: loadTextContent('../../../../.common/scripts/Set-ConfidentialVMOSDiskEncryptionKey.ps1')
+    treatFailureAsDeploymentFailure: true
+    virtualMachineName: managementVirtualMachineName  
   }
 }
 
-module confidentialVM_key_disks '../../../sharedModules/custom/customScriptExtension.bicep' = if(confidentialVMOSDiskEncryption) {
-  name: 'EncryptionKey_ConfidentialVMOSDisk_${timeStamp}'
+module get_confidentialVM_key_disks 'getKeyVaultKey.bicep' = if(confidentialVMOSDiskEncryption) {
+  name: 'Get_EncryptionKey_ConfidentialVMOSDisk_${timeStamp}'
   params: {
-    commandToExecute: 'powershell.exe -executionpolicy Bypass -File Create-ConfidentialVMOSDiskEncryptionKey.ps1 ${cseScriptParameters}'
-    fileUris: [
-      '${artifactsUri}Create-ConfidentialVMOSDiskEncryptionKey.ps1'
-    ]
-    location: location
-    output: true
-    tags: tags[?'Microsoft.Compute/virtualMachines/extensions'] ?? {}
-    userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
-    virtualMachineName: managementVirtualMachineName
+    keyVaultName: vmKeyVaultName
+    keyName: confidentialVMEncryptionKeyName
   }
+  dependsOn: [
+    set_confidentialVM_key_disks
+  ]
 }
 
 module storageAccountKeyVaults 'keyVault.bicep' = [for i in range(0, storageCount): {
@@ -73,8 +96,7 @@ module storageAccountKeyVaults 'keyVault.bicep' = [for i in range(0, storageCoun
     keyVaultPrivateDnsZoneResourceId: keyVaultPrivateDnsZoneResourceId
     location: location
     skuName: contains(keyManagementFSLogixStorage, 'HSM') ? 'premium' : 'standard'
-    tagsKeyVault: tags[?'Microsoft.KeyVault/vaults'] ?? {}
-    tagsPrivateEndpoints: tags[?'Microsoft.Network/privateEndpoints'] ?? {}
+    tags: tags
     timeStamp: timeStamp
   }
 }]
@@ -87,6 +109,7 @@ module keysStorageAccounts 'keyVaultKeys.bicep' = [for i in range(0, storageCoun
     keyType: contains(keyManagementFSLogixStorage, 'HSM') ? 'RSA-HSM' : 'RSA'
     keyVaultName: last(split(storageAccountKeyVaults[i].outputs.keyVaultResourceId, '/')) 
     rotationPolicy: true
+    tags: tags[?'Microsoft.KeyVault/vaults/keys'] ?? {}
   }
 }]
 
@@ -132,7 +155,7 @@ module diskEncryptionSet 'diskEncryptionSet.bicep' = {
     autoKeyRotationEnabled: confidentialVMOSDiskEncryption ? false : true
     diskEncryptionSetName: confidentialVMOSDiskEncryption ? diskEncryptionSetNames.ConfidentialVMs : (diskEncryptionSetEncryptionType == 'EncryptionAtRestWithCustomerKey' ? diskEncryptionSetNames.CustomerManaged : diskEncryptionSetNames.PlatformAndCustomerManaged)
     encryptionType: diskEncryptionSetEncryptionType
-    keyUrl: confidentialVMOSDiskEncryption ? confidentialVM_key_disks.outputs.value.KeyUriWithVersion : encryption_key_disks.outputs.keyUriWithVersion
+    keyUrl: confidentialVMOSDiskEncryption ? get_confidentialVM_key_disks.outputs.keyUriWithVersion : encryption_key_disks.outputs.keyUriWithVersion
     keyVaultResourceId: vmKeyVault.id
     location: location
     tags: tags[?'Microsoft.Compute/diskEncryptionSets'] ?? {}

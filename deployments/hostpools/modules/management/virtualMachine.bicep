@@ -1,7 +1,4 @@
-param azModuleBlobName string
 param identitySolution string
-param artifactsUri string
-param artifactsUserAssignedIdentityClientId string
 param diskName string
 param diskSku string
 @secure()
@@ -186,29 +183,6 @@ resource extension_JsonADDomainExtension 'Microsoft.Compute/virtualMachines/exte
     }
     protectedSettings: {
       Password: domainJoinUserPassword
-    }
-  }
-}
-
-resource extension_CustomScriptExtension 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = {
-  parent: virtualMachine
-  name: 'CustomScriptExtension'
-  location: location
-  tags: tagsVirtualMachines
-  properties: {
-    publisher: 'Microsoft.Compute'
-    type: 'CustomScriptExtension'
-    typeHandlerVersion: '1.10'
-    autoUpgradeMinorVersion: true
-    settings: {
-      timeStamp: timeStamp
-    }    
-    protectedSettings: {
-      commandToExecute: 'msiexec.exe /i ${azModuleBlobName} /quiet /qn /norestart /passive'
-      fileUris: [
-        '${artifactsUri}${azModuleBlobName}'
-      ]
-      managedIdentity: { clientId: artifactsUserAssignedIdentityClientId }
     }
   }
 }

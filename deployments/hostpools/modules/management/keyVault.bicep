@@ -16,8 +16,7 @@ param privateEndpointNameConv string
 param privateEndpointNICNameConv string
 param privateEndpointSubnetResourceId string
 param skuName string
-param tagsKeyVault object
-param tagsPrivateEndpoints object
+param tags object
 param timeStamp string
 @secure()
 param virtualMachineAdminUserName string = ''
@@ -27,7 +26,7 @@ param virtualMachineAdminPassword string = ''
 resource keyVault 'Microsoft.KeyVault/vaults@2023-02-01' = {
   name: keyVaultName
   location: location
-  tags: tagsKeyVault
+  tags: tags[?'Microsoft.KeyVault/vaults'] ?? {}
   properties: {
     enabledForDeployment: enabledForDeployment
     enabledForDiskEncryption: enabledForDiskEncryption
@@ -37,9 +36,7 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-02-01' = {
     enableSoftDelete: true
     networkAcls: {
       bypass: 'AzureServices'
-      defaultAction: 'Deny'
-      ipRules: []
-      virtualNetworkRules: []
+      defaultAction: privateEndpoint ? 'Deny' : 'Allow'
     }
     publicNetworkAccess: privateEndpoint ? 'Disabled' : 'Enabled'
     sku: {
@@ -67,7 +64,7 @@ module vault_privateEndpoint '../../../sharedModules/resources/network/private-e
     }
     serviceResourceId: keyVault.id
     subnetResourceId: privateEndpointSubnetResourceId
-    tags: tagsPrivateEndpoints
+    tags: tags[?'Microsoft.Network/privateEndpoints'] ?? {}
   }
 }
 
@@ -78,6 +75,7 @@ resource secretDomainJoinUPN 'Microsoft.KeyVault/vaults/secrets@2022-07-01' = if
     contentType: 'text/plain'
     value: domainJoinUserPrincipalName
   }
+  tags: tags[?'Microsoft.KeyVault/vaults/secrets'] ?? {}
 }
 
 resource secretdomainJoinUserPassword 'Microsoft.KeyVault/vaults/secrets@2022-07-01' = if(!empty(domainJoinUserPassword)) {
@@ -87,6 +85,7 @@ resource secretdomainJoinUserPassword 'Microsoft.KeyVault/vaults/secrets@2022-07
     contentType: 'text/plain'
     value: domainJoinUserPassword
   }
+  tags: tags[?'Microsoft.KeyVault/vaults/secrets'] ?? {}
 }
 
 resource secretVirtualMachineAdminUserName 'Microsoft.KeyVault/vaults/secrets@2022-07-01' = if(!empty(virtualMachineAdminUserName)) {
@@ -96,6 +95,7 @@ resource secretVirtualMachineAdminUserName 'Microsoft.KeyVault/vaults/secrets@20
     contentType: 'text/plain'
     value: virtualMachineAdminUserName
   }
+  tags: tags[?'Microsoft.KeyVault/vaults/secrets'] ?? {}
 }
 
 resource secretVirtualMachineAdminPassword 'Microsoft.KeyVault/vaults/secrets@2022-07-01' = if(!empty(virtualMachineAdminPassword)) {
@@ -105,6 +105,7 @@ resource secretVirtualMachineAdminPassword 'Microsoft.KeyVault/vaults/secrets@20
     contentType: 'text/plain'
     value: virtualMachineAdminPassword
   }
+  tags: tags[?'Microsoft.KeyVault/vaults/secrets'] ?? {}
 }
 
 output keyVaultResourceId string = keyVault.id

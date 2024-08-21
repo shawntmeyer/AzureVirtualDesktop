@@ -2,7 +2,6 @@ targetScope = 'subscription'
 
 param identitySolution string
 param artifactsUri string
-param avdAgentInstallersBlobName string
 param avdPrivateLinkPrivateRoutes string
 param customImageResourceId string
 param globalFeedPrivateEndpointSubnetResourceId string
@@ -18,7 +17,6 @@ param cseMasterScript string
 param deployFSLogixStorage bool
 param fileShareNames object
 param fslogixConfigureSessionHosts bool
-param fslogixConfigurationBlobName string
 param fslogixContainerType string
 param fslogixStorageService string
 param hibernationEnabled bool
@@ -147,9 +145,7 @@ var availabilitySetsCount = length(range(beginAvSetRange, (endAvSetRange - begin
 // OTHER LOGIC & COMPUTED VALUES
 // fslogix will not be configured on session hosts if identity solution is not EntraId. Decision made to lower complexity and to avoid potential issues. Assumes the use of Group Policy to configure FSlogix with Domain Services identity solution.
 var fslogixConfigureHosts = identitySolution != 'EntraId' ? false : fslogixConfigureSessionHosts
-var cseArtifacts = fslogixConfigureHosts
-  ? union(['${cseMasterScript}'], ['${avdAgentInstallersBlobName}'], cseBlobNames, ['${fslogixConfigurationBlobName}'])
-  : union(['${cseMasterScript}'], ['${avdAgentInstallersBlobName}'], cseBlobNames)
+var cseArtifacts = !empty(cseBlobNames) ? union(['${cseMasterScript}'], cseBlobNames) : []
 var cseUris = [
   for artifact in cseArtifacts: contains(toLower(artifact), 'http') ? artifact : '${artifactsUri}${artifact}'
 ]
@@ -188,6 +184,7 @@ var roleDefinitions = {
   DesktopVirtualizationSessionHostOperator: '2ad6aaab-ead9-4eaa-8ac5-da422f562408'
   DesktopVirtualizationUser: '1d18fff3-a72a-46b5-b4a9-0b38a3cd7e63'
   DesktopVirtualizationWorkspaceContributor: '21efdde3-836f-432b-bf3d-3e8e734d4b2b'
+  KeyVaultCryptoOfficer: '14b46e9e-c2b7-41b4-b07b-48a6ebf60603'
   KeyVaultCryptoServiceEncryptionUser: 'e147488a-f6f5-4113-8e2d-b22465e65bf6'
   KeyVaultCryptoServiceReleaseUser: '08bbd89e-9f13-488c-ac41-acfcb10c90ab'
   KeyVaultReader: '21090545-7ca7-4776-b22c-e363652d74d2'

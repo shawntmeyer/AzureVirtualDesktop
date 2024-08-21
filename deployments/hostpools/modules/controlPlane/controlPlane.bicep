@@ -1,8 +1,6 @@
 targetScope = 'subscription'
 
 param identitySolution string
-param artifactsUri string
-param artifactsUserAssignedIdentityClientId string
 param avdPrivateDnsZoneResourceId string
 param avdPrivateLinkPrivateRoutes string
 param hostPoolRDPProperties string
@@ -10,7 +8,7 @@ param deployScalingPlan bool
 param deploymentUserAssignedIdentityClientId string
 param desktopApplicationGroupName string
 param desktopFriendlyName string
-param existingGlobalWorkspace bool
+param existingGlobalWorkspaceResourceId string
 param existingFeedWorkspaceResourceId string
 param globalWorkspaceName string
 param hostPoolName string
@@ -35,7 +33,7 @@ param roleDefinitions object
 param scalingPlanExclusionTag string
 param scalingPlanName string
 param scalingPlanSchedules array
-param securityPrincipalObjectIds array
+param securityPrincipals array
 param tags object
 param timeStamp string
 param hostPoolValidationEnvironment bool
@@ -53,21 +51,21 @@ var globalFeedPrivateEndpointNICName = avdPrivateLinkPrivateRoutes == 'All' && !
 var hostPoolPrivateEndpointName = avdPrivateLinkPrivateRoutes != 'None' && !empty(hostPoolPrivateEndpointSubnetResourceId) ? replace(replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'connection'), 'RESOURCE', hostPoolName), 'VNETID', '${split(hostPoolPrivateEndpointSubnetResourceId, '/')[8]}') : 'hostPoolPrivateEndpointName'
 var hostPoolPrivateEndpointNICName = avdPrivateLinkPrivateRoutes != 'None' && !empty(hostPoolPrivateEndpointSubnetResourceId) ? replace(replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'connection'), 'RESOURCE', hostPoolName), 'VNETID', '${split(hostPoolPrivateEndpointSubnetResourceId, '/')[8]}') : 'hostPoolPrivateEndpointName'
 
-module hostPoolPrivateEndpointVnet '../common/privateEndpointVnet.bicep' = if (avdPrivateLinkPrivateRoutes != 'None' && !empty(hostPoolPrivateEndpointSubnetResourceId)) {
+module hostPoolPrivateEndpointVnet '../common/vnetLocation.bicep' = if (avdPrivateLinkPrivateRoutes != 'None' && !empty(hostPoolPrivateEndpointSubnetResourceId)) {
   name: 'HostPoolPrivateEndpointVnet_${timeStamp}'
   params: {
     privateEndpointSubnetResourceId: hostPoolPrivateEndpointSubnetResourceId
   }
 }
 
-module workspaceFeedPrivateEndpointVnet '../common/privateEndpointVnet.bicep' = if ((avdPrivateLinkPrivateRoutes == 'All' || avdPrivateLinkPrivateRoutes == 'FeedAndHostPool') && !empty(workspaceFeedPrivateEndpointSubnetResourceId)) {
+module workspaceFeedPrivateEndpointVnet '../common/vnetLocation.bicep' = if ((avdPrivateLinkPrivateRoutes == 'All' || avdPrivateLinkPrivateRoutes == 'FeedAndHostPool') && !empty(workspaceFeedPrivateEndpointSubnetResourceId)) {
   name: 'WorkspaceFeedPrivateEndpointVnet_${timeStamp}'
   params: {
     privateEndpointSubnetResourceId: workspaceFeedPrivateEndpointSubnetResourceId
   }
 }
 
-module globalFeedPrivateEndpointVnet '../common/privateEndpointVnet.bicep' = if (avdPrivateLinkPrivateRoutes == 'All' && !empty(globalFeedPrivateEndpointSubnetResourceId)) {
+module globalFeedPrivateEndpointVnet '../common/vnetLocation.bicep' = if (avdPrivateLinkPrivateRoutes == 'All' && !empty(globalFeedPrivateEndpointSubnetResourceId)) {
   name: 'GlobalFeedPrivateEndpointVnet_${timeStamp}'
   params: {
     privateEndpointSubnetResourceId: globalFeedPrivateEndpointSubnetResourceId
@@ -104,8 +102,6 @@ module applicationGroup 'applicationGroup.bicep' = {
   name: 'ApplicationGroup_${timeStamp}'
   scope: resourceGroup(resourceGroupControlPlane)
   params: {
-    artifactsUri: artifactsUri
-    artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
     deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
     desktopApplicationGroupName: desktopApplicationGroupName
     desktopFriendlyName: desktopFriendlyName
@@ -116,7 +112,7 @@ module applicationGroup 'applicationGroup.bicep' = {
     managementVirtualMachineName: managementVirtualMachineName
     resourceGroupManagement: resourceGroupManagement
     roleDefinitions: roleDefinitions
-    securityPrincipalObjectIds: securityPrincipalObjectIds
+    securityPrincipals: securityPrincipals
     tags: tags  
     timeStamp: timeStamp
   }
@@ -126,12 +122,10 @@ module feedWorkspace 'workspace.bicep' = {
   name: 'WorkspaceFeed_${timeStamp}'
   scope: resourceGroup(resourceGroupControlPlane)
   params: {
-    applicationGroupReferences: applicationGroup.outputs.ApplicationGroupReference
-    artifactsUri: artifactsUri
-    artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
+    applicationGroupResourceId: applicationGroup.outputs.ApplicationGroupResourceId
     deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
     enableMonitoring: enableMonitoring
-    existingWorkspace: !empty(existingFeedWorkspaceResourceId) ? true : false
+    existingWorkspaceResourceId: existingFeedWorkspaceResourceId
     friendlyName: workspaceFriendlyName
     groupIds: ['feed']
     location: locationControlPlane
@@ -168,16 +162,14 @@ module scalingPlan 'scalingPlan.bicep' = if(deployScalingPlan && contains(hostPo
   }
 } 
 
-module globalWorkspace 'workspace.bicep' = if(!existingGlobalWorkspace && avdPrivateLinkPrivateRoutes == 'All' && !empty(globalFeedPrivateDnsZoneResourceId) && !empty(globalFeedPrivateEndpointSubnetResourceId)) {
+module globalWorkspace 'workspace.bicep' = if(empty(existingGlobalWorkspaceResourceId) && avdPrivateLinkPrivateRoutes == 'All' && !empty(globalFeedPrivateDnsZoneResourceId) && !empty(globalFeedPrivateEndpointSubnetResourceId)) {
   name: 'Global_Feed_Workspace_${timeStamp}'
   scope: resourceGroup(resourceGroupGlobalFeed)
   params: {
-    applicationGroupReferences: []
-    artifactsUri: artifactsUri
-    artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
+    applicationGroupResourceId: ''
     deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
     enableMonitoring: enableMonitoring
-    existingWorkspace: existingGlobalWorkspace
+    existingWorkspaceResourceId: existingGlobalWorkspaceResourceId
     friendlyName: ''
     groupIds: ['global']
     location: locationGlobalFeed
@@ -201,5 +193,5 @@ module globalWorkspace 'workspace.bicep' = if(!existingGlobalWorkspace && avdPri
   ]
 }
 
-output hostPoolName string = last(split(hostPool.outputs.resourceId, '/'))
 output hostPoolRegistrationToken string = hostPool.outputs.registrationToken
+output hostPoolResourceId string = hostPool.outputs.resourceId

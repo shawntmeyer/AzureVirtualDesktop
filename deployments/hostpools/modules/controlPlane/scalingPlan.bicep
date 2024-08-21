@@ -95,7 +95,7 @@ var diagnosticsLogs = contains(diagnosticLogCategoriesToEnable, 'allLogs') ? [
 resource scalingPlan 'Microsoft.DesktopVirtualization/scalingPlans@2022-09-09' = {
   name: name
   location: location
-  tags: contains(tags, 'Microsoft.DesktopVirtualization/scalingPlans') ? tags['Microsoft.DesktopVirtualization/scalingPlans'] : {}
+  tags: tags[?'Microsoft.DesktopVirtualization/scalingPlans'] ?? {}
   properties: {
     friendlyName: friendlyName
     timeZone: timeZone

@@ -6,55 +6,29 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2022-03-01' existing 
   name: virtualMachineName
 }
 
-resource removeVirtualMachine 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
+resource removeVirtualMachine 'Microsoft.Compute/virtualMachines/runCommands@2023-09-01' = {
   parent: virtualMachine
-  name: 'RunCommand'
+  name: 'RemoveManagementVM'
   location: location
-  properties: {
-    treatFailureAsDeploymentFailure: false
+  properties: {    
     asyncExecution: true
     parameters: [
       {
-        name: 'Environment'
-        value: environment().name
+        name: 'ManagementVmResourceId'
+        value: virtualMachine.id
       }
       {
-        name: 'ResourceGroupName'
-        value: resourceGroup().name
-      }
-      {
-        name: 'SubscriptionId'
-        value: subscription().subscriptionId
-      }
-      {
-        name: 'TenantId'
-        value: tenant().tenantId
+        name: 'ResourceManagerUri'
+        value: environment().resourceManager
       }
       {
         name: 'UserAssignedIdentityClientId'
         value: userAssignedIdentityClientId
       }
-      {
-        name: 'VirtualMachineName'
-        value: virtualMachineName
-      }
-
     ]
     source: {
-      script: '''
-        param(
-          [string]$Environment,
-          [string]$ResourceGroupName,
-          [string]$SubscriptionId,
-          [string]$TenantId,
-          [string]$UserAssignedIdentityClientId,
-          [string]$VirtualMachineName
-        )
-        Connect-AzAccount -Environment $Environment -Tenant $TenantId -Subscription $SubscriptionId -Identity -AccountId $UserAssignedIdentityClientId
-        ## Introduce a wait here because every Run Command will require at least 20 seconds to complete. This avoids a condition where the VM gets deleted before the output of this command is returned to the deployment.
-        Start-Sleep -Seconds 20
-        Remove-AzVM -ResourceGroupName $ResourceGroupName -Name $VirtualMachineName -NoWait -Force
-      '''
+      script: loadTextContent('../../../../.common/scripts/Remove-ManagementVM.ps1')
     }
+    treatFailureAsDeploymentFailure: true
   }
 }

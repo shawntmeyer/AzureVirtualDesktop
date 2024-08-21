@@ -1,8 +1,6 @@
-param applicationGroupReferences array
-param artifactsUserAssignedIdentityClientId string
-param artifactsUri string
+param applicationGroupResourceId string
 param deploymentUserAssignedIdentityClientId string
-param existingWorkspace bool
+param existingWorkspaceResourceId string
 param friendlyName string
 param location string
 param locationVirtualMachines string
@@ -22,30 +20,44 @@ param tags object
 param timeStamp string
 param workspaceName string
 
-module addApplicationGroups '../../../sharedModules/custom/customScriptExtension.bicep' = if (existingWorkspace && !empty(applicationGroupReferences)) {
+module addApplicationGroups '../../../sharedModules/resources/compute/virtual-machine/runCommand/main.bicep' = if (!empty(existingWorkspaceResourceId) && !empty(applicationGroupResourceId)) {
   scope: resourceGroup(resourceGroupManagement)
   name: 'AddApplicationGroupReferences_${timeStamp}'
   params: {
-    commandToExecute: 'powershell.exe -ExecutionPolicy Unrestricted -File Update-AvdWorkspace.ps1 -ApplicationGroupReferences "${applicationGroupReferences}" -Environment ${environment().name} -ResourceGroupName ${resourceGroup().name} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentityClientId} -WorkspaceName ${workspaceName}'
-    fileUris: [
-      '${artifactsUri}Update-AvdWorkspace.ps1'
-    ]
     location: locationVirtualMachines
-    output: true
-    tags: tags[?'Microsoft.Compute/virtualMachines'] ?? {}        
-    userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
+    name: 'AddApplicationGroupReferences'
+    parameters: [
+      {
+        name: 'ApplicationGroupResourceId'
+        value: applicationGroupResourceId
+      }
+      {
+        name: 'ResourceManagerUri'
+        value: environment().resourceManager
+      }
+      {
+        name: 'UserAssignedIdentityClientId'
+        value: deploymentUserAssignedIdentityClientId
+      }
+      {
+        name: 'WorkspaceResourceId'
+        value: existingWorkspaceResourceId
+      }
+    ]
+    script: loadTextContent('../../../../.common/scripts/Update-AvdWorkspaceAppReferences.ps1')
+    treatFailureAsDeploymentFailure: true
     virtualMachineName: managementVirtualMachineName
   }
 }
 
-resource workspace 'Microsoft.DesktopVirtualization/workspaces@2023-09-05' = if (!existingWorkspace) { 
+resource workspace 'Microsoft.DesktopVirtualization/workspaces@2023-09-05' = if (empty(existingWorkspaceResourceId)) { 
   name: workspaceName
   location: location
   tags: union({
     'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroup().name}/providers/Microsoft.DesktopVirtualization/Workspaces/${workspaceName}'
   }, tags[?'Microsoft.DesktopVirtualization/Workspaces'] ?? {})
   properties: {
-    applicationGroupReferences: !empty(applicationGroupReferences) ? applicationGroupReferences : null
+    applicationGroupReferences: !empty(applicationGroupResourceId) ? [ applicationGroupResourceId ] : null
     friendlyName: friendlyName
     publicNetworkAccess: publicNetworkAccess
   }
@@ -63,7 +75,7 @@ module workspace_privateEndpoint '../../../sharedModules/resources/network/priva
         privateDnsZoneResourceId
       ]
     }
-    serviceResourceId: existingWorkspace ? '' : workspace.id
+    serviceResourceId: !empty(existingWorkspaceResourceId) ? '' : workspace.id
     subnetResourceId: privateEndpointSubnetResourceId
     tags: union({
       'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroup().name}/providers/Microsoft.DesktopVirtualization/hostpools/${workspaceName}'
@@ -71,7 +83,7 @@ module workspace_privateEndpoint '../../../sharedModules/resources/network/priva
   }
 }
 
-resource workspace_diagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (!existingWorkspace && enableMonitoring) {
+resource workspace_diagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (empty(existingWorkspaceResourceId) && enableMonitoring) {
   name: 'diag-${workspaceName}'
   scope: workspace
   properties: {

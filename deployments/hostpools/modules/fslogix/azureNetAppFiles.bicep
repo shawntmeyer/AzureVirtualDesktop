@@ -1,6 +1,6 @@
-param artifactsUri string
-param artifactsUserAssignedIdentityClientId string
 param activeDirectoryConnection bool
+param fslogixAdminGroupDomainNames array
+param fslogixAdminGroupSamAccountNames array
 @secure()
 param domainJoinUserPassword string
 @secure()
@@ -15,7 +15,6 @@ param netAppCapacityPoolName string
 param netAppVolumesSubnetResourceId string
 param ouPath string
 param resourceGroupManagement string
-param securityPrincipalNames array
 param smbServerLocation string
 param storageSku string
 param fslogixStorageSolution string
@@ -135,16 +134,46 @@ resource volumes 'Microsoft.NetApp/netAppAccounts/capacityPools/volumes@2021-06-
   }
 }]
 
-module ntfsPermissions 'ntfsPermissions.bicep' = {
-  name: 'FslogixNtfsPermissions_${timeStamp}'
+module NTFSPermissions '../../../sharedModules/resources/compute/virtual-machine/runCommand/main.bicep' = {
+  name: 'DomainJoinNtfsPermissions_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
-    artifactsUri: artifactsUri
-    userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
-    commandToExecute: 'powershell -ExecutionPolicy Unrestricted -File Set-NtfsPermissions.ps1 -domainJoinUserPassword "${domainJoinUserPassword}" -domainJoinUserPrincipalName ${domainJoinUserPrincipalName} -fslogixContainerType ${fslogixContainerType} -securityPrincipalNames "${securityPrincipalNames}" -smbServerLocation ${smbServerLocation} -storageSolution ${fslogixStorageSolution}'
     location: location
-    managementVirtualMachineName: managementVirtualMachineName
-    timeStamp: timeStamp
+    name: 'NtfsPermissions_${timeStamp}'
+    parameters: [
+      {
+        name: 'AdminGroupDomainNames'
+        value: string(fslogixAdminGroupDomainNames)
+      }
+      {
+        name: 'AdminGroupSamAccountNames'
+        value: string(fslogixAdminGroupSamAccountNames)
+      }
+      {
+        name: 'FSLogixContainerType'
+        value: fslogixContainerType
+      }            
+      {
+        name: 'SmbServerLocation'
+        value: smbServerLocation
+      }
+      {
+        name: 'StorageSolution'
+        value: fslogixStorageSolution
+      }      
+    ]
+    protectedParameters: [
+      {
+        name: 'DomainJoinUserPwd'
+        value: domainJoinUserPassword
+      }
+      {
+        name: 'DomainJoinUserPrincipalName'
+        value: domainJoinUserPrincipalName
+      }
+    ]
+    script: loadTextContent('../../../../.common/scripts/Set-NtfsPermissions.ps1')  
+    virtualMachineName: managementVirtualMachineName
   }
   dependsOn: [
     volumes

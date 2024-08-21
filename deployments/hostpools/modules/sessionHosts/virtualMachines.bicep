@@ -1,10 +1,10 @@
 param identitySolution string
-param artifactsUri string
 param artifactsUserAssignedIdentityClientId string
 param artifactsUserAssignedIdentityResourceId string
 param availability string
 param availabilitySetNamePrefix string
 param availabilityZones array
+param avdAgentsModuleUrl string
 param batchCount int
 param confidentialVMOSDiskEncryptionType string
 param cseMasterScript string
@@ -32,7 +32,7 @@ param fslogixConfigureSessionHosts bool
 param fslogixContainerType string
 param fslogixStorageAccountResourceIds array
 param hibernationEnabled bool
-param hostPoolName string
+param hostPoolResourceId string
 param hostPoolRegistrationToken string
 param imageOffer string
 param imagePublisher string
@@ -46,10 +46,8 @@ param networkInterfaceNamePrefix string
 param ouPath string
 param avdInsightsDataCollectionRulesResourceId string
 param vmInsightsDataCollectionRulesResourceId string
-param resourceGroupControlPlane string
 param resourceGroupManagement string
 param securityDataCollectionRulesResourceId string
-param securityLogAnalyticsWorkspaceResourceId string
 param securityType string
 param secureBootEnabled bool
 param vTpmEnabled bool
@@ -75,28 +73,19 @@ var amdVmSizes = [
   'Standard_NV32as_v4'
 ]
 
-// Dynamic parameters for Configure-FSLogix Script
-//  cloudcache determined from fslogixContainerType parameter
-var fslogixCloudCacheString = contains(fslogixContainerType, 'CloudCache') ? 'CloudCache=$true' : 'CloudCache=$false'
-
-var fslogixSASuffixString = 'SASuffix=\'${storageSuffix}\''
-// build storage names string
 var fslogixStorageAccountNames = [for id in fslogixStorageAccountResourceIds: last(split(id, '/'))]
-var fslogixSANamesString = 'SANames=\'${replace(join(fslogixStorageAccountNames, ','), ',', '\',\'')}\''
-// build storage account keys string
-var fslogixSAKey1 = fslogixConfigureSessionHosts && !empty(fslogixStorageAccountResourceIds) ? [ storageAccounts[0].listkeys().keys[0].value ] : []
-var fslogixSAKey2 = fslogixConfigureSessionHosts && length(fslogixStorageAccountResourceIds) > 1 ? [ storageAccounts[1].listkeys().keys[0].value ] : []
-var fslogixSAKey3 = fslogixConfigureSessionHosts && length(fslogixStorageAccountResourceIds) > 2 ? [ storageAccounts[2].listkeys().keys[0].value ] : []
-var fslogixSAKey4 = fslogixConfigureSessionHosts && length(fslogixStorageAccountResourceIds) > 3 ? [ storageAccounts[3].listkeys().keys[0].value ] : []  
-var fslogixSAKeysString = 'SAKeys=\'${replace(join(union(fslogixSAKey1, fslogixSAKey2, fslogixSAKey3, fslogixSAKey4), ','), ',', '\',\'')}\''
-// build shares string
-var fslogixSharesString = contains(fslogixContainerType, 'Office') ? 'ShareNames=\'profile-containers\',\'office-containers\'' : 'ShareNames=\'profile-containers\''
-// build fslogix common string
-var fslogixCommon = fslogixCloudCacheString
-// add optional values to string
-var fslogixString = '${fslogixCommon};${fslogixSASuffixString};${fslogixSANamesString};${fslogixSAKeysString};${fslogixSharesString}'
-// create custom object
-var fslogixCustomObject = 'FSLogix=@([pscustomobject]@{${fslogixString}})'
+var fslogixSAKey1 = !empty(fslogixStorageAccountResourceIds) ? [ storageAccounts[0].listkeys().keys[0].value ] : []
+var fslogixSAKey2 = length(fslogixStorageAccountResourceIds) > 1 ? [ storageAccounts[1].listkeys().keys[0].value ] : []
+var fslogixSAKey3 = length(fslogixStorageAccountResourceIds) > 2 ? [ storageAccounts[2].listkeys().keys[0].value ] : []
+var fslogixSAKey4 = length(fslogixStorageAccountResourceIds) > 3 ? [ storageAccounts[3].listkeys().keys[0].value ] : []  
+var fslogixStorageAccountKeys = union(fslogixSAKey1, fslogixSAKey2, fslogixSAKey3, fslogixSAKey4)
+
+var fslogixShares = contains(fslogixContainerType, 'Office') ? [
+  'profile-containers'
+  'office-containers'
+] : [
+  'profile-containers'
+]
 
 // Dynamic parameters for the Anti-Malware Extension
 var fslogixExclusionsCloudCache = contains(fslogixContainerType, 'CloudCache') ? ';"%ProgramData%\\FSLogix\\Cache\\*";"%ProgramData%\\FSLogix\\Proxy\\*"' : ''
@@ -122,16 +111,9 @@ var fslogixExclusionsProfile = ';${join(fslogixExclusionProfileContainers, ';')}
 
 var fslogixExclusions = '"%TEMP%\\*\\*.VHDX";"%Windir%\\TEMP\\*\\*.VHDX"${fslogixExclusionsCloudCache}${fslogixExclusionsProfile}${fslogixExclusionsOffice}'
 
-// Dynamic parameters for Set-SessionHostConfiguration.ps1
-
-var shcCommonString = 'ActiveDirectorySolution=\'${identitySolution}\';AmdVmSize=\'${amdVmSize}\';nvidiaVmSize=\'${nvidiaVmSize}\';HostPoolRegistrationToken=\'${hostPoolRegistrationToken}\''
-var shcCommonCustomObject = 'SHConfiguration=@([pscustomobject]@{${shcCommonString}})'
-
-// CSE Master Script Dynamic parameters - Built from any custom parameters provided via parameter and the FSLogix and SessionHostConfiguration parameters.
-var cseScriptCalculatedParameters = fslogixConfigureSessionHosts ? '${fslogixCustomObject};${shcCommonCustomObject}' : '${shcCommonCustomObject}'
-var cseScriptDynamicParameters = empty(cseScriptAddDynParameters) ? '@{${cseScriptCalculatedParameters}}': '@{${cseScriptCalculatedParameters};${cseScriptAddDynParameters}}'
+var cseScriptParameters = empty(cseScriptAddDynParameters) ? '' : ' -DynParameters ${cseScriptAddDynParameters}'
 // When sending a hashtable via powershell.exe you must use -command instead of -File in order for the parameter to be interpreted as a hashtable and not a string
-var cseCommandToExecute = 'powershell -ExecutionPolicy Unrestricted -Command .\\${cseMasterScript} -DynParameters ${cseScriptDynamicParameters}'
+var cseCommandToExecute = 'powershell -ExecutionPolicy Unrestricted -Command .\\${cseMasterScript} ${cseScriptParameters}'
 
 var identityType = (!contains(identitySolution, 'DomainServices') || enableMonitoring ? true : false) ? (!empty(artifactsUserAssignedIdentityResourceId) ? 'SystemAssigned, UserAssigned' : 'SystemAssigned') : (!empty(artifactsUserAssignedIdentityResourceId) ? 'UserAssigned' : 'None')
 
@@ -175,15 +157,10 @@ var nvidiaVmSizes = [
 
 // call on new storage accounts only if we need the Storage Key(s)
 
-resource storageAccounts 'Microsoft.Storage/storageAccounts@2023-01-01' existing = [for ResId in fslogixStorageAccountResourceIds: if(fslogixConfigureSessionHosts && !empty(fslogixStorageAccountResourceIds)) {
+resource storageAccounts 'Microsoft.Storage/storageAccounts@2023-01-01' existing = [for ResId in fslogixStorageAccountResourceIds: if(!empty(fslogixStorageAccountResourceIds)) {
   name: last(split(ResId, '/'))
   scope: resourceGroup(split(ResId, '/')[2], split(ResId, '/')[4])
 }]
-
-resource securityWorkspace 'Microsoft.OperationalInsights/workspaces@2022-10-01' existing = if (!empty(securityLogAnalyticsWorkspaceResourceId)) {
-  name: last(split(securityLogAnalyticsWorkspaceResourceId, '/'))
-  scope: resourceGroup(split(securityLogAnalyticsWorkspaceResourceId, '/')[2],split(securityLogAnalyticsWorkspaceResourceId, '/')[4])
-}
 
 resource networkInterface 'Microsoft.Network/networkInterfaces@2020-05-01' = [for i in range(0, sessionHostCount): {
   name: '${networkInterfaceNamePrefix}${padLeft((i + sessionHostIndex), 3, '0')}'
@@ -297,6 +274,68 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2022-11-01' = [for i 
   ]
 }]
 
+resource runCommand_ConfigureFSLogix 'Microsoft.Compute/virtualMachines/runCommands@2023-09-01' = [for i in range(0, sessionHostCount): if (fslogixConfigureSessionHosts) {
+  parent: virtualMachine[i]
+  name: 'configureFSLogix'
+  location: location
+  properties: {
+    parameters: [
+      {
+        name: 'CloudCache'
+        value: contains(fslogixContainerType, 'CloudCache') ? 'true' : 'false'
+      }
+      {
+        name: 'Shares'
+        value: string(fslogixShares)
+      }
+      {
+        name: 'StorageAccountNames'
+        value: string(fslogixStorageAccountNames)
+      }
+      {
+        name: 'StorageAccountDNSSuffix'
+        value: storageSuffix
+      }      
+    ]
+    protectedParameters: [
+      {
+        name: 'StorageAccountKeys'
+        value: string(fslogixStorageAccountKeys)
+      }
+    ]
+    source: {
+      script: loadTextContent('../../../../.common/scripts/Set-FSLogixSessionHostConfiguration.ps1')
+    }
+    treatFailureAsDeploymentFailure: true
+  }
+}]
+
+resource runCommand_ConfigureSessionHost 'Microsoft.Compute/virtualMachines/runCommands@2023-09-01' = [for i in range(0, sessionHostCount): {
+  parent: virtualMachine[i]
+  name: 'configureSessionHost'
+  location: location
+  properties: {
+    parameters: [
+      {
+        name: 'AmdVmSize'
+        value: amdVmSize ? 'true' : 'false'
+      }
+      {
+        name: 'NvidiaVmSize'
+        value: nvidiaVmSize ? 'true' : 'false'
+      }
+      {
+        name: 'DisableUpdates'
+        value: 'false'
+      }    
+    ]
+    source: {
+      script: loadTextContent('../../../../.common/scripts/Set-SessionHostConfiguration.ps1')
+    }
+    treatFailureAsDeploymentFailure: true
+  }
+}]
+
 resource extension_JsonADDomainExtension 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): if (contains(identitySolution, 'DomainServices')) {
   parent: virtualMachine[i]
   name: 'JsonADDomainExtension'
@@ -356,9 +395,9 @@ resource extension_IaasAntimalware 'Microsoft.Compute/virtualMachines/extensions
         time: '120' // When to perform the scheduled scan, measured in minutes from midnight (0-1440). For example: 0 = 12AM, 60 = 1AM, 120 = 2AM.
         scanType: 'Quick' //Indicates whether scheduled scan setting type is set to Quick or Full (default is Quick)
       }
-      Exclusions: fslogixConfigureSessionHosts ? {
+      Exclusions: {
         Paths: fslogixExclusions
-      } : {}
+      }
     }
   }
   dependsOn: [
@@ -434,30 +473,6 @@ resource securityDataCollectionRuleAssociation 'Microsoft.Insights/dataCollectio
   ]
 }]
 
-resource extension_MicrosoftMonitoringAgent 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): if (!empty(securityLogAnalyticsWorkspaceResourceId)) {
-  parent: virtualMachine[i]
-  name: 'MicrosoftMonitoringAgent'
-  location: location
-  tags: tagsVirtualMachines
-  properties: {
-    publisher: 'Microsoft.EnterpriseCloud.Monitoring'
-    type: 'MicrosoftMonitoringAgent'
-    typeHandlerVersion: '1.0'
-    autoUpgradeMinorVersion: true
-    settings: {
-      workspaceId: !empty(securityLogAnalyticsWorkspaceResourceId) ? securityWorkspace.properties.customerId : ''
-    }
-    protectedSettings: {
-      workspaceKey: !empty(securityLogAnalyticsWorkspaceResourceId) ? securityWorkspace.listKeys().primarySharedKey : ''
-    }
-  }
-  dependsOn: [
-    extension_IaasAntimalware
-    extension_AADLoginForWindows
-    extension_JsonADDomainExtension
-  ]
-}]
-
 resource extension_GuestAttestation 'Microsoft.Compute/virtualMachines/extensions@2023-09-01' = [for i in range(0, sessionHostCount): if (integrityMonitoring) {
   parent: virtualMachine[i]
   name: 'GuestAttestation'
@@ -488,7 +503,6 @@ resource extension_GuestAttestation 'Microsoft.Compute/virtualMachines/extension
     extension_JsonADDomainExtension
     extension_IaasAntimalware
     extension_AzureMonitorWindowsAgent
-    extension_MicrosoftMonitoringAgent
   ]
 }]
 
@@ -509,7 +523,6 @@ resource extension_AmdGpuDriverWindows 'Microsoft.Compute/virtualMachines/extens
     extension_JsonADDomainExtension
     extension_IaasAntimalware
     extension_AzureMonitorWindowsAgent
-    extension_MicrosoftMonitoringAgent
   ]
 }]
 
@@ -529,11 +542,10 @@ resource extension_NvidiaGpuDriverWindows 'Microsoft.Compute/virtualMachines/ext
     extension_AADLoginForWindows
     extension_JsonADDomainExtension
     extension_AzureMonitorWindowsAgent
-    extension_MicrosoftMonitoringAgent
   ]
 }]
 
-resource extension_CustomScriptExtension 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): {
+resource extension_CustomScriptExtension 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): if(!empty(cseUris)) {
   parent: virtualMachine[i]
   name: 'CustomScriptExtension'
   location: location
@@ -559,9 +571,48 @@ resource extension_CustomScriptExtension 'Microsoft.Compute/virtualMachines/exte
     extension_NvidiaGpuDriverWindows
     extension_IaasAntimalware
     extension_AzureMonitorWindowsAgent
-    extension_MicrosoftMonitoringAgent
   ]
 }]
+
+resource extension_DSC_installAvdAgents 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [
+  for i in range(0, sessionHostCount): {
+    parent: virtualMachine[i]
+    name: 'DesiredStateConfiguration'
+    location: location
+    properties: {
+      publisher: 'Microsoft.Powershell'
+      type: 'DSC'
+      typeHandlerVersion: '2.73'
+      autoUpgradeMinorVersion: true
+      settings: {
+        modulesUrl: avdAgentsModuleUrl
+        configurationFunction: 'Configuration.ps1\\AddSessionHost'
+        properties: {
+          hostPoolName: last(split(hostPoolResourceId, '/'))
+          registrationInfoTokenCredential: {
+            UserName: 'PLACEHOLDER_DO_NOT_USE'
+            Password: 'PrivateSettingsRef:RegistrationInfoToken'
+          }
+          aadJoin: !contains(identitySolution, 'DomainServices')
+          UseAgentDownloadEndpoint: false
+          mdmId: intune ? '0000000a-0000-0000-c000-000000000000' : ''
+        }
+      }
+      protectedSettings: {
+        Items: {
+          RegistrationInfoToken: hostPoolRegistrationToken
+        }
+      }
+    }
+    dependsOn: [
+      extension_AzureMonitorWindowsAgent
+      extension_AmdGpuDriverWindows
+      extension_NvidiaGpuDriverWindows
+      extension_CustomScriptExtension
+      extension_GuestAttestation
+    ]
+  }
+]
 
 module updateOSDiskNetworkAccess 'getOSDisk.bicep' = [for i in range(0, sessionHostCount): {
   name: 'Assoc_DiskAccess_${virtualMachine[i].name}_Stage1_${timeStamp}'
@@ -575,20 +626,83 @@ module updateOSDiskNetworkAccess 'getOSDisk.bicep' = [for i in range(0, sessionH
 }]
 
 // Enables drain mode on the session hosts so users cannot login to hosts immediately after the deployment
-module setDrainMode '../../../sharedModules/custom/customScriptExtension.bicep' = if (drainMode) {
-  name: 'CSE_DrainMode_${batchCount}_${timeStamp}'
+module setDrainMode '../../../sharedModules/resources/compute/virtual-machine/runCommand/main.bicep' = if (drainMode) {
+  name: 'DrainMode_${batchCount}_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
-    commandToExecute: 'powershell -ExecutionPolicy Unrestricted -File Set-AvdDrainMode.ps1 -Environment ${environment().name} -HostPoolName ${hostPoolName} -HostPoolResourceGroupName ${resourceGroupControlPlane} -SessionHostCount ${sessionHostCount} -SessionHostIndex ${sessionHostIndex} -SubscriptionId ${subscription().subscriptionId} -TenantId ${tenant().tenantId} -UserAssignedIdentityClientId ${drainModeUserAssignedIdentityClientId} -VirtualMachineNamePrefix ${virtualMachineNamePrefix}'
-    fileUris: [
-      '${artifactsUri}Set-AvdDrainMode.ps1'
-    ]
     location: location
-    tags: tagsVirtualMachines
-    userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
+    name: 'DrainMode_${batchCount}_${timeStamp}'
+    parameters: [
+      {
+        name: 'HostPoolResourceId'
+        value: hostPoolResourceId
+      }
+      {
+        name: 'ResourceManagerUri'
+        value: environment().resourceManager
+      }      
+      {
+        name: 'SessionHostCount'
+        value: string(sessionHostCount)
+      }
+      {
+        name: 'SessionHostIndex'
+        value: string(sessionHostIndex)
+      }      
+      {
+        name: 'UserAssignedIdentityClientId'
+        value: drainModeUserAssignedIdentityClientId
+      }
+      {
+        name: 'VirtualMachineNamePrefix'
+        value: virtualMachineNamePrefix
+      }
+    ]
+    script: loadTextContent('../../../../.common/scripts/Set-AvdDrainMode.ps1')
+    treatFailureAsDeploymentFailure: true
+    virtualMachineName: managementVirtualMachineName 
+  }
+  dependsOn: [
+    extension_DSC_installAvdAgents
+  ]
+}
+/* Commenting out for future release. Not sure I want to grant the deployment user assigned identity Virtual Machine Contributor to the Hosts RG
+module removeVMRunCommands '../../../sharedModules/resources/compute/virtual-machine/runCommand/main.bicep' = {
+  name: 'RemoveVMRunCommands_${batchCount}_${timeStamp}'
+  scope: resourceGroup(resourceGroupManagement)
+  params: {
+    location: location
+    name: 'RemoveVMRunCommands_${batchCount}_${timeStamp}'
+    parameters: [
+      {
+        name: 'ResourceGroupId'
+        value: resourceGroup().id
+      }
+      {
+        name: 'ResourceManagerUri'
+        value: environment().resourceManager
+      }
+      {
+        name: 'SessionHostCount'
+        value: string(sessionHostCount)
+      }
+      {
+        name: 'SessionHostIndex'
+        value: string(sessionHostIndex)
+      }
+      {
+        name: 'VirtualMachineNamePrefix'
+        value: virtualMachineNamePrefix
+      }
+    ]
+    script: loadTextContent('../../../../.common/scripts/Remove-RunCommands.ps1')
+    treatFailureAsDeploymentFailure: true
     virtualMachineName: managementVirtualMachineName
   }
   dependsOn: [
-    extension_CustomScriptExtension
+    runCommand_ConfigureFSLogix
+    runCommand_ConfigureSessionHost
+    extension_DSC_installAvdAgents
   ]
 }
+*/

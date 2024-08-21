@@ -1,5 +1,3 @@
-param artifactsUri string
-param artifactsUserAssignedIdentityClientId string
 param deploymentUserAssignedIdentityClientId string
 param desktopApplicationGroupName string
 param desktopFriendlyName string
@@ -10,7 +8,7 @@ param logAnalyticsWorkspaceResourceId string
 param managementVirtualMachineName string
 param roleDefinitions object
 param resourceGroupManagement string
-param securityPrincipalObjectIds array
+param securityPrincipals array
 param tags object
 param timeStamp string
 
@@ -26,7 +24,7 @@ resource applicationGroup 'Microsoft.DesktopVirtualization/applicationGroups@202
   location: location
   tags: union({
     'cm-resource-parent': hostPoolResourceId
-  }, contains(tags, 'Microsoft.DesktopVirtualization/applicationGroups') ? tags['Microsoft.DesktopVirtualization/applicationGroups'] : {})
+  }, tags[?'Microsoft.DesktopVirtualization/applicationGroups'] ?? {})
   properties: {
     hostPoolArmPath: hostPoolResourceId
     applicationGroupType: 'Desktop'
@@ -43,35 +41,44 @@ resource applicationGroup_DiagnosticSettings 'Microsoft.Insights/diagnosticSetti
 }
 
 // Adds a friendly name to the SessionDesktop application for the desktop application group
-module applicationFriendlyName '../../../sharedModules/custom/customScriptExtension.bicep' = if (!empty(desktopFriendlyName)) {
+module updateDesktopFriendlyName '../../../sharedModules/resources/compute/virtual-machine/runCommand/main.bicep' = if (!empty(desktopFriendlyName)) {
   scope: resourceGroup(resourceGroupManagement)
   name: 'DesktopFriendlyName_${timeStamp}'
   params : {
-    commandToExecute: 'powershell -ExecutionPolicy Unrestricted -File Update-AvdDesktop.ps1 -ApplicationGroupName ${applicationGroup.name} -Environment ${environment().name} -FriendlyName "${desktopFriendlyName}" -ResourceGroupName ${resourceGroup().name} -SubscriptionId ${subscription().subscriptionId} -Tenant ${tenant().tenantId} -UserAssignedIdentityClientId ${deploymentUserAssignedIdentityClientId}'
-    fileUris: [
-      '${artifactsUri}Update-AvdDesktop.ps1'
-    ]
     location: locationVirtualMachines
-    output: true
-    tags: union({
-      'cm-resource-parent': hostPoolResourceId
-    }, contains(tags, 'Microsoft.Compute/virtualMachines') ? tags['Microsoft.Compute/virtualMachines'] : {})
-    userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
+    name: 'DesktopFriendlyName'
+    script: loadTextContent('../../../../.common/scripts/Update-AvdSessionDesktopName.ps1')
+    parameters: [
+      {
+        name: 'ApplicationGroupResourceId'
+        value: applicationGroup.id
+      }
+      {
+        name: 'FriendlyName'
+        value: desktopFriendlyName
+      }
+      {
+        name: 'ResourceManagerUri'
+        value: environment().resourceManager
+      }
+      {
+        name: 'UserAssignedIdentityClientId'
+        value: deploymentUserAssignedIdentityClientId
+      }
+    ]
+    treatFailureAsDeploymentFailure: true
     virtualMachineName: managementVirtualMachineName
   }
 }
 
-resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for i in range(0, length(securityPrincipalObjectIds)): {
+resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for i in range(0, length(securityPrincipals)): {
   scope: applicationGroup
-  name: guid(securityPrincipalObjectIds[i], roleDefinitions.DesktopVirtualizationUser, desktopApplicationGroupName)
+  name: guid(securityPrincipals[i], roleDefinitions.DesktopVirtualizationUser, desktopApplicationGroupName)
   properties: {
     roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', roleDefinitions.DesktopVirtualizationUser)
-    principalId: securityPrincipalObjectIds[i]
+    principalId: securityPrincipals[i]
   }
 }]
 
-output ApplicationGroupReference array = [
-  applicationGroup.id
-]
 output Name string = applicationGroup.name
-output ResourceId string = applicationGroup.id
+output ApplicationGroupResourceId string = applicationGroup.id

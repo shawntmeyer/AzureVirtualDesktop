@@ -1,6 +1,5 @@
 targetScope = 'subscription'
 
-param artifactsUri string
 param artifactsUserAssignedIdentityClientId string
 param artifactsUserAssignedIdentityResourceId string
 param availability string
@@ -8,6 +7,7 @@ param availabilitySetNamePrefix string
 param availabilitySetsCount int
 param availabilitySetsIndex int
 param availabilityZones array
+param avdAgentsModuleUrl string
 param avdInsightsDataCollectionRulesResourceId string
 param confidentialVMOSDiskEncryptionType string
 param cseMasterScript string
@@ -34,8 +34,8 @@ param fslogixExistingStorageAccountResourceIds array
 param fslogixContainerType string
 param fslogixDeployedStorageAccountResourceIds array
 param hibernationEnabled bool
-param hostPoolName string
 param hostPoolRegistrationToken string
+param hostPoolResourceId string
 param identitySolution string
 param imageOffer string
 param imagePublisher string
@@ -56,8 +56,7 @@ param resourceGroupHosts string
 param resourceGroupManagement string
 param roleDefinitions object
 param securityDataCollectionRulesResourceId string
-param securityPrincipalObjectIds array
-param securityLogAnalyticsWorkspaceResourceId string
+param securityPrincipals array
 param securityType string
 param secureBootEnabled bool
 param vTpmEnabled bool
@@ -70,6 +69,8 @@ param timeStamp string
 param virtualMachineNamePrefix string
 param virtualMachineSize string
 param vmInsightsDataCollectionRulesResourceId string
+
+var hostPoolName = last(split(hostPoolResourceId, '/'))
 
 var tagsAvailabilitySets = union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroupControlPlane}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'}, tags[?'Microsoft.Compute/availabilitySets'] ?? {})
 var tagsNetworkInterfaces = union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroupControlPlane}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'}, tags[?'Microsoft.Network/networkInterfaces'] ?? {})
@@ -106,11 +107,11 @@ module availabilitySets 'availabilitySets.bicep' = if (pooledHostPool && availab
 
 // Role Assignment for Virtual Machine Login User
 // This module deploys the role assignments to login to Azure AD joined session hosts
-module roleAssignments '../../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = [for i in range(0, length(securityPrincipalObjectIds)): if (!contains(identitySolution, 'DomainServices')) {
+module roleAssignments '../../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = [for i in range(0, length(securityPrincipals)): if (!contains(identitySolution, 'DomainServices')) {
   name: 'RoleAssignments_${i}_${timeStamp}'
   scope: resourceGroup(resourceGroupHosts)
   params: {
-    principalId: securityPrincipalObjectIds[i]
+    principalId: securityPrincipals[i]
     principalType: 'Group'
     roleDefinitionId: roleDefinitions.VirtualMachineUserLogin
   }
@@ -121,9 +122,9 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
   name: 'VirtualMachines_${i - 1}_${timeStamp}'
   scope: resourceGroup(resourceGroupHosts)
   params: {
+    avdAgentsModuleUrl: avdAgentsModuleUrl
     enableAcceleratedNetworking: enableAcceleratedNetworking
     identitySolution: identitySolution
-    artifactsUri: artifactsUri
     artifactsUserAssignedIdentityResourceId: artifactsUserAssignedIdentityResourceId
     artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
     availability: availability
@@ -154,8 +155,8 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     fslogixContainerType: fslogixContainerType
     fslogixStorageAccountResourceIds: fslogixConfigureSessionHosts && (!empty(fslogixDeployedStorageAccountResourceIds) || !empty(fslogixExistingStorageAccountResourceIds)) ? fslogixStorageAccountResourceIds.outputs.storageAccountResourceIds : []
     hibernationEnabled: hibernationEnabled
-    hostPoolName: hostPoolName
     hostPoolRegistrationToken: hostPoolRegistrationToken
+    hostPoolResourceId: hostPoolResourceId
     imageOffer: imageOffer
     imagePublisher: imagePublisher
     imageSku: imageSku
@@ -167,10 +168,8 @@ module virtualMachines 'virtualMachines.bicep' = [for i in range(1, sessionHostB
     ouPath: ouPath
     avdInsightsDataCollectionRulesResourceId: avdInsightsDataCollectionRulesResourceId
     vmInsightsDataCollectionRulesResourceId: vmInsightsDataCollectionRulesResourceId 
-    resourceGroupControlPlane: resourceGroupControlPlane
     resourceGroupManagement: resourceGroupManagement
     securityDataCollectionRulesResourceId: securityDataCollectionRulesResourceId
-    securityLogAnalyticsWorkspaceResourceId: securityLogAnalyticsWorkspaceResourceId
     securityType: securityType
     secureBootEnabled: secureBootEnabled
     vTpmEnabled: vTpmEnabled

@@ -1,4 +1,3 @@
-param identitySolution string
 param artifactsUri string
 param artifactsUserAssignedIdentityClientId string
 param automationAccountName string
@@ -13,9 +12,13 @@ param customerManagedKeysEnabled bool
 param enableIncreaseQuotaAutomation bool
 param encryptionUserAssignedIdentityResourceId string
 param fileShares array
+param fslogixAdminGroupDomainNames array
+param fslogixAdminGroupObjectIds array
+param fslogixAdminGroupSamAccountNames array
 param fslogixShareSizeInGB int
 param fslogixContainerType string
 param fslogixStorageService string
+param identitySolution string
 param kerberosEncryption string
 param encryptionKeyKeyVaultUris array
 param location string
@@ -32,8 +35,7 @@ param recoveryServices bool
 param recoveryServicesVaultName string
 param resourceGroupManagement string
 param resourceGroupStorage string
-param securityPrincipalObjectIds array
-param securityPrincipalNames array
+param securityPrincipals array
 @minLength(2)
 param storageAccountNamePrefix string
 param storageEncryptionKeyName string = ''
@@ -48,7 +50,8 @@ param tagsStorageAccounts object
 param timeStamp string
 param timeZone string
 
-var roleDefinitionId = '0c867c2a-1d8c-454a-a3db-ab2ea1bdc8bb' // Storage File Data SMB Share Contributor  
+var adminRoleDefinitionId = 'a7264617-510b-434b-a828-9731dc254ea7' // Storage File Data SMB Share Elevated Contributor
+var userRoleDefinitionId = '0c867c2a-1d8c-454a-a3db-ab2ea1bdc8bb' // Storage File Data SMB Share Contributor  
 var smbMultiChannel = {
   multichannel: {
     enabled: true
@@ -141,13 +144,23 @@ resource fileServices 'Microsoft.Storage/storageAccounts/fileServices@2022-09-01
   }
 }]
 
-// Assigns the SMB Contributor role to the Storage Account so users can save their profiles to the file share using FSLogix
-resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for i in range(0, storageCount): if(!contains(identitySolution,'EntraId')) {
+module roleAssignmentsAdmins 'adminRoleAssignment.bicep' = [for i in range(0, storageCount): if(!empty(fslogixAdminGroupObjectIds)){
+  name: 'AdminRoleAssignment_${i}_${timeStamp}'
+  params: {
+    adminCount: length(fslogixAdminGroupObjectIds)
+    adminRoleDefinitionId: adminRoleDefinitionId
+    storageAccountName: storageAccounts[i].name
+    fslogixAdminGroupObjectIds: fslogixAdminGroupObjectIds
+  }
+}]
+
+// Assigns the SMB Contributor role to the Storage Account so users can save their profiles to the file share using FSLogix. The number of security principals matches the number of storage accounts, so the role assignment is done in a loop.
+resource roleAssignmentsUsers 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for i in range(0, storageCount): if(!contains(identitySolution,'EntraId')) {
   scope: storageAccounts[i]
-  name: guid(securityPrincipalObjectIds[i], roleDefinitionId, storageAccounts[i].id)
+  name: guid(securityPrincipals[i], userRoleDefinitionId, storageAccounts[i].id)
   properties: {
-    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', roleDefinitionId)
-    principalId: securityPrincipalObjectIds[i]
+    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', userRoleDefinitionId)
+    principalId: securityPrincipals[i]
   }
 }]
 
@@ -160,7 +173,8 @@ module shares 'shares.bicep' = [for i in range(0, storageCount): {
     storageSku: storageSku
   }
   dependsOn: [
-    roleAssignment
+    roleAssignmentsUsers
+    roleAssignmentsAdmins
   ]
 }]
 
@@ -184,16 +198,26 @@ module privateEndpoints '../../../../sharedModules/resources/network/private-end
   }
 }]
 
-module ntfsPermissions '../../../../sharedModules/custom/customScriptExtension.bicep' = if (!contains(identitySolution, 'EntraId')) {
-  name: 'FslogixNtfsPermissions_${timeStamp}'
+module domainJoin_NTFSPermissions 'domainJoinNTFSPermissions.bicep' = if(!contains(identitySolution, 'EntraId')) {
+  name: 'DomainJoinNtfsPermissions_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
-    commandToExecute: 'powershell.exe -ExecutionPolicy Unrestricted -File Set-NtfsPermissions.ps1 -ClientId ${deploymentUserAssignedIdentityClientId} -DomainJoinUserPassword "${domainJoinUserPassword}" -DomainJoinUserPrincipalName ${domainJoinUserPrincipalName} -ActiveDirectorySolution ${identitySolution} -Environment ${environment().name} -FslogixContainerType ${fslogixContainerType} -KerberosEncryptionType ${kerberosEncryption} -Netbios ${netbios} -OUPath "${ouPath}" -SecurityPrincipalNames "${securityPrincipalNames}" -StorageAccountPrefix ${storageAccountNamePrefix} -StorageAccountResourceGroupName ${resourceGroupStorage} -StorageCount ${storageCount} -StorageIndex ${storageIndex} -StorageSolution ${storageSolution} -StorageSuffix ${environment().suffixes.storage} -SubscriptionId ${subscription().subscriptionId} -TenantId ${subscription().tenantId}'
-    fileUris: [
-      '${artifactsUri}Set-NtfsPermissions.ps1'
-    ]
+    adminGroupDomainNames: fslogixAdminGroupDomainNames
+    adminGroupSamAccountNames: fslogixAdminGroupSamAccountNames
+    deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
+    domainJoinUserPassword: domainJoinUserPassword
+    domainJoinUserPrincipalName: domainJoinUserPrincipalName
+    fslogixContainerType: fslogixContainerType
+    identitySolution: identitySolution
+    kerberosEncryption: kerberosEncryption
     location: location
-    userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
+    netbios: netbios
+    ouPath: ouPath
+    storageAccountNamePrefix: storageAccountNamePrefix
+    resourceGroupStorage: resourceGroupStorage
+    storageCount: storageCount
+    storageIndex: storageIndex
+    storageSolution: storageSolution
     virtualMachineName: managementVirtualMachineName
   }
   dependsOn: [

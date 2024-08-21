@@ -14,6 +14,9 @@ param domainName string
 param enableIncreaseQuotaAutomation bool
 param encryptionUserAssignedIdentityResourceId string
 param fileShares array
+param fslogixAdminGroupDomainNames array
+param fslogixAdminGroupObjectIds array
+param fslogixAdminGroupSamAccountNames array
 param shareSizeInGB int
 param containerType string
 param storageService string
@@ -35,8 +38,7 @@ param recoveryServices bool
 param recoveryServicesVaultName string
 param resourceGroupManagement string
 param resourceGroupStorage string
-param securityPrincipalObjectIds array
-param securityPrincipalNames array
+param securityPrincipals array
 param smbServerLocation string
 param storageAccountNamePrefix string
 param storageCount int
@@ -57,7 +59,7 @@ resource vmKeyVault 'Microsoft.KeyVault/vaults@2022-07-01' existing = if (contai
   scope: resourceGroup(resourceGroupManagement)
 }
 
-module privateEndpointVnet '../common/privateEndpointVnet.bicep' = if (privateEndpoint && !empty(privateEndpointSubnetResourceId)) {
+module privateEndpointVnet '../common/VnetLocation.bicep' = if (privateEndpoint && !empty(privateEndpointSubnetResourceId)) {
   name: 'PrivateEndpointVnet_${timeStamp}'
   params: {
     privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
@@ -69,9 +71,9 @@ module azureNetAppFiles 'azureNetAppFiles.bicep' = if (storageSolution == 'Azure
   name: 'AzureNetAppFiles_${timeStamp}'
   scope: resourceGroup(resourceGroupStorage)
   params: {
-    activeDirectoryConnection: activeDirectoryConnection
-    artifactsUri: artifactsUri
-    artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId    
+    fslogixAdminGroupDomainNames: fslogixAdminGroupDomainNames
+    fslogixAdminGroupSamAccountNames: fslogixAdminGroupSamAccountNames
+    activeDirectoryConnection: activeDirectoryConnection 
     domainJoinUserPassword: vmKeyVault.getSecret('domainJoinUserPassword')
     domainJoinUserPrincipalName: vmKeyVault.getSecret('domainJoinUserPrincipalName')
     domainName: domainName
@@ -84,7 +86,6 @@ module azureNetAppFiles 'azureNetAppFiles.bicep' = if (storageSolution == 'Azure
     netAppVolumesSubnetResourceId: netAppVolumesSubnetResourceId
     ouPath: ouPath
     resourceGroupManagement: resourceGroupManagement
-    securityPrincipalNames: securityPrincipalNames
     smbServerLocation: smbServerLocation
     storageSku: storageSku
     fslogixStorageSolution: storageSolution
@@ -98,6 +99,9 @@ module azureFiles 'azureFiles/azureFiles.bicep' = if (storageSolution == 'AzureF
   name: 'AzureFiles_${timeStamp}'
   scope: resourceGroup(resourceGroupStorage)
   params: {
+    fslogixAdminGroupDomainNames: fslogixAdminGroupDomainNames
+    fslogixAdminGroupObjectIds: fslogixAdminGroupObjectIds
+    fslogixAdminGroupSamAccountNames: fslogixAdminGroupSamAccountNames
     artifactsUri: artifactsUri
     artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
     automationAccountName: automationAccountName
@@ -122,7 +126,7 @@ module azureFiles 'azureFiles/azureFiles.bicep' = if (storageSolution == 'AzureF
     netbios: netbios
     ouPath: ouPath
     privateEndpoint: privateEndpoint
-    privateEndpointLocation: privateEndpointVnet.outputs.location
+    privateEndpointLocation: privateEndpoint && !empty(privateEndpointSubnetResourceId) ? privateEndpointVnet.outputs.location : ''
     privateEndpointNameConv: privateEndpointNameConv
     privateEndpointNICNameConv: privateEndpointNICNameConv
     privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
@@ -130,8 +134,7 @@ module azureFiles 'azureFiles/azureFiles.bicep' = if (storageSolution == 'AzureF
     recoveryServicesVaultName: recoveryServicesVaultName
     resourceGroupManagement: resourceGroupManagement
     resourceGroupStorage: resourceGroupStorage
-    securityPrincipalObjectIds: securityPrincipalObjectIds
-    securityPrincipalNames: securityPrincipalNames
+    securityPrincipals: securityPrincipals
     storageAccountNamePrefix: storageAccountNamePrefix
     storageCount: storageCount
     storageEncryptionKeyName: storageEncryptionKeyName

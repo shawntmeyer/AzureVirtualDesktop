@@ -5,6 +5,7 @@ param keyType string
 param keyVaultName string
 param release_policy object = {}
 param rotationPolicy bool
+param tags object
 
 resource vault 'Microsoft.KeyVault/vaults@2022-07-01' existing = {
   name: keyVaultName
@@ -45,6 +46,7 @@ resource key 'Microsoft.KeyVault/vaults/keys@2022-07-01' = {
       ]
     } : null
   }
+  tags: tags
 }
 
 output keyName string = key.name

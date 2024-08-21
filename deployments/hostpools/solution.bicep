@@ -2,27 +2,23 @@ targetScope = 'subscription'
 
 // Deployment Prerequisites
 
-@description('Optional. The name of the Azure Blobs container hosting the required artifacts.')
+@description('Optional. The name of the Azure Blobs container hosting the custom script extension master script and any custom scripts.')
 param artifactsContainerName string = 'artifacts'
 
-@description('Required. The storage account resource Id where the artifacts used by this deployment are stored.')
-param artifactsStorageAccountResourceId string
+@description('Optional. The storage account resource Id hosting the custom script extension master script and any custom scripts.')
+param artifactsStorageAccountResourceId string = ''
 
-@description('''Optional.
-The resource ID of the managed identity with Storage Blob Data Reader Access to the artifacts storage Account.
-If provided this identity will be used to access blobs. Otherwise, the managed identity created
-by this solution will be granted \'Storage Blob Data Reader\' rights on the storage account.
+@description('''Conditional.
+The Resource Id of the managed identity with Storage Blob Data Reader Access to the artifacts storage Account.
+Required when accessing artifacts from the storage account. 
 ''')
 param artifactsUserAssignedIdentityResourceId string = ''
 
 @description('The Object ID for the Windows Virtual Desktop Enterprise Application in Azure AD.  The Object ID can found by selecting Microsoft Applications using the Application type filter in the Enterprise Applications blade of Azure AD.')
 param avdObjectId string
 
-@description('Optional. The name of the blob that contains the PowerShell Az Module msi.')
-param azModuleBlobName string = 'PowerShell-Az.msi'
-
-@description('Optional. The name of the blob containing the AVDAgent Agent installers and script.')
-param avdAgentInstallersBlobName string = 'Set-SessionHostConfiguration.zip'
+@description('Optional. The URL of the AVD Agent and Session Host DSC Configuration.zip.')
+param avdAgentsModuleUrl string = 'https://wvdportalstorageblob.blob.${environment().suffixes.storage}/galleryartifacts/Configuration_1.0.02721.349.zip'
 
 // Resource and Resource Group naming and organization
 
@@ -94,7 +90,7 @@ param hostPoolRDPProperties string = 'audiocapturemode:i:1;camerastoredirect:s:*
 @description('Optional. The value determines whether the hostPool should receive early AVD updates for testing.')
 param hostPoolValidationEnvironment bool = false
 
-@description('Optional. An array of Security Principals with their object IDs and display names to assign to the AVD Application Group and FSLogix Storage.')
+@description('Optional. An array of object IDs to assign to the AVD Application Group and FSLogix Storage.')
 param securityPrincipals array = []
 
 @description('Optional. Determines if the scaling plan is deployed to the host pool.')
@@ -332,6 +328,12 @@ param fslogixShareSizeInGB int = 100
 ])
 param fslogixContainerType string = 'ProfileContainer'
 
+@description('''
+Optional. An array of objects, defining the groups of administrators who will be granted full control access to the FSLogix share.
+This parameter must include key value pairs with the following keys: "domainName", "samAccountName", and "objectId".
+''')
+param fslogixShareAdminGroups array = []
+
 @allowed([
   'AzureNetAppFiles Premium' // ANF with the Premium SKU, 450,000 IOPS
   'AzureNetAppFiles Standard' // ANF with the Standard SKU, 320,000 IOPS
@@ -352,9 +354,6 @@ param enableIncreaseQuotaAutomation bool = false
 
 @description('Optional. Configure FSLogix agent on the session hosts via local registry keys.')
 param fslogixConfigureSessionHosts bool = false
-
-@description('Optional. The name of the blob that contains the FSLogix Configuration Script.')
-param fslogixConfigurationBlobName string = 'Set-FSLogixSessionHostConfiguration.ps1'
 
 @description('''Optional. Existing FSLogix Storage Account Resource Ids. Only used when fslogixConfigureSessionHosts = "true".
 This list will be added to any storage accounts created when setting "fslogixStorageService" to any of the AzureFiles options. 
@@ -406,9 +405,6 @@ param logAnalyticsWorkspaceRetention int = 30
 ])
 @description('Optional. The SKU for the Log Analytics Workspace to setup the AVD monitoring solution')
 param logAnalyticsWorkspaceSku string = 'PerGB2018'
-
-@description('Optional. The resource ID of the log analytics workspace used for Azure Sentinel and / or Defender for Cloud. When using the Microsoft Monitor Agent (Log Analytics Agent), this allows you to multihome the agent to reduce unnecessary log collection and reduce cost.')
-param securityLogAnalyticsWorkspaceResourceId string = ''
 
 @description('Optional. The resource ID of the data collection rule used for Azure Sentinel and / or Defender for Cloud when using the Azure Monitor Agent.')
 param securityDataCollectionRulesResourceId string = ''
@@ -499,8 +495,8 @@ param timeStamp string = utcNow('yyyyMMddhhmmss')
 
 // VARIABLES
 
-var artifactsStorageAccountName = last(split(artifactsStorageAccountResourceId, '/'))
-var artifactsUri = 'https://${artifactsStorageAccountName}.blob.${environment().suffixes.storage}/${artifactsContainerName}/'
+var artifactsStorageAccountName = !empty(artifactsStorageAccountResourceId) ? last(split(artifactsStorageAccountResourceId, '/')) : ''
+var artifactsUri = !empty(artifactsStorageAccountName) ? 'https://${artifactsStorageAccountName}.blob.${environment().suffixes.storage}/${artifactsContainerName}/' : ''
 
 var deployDiskAccessResource = contains(hostPoolType, 'Personal') && recoveryServices && deployPrivateEndpoints ? true : false
 
@@ -510,6 +506,13 @@ var locationGlobalFeed = !empty(globalFeedPrivateEndpointSubnetResourceId) ? avd
 var confidentialVMOSDiskEncryptionType = confidentialVMOSDiskEncryption ? 'DiskWithVMGuestState' : 'VMGuestStateOnly'
 
 var resourceGroupsCount = 3 + (empty(existingFeedWorkspaceResourceId) ? 1 : 0) + (deployFSLogixStorage ? 1 : 0) + (avdPrivateLinkPrivateRoutes == 'All' && !empty(globalFeedPrivateEndpointSubnetResourceId) ? 1 : 0)
+
+module artifactsUserAssignedIdentity 'modules/getUserAssignedIdentity.bicep' = if(!empty(artifactsUserAssignedIdentityResourceId)) {
+  name: 'ArtifactsUserAssignedIdentity_${timeStamp}'
+  params: {
+    userAssignedIdentityResourceId: artifactsUserAssignedIdentityResourceId
+  }
+}
 
 // Existing Session Host Virtual Network location
 resource vmVirtualNetwork 'Microsoft.Network/virtualNetworks@2023-04-01' existing = {
@@ -547,7 +550,6 @@ module logic 'modules/logic.bicep' = {
   name: 'Logic_${timeStamp}'
   params: {
     artifactsUri: artifactsUri
-    avdAgentInstallersBlobName: avdAgentInstallersBlobName
     avdPrivateLinkPrivateRoutes: avdPrivateLinkPrivateRoutes
     globalFeedPrivateEndpointSubnetResourceId: globalFeedPrivateEndpointSubnetResourceId
     cseBlobNames: cseBlobNames
@@ -563,7 +565,6 @@ module logic 'modules/logic.bicep' = {
     domainName: domainName
     fileShareNames: resourceNames.outputs.fileShareNames
     fslogixConfigureSessionHosts: fslogixConfigureSessionHosts
-    fslogixConfigurationBlobName: fslogixConfigurationBlobName
     fslogixContainerType: fslogixContainerType
     fslogixStorageService: fslogixStorageService
     hibernationEnabled: hibernationEnabled
@@ -614,13 +615,9 @@ module rgs 'modules/resourceGroups.bicep' = [for i in range(0, resourceGroupsCou
 module management 'modules/management/management.bicep' = {
   name: 'Management_${timeStamp}'
   params: {
-    artifactsUri: artifactsUri
-    artifactsStorageAccountResourceId: artifactsStorageAccountResourceId
-    artifactsUserAssignedIdentityResourceId: artifactsUserAssignedIdentityResourceId
     automationAccountName: resourceNames.outputs.automationAccountName
     automationAccountPrivateDnsZoneResourceId: automationAccountPrivateDnsZoneResourceId
     avdObjectId: avdObjectId
-    azModuleBlobName: azModuleBlobName
     azureBlobsPrivateDnsZoneResourceId: azureBlobsPrivateDnsZoneResourceId
     confidentialVMOrchestratorObjectId: confidentialVMOrchestratorObjectId
     confidentialVMOSDiskEncryptionType: confidentialVMOSDiskEncryptionType
@@ -645,7 +642,6 @@ module management 'modules/management/management.bicep' = {
     identitySolution: identitySolution
     keyVaultNames: resourceNames.outputs.keyVaultNames
     keyVaultPrivateDnsZoneResourceId: keyVaultPrivateDnsZoneResourceId
-    locationControlPlane: locationControlPlane
     locationVirtualMachines: locationVirtualMachines
     logAnalyticsWorkspaceResourceId: enableMonitoring ? monitoring.outputs.logAnalyticsWorkspaceResourceId : ''
     managementVmSize: managementVmSize
@@ -701,9 +697,7 @@ module monitoring 'modules/monitoring/monitoring.bicep' = if(enableMonitoring) {
 // This module deploys the workspace, host pool, and desktop application group
 module controlPlane 'modules/controlPlane/controlPlane.bicep' = {
   name: 'ControlPlane_${timeStamp}'
-  params: {
-    artifactsUri: artifactsUri
-    artifactsUserAssignedIdentityClientId: management.outputs.artifactsUserAssignedIdentityClientId    
+  params: {  
     avdPrivateDnsZoneResourceId: avdPrivateDnsZoneResourceId
     avdPrivateLinkPrivateRoutes: avdPrivateLinkPrivateRoutes
     deployScalingPlan: deployScalingPlan
@@ -711,7 +705,7 @@ module controlPlane 'modules/controlPlane/controlPlane.bicep' = {
     desktopApplicationGroupName: resourceNames.outputs.desktopApplicationGroupName
     desktopFriendlyName: desktopFriendlyName
     existingFeedWorkspaceResourceId: existingFeedWorkspaceResourceId
-    existingGlobalWorkspace: empty(existingGlobalFeedResourceId) ? false : true
+    existingGlobalWorkspaceResourceId: existingGlobalFeedResourceId
     globalFeedPrivateDnsZoneResourceId: globalFeedPrivateDnsZoneResourceId
     globalFeedPrivateEndpointSubnetResourceId: globalFeedPrivateEndpointSubnetResourceId
     globalWorkspaceName: resourceNames.outputs.globalFeedWorkspaceName
@@ -736,7 +730,7 @@ module controlPlane 'modules/controlPlane/controlPlane.bicep' = {
     resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
     roleDefinitions: logic.outputs.roleDefinitions
     scalingPlanExclusionTag: scalingPlanExclusionTag
-    securityPrincipalObjectIds: map(securityPrincipals, item => item.objectId)
+    securityPrincipals: securityPrincipals
     tags: tags
     timeStamp: timeStamp
     virtualMachineTemplate: logic.outputs.virtualMachineTemplate
@@ -757,7 +751,7 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (deployFSLogixStorage) {
   name: 'FSLogix_${timeStamp}'
   params: {
     artifactsUri: artifactsUri
-    artifactsUserAssignedIdentityClientId: management.outputs.artifactsUserAssignedIdentityClientId
+    artifactsUserAssignedIdentityClientId: empty(artifactsUserAssignedIdentityResourceId) ? '' : artifactsUserAssignedIdentity.outputs.clientId
     activeDirectoryConnection: existingSharedActiveDirectoryConnection
     automationAccountName: resourceNames.outputs.automationAccountName
     availability: availability
@@ -769,6 +763,9 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (deployFSLogixStorage) {
     enableIncreaseQuotaAutomation: enableIncreaseQuotaAutomation
     encryptionUserAssignedIdentityResourceId: management.outputs.encryptionUserAssignedIdentityResourceId
     fileShares: logic.outputs.fileShares
+    fslogixAdminGroupObjectIds: !empty(fslogixShareAdminGroups) ? map(fslogixShareAdminGroups, item => item.objectId) : []
+    fslogixAdminGroupSamAccountNames: !empty(fslogixShareAdminGroups) ? map(fslogixShareAdminGroups, item => item.samAccountName) : []
+    fslogixAdminGroupDomainNames: !empty(fslogixShareAdminGroups) ? map(fslogixShareAdminGroups, item => item.domainName) : []
     shareSizeInGB: fslogixShareSizeInGB
     containerType: fslogixContainerType
     storageService: fslogixStorageService
@@ -790,8 +787,7 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (deployFSLogixStorage) {
     recoveryServicesVaultName: resourceNames.outputs.recoveryServicesVaultName
     resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
     resourceGroupStorage: resourceNames.outputs.resourceGroupStorage
-    securityPrincipalObjectIds: map(securityPrincipals, item => item.objectId)
-    securityPrincipalNames: map(securityPrincipals, item => item.name)
+    securityPrincipals: securityPrincipals
     smbServerLocation: logic.outputs.smbServerLocation
     storageAccountNamePrefix: resourceNames.outputs.storageAccountNamePrefix
     storageCount: logic.outputs.fslogixStorageCount
@@ -826,10 +822,9 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (deployFSLogixStorage) {
 module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
   name: 'SessionHosts_${timeStamp}'
   params: {
-    enableAcceleratedNetworking: enableAcceleratedNetworking
-    artifactsUri: artifactsUri
-    artifactsUserAssignedIdentityClientId: management.outputs.artifactsUserAssignedIdentityClientId // ClientId that comes from Management / UserAssignedIdentity Modules is already determined.
-    artifactsUserAssignedIdentityResourceId: management.outputs.artifactsUserAssignedIdentityResourceId // ResourceId that comes from Management / UserAssignedIdentity Modules is already determined.
+    avdAgentsModuleUrl: avdAgentsModuleUrl
+    artifactsUserAssignedIdentityClientId: empty(artifactsUserAssignedIdentityResourceId) ? '': artifactsUserAssignedIdentity.outputs.clientId
+    artifactsUserAssignedIdentityResourceId: artifactsUserAssignedIdentityResourceId
     availability: availability
     availabilitySetNamePrefix: resourceNames.outputs.availabilitySetNamePrefix
     availabilitySetsCount: logic.outputs.availabilitySetsCount
@@ -853,14 +848,15 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     domainName: domainName
     drainMode: drainMode
     drainModeUserAssignedIdentityClientId: management.outputs.deploymentUserAssignedIdentityClientId
+    enableAcceleratedNetworking: enableAcceleratedNetworking
     encryptionAtHost: encryptionAtHost
     fslogixConfigureSessionHosts: logic.outputs.fslogixConfigureSessionHosts
     fslogixContainerType: fslogixContainerType
     fslogixDeployedStorageAccountResourceIds: deployFSLogixStorage ? fslogix.outputs.storageAccountResourceIds : []
     fslogixExistingStorageAccountResourceIds: fslogixExistingStorageAccountResourceIds
     hibernationEnabled: hibernationEnabled
-    hostPoolName: controlPlane.outputs.hostPoolName
     hostPoolRegistrationToken: controlPlane.outputs.hostPoolRegistrationToken
+    hostPoolResourceId: controlPlane.outputs.hostPoolResourceId
     identitySolution: identitySolution
     imageOffer: imageOffer
     imagePublisher: imagePublisher
@@ -883,8 +879,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
     roleDefinitions: logic.outputs.roleDefinitions
     securityDataCollectionRulesResourceId: securityDataCollectionRulesResourceId
-    securityPrincipalObjectIds: map(securityPrincipals, item => item.objectId)
-    securityLogAnalyticsWorkspaceResourceId: securityLogAnalyticsWorkspaceResourceId
+    securityPrincipals: securityPrincipals
     securityType: securityType
     secureBootEnabled: secureBootEnabled
     vTpmEnabled: vTpmEnabled

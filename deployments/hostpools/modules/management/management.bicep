@@ -1,14 +1,9 @@
 targetScope = 'subscription'
 param identitySolution string
-param artifactsUri string
-param artifactsStorageAccountResourceId string
-param artifactsUserAssignedIdentityResourceId string
 param automationAccountName string
 param automationAccountPrivateDnsZoneResourceId string
 param azureBlobsPrivateDnsZoneResourceId string
 param avdObjectId string
-param azModuleBlobName string
-param locationControlPlane string
 param confidentialVMOrchestratorObjectId string
 param confidentialVMOSDiskEncryptionType string
 param deployDiskAccessPolicy bool
@@ -63,7 +58,6 @@ param virtualMachineAdminPassword string
 param virtualMachineAdminUserName string
 param virtualMachineSubnetResourceId string
 
-var artifactsUserAssignedIdentityName = replace(userAssignedIdentityNameConv, 'UAIPURPOSE', 'artifacts')
 var deploymentUserAssignedIdentityName = replace(userAssignedIdentityNameConv, 'UAIPURPOSE', 'avd-deployment')
 
 var confidentialVMOSDiskEncryption = confidentialVMOSDiskEncryptionType == 'DiskWithVMGuestState' ? true : false
@@ -118,8 +112,8 @@ var roleAssignmentStorage = fslogix && !contains(identitySolution, 'EntraId')
 var roleAssignmentKeyVault = confidentialVMOSDiskEncryption && contains(keyManagementDisks, 'CustomerManaged')
   ? [
       {
-        roleDefinitionId: roleDefinitions.KeyVaultReader // (Purpose: Retrieve the customer managed keys from the key vault for idempotent deployment)
-        roleShortName: 'KeyVaultReader'
+        roleDefinitionId: roleDefinitions.KeyVaultCryptoOfficer // (Purpose: Retrieve the customer managed keys from the key vault for idempotent deployment)
+        roleShortName: 'KeyVaultCryptoOfficer'
         resourceGroup: resourceGroupManagement
         subscription: subscription().subscriptionId
       }
@@ -127,9 +121,6 @@ var roleAssignmentKeyVault = confidentialVMOSDiskEncryption && contains(keyManag
   : []
 
 var roleAssignments = union(roleAssignmentsCommon, roleAssignmentKeyVault, roleAssignmentStorage)
-var artifactsUserAssignedIdentityClientId = empty(artifactsUserAssignedIdentityResourceId)
-  ? artifactsUserAssignedIdentity.outputs.clientId
-  : existingArtifactsUserAssignedIdentity.properties.clientId
 
 // Role Assignment required for Start VM On Connect
 resource roleAssignment_PowerOnContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
@@ -165,8 +156,7 @@ module deploymentUserAssignedIdentity 'userAssignedIdentity.bicep' = {
   }
 }
 
-module roleAssignments_deployment '../../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = [
-  for i in range(0, length(roleAssignments)): {
+module roleAssignments_deployment '../../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = [for i in range(0, length(roleAssignments)): {
     scope: resourceGroup(roleAssignments[i].subscription, roleAssignments[i].resourceGroup)
     name: 'RoleAssignment_${roleAssignments[i].roleShortName}_${timeStamp}'
     params: {
@@ -177,40 +167,7 @@ module roleAssignments_deployment '../../../sharedModules/resources/authorizatio
   }
 ]
 
-resource existingArtifactsUserAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = if (!empty(artifactsUserAssignedIdentityResourceId)) {
-  name: last(split(artifactsUserAssignedIdentityResourceId, '/'))
-  scope: resourceGroup(
-    split(artifactsUserAssignedIdentityResourceId, '/')[2],
-    split(artifactsUserAssignedIdentityResourceId, '/')[4]
-  )
-}
-
-module artifactsUserAssignedIdentity 'userAssignedIdentity.bicep' = if (empty(artifactsUserAssignedIdentityResourceId)) {
-  scope: resourceGroup(resourceGroupManagement)
-  name: 'UserAssignedIdentity_Artifacts_${timeStamp}'
-  params: {
-    location: locationControlPlane
-    name: artifactsUserAssignedIdentityName
-    tags: tags[?'Microsoft.ManagedIdentity/userAssignedIdentities'] ?? {}
-  }
-}
-module artifactsRoleAssignment 'artifactsRoleAssignment.bicep' = if (empty(artifactsUserAssignedIdentityResourceId)) {
-  scope: resourceGroup(
-    split(artifactsStorageAccountResourceId, '/')[2],
-    split(artifactsStorageAccountResourceId, '/')[4]
-  )
-  name: 'RoleAssignment_StorageBlobReader_${timeStamp}'
-  params: {
-    roleDefinitionId: roleDefinitions.StorageBlobDataReader
-    storageName: last(split(artifactsStorageAccountResourceId, '/'))
-    userAssignedIdentityName: artifactsUserAssignedIdentityName
-    userAssignedIdentityPrincipalId: empty(artifactsUserAssignedIdentityResourceId)
-      ? artifactsUserAssignedIdentity.outputs.principalId
-      : ''
-  }
-}
-
-module privateEndpointVnet '../common/privateEndpointVnet.bicep' = if (privateEndpoint && !empty(privateEndpointSubnetResourceId)) {
+module privateEndpointVnet '../common/vnetLocation.bicep' = if (privateEndpoint && !empty(privateEndpointSubnetResourceId)) {
   name: 'PrivateEndpointVnet_${timeStamp}'
   params: {
     privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
@@ -227,7 +184,7 @@ module diskAccess 'diskAccess.bicep' = if(deployDiskAccessResource) {
     privateEndpointNameConv: privateEndpointNameConv
     privateEndpointNICNameConv: privateEndpointNICNameConv
     privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
-    privateEndpointLocation: privateEndpointVnet.outputs.location
+    privateEndpointLocation: privateEndpoint && !empty(privateEndpointSubnetResourceId)? privateEndpointVnet.outputs.location : ''
     tags: tags
     timeStamp: timeStamp
   }
@@ -265,8 +222,7 @@ module vmKeyVault 'keyVault.bicep' = if (!empty(virtualMachineAdminPassword) || 
     privateEndpointNICNameConv: privateEndpointNICNameConv
     privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
     skuName: confidentialVMOSDiskEncryption || contains(keyManagementDisks, 'HSM') ? 'premium' : 'standard'
-    tagsKeyVault: tags[?'Microsoft.KeyVault/vaults'] ?? {}
-    tagsPrivateEndpoints: tags[?'Microsoft.Network/privateEndpoints'] ?? {}
+    tags: tags
     timeStamp: timeStamp
     virtualMachineAdminPassword: virtualMachineAdminPassword
     virtualMachineAdminUserName: virtualMachineAdminUserName
@@ -280,9 +236,6 @@ module virtualMachine 'virtualMachine.bicep' = {
   scope: resourceGroup(resourceGroupManagement)
   params: {
     identitySolution: identitySolution
-    artifactsUri: artifactsUri
-    artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
-    azModuleBlobName: azModuleBlobName
     diskName: virtualMachineDiskName
     diskSku: diskSku
     domainJoinUserPassword: !contains(identitySolution, 'DomainServices')
@@ -300,15 +253,9 @@ module virtualMachine 'virtualMachine.bicep' = {
     subnetResourceId: virtualMachineSubnetResourceId
     tagsNetworkInterfaces: tags[?'Microsoft.Network/networkInterfaces'] ?? {}
     tagsVirtualMachines: tags[?'Microsoft.Compute/virtualMachines'] ?? {}
-    userAssignedIdentitiesResourceIds: empty(artifactsUserAssignedIdentityResourceId)
-      ? {
-          '${artifactsUserAssignedIdentity.outputs.resourceId}': {}
-          '${deploymentUserAssignedIdentity.outputs.resourceId}': {}
-        }
-      : {
-          '${existingArtifactsUserAssignedIdentity.id}': {}
-          '${deploymentUserAssignedIdentity.outputs.resourceId}': {}
-        }
+    userAssignedIdentitiesResourceIds: {
+      '${deploymentUserAssignedIdentity.outputs.resourceId}': {}
+    }      
     virtualMachineName: virtualMachineName
     virtualMachineAdminPassword: !empty(virtualMachineAdminPassword)
       ? virtualMachineAdminPassword
@@ -324,8 +271,6 @@ module customerManagedKeys 'customerManagedKeys.bicep' = if (keyManagementDisks 
   name: 'CustomerManagedKeys_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
-    artifactsUri: artifactsUri
-    artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
     confidentialVMOrchestratorObjectId: confidentialVMOrchestratorObjectId
     confidentialVMOSDiskEncryption: confidentialVMOSDiskEncryption
     deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentity.outputs.clientId
@@ -387,10 +332,6 @@ module recoveryServicesVault 'recoveryServicesVault.bicep' = if (recoveryService
   }
 }
 
-output artifactsUserAssignedIdentityClientId string = artifactsUserAssignedIdentityClientId
-output artifactsUserAssignedIdentityResourceId string = empty(artifactsUserAssignedIdentityResourceId)
-  ? artifactsUserAssignedIdentity.outputs.resourceId
-  : existingArtifactsUserAssignedIdentity.id
 output diskAccessResourceId string = deployDiskAccessResource ? diskAccess.outputs.resourceId : ''
 output diskEncryptionSetResourceId string = keyManagementDisks != 'PlatformManaged'
   ? customerManagedKeys.outputs.diskEncryptionSetResourceId

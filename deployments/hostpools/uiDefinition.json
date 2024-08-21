@@ -476,7 +476,7 @@
 									"toolTip": "Select the desired group(s) to give access to this AVD hostpool and if applicable, the FSLogix file share.",
 									"multiselect": true,
 									"constraints": {
-										"allowedValues": "[map(steps('controlPlane').assignment.groupsApi.value, (item) => parse(concat('{\"label\":\"', item.displayName, '\",\"value\":\"', item.id, '\"}')))]",
+										"allowedValues": "[map(steps('controlPlane').assignment.groupsApi.value, (item) => parse(concat('{\"label\":\"', item.displayName, '\",\"value\": {\"name\":\"', item.displayName, '\",\"objectId\":\"', item.id, '\"}}')))]",
 										"required": true
 									},
 									"visible": "[not(empty(steps('controlPlane').assignment.groupsApi))]"
@@ -496,6 +496,19 @@
 											}
 										},
 										"columns": [
+											{
+												"id": "name",
+												"header": "Name",
+												"width": "1fr",
+												"element": {
+													"type": "Microsoft.Common.TextBox",
+													"placeholder": "Security Group Name",
+													"constraints": {
+														"required": true,
+														"validations": []
+													}
+												}
+											},
 											{
 												"id": "objectId",
 												"header": "Object ID",
@@ -2211,7 +2224,7 @@
 									"type": "Microsoft.Common.DropDown",
 									"label": "Share Admins Group",
 									"toolTip": "Select a group to give Full Access to the file share if desired.",
-									"multiselect": true,
+									"multiselect": false,
 									"constraints": {
 										"allowedValues": "[map(filter(steps('userProfiles').fslogixStorage.groupsApi.value, (item) => not(empty(item.onPremisesSamAccountName))), (item) => parse(concat('{\"label\":\"', item.onPremisesNetbiosName, ' ', item.onPremisesSamAccountName, '\",\"value\": {\"domainName\":\"', item.onPremisesNetbiosName, '\",\"samAccountName\":\"', item.onPremisesSamAccountName, '\",\"objectId\":\"', item.id, '\"}}')))]",
 										"required": false
@@ -2229,7 +2242,7 @@
 										"rows": {
 											"count": {
 												"min": 0,
-												"max": 10
+												"max": 1
 											}
 										},
 										"columns": [
@@ -2250,13 +2263,13 @@
 											{
 												"id": "samAccountName",
 												"header": "samAccountName",
-												"width": "2fr",
+												"width": "1fr",
 												"element": {
 													"type": "Microsoft.Common.TextBox",
 													"placeholder": "Security Group Name",
 													"constraints": {
 														"required": true,
-														"regex": "^(?! )[a-zA-Z0-9._\\-\\s]{0,62}(?<! )$",
+														"regex": "^[a-zA-Z0-9._-]{1,64}$",
 														"validationMessage": "Please specify a valid samAccountName"
 													}
 												}
@@ -2264,7 +2277,7 @@
 											{
 												"id": "objectId",
 												"header": "Entra ID Object ID",
-												"width": "2fr",
+												"width": "1fr",
 												"element": {
 													"type": "Microsoft.Common.TextBox",
 													"placeholder": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
@@ -3119,7 +3132,8 @@
 				"hostPoolMaxSessionLimit": "[if(equals(steps('controlPlane').hostPool.type, 'Pooled'), steps('controlPlane').hostPool.maxSessions, 1)]",
 				"hostPoolValidationEnvironment": "[steps('controlPlane').hostPool.validation]",
 				"hostPoolRDPProperties": "[steps('controlPlane').hostPool.rdpProperties]",
-				"securityPrincipals": "[if(empty(steps('controlPlane').assignment.groupsApi), map(steps('controlPlane').assignment.groupsGrid, (item) => item.objectId), steps('controlPlane').assignment.groupsDropDown)]",				
+				"securityPrincipals": "[if(empty(steps('controlPlane').assignment.groupsApi), steps('controlPlane').assignment.groupsGrid, steps('controlPlane').assignment.groupsDropDown)]",
+				"shareAdminGroup": "[if(steps('userProfiles').fslogixStorage.selectAdminGroup, if(empty(steps('userProfiles').fslogixStorage.groupsApi), steps('userProfiles').fslogixStorage.adminGroupGrid, steps('userProfiles').fslogixStorage.adminGroupDropDown) , parse('{}'))]",
 				"deployScalingPlan": "[steps('controlPlane').scalingPlan.deployScalingPlan]",
 				"scalingPlanExclusionTag": "[if(steps('controlPlane').scalingPlan.deployScalingPlan, steps('controlPlane').scalingPlan.exclusionTag, '')]",
 				"scalingPlanRampUpSchedule": "[if(steps('controlPlane').scalingPlan.deployScalingPlan, first(steps('controlPlane').scalingPlan.weekdayRampUpSchedule), parse('{}'))]",
@@ -3173,7 +3187,6 @@
 				"fslogixStorageIndex": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').fslogixStorage.deployStorage, equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles')), steps('userProfiles').fslogixStorage.storageIndex, 0)]",
 				"fslogixStorageAccountADKerberosEncryption": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').fslogixStorage.deployStorage, equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles')), steps('userProfiles').fslogixStorage.storageKerberosEncryption, 'RC4')]",
 				"keyManagementFSLogixStorage": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').fslogixStorage.deployStorage, equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles')), steps('userProfiles').fslogixStorage.keyManagement, 'CustomerManaged')]",
-				"fslogixShareAdminGroups": "[if(steps('userProfiles').fslogixStorage.selectAdminGroup, if(empty(steps('userProfiles').fslogixStorage.groupsApi), steps('userProfiles').fslogixStorage.adminGroupGrid, steps('userProfiles').fslogixStorage.adminGroupDropDown), parse('[]'))]",
 				"fslogixConfigureSessionHosts": "[if(and(equals(steps('hosts').identity.solution, 'EntraId'), equals(steps('userProfiles').profileSolution, 'FSLogix')), steps('userProfiles').fslogixSessionHostConfig.configureSessionHosts, false)]",
 				"fslogixExistingStorageAccountResourceIds": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').fslogixSessionHostConfig.configureSessionHosts, or(equals(steps('userProfiles').fslogixStorage.deployStorage, false), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))), map(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts, (item) => item.resourceId), parse('[]'))]",
 				"recoveryServices": "[steps('management').backup.recoveryServices]",
