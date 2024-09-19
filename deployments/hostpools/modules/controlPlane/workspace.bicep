@@ -75,7 +75,7 @@ module workspace_privateEndpoint '../../../sharedModules/resources/network/priva
         privateDnsZoneResourceId
       ]
     }
-    serviceResourceId: !empty(existingWorkspaceResourceId) ? '' : workspace.id
+    serviceResourceId: !empty(existingWorkspaceResourceId) ? existingWorkspaceResourceId : workspace.id
     subnetResourceId: privateEndpointSubnetResourceId
     tags: union({
       'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroup().name}/providers/Microsoft.DesktopVirtualization/hostpools/${workspaceName}'
