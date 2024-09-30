@@ -30,7 +30,7 @@ $ExistingApplicationGroupReferences = (Invoke-RestMethod `
 
 [array]$NewApplicationGroupReference = $ApplicationGroupResourceId.Split(',')
   
-[array]$ApplicationGroupReferences = $ExistingApplicationGroupReferences + $NewApplicationGroupReference | Select-Object -Unique
+[array]$ApplicationGroupReferences = $ExistingApplicationGroupReferences + $NewApplicationGroupReference | ForEach-Object {$_.toLower()} | Select-Object -Unique
 
 # Use the access token to update the app group references on the workspace
 Invoke-RestMethod `
