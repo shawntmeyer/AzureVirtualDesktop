@@ -16,23 +16,6 @@ param virtualMachineNamePrefix string
 // Ensure that Centralized AVD Managment resource group and resources are created appropriately
 var centralAVDMonitoring = !empty(businessUnitIdentifier) ? centralizedAVDMonitoring : true
 
-var fileShareNames = {
-  CloudCacheProfileContainer: [
-    'profile-containers'
-  ]
-  CloudCacheProfileOfficeContainer: [
-    'profile-containers'
-    'office-containers'
-  ]
-  ProfileContainer: [
-    'profile-containers'
-  ]
-  ProfileOfficeContainer: [
-    'profile-containers'
-    'office-containers'
-  ]
-}
-
 var locations = (loadJsonContent('../../../.common/data/locations.json'))[environment().name]
 var resourceAbbreviations = loadJsonContent('../../../.common/data/resourceAbbreviations.json')
 // busUnitId = Identifier from MLZ AVD
@@ -247,11 +230,27 @@ var netAppCapacityPoolName = replace(
   'LOCATION',
   locations[locationVirtualMachines].abbreviation
 )
-// Storage Account Name - Max length 15 characters for Domain Services
+// Storage Account Naming Prefix
 var storageAccountNamePrefix = empty(fslogixStorageCustomPrefix)
-  ? toLower('${replace(replace(replace(replace(replace(nameConv_HP_Resources, 'RESOURCETYPE', ''), hostPoolBaseName, '${hostPoolBaseName}pc'), 'LOCATION', locations[locationVirtualMachines].abbreviation), 'avd-', ''), '-', '')}')
+  ? toLower('${replace(replace(replace(replace(replace(nameConv_HP_Resources, 'RESOURCETYPE', ''), hostPoolBaseName, '${hostPoolBaseName}ud'), 'LOCATION', locations[locationVirtualMachines].abbreviation), 'avd-', ''), '-', '')}')
   : toLower(fslogixStorageCustomPrefix)
 
+var fslogixfileShareNames = {
+  CloudCacheProfileContainer: [
+    'profile-containers'
+  ]
+  CloudCacheProfileOfficeContainer: [
+    'profile-containers'
+    'office-containers'
+  ]
+  ProfileContainer: [
+    'profile-containers'
+  ]
+  ProfileOfficeContainer: [
+    'profile-containers'
+    'office-containers'
+  ]
+}
 // Private Endpoints - Max length 64 characters
 var privateEndpointNameConvTemp = nameConvResTypeAtEnd
   ? 'RESOURCE-SUBRESOURCE-VNETID-RESOURCETYPE'
@@ -311,7 +310,7 @@ output diskEncryptionSetNames object = {
 }
 output diskNamePrefix string = diskNamePrefix
 output globalFeedWorkspaceName string = globalFeedWorkspaceName
-output fileShareNames object = fileShareNames
+output fslogixFileShareNames object = fslogixfileShareNames
 output hostPoolName string = hostPoolName
 output keyVaultNames object = {
   VMs: keyVaultNameVMs

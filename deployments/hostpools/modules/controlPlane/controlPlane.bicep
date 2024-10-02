@@ -33,7 +33,7 @@ param roleDefinitions object
 param scalingPlanExclusionTag string
 param scalingPlanName string
 param scalingPlanSchedules array
-param securityPrincipals array
+param appGroupSecurityGroups array
 param tags object
 param timeStamp string
 param hostPoolValidationEnvironment bool
@@ -72,7 +72,7 @@ module globalFeedPrivateEndpointVnet '../common/vnetLocation.bicep' = if (avdPri
   }
 }
 
-module hostPool 'hostPool.bicep' = {
+module hostPool 'modules/hostPool.bicep' = {
   name: 'HostPool_${timeStamp}'
   scope: resourceGroup(resourceGroupControlPlane)
   params: {
@@ -98,7 +98,7 @@ module hostPool 'hostPool.bicep' = {
   }
 }
 
-module applicationGroup 'applicationGroup.bicep' = {
+module applicationGroup 'modules/applicationGroup.bicep' = {
   name: 'ApplicationGroup_${timeStamp}'
   scope: resourceGroup(resourceGroupControlPlane)
   params: {
@@ -112,13 +112,13 @@ module applicationGroup 'applicationGroup.bicep' = {
     managementVirtualMachineName: managementVirtualMachineName
     resourceGroupManagement: resourceGroupManagement
     roleDefinitions: roleDefinitions
-    securityPrincipals: securityPrincipals
+    appGroupSecurityGroups: appGroupSecurityGroups
     tags: tags  
     timeStamp: timeStamp
   }
 }
 
-module feedWorkspace 'workspace.bicep' = {
+module feedWorkspace 'modules/workspace.bicep' = {
   name: 'WorkspaceFeed_${timeStamp}'
   scope: resourceGroup(resourceGroupControlPlane)
   params: {
@@ -146,7 +146,7 @@ module feedWorkspace 'workspace.bicep' = {
   }
 }
 
-module scalingPlan 'scalingPlan.bicep' = if(deployScalingPlan && contains(hostPoolType,'Pooled')) {
+module scalingPlan 'modules/scalingPlan.bicep' = if(deployScalingPlan && contains(hostPoolType,'Pooled')) {
   name: 'ScalingPlan_${timeStamp}'
   scope: resourceGroup(resourceGroupControlPlane)
   params: {
@@ -162,7 +162,7 @@ module scalingPlan 'scalingPlan.bicep' = if(deployScalingPlan && contains(hostPo
   }
 } 
 
-module globalWorkspace 'workspace.bicep' = if(empty(existingGlobalWorkspaceResourceId) && avdPrivateLinkPrivateRoutes == 'All' && !empty(globalFeedPrivateDnsZoneResourceId) && !empty(globalFeedPrivateEndpointSubnetResourceId)) {
+module globalWorkspace 'modules/workspace.bicep' = if(empty(existingGlobalWorkspaceResourceId) && avdPrivateLinkPrivateRoutes == 'All' && !empty(globalFeedPrivateDnsZoneResourceId) && !empty(globalFeedPrivateEndpointSubnetResourceId)) {
   name: 'Global_Feed_Workspace_${timeStamp}'
   scope: resourceGroup(resourceGroupGlobalFeed)
   params: {
@@ -193,5 +193,4 @@ module globalWorkspace 'workspace.bicep' = if(empty(existingGlobalWorkspaceResou
   ]
 }
 
-output hostPoolRegistrationToken string = hostPool.outputs.registrationToken
 output hostPoolResourceId string = hostPool.outputs.resourceId

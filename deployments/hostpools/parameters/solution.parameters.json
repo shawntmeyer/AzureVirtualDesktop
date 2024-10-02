@@ -32,7 +32,7 @@
     "virtualMachineSubnetResourceId": {
       "value": ""
     },
-    "securityPrincipals": {
+    "appGroupSecurityPrincipals": {
       "value": [
       ]
     },

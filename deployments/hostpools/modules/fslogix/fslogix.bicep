@@ -2,33 +2,28 @@ targetScope = 'subscription'
 
 param activeDirectoryConnection bool
 param identitySolution string
-param artifactsUri string
-param artifactsUserAssignedIdentityClientId string
-param automationAccountName string
 param availability string
 param azureFilesPrivateDnsZoneResourceId string
 param customerManagedKeysEnabled bool
 param deploymentUserAssignedIdentityClientId string
+@secure()
+param domainJoinUserPassword string
+@secure()
+param domainJoinUserPrincipalName string
 param netAppVolumesSubnetResourceId string
 param domainName string
-param enableIncreaseQuotaAutomation bool
 param encryptionUserAssignedIdentityResourceId string
-param fileShares array
-param fslogixAdminGroupDomainNames array
-param fslogixAdminGroupObjectIds array
-param fslogixAdminGroupSamAccountNames array
+param fslogixFileShares array
+param fslogixAdminGroups array
+param fslogixUserGroups array
 param shareSizeInGB int
-param containerType string
-param storageService string
-param kerberosEncryption string
-param vmKeyVaultName string
+param kerberosEncryptionType string
 param storageEncryptionKeyVaultUris array
 param location string
 param logAnalyticsWorkspaceResourceId string
 param managementVirtualMachineName string
 param netAppAccountName string
 param netAppCapacityPoolName string
-param netbios string
 param ouPath string
 param privateEndpoint bool
 param privateEndpointNameConv string
@@ -38,7 +33,6 @@ param recoveryServices bool
 param recoveryServicesVaultName string
 param resourceGroupManagement string
 param resourceGroupStorage string
-param securityPrincipals array
 param smbServerLocation string
 param storageAccountNamePrefix string
 param storageCount int
@@ -46,18 +40,11 @@ param storageEncryptionKeyName string
 param storageIndex int
 param storageSku string
 param storageSolution string
-param tagsAutomationAccounts object
 param tagsNetAppAccount object
 param tagsPrivateEndpoints object
 param tagsRecoveryServicesVault object
 param tagsStorageAccounts object
 param timeStamp string
-param timeZone string
-
-resource vmKeyVault 'Microsoft.KeyVault/vaults@2022-07-01' existing = if (contains(identitySolution, 'DomainServices')) {
-  name: vmKeyVaultName
-  scope: resourceGroup(resourceGroupManagement)
-}
 
 module privateEndpointVnet '../common/VnetLocation.bicep' = if (privateEndpoint && !empty(privateEndpointSubnetResourceId)) {
   name: 'PrivateEndpointVnet_${timeStamp}'
@@ -67,18 +54,18 @@ module privateEndpointVnet '../common/VnetLocation.bicep' = if (privateEndpoint 
 }
 
 // Azure NetApp files for fslogix
-module azureNetAppFiles 'azureNetAppFiles.bicep' = if (storageSolution == 'AzureNetAppFiles' && contains(identitySolution, 'DomainServices')) {
+module azureNetAppFiles 'modules/azureNetAppFiles.bicep' = if (storageSolution == 'AzureNetAppFiles' && contains(identitySolution, 'DomainServices')) {
   name: 'AzureNetAppFiles_${timeStamp}'
   scope: resourceGroup(resourceGroupStorage)
   params: {
-    fslogixAdminGroupDomainNames: fslogixAdminGroupDomainNames
-    fslogixAdminGroupSamAccountNames: fslogixAdminGroupSamAccountNames
     activeDirectoryConnection: activeDirectoryConnection 
-    domainJoinUserPassword: vmKeyVault.getSecret('domainJoinUserPassword')
-    domainJoinUserPrincipalName: vmKeyVault.getSecret('domainJoinUserPrincipalName')
+    domainJoinUserPassword: domainJoinUserPassword
+    domainJoinUserPrincipalName: domainJoinUserPrincipalName
     domainName: domainName
-    fileShares: fileShares
-    fslogixContainerType: containerType
+    shares: fslogixFileShares
+    shareSizeInGB: shareSizeInGB
+    shareAdminGroups: fslogixAdminGroups
+    shareUserGroups: fslogixUserGroups
     location: location
     managementVirtualMachineName: managementVirtualMachineName
     netAppAccountName: netAppAccountName
@@ -88,42 +75,34 @@ module azureNetAppFiles 'azureNetAppFiles.bicep' = if (storageSolution == 'Azure
     resourceGroupManagement: resourceGroupManagement
     smbServerLocation: smbServerLocation
     storageSku: storageSku
-    fslogixStorageSolution: storageSolution
+    storageSolution: storageSolution
     tagsNetAppAccount: tagsNetAppAccount
     timeStamp: timeStamp
   }
 }
 
 // Azure files for FSLogix
-module azureFiles 'azureFiles/azureFiles.bicep' = if (storageSolution == 'AzureFiles') {
+module azureFiles 'modules/azureFiles.bicep' = if (storageSolution == 'AzureFiles') {
   name: 'AzureFiles_${timeStamp}'
   scope: resourceGroup(resourceGroupStorage)
   params: {
-    fslogixAdminGroupDomainNames: fslogixAdminGroupDomainNames
-    fslogixAdminGroupObjectIds: fslogixAdminGroupObjectIds
-    fslogixAdminGroupSamAccountNames: fslogixAdminGroupSamAccountNames
-    artifactsUri: artifactsUri
-    artifactsUserAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
-    automationAccountName: automationAccountName
     availability: availability
     azureFilesPrivateDnsZoneResourceId: azureFilesPrivateDnsZoneResourceId
     deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
     customerManagedKeysEnabled: customerManagedKeysEnabled
-    domainJoinUserPassword: contains(identitySolution, 'DomainServices') ? vmKeyVault.getSecret('domainJoinUserPassword') : ''
-    domainJoinUserPrincipalName: contains(identitySolution, 'DomainServices') ? vmKeyVault.getSecret('domainJoinUserPrincipalName') : ''
-    enableIncreaseQuotaAutomation: enableIncreaseQuotaAutomation
+    domainJoinUserPassword: contains(identitySolution, 'DomainServices') ? domainJoinUserPassword : ''
+    domainJoinUserPrincipalName: contains(identitySolution, 'DomainServices') ? domainJoinUserPrincipalName : ''
     encryptionUserAssignedIdentityResourceId: encryptionUserAssignedIdentityResourceId
-    fileShares: fileShares
+    fileShares: fslogixFileShares
     fslogixShareSizeInGB: shareSizeInGB
-    fslogixContainerType: containerType
-    fslogixStorageService: storageService
+    fslogixAdminGroups: fslogixAdminGroups
+    fslogixUserGroups: fslogixUserGroups
     identitySolution: identitySolution
-    kerberosEncryption: kerberosEncryption
+    kerberosEncryptionType: kerberosEncryptionType
     encryptionKeyKeyVaultUris: storageEncryptionKeyVaultUris
     location: location
     logAnalyticsWorkspaceId: logAnalyticsWorkspaceResourceId
     managementVirtualMachineName: managementVirtualMachineName
-    netbios: netbios
     ouPath: ouPath
     privateEndpoint: privateEndpoint
     privateEndpointLocation: privateEndpoint && !empty(privateEndpointSubnetResourceId) ? privateEndpointVnet.outputs.location : ''
@@ -134,21 +113,18 @@ module azureFiles 'azureFiles/azureFiles.bicep' = if (storageSolution == 'AzureF
     recoveryServicesVaultName: recoveryServicesVaultName
     resourceGroupManagement: resourceGroupManagement
     resourceGroupStorage: resourceGroupStorage
-    securityPrincipals: securityPrincipals
     storageAccountNamePrefix: storageAccountNamePrefix
     storageCount: storageCount
     storageEncryptionKeyName: storageEncryptionKeyName
     storageIndex: storageIndex
     storageSku: storageSku
     storageSolution: storageSolution
-    tagsAutomationAccounts: tagsAutomationAccounts
     tagsPrivateEndpoints: tagsPrivateEndpoints
     tagsRecoveryServicesVault: tagsRecoveryServicesVault
     tagsStorageAccounts: tagsStorageAccounts
     timeStamp: timeStamp
-    timeZone: timeZone
   }
 }
 
-output netAppShares array = storageSolution == 'AzureNetAppFiles' ? azureNetAppFiles.outputs.fileShares : []
+output netAppVolumeResourceIds array = storageSolution == 'AzureNetAppFiles' ? azureNetAppFiles.outputs.volumeResourceIds : []
 output storageAccountResourceIds array = storageSolution == 'AzureFiles' ? azureFiles.outputs.storageAccountResourceIds : []

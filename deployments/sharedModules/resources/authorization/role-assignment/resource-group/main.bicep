@@ -70,3 +70,6 @@ output resourceGroupName string = resourceGroup().name
 
 @sys.description('The scope this Role Assignment applies to.')
 output scope string = resourceGroup().id
+
+@sys.description('The role Definition Id of the Role Assignment.')
+output roleDefinitionId string = roleAssignment.properties.roleDefinitionId

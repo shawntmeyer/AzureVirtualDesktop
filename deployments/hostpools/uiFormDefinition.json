@@ -31,6 +31,15 @@
 							}
 						},
 						{
+							"name": "groupsApi",
+							"type": "Microsoft.Solutions.GraphApiControl",
+							"condition": "[or(steps('userProfiles').deployStorage, steps('userProfiles').configureSessionHosts)]",
+							"request": {
+								"method": "GET",
+								"path": "/v1.0/groups?$orderby=displayName&$select=displayName,id,onPremisesSamAccountName"
+							}
+						},
+						{
 							"name": "servicePrincipalApi",
 							"type": "Microsoft.Solutions.GraphApiControl",
 							"request": {
@@ -455,63 +464,62 @@
 							]
 						},
 						{
-							"name": "assignment",
+							"name": "assignments",
 							"type": "Microsoft.Common.Section",
 							"label": "Assignments",
 							"visible": true,
 							"elements": [
 								{
-									"name": "groupsApi",
-									"type": "Microsoft.Solutions.GraphApiControl",
-									"request": {
-										"method": "GET",
-										"path": "/v1.0/groups?$top=999"
+									"name": "groupPickerBlade",
+									"type": "Microsoft.Solutions.BladeInvokeControl",
+									"openBladeStatus": "[steps('controlPlane').assignments.groupSelector.changing]",
+									"bladeReference": {
+										"name": "ObjectPickerBlade",
+										"extension": "Microsoft_AAD_IAM",
+										"parameters": {
+											"queries": 32,
+											"disablers": 4,											
+											"bladeSubtitle": "Pick the groups to assign",
+											"additionalQueriesOnSearch": 0,
+											"advancedQueryOptions": {
+												"suggestedObjectsOptions": {}
+											},
+											"selectionMaximum": 3,
+											"selectionMinimum": 1,
+											"bladeTitle": "Select Groups",
+											"informationHeader": {
+												"informationText": "Select the groups to assign to the desktop application group",
+												"informationLink": ""
+											},
+											"inviteEnabled": true,
+											"searchBoxLabel": "Search for a group",
+											"searchBoxPlaceHolderText": "Enter a string in the group name",
+											"searchBoxTooltip": "This is the tooltip",
+											"searchGridNoRowsMessage": "No groups found",
+											"selectButtonText": "Select Groups",
+											"selectedGridLabel": "Selected Groups",
+											"selectedGridNoRowsMessage": "You must select at least one group"									
+										},
+										"inFullScreen": false
+									},
+									"transforms": {
+										"selection": "selectedObjects|[*].{displayName:displayName, objectId:id}"
 									}
 								},
 								{
-									"name": "groupsDropDown",
-									"type": "Microsoft.Common.DropDown",
-									"label": "Groups",
-									"defaultValue": "",
-									"toolTip": "Select the desired group(s) to give access to this AVD hostpool and if applicable, the FSLogix file share.",
-									"multiselect": true,
+									"name": "groupSelector",
+									"type": "Microsoft.Common.Selector",
+									"label": "Select Groups",
+									"keyPath": "displayName",
+									"descriptionKeyPath": "id",
+									"value": "[steps('controlPlane').assignments.groupPickerBlade.transformed.selection]",
+									"visible": true,
+									"barColor": "[if(empty(steps('controlPlane').assignments.groupPickerBlade), '#FF0000', '#7fba00')]",
 									"constraints": {
-										"allowedValues": "[map(steps('controlPlane').assignment.groupsApi.value, (item) => parse(concat('{\"label\":\"', item.displayName, '\",\"value\":\"', item.id, '\"}')))]",
 										"required": true
 									},
-									"visible": "[not(empty(steps('controlPlane').assignment.groupsApi))]"
-								},
-								{
-									"name": "groupsGrid",
-									"type": "Microsoft.Common.EditableGrid",
-									"ariaLabel": "Enter the security groups for access to AVD and if applicable, FSLogix. If deploying FSLogix, a storage account will be deployed for each group to support sharding.",
-									"label": "Security Groups",
-									"visible": "[empty(steps('controlPlane').assignment.groupsApi)]",
-									"constraints": {
-										"width": "Full",
-										"rows": {
-											"count": {
-												"min": 1,
-												"max": 10
-											}
-										},
-										"columns": [
-											{
-												"id": "objectId",
-												"header": "Object ID",
-												"width": "1fr",
-												"element": {
-													"type": "Microsoft.Common.TextBox",
-													"placeholder": "Security Group Object ID",
-													"constraints": {
-														"required": true,
-														"validations": []
-													}
-												}
-											}
-										]
-									}
-								}
+									"link": "[if(empty(steps('controlPlane').assignments.groupPickerBlade), 'Select groups', 'Re-select groups')]"
+								}								
 							]
 						},
 						{
@@ -647,6 +655,7 @@
 																"value": "DepthFirst"
 															}
 														],
+														"defaultValue": "Breadth-First",
 														"required": true
 													}
 												}
@@ -704,6 +713,7 @@
 																"value": "DepthFirst"
 															}
 														],
+														"defaultValue": "Depth-First",
 														"required": true
 													}
 												}
@@ -732,7 +742,7 @@
 												"width": "2fr",
 												"element": {
 													"type": "Microsoft.Common.TextBox",
-													"placeholder": "17:00",
+													"placeholder": "18:00",
 													"constraints": {
 														"required": true,
 														"validations": [
@@ -797,6 +807,7 @@
 																"value": "DepthFirst"
 															}
 														],
+														"defaultValue": "Depth-First",
 														"required": true
 													}
 												}
@@ -830,8 +841,7 @@
 									"name": "minsToLogoff",
 									"type": "Microsoft.Common.TextBox",
 									"label": "Number of minutes before users are forcefully logged off",
-									"placeholder": "",
-									"defaultValue": "30",
+									"placeholder": "30",
 									"toolTip": "Use only integers",
 									"constraints": {
 										"required": true,
@@ -860,7 +870,7 @@
 												"width": "5fr",
 												"element": {
 													"type": "Microsoft.Common.TextBox",
-													"placeholder": "20:00",
+													"placeholder": "22:00",
 													"constraints": {
 														"required": true,
 														"validations": [
@@ -889,6 +899,7 @@
 																"value": "DepthFirst"
 															}
 														],
+														"defaultValue": "Depth-First",
 														"required": true
 													}
 												}
@@ -1231,7 +1242,7 @@
 										}
 									}
 								},
-																{
+								{
 									"name": "hostGroupsApi",
 									"type": "Microsoft.Solutions.ArmApiControl",
 									"condition": "[and(not(empty(steps('basics').scope.subscription)), steps('hosts').dedicatedHosts.deployToDedicatedHosts)]",
@@ -1426,8 +1437,8 @@
 									"type": "Microsoft.Common.CheckBox",
 									"label": "Enable Hibernation",
 									"toolTip": "Hibernation allows you to pause VMs that aren't being used and save on compute costs where the VMs don't need to run 24/7.",
-									"visible": "[and(equals(steps('controlPlane').hostPool.type, 'Personal'), bool(first(map(filter(first(map(filter(steps('hosts').specs.resourceSkusApi.value, (item) => contains(item.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (item) => item.capabilities)), (item) => equals(item.name, 'HibernationSupported')), (item) => item.value))))]"									
-								}								
+									"visible": "[and(equals(steps('controlPlane').hostPool.type, 'Personal'), bool(first(map(filter(first(map(filter(steps('hosts').specs.resourceSkusApi.value, (item) => contains(item.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (item) => item.capabilities)), (item) => equals(item.name, 'HibernationSupported')), (item) => item.value))))]"
+								}
 							]
 						},
 						{
@@ -1617,11 +1628,11 @@
 							"visible": "[not(equals(steps('hosts').identity.solution, 'EntraId'))]",
 							"elements": [
 								{
-									"name": "passwordSource",
+									"name": "source",
 									"type": "Microsoft.Common.OptionsGroup",
 									"label": "Domain Join User and Password Source",
 									"defaultValue": "Manual Entry",
-									"toolTip": "Select 'Manual Entry' to specify the Domain Join User and Password or 'Key Vault' to reference the 'domainJoinUserPassword' and 'domainJoinUserPrincipalName' secrets stored in the management key vault.",
+									"toolTip": "Select 'Manual Entry' to specify the Domain Join User and Password or 'Key Vault' to select secrets from a key vault.",
 									"constraints": {
 										"allowedValues": [
 											{
@@ -1648,7 +1659,7 @@
 										"regex": "^[a-z0-9A-Z_.-]+@(?:[a-z0-9]+\\.)+[a-z]+$",
 										"validationMessage": "The value must be a valid user principal name."
 									},
-									"visible": "[equals(steps('hosts').domainJoinCredentials.passwordSource, 'manual')]"
+									"visible": "[equals(steps('hosts').domainJoinCredentials.source, 'manual')]"
 								},
 								{
 									"name": "password",
@@ -1664,7 +1675,65 @@
 									"options": {
 										"hideConfirmation": false
 									},
-									"visible": "[equals(steps('hosts').domainJoinCredentials.passwordSource, 'manual')]"
+									"visible": "[equals(steps('hosts').domainJoinCredentials.source, 'manual')]"
+								},
+								{
+									"name": "upnSecretPickerBlade",
+									"type": "Microsoft.Solutions.BladeInvokeControl",
+									"openBladeStatus": "[steps('hosts').domainJoinCredentials.upnSecretSelector.changing]",
+									"bladeReference": {
+										"name": "SecretPickerV2ViewModel",
+										"extension": "Microsoft_Azure_KeyVault",
+										"parameters": {
+											"subscriptionId": "[steps('basics').scope.subscription.subscriptionId]",
+											"showSubscriptionDropdown": true,
+											"showCreateNew": false,
+											"showVersionPicker": false
+										},
+										"inFullScreen": false
+									}
+								},
+								{
+									"name": "upnSecretSelector",
+									"type": "Microsoft.Common.Selector",
+									"label": "User Principal Name",
+									"keyPath": "secretId",
+									"value": "[steps('hosts').domainJoinCredentials.upnSecretPickerBlade]",
+									"visible": "[equals(steps('hosts').domainJoinCredentials.source, 'keyVault')]",
+									"barColor": "[if(empty(steps('hosts').domainJoinCredentials.upnSecretPickerBlade), '#FF0000', '#7fba00')]",
+									"constraints": {
+										"required": true
+									},
+									"link": "Select a secret"
+								},
+								{
+									"name": "passwordSecretPickerBlade",
+									"type": "Microsoft.Solutions.BladeInvokeControl",
+									"openBladeStatus": "[steps('hosts').domainJoinCredentials.passwordSecretSelector.changing]",
+									"bladeReference": {
+										"name": "SecretPickerV2ViewModel",
+										"extension": "Microsoft_Azure_KeyVault",
+										"parameters": {
+											"subscriptionId": "[steps('basics').scope.subscription.subscriptionId]",
+											"showSubscriptionDropdown": true,
+											"showCreateNew": false,
+											"showVersionPicker": false
+										},
+										"inFullScreen": false
+									}
+								},
+								{
+									"name": "passwordSecretSelector",
+									"type": "Microsoft.Common.Selector",
+									"label": "Password",
+									"keyPath": "secretId",
+									"value": "[steps('hosts').domainJoinCredentials.passwordSecretPickerBlade]",
+									"visible": "[equals(steps('hosts').domainJoinCredentials.source, 'keyVault')]",
+									"barColor": "[if(empty(steps('hosts').domainJoinCredentials.passwordSecretPickerBlade), '#FF0000', '#7fba00')]",
+									"constraints": {
+										"required": true
+									},
+									"link": "Select a secret"
 								}
 							]
 						},
@@ -1675,7 +1744,7 @@
 							"label": "Local Administrator Credential",
 							"elements": [
 								{
-									"name": "passwordSource",
+									"name": "source",
 									"type": "Microsoft.Common.OptionsGroup",
 									"label": "Local Admin Account and Password Source",
 									"defaultValue": "Manual Entry",
@@ -1706,7 +1775,7 @@
 										"regex": "",
 										"validationMessage": ""
 									},
-									"visible": "[equals(steps('hosts').localAdminCredentials.passwordSource, 'manual')]"
+									"visible": "[equals(steps('hosts').localAdminCredentials.source, 'manual')]"
 								},
 								{
 									"name": "password",
@@ -1724,7 +1793,65 @@
 									"options": {
 										"hideConfirmation": false
 									},
-									"visible": "[equals(steps('hosts').localAdminCredentials.passwordSource, 'manual')]"
+									"visible": "[equals(steps('hosts').localAdminCredentials.source, 'manual')]"
+								},
+								{
+									"name": "usernameSecretPickerBlade",
+									"type": "Microsoft.Solutions.BladeInvokeControl",
+									"openBladeStatus": "[steps('hosts').localAdminCredentials.usernameSecretSelector.changing]",
+									"bladeReference": {
+										"name": "SecretPickerV2ViewModel",
+										"extension": "Microsoft_Azure_KeyVault",
+										"parameters": {
+											"subscriptionId": "[steps('basics').scope.subscription.subscriptionId]",
+											"showSubscriptionDropdown": true,
+											"showCreateNew": false,
+											"showVersionPicker": false
+										},
+										"inFullScreen": false
+									}
+								},
+								{
+									"name": "usernameSecretSelector",
+									"type": "Microsoft.Common.Selector",
+									"label": "Username",
+									"keyPath": "secretId",
+									"value": "[steps('hosts').localAdminCredentials.usernameSecretPickerBlade]",
+									"visible": "[equals(steps('hosts').localAdminCredentials.source, 'keyVault')]",
+									"barColor": "[if(empty(steps('hosts').localAdminCredentials.usernameSecretPickerBlade), '#FF0000', '#7fba00')]",
+									"constraints": {
+										"required": true
+									},
+									"link": "Select a secret"
+								},
+								{
+									"name": "passwordSecretPickerBlade",
+									"type": "Microsoft.Solutions.BladeInvokeControl",
+									"openBladeStatus": "[steps('hosts').localAdminCredentials.passwordSecretSelector.changing]",
+									"bladeReference": {
+										"name": "SecretPickerV2ViewModel",
+										"extension": "Microsoft_Azure_KeyVault",
+										"parameters": {
+											"subscriptionId": "[steps('basics').scope.subscription.subscriptionId]",
+											"showSubscriptionDropdown": true,
+											"showCreateNew": false,
+											"showVersionPicker": false
+										},
+										"inFullScreen": false
+									}
+								},
+								{
+									"name": "passwordSecretSelector",
+									"type": "Microsoft.Common.Selector",
+									"label": "Password",
+									"keyPath": "secretId",
+									"value": "[steps('hosts').localAdminCredentials.passwordSecretPickerBlade]",
+									"visible": "[equals(steps('hosts').localAdminCredentials.source, 'keyVault')]",
+									"barColor": "[if(empty(steps('hosts').localAdminCredentials.passwordSecretPickerBlade), '#FF0000', '#7fba00')]",
+									"constraints": {
+										"required": true
+									},
+									"link": "Select a secret"
 								}
 							]
 						},
@@ -1760,7 +1887,7 @@
 									"type": "Microsoft.Common.TextBlock",
 									"visible": "[steps('hosts').customScripts.addCustomScripts]",
 									"options": {
-										"text": "<b><i>Artifacts Storage</i></b>"
+										"text": "<u>Artifacts Storage</u>"
 									}
 								},
 								{
@@ -1854,7 +1981,7 @@
 											}
 										]
 									}
-								}								
+								}
 							],
 							"visible": true
 						}
@@ -1885,9 +2012,23 @@
 							}
 						},
 						{
+							"name": "configureSessionHosts",
+							"type": "Microsoft.Common.CheckBox",
+							"label": "Configure FSLogix registry settings on session hosts",
+							"defaultValue": true,
+							"visible": "[equals(steps('userProfiles').profileSolution, 'FSLogix')]"
+						},
+						{
+							"name": "deployStorage",
+							"type": "Microsoft.Common.CheckBox",
+							"label": "Deploy FSLogix Storage Resources",
+							"defaultValue": true,
+							"visible": "[equals(steps('userProfiles').profileSolution, 'FSLogix')]"
+						},
+						{
 							"name": "fslogixContainerType",
 							"type": "Microsoft.Common.DropDown",
-							"visible": "[equals(steps('userProfiles').profileSolution, 'FSLogix')]",
+							"visible": "[or(steps('userProfiles').configureSessionHosts, steps('userProfiles').deployStorage)]",
 							"label": "FSLogix Container Type(s)",
 							"defaultValue": "Profile Container",
 							"toolTip": "Select the container type(s) for the FSLogix profiles.",
@@ -1914,33 +2055,28 @@
 							}
 						},
 						{
-							"name": "fslogixStorage",
+							"name": "storageService",
+							"type": "Microsoft.Common.DropDown",
+							"visible": "[or(steps('userProfiles').configureSessionHosts, steps('userProfiles').deployStorage)]",
+							"label": "Storage Service",
+							"defaultValue": "Azure Files",
+							"toolTip": "Select the storage service that provides the SMB file share to support the use of FSLogix.",
+							"constraints": {
+								"allowedValues": "[if(equals(steps('hosts').identity.solution, 'EntraId'), parse('[{\"label\":\"Azure Files\",\"value\":\"AzureFiles\"}]'), parse('[{\"label\":\"Azure Files\",\"value\":\"AzureFiles\"},{\"label\":\"Azure NetApp Files\",\"value\":\"AzureNetAppFiles\"}]'))]"
+							}
+						},
+						{
+							"name": "azureNetAppFiles",
 							"type": "Microsoft.Common.Section",
-							"label": "FSLogix Storage",
+							"label": "Azure NetApp Files",
+							"visible": "[equals(steps('userProfiles').storageService, 'AzureNetAppFiles')]",
 							"elements": [
-								{
-									"name": "deployStorage",
-									"type": "Microsoft.Common.CheckBox",
-									"label": "Deploy FSLogix Storage Resources",
-									"defaultValue": true
-								},
-								{
-									"name": "storageService",
-									"type": "Microsoft.Common.DropDown",
-									"visible": "[steps('userProfiles').fslogixStorage.deployStorage]",
-									"label": "Storage Product",
-									"defaultValue": "Azure Files",
-									"toolTip": "Select the storage product for the SMB file share to support the use of FSLogix.",
-									"constraints": {
-										"allowedValues": "[if(equals(steps('hosts').identity.solution, 'EntraId'), parse('[{\"label\":\"Azure Files\",\"value\":\"AzureFiles\"}]'), parse('[{\"label\":\"Azure Files\",\"value\":\"AzureFiles\"},{\"label\":\"Azure NetApp Files\",\"value\":\"AzureNetAppFiles\"}]'))]"
-									}
-								},
 								{
 									"name": "storageSku",
 									"type": "Microsoft.Common.DropDown",
-									"visible": "[steps('userProfiles').fslogixStorage.deployStorage]",
-									"label": "Storage SKU",
-									"toolTip": "Select the storage SKU for the SMB file shares to support the use of FSLogix.",
+									"visible": "[steps('userProfiles').deployStorage]",
+									"label": "NetApp Files SKU",
+									"toolTip": "Select the Azure NetApp Sku.",
 									"constraints": {
 										"allowedValues": [
 											{
@@ -1957,7 +2093,7 @@
 								{
 									"name": "storageVirtualNetworksApi",
 									"type": "Microsoft.Solutions.ArmApiControl",
-									"condition": "[and(not(empty(steps('basics').scope.subscription)), steps('userProfiles').fslogixStorage.deployStorage)]",
+									"condition": "[and(equals(steps('userProfiles').storageService, 'AzureNetAppFiles'), steps('userProfiles').deployStorage)]",
 									"request": {
 										"method": "GET",
 										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Network/virtualNetworks?api-version=2022-11-01')]"
@@ -1971,24 +2107,24 @@
 									"multiLine": true,
 									"toolTip": "Select the virtual network containing the subnets to which the Azure NetApp Files instance will be attached.",
 									"constraints": {
-										"allowedValues": "[map(filter(steps('userProfiles').fslogixStorage.storageVirtualNetworksApi.value, (item) => equals(item.location, steps('basics').scope.location.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"<b>Location:</b> ', item.location, ' <b>Resource Group:</b> ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]",
+										"allowedValues": "[map(filter(steps('userProfiles').azureNetAppFiles.storageVirtualNetworksApi.value, (vnet) => equals(vnet.location, steps('basics').scope.location.name)), (vnet) => parse(concat('{\"label\":\"', vnet.name, '\",\"description\":\"<b>Location:</b> ', vnet.location, ' <b>Resource Group:</b> ', first(skip(split(vnet.id, '/'), 4)), '\",\"value\":\"', vnet.id, '\"}')))]",
 										"required": true
 									},
-									"visible": "[equals(steps('userProfiles').fslogixStorage.storageService, 'AzureNetAppFiles')]"
+									"visible": "[steps('userProfiles').deployStorage]"
 								},
 								{
 									"name": "subnetsApi",
-									"condition": "[not(empty(steps('userProfiles').fslogixStorage.virtualNetwork))]",
+									"condition": "[not(empty(steps('userProfiles').azureNetAppFiles.virtualNetwork))]",
 									"type": "Microsoft.Solutions.ArmApiControl",
 									"request": {
 										"method": "GET",
-										"path": "[concat(steps('userProfiles').fslogixStorage.virtualNetwork, '/subnets?api-version=2022-05-01')]"
+										"path": "[concat(steps('userProfiles').azureNetAppFiles.virtualNetwork, '/subnets?api-version=2022-05-01')]"
 									}
 								},
 								{
 									"name": "noSnetsWithDelegationErrorBox",
 									"type": "Microsoft.Common.InfoBox",
-									"visible": "[and(equals(steps('userProfiles').fslogixStorage.storageService, 'AzureNetAppFiles'), not(empty(steps('userProfiles').fslogixStorage.virtualNetwork)), empty(map(filter(steps('userProfiles').fslogixStorage.subnetsApi.value, (snet) => equals(first(map(snet.properties.delegations, (del) => del.properties.serviceName)), 'Microsoft.Netapp/volumes')), (item) => item.name)))]",
+									"visible": "[and(not(empty(steps('userProfiles').azureNetAppFiles.virtualNetwork)), empty(map(filter(steps('userProfiles').azureNetAppFiles.subnetsApi.value, (snet) => equals(first(map(snet.properties.delegations, (del) => del.properties.serviceName)), 'Microsoft.NetApp/volumes')), (snet) => snet.name)))]",
 									"options": {
 										"icon": "Error",
 										"text": "There are no subnets in the virtual network chosen above that are delegated to the 'Microsoft.Netapp/volumes' service. You must either select another network (or region on the basics page) or create a subnet in the chosen virtual network and delegate it to 'Microsoft.Netapp/volumes', and then restart this deployment."
@@ -2000,21 +2136,88 @@
 									"label": "NetApp Subnet",
 									"toolTip": "Select the subnet within the Virtual Network that is delegated to 'Microsoft.NetApp/volumes'.",
 									"constraints": {
-										"allowedValues": "[map(filter(steps('userProfiles').fslogixStorage.subnetsApi.value, (snet) => equals(first(map(snet.properties.delegations, (del) => del.properties.serviceName)), 'Microsoft.Netapp/volumes')), (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.id, '\"}')))]",
+										"allowedValues": "[map(filter(steps('userProfiles').azureNetAppFiles.subnetsApi.value, (snet) => equals(first(map(snet.properties.delegations, (del) => del.properties.serviceName)), 'Microsoft.NetApp/volumes')), (snet) => parse(concat('{\"label\":\"', snet.name, '\",\"value\":\"', snet.id, '\"}')))]",
 										"required": true
 									},
-									"visible": "[equals(steps('userProfiles').fslogixStorage.storageService, 'AzureNetAppFiles')]"
+									"visible": "[steps('userProfiles').deployStorage]"
 								},
 								{
 									"name": "existingSharedActiveDirectoryConnection",
 									"type": "Microsoft.Common.CheckBox",
 									"label": "Existing shared Active Directory connection",
-									"visible": "[equals(steps('userProfiles').fslogixStorage.storageService, 'AzureNetAppFiles')]",
+									"visible": "[steps('userProfiles').deployStorage]",
 									"toolTip": "Choose whether a Shared AD Connection for Azure NetApp File exists.",
 									"constraints": {
 										"required": false
 									}
-								},								
+								},
+								{
+									"name": "groupsHeader",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": "[steps('hosts').configureSessionHosts]",
+									"options": {
+										"text": "<u>Share Access Assignments</u>"
+									}
+								},
+								{
+									"name": "groupsDropDownTextBlock",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": "[steps('userProfiles').deployStorage]",
+									"options": {
+										"text": "Use the group picker blade to select the hybrid security groups that you want to grant access to the NetApp File Share for FSLogix profile management."
+									}
+								},
+								{
+									"name": "groupPickerBlade",
+									"type": "Microsoft.Solutions.BladeInvokeControl",
+									"openBladeStatus": "[steps('userProfiles').azureNetAppFiles.groupSelector.changing]",
+									"bladeReference": {
+										"name": "ObjectPickerBlade",
+										"extension": "Microsoft_AAD_IAM",
+										"parameters": {
+											"queries": 4194304,
+											"disablers": 4,											
+											"bladeSubtitle": "Pick the user groups",
+											"additionalQueriesOnSearch": 0,
+											"advancedQueryOptions": {
+												"suggestedObjectsOptions": {}
+											},
+											"selectionMaximum": 20,
+											"selectionMinimum": 1,
+											"bladeTitle": "Select Groups",
+											"informationHeader": {
+												"informationText": "Select the user groups to assign to the FSLogix NetApp File Share(s)",
+												"informationLink": ""
+											},
+											"inviteEnabled": true,
+											"searchBoxLabel": "Search for a group",
+											"searchBoxPlaceHolderText": "Enter a string in the group name",
+											"searchBoxTooltip": "This is the tooltip",
+											"searchGridNoRowsMessage": "No groups found",
+											"selectButtonText": "Select Groups",
+											"selectedGridLabel": "Selected Groups",
+											"selectedGridNoRowsMessage": "You must select at least one group"									
+										},
+										"inFullScreen": false
+									},
+									"transforms": {
+										"selection": "selectedObjects|[*].{displayName:displayName, objectId:id}"
+									}
+								},
+								{
+									"name": "groupSelector",
+									"type": "Microsoft.Common.Selector",
+									"label": "Select User Groups",
+									"keyPath": "displayName",
+									"descriptionKeyPath": "id",
+									"value": "[steps('userProfiles').aureNetAppFiles.groupPickerBlade.transformed.selection]",
+									"visible": "[steps('userProfiles').deployStorage]",
+									"barColor": "[if(empty(steps('userProfiles').azureNetAppFiles.groupPickerBlade), '#FF0000', '#7fba00')]",
+									"constraints": {
+										"required": true
+									},
+									"link": "[if(empty(steps('userProfiles').azureNetAppFiles.groupPickerBlade), 'Select groups', 'Edit selected groups')]"
+								},
 								{
 									"name": "storageShareSize",
 									"type": "Microsoft.Common.Slider",
@@ -2027,63 +2230,338 @@
 									"constraints": {
 										"required": true
 									},
-									"visible": "[steps('userProfiles').fslogixStorage.deployStorage]"
+									"visible": "[steps('userProfiles').deployStorage]"
 								},
 								{
-									"name": "sliderTextBlock",
+									"name": "configureSessionHostsHeader",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[steps('userProfiles').fslogixStorage.deployStorage]",
+									"visible": "[steps('hosts').configureSessionHosts]",
 									"options": {
-										"text": "The number of storage accounts are automatically determined based on your choices from previous screens. The storage account names are automatically determined by combining a suffix with a 0-padded two digit suffix starting at the 'Storage Index' value."
+										"text": "<b>Session Host Configuration</b>"
+									}
+								},
+								{
+									"name": "localNetAppVolumesTextBlock",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": "[and(steps('userProfiles').configureSessionHosts, equals(steps('userProfiles').deployStorage, false))]",
+									"options": {
+										"text": "Use the drop down boxes below to select the local NetApp account, capacity pool, and volume that is used for the fslogix profile (and office) containers."
+									}
+								},
+								{
+									"name": "netAppAccountsApi",
+									"type": "Microsoft.Solutions.ArmApiControl",
+									"condition": "[and(not(empty(steps('basics').scope.subscription)), equals(steps('userProfiles').storageService, 'AzureNetAppFiles'), steps('userProfiles').configureSessionHosts)]",
+									"request": {
+										"method": "GET",
+										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.NetApp/netAppAccounts?api-version=2023-11-01')]"
+									}
+								},
+								{
+									"name": "existingLocalNetAppAccount",
+									"type": "Microsoft.Common.DropDown",
+									"label": "Existing Local NetApp Account",
+									"toolTip": "Select the existing local NetApp account to use for the FSLogix profile storage.",
+									"constraints": {
+										"allowedValues": "[map(filter(steps('userProfiles').azureNetAppFiles.netAppAccountsApi.value, (account) => equals(account.location, steps('basics').scope.location.name)), (account) => parse(concat('{\"label\":\"', account.name, '\",\"description\":\"<b>ResourceGroup:</b> ', first(skip(split(account.id, '/'), 4)), '\", \"value\":\"', account.id, '\"}')))]",
+										"required": true
+									},
+									"visible": "[and(steps('userProfiles').configureSessionHosts, equals(steps('userProfiles').deployStorage, false))]"
+								},
+								{
+									"name": "localCapacityPoolsApi",
+									"condition": "[not(empty(steps('userProfiles').azureNetAppFiles.existingLocalNetAppAccount))]",
+									"type": "Microsoft.Solutions.ArmApiControl",
+									"request": {
+										"method": "GET",
+										"path": "[concat(steps('userProfiles').azureNetAppFiles.existingLocalNetAppAccount, '/capacityPools?api-version=2023-11-01')]"
+									}
+								},
+								{
+									"name": "localCapacityPool",
+									"type": "Microsoft.Common.DropDown",
+									"label": "Local Capacity Pool",
+									"multiLine": false,
+									"toolTip": "Select an existing capacity pool from the selected NetApp Account.",
+									"constraints": {
+										"allowedValues": "[map(steps('userProfiles').azureNetAppFiles.localCapacityPoolsApi.value, (pool) => parse(concat('{\"label\":\"', last(split(pool.name, '/')), '\",\"value\":\"', pool.id, '\"}')))]",
+										"required": true
+									},
+									"visible": "[and(steps('userProfiles').configureSessionHosts, equals(steps('userProfiles').deployStorage, false))]"
+								},
+								{
+									"name": "localVolumesApi",
+									"condition": "[not(empty(steps('userProfiles').azureNetAppFiles.localCapacityPool))]",
+									"type": "Microsoft.Solutions.ArmApiControl",
+									"request": {
+										"method": "GET",
+										"path": "[concat(steps('userProfiles').azureNetAppFiles.localCapacityPool, '/volumes?api-version=2023-11-01')]"
+									}
+								},
+								{
+									"name": "localVolumes",
+									"type": "Microsoft.Common.DropDown",
+									"label": "Local Volume(s)",
+									"multiselect": "[contains(steps('userProfiles').fslogixContainerType, 'OfficeContainer')]",
+									"toolTip": "Select the existing volume from the selected NetApp capacity pool.",
+									"constraints": {
+										"allowedValues": "[map(steps('userProfiles').azureNetAppFiles.localVolumesApi.value, (vol) => parse(concat('{\"label\":\"', last(split(vol.name, '/')), '\",\"value\":\"', vol.id, '\"}')))]",
+										"required": true
+									},
+									"visible": "[and(steps('userProfiles').configureSessionHosts, equals(steps('userProfiles').deployStorage, false))]"
+								},
+								{
+									"name": "remoteVolumesTextBlock",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": "[and(steps('userProfiles').configureSessionHosts, contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]",
+									"options": {
+										"text": "<u>Optionally</u>, use the drop down boxes below to select a remote NetApp account, capacity pool, and volume(s) to use with Cloud Cache profile containers and office containers."
+									}
+								},
+								{
+									"name": "remoteNetAppAccount",
+									"type": "Microsoft.Common.DropDown",
+									"label": "Remote NetApp Account",
+									"toolTip": "Select the existing local NetApp account to use for the FSLogix profile storage.",
+									"multiLine": true,
+									"constraints": {
+										"allowedValues": "[map(filter(steps('userProfiles').azureNetAppFiles.netAppAccountsApi.value, (account) => not(equals(account.location, steps('basics').scope.location.name))), (account) => parse(concat('{\"label\":\"', account.name, '\",\"description\":\"<b>Location:</b> ', account.location, ', <b>ResourceGroup:</b> ', first(skip(split(account.id, '/'), 4)), '\", \"value\":\"', account.id, '\"}')))]",
+										"required": false
+									},
+									"visible": "[and(steps('userProfiles').configureSessionHosts, contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]"
+								},
+								{
+									"name": "remoteCapacityPoolsApi",
+									"condition": "[not(empty(steps('userProfiles').azureNetAppFiles.remoteNetAppAccount))]",
+									"type": "Microsoft.Solutions.ArmApiControl",
+									"request": {
+										"method": "GET",
+										"path": "[concat(steps('userProfiles').azureNetAppFiles.remoteNetAppAccount, '/capacityPools?api-version=2023-11-01')]"
+									}
+								},
+								{
+									"name": "remoteCapacityPool",
+									"type": "Microsoft.Common.DropDown",
+									"label": "Remote Capacity Pool",
+									"toolTip": "Select an existing capacity pool from the selected NetApp Account.",
+									"constraints": {
+										"allowedValues": "[map(steps('userProfiles').azureNetAppFiles.remoteCapacityPoolsApi.value, (pool) => parse(concat('{\"label\":\"', last(split(pool.name, '/')), '\",\"value\":\"', pool.id, '\"}')))]",
+										"required": false
+									},
+									"visible": "[and(steps('userProfiles').configureSessionHosts, contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]"
+								},
+								{
+									"name": "remoteVolumesApi",
+									"condition": "[not(empty(steps('userProfiles').azureNetAppFiles.remoteCapacityPool))]",
+									"type": "Microsoft.Solutions.ArmApiControl",
+									"request": {
+										"method": "GET",
+										"path": "[concat(steps('userProfiles').azureNetAppFiles.remoteCapacityPool, '/volumes?api-version=2023-11-01')]"
+									}
+								},
+								{
+									"name": "remoteVolumes",
+									"type": "Microsoft.Common.DropDown",
+									"label": "Remote Volume(s)",
+									"multiselect": "[contains(steps('userProfiles').fslogixContainerType, 'OfficeContainer')]",
+									"toolTip": "Select the office-containers and profile-containers volumes from the selected NetApp capacity pool.",
+									"constraints": {
+										"allowedValues": "[map(steps('userProfiles').azureNetAppFiles.remoteVolumesApi.value, (vol) => parse(concat('{\"label\":\"', last(split(vol.name, '/')), '\",\"value\":\"', vol.id, '\"}')))]",
+										"required": false
+									},
+									"visible": "[and(steps('userProfiles').configureSessionHosts, contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]"
+								}
+							]
+						},
+						{
+							"name": "azureFiles",
+							"type": "Microsoft.Common.Section",
+							"label": "Azure Files",
+							"visible": "[equals(steps('userProfiles').storageService, 'AzureFiles')]",
+							"elements": [
+								{
+									"name": "storageSku",
+									"type": "Microsoft.Common.DropDown",
+									"visible": "[steps('userProfiles').deployStorage]",
+									"label": "Azure Files SKU",
+									"toolTip": "Select the Azure Files Sku.",
+									"constraints": {
+										"allowedValues": [
+											{
+												"label": "Premium",
+												"value": "Premium"
+											},
+											{
+												"label": "Standard",
+												"value": "Standard"
+											}
+										]
+									}
+								},
+								{
+									"name": "shardingHeader",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": "[and(or(steps('userProfiles').configureSessionHosts, steps('userProfiles').deployStorage), not(equals(steps('hosts').identity.solution, 'EntraId')))]",
+									"options": {
+										"text": "<u>Sharding and User Group(s) to Share Assignment(s)</u>"
+									}
+								},
+								{
+									"name": "shardingTextBlock1",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": "[and(or(steps('userProfiles').configureSessionHosts, steps('userProfiles').deployStorage), not(equals(steps('hosts').identity.solution, 'EntraId')))]",
+									"options": {
+										"text": "In order to improve scalability of user profile data, you have the option to deploy more than one storage account per host pool. This architectural pattern is called 'Sharding'.",
+										"link": {
+											"label": "Sharding pattern - Azure Architecture Center | Microsoft Learn",
+											"uri": "https://learn.microsoft.com/en-us/azure/architecture/patterns/sharding"
+										}
+									}
+								},
+								{
+									"name": "shardingInfoBox1",
+									"type": "Microsoft.Common.InfoBox",
+									"visible": "[and(or(steps('userProfiles').configureSessionHosts, steps('userProfiles').deployStorage), not(equals(steps('hosts').identity.solution, 'EntraId')))]",
+									"options": {
+										"icon": "Info",
+										"text": "If you choose to Shard the user profile storage, you must provide a group to assign to each storage account. In order to minimize login times, to provide create more than four (4) storage accounts, you must select the 'Sharding via Object Specific Settings' option below and use the instructions found in the link here to configure object specific settings for the VHDLocations or CCDLocations paths.",
+										"uri": "https://learn.microsoft.com/en-us/fslogix/how-to-configure-object-specific-settings"
+									}
+								},
+								{
+									"name": "shardingOption",
+									"type": "Microsoft.Common.OptionsGroup",
+									"label": "Sharding Options",
+									"defaultValue": "No Sharding",
+									"constraints": {
+										"allowedValues": [
+											{
+												"label": "No Sharding",
+												"value": "None"
+											},
+											{
+												"label": "Sharding via Permissions (Max 4 Storage Accounts)",
+												"value": "ShardPerms"
+											},
+											{
+												"label": "Sharding via Object Specific Settings",
+												"value": "ShardOSS"
+											}
+										]
+									},
+									"visible": "[and(or(steps('userProfiles').configureSessionHosts, steps('userProfiles').deployStorage), not(equals(steps('hosts').identity.solution, 'EntraId')))]"
+								},
+								{
+									"name": "shardWarningBox1",
+									"type": "Microsoft.Common.InfoBox",
+									"visible": "[and(or(steps('userProfiles').configureSessionHosts, steps('userProfiles').deployStorage), not(equals(steps('hosts').identity.solution, 'EntraId')), not(equals(steps('userProfiles').azureFiles.shardingOption, 'None')), not(empty(steps('basics').groupsApi)))]",
+									"options": {
+										"icon": "Warning",
+										"text": "The Groups are listed in alphabetic order by the displayName. They will be assigned to the storage accounts in this order (i.e., Groups with displayNames earlier in the alphabet will be assigned to the lowest storage account number)."
+									}
+								},
+								{
+									"name": "groupPickerBlade",
+									"type": "Microsoft.Solutions.BladeInvokeControl",
+									"openBladeStatus": "[steps('userProfiles').azureFiles.groupSelector.changing]",
+									"bladeReference": {
+										"name": "ObjectPickerBlade",
+										"extension": "Microsoft_AAD_IAM",
+										"parameters": {
+											"queries": "[if(equals(steps('userProfiles').azureFiles.shardingOption, 'ShardPerms'), 32, 4194304)]",
+											"disablers": 4,											
+											"bladeSubtitle": "Pick the groups to assign",
+											"additionalQueriesOnSearch": 0,
+											"advancedQueryOptions": {
+												"suggestedObjectsOptions": {}
+											},
+											"selectionMaximum": 20,
+											"selectionMinimum": 1,
+											"bladeTitle": "Select Groups",
+											"informationHeader": {
+												"informationText": "Select the groups to assign to the desktop application group",
+												"informationLink": ""
+											},
+											"inviteEnabled": true,
+											"searchBoxLabel": "Search for a group",
+											"searchBoxPlaceHolderText": "Enter a string in the group name",
+											"searchBoxTooltip": "This is the tooltip",
+											"searchGridNoRowsMessage": "No groups found",
+											"selectButtonText": "Select Groups",
+											"selectedGridLabel": "Selected User Groups",
+											"selectedGridNoRowsMessage": "You must select at least one group"									
+										},
+										"inFullScreen": false
+									},
+									"transforms": {
+										"selection": "selectedObjects|[*].{displayName:displayName, objectId:id}"
+									}
+								},
+								{
+									"name": "groupSelector",
+									"type": "Microsoft.Common.Selector",
+									"label": "Select User Groups",
+									"keyPath": "displayName",
+									"descriptionKeyPath": "id",
+									"value": "[steps('userProfiles').azureFiles.groupPickerBlade.transformed.selection]",
+									"visible": "[and(or(steps('userProfiles').configureSessionHosts, steps('userProfiles').deployStorage), not(equals(steps('hosts').identity.solution, 'EntraId')), not(equals(steps('userProfiles').azureFiles.shardingOption, 'None')))]",
+									"barColor": "[if(empty(steps('userProfiles').azureFiles.groupPickerBlade), '#FF0000', '#7fba00')]",
+									"constraints": {
+										"required": true
+									},
+									"link": "[if(empty(steps('userProfiles').azureFiles.groupPickerBlade), 'Select groups', 'Re-select groups')]"
+								},								
+								{
+									"name": "shardingTooManyGroupsErrorBox",
+									"type": "Microsoft.Common.InfoBox",
+									"visible": "[and(equals(steps('userProfiles').azureFiles.shardingOption, 'ShardPerms'), greater(length(steps('userProfiles').azureFiles.groupPickerBlade.transformed.selection), 4))]",
+									"options": {
+										"icon": "Error",
+										"text": "You selected (or provided) over 4 groups. You can select/provide a maximum of 4 groups when choosing 'Sharding with Permissions' in order to minimize login time and maintain compatibility with Cloud Cache (if used). Either reduce the number of groups, or select 'Sharding with Object Specific Settings' and follow the instructions provided in the link to configure the registry on the session hosts.",
+										"uri": "https://learn.microsoft.com/en-us/fslogix/how-to-configure-object-specific-settings"
+									}
+								},
+								{
+									"name": "storageAccountDeployedNumberTextBlock",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": "[and(steps('userProfiles').deployStorage, and(not(equals(steps('hosts').identity.solution, 'EntraId')), not(equals(steps('userProfiles').azureFiles.shardingOption, 'None'))))]",
+									"options": {
+										"text": "The number of groups selected or provided above determines the number of storage accounts deployed by this solution. The storage account names are automatically determined by combining a suffix with a 0-padded two digit suffix starting at the 'Storage Index' value."
+									}
+								},
+								{
+									"name": "storageAccountsRequiredTextBlock",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": "[and(equals(steps('userProfiles').deployStorage, false), steps('userProfiles').configureSessionHosts, and(not(equals(steps('hosts').identity.solution, 'EntraId')), not(equals(steps('userProfiles').azureFiles.shardingOption, 'None'))))]",
+									"options": {
+										"text": "The number of groups selected or provided above determines the number of storage accounts that are required when selecting existing accounts."
 									}
 								},
 								{
 									"name": "entraIdTexBlock",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(equals(steps('hosts').identity.solution, 'EntraId'), steps('userProfiles').fslogixStorage.deployStorage)]",
+									"visible": "[and(or(steps('userProfiles').configureSessionHosts, steps('userProfiles').deployStorage), equals(steps('hosts').identity.solution, 'EntraId'))]",
 									"options": {
-										"text": "For the 'Entra Id' identity provider selected on the 'Session Host' screen, the storage account count value is limited to '1'. You can deploy a maximum of 1 storage account when the identity provider is 'EntraId' because sharding is not possible.",
-										"link": {
-											"label": "Microsoft Learn | FSLogix - How To Configure Object Specific Settings",
-											"uri": "https://learn.microsoft.com/en-us/fslogix/how-to-configure-object-specific-settings"
-										}
+										"text": "A total of 1 storage account will be deployed/required because you chose the 'Entra Id' identity provider on the 'Session Host' screen. Currently, Entra Id does not support sharding storage with multiple storage accounts."
 									}
 								},
 								{
-									"name": "domainServiceTextBlock",
+									"name": "noShardingTexBlock",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(steps('userProfiles').fslogixStorage.deployStorage, not(equals(steps('hosts').identity.solution, 'EntraId')), or(not(startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache')), lessOrEquals(if(empty(steps('controlPlane').assignment.groupsApi), length(steps('controlPlane').assignment.groupsGrid), length(steps('controlPlane').assignment.groupsDropDown)), 4)))]",
+									"visible": "[and(or(steps('userProfiles').configureSessionHosts, steps('userProfiles').deployStorage), equals(steps('userProfiles').azureFiles.shardingOption, 'None'))]",
 									"options": {
-										"text": "For the 'Active Directory Domain Services' or 'Entra Id Domain Services' identity providers selected on the 'Session Host' screen, the number of storage accounts equals the number of security principals or groups you entered under the assignments section of the 'Control Plane' blade. A storage account is created for each security principal and permissions are assigned separately to each to enable storage sharding.",
-										"link": {
-											"label": "Microsoft Learn | FSLogix - How To Configure Object Specific Settings",
-											"uri": "https://learn.microsoft.com/en-us/fslogix/how-to-configure-object-specific-settings"
-										}
-									}
-								},
-								{
-									"name": "domainServiceWithCloudCacheErrorBox",
-									"type": "Microsoft.Common.InfoBox",
-									"visible": "[and(steps('userProfiles').fslogixStorage.deployStorage, not(equals(steps('hosts').identity.solution, 'EntraId')) , startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache'), greater(if(empty(steps('controlPlane').assignment.groupsApi), length(steps('controlPlane').assignment.groupsGrid), length(steps('controlPlane').assignment.groupsDropDown)), 4))]",
-									"options": {
-										"icon": "Error",
-										"text": "You can deploy a maximum of 4 storage accounts when using Cloud Cache. The number of groups/principals assigned in the 'Assignment' pane is over 4. Either reduce the number of principals assigned, or do not use Cloud Cache as a container type.",
-										"uri": "https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=ccd#ccdlocations"
+										"text": "A total of 1 storage account will be deployed/required because you have chosen not to Shard your storage."
 									}
 								},
 								{
 									"name": "storageCount",
 									"type": "Microsoft.Common.Slider",
-									"label": "Storage Count",
+									"label": "Storage Accounts Required (Read Only)",
 									"defaultValue": 1,
-									"toolTip": "Input the number of Storage Accounts to deploy with SMB file shares to support the use of FSLogix.",
-									"min": "[if(equals(steps('hosts').identity.solution, 'EntraId'), 1, if(startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache'), if(lessOrEquals(if(empty(steps('controlPlane').assignment.groupsApi), length(steps('controlPlane').assignment.groupsGrid), length(steps('controlPlane').assignment.groupsDropDown)), 4), if(empty(steps('controlPlane').assignment.groupsApi), length(steps('controlPlane').assignment.groupsGrid), length(steps('controlPlane').assignment.groupsDropDown)), 4), if(empty(steps('controlPlane').assignment.groupsApi), length(steps('controlPlane').assignment.groupsGrid), length(steps('controlPlane').assignment.groupsDropDown))))]",
-									"max": "[if(equals(steps('hosts').identity.solution, 'EntraId'), 1, if(startsWith(steps('userProfiles').fslogixContainerType, 'CloudCache'), if(lessOrEquals(if(empty(steps('controlPlane').assignment.groupsApi), length(steps('controlPlane').assignment.groupsGrid), length(steps('controlPlane').assignment.groupsDropDown)), 4), if(empty(steps('controlPlane').assignment.groupsApi), length(steps('controlPlane').assignment.groupsGrid), length(steps('controlPlane').assignment.groupsDropDown)), 4), if(empty(steps('controlPlane').assignment.groupsApi), length(steps('controlPlane').assignment.groupsGrid), length(steps('controlPlane').assignment.groupsDropDown))))]",
+									"min": "[if(or(equals(steps('hosts').identity.solution, 'EntraId'), equals(steps('userProfiles').azureFiles.shardingOption, 'None')), 1, length(steps('userProfiles').azureFiles.groupPickerBlade.transformed.selection))]",
+									"max": "[if(or(equals(steps('hosts').identity.solution, 'EntraId'), equals(steps('userProfiles').azureFiles.shardingOption, 'None')), 1, length(steps('userProfiles').azureFiles.groupPickerBlade.transformed.selection))]",
 									"showStepMarkers": false,
-									"constraints": {
-										"required": true
-									},
-									"visible": "[equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles')]"
+									"visible": "[or(steps('userProfiles').configureSessionHosts, steps('userProfiles').deployStorage)]"
 								},
 								{
 									"name": "storageIndex",
@@ -2092,17 +2570,31 @@
 									"defaultValue": 1,
 									"toolTip": "Input the starting number of the storage accounts to deploy with SMB file shares to support the use of FSLogix.",
 									"min": 1,
-									"max": "[sub(99, steps('userProfiles').fslogixStorage.storageCount)]",
+									"max": "[sub(99, steps('userProfiles').azureFiles.storageCount)]",
 									"showStepMarkers": false,
 									"constraints": {
 										"required": true
 									},
-									"visible": "[equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles')]"
+									"visible": "[steps('userProfiles').deployStorage]"
+								},
+								{
+									"name": "storageShareSize",
+									"type": "Microsoft.Common.Slider",
+									"label": "Storage Share Size (GB)",
+									"defaultValue": 100,
+									"toolTip": "Input the quota size for the SMB file share to support the use of FSLogix.",
+									"min": 100,
+									"max": 100000,
+									"showStepMarkers": false,
+									"constraints": {
+										"required": true
+									},
+									"visible": "[steps('userProfiles').deployStorage]"
 								},
 								{
 									"name": "storageKerberosEncryption",
 									"type": "Microsoft.Common.DropDown",
-									"visible": "[and(equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles'), not(equals(steps('hosts').identity.solution, 'EntraId')))]",
+									"visible": "[and(steps('userProfiles').deployStorage, not(equals(steps('hosts').identity.solution, 'EntraId')))]",
 									"label": "Storage Kerberos Encryption",
 									"defaultValue": "AES256",
 									"toolTip": "Select the Kerberos encryption for the SMB file shares to support the use of FSLogix.",
@@ -2123,15 +2615,15 @@
 								{
 									"name": "keyManagementHeader",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles')]",
+									"visible": "[steps('userProfiles').deployStorage]",
 									"options": {
-										"text": "<b>Encryption Key Management</b>"
+										"text": "<u>Encryption Key Management</u>"
 									}
 								},
 								{
 									"name": "keyManagementTextBox1",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles')]",
+									"visible": "[steps('userProfiles').deployStorage]",
 									"options": {
 										"link": {
 											"label": "Microsoft Learn | Azure Storage - Customer Managed Keys",
@@ -2143,7 +2635,7 @@
 								{
 									"name": "keyManagementInfobox1",
 									"type": "Microsoft.Common.InfoBox",
-									"visible": "[equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles')]",
+									"visible": "[steps('userProfiles').deployStorage]",
 									"options": {
 										"text": "In some environments it is required to utilize Customer Managed Keys and protect those keys in a premium key vault with the keys stored in a FIPS 140 validated Hardware Security Module. This is most common in IL5 type environments. Selecting a Customer Managed Key Hardware Security Module (HSM) option will ensure that all storage accounts protected with this configuration. Click this box for more information.",
 										"uri": "https://learn.microsoft.com/en-us/azure/azure-government/documentation-government-impact-level-5#storage-isolation",
@@ -2153,7 +2645,7 @@
 								{
 									"name": "keyManagement",
 									"type": "Microsoft.Common.DropDown",
-									"visible": "[equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles')]",
+									"visible": "[steps('userProfiles').deployStorage]",
 									"label": "Storage Encryption Key Management",
 									"defaultValue": "[if(contains(steps('hosts').diskEncryption.keyManagement, 'Customer'), if(contains(steps('hosts').diskEncryption.keyManagement, 'HSM'), 'Customer-Managed Keys protected by HSM', 'Customer-Managed Keys'), 'Microsoft-Managed Keys')]",
 									"toolTip": "Select the type of Key Management to use for the FSLogix storage account(s) encryption keys.",
@@ -2176,213 +2668,182 @@
 									}
 								},
 								{
-									"name": "shareManagementHeader",
+									"name": "configureSessionHostsHeader",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[not(equals(steps('hosts').identity.solution, 'EntraId'))]",
+									"visible": "[and(steps('userProfiles').configureSessionHosts, or(equals(steps('userProfiles').deployStorage, false), contains(steps('userProfiles').fslogixContainerType, 'CloudCache')))]",
 									"options": {
-										"text": "<b>Share Management</b>"
-									}
-								},								
-								{
-									"name": "shareManagementTextBox1",
-									"type": "Microsoft.Common.TextBlock",
-									"visible": "[not(equals(steps('hosts').identity.solution, 'EntraId'))]",
-									"options": {
-										"text": "If desired, enter a single Cloud synced Active Directory sourced group that will be assigned admin permissions to the file share to facilitate user profile management troubleshooting."
-									}
-								},
-								{
-									"name": "selectAdminGroup",
-									"type": "Microsoft.Common.CheckBox",
-									"label": "Specify an Admin Group",
-									"visible": "[not(equals(steps('hosts').identity.solution, 'EntraId'))]"
-								},
-								{
-									"name": "groupsApi",
-									"type": "Microsoft.Solutions.GraphApiControl",
-									"condition": "[steps('userProfiles').fslogixStorage.selectAdminGroup]",
-									"request": {
-										"method": "GET",
-										"path": "/v1.0/groups?$filter=securityEnabled eq true&$select=id,onPremisesSamAccountName,onPremisesNetbiosName"
-									}
-								},							
-								{
-									"name": "adminGroupDropDown",
-									"type": "Microsoft.Common.DropDown",
-									"label": "Share Admins Group",
-									"toolTip": "Select a group to give Full Access to the file share if desired.",
-									"multiselect": true,
-									"constraints": {
-										"allowedValues": "[map(filter(steps('userProfiles').fslogixStorage.groupsApi.value, (item) => not(empty(item.onPremisesSamAccountName))), (item) => parse(concat('{\"label\":\"', item.onPremisesNetbiosName, ' ', item.onPremisesSamAccountName, '\",\"value\": {\"domainName\":\"', item.onPremisesNetbiosName, '\",\"samAccountName\":\"', item.onPremisesSamAccountName, '\",\"objectId\":\"', item.id, '\"}}')))]",
-										"required": false
-									},
-									"visible": "[and(steps('userProfiles').fslogixStorage.selectAdminGroup, not(empty(steps('userProfiles').fslogixStorage.groupsApi)))]"
-								},
-								{
-									"name": "adminGroupGrid",
-									"type": "Microsoft.Common.EditableGrid",
-									"ariaLabel": "Enter the security group that will be assigned full control access to the file share.",
-									"label": "Security Groups",
-									"visible": "[and(steps('userProfiles').fslogixStorage.selectAdminGroup, empty(steps('userProfiles').fslogixStorage.groupsApi))]",
-									"constraints": {
-										"width": "Full",
-										"rows": {
-											"count": {
-												"min": 0,
-												"max": 10
-											}
-										},
-										"columns": [
-											{
-												"id": "domainName",
-												"header": "Domain Name",
-												"width": "1fr",
-												"element": {
-													"type": "Microsoft.Common.TextBox",
-													"placeholder": "Domain NETBIOS Name",
-													"constraints": {
-														"required": true,
-														"regex": "^[A-Z0-9][A-Z0-9-]{1,15}$",
-														"validationMessage": "Please specify a valid NETBIOS domain name in all CAPS."
-													}
-												}
-											},
-											{
-												"id": "samAccountName",
-												"header": "samAccountName",
-												"width": "2fr",
-												"element": {
-													"type": "Microsoft.Common.TextBox",
-													"placeholder": "Security Group Name",
-													"constraints": {
-														"required": true,
-														"regex": "^(?! )[a-zA-Z0-9._\\-\\s]{0,62}(?<! )$",
-														"validationMessage": "Please specify a valid samAccountName"
-													}
-												}
-											},
-											{
-												"id": "objectId",
-												"header": "Entra ID Object ID",
-												"width": "2fr",
-												"element": {
-													"type": "Microsoft.Common.TextBox",
-													"placeholder": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-													"constraints": {
-														"required": true,
-														"regex": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
-														"validationMessage": "Please specify a valid object ID"
-													}
-												}
-											}
-										]
-									}
-								}
-							],
-							"visible": "[equals(steps('userProfiles').profileSolution, 'FSLogix')]"
-						},
-						{
-							"name": "fslogixSessionHostConfig",
-							"type": "Microsoft.Common.Section",
-							"label": "Session Host Configuration",
-							"visible": "[and(equals(steps('hosts').identity.solution, 'EntraId'), equals(steps('userProfiles').profileSolution, 'FSLogix'))]",
-							"elements": [
-								{
-									"name": "configureSessionHosts",
-									"type": "Microsoft.Common.CheckBox",
-									"label": "Configure Session Hosts via local registry",
-									"defaultValue": true
-								},
-								{
-									"name": "notDeployedCCTextBox",
-									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(steps('userProfiles').fslogixSessionHostConfig.configureSessionHosts, equals(steps('userProfiles').fslogixStorage.deployStorage, false), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]",
-									"options": {
-										"text": "Pick up to two storage accounts below, listing the storage account in the same region as the virtual machines first and then for high availability you can select an additional storage account in another region."
-									}
-								},
-								{
-									"name": "deployedCCTextBox",
-									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(steps('userProfiles').fslogixSessionHostConfig.configureSessionHosts, steps('userProfiles').fslogixStorage.deployStorage, contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]",
-									"options": {
-										"text": "To enable cross-region high availability of user profiles using FSLogix CloudCache select an additional storage account that is not from the region where you deployed the virtual machines."
-									}
-								},
-								{
-									"name": "notDeployedVHDTextBox",
-									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(steps('userProfiles').fslogixSessionHostConfig.configureSessionHosts, equals(steps('userProfiles').fslogixStorage.deployStorage, false), not(contains(steps('userProfiles').fslogixContainerType, 'CloudCache')))]",
-									"options": {
-										"text": "Pick the local storage account below on which user profiles are stored."
+										"text": "<b><i>Session Host Configuration</i></b>"
 									}
 								},
 								{
 									"name": "storageAccountsApi",
 									"type": "Microsoft.Solutions.ArmApiControl",
-									"condition": "[and(not(empty(steps('basics').scope.subscription)), steps('userProfile').fslogixSessionHostConfig.configureSessionHosts)]",
+									"condition": "[and(not(empty(steps('basics').scope.subscription)), steps('userProfiles').configureSessionHosts)]",
 									"request": {
 										"method": "GET",
-										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Storage/storageAccounts?api-version=2023-01-01')]"
+										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Storage/storageAccounts?api-version=2023-01-01')]",
+										"transforms": {
+											"list": "sort_by(value, &name)|[*].{saName:name, resourceId:id, region:location, skuName:sku.name}"
+										}
 									}
 								},
 								{
-									"name": "existingStorageAccounts",
-									"type": "Microsoft.Common.EditableGrid",
-									"ariaLabel": "FSLogix Existing Storage Account Resource Ids",
-									"label": "FSLogix Existing Storage Account Resource Ids",
+									"name": "notDeployedOnlyOneSATextBox",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": "[and(steps('userProfiles').configureSessionHosts, equals(steps('userProfiles').deployStorage, false), or(equals(steps('userProfiles').azureFiles.shardingOption, 'None'), equals(steps('hosts').identity.solution, 'EntraId')))]",
+									"options": {
+										"text": "Select a single storage account from the same region as the session hosts. The session hosts will be configured to store user profiles on this storage account."
+									}
+								},
+								{
+									"name": "notDeployedMorethanOneSATextBox",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": "[and(steps('userProfiles').configureSessionHosts, equals(steps('userProfiles').deployStorage, false), not(equals(steps('hosts').identity.solution, 'EntraId')), not(equals(steps('userProfiles').azureFiles.shardingOption, 'None')))]",
+									"options": {
+										"text": "Select the same number of storage accounts as the groups selected/provided above from the same region as the session hosts. The session hosts will be configured to store user profiles on these storage accounts."
+									}
+								},
+								{
+									"name": "existingLocalStorageAccounts",
+									"type": "Microsoft.Common.DropDown",
+									"label": "Existing Local Storage Accounts",
+									"multiLine": true,
+									"multiselect": true,
+									"toolTip": "",
 									"constraints": {
-										"width": "Full",
-										"rows": {
-											"count": {
-												"min": 0,
-												"max": 2
-											}
-										},
-										"columns": [
-											{
-												"id": "resourceId",
-												"header": "Existing FSLogix Storage Accounts",
-												"width": "1fr",
-												"element": {
-													"type": "Microsoft.Common.DropDown",
-													"multiLine": true,
-													"constraints": {
-														"allowedValues": "[if(steps('userProfiles').fslogixStorage.deployStorage, map(filter(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi.value, (item) => not(equals(item.location, steps('basics').scope.location.name))), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Location: ', item.location, '\", \"value\":\"', item.id, '\"}'))), if(not(contains(steps('userProfiles').fslogixContainerType, 'CloudCache')), map(filter(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi.value, (item) => equals(item.location, steps('basics').scope.location.name)), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Location: ', item.location, '\", \"value\":\"', item.id, '\"}'))), map(steps('userProfiles').fslogixSessionHostConfig.storageAccountsApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\", \"description\":\"Location: ', item.location, '\", \"value\":\"', item.id, '\"}')))))]"
-													}
-												}
-											}
-										],
+										"allowedValues": "[map(filter(steps('userProfiles').azureFiles.storageAccountsApi.transformed.list, (sa) => equals(sa.region, steps('basics').scope.location.name)), (sa) => parse(concat('{\"label\":\"', sa.saName, '\",\"description\":\"Sku: ', sa.skuName, ', Location: ', sa.region, '\", \"value\":\"', sa.resourceId, '\"}')))]",
+										"required": true
+									},
+									"visible": "[and(steps('userProfiles').configureSessionHosts, equals(steps('userProfiles').deployStorage, false))]"
+								},
+								{
+									"name": "wrongNumberOfLocalStorageAccounts",
+									"type": "Microsoft.Common.InfoBox",
+									"visible": "[and(steps('userProfiles').configureSessionHosts, equals(steps('userProfiles').deployStorage, false), not(equals(steps('userProfiles').azureFiles.storageCount, length(steps('userProfiles').azureFiles.existingLocalStorageAccounts))))]",
+									"options": {
+										"icon": "Error",
+										"text": "You have not selected the correct number of storage accounts. You must select the correct number before continuing or the session hosts will not be configured properly."
+									}
+								},
+								{
+									"name": "singleSACCTextBox",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": "[and(steps('userProfiles').configureSessionHosts, or(equals(steps('userProfiles').azureFiles.shardingOption, 'None'), equals(steps('hosts').identity.solution, 'EntraId')), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]",
+									"options": {
+										"text": "<u>Optionally</u>, select a single storage account that is <u>not</u> in the same region as the session hosts for active/active disaster recovery or high availability of user profiles using FSLogix Cloud Cache."
+									}
+								},
+								{
+									"name": "morethanOneSACCTextBox",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": "[and(steps('userProfiles').configureSessionHosts, contains(steps('userProfiles').fslogixContainerType, 'CloudCache'), not(equals(steps('hosts').identity.solution, 'EntraId')), not(equals(steps('userProfiles').azureFiles.shardingOption, 'None')))]",
+									"options": {
+										"text": "<u>Optionally</u>, select the same number of storage accounts as the groups selected/provided above in the <u>same region</u> but <u>not</u> in the region where the session hosts are located. The session hosts will be configured to also store user profiles on these remote storage accounts using cloud cache.'))]"
+									}
+								},
+								{
+									"name": "existingRemoteStorageAccounts",
+									"type": "Microsoft.Common.DropDown",
+									"label": "Existing Remote Storage Accounts",
+									"multiLine": true,
+									"multiselect": true,
+									"toolTip": "",
+									"constraints": {
+										"allowedValues": "[map(filter(steps('userProfiles').azureFiles.storageAccountsApi.transformed.list, (sa) => not(equals(sa.region, steps('basics').scope.location.name))), (sa) => parse(concat('{\"label\":\"', sa.saName, '\",\"description\":\"Sku: ', sa.skuName, ', Location: ', sa.region, '\", \"value\":\"', sa.resourceId, '\"}')))]",
 										"required": false
 									},
-									"visible": "[and(steps('userProfiles').fslogixSessionHostConfig.configureSessionHosts, or(not(steps('userProfiles').fslogixStorage.deployStorage), contains(steps('userProfiles').fslogixContainerType, 'CloudCache')))]"
+									"visible": "[and(steps('userProfiles').configureSessionHosts, contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]"
 								},
 								{
-									"name": "deployedTooManyStorageAccountsCCErrorBox",
+									"name": "wrongNumberOfRemoteStorageAccounts",
 									"type": "Microsoft.Common.InfoBox",
-									"visible": "[if(and(steps('userProfiles').fslogixSessionHostConfig.configureSessionHosts, steps('userProfiles').fslogixStorage.deployStorage, contains(steps('userProfiles').fslogixContainerType, 'CloudCache')), greater(length(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts), 1), false)]",
+									"visible": "[and(steps('userProfiles').configureSessionHosts, contains(steps('userProfiles').fslogixContainerType, 'CloudCache'), not(equals(length(steps('userProfiles').azureFiles.existingRemoteStorageAccounts), 0)) , not(equals(steps('userProfiles').azureFiles.storageCount, length(steps('userProfiles').azureFiles.existingRemoteStorageAccounts))))]",
 									"options": {
 										"icon": "Error",
-										"text": "You have provided too many storage account resource Ids. You can only specify 1 existing resource Id for a storage account in a region other than the region where you deployed virtual machines."
+										"text": "You have not selected the correct number of storage accounts. You must select the correct number before continuing or the session hosts will not be configured properly."
+									}
+								}
+							]
+						},
+						{
+							"name": "shareManagement",
+							"type": "Microsoft.Common.Section",
+							"label": "Share Management",
+							"visible": "[and(not(equals(steps('hosts').identity.solution, 'EntraId')), steps('userProfiles').deployStorage)]",
+							"elements": [
+								{
+									"name": "groupsApi",
+									"type": "Microsoft.Solutions.GraphApiControl",
+									"condition": "[or(steps('userProfiles').deployStorage, steps('userProfiles').configureSessionHosts)]",
+									"request": {
+										"method": "GET",
+										"path": "/v1.0/groups?$filter=securityEnabled eq true&$select=displayName,id,onPremisesSamAccountName"
 									}
 								},
 								{
-									"name": "notDeployedTooManyStorageAccountsCCErrorBox",
-									"type": "Microsoft.Common.InfoBox",
-									"visible": "[if(and(steps('userProfiles').fslogixSessionHostConfig.configureSessionHosts, equals(steps('userProfiles').fslogixStorage.deployStorage, false), contains(steps('userProfiles').fslogixContainerType, 'CloudCache')), greater(length(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts), 2), false)]",
+									"name": "shareManagementTextBox1",
+									"type": "Microsoft.Common.TextBlock",
 									"options": {
-										"icon": "Error",
-										"text": "You have provided too many storage account resource Ids. You can only specify 2 existing storage accounts - on in the same region as your virtual machines and one in a region other than the region where you deployed virtual machines."
+										"text": "You can optionally enter cloud synced Active Directory sourced groups that will be assigned admin permissions to the file share to facilitate user profile management troubleshooting."
 									}
 								},
 								{
-									"name": "tooManyStorageAccountsVHDxErrorBox",
-									"type": "Microsoft.Common.InfoBox",
-									"visible": "[if(and(steps('userProfiles').fslogixSessionHostConfig.configureSessionHosts, equals(steps('userProfiles').fslogixStorage.deployStorage, false), not(contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))), greater(length(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts), 1), false)]",
-									"options": {
-										"icon": "Error",
-										"text": "You have provided too many storage accounts. You can only specify 1 existing storage account when specifying a standard VHDx container type (i.e., no Cloud Cache)."
+									"name": "configureAdminAccess",
+									"type": "Microsoft.Common.CheckBox",
+									"label": "Add Admin Access to File Share",
+									"defaultValue": false,
+									"visible": true
+								},
+								{
+									"name": "groupPickerBlade",
+									"type": "Microsoft.Solutions.BladeInvokeControl",
+									"openBladeStatus": "[steps('userProfiles').shareManagement.groupSelector.changing]",
+									"bladeReference": {
+										"name": "ObjectPickerBlade",
+										"extension": "Microsoft_AAD_IAM",
+										"parameters": {
+											"queries": 4194304,
+											"disablers": 4,											
+											"bladeSubtitle": "Pick the groups to assign",
+											"additionalQueriesOnSearch": 0,
+											"advancedQueryOptions": {
+												"suggestedObjectsOptions": {}
+											},
+											"selectionMaximum": 20,
+											"selectionMinimum": 1,
+											"bladeTitle": "Select Groups",
+											"informationHeader": {
+												"informationText": "Select the groups to assign to the desktop application group",
+												"informationLink": ""
+											},
+											"inviteEnabled": true,
+											"searchBoxLabel": "Search for a group",
+											"searchBoxPlaceHolderText": "Enter a string in the group name",
+											"searchBoxTooltip": "This is the tooltip",
+											"searchGridNoRowsMessage": "No groups found",
+											"selectButtonText": "Select Groups",
+											"selectedGridLabel": "Selected Admin Groups",
+											"selectedGridNoRowsMessage": "You must select at least one group"									
+										},
+										"inFullScreen": false
+									},
+									"transforms": {
+										"selection": "selectedObjects|[*].{displayName:displayName, objectId:id}"
 									}
+								},
+								{
+									"name": "groupSelector",
+									"type": "Microsoft.Common.Selector",
+									"label": "Select Admin Groups",
+									"keyPath": "displayName",
+									"descriptionKeyPath": "id",
+									"value": "[steps('userProfiles').shareManagement.groupPickerBlade.transformed.selection]",
+									"visible": "[steps('userProfiles').shareManagement.configureAdminAccess]",
+									"barColor": "[if(empty(steps('userProfiles').shareManagement.groupPickerBlade), '#FF0000', '#7fba00')]",
+									"constraints": {
+										"required": true
+									},
+									"link": "[if(empty(steps('userProfiles').shareManagement.groupPickerBlade), 'Select groups', 'Re-select groups')]"
 								}
 							]
 						}
@@ -2428,7 +2889,7 @@
 									"label": "Enable Security Monitoring",
 									"defaultValue": false,
 									"toolTip": "Deploy the Log Analytics (Microsoft Monitoring) Agent or a Data Collection Rule Association to use the Azure Monitoring Agent for collecting security relevant data."
-								},								
+								},
 								{
 									"name": "dataCollectionRule",
 									"type": "Microsoft.Solutions.ResourceSelector",
@@ -2436,7 +2897,7 @@
 									"visible": "[steps('management').monitoring.enableSecurity]",
 									"resourceType": "Microsoft.Insights/dataCollectionRules",
 									"toolTip": "Select the Data Collection Rule used for collecting security data for Sentinel or Defender for Cloud. This is required to create the Data Collection Rule Association"
-								}								
+								}
 							]
 						},
 						{
@@ -2494,12 +2955,13 @@
 							"name": "privateEndpoints",
 							"type": "Microsoft.Common.Section",
 							"label": "Private Endpoints",
+							"visible": "[or(and(equals(steps('controlPlane').hostPool.type, 'Personal'), steps('management').backup.recoveryServices), and(steps('userProfiles').deployStorage, equals(steps('userProfiles').storageService, 'AzureFiles')), or(steps('hosts').diskEncryption.confidentialVMOSDiskEncryption, contains(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), contains(steps('userProfiles').azureFiles.keyManagement, 'CustomerManaged')))]",
 							"elements": [
 								{
 									"name": "privateEndpointTextBlock1",
 									"type": "Microsoft.Common.TextBlock",
 									"options": {
-										"text": "Private Endpoints are one key technology we can use to implement Zero Trust Architecture Guidance. Private endpoints should be utilized for all Platform as a Service (PaaS) resources (i.e., Automation Accounts, Blob Storage, File Storage, and Key Vaults utilized by this solution. Private Endpoints have their own set of prereqs including Private DNS Zones.",
+										"text": "Private Endpoints are one key technology we can use to implement Zero Trust Architecture Guidance. Private endpoints should be utilized for all Platform as a Service (PaaS) resources (i.e., Blob Storage, File Storage, and Key Vaults utilized by this solution. Private Endpoints have their own set of prereqs including Private DNS Zones.",
 										"link": {
 											"label": "Microsoft Learn | Private Endpoint Overview",
 											"uri": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview"
@@ -2521,7 +2983,7 @@
 											"label": "Microsoft Learn | Private Link Deployment in a Hub and Spoke Network",
 											"uri": "https://learn.microsoft.com/en-us/azure/architecture/networking/guide/private-link-hub-spoke-network"
 										},
-										"text": "When deploying private endpoints, you must select the subnet to which they will be attached and the Private DNS Zones to enable DNS resolution. Since this deployment expects that an Azure Landing Zone has already been deployed, you may be utilizing multiple subscriptions for different components of your architecture. To support this, the following drop downs allow you to select the subscription(s) containing the subnets and the Private DNS zones required to support Zero Trust. Once you select the subscription(s), you'll be able to select the virtual network, subnet, and appropropriate Private DNS Zones from these subscriptions. The following Private DNS Zones may be required:<br/><ul><li>Azure Files for FSLogix profile storage (privatelink.file.<i>suffix</i>)</li><li>Azure Key Vault (privatelink.vaultcore.<i>suffix</i>)</li><li>Automation Accounts for the Storage Auto Quota Increase capability (privatelink.azure-automation.<i>suffix</i>)</li><li>Azure Blob Storage for Disk Access and artifacts storage (privatelink.blob.<i>suffix</i>)</li></ul>See the documentation in the source repo to determine the correct fully-qualified domain name for each zone based on the cloud."
+										"text": "When deploying private endpoints, you must select the subnet to which they will be attached and the Private DNS Zones to enable DNS resolution. Since this deployment expects that an Azure Landing Zone has already been deployed, you may be utilizing multiple subscriptions for different components of your architecture. To support this, the following drop downs allow you to select the subscription(s) containing the subnets and the Private DNS zones required to support Zero Trust. Once you select the subscription(s), you'll be able to select the virtual network, subnet, and appropropriate Private DNS Zones from these subscriptions. The following Private DNS Zones may be required:<br/><ul><li>Azure Files for FSLogix profile storage (privatelink.file.<i>suffix</i>)</li><li>Azure Key Vault (privatelink.vaultcore.<i>suffix</i>)</li><li>Azure Blob Storage for Disk Access and artifacts storage (privatelink.blob.<i>suffix</i>)</li></ul>See the documentation in the source repo to determine the correct fully-qualified domain name for each zone based on the cloud."
 									}
 								},
 								{
@@ -2550,7 +3012,7 @@
 									"name": "virtualNetwork",
 									"type": "Microsoft.Common.DropDown",
 									"label": "Virtual Network",
-									"defaultValue": "[last(split(steps('userProfiles').fslogixStorage.virtualNetwork, '/'))]",
+									"defaultValue": "[last(split(steps('userProfiles').azureFiles.virtualNetwork, '/'))]",
 									"multiLine": true,
 									"toolTip": "Select the virtual network containing the subnets to which the management resource and storage account (if applicable) private endpoints will be attached.",
 									"constraints": {
@@ -2572,7 +3034,7 @@
 									"name": "subnet",
 									"type": "Microsoft.Common.DropDown",
 									"label": "Subnet",
-									"defaultValue": "[last(split(steps('userProfiles').fslogixStorage.subnet, '/'))]",
+									"defaultValue": "[last(split(steps('userProfiles').azureFiles.subnet, '/'))]",
 									"toolTip": "Select an existing subnet for the private Endpoints.",
 									"constraints": {
 										"allowedValues": "[map(steps('zeroTrust').privateEndpoints.subnetsApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.id, '\"}')))]",
@@ -2601,7 +3063,7 @@
 										"method": "GET",
 										"path": "[concat(steps('zeroTrust').privateEndpoints.privateDNSZonesSubscription.id, '/providers/Microsoft.Network/privateDnsZones?api-version=2018-09-01')]"
 									}
-								},								
+								},
 								{
 									"name": "azureBlobsPrivateDnsZone",
 									"type": "Microsoft.Common.DropDown",
@@ -2617,7 +3079,7 @@
 								{
 									"name": "azureFilesPrivateDnsZone",
 									"type": "Microsoft.Common.DropDown",
-									"visible": "[and(equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles'), steps('zeroTrust').privateEndpoints.deployPrivateEndpoints)]",
+									"visible": "[and(steps('userProfiles').deployStorage, equals(steps('userProfiles').storageService, 'AzureFiles'), steps('zeroTrust').privateEndpoints.deployPrivateEndpoints)]",
 									"label": "Azure Files Private DNS Zone",
 									"multiLine": true,
 									"toolTip": "Select the existing Private DNS Zone for Azure Files.",
@@ -2636,7 +3098,7 @@
 										"allowedValues": "[map(filter(steps('zeroTrust').privateEndpoints.privateDNSZonesApi.value, (item) => contains(item.name, 'privatelink.vaultcore.')), (item) => parse(concat('{\"label\":\"', item.name, '\",\"description\":\"Resource group: ', first(skip(split(item.id, '/'), 4)), '\",\"value\":\"', item.id, '\"}')))]",
 										"required": true
 									},
-									"visible": "[steps('zeroTrust').privateEndpoints.deployPrivateEndpoints]"
+									"visible": "[and(steps('zeroTrust').privateEndpoints.deployPrivateEndpoints, or(steps('hosts').diskEncryption.confidentialVMOSDiskEncryption, contains(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), contains(steps('userProfiles').azureFiles.keyManagement, 'CustomerManaged')))]"
 								}
 							]
 						},
@@ -3073,7 +3535,6 @@
 							"name": "tags",
 							"type": "Microsoft.Common.TagsByResource",
 							"resources": [
-								"Microsoft.Automation/automationAccounts",
 								"Microsoft.Compute/availabilitySets",
 								"Microsoft.Compute/diskAccesses",
 								"Microsoft.Compute/diskEncryptionSets",
@@ -3105,7 +3566,7 @@
 		},
 		"outputs": {
 			"parameters": {
-				"avdObjectId": "[if(empty(steps('basics').servicePrincipalApi), steps('basics').prereqs.avdObjectId, first(map(steps('basics').servicePrincipalApi.value, (item) => item.id)))]",			
+				"avdObjectId": "[if(empty(steps('basics').servicePrincipalApi), steps('basics').prereqs.avdObjectId, first(map(steps('basics').servicePrincipalApi.value, (item) => item.id)))]",
 				"businessUnitIdentifier": "[steps('basics').naming.businessUnitIdentifier]",
 				"hostPoolIdentifier": "[steps('basics').naming.hostPoolIdentifier]",
 				"centralizedAVDMonitoring": "[if(empty(steps('basics').naming.businessUnitIdentifier), true, steps('basics').naming.centralizedAVDMonitoring)]",
@@ -3119,7 +3580,7 @@
 				"hostPoolMaxSessionLimit": "[if(equals(steps('controlPlane').hostPool.type, 'Pooled'), steps('controlPlane').hostPool.maxSessions, 1)]",
 				"hostPoolValidationEnvironment": "[steps('controlPlane').hostPool.validation]",
 				"hostPoolRDPProperties": "[steps('controlPlane').hostPool.rdpProperties]",
-				"securityPrincipals": "[if(empty(steps('controlPlane').assignment.groupsApi), map(steps('controlPlane').assignment.groupsGrid, (item) => item.objectId), steps('controlPlane').assignment.groupsDropDown)]",				
+				"appGroupSecurityGroups": "[steps('controlPlane').assignments.groupPickerBlade.transformed.selection]",
 				"deployScalingPlan": "[steps('controlPlane').scalingPlan.deployScalingPlan]",
 				"scalingPlanExclusionTag": "[if(steps('controlPlane').scalingPlan.deployScalingPlan, steps('controlPlane').scalingPlan.exclusionTag, '')]",
 				"scalingPlanRampUpSchedule": "[if(steps('controlPlane').scalingPlan.deployScalingPlan, first(steps('controlPlane').scalingPlan.weekdayRampUpSchedule), parse('{}'))]",
@@ -3156,26 +3617,35 @@
 				"identitySolution": "[if(and(equals(steps('hosts').identity.solution, 'EntraId'), steps('hosts').identity.intune), 'EntraIdIntuneEnrollment', steps('hosts').identity.solution)]",
 				"domainName": "[steps('hosts').identity.domainName]",
 				"ouPath": "[if(equals(steps('hosts').identity.solution, 'EntraId'), '', steps('hosts').identity.ouPath)]",
-				"domainJoinUserPassword": "[if(equals(steps('hosts').domainJoinCredentials.passwordSource, 'manual'), steps('hosts').domainJoinCredentials.password, '')]",
-				"domainJoinUserPrincipalName": "[if(equals(steps('hosts').domainJoinCredentials.passwordSource, 'manual'), steps('hosts').domainJoinCredentials.userPrincipalName, '')]",
-				"virtualMachineAdminPassword": "[if(equals(steps('hosts').localAdminCredentials.passwordSource, 'manual'), steps('hosts').localAdminCredentials.password, '')]",
-				"virtualMachineAdminUserName": "[if(equals(steps('hosts').localAdminCredentials.passwordSource, 'manual'), steps('hosts').localAdminCredentials.username, '')]",
+				"domainJoinUserPassword": "[if(equals(steps('hosts').domainJoinCredentials.source, 'manual'), steps('hosts').domainJoinCredentials.password, '')]",
+				"domainJoinUserPasswordKvSecret": "[if(equals(steps('hosts').domainJoinCredentials.source, 'manual'), parse('{}'), parse(concat('{\"id\":\"', steps('hosts').domainJoinCredentials.passwordSecretPickerBlade.vaultResourceId, '\",\"secretName\":\"', last(split(steps('hosts').domainJoinCredentials.passwordSecretPickerBlade.secretId,'/')), '\"}')))]",
+				"domainJoinUserPrincipalName": "[if(equals(steps('hosts').domainJoinCredentials.source, 'manual'), steps('hosts').domainJoinCredentials.userPrincipalName, '')]",
+				"domainJoinUserPrincipalNameKvSecret": "[if(equals(steps('hosts').domainJoinCredentials.source, 'manual'), parse('{}'), parse(concat('{\"id\":\"', steps('hosts').domainJoinCredentials.upnSecretPickerBlade.vaultResourceId, '\",\"secretName\":\"', last(split(steps('hosts').domainJoinCredentials.upnSecretPickerBlade.secretId,'/')), '\"}')))]",
+				"virtualMachineAdminPassword": "[if(equals(steps('hosts').localAdminCredentials.source, 'manual'), steps('hosts').localAdminCredentials.password, '')]",
+				"virtualMachineAdminPasswordKvSecret": "[if(equals(steps('hosts').localAdminCredentials.source, 'manual'), parse('{}'), parse(concat('{\"id\":\"', steps('hosts').localAdminCredentials.passwordSecretPickerBlade.vaultResourceId, '\",\"secretName\":\"', last(split(steps('hosts').localAdminCredentials.passwordSecretPickerBlade.secretId,'/')), '\"}')))]",
+				"virtualMachineAdminUserName": "[if(equals(steps('hosts').localAdminCredentials.source, 'manual'), steps('hosts').localAdminCredentials.username, '')]",
+				"virtualMachineAdminUserNameKvSecret": "[if(equals(steps('hosts').localAdminCredentials.source, 'manual'), parse('{}'), parse(concat('{\"id\":\"', steps('hosts').localAdminCredentials.usernameSecretPickerBlade.vaultResourceId, '\",\"secretName\":\"', last(split(steps('hosts').localAdminCredentials.usernameSecretPickerBlade.secretId,'/')), '\"}')))]",
 				"artifactsStorageAccountResourceId": "[if(steps('hosts').customScripts.addCustomScripts, steps('hosts').customScripts.storageAccount.id, '')]",
 				"artifactsContainerName": "[if(steps('hosts').customScripts.addCustomScripts, first(skip(split(steps('hosts').customScripts.container, '/'), 12)), '')]",
 				"artifactsUserAssignedIdentityResourceId": "[if(steps('hosts').customScripts.addCustomScripts, if(not(empty(steps('hosts').customScripts.managedIdentity)), steps('hosts').customScripts.managedIdentity.id, ''), '')]",
 				"cseBlobNames": "[if(steps('hosts').customScripts.addCustomScripts, map(steps('hosts').customScripts.customizations, (item) => item.blobName), '')]",
 				"fslogixContainerType": "[if(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').fslogixContainerType, 'ProfileContainer')]",
-				"deployFSLogixStorage": "[if(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').fslogixStorage.deployStorage, false)]",
-				"fslogixStorageService": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').fslogixStorage.deployStorage), concat(steps('userProfiles').fslogixStorage.storageService, ' ', steps('userProfiles').fslogixStorage.storageSku), 'AzureFiles Standard')]",
-				"netAppVolumesSubnetResourceId": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').fslogixStorage.deployStorage, equals(steps('userProfiles').fslogixStorage.storageService, 'AzureNetAppFiles')), steps('userProfiles').fslogixStorage.subnet, '')]",
-				"existingSharedActiveDirectoryConnection": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').fslogixStorage.deployStorage, equals(steps('userProfiles').fslogixStorage.storageService, 'AzureNetAppFiles')), steps('userProfiles').fslogixStorage.existingSharedActiveDirectoryConnection, false)]",
-				"fslogixShareSizeInGB": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').fslogixStorage.deployStorage), steps('userProfiles').fslogixStorage.storageShareSize, 100)]",
-				"fslogixStorageIndex": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').fslogixStorage.deployStorage, equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles')), steps('userProfiles').fslogixStorage.storageIndex, 0)]",
-				"fslogixStorageAccountADKerberosEncryption": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').fslogixStorage.deployStorage, equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles')), steps('userProfiles').fslogixStorage.storageKerberosEncryption, 'RC4')]",
-				"keyManagementFSLogixStorage": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').fslogixStorage.deployStorage, equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles')), steps('userProfiles').fslogixStorage.keyManagement, 'CustomerManaged')]",
-				"fslogixShareAdminGroups": "[if(steps('userProfiles').fslogixStorage.selectAdminGroup, if(empty(steps('userProfiles').fslogixStorage.groupsApi), steps('userProfiles').fslogixStorage.adminGroupGrid, steps('userProfiles').fslogixStorage.adminGroupDropDown), parse('[]'))]",
-				"fslogixConfigureSessionHosts": "[if(and(equals(steps('hosts').identity.solution, 'EntraId'), equals(steps('userProfiles').profileSolution, 'FSLogix')), steps('userProfiles').fslogixSessionHostConfig.configureSessionHosts, false)]",
-				"fslogixExistingStorageAccountResourceIds": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').fslogixSessionHostConfig.configureSessionHosts, or(equals(steps('userProfiles').fslogixStorage.deployStorage, false), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))), map(steps('userProfiles').fslogixSessionHostConfig.existingStorageAccounts, (item) => item.resourceId), parse('[]'))]",
+				"deployFSLogixStorage": "[if(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').deployStorage, false)]",
+				"fslogixConfigureSessionHosts": "[if(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').configureSessionHosts, false)]",
+				"fslogixStorageService": "[if(steps('userProfiles').deployStorage, if(equals(steps('userProfiles').storageService, 'AzureFiles'), concat('AzureFiles ', steps('userProfiles').azureFiles.storageSku), concat('AzureNetAppFiles ', steps('userProfiles').azureNetAppFiles.storageSku)), if(steps('userProfiles').configureSessionHosts, if(equals(steps('userProfiles').storageService, 'AzureFiles'), 'AzureFiles Standard', 'AzureNetAppFiles Standard'), 'AzureFiles Standard'))]",
+				"netAppVolumesSubnetResourceId": "[if(and(steps('userProfiles').deployStorage, equals(steps('userProfiles').storageService, 'AzureNetAppFiles')), steps('userProfiles').azureNetAppFiles.subnet, '')]",
+				"existingSharedActiveDirectoryConnection": "[if(and(steps('userProfiles').deployStorage, equals(steps('userProfiles').storageService, 'AzureNetAppFiles')), steps('userProfiles').azureNetAppFiles.existingSharedActiveDirectoryConnection, false)]",
+				"fslogixExistingLocalNetAppVolumeResourceIds": "[if(and(steps('userProfiles').configureSessionHosts, equals(steps('userProfiles').deployStorage, false), equals(steps('userProfiles').storageService, 'AzureNetAppFiles')), steps('userProfiles').azureNetAppFiles.localVolumes, parse('[]'))]",
+				"fslogixExistingRemoteNetAppVolumeResourceIds": "[if(and(steps('userProfiles').configureSessionHosts, contains(steps('userProfiles').fslogixContainerType, 'CloudCache'), equals(steps('userProfiles').storageService, 'AzureNetAppFiles')), steps('userProfiles').azureNetAppFiles.remoteVolumes, parse('[]'))]",
+				"fslogixShardOptions": "[if(and(equals(steps('userProfiles').storageService, 'AzureFiles'), or(steps('userProfiles').configureSessionHosts, steps('userProfiles').deployStorage)), steps('userProfiles').azureFiles.shardingOption, 'None')]",
+				"fslogixUserGroups": "[if(equals(steps('userProfiles').storageService, 'AzureNetAppFiles'), if(steps('userProfiles').deployStorage, steps('userProfiles').azureNetAppFiles.groupPickerBlade.transformed.selection, parse('[]')), if(and(equals(steps('userProfiles').storageService, 'AzureFiles'), or(steps('userProfiles').configureSessionHosts, steps('userProfiles').deployStorage), not(equals(steps('userProfiles').azureFiles.shardingOption, 'None')), not(equals(steps('hosts').identity.solution, 'EntraId'))), steps('userProfiles').azureFiles.groupPickerBlade.transformed.selection, parse('[]')))]",
+				"fslogixShareSizeInGB": "[if(steps('userProfiles').deployStorage, if(equals(steps('userProfiles').storageService, 'AzureFiles'), steps('userProfiles').azureFiles.storageShareSize, steps('userProfiles').azureNetAppFiles.storageShareSize), 100)]",
+				"fslogixStorageIndex": "[if(and(steps('userProfiles').deployStorage, equals(steps('userProfiles').storageService, 'AzureFiles')), steps('userProfiles').azureFiles.storageIndex, 0)]",
+				"fslogixStorageAccountADKerberosEncryption": "[if(and(steps('userProfiles').deployStorage, equals(steps('userProfiles').storageService, 'AzureFiles')), steps('userProfiles').azureFiles.storageKerberosEncryption, 'RC4')]",
+				"keyManagementFSLogixStorage": "[if(and(steps('userProfiles').deployStorage, equals(steps('userProfiles').storageService, 'AzureFiles')), steps('userProfiles').azureFiles.keyManagement, 'MicrosoftManaged')]",
+				"fslogixExistingLocalStorageAccountResourceIds": "[if(and(steps('userProfiles').configureSessionHosts, equals(steps('userProfiles').deployStorage, false), equals(steps('userProfiles').storageService, 'AzureFiles')), steps('userProfiles').azureFiles.existingLocalStorageAccounts, parse('[]'))]",
+				"fslogixExistingRemoteStorageAccountResourceIds": "[if(and(steps('userProfiles').configureSessionHosts, contains(steps('userProfiles').fslogixContainerType, 'CloudCache'), equals(steps('userProfiles').storageService, 'AzureFiles')), steps('userProfiles').azureFiles.existingRemoteStorageAccounts, parse('[]'))]",
+				"fslogixAdminGroups": "[if(steps('userProfiles').shareManagement.configureAdminAccess, steps('userProfiles').shareManagement.groupPickerBlade.transformed.selection, parse('[]'))]",			                                             
 				"recoveryServices": "[steps('management').backup.recoveryServices]",
 				"enableMonitoring": "[steps('management').monitoring.enableMonitoring]",
 				"logAnalyticsWorkspaceRetention": 30,
@@ -3185,8 +3655,8 @@
 				"deployPrivateEndpoints": "[steps('zeroTrust').privateEndpoints.deployPrivateEndpoints]",
 				"managementAndStoragePrivateEndpointSubnetResourceId": "[if(steps('zeroTrust').privateEndpoints.deployPrivateEndpoints, steps('zeroTrust').privateEndpoints.subnet, '')]",
 				"azureBlobsPrivateDnsZoneResourceId": "[if(and(equals(steps('controlPlane').hostPool.type, 'Personal'), steps('management').backup.recoveryServices, steps('zeroTrust').privateEndpoints.deployPrivateEndpoints), steps('zeroTrust').privateEndpoints.azureBlobsPrivateDnsZone, '')]",
-				"azureFilesPrivateDnsZoneResourceId": "[if(and(equals(steps('userProfiles').fslogixStorage.storageService, 'AzureFiles'), steps('zeroTrust').privateEndpoints.deployPrivateEndpoints), steps('zeroTrust').privateEndpoints.azureFilesPrivateDnsZone, '')]",
-				"keyVaultPrivateDnsZoneResourceId": "[if(steps('zeroTrust').privateEndpoints.deployPrivateEndpoints, steps('zeroTrust').privateEndpoints.keyVaultPrivateDnsZone, '')]",
+				"azureFilesPrivateDnsZoneResourceId": "[if(and(equals(steps('userProfiles').storageService, 'AzureFiles'), steps('zeroTrust').privateEndpoints.deployPrivateEndpoints), steps('zeroTrust').privateEndpoints.azureFilesPrivateDnsZone, '')]",
+				"keyVaultPrivateDnsZoneResourceId": "[if(and(steps('zeroTrust').privateEndpoints.deployPrivateEndpoints, or(steps('hosts').diskEncryption.confidentialVMOSDiskEncryption, contains(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), contains(steps('userProfiles').azureFiles.keyManagement, 'CustomerManaged'))), steps('zeroTrust').privateEndpoints.keyVaultPrivateDnsZone, '')]",
 				"deployDiskAccessPolicy": "[steps('zeroTrust').policy.deployDiskAccessPolicy]",
 				"avdPrivateLinkPrivateRoutes": "[if(steps('zeroTrust').avdPrivateLink.enablePrivateLink, steps('zeroTrust').avdPrivateLink.avdPrivateLinkConfig, 'None')]",
 				"hostpoolPrivateEndpointSubnetResourceId": "[if(steps('zeroTrust').avdPrivateLink.enablePrivateLink, steps('zeroTrust').avdPrivateLink.hostpoolSubnet, '')]",

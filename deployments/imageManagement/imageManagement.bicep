@@ -144,7 +144,7 @@ var storageKind = 'StorageV2'
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   name: resourceGroupName
   location: location
-  tags: contains(tags, 'resourceGroups') ? tags.resourceGroups : {}
+  tags: tags.?resourceGroups ?? {}
 }
 
 module resources 'resources.bicep' = {

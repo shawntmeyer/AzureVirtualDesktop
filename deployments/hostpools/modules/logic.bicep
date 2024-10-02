@@ -1,6 +1,7 @@
 targetScope = 'subscription'
 
 param identitySolution string
+param appGroupSecurityGroups array
 param artifactsUri string
 param avdPrivateLinkPrivateRoutes string
 param customImageResourceId string
@@ -15,9 +16,10 @@ param domainName string
 param cseBlobNames array
 param cseMasterScript string
 param deployFSLogixStorage bool
-param fileShareNames object
-param fslogixConfigureSessionHosts bool
 param fslogixContainerType string
+param fslogixFileShareNames object
+param fslogixShardOptions string
+param fslogixShardGroups array
 param fslogixStorageService string
 param hibernationEnabled bool
 param hostPoolOnly bool = false
@@ -40,7 +42,7 @@ param scalingPlanRampDownSchedule object = {}
 param scalingPlanOffPeakSchedule object = {}
 param scalingPlanForceLogoff bool = false
 param scalingPlanMinsBeforeLogoff int = 0
-param securityPrincipals array
+
 param sessionHostCount int
 param sessionHostIndex int
 param securityType string
@@ -144,17 +146,17 @@ var availabilitySetsCount = length(range(beginAvSetRange, (endAvSetRange - begin
 
 // OTHER LOGIC & COMPUTED VALUES
 // fslogix will not be configured on session hosts if identity solution is not EntraId. Decision made to lower complexity and to avoid potential issues. Assumes the use of Group Policy to configure FSlogix with Domain Services identity solution.
-var fslogixConfigureHosts = identitySolution != 'EntraId' ? false : fslogixConfigureSessionHosts
 var cseArtifacts = !empty(cseBlobNames) ? union(['${cseMasterScript}'], cseBlobNames) : []
 var cseUris = [
   for artifact in cseArtifacts: contains(toLower(artifact), 'http') ? artifact : '${artifactsUri}${artifact}'
 ]
 
-var fileShares = fileShareNames[fslogixContainerType]
+var fslogixFileShares = fslogixFileShareNames[fslogixContainerType]
 // ONLY DEPLOY 1 storage account when Cloud Only identity is used because Sharding is not possible.
-var countStorage = identitySolution == 'EntraId' || identitySolution == 'EntraIdIntuneEnrollment'
+var fslogixUserGroups = empty(fslogixShardGroups) ? appGroupSecurityGroups : fslogixShardGroups
+var countStorage = identitySolution == 'EntraId' || identitySolution == 'EntraIdIntuneEnrollment' || fslogixShardOptions == 'None'
   ? 1
-  : length(securityPrincipals)
+  : length(fslogixUserGroups)
 var netbios = split(domainName, '.')[0]
 var pooledHostPool = split(hostPoolType, ' ')[0] == 'Pooled' ? true : false
 
@@ -189,12 +191,13 @@ var roleDefinitions = {
   KeyVaultCryptoServiceReleaseUser: '08bbd89e-9f13-488c-ac41-acfcb10c90ab'
   KeyVaultReader: '21090545-7ca7-4776-b22c-e363652d74d2'
   Reader: 'acdd72a7-3385-48ef-bd42-f606fba81ae7'
+  RoleBasedAccessControlAdministrator: 'f58310d9-a9f6-439a-9e8d-f62e7b41a168'
   StorageAccountContributor: '17d1049b-9a84-46fb-8f53-869881c3d3ab'
   StorageBlobDataReader: '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1'
   VirtualMachineContributor: '9980e02c-c2be-4d73-94e8-173b1dc7cf3c'
   VirtualMachineUserLogin: 'fb879df8-f326-4884-b1cf-06f3ad86be52'
 }
-var SecurityPrincipalsCount = length(securityPrincipals)
+var SecurityGroupsCount = length(appGroupSecurityGroups)
 var smbServerLocation = locations[locationVirtualMachines].abbreviation
 var fslogixStorageSku = fslogixStorageService == 'None' ? 'None' : split(fslogixStorageService, ' ')[1]
 var fslogixStorageSolution = split(fslogixStorageService, ' ')[0]
@@ -211,7 +214,7 @@ output beginAvSetRange int = beginAvSetRange
 output cseUris array = cseUris
 output dedicatedHostGroupZones array = !empty(dedicatedHostGroupName) ? dedicatedHostGroup.zones : []
 output divisionRemainderValue int = divisionRemainderValue
-output fileShares array = fileShares
+output fslogixFileShareNames array = fslogixFileShares
 output maxResourcesPerTemplateDeployment int = maxResourcesPerTemplateDeployment
 output netbios string = netbios
 output pooledHostPool bool = pooledHostPool
@@ -219,11 +222,11 @@ output resourceGroupNames array = resourceGroupNames
 output roleDefinitions object = roleDefinitions
 output scalingPlanSchedules array = scalingPlanSchedules
 output sessionHostBatchCount int = sessionHostBatchCount
-output SecurityPrincipalsCount int = SecurityPrincipalsCount
+output SecurityGroupsCount int = SecurityGroupsCount
 output smbServerLocation string = smbServerLocation
 output fslogixStorageSku string = fslogixStorageSku
 output fslogixStorageSolution string = fslogixStorageSolution
-output fslogixConfigureSessionHosts bool = fslogixConfigureHosts
+output fslogixUserGroups array = fslogixUserGroups
 output storageSuffix string = storageSuffix
 output fslogixStorageCount int = countStorage
 output tags object = varTags

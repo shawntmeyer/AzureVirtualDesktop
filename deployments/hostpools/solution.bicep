@@ -18,7 +18,7 @@ param artifactsUserAssignedIdentityResourceId string = ''
 param avdObjectId string
 
 @description('Optional. The URL of the AVD Agent and Session Host DSC Configuration.zip.')
-param avdAgentsModuleUrl string = 'https://wvdportalstorageblob.blob.${environment().suffixes.storage}/galleryartifacts/Configuration_1.0.02721.349.zip'
+param avdAgentsModuleUrl string = 'https://wvdportalstorageblob.blob.${environment().suffixes.storage}/galleryartifacts/Configuration_1.0.02790.438.zip'
 
 // Resource and Resource Group naming and organization
 
@@ -90,8 +90,12 @@ param hostPoolRDPProperties string = 'audiocapturemode:i:1;camerastoredirect:s:*
 @description('Optional. The value determines whether the hostPool should receive early AVD updates for testing.')
 param hostPoolValidationEnvironment bool = false
 
-@description('Optional. An array of object IDs to assign to the AVD Application Group and FSLogix Storage.')
-param securityPrincipals array = []
+@description('''Optional.
+An array of objects, defining the security groups that are assigned permissions to the desktop application group created by this solution.
+Each object contains a displayName and objectId key value pair.
+If the 'fslogixShardGroups' is not defined, the value of this parameter is used to determine the number of storage accounts and permissions for each.
+''')
+param appGroupSecurityGroups array = []
 
 @description('Optional. Determines if the scaling plan is deployed to the host pool.')
 param deployScalingPlan bool = false
@@ -278,16 +282,52 @@ param identitySolution string
 param virtualMachineAdminPassword string
 
 @secure()
+@description('''Optional. The Key Vault reference for the virtualMachineAdminPassword. This is used only with the Custom UI template Spec deployment.
+Object that contains the following properties:
+id: The resource Id of the Key Vault Secret.
+secretName: The name of the secret in the Key Vault.
+If specified, the virtualMachineAdminPassword parameter is not used.
+''')
+param virtualMachineAdminPwdKvReference object = {}
+
+@secure()
 @description('Required. The Local Administrator Username for the Session Hosts')
 param virtualMachineAdminUserName string
 
 @secure()
-@description('Conditional. The password of the privileged account to domain join the AVD session hosts to your domain. Required when "identitySolution" contains "DomainServices".')
+@description('''Optional. The Key Vault reference for the virtualMachineAdminUserName. This is used only with the Custom UI template Spec deployment.
+Object that contains the following properties:
+id: The resource Id of the Key Vault Secret.
+secretName: The name of the secret in the Key Vault.
+If specified, the virtualMachineAdminUserName parameter is not used.
+''')
+param virtualMachineAdminUserNameKvReference object = {}
+
+@secure()
+@description('Optional. The password of the privileged account to domain join the AVD session hosts to your domain. Required when "identitySolution" contains "DomainServices".')
 param domainJoinUserPassword string = ''
+
+@secure()
+@description('''Optional. The Key Vault reference for the domainJoinUserPassword. This is used only with the Custom UI template Spec deployment.
+Object that contains the following properties:
+id: The resource Id of the Key Vault Secret.
+secretName: The name of the secret in the Key Vault.
+If specified, the domainJoinUserPassword parameter must be an empty string.
+''')
+param domainJoinUserPwdKvReference object = {}
 
 @secure()
 @description('Conditional. The UPN of the privileged account to domain join the AVD session hosts to your domain. This should be an account the resides within the domain you are joining. Required when "identitySolution" contains "DomainServices".')
 param domainJoinUserPrincipalName string = ''
+
+@secure()
+@description('''Optional. The Key Vault reference for the domainJoinUserPrincipalName. This is used only with the Custom UI template Spec deployment.
+Object that contains the following properties:
+id: The resource Id of the Key Vault Secret.
+secretName: The name of the secret in the Key Vault.
+If specified, the domainJoinUserPrincipalName parameter must be an empty string.
+''')
+param domainJoinUserPrincipalNameKvReference object = {}
 
 @description('Optional. The name of the domain that provides ADDS to the AVD session hosts and is synchronized with Azure AD')
 param domainName string = ''
@@ -303,7 +343,8 @@ param cseBlobNames array = []
 @description('Optional. The name of the script and blob that is ran by the Custom Script Extension on Virtual Machines.')
 param cseMasterScript string = 'cse_master_script.ps1'
 
-@description('''Additional Custom Dynamic parameters passed to CSE Scripts.
+@description('''Optional.
+Additional Custom Dynamic parameters passed to CSE Scripts.
 (ex: 'Script2Keys=@([pscustomobject]@{stringValue=\'storageAccountName\';booleanValue=\'false\'});Script3Keys=@([pscustomobject]@{intValue=\'10\'}')
 ''')
 param cseScriptAddDynParameters string = ''
@@ -328,11 +369,34 @@ param fslogixShareSizeInGB int = 100
 ])
 param fslogixContainerType string = 'ProfileContainer'
 
-@description('''
-Optional. An array of objects, defining the groups of administrators who will be granted full control access to the FSLogix share.
-This parameter must include key value pairs with the following keys: "domainName", "samAccountName", and "objectId".
+@description('''Optional.
+Determines whether or not to Shard Azure Files Storage by deploying more than one storage account, and if so how the Session Hosts are Configured.
+If 'None' is selected, then no sharding is performed and only 1 storage account is deployed when deploying storage accounts.
+If 'ShardOSS' is selected, then the fslogixShardGroups are used to assign share permissions and configure the session hosts with Object Specific Settings.
+If 'ShardPerms' is selected, then storage account permissions are assigned based on the groups defined in "appGroupSecurityGroups" or "fslogixShardPrincpals".
 ''')
-param fslogixShareAdminGroups array = []
+@allowed([
+  'None'
+  'ShardOSS'
+  'ShardPerms'
+])
+param fslogixShardOptions string = 'None'
+
+@description('''Optional.
+An array of objects, defining the administrator groups who will be granted full control access to the FSLogix share. The groups must exist in AD and Entra.
+Each object must include the following key value pairs:
+- 'displayName': The display name of the security group.
+- 'objectId': The Object ID of the security group.
+''')
+param fslogixAdminGroups array = []
+
+@description('''Optional.
+An array of objects, defining the user groups that are assigned permissions to each share. The groups must exist in AD and Entra.
+Each object contains the following key value pairs:
+- 'displayName': The display name of the security group.
+- 'objectId': The Object ID of the security group.
+''')
+param fslogixUserGroups array = []
 
 @allowed([
   'AzureNetAppFiles Premium' // ANF with the Premium SKU, 450,000 IOPS
@@ -349,17 +413,31 @@ param netAppVolumesSubnetResourceId string = ''
 @description('Optional. Indicates whether or not there is an existing Active Directory Connection with Azure NetApp Volume.')
 param existingSharedActiveDirectoryConnection bool = false
 
-@description('Optional. Enable Automatic File Share Quota Increase for Azure Files Premium.')
-param enableIncreaseQuotaAutomation bool = false
-
 @description('Optional. Configure FSLogix agent on the session hosts via local registry keys.')
 param fslogixConfigureSessionHosts bool = false
 
-@description('''Optional. Existing FSLogix Storage Account Resource Ids. Only used when fslogixConfigureSessionHosts = "true".
+@description('''Optional. Existing local (in the same region as the session host VMs) NetApp Files Volume Resource Ids.
+If Office Containers are used, then list the FSLogix Profile Container Volume first and the Office Container Volume second.
+''')
+param fslogixExistingLocalNetAppVolumeResourceIds array = []
+
+@description('''Optional. Existing local (in the same region as the session host VMs) FSLogix Storage Account Resource Ids.
+Only used when fslogixConfigureSessionHosts = true and deployFSLogixStorage = false.
+If "identitySolution" is set to "EntraId" or "EntraIdIntuneEnrollment" then only the first storage account listed will be used.
+''')
+param fslogixExistingLocalStorageAccountResourceIds array = []
+
+@description('''Optional. Existing remote (not in the same region as the session host VMs) NetApp Files Volume Resource Ids.
+If Office Containers are used, then list the FSLogix Profile Container Volume first and the Office Container Volume second.
+''')
+param fslogixExistingRemoteNetAppVolumeResourceIds array = []
+
+@description('''Optional. Existing remote (not in the same region as the session host VMs) FSLogix Storage Account Resource Ids.
+Only used when fslogixConfigureSessionHosts = true.
 This list will be added to any storage accounts created when setting "fslogixStorageService" to any of the AzureFiles options. 
 If "identitySolution" is set to "EntraId" or "EntraIdIntuneEnrollment" then only the first storage account listed will be used.
 ''')
-param fslogixExistingStorageAccountResourceIds array = []
+param fslogixExistingRemoteStorageAccountResourceIds array = []
 
 @allowed([
   'AES256'
@@ -419,9 +497,6 @@ param deployPrivateEndpoints bool = false
 
 @description('Conditional. The Resource Id of the subnet on which to create the storage account, keyvault, and other resources private link. Required when "privateEndoints" = true.')
 param managementAndStoragePrivateEndpointSubnetResourceId string = ''
-
-@description('Conditional. If using private endpoints with Automation Accounts, input the Resource ID for the Private DNS Zone linked to your hub virtual network. Required when "managementPrivateEndpoints is true.')
-param automationAccountPrivateDnsZoneResourceId string = ''
 
 @description('Conditional. If using private endpoints with Azure files, input the Resource ID for the Private DNS Zone linked to your hub virtual network. Required when "storagePrivateEndpoints" is true.')
 param azureBlobsPrivateDnsZoneResourceId string = ''
@@ -507,13 +582,6 @@ var confidentialVMOSDiskEncryptionType = confidentialVMOSDiskEncryption ? 'DiskW
 
 var resourceGroupsCount = 3 + (empty(existingFeedWorkspaceResourceId) ? 1 : 0) + (deployFSLogixStorage ? 1 : 0) + (avdPrivateLinkPrivateRoutes == 'All' && !empty(globalFeedPrivateEndpointSubnetResourceId) ? 1 : 0)
 
-module artifactsUserAssignedIdentity 'modules/getUserAssignedIdentity.bicep' = if(!empty(artifactsUserAssignedIdentityResourceId)) {
-  name: 'ArtifactsUserAssignedIdentity_${timeStamp}'
-  params: {
-    userAssignedIdentityResourceId: artifactsUserAssignedIdentityResourceId
-  }
-}
-
 // Existing Session Host Virtual Network location
 resource vmVirtualNetwork 'Microsoft.Network/virtualNetworks@2023-04-01' existing = {
   name: split(virtualMachineSubnetResourceId, '/')[8]
@@ -524,6 +592,28 @@ resource vmVirtualNetwork 'Microsoft.Network/virtualNetworks@2023-04-01' existin
 resource avdPrivateLinkGlobalFeedNetwork 'Microsoft.Network/virtualNetworks@2023-04-01' existing = if (!empty(globalFeedPrivateEndpointSubnetResourceId)) {
   name: split(globalFeedPrivateEndpointSubnetResourceId, '/')[8]
   scope: resourceGroup(split(globalFeedPrivateEndpointSubnetResourceId, '/')[2], split(globalFeedPrivateEndpointSubnetResourceId, '/')[4])
+}
+
+// Existing Key Vaults for Secrets (only used for UI deployments since you can specify references in Parameter files.)
+
+resource kvDomainJoinUserPassword 'Microsoft.KeyVault/vaults@2023-07-01' existing = if (!empty(domainJoinUserPwdKvReference)) {
+  name: last(split(domainJoinUserPwdKvReference.id, '/'))
+  scope: resourceGroup(split(domainJoinUserPwdKvReference.id, '/')[2], split(domainJoinUserPwdKvReference.id, '/')[4])
+}
+
+resource kvDomainJoinUserPrincipalName 'Microsoft.KeyVault/vaults@2023-07-01' existing = if (!empty(domainJoinUserPrincipalNameKvReference)) {
+  name: last(split(domainJoinUserPrincipalNameKvReference.id, '/'))
+  scope: resourceGroup(split(domainJoinUserPrincipalNameKvReference.id, '/')[2], split(domainJoinUserPrincipalNameKvReference.id, '/')[4])
+}
+
+resource kvVirtualMachineAdminPassword 'Microsoft.KeyVault/vaults@2023-07-01' existing = if (!empty(virtualMachineAdminPwdKvReference)) {
+  name: last(split(virtualMachineAdminPwdKvReference.id, '/'))
+  scope: resourceGroup(split(virtualMachineAdminPwdKvReference.id, '/')[2], split(virtualMachineAdminPwdKvReference.id, '/')[4])
+}
+
+resource kvVirtualMachineAdminUserName 'Microsoft.KeyVault/vaults@2023-07-01' existing = if (!empty(virtualMachineAdminUserNameKvReference)) {
+  name: last(split(virtualMachineAdminUserNameKvReference.id, '/'))
+  scope: resourceGroup(split(virtualMachineAdminUserNameKvReference.id, '/')[2], split(virtualMachineAdminUserNameKvReference.id, '/')[4])
 }
 
 // Resource Names
@@ -549,6 +639,7 @@ module resourceNames 'modules/resourceNames.bicep' = {
 module logic 'modules/logic.bicep' = {
   name: 'Logic_${timeStamp}'
   params: {
+    appGroupSecurityGroups: appGroupSecurityGroups
     artifactsUri: artifactsUri
     avdPrivateLinkPrivateRoutes: avdPrivateLinkPrivateRoutes
     globalFeedPrivateEndpointSubnetResourceId: globalFeedPrivateEndpointSubnetResourceId
@@ -563,9 +654,10 @@ module logic 'modules/logic.bicep' = {
     diskSizeGB: diskSizeGB
     diskSku: diskSku
     domainName: domainName
-    fileShareNames: resourceNames.outputs.fileShareNames
-    fslogixConfigureSessionHosts: fslogixConfigureSessionHosts
     fslogixContainerType: fslogixContainerType
+    fslogixFileShareNames: resourceNames.outputs.fslogixFileShareNames
+    fslogixShardOptions: fslogixShardOptions
+    fslogixShardGroups: fslogixUserGroups
     fslogixStorageService: fslogixStorageService
     hibernationEnabled: hibernationEnabled
     hostPoolType: hostPoolType
@@ -587,8 +679,7 @@ module logic 'modules/logic.bicep' = {
     scalingPlanRampUpSchedule: scalingPlanRampUpSchedule
     scalingPlanPeakSchedule: scalingPlanPeakSchedule
     scalingPlanRampDownSchedule: scalingPlanRampDownSchedule
-    scalingPlanOffPeakSchedule: scalingPlanOffPeakSchedule
-    securityPrincipals: securityPrincipals
+    scalingPlanOffPeakSchedule: scalingPlanOffPeakSchedule    
     sessionHostCount: sessionHostCount
     sessionHostIndex: sessionHostIndex
     securityType: securityType
@@ -615,8 +706,6 @@ module rgs 'modules/resourceGroups.bicep' = [for i in range(0, resourceGroupsCou
 module management 'modules/management/management.bicep' = {
   name: 'Management_${timeStamp}'
   params: {
-    automationAccountName: resourceNames.outputs.automationAccountName
-    automationAccountPrivateDnsZoneResourceId: automationAccountPrivateDnsZoneResourceId
     avdObjectId: avdObjectId
     azureBlobsPrivateDnsZoneResourceId: azureBlobsPrivateDnsZoneResourceId
     confidentialVMOrchestratorObjectId: confidentialVMOrchestratorObjectId
@@ -627,26 +716,22 @@ module management 'modules/management/management.bicep' = {
     diskAccessName: resourceNames.outputs.diskAccessName
     diskEncryptionSetNames: resourceNames.outputs.diskEncryptionSetNames
     diskSku: diskSku
-    domainJoinUserPassword: domainJoinUserPassword
-    domainJoinUserPrincipalName: domainJoinUserPrincipalName
+    domainJoinUserPassword: identitySolution != 'EntraId' ? !empty(domainJoinUserPwdKvReference) ? kvDomainJoinUserPassword.getSecret(domainJoinUserPwdKvReference.secretName) : domainJoinUserPassword : ''
+    domainJoinUserPrincipalName: identitySolution != 'EntraId' ? !empty(domainJoinUserPrincipalNameKvReference) ? kvDomainJoinUserPrincipalName.getSecret(domainJoinUserPrincipalNameKvReference.secretName) : domainJoinUserPrincipalName : ''
     domainName: domainName
-    enableIncreaseQuotaAutomation: enableIncreaseQuotaAutomation
     encryptionAtHost: encryptionAtHost
     envShortName: envShortName
     fslogix: deployFSLogixStorage
     fslogixStorageIndex: fslogixStorageIndex
     keyManagementFSLogixStorage: keyManagementFSLogixStorage
-    fslogixStorageService: fslogixStorageService
     fslogixStorageSolution: logic.outputs.fslogixStorageSolution
     hostPoolType: hostPoolType
     identitySolution: identitySolution
+    keyManagementDisks: keyManagementDisks
     keyVaultNames: resourceNames.outputs.keyVaultNames
     keyVaultPrivateDnsZoneResourceId: keyVaultPrivateDnsZoneResourceId
     locationVirtualMachines: locationVirtualMachines
-    logAnalyticsWorkspaceResourceId: enableMonitoring ? monitoring.outputs.logAnalyticsWorkspaceResourceId : ''
     managementVmSize: managementVmSize
-    enableMonitoring: enableMonitoring
-    keyManagementDisks: keyManagementDisks
     privateEndpointSubnetResourceId: managementAndStoragePrivateEndpointSubnetResourceId
     privateEndpoint: deployPrivateEndpoints
     privateEndpointNameConv: resourceNames.outputs.privateEndpointNameConv
@@ -666,8 +751,8 @@ module management 'modules/management/management.bicep' = {
     virtualMachineName: resourceNames.outputs.mgmtVirtualMachineName
     virtualMachineNICName: resourceNames.outputs.mgmtVirtualMachineNicName
     virtualMachineDiskName: resourceNames.outputs.mgmtVirtualMachineDiskName
-    virtualMachineAdminPassword: virtualMachineAdminPassword
-    virtualMachineAdminUserName: virtualMachineAdminUserName
+    virtualMachineAdminPassword: !empty(virtualMachineAdminPwdKvReference) ? kvVirtualMachineAdminPassword.getSecret(virtualMachineAdminPwdKvReference.secretName) : virtualMachineAdminPassword
+    virtualMachineAdminUserName: !empty(virtualMachineAdminUserNameKvReference) ? kvVirtualMachineAdminUserName.getSecret(virtualMachineAdminUserNameKvReference.secretName) : virtualMachineAdminUserName
     virtualMachineSubnetResourceId: virtualMachineSubnetResourceId
   }                
   dependsOn: [
@@ -697,7 +782,8 @@ module monitoring 'modules/monitoring/monitoring.bicep' = if(enableMonitoring) {
 // This module deploys the workspace, host pool, and desktop application group
 module controlPlane 'modules/controlPlane/controlPlane.bicep' = {
   name: 'ControlPlane_${timeStamp}'
-  params: {  
+  params: {
+    appGroupSecurityGroups: map(appGroupSecurityGroups, group => group.objectId)
     avdPrivateDnsZoneResourceId: avdPrivateDnsZoneResourceId
     avdPrivateLinkPrivateRoutes: avdPrivateLinkPrivateRoutes
     deployScalingPlan: deployScalingPlan
@@ -729,8 +815,7 @@ module controlPlane 'modules/controlPlane/controlPlane.bicep' = {
     resourceGroupGlobalFeed: resourceNames.outputs.resourceGroupGlobalFeed
     resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
     roleDefinitions: logic.outputs.roleDefinitions
-    scalingPlanExclusionTag: scalingPlanExclusionTag
-    securityPrincipals: securityPrincipals
+    scalingPlanExclusionTag: scalingPlanExclusionTag    
     tags: tags
     timeStamp: timeStamp
     virtualMachineTemplate: logic.outputs.virtualMachineTemplate
@@ -750,35 +835,28 @@ module controlPlane 'modules/controlPlane/controlPlane.bicep' = {
 module fslogix 'modules/fslogix/fslogix.bicep' = if (deployFSLogixStorage) {
   name: 'FSLogix_${timeStamp}'
   params: {
-    artifactsUri: artifactsUri
-    artifactsUserAssignedIdentityClientId: empty(artifactsUserAssignedIdentityResourceId) ? '' : artifactsUserAssignedIdentity.outputs.clientId
     activeDirectoryConnection: existingSharedActiveDirectoryConnection
-    automationAccountName: resourceNames.outputs.automationAccountName
     availability: availability
     azureFilesPrivateDnsZoneResourceId: azureFilesPrivateDnsZoneResourceId
     customerManagedKeysEnabled: keyManagementFSLogixStorage != 'MicrosoftManaged' ? true : false
     deploymentUserAssignedIdentityClientId: management.outputs.deploymentUserAssignedIdentityClientId
+    domainJoinUserPassword: !empty(domainJoinUserPwdKvReference) ? kvDomainJoinUserPassword.getSecret(domainJoinUserPwdKvReference.secretName) : domainJoinUserPassword
+    domainJoinUserPrincipalName: !empty(domainJoinUserPrincipalNameKvReference) ? kvDomainJoinUserPrincipalName.getSecret(domainJoinUserPrincipalNameKvReference.secretName) : domainJoinUserPrincipalName
     netAppVolumesSubnetResourceId: netAppVolumesSubnetResourceId
     domainName: domainName
-    enableIncreaseQuotaAutomation: enableIncreaseQuotaAutomation
-    encryptionUserAssignedIdentityResourceId: management.outputs.encryptionUserAssignedIdentityResourceId
-    fileShares: logic.outputs.fileShares
-    fslogixAdminGroupObjectIds: !empty(fslogixShareAdminGroups) ? map(fslogixShareAdminGroups, item => item.objectId) : []
-    fslogixAdminGroupSamAccountNames: !empty(fslogixShareAdminGroups) ? map(fslogixShareAdminGroups, item => item.samAccountName) : []
-    fslogixAdminGroupDomainNames: !empty(fslogixShareAdminGroups) ? map(fslogixShareAdminGroups, item => item.domainName) : []
+    encryptionUserAssignedIdentityResourceId: management.outputs.encryptionUserAssignedIdentityResourceId    
+    fslogixAdminGroups: fslogixAdminGroups
+    fslogixFileShares: logic.outputs.fslogixFileShareNames
+    fslogixUserGroups: logic.outputs.fslogixUserGroups
     shareSizeInGB: fslogixShareSizeInGB
-    containerType: fslogixContainerType
-    storageService: fslogixStorageService
     identitySolution: identitySolution
-    kerberosEncryption: fslogixStorageAccountADKerberosEncryption
-    vmKeyVaultName: resourceNames.outputs.keyVaultNames.VMs
+    kerberosEncryptionType: fslogixStorageAccountADKerberosEncryption
     storageEncryptionKeyVaultUris: management.outputs.storageEncryptionKeyKeyVaultUris
     location: locationVirtualMachines
     logAnalyticsWorkspaceResourceId: enableMonitoring ? monitoring.outputs.logAnalyticsWorkspaceResourceId : ''
     managementVirtualMachineName: management.outputs.virtualMachineName
     netAppAccountName: resourceNames.outputs.netAppAccountName
     netAppCapacityPoolName: resourceNames.outputs.netAppCapacityPoolName
-    netbios: logic.outputs.netbios
     ouPath: ouPath
     privateEndpoint: deployPrivateEndpoints
     privateEndpointNameConv: resourceNames.outputs.privateEndpointNameConv
@@ -787,7 +865,6 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (deployFSLogixStorage) {
     recoveryServicesVaultName: resourceNames.outputs.recoveryServicesVaultName
     resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
     resourceGroupStorage: resourceNames.outputs.resourceGroupStorage
-    securityPrincipals: securityPrincipals
     smbServerLocation: logic.outputs.smbServerLocation
     storageAccountNamePrefix: resourceNames.outputs.storageAccountNamePrefix
     storageCount: logic.outputs.fslogixStorageCount
@@ -796,9 +873,6 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (deployFSLogixStorage) {
     storageSku: logic.outputs.fslogixStorageSku
     storageSolution: logic.outputs.fslogixStorageSolution
     privateEndpointSubnetResourceId: managementAndStoragePrivateEndpointSubnetResourceId
-    tagsAutomationAccounts: union({
-        'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceNames.outputs.resourceGroupManagement}/providers/Microsoft.DesktopVirtualization/workspaces/${resourceNames.outputs.workspaceName}'
-      }, tags[?'Microsoft.Automation/automationAccounts'] ?? {})
     tagsNetAppAccount: union({
         'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceNames.outputs.resourceGroupManagement}/providers/Microsoft.DesktopVirtualization/hostPools/${resourceNames.outputs.hostPoolName}'
       }, tags[?'Microsoft.NetApp/netAppAccounts'] ?? {})
@@ -812,7 +886,6 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (deployFSLogixStorage) {
         'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceNames.outputs.resourceGroupManagement}/providers/Microsoft.DesktopVirtualization/hostPools/${resourceNames.outputs.hostPoolName}'
       }, tags[?'Microsoft.recoveryServices/vaults'] ?? {})
     timeStamp: timeStamp
-    timeZone: logic.outputs.timeZone
   }
   dependsOn: [
     controlPlane
@@ -822,8 +895,8 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (deployFSLogixStorage) {
 module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
   name: 'SessionHosts_${timeStamp}'
   params: {
+    appGroupSecurityGroups: map(appGroupSecurityGroups, group => group.objectId)
     avdAgentsModuleUrl: avdAgentsModuleUrl
-    artifactsUserAssignedIdentityClientId: empty(artifactsUserAssignedIdentityResourceId) ? '': artifactsUserAssignedIdentity.outputs.clientId
     artifactsUserAssignedIdentityResourceId: artifactsUserAssignedIdentityResourceId
     availability: availability
     availabilitySetNamePrefix: resourceNames.outputs.availabilitySetNamePrefix
@@ -839,30 +912,36 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     dedicatedHostGroupResourceId: dedicatedHostGroupResourceId
     dedicatedHostGroupZones: logic.outputs.dedicatedHostGroupZones
     dedicatedHostResourceId: dedicatedHostResourceId
+    deploymentUserAssignedIdentityClientId: management.outputs.deploymentUserAssignedIdentityClientId
     diskAccessId: deployDiskAccessResource ? management.outputs.diskAccessResourceId : ''    
     diskEncryptionSetResourceId: management.outputs.diskEncryptionSetResourceId
     diskNamePrefix: resourceNames.outputs.diskNamePrefix
     diskSizeGB: diskSizeGB
     diskSku: diskSku
     divisionRemainderValue: logic.outputs.divisionRemainderValue
+    domainJoinUserPassword: !empty(domainJoinUserPwdKvReference) ? kvDomainJoinUserPassword.getSecret(domainJoinUserPwdKvReference.secretName) : domainJoinUserPassword
+    domainJoinUserPrincipalName: !empty(domainJoinUserPrincipalNameKvReference) ? kvDomainJoinUserPrincipalName.getSecret(domainJoinUserPrincipalNameKvReference.secretName) : domainJoinUserPrincipalName
     domainName: domainName
     drainMode: drainMode
     drainModeUserAssignedIdentityClientId: management.outputs.deploymentUserAssignedIdentityClientId
     enableAcceleratedNetworking: enableAcceleratedNetworking
     encryptionAtHost: encryptionAtHost
-    fslogixConfigureSessionHosts: logic.outputs.fslogixConfigureSessionHosts
+    fslogixConfigureSessionHosts: fslogixConfigureSessionHosts
     fslogixContainerType: fslogixContainerType
-    fslogixDeployedStorageAccountResourceIds: deployFSLogixStorage ? fslogix.outputs.storageAccountResourceIds : []
-    fslogixExistingStorageAccountResourceIds: fslogixExistingStorageAccountResourceIds
+    fslogixFileShareNames: logic.outputs.fslogixFileShareNames
+    fslogixLocalStorageAccountResourceIds: deployFSLogixStorage ? fslogix.outputs.storageAccountResourceIds : fslogixExistingLocalStorageAccountResourceIds
+    fslogixLocalNetAppVolumeResourceIds: deployFSLogixStorage ? fslogix.outputs.netAppVolumeResourceIds : fslogixExistingLocalNetAppVolumeResourceIds
+    fslogixOSSGroups: fslogixShardOptions == 'ShardOSS' ? map(fslogixUserGroups, group => group.displayName) : []
+    fslogixRemoteNetAppVolumeResourceIds: fslogixExistingRemoteNetAppVolumeResourceIds
+    fslogixRemoteStorageAccountResourceIds: fslogixExistingRemoteStorageAccountResourceIds
+    fslogixStorageService: split(fslogixStorageService, ' ')[0]    
     hibernationEnabled: hibernationEnabled
-    hostPoolRegistrationToken: controlPlane.outputs.hostPoolRegistrationToken
     hostPoolResourceId: controlPlane.outputs.hostPoolResourceId
     identitySolution: identitySolution
     imageOffer: imageOffer
     imagePublisher: imagePublisher
     imageSku: imageSku
     integrityMonitoring: integrityMonitoring
-    keyVaultName: resourceNames.outputs.keyVaultNames.VMs
     location: vmVirtualNetwork.location
     managementVirtualMachineName: management.outputs.virtualMachineName
     maxResourcesPerTemplateDeployment: logic.outputs.maxResourcesPerTemplateDeployment
@@ -879,7 +958,6 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
     roleDefinitions: logic.outputs.roleDefinitions
     securityDataCollectionRulesResourceId: securityDataCollectionRulesResourceId
-    securityPrincipals: securityPrincipals
     securityType: securityType
     secureBootEnabled: secureBootEnabled
     vTpmEnabled: vTpmEnabled
@@ -889,6 +967,8 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     subnetResourceId: virtualMachineSubnetResourceId
     tags: deployScalingPlan ? logic.outputs.tags : tags
     timeStamp: timeStamp
+    virtualMachineAdminPassword: !empty(virtualMachineAdminPwdKvReference) ? kvVirtualMachineAdminPassword.getSecret(virtualMachineAdminPwdKvReference.secretName) : virtualMachineAdminPassword
+    virtualMachineAdminUserName: !empty(virtualMachineAdminUserNameKvReference) ? kvVirtualMachineAdminUserName.getSecret(virtualMachineAdminUserNameKvReference.secretName) : virtualMachineAdminUserName
     virtualMachineNamePrefix: resourceNames.outputs.virtualMachineNamePrefix
     virtualMachineSize: virtualMachineSize
   }
@@ -897,15 +977,18 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
   ]
 }
 
-module cleanUp 'modules/cleanUp/cleanUp.bicep' = if(!enableIncreaseQuotaAutomation) {
+module cleanUp 'modules/cleanUp/cleanUp.bicep' = {
   name: 'CleanUp_${timeStamp}'
   params: {
     location: locationVirtualMachines
+    managementVirtualMachineName: management.outputs.virtualMachineName
     resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
+    resourceGroupHosts: resourceNames.outputs.resourceGroupHosts
+    roleAssignmentIds: management.outputs.deploymentUserAssignedIdentityRoleAssignmentIds
     timeStamp: timeStamp
     userAssignedIdentityClientId: management.outputs.deploymentUserAssignedIdentityClientId
-    virtualMachineName: management.outputs.virtualMachineName
-  }
+    virtualMachineNames: sessionHosts.outputs.virtualMachineNames
+  } 
   dependsOn: [
     sessionHosts
   ]

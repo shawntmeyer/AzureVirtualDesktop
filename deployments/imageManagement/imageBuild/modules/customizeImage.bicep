@@ -42,7 +42,7 @@ var apiVersion = environment().name == 'USNat' ? '2017-08-01' : '2018-02-01'
 var customizers = [for customization in customizations: {
   name: replace(customization.name, ' ', '-')
   blobName: customization.blobName
-  arguments: contains(customization, 'arguments') ? customization.arguments : ''
+  arguments: customization.?arguments ?? ''
 }]
 
 var commonScriptParams = [
@@ -96,7 +96,6 @@ resource createBuildDirs 'Microsoft.Compute/virtualMachines/runCommands@2023-03-
   location: location
   parent: imageVm
   properties: {
-    treatFailureAsDeploymentFailure: true
     parameters: [
       {
         name: 'BuildDir'
@@ -112,7 +111,9 @@ resource createBuildDirs 'Microsoft.Compute/virtualMachines/runCommands@2023-03-
         New-Item -Path (Join-Path -Path "$env:SystemRoot\Logs" -ChildPath ImageBuild) -ItemType Directory -Force | Out-Null
       '''
     }
+    treatFailureAsDeploymentFailure: true
   }
+
 }
 
 @batchSize(1)
@@ -121,7 +122,6 @@ resource applications 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01'
   location: location
   parent: imageVm
   properties: {
-    treatFailureAsDeploymentFailure: true
     errorBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
       clientId: userAssignedIdentityClientId
     }
@@ -147,6 +147,7 @@ resource applications 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01'
     source: {
       script: loadTextContent('../../../../.common/scripts/Invoke-Customizations.ps1')
     }
+    treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
     createBuildDirs
@@ -175,6 +176,7 @@ resource fslogix 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = if
     source: {
       script: loadTextContent('../../../../.common/scripts/Install-FSLogix.ps1')
     }
+    treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
     createBuildDirs
@@ -248,6 +250,7 @@ resource office 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if(
     source: {
       script: loadTextContent('../../../../.common/scripts/Install-M365Applications.ps1')
     }
+    treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
     createBuildDirs
@@ -278,6 +281,7 @@ resource onedrive 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = i
     source: {
       script: loadTextContent('../../../../.common/scripts/Install-OneDrive.ps1')
     }
+    treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
     createBuildDirs
@@ -313,6 +317,7 @@ resource teamsClassic 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01'
     source: {
       script: loadTextContent('../../../../.common/scripts/Install-TeamsClassic.ps1')
     }
+    treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
     createBuildDirs
@@ -349,6 +354,7 @@ resource teams 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (
     source: {
       script: loadTextContent('../../../../.common/scripts/Install-Teams.ps1')
     }
+    treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
     createBuildDirs
@@ -442,7 +448,6 @@ resource vdot 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (i
   location: location
   parent: imageVm
   properties: {
-    treatFailureAsDeploymentFailure: true
     errorBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
       clientId: userAssignedIdentityClientId
     }
@@ -461,6 +466,7 @@ resource vdot 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (i
       script: loadTextContent('../../../../.common/scripts/Invoke-VDOT.ps1')
     }
     timeoutInSeconds: 640
+    treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
     secondImageVmRestart

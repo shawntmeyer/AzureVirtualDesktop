@@ -8,6 +8,9 @@ param(
 $ErrorActionPreference = 'Stop'
 $WarningPreference = 'SilentlyContinue'
 
+# Wait for role assignment propagation
+Start-Sleep -Seconds 30
+
 # Fix the resource manager URI since only AzureCloud contains a trailing slash
 $ResourceManagerUriFixed = if($ResourceManagerUri[-1] -eq '/'){$ResourceManagerUri.Substring(0,$ResourceManagerUri.Length - 1)} else {$ResourceManagerUri}
 

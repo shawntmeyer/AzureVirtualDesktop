@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.29.47.4906",
-      "templateHash": "863356446313491095"
+      "templateHash": "11963122699310368172"
     },
     "name": "Zero Trust Architecture Custom Windows Image Builder",
     "description": "This solution allows you to create a custom image much like Azure VM Image Builder, but utilizes zero trust architecture and does not require that service.",
@@ -4416,7 +4416,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.29.47.4906",
-              "templateHash": "13334760786438198200"
+              "templateHash": "16619003875116785662"
             },
             "name": "Virtual Machines",
             "description": "This module deploys a Virtual Machine with one or multiple NICs and optionally one or multiple public IPs.",
@@ -5031,9 +5031,9 @@
                         "lun": "[copyIndex('dataDisks')]",
                         "name": "[format('{0}-disk-data-{1}', parameters('name'), padLeft(add(copyIndex('dataDisks'), 1), 2, '0'))]",
                         "diskSizeGB": "[parameters('dataDisks')[copyIndex('dataDisks')].diskSizeGB]",
-                        "createOption": "[if(contains(parameters('dataDisks')[copyIndex('dataDisks')], 'createOption'), parameters('dataDisks')[copyIndex('dataDisks')].createOption, 'Empty')]",
-                        "deleteOption": "[if(contains(parameters('dataDisks')[copyIndex('dataDisks')], 'deleteOption'), parameters('dataDisks')[copyIndex('dataDisks')].deleteOption, 'Delete')]",
-                        "caching": "[if(contains(parameters('dataDisks')[copyIndex('dataDisks')], 'caching'), parameters('dataDisks')[copyIndex('dataDisks')].caching, 'ReadOnly')]",
+                        "createOption": "[coalesce(tryGet(parameters('dataDisks')[copyIndex('dataDisks')], 'createOption'), 'Empty')]",
+                        "deleteOption": "[coalesce(tryGet(parameters('dataDisks')[copyIndex('dataDisks')], 'deleteOption'), 'Delete')]",
+                        "caching": "[coalesce(tryGet(parameters('dataDisks')[copyIndex('dataDisks')], 'caching'), 'ReadOnly')]",
                         "managedDisk": {
                           "storageAccountType": "[parameters('dataDisks')[copyIndex('dataDisks')].managedDisk.storageAccountType]",
                           "diskEncryptionSet": "[if(contains(parameters('dataDisks')[copyIndex('dataDisks')].managedDisk, 'diskEncryptionSet'), createObject('id', parameters('dataDisks')[copyIndex('dataDisks')].managedDisk.diskEncryptionSet.id), null())]"
@@ -5044,10 +5044,10 @@
                   "imageReference": "[parameters('imageReference')]",
                   "osDisk": {
                     "name": "[format('{0}-disk-os-01', parameters('name'))]",
-                    "createOption": "[if(contains(parameters('osDisk'), 'createOption'), parameters('osDisk').createOption, 'FromImage')]",
-                    "deleteOption": "[if(contains(parameters('osDisk'), 'deleteOption'), parameters('osDisk').deleteOption, 'Delete')]",
+                    "createOption": "[coalesce(tryGet(parameters('osDisk'), 'createOption'), 'FromImage')]",
+                    "deleteOption": "[coalesce(tryGet(parameters('osDisk'), 'deleteOption'), 'Delete')]",
                     "diskSizeGB": "[parameters('osDisk').diskSizeGB]",
-                    "caching": "[if(contains(parameters('osDisk'), 'caching'), parameters('osDisk').caching, 'ReadOnly')]",
+                    "caching": "[coalesce(tryGet(parameters('osDisk'), 'caching'), 'ReadOnly')]",
                     "managedDisk": {
                       "storageAccountType": "[parameters('osDisk').managedDisk.storageAccountType]",
                       "diskEncryptionSet": "[if(contains(parameters('osDisk').managedDisk, 'diskEncryptionSet'), createObject('id', parameters('osDisk').managedDisk.diskEncryptionSet.id), null())]"
@@ -5074,7 +5074,7 @@
                       "count": "[length(parameters('nicConfigurations'))]",
                       "input": {
                         "properties": {
-                          "deleteOption": "[if(contains(parameters('nicConfigurations')[copyIndex('networkInterfaces')], 'deleteOption'), parameters('nicConfigurations')[copyIndex('networkInterfaces')].deleteOption, 'Delete')]",
+                          "deleteOption": "[coalesce(tryGet(parameters('nicConfigurations')[copyIndex('networkInterfaces')], 'deleteOption'), 'Delete')]",
                           "primary": "[if(equals(copyIndex('networkInterfaces'), 0), true(), false())]"
                         },
                         "id": "[resourceId('Microsoft.Network/networkInterfaces', format('{0}{1}', parameters('name'), parameters('nicConfigurations')[copyIndex('networkInterfaces')].nicSuffix))]"
@@ -5140,9 +5140,13 @@
                     "value": "[parameters('tags')]"
                   },
                   "enableIPForwarding": "[if(contains(parameters('nicConfigurations')[copyIndex()], 'enableIPForwarding'), if(not(empty(parameters('nicConfigurations')[copyIndex()].enableIPForwarding)), createObject('value', parameters('nicConfigurations')[copyIndex()].enableIPForwarding), createObject('value', false())), createObject('value', false()))]",
-                  "enableAcceleratedNetworking": "[if(contains(parameters('nicConfigurations')[copyIndex()], 'enableAcceleratedNetworking'), createObject('value', parameters('nicConfigurations')[copyIndex()].enableAcceleratedNetworking), createObject('value', true()))]",
+                  "enableAcceleratedNetworking": {
+                    "value": "[coalesce(tryGet(parameters('nicConfigurations')[copyIndex()], 'enableAcceleratedNetworking'), true())]"
+                  },
                   "dnsServers": "[if(contains(parameters('nicConfigurations')[copyIndex()], 'dnsServers'), if(not(empty(parameters('nicConfigurations')[copyIndex()].dnsServers)), createObject('value', parameters('nicConfigurations')[copyIndex()].dnsServers), createObject('value', createArray())), createObject('value', createArray()))]",
-                  "networkSecurityGroupResourceId": "[if(contains(parameters('nicConfigurations')[copyIndex()], 'networkSecurityGroupResourceId'), createObject('value', parameters('nicConfigurations')[copyIndex()].networkSecurityGroupResourceId), createObject('value', ''))]",
+                  "networkSecurityGroupResourceId": {
+                    "value": "[coalesce(tryGet(parameters('nicConfigurations')[copyIndex()], 'networkSecurityGroupResourceId'), '')]"
+                  },
                   "ipConfigurations": {
                     "value": "[parameters('nicConfigurations')[copyIndex()].ipConfigurations]"
                   },
@@ -5942,11 +5946,21 @@
                     "value": "Microsoft.Azure.ActiveDirectory"
                   },
                   "type": "[if(equals(parameters('osType'), 'Windows'), createObject('value', 'AADLoginForWindows'), createObject('value', 'AADSSHLoginforLinux'))]",
-                  "typeHandlerVersion": "[if(contains(parameters('extensionAadJoinConfig'), 'typeHandlerVersion'), createObject('value', parameters('extensionAadJoinConfig').typeHandlerVersion), createObject('value', '1.0'))]",
-                  "autoUpgradeMinorVersion": "[if(contains(parameters('extensionAadJoinConfig'), 'autoUpgradeMinorVersion'), createObject('value', parameters('extensionAadJoinConfig').autoUpgradeMinorVersion), createObject('value', true()))]",
-                  "enableAutomaticUpgrade": "[if(contains(parameters('extensionAadJoinConfig'), 'enableAutomaticUpgrade'), createObject('value', parameters('extensionAadJoinConfig').enableAutomaticUpgrade), createObject('value', false()))]",
-                  "settings": "[if(contains(parameters('extensionAadJoinConfig'), 'settings'), createObject('value', parameters('extensionAadJoinConfig').settings), createObject('value', createObject()))]",
-                  "tags": "[if(contains(parameters('extensionAadJoinConfig'), 'tags'), createObject('value', parameters('extensionAadJoinConfig').tags), createObject('value', createObject()))]"
+                  "typeHandlerVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionAadJoinConfig'), 'typeHandlerVersion'), '1.0')]"
+                  },
+                  "autoUpgradeMinorVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionAadJoinConfig'), 'autoUpgradeMinorVersion'), true())]"
+                  },
+                  "enableAutomaticUpgrade": {
+                    "value": "[coalesce(tryGet(parameters('extensionAadJoinConfig'), 'enableAutomaticUpgrade'), false())]"
+                  },
+                  "settings": {
+                    "value": "[coalesce(tryGet(parameters('extensionAadJoinConfig'), 'settings'), createObject())]"
+                  },
+                  "tags": {
+                    "value": "[coalesce(tryGet(parameters('extensionAadJoinConfig'), 'tags'), createObject())]"
+                  }
                 },
                 "template": {
                   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -6129,13 +6143,21 @@
                   "type": {
                     "value": "JsonADDomainExtension"
                   },
-                  "typeHandlerVersion": "[if(contains(parameters('extensionDomainJoinConfig'), 'typeHandlerVersion'), createObject('value', parameters('extensionDomainJoinConfig').typeHandlerVersion), createObject('value', '1.3'))]",
-                  "autoUpgradeMinorVersion": "[if(contains(parameters('extensionDomainJoinConfig'), 'autoUpgradeMinorVersion'), createObject('value', parameters('extensionDomainJoinConfig').autoUpgradeMinorVersion), createObject('value', true()))]",
-                  "enableAutomaticUpgrade": "[if(contains(parameters('extensionDomainJoinConfig'), 'enableAutomaticUpgrade'), createObject('value', parameters('extensionDomainJoinConfig').enableAutomaticUpgrade), createObject('value', false()))]",
+                  "typeHandlerVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionDomainJoinConfig'), 'typeHandlerVersion'), '1.3')]"
+                  },
+                  "autoUpgradeMinorVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionDomainJoinConfig'), 'autoUpgradeMinorVersion'), true())]"
+                  },
+                  "enableAutomaticUpgrade": {
+                    "value": "[coalesce(tryGet(parameters('extensionDomainJoinConfig'), 'enableAutomaticUpgrade'), false())]"
+                  },
                   "settings": {
                     "value": "[parameters('extensionDomainJoinConfig').settings]"
                   },
-                  "tags": "[if(contains(parameters('extensionDomainJoinConfig'), 'tags'), createObject('value', parameters('extensionDomainJoinConfig').tags), createObject('value', createObject()))]",
+                  "tags": {
+                    "value": "[coalesce(tryGet(parameters('extensionDomainJoinConfig'), 'tags'), createObject())]"
+                  },
                   "protectedSettings": {
                     "value": {
                       "Password": "[parameters('extensionDomainJoinPassword')]"
@@ -6323,13 +6345,21 @@
                   "type": {
                     "value": "IaaSAntimalware"
                   },
-                  "typeHandlerVersion": "[if(contains(parameters('extensionAntiMalwareConfig'), 'typeHandlerVersion'), createObject('value', parameters('extensionAntiMalwareConfig').typeHandlerVersion), createObject('value', '1.3'))]",
-                  "autoUpgradeMinorVersion": "[if(contains(parameters('extensionAntiMalwareConfig'), 'autoUpgradeMinorVersion'), createObject('value', parameters('extensionAntiMalwareConfig').autoUpgradeMinorVersion), createObject('value', true()))]",
-                  "enableAutomaticUpgrade": "[if(contains(parameters('extensionAntiMalwareConfig'), 'enableAutomaticUpgrade'), createObject('value', parameters('extensionAntiMalwareConfig').enableAutomaticUpgrade), createObject('value', false()))]",
+                  "typeHandlerVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionAntiMalwareConfig'), 'typeHandlerVersion'), '1.3')]"
+                  },
+                  "autoUpgradeMinorVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionAntiMalwareConfig'), 'autoUpgradeMinorVersion'), true())]"
+                  },
+                  "enableAutomaticUpgrade": {
+                    "value": "[coalesce(tryGet(parameters('extensionAntiMalwareConfig'), 'enableAutomaticUpgrade'), false())]"
+                  },
                   "settings": {
                     "value": "[parameters('extensionAntiMalwareConfig').settings]"
                   },
-                  "tags": "[if(contains(parameters('extensionAntiMalwareConfig'), 'tags'), createObject('value', parameters('extensionAntiMalwareConfig').tags), createObject('value', createObject()))]"
+                  "tags": {
+                    "value": "[coalesce(tryGet(parameters('extensionAntiMalwareConfig'), 'tags'), createObject())]"
+                  }
                 },
                 "template": {
                   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -6510,15 +6540,23 @@
                     "value": "Microsoft.EnterpriseCloud.Monitoring"
                   },
                   "type": "[if(equals(parameters('osType'), 'Windows'), createObject('value', 'MicrosoftMonitoringAgent'), createObject('value', 'OmsAgentForLinux'))]",
-                  "typeHandlerVersion": "[if(contains(parameters('extensionMonitoringAgentConfig'), 'typeHandlerVersion'), createObject('value', parameters('extensionMonitoringAgentConfig').typeHandlerVersion), if(equals(parameters('osType'), 'Windows'), createObject('value', '1.0'), createObject('value', '1.7')))]",
-                  "autoUpgradeMinorVersion": "[if(contains(parameters('extensionMonitoringAgentConfig'), 'autoUpgradeMinorVersion'), createObject('value', parameters('extensionMonitoringAgentConfig').autoUpgradeMinorVersion), createObject('value', true()))]",
-                  "enableAutomaticUpgrade": "[if(contains(parameters('extensionMonitoringAgentConfig'), 'enableAutomaticUpgrade'), createObject('value', parameters('extensionMonitoringAgentConfig').enableAutomaticUpgrade), createObject('value', false()))]",
+                  "typeHandlerVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionMonitoringAgentConfig'), 'typeHandlerVersion'), if(equals(parameters('osType'), 'Windows'), '1.0', '1.7'))]"
+                  },
+                  "autoUpgradeMinorVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionMonitoringAgentConfig'), 'autoUpgradeMinorVersion'), true())]"
+                  },
+                  "enableAutomaticUpgrade": {
+                    "value": "[coalesce(tryGet(parameters('extensionMonitoringAgentConfig'), 'enableAutomaticUpgrade'), false())]"
+                  },
                   "settings": {
                     "value": {
                       "workspaceId": "[if(not(empty(parameters('monitoringWorkspaceId'))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('monitoringWorkspaceId'), '/')[2], split(parameters('monitoringWorkspaceId'), '/')[4]), 'Microsoft.OperationalInsights/workspaces', last(split(parameters('monitoringWorkspaceId'), '/'))), '2021-06-01').customerId, '')]"
                     }
                   },
-                  "tags": "[if(contains(parameters('extensionMonitoringAgentConfig'), 'tags'), createObject('value', parameters('extensionMonitoringAgentConfig').tags), createObject('value', createObject()))]",
+                  "tags": {
+                    "value": "[coalesce(tryGet(parameters('extensionMonitoringAgentConfig'), 'tags'), createObject())]"
+                  },
                   "protectedSettings": {
                     "value": {
                       "workspaceKey": "[if(not(empty(parameters('monitoringWorkspaceId'))), listKeys(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('monitoringWorkspaceId'), '/')[2], split(parameters('monitoringWorkspaceId'), '/')[4]), 'Microsoft.OperationalInsights/workspaces', last(split(parameters('monitoringWorkspaceId'), '/'))), '2021-06-01').primarySharedKey, '')]"
@@ -6704,10 +6742,18 @@
                     "value": "Microsoft.Azure.Monitoring.DependencyAgent"
                   },
                   "type": "[if(equals(parameters('osType'), 'Windows'), createObject('value', 'DependencyAgentWindows'), createObject('value', 'DependencyAgentLinux'))]",
-                  "typeHandlerVersion": "[if(contains(parameters('extensionDependencyAgentConfig'), 'typeHandlerVersion'), createObject('value', parameters('extensionDependencyAgentConfig').typeHandlerVersion), createObject('value', '9.5'))]",
-                  "autoUpgradeMinorVersion": "[if(contains(parameters('extensionDependencyAgentConfig'), 'autoUpgradeMinorVersion'), createObject('value', parameters('extensionDependencyAgentConfig').autoUpgradeMinorVersion), createObject('value', true()))]",
-                  "enableAutomaticUpgrade": "[if(contains(parameters('extensionDependencyAgentConfig'), 'enableAutomaticUpgrade'), createObject('value', parameters('extensionDependencyAgentConfig').enableAutomaticUpgrade), createObject('value', true()))]",
-                  "tags": "[if(contains(parameters('extensionDependencyAgentConfig'), 'tags'), createObject('value', parameters('extensionDependencyAgentConfig').tags), createObject('value', createObject()))]"
+                  "typeHandlerVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionDependencyAgentConfig'), 'typeHandlerVersion'), '9.5')]"
+                  },
+                  "autoUpgradeMinorVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionDependencyAgentConfig'), 'autoUpgradeMinorVersion'), true())]"
+                  },
+                  "enableAutomaticUpgrade": {
+                    "value": "[coalesce(tryGet(parameters('extensionDependencyAgentConfig'), 'enableAutomaticUpgrade'), true())]"
+                  },
+                  "tags": {
+                    "value": "[coalesce(tryGet(parameters('extensionDependencyAgentConfig'), 'tags'), createObject())]"
+                  }
                 },
                 "template": {
                   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -6888,10 +6934,18 @@
                     "value": "Microsoft.Azure.NetworkWatcher"
                   },
                   "type": "[if(equals(parameters('osType'), 'Windows'), createObject('value', 'NetworkWatcherAgentWindows'), createObject('value', 'NetworkWatcherAgentLinux'))]",
-                  "typeHandlerVersion": "[if(contains(parameters('extensionNetworkWatcherAgentConfig'), 'typeHandlerVersion'), createObject('value', parameters('extensionNetworkWatcherAgentConfig').typeHandlerVersion), createObject('value', '1.4'))]",
-                  "autoUpgradeMinorVersion": "[if(contains(parameters('extensionNetworkWatcherAgentConfig'), 'autoUpgradeMinorVersion'), createObject('value', parameters('extensionNetworkWatcherAgentConfig').autoUpgradeMinorVersion), createObject('value', true()))]",
-                  "enableAutomaticUpgrade": "[if(contains(parameters('extensionNetworkWatcherAgentConfig'), 'enableAutomaticUpgrade'), createObject('value', parameters('extensionNetworkWatcherAgentConfig').enableAutomaticUpgrade), createObject('value', false()))]",
-                  "tags": "[if(contains(parameters('extensionNetworkWatcherAgentConfig'), 'tags'), createObject('value', parameters('extensionNetworkWatcherAgentConfig').tags), createObject('value', createObject()))]"
+                  "typeHandlerVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionNetworkWatcherAgentConfig'), 'typeHandlerVersion'), '1.4')]"
+                  },
+                  "autoUpgradeMinorVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionNetworkWatcherAgentConfig'), 'autoUpgradeMinorVersion'), true())]"
+                  },
+                  "enableAutomaticUpgrade": {
+                    "value": "[coalesce(tryGet(parameters('extensionNetworkWatcherAgentConfig'), 'enableAutomaticUpgrade'), false())]"
+                  },
+                  "tags": {
+                    "value": "[coalesce(tryGet(parameters('extensionNetworkWatcherAgentConfig'), 'tags'), createObject())]"
+                  }
                 },
                 "template": {
                   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -7074,12 +7128,24 @@
                   "type": {
                     "value": "DSC"
                   },
-                  "typeHandlerVersion": "[if(contains(parameters('extensionDSCConfig'), 'typeHandlerVersion'), createObject('value', parameters('extensionDSCConfig').typeHandlerVersion), createObject('value', '2.77'))]",
-                  "autoUpgradeMinorVersion": "[if(contains(parameters('extensionDSCConfig'), 'autoUpgradeMinorVersion'), createObject('value', parameters('extensionDSCConfig').autoUpgradeMinorVersion), createObject('value', true()))]",
-                  "enableAutomaticUpgrade": "[if(contains(parameters('extensionDSCConfig'), 'enableAutomaticUpgrade'), createObject('value', parameters('extensionDSCConfig').enableAutomaticUpgrade), createObject('value', false()))]",
-                  "settings": "[if(contains(parameters('extensionDSCConfig'), 'settings'), createObject('value', parameters('extensionDSCConfig').settings), createObject('value', createObject()))]",
-                  "tags": "[if(contains(parameters('extensionDSCConfig'), 'tags'), createObject('value', parameters('extensionDSCConfig').tags), createObject('value', createObject()))]",
-                  "protectedSettings": "[if(contains(parameters('extensionDSCConfig'), 'protectedSettings'), createObject('value', parameters('extensionDSCConfig').protectedSettings), createObject('value', createObject()))]"
+                  "typeHandlerVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionDSCConfig'), 'typeHandlerVersion'), '2.77')]"
+                  },
+                  "autoUpgradeMinorVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionDSCConfig'), 'autoUpgradeMinorVersion'), true())]"
+                  },
+                  "enableAutomaticUpgrade": {
+                    "value": "[coalesce(tryGet(parameters('extensionDSCConfig'), 'enableAutomaticUpgrade'), false())]"
+                  },
+                  "settings": {
+                    "value": "[coalesce(tryGet(parameters('extensionDSCConfig'), 'settings'), createObject())]"
+                  },
+                  "tags": {
+                    "value": "[coalesce(tryGet(parameters('extensionDSCConfig'), 'tags'), createObject())]"
+                  },
+                  "protectedSettings": {
+                    "value": "[coalesce(tryGet(parameters('extensionDSCConfig'), 'protectedSettings'), createObject())]"
+                  }
                 },
                 "template": {
                   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -7258,9 +7324,15 @@
                   },
                   "publisher": "[if(equals(parameters('osType'), 'Windows'), createObject('value', 'Microsoft.Compute'), createObject('value', 'Microsoft.Azure.Extensions'))]",
                   "type": "[if(equals(parameters('osType'), 'Windows'), createObject('value', 'CustomScriptExtension'), createObject('value', 'CustomScript'))]",
-                  "typeHandlerVersion": "[if(contains(parameters('extensionCustomScriptConfig'), 'typeHandlerVersion'), createObject('value', parameters('extensionCustomScriptConfig').typeHandlerVersion), if(equals(parameters('osType'), 'Windows'), createObject('value', '1.10'), createObject('value', '2.1')))]",
-                  "autoUpgradeMinorVersion": "[if(contains(parameters('extensionCustomScriptConfig'), 'autoUpgradeMinorVersion'), createObject('value', parameters('extensionCustomScriptConfig').autoUpgradeMinorVersion), createObject('value', true()))]",
-                  "enableAutomaticUpgrade": "[if(contains(parameters('extensionCustomScriptConfig'), 'enableAutomaticUpgrade'), createObject('value', parameters('extensionCustomScriptConfig').enableAutomaticUpgrade), createObject('value', false()))]",
+                  "typeHandlerVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionCustomScriptConfig'), 'typeHandlerVersion'), if(equals(parameters('osType'), 'Windows'), '1.10', '2.1'))]"
+                  },
+                  "autoUpgradeMinorVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionCustomScriptConfig'), 'autoUpgradeMinorVersion'), true())]"
+                  },
+                  "enableAutomaticUpgrade": {
+                    "value": "[coalesce(tryGet(parameters('extensionCustomScriptConfig'), 'enableAutomaticUpgrade'), false())]"
+                  },
                   "settings": {
                     "value": {
                       "copy": [
@@ -7272,7 +7344,9 @@
                       ]
                     }
                   },
-                  "tags": "[if(contains(parameters('extensionCustomScriptConfig'), 'tags'), createObject('value', parameters('extensionCustomScriptConfig').tags), createObject('value', createObject()))]",
+                  "tags": {
+                    "value": "[coalesce(tryGet(parameters('extensionCustomScriptConfig'), 'tags'), createObject())]"
+                  },
                   "protectedSettings": {
                     "value": "[parameters('extensionCustomScriptProtectedSetting')]"
                   }
@@ -7457,14 +7531,24 @@
                     "value": "Microsoft.Azure.Security"
                   },
                   "type": "[if(equals(parameters('osType'), 'Windows'), createObject('value', 'AzureDiskEncryption'), createObject('value', 'AzureDiskEncryptionForLinux'))]",
-                  "typeHandlerVersion": "[if(contains(parameters('extensionAzureDiskEncryptionConfig'), 'typeHandlerVersion'), createObject('value', parameters('extensionAzureDiskEncryptionConfig').typeHandlerVersion), if(equals(parameters('osType'), 'Windows'), createObject('value', '2.2'), createObject('value', '1.1')))]",
-                  "autoUpgradeMinorVersion": "[if(contains(parameters('extensionAzureDiskEncryptionConfig'), 'autoUpgradeMinorVersion'), createObject('value', parameters('extensionAzureDiskEncryptionConfig').autoUpgradeMinorVersion), createObject('value', true()))]",
-                  "enableAutomaticUpgrade": "[if(contains(parameters('extensionAzureDiskEncryptionConfig'), 'enableAutomaticUpgrade'), createObject('value', parameters('extensionAzureDiskEncryptionConfig').enableAutomaticUpgrade), createObject('value', false()))]",
-                  "forceUpdateTag": "[if(contains(parameters('extensionAzureDiskEncryptionConfig'), 'forceUpdateTag'), createObject('value', parameters('extensionAzureDiskEncryptionConfig').forceUpdateTag), createObject('value', '1.0'))]",
+                  "typeHandlerVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionAzureDiskEncryptionConfig'), 'typeHandlerVersion'), if(equals(parameters('osType'), 'Windows'), '2.2', '1.1'))]"
+                  },
+                  "autoUpgradeMinorVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionAzureDiskEncryptionConfig'), 'autoUpgradeMinorVersion'), true())]"
+                  },
+                  "enableAutomaticUpgrade": {
+                    "value": "[coalesce(tryGet(parameters('extensionAzureDiskEncryptionConfig'), 'enableAutomaticUpgrade'), false())]"
+                  },
+                  "forceUpdateTag": {
+                    "value": "[coalesce(tryGet(parameters('extensionAzureDiskEncryptionConfig'), 'forceUpdateTag'), '1.0')]"
+                  },
                   "settings": {
                     "value": "[parameters('extensionAzureDiskEncryptionConfig').settings]"
                   },
-                  "tags": "[if(contains(parameters('extensionAzureDiskEncryptionConfig'), 'tags'), createObject('value', parameters('extensionAzureDiskEncryptionConfig').tags), createObject('value', createObject()))]"
+                  "tags": {
+                    "value": "[coalesce(tryGet(parameters('extensionAzureDiskEncryptionConfig'), 'tags'), createObject())]"
+                  }
                 },
                 "template": {
                   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -7749,7 +7833,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.29.47.4906",
-              "templateHash": "13334760786438198200"
+              "templateHash": "16619003875116785662"
             },
             "name": "Virtual Machines",
             "description": "This module deploys a Virtual Machine with one or multiple NICs and optionally one or multiple public IPs.",
@@ -8364,9 +8448,9 @@
                         "lun": "[copyIndex('dataDisks')]",
                         "name": "[format('{0}-disk-data-{1}', parameters('name'), padLeft(add(copyIndex('dataDisks'), 1), 2, '0'))]",
                         "diskSizeGB": "[parameters('dataDisks')[copyIndex('dataDisks')].diskSizeGB]",
-                        "createOption": "[if(contains(parameters('dataDisks')[copyIndex('dataDisks')], 'createOption'), parameters('dataDisks')[copyIndex('dataDisks')].createOption, 'Empty')]",
-                        "deleteOption": "[if(contains(parameters('dataDisks')[copyIndex('dataDisks')], 'deleteOption'), parameters('dataDisks')[copyIndex('dataDisks')].deleteOption, 'Delete')]",
-                        "caching": "[if(contains(parameters('dataDisks')[copyIndex('dataDisks')], 'caching'), parameters('dataDisks')[copyIndex('dataDisks')].caching, 'ReadOnly')]",
+                        "createOption": "[coalesce(tryGet(parameters('dataDisks')[copyIndex('dataDisks')], 'createOption'), 'Empty')]",
+                        "deleteOption": "[coalesce(tryGet(parameters('dataDisks')[copyIndex('dataDisks')], 'deleteOption'), 'Delete')]",
+                        "caching": "[coalesce(tryGet(parameters('dataDisks')[copyIndex('dataDisks')], 'caching'), 'ReadOnly')]",
                         "managedDisk": {
                           "storageAccountType": "[parameters('dataDisks')[copyIndex('dataDisks')].managedDisk.storageAccountType]",
                           "diskEncryptionSet": "[if(contains(parameters('dataDisks')[copyIndex('dataDisks')].managedDisk, 'diskEncryptionSet'), createObject('id', parameters('dataDisks')[copyIndex('dataDisks')].managedDisk.diskEncryptionSet.id), null())]"
@@ -8377,10 +8461,10 @@
                   "imageReference": "[parameters('imageReference')]",
                   "osDisk": {
                     "name": "[format('{0}-disk-os-01', parameters('name'))]",
-                    "createOption": "[if(contains(parameters('osDisk'), 'createOption'), parameters('osDisk').createOption, 'FromImage')]",
-                    "deleteOption": "[if(contains(parameters('osDisk'), 'deleteOption'), parameters('osDisk').deleteOption, 'Delete')]",
+                    "createOption": "[coalesce(tryGet(parameters('osDisk'), 'createOption'), 'FromImage')]",
+                    "deleteOption": "[coalesce(tryGet(parameters('osDisk'), 'deleteOption'), 'Delete')]",
                     "diskSizeGB": "[parameters('osDisk').diskSizeGB]",
-                    "caching": "[if(contains(parameters('osDisk'), 'caching'), parameters('osDisk').caching, 'ReadOnly')]",
+                    "caching": "[coalesce(tryGet(parameters('osDisk'), 'caching'), 'ReadOnly')]",
                     "managedDisk": {
                       "storageAccountType": "[parameters('osDisk').managedDisk.storageAccountType]",
                       "diskEncryptionSet": "[if(contains(parameters('osDisk').managedDisk, 'diskEncryptionSet'), createObject('id', parameters('osDisk').managedDisk.diskEncryptionSet.id), null())]"
@@ -8407,7 +8491,7 @@
                       "count": "[length(parameters('nicConfigurations'))]",
                       "input": {
                         "properties": {
-                          "deleteOption": "[if(contains(parameters('nicConfigurations')[copyIndex('networkInterfaces')], 'deleteOption'), parameters('nicConfigurations')[copyIndex('networkInterfaces')].deleteOption, 'Delete')]",
+                          "deleteOption": "[coalesce(tryGet(parameters('nicConfigurations')[copyIndex('networkInterfaces')], 'deleteOption'), 'Delete')]",
                           "primary": "[if(equals(copyIndex('networkInterfaces'), 0), true(), false())]"
                         },
                         "id": "[resourceId('Microsoft.Network/networkInterfaces', format('{0}{1}', parameters('name'), parameters('nicConfigurations')[copyIndex('networkInterfaces')].nicSuffix))]"
@@ -8473,9 +8557,13 @@
                     "value": "[parameters('tags')]"
                   },
                   "enableIPForwarding": "[if(contains(parameters('nicConfigurations')[copyIndex()], 'enableIPForwarding'), if(not(empty(parameters('nicConfigurations')[copyIndex()].enableIPForwarding)), createObject('value', parameters('nicConfigurations')[copyIndex()].enableIPForwarding), createObject('value', false())), createObject('value', false()))]",
-                  "enableAcceleratedNetworking": "[if(contains(parameters('nicConfigurations')[copyIndex()], 'enableAcceleratedNetworking'), createObject('value', parameters('nicConfigurations')[copyIndex()].enableAcceleratedNetworking), createObject('value', true()))]",
+                  "enableAcceleratedNetworking": {
+                    "value": "[coalesce(tryGet(parameters('nicConfigurations')[copyIndex()], 'enableAcceleratedNetworking'), true())]"
+                  },
                   "dnsServers": "[if(contains(parameters('nicConfigurations')[copyIndex()], 'dnsServers'), if(not(empty(parameters('nicConfigurations')[copyIndex()].dnsServers)), createObject('value', parameters('nicConfigurations')[copyIndex()].dnsServers), createObject('value', createArray())), createObject('value', createArray()))]",
-                  "networkSecurityGroupResourceId": "[if(contains(parameters('nicConfigurations')[copyIndex()], 'networkSecurityGroupResourceId'), createObject('value', parameters('nicConfigurations')[copyIndex()].networkSecurityGroupResourceId), createObject('value', ''))]",
+                  "networkSecurityGroupResourceId": {
+                    "value": "[coalesce(tryGet(parameters('nicConfigurations')[copyIndex()], 'networkSecurityGroupResourceId'), '')]"
+                  },
                   "ipConfigurations": {
                     "value": "[parameters('nicConfigurations')[copyIndex()].ipConfigurations]"
                   },
@@ -9275,11 +9363,21 @@
                     "value": "Microsoft.Azure.ActiveDirectory"
                   },
                   "type": "[if(equals(parameters('osType'), 'Windows'), createObject('value', 'AADLoginForWindows'), createObject('value', 'AADSSHLoginforLinux'))]",
-                  "typeHandlerVersion": "[if(contains(parameters('extensionAadJoinConfig'), 'typeHandlerVersion'), createObject('value', parameters('extensionAadJoinConfig').typeHandlerVersion), createObject('value', '1.0'))]",
-                  "autoUpgradeMinorVersion": "[if(contains(parameters('extensionAadJoinConfig'), 'autoUpgradeMinorVersion'), createObject('value', parameters('extensionAadJoinConfig').autoUpgradeMinorVersion), createObject('value', true()))]",
-                  "enableAutomaticUpgrade": "[if(contains(parameters('extensionAadJoinConfig'), 'enableAutomaticUpgrade'), createObject('value', parameters('extensionAadJoinConfig').enableAutomaticUpgrade), createObject('value', false()))]",
-                  "settings": "[if(contains(parameters('extensionAadJoinConfig'), 'settings'), createObject('value', parameters('extensionAadJoinConfig').settings), createObject('value', createObject()))]",
-                  "tags": "[if(contains(parameters('extensionAadJoinConfig'), 'tags'), createObject('value', parameters('extensionAadJoinConfig').tags), createObject('value', createObject()))]"
+                  "typeHandlerVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionAadJoinConfig'), 'typeHandlerVersion'), '1.0')]"
+                  },
+                  "autoUpgradeMinorVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionAadJoinConfig'), 'autoUpgradeMinorVersion'), true())]"
+                  },
+                  "enableAutomaticUpgrade": {
+                    "value": "[coalesce(tryGet(parameters('extensionAadJoinConfig'), 'enableAutomaticUpgrade'), false())]"
+                  },
+                  "settings": {
+                    "value": "[coalesce(tryGet(parameters('extensionAadJoinConfig'), 'settings'), createObject())]"
+                  },
+                  "tags": {
+                    "value": "[coalesce(tryGet(parameters('extensionAadJoinConfig'), 'tags'), createObject())]"
+                  }
                 },
                 "template": {
                   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -9462,13 +9560,21 @@
                   "type": {
                     "value": "JsonADDomainExtension"
                   },
-                  "typeHandlerVersion": "[if(contains(parameters('extensionDomainJoinConfig'), 'typeHandlerVersion'), createObject('value', parameters('extensionDomainJoinConfig').typeHandlerVersion), createObject('value', '1.3'))]",
-                  "autoUpgradeMinorVersion": "[if(contains(parameters('extensionDomainJoinConfig'), 'autoUpgradeMinorVersion'), createObject('value', parameters('extensionDomainJoinConfig').autoUpgradeMinorVersion), createObject('value', true()))]",
-                  "enableAutomaticUpgrade": "[if(contains(parameters('extensionDomainJoinConfig'), 'enableAutomaticUpgrade'), createObject('value', parameters('extensionDomainJoinConfig').enableAutomaticUpgrade), createObject('value', false()))]",
+                  "typeHandlerVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionDomainJoinConfig'), 'typeHandlerVersion'), '1.3')]"
+                  },
+                  "autoUpgradeMinorVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionDomainJoinConfig'), 'autoUpgradeMinorVersion'), true())]"
+                  },
+                  "enableAutomaticUpgrade": {
+                    "value": "[coalesce(tryGet(parameters('extensionDomainJoinConfig'), 'enableAutomaticUpgrade'), false())]"
+                  },
                   "settings": {
                     "value": "[parameters('extensionDomainJoinConfig').settings]"
                   },
-                  "tags": "[if(contains(parameters('extensionDomainJoinConfig'), 'tags'), createObject('value', parameters('extensionDomainJoinConfig').tags), createObject('value', createObject()))]",
+                  "tags": {
+                    "value": "[coalesce(tryGet(parameters('extensionDomainJoinConfig'), 'tags'), createObject())]"
+                  },
                   "protectedSettings": {
                     "value": {
                       "Password": "[parameters('extensionDomainJoinPassword')]"
@@ -9656,13 +9762,21 @@
                   "type": {
                     "value": "IaaSAntimalware"
                   },
-                  "typeHandlerVersion": "[if(contains(parameters('extensionAntiMalwareConfig'), 'typeHandlerVersion'), createObject('value', parameters('extensionAntiMalwareConfig').typeHandlerVersion), createObject('value', '1.3'))]",
-                  "autoUpgradeMinorVersion": "[if(contains(parameters('extensionAntiMalwareConfig'), 'autoUpgradeMinorVersion'), createObject('value', parameters('extensionAntiMalwareConfig').autoUpgradeMinorVersion), createObject('value', true()))]",
-                  "enableAutomaticUpgrade": "[if(contains(parameters('extensionAntiMalwareConfig'), 'enableAutomaticUpgrade'), createObject('value', parameters('extensionAntiMalwareConfig').enableAutomaticUpgrade), createObject('value', false()))]",
+                  "typeHandlerVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionAntiMalwareConfig'), 'typeHandlerVersion'), '1.3')]"
+                  },
+                  "autoUpgradeMinorVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionAntiMalwareConfig'), 'autoUpgradeMinorVersion'), true())]"
+                  },
+                  "enableAutomaticUpgrade": {
+                    "value": "[coalesce(tryGet(parameters('extensionAntiMalwareConfig'), 'enableAutomaticUpgrade'), false())]"
+                  },
                   "settings": {
                     "value": "[parameters('extensionAntiMalwareConfig').settings]"
                   },
-                  "tags": "[if(contains(parameters('extensionAntiMalwareConfig'), 'tags'), createObject('value', parameters('extensionAntiMalwareConfig').tags), createObject('value', createObject()))]"
+                  "tags": {
+                    "value": "[coalesce(tryGet(parameters('extensionAntiMalwareConfig'), 'tags'), createObject())]"
+                  }
                 },
                 "template": {
                   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -9843,15 +9957,23 @@
                     "value": "Microsoft.EnterpriseCloud.Monitoring"
                   },
                   "type": "[if(equals(parameters('osType'), 'Windows'), createObject('value', 'MicrosoftMonitoringAgent'), createObject('value', 'OmsAgentForLinux'))]",
-                  "typeHandlerVersion": "[if(contains(parameters('extensionMonitoringAgentConfig'), 'typeHandlerVersion'), createObject('value', parameters('extensionMonitoringAgentConfig').typeHandlerVersion), if(equals(parameters('osType'), 'Windows'), createObject('value', '1.0'), createObject('value', '1.7')))]",
-                  "autoUpgradeMinorVersion": "[if(contains(parameters('extensionMonitoringAgentConfig'), 'autoUpgradeMinorVersion'), createObject('value', parameters('extensionMonitoringAgentConfig').autoUpgradeMinorVersion), createObject('value', true()))]",
-                  "enableAutomaticUpgrade": "[if(contains(parameters('extensionMonitoringAgentConfig'), 'enableAutomaticUpgrade'), createObject('value', parameters('extensionMonitoringAgentConfig').enableAutomaticUpgrade), createObject('value', false()))]",
+                  "typeHandlerVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionMonitoringAgentConfig'), 'typeHandlerVersion'), if(equals(parameters('osType'), 'Windows'), '1.0', '1.7'))]"
+                  },
+                  "autoUpgradeMinorVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionMonitoringAgentConfig'), 'autoUpgradeMinorVersion'), true())]"
+                  },
+                  "enableAutomaticUpgrade": {
+                    "value": "[coalesce(tryGet(parameters('extensionMonitoringAgentConfig'), 'enableAutomaticUpgrade'), false())]"
+                  },
                   "settings": {
                     "value": {
                       "workspaceId": "[if(not(empty(parameters('monitoringWorkspaceId'))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('monitoringWorkspaceId'), '/')[2], split(parameters('monitoringWorkspaceId'), '/')[4]), 'Microsoft.OperationalInsights/workspaces', last(split(parameters('monitoringWorkspaceId'), '/'))), '2021-06-01').customerId, '')]"
                     }
                   },
-                  "tags": "[if(contains(parameters('extensionMonitoringAgentConfig'), 'tags'), createObject('value', parameters('extensionMonitoringAgentConfig').tags), createObject('value', createObject()))]",
+                  "tags": {
+                    "value": "[coalesce(tryGet(parameters('extensionMonitoringAgentConfig'), 'tags'), createObject())]"
+                  },
                   "protectedSettings": {
                     "value": {
                       "workspaceKey": "[if(not(empty(parameters('monitoringWorkspaceId'))), listKeys(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('monitoringWorkspaceId'), '/')[2], split(parameters('monitoringWorkspaceId'), '/')[4]), 'Microsoft.OperationalInsights/workspaces', last(split(parameters('monitoringWorkspaceId'), '/'))), '2021-06-01').primarySharedKey, '')]"
@@ -10037,10 +10159,18 @@
                     "value": "Microsoft.Azure.Monitoring.DependencyAgent"
                   },
                   "type": "[if(equals(parameters('osType'), 'Windows'), createObject('value', 'DependencyAgentWindows'), createObject('value', 'DependencyAgentLinux'))]",
-                  "typeHandlerVersion": "[if(contains(parameters('extensionDependencyAgentConfig'), 'typeHandlerVersion'), createObject('value', parameters('extensionDependencyAgentConfig').typeHandlerVersion), createObject('value', '9.5'))]",
-                  "autoUpgradeMinorVersion": "[if(contains(parameters('extensionDependencyAgentConfig'), 'autoUpgradeMinorVersion'), createObject('value', parameters('extensionDependencyAgentConfig').autoUpgradeMinorVersion), createObject('value', true()))]",
-                  "enableAutomaticUpgrade": "[if(contains(parameters('extensionDependencyAgentConfig'), 'enableAutomaticUpgrade'), createObject('value', parameters('extensionDependencyAgentConfig').enableAutomaticUpgrade), createObject('value', true()))]",
-                  "tags": "[if(contains(parameters('extensionDependencyAgentConfig'), 'tags'), createObject('value', parameters('extensionDependencyAgentConfig').tags), createObject('value', createObject()))]"
+                  "typeHandlerVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionDependencyAgentConfig'), 'typeHandlerVersion'), '9.5')]"
+                  },
+                  "autoUpgradeMinorVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionDependencyAgentConfig'), 'autoUpgradeMinorVersion'), true())]"
+                  },
+                  "enableAutomaticUpgrade": {
+                    "value": "[coalesce(tryGet(parameters('extensionDependencyAgentConfig'), 'enableAutomaticUpgrade'), true())]"
+                  },
+                  "tags": {
+                    "value": "[coalesce(tryGet(parameters('extensionDependencyAgentConfig'), 'tags'), createObject())]"
+                  }
                 },
                 "template": {
                   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -10221,10 +10351,18 @@
                     "value": "Microsoft.Azure.NetworkWatcher"
                   },
                   "type": "[if(equals(parameters('osType'), 'Windows'), createObject('value', 'NetworkWatcherAgentWindows'), createObject('value', 'NetworkWatcherAgentLinux'))]",
-                  "typeHandlerVersion": "[if(contains(parameters('extensionNetworkWatcherAgentConfig'), 'typeHandlerVersion'), createObject('value', parameters('extensionNetworkWatcherAgentConfig').typeHandlerVersion), createObject('value', '1.4'))]",
-                  "autoUpgradeMinorVersion": "[if(contains(parameters('extensionNetworkWatcherAgentConfig'), 'autoUpgradeMinorVersion'), createObject('value', parameters('extensionNetworkWatcherAgentConfig').autoUpgradeMinorVersion), createObject('value', true()))]",
-                  "enableAutomaticUpgrade": "[if(contains(parameters('extensionNetworkWatcherAgentConfig'), 'enableAutomaticUpgrade'), createObject('value', parameters('extensionNetworkWatcherAgentConfig').enableAutomaticUpgrade), createObject('value', false()))]",
-                  "tags": "[if(contains(parameters('extensionNetworkWatcherAgentConfig'), 'tags'), createObject('value', parameters('extensionNetworkWatcherAgentConfig').tags), createObject('value', createObject()))]"
+                  "typeHandlerVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionNetworkWatcherAgentConfig'), 'typeHandlerVersion'), '1.4')]"
+                  },
+                  "autoUpgradeMinorVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionNetworkWatcherAgentConfig'), 'autoUpgradeMinorVersion'), true())]"
+                  },
+                  "enableAutomaticUpgrade": {
+                    "value": "[coalesce(tryGet(parameters('extensionNetworkWatcherAgentConfig'), 'enableAutomaticUpgrade'), false())]"
+                  },
+                  "tags": {
+                    "value": "[coalesce(tryGet(parameters('extensionNetworkWatcherAgentConfig'), 'tags'), createObject())]"
+                  }
                 },
                 "template": {
                   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -10407,12 +10545,24 @@
                   "type": {
                     "value": "DSC"
                   },
-                  "typeHandlerVersion": "[if(contains(parameters('extensionDSCConfig'), 'typeHandlerVersion'), createObject('value', parameters('extensionDSCConfig').typeHandlerVersion), createObject('value', '2.77'))]",
-                  "autoUpgradeMinorVersion": "[if(contains(parameters('extensionDSCConfig'), 'autoUpgradeMinorVersion'), createObject('value', parameters('extensionDSCConfig').autoUpgradeMinorVersion), createObject('value', true()))]",
-                  "enableAutomaticUpgrade": "[if(contains(parameters('extensionDSCConfig'), 'enableAutomaticUpgrade'), createObject('value', parameters('extensionDSCConfig').enableAutomaticUpgrade), createObject('value', false()))]",
-                  "settings": "[if(contains(parameters('extensionDSCConfig'), 'settings'), createObject('value', parameters('extensionDSCConfig').settings), createObject('value', createObject()))]",
-                  "tags": "[if(contains(parameters('extensionDSCConfig'), 'tags'), createObject('value', parameters('extensionDSCConfig').tags), createObject('value', createObject()))]",
-                  "protectedSettings": "[if(contains(parameters('extensionDSCConfig'), 'protectedSettings'), createObject('value', parameters('extensionDSCConfig').protectedSettings), createObject('value', createObject()))]"
+                  "typeHandlerVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionDSCConfig'), 'typeHandlerVersion'), '2.77')]"
+                  },
+                  "autoUpgradeMinorVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionDSCConfig'), 'autoUpgradeMinorVersion'), true())]"
+                  },
+                  "enableAutomaticUpgrade": {
+                    "value": "[coalesce(tryGet(parameters('extensionDSCConfig'), 'enableAutomaticUpgrade'), false())]"
+                  },
+                  "settings": {
+                    "value": "[coalesce(tryGet(parameters('extensionDSCConfig'), 'settings'), createObject())]"
+                  },
+                  "tags": {
+                    "value": "[coalesce(tryGet(parameters('extensionDSCConfig'), 'tags'), createObject())]"
+                  },
+                  "protectedSettings": {
+                    "value": "[coalesce(tryGet(parameters('extensionDSCConfig'), 'protectedSettings'), createObject())]"
+                  }
                 },
                 "template": {
                   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -10591,9 +10741,15 @@
                   },
                   "publisher": "[if(equals(parameters('osType'), 'Windows'), createObject('value', 'Microsoft.Compute'), createObject('value', 'Microsoft.Azure.Extensions'))]",
                   "type": "[if(equals(parameters('osType'), 'Windows'), createObject('value', 'CustomScriptExtension'), createObject('value', 'CustomScript'))]",
-                  "typeHandlerVersion": "[if(contains(parameters('extensionCustomScriptConfig'), 'typeHandlerVersion'), createObject('value', parameters('extensionCustomScriptConfig').typeHandlerVersion), if(equals(parameters('osType'), 'Windows'), createObject('value', '1.10'), createObject('value', '2.1')))]",
-                  "autoUpgradeMinorVersion": "[if(contains(parameters('extensionCustomScriptConfig'), 'autoUpgradeMinorVersion'), createObject('value', parameters('extensionCustomScriptConfig').autoUpgradeMinorVersion), createObject('value', true()))]",
-                  "enableAutomaticUpgrade": "[if(contains(parameters('extensionCustomScriptConfig'), 'enableAutomaticUpgrade'), createObject('value', parameters('extensionCustomScriptConfig').enableAutomaticUpgrade), createObject('value', false()))]",
+                  "typeHandlerVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionCustomScriptConfig'), 'typeHandlerVersion'), if(equals(parameters('osType'), 'Windows'), '1.10', '2.1'))]"
+                  },
+                  "autoUpgradeMinorVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionCustomScriptConfig'), 'autoUpgradeMinorVersion'), true())]"
+                  },
+                  "enableAutomaticUpgrade": {
+                    "value": "[coalesce(tryGet(parameters('extensionCustomScriptConfig'), 'enableAutomaticUpgrade'), false())]"
+                  },
                   "settings": {
                     "value": {
                       "copy": [
@@ -10605,7 +10761,9 @@
                       ]
                     }
                   },
-                  "tags": "[if(contains(parameters('extensionCustomScriptConfig'), 'tags'), createObject('value', parameters('extensionCustomScriptConfig').tags), createObject('value', createObject()))]",
+                  "tags": {
+                    "value": "[coalesce(tryGet(parameters('extensionCustomScriptConfig'), 'tags'), createObject())]"
+                  },
                   "protectedSettings": {
                     "value": "[parameters('extensionCustomScriptProtectedSetting')]"
                   }
@@ -10790,14 +10948,24 @@
                     "value": "Microsoft.Azure.Security"
                   },
                   "type": "[if(equals(parameters('osType'), 'Windows'), createObject('value', 'AzureDiskEncryption'), createObject('value', 'AzureDiskEncryptionForLinux'))]",
-                  "typeHandlerVersion": "[if(contains(parameters('extensionAzureDiskEncryptionConfig'), 'typeHandlerVersion'), createObject('value', parameters('extensionAzureDiskEncryptionConfig').typeHandlerVersion), if(equals(parameters('osType'), 'Windows'), createObject('value', '2.2'), createObject('value', '1.1')))]",
-                  "autoUpgradeMinorVersion": "[if(contains(parameters('extensionAzureDiskEncryptionConfig'), 'autoUpgradeMinorVersion'), createObject('value', parameters('extensionAzureDiskEncryptionConfig').autoUpgradeMinorVersion), createObject('value', true()))]",
-                  "enableAutomaticUpgrade": "[if(contains(parameters('extensionAzureDiskEncryptionConfig'), 'enableAutomaticUpgrade'), createObject('value', parameters('extensionAzureDiskEncryptionConfig').enableAutomaticUpgrade), createObject('value', false()))]",
-                  "forceUpdateTag": "[if(contains(parameters('extensionAzureDiskEncryptionConfig'), 'forceUpdateTag'), createObject('value', parameters('extensionAzureDiskEncryptionConfig').forceUpdateTag), createObject('value', '1.0'))]",
+                  "typeHandlerVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionAzureDiskEncryptionConfig'), 'typeHandlerVersion'), if(equals(parameters('osType'), 'Windows'), '2.2', '1.1'))]"
+                  },
+                  "autoUpgradeMinorVersion": {
+                    "value": "[coalesce(tryGet(parameters('extensionAzureDiskEncryptionConfig'), 'autoUpgradeMinorVersion'), true())]"
+                  },
+                  "enableAutomaticUpgrade": {
+                    "value": "[coalesce(tryGet(parameters('extensionAzureDiskEncryptionConfig'), 'enableAutomaticUpgrade'), false())]"
+                  },
+                  "forceUpdateTag": {
+                    "value": "[coalesce(tryGet(parameters('extensionAzureDiskEncryptionConfig'), 'forceUpdateTag'), '1.0')]"
+                  },
                   "settings": {
                     "value": "[parameters('extensionAzureDiskEncryptionConfig').settings]"
                   },
-                  "tags": "[if(contains(parameters('extensionAzureDiskEncryptionConfig'), 'tags'), createObject('value', parameters('extensionAzureDiskEncryptionConfig').tags), createObject('value', createObject()))]"
+                  "tags": {
+                    "value": "[coalesce(tryGet(parameters('extensionAzureDiskEncryptionConfig'), 'tags'), createObject())]"
+                  }
                 },
                 "template": {
                   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",

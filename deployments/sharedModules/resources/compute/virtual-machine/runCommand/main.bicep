@@ -39,8 +39,15 @@ param outputBlobContainerUri string = ''
 @description('Optional. Parameters used by the script.')
 param parameters array = []
 
-@description('Optional. Protected parameters used by the script. These parameters will not show up in deployment data.')
-param protectedParameters array = []
+@secure()
+@description('''Optional. Protected parameters used by the script. These parameters will not show up in deployment data.
+Format the object as follows:
+{
+  SecureParameterName1: { value: 'secureParameterValue1'}
+  SecureParameterName2: { value: 'secureParameterValue2'}
+}    
+''')
+param protectedParameters object = {}
 
 @description('Optional. Specifies the user account password on the VM when executing the run command.')
 @secure()
@@ -77,6 +84,11 @@ param treatFailureAsDeploymentFailure bool = false
 @description('Optional. Tags of the resource.')
 param tags object = {}
 
+var protectedParametersArray = [for parameter in items(protectedParameters): {
+  name: parameter.key
+  value: parameter.value.value
+}]
+
 resource virtualMachine 'Microsoft.Compute/virtualMachines@2022-11-01' existing = {
   name: virtualMachineName
 }
@@ -93,7 +105,7 @@ resource runCommand 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' =
     outputBlobManagedIdentity: !empty(outputBlobManagedIdentity) ? outputBlobManagedIdentity : null
     outputBlobUri: !empty(outputBlobContainerUri) ? '${toLower(outputBlobContainerUri)}${name}-output.log' : null
     parameters: !empty(parameters) ? parameters : null
-    protectedParameters: !empty(protectedParameters) ? protectedParameters : null
+    protectedParameters: protectedParametersArray
     runAsPassword: !empty(runAsPassword) ? runAsPassword : null
     runAsUser: !empty(runAsUser) ? runAsUser : null
     source: {

@@ -3,18 +3,16 @@ param(
     [string]$ResourceManagerUri,
 
     [Parameter(Mandatory=$true)]
-    [string]$UserAssignedIdentityClientId,
+    [string]$RoleAssignmentIds,
 
     [Parameter(Mandatory=$true)]
-    [string]$ManagementVmResourceId
+    [string]$UserAssignedIdentityClientId
 )
 
 $ErrorActionPreference = 'Stop'
 $WarningPreference = 'SilentlyContinue'
 
 Try {
-    $StopWatch = [Diagnostics.Stopwatch]::StartNew()
-
     # Fix the resource manager URI since only AzureCloud contains a trailing slash
     $ResourceManagerUriFixed = if($ResourceManagerUri[-1] -eq '/'){$ResourceManagerUri.Substring(0,$ResourceManagerUri.Length - 1)} else {$ResourceManagerUri}
 
@@ -27,16 +25,14 @@ Try {
         'Authorization'='Bearer ' + $AzureManagementAccessToken
     }
 
-    # Wait for at least 30 seconds to allow the Run Command to report status to ARM to avoid deployment failed error when VM is deleted before status is returned.
-    # Run commands have a minimum of 20 seconds to report status to ARM. This gives an additional 10 seconds buffer.
-    $StopWatch.Stop()
-    $StopWatch.Elapsed.TotalSeconds
-    If ($StopWatch.Elapsed.TotalSeconds -lt 30) {
-        Start-Sleep -Seconds (30 - $StopWatch.Elapsed.TotalSeconds)
-    }
+    # Delete Role Assignments
 
-    # Delete the Management VM
-    Invoke-RestMethod -Headers $AzureManagementHeader -Method 'DELETE' -Uri $($ResourceManagerUriFixed + $ManagementVmResourceId + '?forceDeletion=true&api-version=2024-03-01')
+    [array]$RoleAssignments = $RoleAssignments.replace('\"', '"') | ConvertFrom-Json
+
+    ForEach ($RoleAssignmentId in $RoleAssignmentIds) {
+        Start-Sleep -Seconds 1
+        Invoke-RestMethod -Headers $AzureManagementHeader -Method 'DELETE' -Uri $($ResourceManagerUriFixed + $RoleAssignmentId + '?api-version=2022-04-01')
+    }
 }
 catch {
     throw

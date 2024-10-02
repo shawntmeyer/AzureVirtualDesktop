@@ -10,7 +10,7 @@ param resourceGroupMonitoring string
 param tags object
 param timeStamp string
 
-module logAnalyticsWorkspace 'logAnalyticsWorkspace.bicep' = {
+module logAnalyticsWorkspace 'modules/logAnalyticsWorkspace.bicep' = {
   scope: resourceGroup(resourceGroupMonitoring)
   name: 'LogAnalytics_${timeStamp}'
   params: {
@@ -18,12 +18,12 @@ module logAnalyticsWorkspace 'logAnalyticsWorkspace.bicep' = {
     logAnalyticsWorkspaceRetention: logAnalyticsWorkspaceRetention
     logAnalyticsWorkspaceSku: logAnalyticsWorkspaceSku
     location: location
-    tags: contains(tags, 'Microsoft.OperationalInsights/workspaces') ? tags['Microsoft.OperationalInsights/workspaces'] : {}
+    tags: tags[?'Microsoft.OperationalInsights/workspaces'] ?? {}
   }
 }
 
 // Data Collection Rule for AVD Insights required for the Azure Monitor Agent
-module avdInsightsDataCollectionRules 'avdInsightsDataCollectionRules.bicep' = {
+module avdInsightsDataCollectionRules 'modules/avdInsightsDataCollectionRules.bicep' = {
   name: 'AVDInsights_DataCollectionRule_${timeStamp}'
   scope: resourceGroup(resourceGroupMonitoring)
   params: {
@@ -31,12 +31,12 @@ module avdInsightsDataCollectionRules 'avdInsightsDataCollectionRules.bicep' = {
     LogAWorkspaceId: logAnalyticsWorkspace.outputs.ResourceId
     location: location
     NameConv: dataCollectionRulesNameConv
-    tags: contains(tags, 'Microsoft.Insights/dataCollectionRules') ? tags['Microsoft.Insights/dataCollectionRules'] : {}
+    tags: tags[?'Microsoft.Insights/dataCollectionRules'] ?? {}
   }
 }
 
 // Data Collection Rule for VM Insights required for the Azure Monitor Agent
-module vmInsightsDataCollectionRules 'vmInsightsDataCollectionRules.bicep' = {
+module vmInsightsDataCollectionRules 'modules/vmInsightsDataCollectionRules.bicep' = {
   name: 'VMInsights_DataCollectionRule_${timeStamp}'
   scope: resourceGroup(resourceGroupMonitoring)
   params: {
@@ -44,16 +44,16 @@ module vmInsightsDataCollectionRules 'vmInsightsDataCollectionRules.bicep' = {
     LogAWorkspaceId: logAnalyticsWorkspace.outputs.ResourceId
     location: location
     NameConv: dataCollectionRulesNameConv
-    tags: contains(tags, 'Microsoft.Insights/dataCollectionRules') ? tags['Microsoft.Insights/dataCollectionRules'] : {}
+    tags: tags[?'Microsoft.Insights/dataCollectionRules'] ?? {}
   }
 }
 
-module dataCollectionEndpoint 'dataCollectionEndpoint.bicep' = {
+module dataCollectionEndpoint 'modules/dataCollectionEndpoint.bicep' = {
   name: 'DataCollectionEndpoint_${timeStamp}'
   scope: resourceGroup(resourceGroupMonitoring)
   params: {
     location: location
-    tags: contains(tags, 'Microsoft.Insights/dataCollectionEndpoints') ? tags['Microsoft.Insights/dataCollectionEndpoints'] : {}
+    tags: tags[?'Microsoft.Insights/dataCollectionEndpoints'] ?? {}
     name: dataCollectionEndpointName
     publicNetworkAccess: 'Enabled'
   }
