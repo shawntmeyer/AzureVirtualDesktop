@@ -27,7 +27,7 @@ Try {
 
     # Delete Role Assignments
 
-    [array]$RoleAssignments = $RoleAssignments.replace('\"', '"') | ConvertFrom-Json
+    [array]$RoleAssignmentIds = $RoleAssignmentIds.replace('\"', '"') | ConvertFrom-Json
 
     ForEach ($RoleAssignmentId in $RoleAssignmentIds) {
         Start-Sleep -Seconds 1
