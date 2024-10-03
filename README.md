@@ -2,9 +2,7 @@
 
 [**Home**](./README.md) | [**Solution**](/docs/avd.md) 
 
-This solution will deploy a fully operational Azure Virtual Desktop hostpool and image management capability adhering to the [Zero Trust principles](https://learn.microsoft.com/security/zero-trust/azure-infrastructure-avd). Many of the [common features](./docs/features.md) used with AVD have been automated in this solution for your convenience.
-
-Note:  refer to Scope section within the [**AVD**](/docs/avd.md) for full design/scope details for the solution.
+This solution will deploy a fully operational Azure Virtual Desktop hostpool and image management capability adhering to the [Zero Trust principles](https://learn.microsoft.com/security/zero-trust/azure-infrastructure-avd). Many of the [common features](./docs/avd.md#features) used with AVD have been automated in this solution for your convenience.
 
 ## Deployment Options
 
