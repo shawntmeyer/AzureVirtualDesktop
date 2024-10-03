@@ -526,10 +526,10 @@ To successfully deploy this solution, you will need to ensure the following prer
 
 - **Licenses:** ensure you have the [required licensing for AVD](https://learn.microsoft.com/en-us/azure/virtual-desktop/overview#requirements).
 - **Networking:** deployment requires a minimum of 1 Azure Virtual Network with one subnet to which the management virtual machine (deployment helper) and the session host(s) will be attached. For a PoC type implementation of AVD with Entra ID authentication, this Vnet can be standalone as there are no custom DNS requirements; however, for hybrid identity scenarios and zero trust implementations, the Virtual Network has DNS requirements as documented below under optional.
-- **Image Management Resources:** the deployment of this solution depends on many artifacts that must be hosted in Azure Blob storage. This repo contains a helper script that should be used to deploy the image management resources and upload the artifacts to the created storage account. See *deployments/imageManagement/Deploy-ImageManagement.ps1*.
+- **Image Management Resources:** the deployment of the custom image build option depends on many artifacts that must be hosted in Azure Blob storage. This repo contains a helper script that should be used to deploy the image management resources and upload the artifacts to the created storage account. See *deployments/imageManagement/Deploy-ImageManagement.ps1*.
 - **Azure Permissions:** ensure the principal deploying the solution has "Owner" and "Key Vault Administrator" roles assigned on the target Azure subscription. This solution contains many role assignments at different scopes and deploys a key vault with keys and secrets to enhance security.
 - **Security Group:** create a security group for your AVD users.
-  - AD DS: create the group in ADUC and ensure the group has synchronized to Azure AD.
+  - Active Directory Domain Services: create the group in ADUC and ensure the group has synchronized to Azure AD.
   - Azure AD: create the group.
   - Azure AD DS: create the group in Azure AD and ensure the group has synchronized to Azure AD DS.
 
@@ -663,7 +663,7 @@ Additional Information can be found [here](https://learn.microsoft.com/en-us/azu
 
 #### Authentication to Azure
 
-1. Connect to the correct Azure Environment where "\<Environment>" equals "AzureCloud", "AzureUSGovernment", "USNat", or "USSec".
+1. Connect to the correct Azure Environment where "<Environment>" equals "AzureCloud", "AzureUSGovernment", "USNat", or "USSec".
 
    ``` powershell
    Connect-AzAccount -Environment <Environment>
@@ -711,10 +711,10 @@ For the purposes of deploying a Proof of Concept where you do not have the prere
     $VirtualNetwork     = New-AzVirtualNetwork -Name $VnetName -ResourceGroupName $ResGroupName -Location $Location -AddressPrefix $VnetAddressPrefix
     ```
 
-1. Create the subnet configuration:
+1. Create the virtual machine subnet configuration:
 
    ``` powershell
-   $SubnetName          = '<Subnet Name>'
+   $SubnetName          = '<Virtual Machine Subnet Name>'
    $SubnetAddressPrefix = '10.0.0.0/24'
    $SubnetConfig        = Add-AzVirtualNetworkSubnetConfig -Name $SubnetName -VirtualNetwork $VirtualNetwork -AddressPrefix $SubnetAddressPrefix
    ```
@@ -734,7 +734,35 @@ For the purposes of deploying a Proof of Concept where you do not have the prere
 
    Save the resource id of the subnet for use in the parameters files below as follows:
 
+   1. imageBuild - 'subnetResourceId'
+   2. hostpools = 'virtualMachineSubnetResourceId'
+
+1. Create the private endpoint subnet configuration:
+
+   ``` powershell
+   $SubnetName          = '<Private Endpoint Subnet Name>'
+   $SubnetAddressPrefix = '10.1.0.0/24'
+   $SubnetConfig        = Add-AzVirtualNetworkSubnetConfig -Name $SubnetName -VirtualNetwork $VirtualNetwork -AddressPrefix $SubnetAddressPrefix
+   ```
+
+1. Associate the subnet configuration to the virtual network:
+
+   ``` powershell
+   $VirtualNetwork | Set-AzVirtualNetwork
+   ```
+
+1. Retrieve the Subnet Resource Id:
+
+   ``` powershell
+   $VNet = Get-AzVirtualNetwork -Name $VnetName -ResourceGroupName $ResGroupName
+   ($VNet.Subnets | Where-Object {$_.Name -eq "$SubnetName"}).Id
+   ```
+
+   Save the resource id of the subnet for use in the parameters files below as follows:
+
    1. imageManagement - 'privateEndpointSubnetResourceId'
+   2. imageBuild = 'privateEndpointSubnetResourceId'
+   3. hostpools = 'managementAndStoragePrivateEndpointSubnetResourceId'
 
 #### Private DNS
 
@@ -742,7 +770,7 @@ While utilizing a private endpoints is optional, it must be deployed in order to
 
 - Image Management - Blob Storage Account
 - Image Build - Blob Storage Account for logging customizations
-- AVD Deployment - Azure Files for FSLogix profiles, Azure Key Vault for storing Customer Managed Keys.
+- AVD Deployment - Azure Files for FSLogix profiles, Azure Key Vault for storing Customer Managed Keys, and AVD Private Link
 
 Prior to running the Deploy-ImageManagement script, the Azure Blob private DNS zone should be created either in the portal or through Powershell. See [DNS Prerequisites](#prerequisites) for the correct values per environment.:
 
@@ -797,6 +825,8 @@ You will then need to specify the objectId property of this new service principa
 ### Deployment
 
 #### Deploy Image Management Resources
+
+If you plan to build custom images or to add custom software or run scripts during the deployment of your session hosts, you must deploy the image management resources.
 
 The *deployments/imageManagement/Deploy-ImageManagement.ps1* is the easiest way to ensure all necessary image management resources (scripts and installers and Compute Gallery for custom image option.) are present for the AVD deployment.
 
@@ -899,14 +929,14 @@ The AVD solution includes all necessary resources to deploy a usable virtual des
 
 **Option 1: Using Command Line**
 
-1. Create a parameters file (completeSolution.parameters.json) by reviewing the documentation at [AVD Host Pool Parameters](#avd-host-pool-deployment-parameters).
+1. Create a parameters file (hostpoolid.parameters.json) by reviewing the documentation at [AVD Host Pool Parameters](#avd-host-pool-deployment-parameters).
 
 2. Deploy the AVD Host Pool (and supporting resources)
 
     ``` powershell
     $Location = '<Region>'
     $DeploymentName = '<valid deployment name>'
-    New-AzDeployment -Location $Location -Name $DeploymentName -TemplateFile '.\deployments\hostpools\solution.bicep' -TemplateParameterFile '.\deployments\hostpools\parameters\solution.parameters.json' -Verbose
+    New-AzDeployment -Location $Location -Name $DeploymentName -TemplateFile '.\deployments\hostpools\solution.bicep' -TemplateParameterFile '.\deployments\hostpools\parameters\hostpoolid.parameters.json' -Verbose
     ```
 
 **Option 2: Using a Template Spec and Portal Form**
@@ -1055,7 +1085,6 @@ In the context of the AVD project, certain deviations and considerations have be
 
 #### Deviations from Standard Zero Trust Practices
 
-- Sharding for Increased Capacity: The AVD project introduces sharding to enhance storage capacity, which is not a customary practice in standard Zero Trust implementations. This allows for scaling up to Azure's subscription limitations and provides additional capacity to an AVD host pool.
 - Confidential VMs and Trusted Launch: The project leverages Azure confidential VMs and Trusted Launch features to create a hardware-enforced boundary and protect virtual machines from advanced threats, going beyond typical Zero Trust security measures.
 
 #### Project-Specific Considerations
