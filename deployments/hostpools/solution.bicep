@@ -339,8 +339,21 @@ param artifactsUserAssignedIdentityResourceId string = ''
 @description('''Optional.
 Array of objects containing the following properties
 -name: The name of the script or application that is running minus extension
--uri: The uri of the file to download.
+-blobNameOrUri: The blob name when used with the artifactsContainerUri or the full URI of the file to download.
 -arguments: Arguments required by the installer or script being ran.
+
+JSON example:
+[
+  {
+    "name": "FSLogix",
+    "blobNameOrUri": "https://aka.ms/fslogix_download"
+  },
+  {
+    "name": "VSCode",
+    "blobNameOrUri": "VSCode.zip",
+    "arguments": "/verysilent /mergetasks=!runcode"
+  }
+]
 ''')
 param sessionHostCustomizations array = []
 

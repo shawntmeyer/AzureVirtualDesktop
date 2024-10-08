@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.30.23.60470",
-      "templateHash": "10174964119639668271"
+      "templateHash": "17090296165955476518"
     }
   },
   "parameters": {
@@ -523,7 +523,7 @@
       "type": "array",
       "defaultValue": [],
       "metadata": {
-        "description": "Optional.\nArray of objects containing the following properties\n-name: The name of the script or application that is running minus extension\n-uri: The uri of the file to download.\n-arguments: Arguments required by the installer or script being ran.\n"
+        "description": "Optional.\nArray of objects containing the following properties\n-name: The name of the script or application that is running minus extension\n-blobNameOrUri: The blob name when used with the artifactsContainerUri or the full URI of the file to download.\n-arguments: Arguments required by the installer or script being ran.\n\nJSON example:\n[\n  {\n    \"name\": \"FSLogix\",\n    \"blobNameOrUri\": \"https://aka.ms/fslogix_download\"\n  },\n  {\n    \"name\": \"VSCode\",\n    \"blobNameOrUri\": \"VSCode.zip\",\n    \"arguments\": \"/verysilent /mergetasks=!runcode\"\n  }\n]\n"
       }
     },
     "deployFSLogixStorage": {
@@ -12012,7 +12012,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.30.23.60470",
-              "templateHash": "6803443777215068929"
+              "templateHash": "5078723112481055035"
             }
           },
           "parameters": {
@@ -12867,7 +12867,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.30.23.60470",
-                      "templateHash": "2880363237140277129"
+                      "templateHash": "2238528138233929584"
                     }
                   },
                   "parameters": {
@@ -13750,7 +13750,7 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.30.23.60470",
-                              "templateHash": "14062630621526824529"
+                              "templateHash": "12161174931007696904"
                             }
                           },
                           "parameters": {

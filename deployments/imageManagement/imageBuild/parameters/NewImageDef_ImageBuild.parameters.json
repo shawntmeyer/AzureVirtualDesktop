@@ -14,11 +14,8 @@
         "computeGalleryResourceId": {
             "value": "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/rg-avd-image-management-use/providers/Microsoft.Compute/galleries/gal_image_management_use"
         },
-        "storageAccountResourceId": {
-            "value": "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/rg-avd-image-management-use/providers/Microsoft.Storage/storageAccounts/saimageassetsusexj5oy5dp"
-        },
-        "artifactsContainerName": {
-            "value": "artifacts"
+        "artifactsContainerUri": {
+            "value": "https://saimageassetsusexj5oy5dp.blob.core.windows.net/artifacts"
         },
         "userAssignedIdentityResourceId": {
             "value": "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/rg-avd-image-management-use/providers/Microsoft.ManagedIdentity/userAssignedIdentities/uai-image-management-use"
@@ -42,7 +39,7 @@
             "value": "office-365"
         },
         "sku": {
-            "value": "win11-23h2-avd-m365"
+            "value": "win11-24h2-avd-m365"
         },
         "encryptionAtHost": {
             "value": true
@@ -54,11 +51,12 @@
             "value": [
                 {
                     "name": "LGPO",
-                    "blobname": "LGPO.zip"
+                    "blobNameOrUri": "LGPO.zip"
                 },
                 {
                     "name": "PowerShell7",
-                    "blobname": "PowerShell-7.zip"
+                    "blobname": "PowerShell-7.zip",
+                    "arguments": "-quiet"
                 }
             ]
         },
@@ -81,7 +79,7 @@
             "value": "office-365"
         },
         "imageDefinitionSku": {
-            "value": "win11-23h2-avd-m365"
+            "value": "win11-24h2-avd-m365"
         },
         "imageDefinitionIsAcceleratedNetworkSupported": {
             "value": true

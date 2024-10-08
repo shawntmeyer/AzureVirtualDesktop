@@ -2,15 +2,6 @@
   "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "artifactsContainerName": {
-      "value": "artifacts"
-    },
-    "artifactsStorageAccountResourceId": {
-      "value": ""
-    },
-    "artifactsUserAssignedIdentityResourceId" :{
-      "value": ""
-    },
     "identitySolution": {
       "value": "EntraId"
     },
@@ -32,7 +23,7 @@
     "virtualMachineSubnetResourceId": {
       "value": ""
     },
-    "appGroupSecurityPrincipals": {
+    "appGroupSecurityGroups": {
       "value": [
       ]
     },

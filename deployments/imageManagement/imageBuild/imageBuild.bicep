@@ -137,18 +137,21 @@ param installVirtualDesktopOptimizationTool bool = false
 @description('Conditional. The name of the zip blob containing the Virtual Desktop Optimization Tool Script and files.')
 param vDotBlobName string = 'VDOT.zip'
 
-@description('''An array of image customizations consisting of the blob name and parameters.
-BICEP example:
+@description('''An array of image customization objects containing the following properties:
+-name: The name of the script or application that is running minus extension
+-blobNameOrUri: The blob name when used with the artifactsContainerUri or the full URI of the file to download.
+-arguments: Arguments required by the installer or script being ran.
+
+JSON example:
 [
   {
-    name: 'FSLogix'
-    blobNameOrUri: 'https://aka.ms/fslogix_download'
-    arguments: ''
-  }
+    "name": "FSLogix",
+    "blobNameOrUri": "https://aka.ms/fslogix_download"
+  },
   {
-    name: 'VSCode'
-    blobNameOrUri: 'VSCode.zip'
-    arguments: '/verysilent /mergetasks=!runcode'
+    "name": "VSCode",
+    "blobNameOrUri": "VSCode.zip",
+    "arguments": "/verysilent /mergetasks=!runcode"
   }
 ]
 ''')
