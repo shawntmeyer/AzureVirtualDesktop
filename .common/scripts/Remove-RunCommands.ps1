@@ -39,21 +39,3 @@ ForEach ($VMName in $VirtualMachineNames) {
             -Uri $($ResourceManagerUriFixed + $ResourceGroupId + '/providers/Microsoft.Compute/virtualMachines/' + $VmName + '/runCommands/' + $RunCommand + '?api-version=2024-03-01') | Out-Null
     }
 }
-
-<#
-[int]$SHCount = $SessionHostCount
-[int]$SHIndex = $SessionHostIndex
-for ($i = $SHIndex; $i -lt $($SHIndex + $SHCount); $i++) {
-    $VmName = $VirtualMachineNamePrefix + $i.ToString().PadLeft(3,'0')
-    $RunCommands = (Invoke-RestMethod `
-        -Headers $AzureManagementHeader `
-        -Method 'GET' `
-        -Uri $($ResourceManagerUriFixed + $ResourceGroupId + '/providers/Microsoft.Compute/virtualMachines/' + $VmName + '/runCommands?api-version=2024-03-01')).value.name
-    foreach ($RunCommand in $RunCommands) {
-        Invoke-RestMethod `
-            -Headers $AzureManagementHeader `
-            -Method 'DELETE' `
-            -Uri $($ResourceManagerUriFixed + $ResourceGroupId + '/providers/Microsoft.Compute/virtualMachines/' + $VmName + '/runCommands/' + $RunCommand + '?api-version=2024-03-01') | Out-Null
-    }    
-}
-#>

@@ -204,14 +204,27 @@
 							"label": "Storage Account",
 							"elements": [
 								{
-									"name": "storageAccount",
-									"type": "Microsoft.Solutions.ResourceSelector",
-									"label": "Image Artifacts Storage Account",
-									"resourceType": "Microsoft.Storage/storageAccounts",
-									"toolTip": "Select the storage account containing the image customization artifacts (i.e., installers, scripts)."
+									"name": "storageAccountsApi",
+									"type": "Microsoft.Solutions.ArmApiControl",
+									"condition": "[not(empty(steps('basics').scope.subscription))]",
+									"request": {
+										"method": "GET",
+										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Storage/storageAccounts?api-version=2023-01-01')]"										
+									}
 								},
 								{
-									"name": "containerApi",
+									"name": "storageAccount",
+									"type": "Microsoft.Common.DropDown",
+									"label": "Image Artifacts Storage Account",
+									"multiLine": true,									
+									"toolTip": "Select the storage account containing the image customization artifacts (i.e., installers, scripts).",
+									"constraints": {
+										"allowedValues": "[map(steps('prereqs').storage.storageAccountsApi.value, (sa) => parse(concat('{\"label\":\"', sa.name, '\",\"description\":\"<b>Location</b>: ', sa.location, ' <b>Resource Group</b>: ', first(skip(split(sa.id, '/'), 4)), '\",\"value\":{\"id\":\"', sa.id, '\",\"blobEndpoint\":\"', sa.properties.primaryEndpoints.blob, '\"}}')))]",
+										"required": true
+									}									
+								},								
+								{
+									"name": "containersApi",
 									"type": "Microsoft.Solutions.ArmApiControl",
 									"condition": "[not(empty(steps('prereqs').storage.storageAccount))]",
 									"request": {
@@ -221,14 +234,13 @@
 								},
 								{
 									"name": "container",
-									"type": "Microsoft.Common.DropDown",
-									"visible": true,
+									"type": "Microsoft.Common.DropDown",									
 									"label": "Image Artifacts Container",
 									"defaultValue": "",
 									"toolTip": "Select the container which contains the software and script blobs.",
 									"constraints": {
 										"required": true,
-										"allowedValues": "[map(steps('prereqs').storage.containerApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.id, '\"}')))]"
+										"allowedValues": "[map(steps('prereqs').storage.containersApi.value, (container) => parse(concat('{\"label\":\"', container.name, '\",\"value\":\"', container.name, '\"}')))]"
 									}
 								},
 								{
@@ -420,7 +432,7 @@
 								{
 									"name": "offersApi",
 									"type": "Microsoft.Solutions.ArmApiControl",
-									"condition": "[not(empty(steps('basics').scope.subscription))]",
+									"condition": "[not(empty(steps('imageVm').imageSource.publisher))]",
 									"request": {
 										"method": "GET",
 										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Compute/locations/', steps('basics').scope.location.name, '/publishers/', steps('imageVm').imageSource.publisher, '/artifacttypes/vmimage/offers?api-version=2023-07-01')]"
@@ -441,7 +453,7 @@
 								{
 									"name": "skusApi",
 									"type": "Microsoft.Solutions.ArmApiControl",
-									"condition": "[not(empty(steps('basics').scope.subscription))]",
+									"condition": "[not(empty(steps('imageVm').imageSource.offer))]",
 									"request": {
 										"method": "GET",
 										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Compute/locations/', steps('basics').scope.location.name, '/publishers/', steps('imageVm').imageSource.publisher, '/artifacttypes/vmimage/offers/', steps('imageVm').imageSource.offer, '/skus?api-version=2023-07-01')]"
@@ -451,7 +463,7 @@
 									"name": "sku",
 									"type": "Microsoft.Common.DropDown",
 									"label": "SKU",
-									"defaultValue": "win11-23h2-avd",
+									"defaultValue": "win11-24h2-avd",
 									"toolTip": "Select the desired marketplace image SKU.",
 									"constraints": {
 										"allowedValues": "[map(steps('imageVm').imageSource.skusApi, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.name, '\"}')))]",
@@ -650,6 +662,7 @@
 									"type": "Microsoft.Common.OptionsGroup",
 									"label": "Install Teams",
 									"defaultValue": "Yes",
+									"toolTip": "Note that Teams requires that the Office Suite is installed.",
 									"constraints": {
 										"allowedValues": [
 											{
@@ -663,28 +676,7 @@
 										]
 									},
 									"visible": true
-								},
-								{
-									"name": "teamsVersion",
-									"type": "Microsoft.Common.OptionsGroup",
-									"label": "Teams Version",
-									"defaultValue": "New",
-									"toolTip": "Select 'Classic' to install the Teams Version 1 or 'New' to install the new Teams client.",
-									"constraints": {
-										"allowedValues": [
-											{
-												"label": "New",
-												"value": "New"
-											},
-											{
-												"label": "Classic",
-												"value": "Classic"
-											}
-										],
-										"required": false
-									},
-									"visible": "[steps('imageCustomizations').office.installTeams]"
-								},
+								},								
 								{
 									"name": "teamsCloudType",
 									"type": "Microsoft.Common.OptionsGroup",
@@ -723,7 +715,7 @@
 										],
 										"required": false
 									},
-									"visible": "[and(steps('imageCustomizations').office.installTeams, equals(steps('imageCustomizations').office.teamsVersion, 'New'))]"
+									"visible": "[steps('imageCustomizations').office.installTeams]"
 								}
 							]
 						},
@@ -732,6 +724,27 @@
 							"type": "Microsoft.Common.Section",
 							"label": "Other Customizations",
 							"elements": [
+								{
+									"name": "removeApps",
+									"type": "Microsoft.Common.OptionsGroup",
+									"label": "Remove Built-In Apps",
+									"defaultValue": "Yes",
+									"toolTip": "Select 'True' to remove most of the built-in apps that are not applicable in AVD.",
+									"constraints": {
+										"allowedValues": [
+											{
+												"label": "Yes",
+												"value": true
+											},
+											{
+												"label": "No",
+												"value": false
+											}
+										],
+										"required": false
+									},
+									"visible": true
+								},
 								{
 									"name": "installVirtualDesktopOptimizationTool",
 									"type": "Microsoft.Common.OptionsGroup",
@@ -820,19 +833,13 @@
 												}
 											},
 											{
-												"id": "blobname",
-												"header": "Blobname",
+												"id": "blobNameOrUri",
+												"header": "Blob Name (or URI)",
 												"width": "10fr",
 												"element": {
 													"type": "Microsoft.Common.TextBox",
 													"placeholder": "Example: VSCodeSetup-x64-1.81.1.exe",
-													"constraints": {
-														"allowedValues": [
-															{
-																"label": "blobname",
-																"value": "text"
-															}
-														],
+													"constraints": {														
 														"required": true
 													}
 												}
@@ -840,17 +847,11 @@
 											{
 												"id": "arguments",
 												"header": "Arguments",
-												"width": "10fr",
+												"width": "1fr",
 												"element": {
 													"type": "Microsoft.Common.TextBox",
-													"placeholder": "Example: /silent /mergetasks='!runcode'",
-													"constraints": {
-														"allowedValues": [
-															{
-																"label": "arguments",
-																"value": "text"
-															}
-														],
+													"placeholder": "Example: /verysilent /mergetasks='!runcode'",
+													"constraints": {														
 														"required": false
 													}
 												}
@@ -1540,9 +1541,8 @@
 				"envShortName": "[steps('basics').deploymentSpecs.envShortName]",
 				"imageBuildResourceGroupId": "[if(equals(steps('basics').resGroup.useExResGroup, true), concat(steps('basics').scope.subscription.id, '/resourceGroups/',steps('basics').resGroup.resourceGroup), '')]",
 				"customBuildResourceGroupName": "[if(equals(steps('basics').resGroup.useExResGroup, false), steps('basics').resGroup.customBuildResourceGroupName, '')]",
-				"computeGalleryResourceId": "[steps('prereqs').gallery.gallery.id]",
-				"storageAccountResourceId": "[steps('prereqs').storage.storageAccount.id]",
-				"artifactsContainerName": "[first(skip(split(steps('prereqs').storage.container, '/'), 12))]",
+				"computeGalleryResourceId": "[steps('prereqs').gallery.gallery.id]",		
+				"artifactsContainerUri": "[concat(steps('prereqs').storage.storageAccount.blobEndpoint, steps('prereqs').storage.container)]",
 				"userAssignedIdentityResourceId": "[steps('prereqs').storage.managedIdentity.id]",
 				"subnetResourceId": "[steps('prereqs').network.subnet]",
 				"vmSize": "[steps('imageVm').vmProps.vmSize]",
@@ -1563,8 +1563,8 @@
 				"installPublisher": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installPublisher,'false')]",
 				"installSkypeForBusiness": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installSkypeForBusiness,'false')]",
 				"installTeams": "[steps('imageCustomizations').office.installTeams]",
-				"teamsVersion": "[if(steps('imageCustomizations').office.installTeams, steps('imageCustomizations').office.teamsVersion, 'New')]",
-				"teamsCloudType": "[if(and(steps('imageCustomizations').office.installTeams, equals(steps('imageCustomizations').office.teamsVersion, 'New')), steps('imageCustomizations').office.teamsCloudType, 'Commercial')]",
+				"teamsCloudType": "[if(steps('imageCustomizations').office.installTeams, steps('imageCustomizations').office.teamsCloudType, 'Commercial')]",
+				"removeApps": "[steps('imageCustomizations').customizations.removeApps]",
 				"installVirtualDesktopOptimizationTool": "[steps('imageCustomizations').customizations.installVirtualDesktopOptimizationTool]",
 				"installVisio": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installVisio,'false')]",
 				"installWord": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installWord,'false')]",

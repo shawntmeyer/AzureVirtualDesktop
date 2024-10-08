@@ -2,14 +2,15 @@ targetScope = 'resourceGroup'
 
 param cloud string
 param location string = resourceGroup().location
-param userAssignedIdentityClientId string
+
+
+param artifactsContainerUri string
+param customizations array
 param logBlobContainerUri string
-param storageEndpoint string
-param artifactsContainerName string
 param managementVmName string
 param imageVmName string
 param installFsLogix bool
-param fslogixBlobName string
+param fslogixSetupBlobName string
 param installAccess bool
 param installExcel bool
 param installOneNote bool
@@ -19,20 +20,20 @@ param installProject bool
 param installPublisher bool
 param installSkypeForBusiness bool
 param installTeams bool
+param installUpdates bool
 param installVirtualDesktopOptimizationTool bool
 param installVisio bool
 param installWord bool
 param installOneDrive bool
-param onedriveBlobName string
-param customizations array
+param onedriveSetupBlobName string
 param vDotBlobName string
-param officeBlobName string
-param teamsBlobName string
+param officeDeploymentToolBlobName string
+param removeApps bool
+param teamsInstallerBlobName string
 param teamsCloudType string
-param teamsVersion string
 param timeStamp string = utcNow('yyMMddhhmm')
-param installUpdates bool
 param updateService string
+param userAssignedIdentityClientId string
 param wsusServer string
 
 var buildDir = 'c:\\BuildDir'
@@ -41,7 +42,7 @@ var apiVersion = environment().name == 'USNat' ? '2017-08-01' : '2018-02-01'
 
 var customizers = [for customization in customizations: {
   name: replace(customization.name, ' ', '-')
-  blobName: customization.blobName
+  uri: contains(customization.blobNameOrUri, '//:') ? customization.blobNameOrUri : '${artifactsContainerUri}/${customization.blobNameOrUri}'
   arguments: customization.?arguments ?? ''
 }]
 
@@ -51,21 +52,17 @@ var commonScriptParams = [
     value: apiVersion
   }
   {
+    name: 'BlobStorageSuffix'
+    value: 'blob.${environment().suffixes.storage}'
+  }
+  {
     name: 'BuildDir'
     value: buildDir
   }
   {
     name: 'UserAssignedIdentityClientId'
     value: userAssignedIdentityClientId
-  }
-  {
-    name: 'ContainerName'
-    value: artifactsContainerName
-  }
-  {
-    name: 'StorageEndpoint'
-    value: storageEndpoint
-  }
+  }  
 ]
 
 var restartVMParameters = [
@@ -116,6 +113,26 @@ resource createBuildDirs 'Microsoft.Compute/virtualMachines/runCommands@2023-03-
 
 }
 
+resource removeAppxPackages 'Microsoft.Compute/virtualMachines/runCommands@2024-03-01' = if (removeApps) {
+  name: 'remove-appxPackages'
+  location: location
+  parent: imageVm
+  properties: {
+    errorBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
+      clientId: userAssignedIdentityClientId
+    }
+    errorBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-Remove-AppxPackages-error-${timeStamp}.log' 
+    outputBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
+      clientId: userAssignedIdentityClientId
+    }
+    outputBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-Remove-AppxPackages-output-${timeStamp}.log'
+    source: {
+      script: loadTextContent('../../../../.common/scripts/Remove-AppXPackages.ps1')
+    }
+    treatFailureAsDeploymentFailure: true
+  }
+}
+
 @batchSize(1)
 resource applications 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = [for customizer in customizers: {
   name: customizer.name
@@ -132,11 +149,11 @@ resource applications 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01'
     outputBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-${customizer.name}-output-${timeStamp}.log'
     parameters: union(commonScriptParams, [      
       {
-        name: 'Blobname'
-        value: customizer.blobName
+        name: 'Uri'
+        value: customizer.uri
       }
       {
-        name: 'installer'
+        name: 'Name'
         value: customizer.name
       }
       {
@@ -151,6 +168,7 @@ resource applications 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01'
   }
   dependsOn: [
     createBuildDirs
+    removeAppxPackages
   ]
 }]
 
@@ -169,8 +187,12 @@ resource fslogix 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = if
     outputBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-FSLogix-output-${timeStamp}.log'
     parameters: union(commonScriptParams, [
       {
-        name: 'BlobName'
-        value: fslogixBlobName
+        name: 'Name'
+        value: 'FSLogix'
+      }
+      {
+        name: 'Uri'
+        value: contains(fslogixSetupBlobName, '//:') ? fslogixSetupBlobName : '${artifactsContainerUri}/${fslogixSetupBlobName}'
       }
     ])
     source: {
@@ -180,6 +202,7 @@ resource fslogix 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = if
   }
   dependsOn: [
     createBuildDirs
+    removeAppxPackages
     applications
   ]
 }
@@ -243,8 +266,12 @@ resource office 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if(
         value: string(installVisio)
       }
       {
-        name: 'BlobName'
-        value: officeBlobName
+        name: 'Name'
+        value: 'Office-365-ProPlus'
+      }
+      {
+        name: 'Uri'
+        value: contains(officeDeploymentToolBlobName, '//:') ? officeDeploymentToolBlobName : '${artifactsContainerUri}/${officeDeploymentToolBlobName}'
       }
     ])
     source: {
@@ -254,6 +281,7 @@ resource office 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if(
   }
   dependsOn: [
     createBuildDirs
+    removeAppxPackages
     fslogix
     applications
   ]
@@ -274,8 +302,12 @@ resource onedrive 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = i
     outputBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-OneDrive-output-${timeStamp}.log'
     parameters: union(commonScriptParams, [
       {
-        name: 'BlobName'
-        value: onedriveBlobName
+        name: 'Name'
+        value: 'OneDrive'
+      }
+      {
+        name: 'Uri'
+        value: contains(onedriveSetupBlobName, '//:') ? onedriveSetupBlobName : '${artifactsContainerUri}/${onedriveSetupBlobName}'
       }
     ])
     source: {
@@ -285,50 +317,14 @@ resource onedrive 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = i
   }
   dependsOn: [
     createBuildDirs
+    removeAppxPackages
     applications
     fslogix
     office
   ]
 }
 
-resource teamsClassic 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (installTeams && teamsVersion == 'Classic') {
-  name: 'teamsClassic'
-  location: location
-  parent: imageVm
-  properties: {
-    errorBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
-      clientId: userAssignedIdentityClientId
-    }
-    errorBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-Teams-error-${timeStamp}.log' 
-    outputBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
-      clientId: userAssignedIdentityClientId
-    }
-    outputBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-Teams-output-${timeStamp}.log'
-    parameters: union(commonScriptParams, [
-      {
-        name: 'Environment'
-        value: cloud
-      }
-      {
-        name: 'BlobName'
-        value: teamsBlobName
-      }
-    ])
-    source: {
-      script: loadTextContent('../../../../.common/scripts/Install-TeamsClassic.ps1')
-    }
-    treatFailureAsDeploymentFailure: true
-  }
-  dependsOn: [
-    createBuildDirs
-    applications
-    fslogix
-    office
-    onedrive
-  ]
-}
-
-resource teams 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (installTeams && teamsVersion == 'New') {
+resource teams 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (installTeams) {
   name: 'teams'
   location: location
   parent: imageVm
@@ -343,13 +339,17 @@ resource teams 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (
     outputBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-Teams-output-${timeStamp}.log'
     parameters: union(commonScriptParams, [
       {
+        name: 'Name'
+        value: 'Teams'
+      }      
+      {
+        name: 'Uri'
+        value: contains(teamsInstallerBlobName, '//:') ? teamsInstallerBlobName : '${artifactsContainerUri}/${teamsInstallerBlobName}'
+      }
+      {
         name: 'TeamsCloudType'
         value: teamsCloudType
-      }     
-      {
-        name: 'BlobName'
-        value: teamsBlobName
-      }
+      }  
     ])
     source: {
       script: loadTextContent('../../../../.common/scripts/Install-Teams.ps1')
@@ -358,6 +358,7 @@ resource teams 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (
   }
   dependsOn: [
     createBuildDirs
+    removeAppxPackages
     applications
     fslogix
     office
@@ -379,10 +380,10 @@ resource firstImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023
   }
   dependsOn: [
     createBuildDirs
+    removeAppxPackages
     applications
     fslogix
     office
-    teamsClassic
     teams
   ]
 }
@@ -458,8 +459,12 @@ resource vdot 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (i
     outputBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-vdot-output-${timeStamp}.log'
     parameters: union(commonScriptParams, [
       {
-        name: 'BlobName'
-        value: vDotBlobName
+        name: 'Name'
+        value: 'VDOT'
+      }
+      {
+        name: 'Uri'
+        value: contains(vDotBlobName, '//:') ? vDotBlobName : '${artifactsContainerUri}/${vDotBlobName}'
       }
     ])
     source: {

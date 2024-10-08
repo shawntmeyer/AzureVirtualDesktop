@@ -104,14 +104,8 @@ var roleAssignmentsHosts = [
   }
 ]
 
-var roleAssignmentsManagement = confidentialVMOSDiskEncryption && contains(keyManagementDisks, 'CustomerManaged')
+var roleAssignmentsKeyVault = confidentialVMOSDiskEncryption && contains(keyManagementDisks, 'CustomerManaged')
   ? [
-      {
-        roleDefinitionId: roleDefinitions.VirtualMachineContributor // (Purpose: remove the management virtual machine)
-        depName: 'VMCont-Management'
-        resourceGroup: resourceGroupManagement
-        subscription: subscription().subscriptionId
-      }
       {
         roleDefinitionId: roleDefinitions.KeyVaultCryptoOfficer // (Purpose: Retrieve the customer managed keys from the key vault for idempotent deployment)
         depName: 'KVCryptoOff-Management'
@@ -119,14 +113,25 @@ var roleAssignmentsManagement = confidentialVMOSDiskEncryption && contains(keyMa
         subscription: subscription().subscriptionId
       }
     ]
-  : [
+  : []
+
+
+var roleAssignmentsManagement = confidentialVMOSDiskEncryption || deployDiskAccessResource || keyManagementDisks !='PlatformManaged' || keyManagementFSLogixStorage != 'MicrosoftManaged'
+  ? union(roleAssignmentsKeyVault, [
       {
         roleDefinitionId: roleDefinitions.VirtualMachineContributor // (Purpose: remove the management virtual machine)
         depName: 'VMCont-Management'
         resourceGroup: resourceGroupManagement
         subscription: subscription().subscriptionId
       }
-    ]
+    ]) : union(roleAssignmentsKeyVault, [
+      {
+        roleDefinitionId: roleDefinitions.Contributor // (Purpose: remove the management resource group during cleanup as there won't be any resources within.)
+        depName: 'Cont-Management'
+        resourceGroup: resourceGroupManagement
+        subscription: subscription().subscriptionId
+      }
+    ])
 
 var roleAssignmentStorage = fslogix && contains(identitySolution, 'DomainServices')
   ? [
@@ -223,10 +228,7 @@ module policy 'modules/policy.bicep' = if (deployDiskAccessPolicy) {
   }
 }
 
-module vmKeyVault 'modules/keyVault.bicep' = if (confidentialVMOSDiskEncryption || contains(
-  keyManagementDisks,
-  'CustomerManaged'
-)) {
+module vmKeyVault 'modules/keyVault.bicep' = if (confidentialVMOSDiskEncryption || contains(keyManagementDisks, 'CustomerManaged')) {
   name: 'KeyVault_VMs_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {

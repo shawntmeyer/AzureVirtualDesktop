@@ -2,7 +2,6 @@ targetScope = 'subscription'
 
 param identitySolution string
 param appGroupSecurityGroups array
-param artifactsUri string
 param avdPrivateLinkPrivateRoutes string
 param customImageResourceId string
 param globalFeedPrivateEndpointSubnetResourceId string
@@ -13,8 +12,6 @@ param deployScalingPlan bool = false
 param diskSizeGB int
 param diskSku string
 param domainName string
-param cseBlobNames array
-param cseMasterScript string
 param deployFSLogixStorage bool
 param fslogixContainerType string
 param fslogixFileShareNames object
@@ -145,12 +142,6 @@ var endAvSetRange = (sessionHostCount + sessionHostIndex) / maxAvSetMembers // T
 var availabilitySetsCount = length(range(beginAvSetRange, (endAvSetRange - beginAvSetRange) + 1))
 
 // OTHER LOGIC & COMPUTED VALUES
-// fslogix will not be configured on session hosts if identity solution is not EntraId. Decision made to lower complexity and to avoid potential issues. Assumes the use of Group Policy to configure FSlogix with Domain Services identity solution.
-var cseArtifacts = !empty(cseBlobNames) ? union(['${cseMasterScript}'], cseBlobNames) : []
-var cseUris = [
-  for artifact in cseArtifacts: contains(toLower(artifact), 'http') ? artifact : '${artifactsUri}${artifact}'
-]
-
 var fslogixFileShares = fslogixFileShareNames[fslogixContainerType]
 // ONLY DEPLOY 1 storage account when Cloud Only identity is used because Sharding is not possible.
 var fslogixUserGroups = empty(fslogixShardGroups) ? appGroupSecurityGroups : fslogixShardGroups
@@ -180,6 +171,7 @@ var resourceGroupNames = union(
 
 var roleDefinitions = {
   AutomationContributor: 'f353d9bd-d4a6-484e-a77a-8050b599b867'
+  Contributor: 'b24988ac-6180-42a0-ab88-20f7382dd24c'
   DesktopVirtualizationApplicationGroupContributor: '86240b0e-9422-4c43-887b-b61143f32ba8'
   DesktopVirtualizationPowerOnContributor: '489581de-a3bd-480d-9518-53dea7416b33'
   DesktopVirtualizationPowerOnOffContributor: '40c5ff49-9181-41f8-ae61-143b0e78555e'
@@ -211,7 +203,6 @@ var virtualMachineTemplate = '{"domain":"${domainName}",${virtualMachineTemplate
 
 output availabilitySetsCount int = availabilitySetsCount
 output beginAvSetRange int = beginAvSetRange
-output cseUris array = cseUris
 output dedicatedHostGroupZones array = !empty(dedicatedHostGroupName) ? dedicatedHostGroup.zones : []
 output divisionRemainderValue int = divisionRemainderValue
 output fslogixFileShareNames array = fslogixFileShares

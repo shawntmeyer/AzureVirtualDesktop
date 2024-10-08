@@ -2,18 +2,6 @@ targetScope = 'subscription'
 
 // Deployment Prerequisites
 
-@description('Optional. The name of the Azure Blobs container hosting the custom script extension master script and any custom scripts.')
-param artifactsContainerName string = 'artifacts'
-
-@description('Optional. The storage account resource Id hosting the custom script extension master script and any custom scripts.')
-param artifactsStorageAccountResourceId string = ''
-
-@description('''Conditional.
-The Resource Id of the managed identity with Storage Blob Data Reader Access to the artifacts storage Account.
-Required when accessing artifacts from the storage account. 
-''')
-param artifactsUserAssignedIdentityResourceId string = ''
-
 @description('The Object ID for the Windows Virtual Desktop Enterprise Application in Azure AD.  The Object ID can found by selecting Microsoft Applications using the Application type filter in the Enterprise Applications blade of Azure AD.')
 param avdObjectId string
 
@@ -335,19 +323,26 @@ param domainName string = ''
 @description('Optional. The distinguished name for the target Organization Unit in Active Directory Domain Services.')
 param ouPath string = ''
 
-@description('''Optional. Array of script (or other artifact) names or full uris that will be downloaded by the Custom Script Extension on each Session Host Virtual Machine.
-Either specify the entire URL or just the name of the blob if is located at the fqdn specified by the [artifactsUri] parameter.
-''')
-param cseBlobNames array = []
-
-@description('Optional. The name of the script and blob that is ran by the Custom Script Extension on Virtual Machines.')
-param cseMasterScript string = 'cse_master_script.ps1'
 
 @description('''Optional.
-Additional Custom Dynamic parameters passed to CSE Scripts.
-(ex: 'Script2Keys=@([pscustomobject]@{stringValue=\'storageAccountName\';booleanValue=\'false\'});Script3Keys=@([pscustomobject]@{intValue=\'10\'}')
+The Uri of the container hosting the scripts or installers that are used to customize the session host Virtual Machines.
+Do not include the trailing slash.
 ''')
-param cseScriptAddDynParameters string = ''
+param artifactsContainerUri string = ''
+
+@description('''Optional.
+The Resource Id of the managed identity with Storage Blob Data Reader Access to the artifacts container if using Azure Blob Storage.
+Required when accessing artifacts from the storage account when they do not enable anonymous access. 
+''')
+param artifactsUserAssignedIdentityResourceId string = ''
+
+@description('''Optional.
+Array of objects containing the following properties
+-name: The name of the script or application that is running minus extension
+-uri: The uri of the file to download.
+-arguments: Arguments required by the installer or script being ran.
+''')
+param sessionHostCustomizations array = []
 
 // Profile Storage Configuration
 
@@ -568,11 +563,6 @@ param tags object = {}
 @description('DO NOT MODIFY THIS VALUE! The timeStamp is needed to differentiate deployments for certain Azure resources and must be set using a parameter.')
 param timeStamp string = utcNow('yyyyMMddhhmmss')
 
-// VARIABLES
-
-var artifactsStorageAccountName = !empty(artifactsStorageAccountResourceId) ? last(split(artifactsStorageAccountResourceId, '/')) : ''
-var artifactsUri = !empty(artifactsStorageAccountName) ? 'https://${artifactsStorageAccountName}.blob.${environment().suffixes.storage}/${artifactsContainerName}/' : ''
-
 var deployDiskAccessResource = contains(hostPoolType, 'Personal') && recoveryServices && deployPrivateEndpoints ? true : false
 
 var locationVirtualMachines = vmVirtualNetwork.location
@@ -640,11 +630,8 @@ module logic 'modules/logic.bicep' = {
   name: 'Logic_${timeStamp}'
   params: {
     appGroupSecurityGroups: appGroupSecurityGroups
-    artifactsUri: artifactsUri
     avdPrivateLinkPrivateRoutes: avdPrivateLinkPrivateRoutes
     globalFeedPrivateEndpointSubnetResourceId: globalFeedPrivateEndpointSubnetResourceId
-    cseBlobNames: cseBlobNames
-    cseMasterScript: cseMasterScript
     customImageResourceId: customImageResourceId
     dedicatedHostGroupResourceId: dedicatedHostGroupResourceId
     dedicatedHostResourceId: dedicatedHostResourceId
@@ -896,6 +883,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
   name: 'SessionHosts_${timeStamp}'
   params: {
     appGroupSecurityGroups: map(appGroupSecurityGroups, group => group.objectId)
+    artifactsContainerUri: artifactsContainerUri
     avdAgentsModuleUrl: avdAgentsModuleUrl
     artifactsUserAssignedIdentityResourceId: artifactsUserAssignedIdentityResourceId
     availability: availability
@@ -904,15 +892,11 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     availabilitySetsIndex: logic.outputs.beginAvSetRange
     availabilityZones: availabilityZones
     confidentialVMOSDiskEncryptionType: confidentialVMOSDiskEncryptionType
-    cseMasterScript: cseMasterScript
-    cseScriptAddDynParameters: cseScriptAddDynParameters
-    cseUris: logic.outputs.cseUris
     customImageResourceId: customImageResourceId
     dataCollectionEndpointResourceId: enableMonitoring ? monitoring.outputs.dataCollectionEndpointResourceId : ''
     dedicatedHostGroupResourceId: dedicatedHostGroupResourceId
     dedicatedHostGroupZones: logic.outputs.dedicatedHostGroupZones
     dedicatedHostResourceId: dedicatedHostResourceId
-    deploymentUserAssignedIdentityClientId: management.outputs.deploymentUserAssignedIdentityClientId
     diskAccessId: deployDiskAccessResource ? management.outputs.diskAccessResourceId : ''    
     diskEncryptionSetResourceId: management.outputs.diskEncryptionSetResourceId
     diskNamePrefix: resourceNames.outputs.diskNamePrefix
@@ -948,6 +932,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     enableMonitoring: enableMonitoring
     networkInterfaceNamePrefix: resourceNames.outputs.networkInterfaceNamePrefix
     ouPath: ouPath
+    sessionHostCustomizations: sessionHostCustomizations
     avdInsightsDataCollectionRulesResourceId: enableMonitoring ? monitoring.outputs.avdInsightsDataCollectionRulesResourceId : ''
     vmInsightsDataCollectionRulesResourceId: enableMonitoring ? monitoring.outputs.vmInsightsDataCollectionRulesResourceId : ''
     pooledHostPool: logic.outputs.pooledHostPool
@@ -980,6 +965,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
 module cleanUp 'modules/cleanUp/cleanUp.bicep' = {
   name: 'CleanUp_${timeStamp}'
   params: {
+    deleteManagementResourceGroup: confidentialVMOSDiskEncryption || deployDiskAccessResource || keyManagementDisks !='PlatformManaged' || keyManagementFSLogixStorage != 'MicrosoftManaged' ? false : true
     location: locationVirtualMachines
     managementVirtualMachineName: management.outputs.virtualMachineName
     resourceGroupManagement: resourceNames.outputs.resourceGroupManagement

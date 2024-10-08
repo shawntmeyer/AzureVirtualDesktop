@@ -38,14 +38,14 @@ function Write-OutputWithTimeStamp {
         [string]$Message
     )    
     $Timestamp = Get-Date -Format 'MM/dd/yyyy HH:mm:ss.ff'
-    $Entry = '[' + $Timestamp + ']' + $Message
+    $Entry = '[' + $Timestamp + '] ' + $Message
     Write-Output $Entry
 }
 
 Start-Transcript -Path "$env:SystemRoot\Logs\ImageBuild\Install-Updates.log"
 
 Write-OutputWithTimeStamp -Message "Starting Windows Update Script with the following parameters:"
-Write-Output $PSBoundParameters
+Write-Output ( $PSBoundParameters | Format-Table -AutoSize )
 
 Switch ($Service.ToUpper()) {
     'WU' { $ServerSelection = 2 }

@@ -1,5 +1,7 @@
 targetScope = 'subscription'
 
+param appGroupSecurityGroups array
+param artifactsContainerUri string
 param artifactsUserAssignedIdentityResourceId string
 param availability string
 param availabilitySetNamePrefix string
@@ -9,15 +11,11 @@ param availabilityZones array
 param avdAgentsModuleUrl string
 param avdInsightsDataCollectionRulesResourceId string
 param confidentialVMOSDiskEncryptionType string
-param cseMasterScript string
-param cseScriptAddDynParameters string
-param cseUris array
 param customImageResourceId string
 param dataCollectionEndpointResourceId string
 param dedicatedHostGroupResourceId string
 param dedicatedHostGroupZones array
 param dedicatedHostResourceId string
-param deploymentUserAssignedIdentityClientId string
 @secure()
 param domainJoinUserPassword string
 @secure()
@@ -62,12 +60,11 @@ param resourceGroupControlPlane string
 param resourceGroupHosts string
 param resourceGroupManagement string
 param roleDefinitions object
-param securityDataCollectionRulesResourceId string
-param appGroupSecurityGroups array
-param securityType string
 param secureBootEnabled bool
-param vTpmEnabled bool
+param securityDataCollectionRulesResourceId string
+param securityType string
 param sessionHostBatchCount int
+param sessionHostCustomizations array
 param sessionHostIndex int
 param storageSuffix string
 param subnetResourceId string
@@ -79,6 +76,7 @@ param virtualMachineSize string
 param virtualMachineAdminPassword string
 @secure()
 param virtualMachineAdminUserName string
+param vTpmEnabled bool
 param vmInsightsDataCollectionRulesResourceId string
 
 var hostPoolName = last(split(hostPoolResourceId, '/'))
@@ -118,7 +116,7 @@ module availabilitySets 'modules/availabilitySets.bicep' = if (pooledHostPool &&
 // Role Assignment for Virtual Machine Login User
 // This module deploys the role assignments to login to Azure AD joined session hosts
 module roleAssignments '../../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = [for i in range(0, length(appGroupSecurityGroups)): if (!contains(identitySolution, 'DomainServices')) {
-  name: 'RoleAssignments_${i}_${timeStamp}'
+  name: 'RA-VMLoginUser-${i}_${timeStamp}'
   scope: resourceGroup(resourceGroupHosts)
   params: {
     principalId: appGroupSecurityGroups[i]
@@ -146,6 +144,7 @@ module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sess
   name: 'VirtualMachines_${i - 1}_${timeStamp}'
   scope: resourceGroup(resourceGroupHosts)
   params: {
+    artifactsContainerUri: artifactsContainerUri
     avdAgentsModuleUrl: avdAgentsModuleUrl
     enableAcceleratedNetworking: enableAcceleratedNetworking
     identitySolution: identitySolution
@@ -156,15 +155,11 @@ module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sess
     availabilitySetNamePrefix: availabilitySetNamePrefix
     batchCount: i
     confidentialVMOSDiskEncryptionType: confidentialVMOSDiskEncryptionType
-    cseMasterScript: cseMasterScript
-    cseScriptAddDynParameters: cseScriptAddDynParameters
-    cseUris: cseUris
     customImageResourceId: customImageResourceId
     dataCollectionEndpointResourceId: dataCollectionEndpointResourceId
     dedicatedHostGroupResourceId: dedicatedHostGroupResourceId
     dedicatedHostGroupZones: dedicatedHostGroupZones
     dedicatedHostResourceId: dedicatedHostResourceId
-    deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
     diskAccessId: diskAccessId
     diskEncryptionSetResourceId: diskEncryptionSetResourceId
     diskNamePrefix: diskNamePrefix
@@ -196,6 +191,7 @@ module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sess
     enableMonitoring: enableMonitoring
     networkInterfaceNamePrefix: networkInterfaceNamePrefix
     ouPath: ouPath
+    sessionHostCustomizations: sessionHostCustomizations
     avdInsightsDataCollectionRulesResourceId: avdInsightsDataCollectionRulesResourceId
     vmInsightsDataCollectionRulesResourceId: vmInsightsDataCollectionRulesResourceId 
     resourceGroupManagement: resourceGroupManagement

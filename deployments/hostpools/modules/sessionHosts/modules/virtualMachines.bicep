@@ -1,4 +1,5 @@
 param identitySolution string
+param artifactsContainerUri string
 param artifactsUserAssignedIdentityClientId string
 param artifactsUserAssignedIdentityResourceId string
 param availability string
@@ -7,14 +8,10 @@ param availabilityZones array
 param avdAgentsModuleUrl string
 param batchCount int
 param confidentialVMOSDiskEncryptionType string
-param cseMasterScript string
-param cseUris array
-param cseScriptAddDynParameters string
 param dataCollectionEndpointResourceId string
 param dedicatedHostGroupResourceId string
 param dedicatedHostGroupZones array
 param dedicatedHostResourceId string
-param deploymentUserAssignedIdentityClientId string
 param diskAccessId string
 param diskEncryptionSetResourceId string
 param diskNamePrefix string
@@ -50,6 +47,7 @@ param managementVirtualMachineName string
 param enableMonitoring bool
 param networkInterfaceNamePrefix string
 param ouPath string
+param sessionHostCustomizations array
 param avdInsightsDataCollectionRulesResourceId string
 param vmInsightsDataCollectionRulesResourceId string
 param resourceGroupManagement string
@@ -136,10 +134,6 @@ var fslogixExclusionsArray = [
 ]
 
 var fslogixPathExclusions = join(filter(fslogixExclusionsArray, exclusion => !empty(exclusion)), ';')
-
-var cseScriptParameters = empty(cseScriptAddDynParameters) ? '' : ' -DynParameters ${cseScriptAddDynParameters}'
-// When sending a hashtable via powershell.exe you must use -command instead of -File in order for the parameter to be interpreted as a hashtable and not a string
-var cseCommandToExecute = 'powershell -ExecutionPolicy Unrestricted -Command .\\${cseMasterScript} ${cseScriptParameters}'
 
 var identityType = (!contains(identitySolution, 'DomainServices') || enableMonitoring ? true : false) ? (!empty(artifactsUserAssignedIdentityResourceId) ? 'SystemAssigned, UserAssigned' : 'SystemAssigned') : (!empty(artifactsUserAssignedIdentityResourceId) ? 'UserAssigned' : 'None')
 
@@ -620,28 +614,17 @@ resource runCommand_ConfigureFSLogix 'Microsoft.Compute/virtualMachines/runComma
   ]
 }]
 
-resource extension_CustomScriptExtension 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): if(!empty(cseUris)) {
-  parent: virtualMachine[i]
-  name: 'CustomScriptExtension'
-  location: location
-  tags: tagsVirtualMachines
-  properties: {
-    publisher: 'Microsoft.Compute'
-    type: 'CustomScriptExtension'
-    typeHandlerVersion: '1.10'
-    autoUpgradeMinorVersion: true
-    settings: {
-      fileUris: cseUris
-      timeStamp: timeStamp
-    }    
-    protectedSettings: {
-      commandToExecute: cseCommandToExecute
-      managedIdentity: { clientId: artifactsUserAssignedIdentityClientId }
-    }
+module postDeploymentScripts 'invokeCustomizations.bicep' = [for i in range(0, sessionHostCount): if(!empty(sessionHostCustomizations)) {
+  name: '${virtualMachine[i].name}-Customizations-${timeStamp}'
+  params: {
+    artifactsContainerUri: artifactsContainerUri
+    customizations: sessionHostCustomizations
+    userAssignedIdentityClientId: artifactsUserAssignedIdentityClientId
+    virtualMachineName: virtualMachine[i].name
   }
   dependsOn: [
-    runCommand_ConfigureFSLogix
     runCommand_ConfigureSessionHost
+    runCommand_ConfigureFSLogix
   ]
 }]
 
@@ -677,7 +660,7 @@ resource extension_DSC_installAvdAgents 'Microsoft.Compute/virtualMachines/exten
     dependsOn: [
       runCommand_ConfigureSessionHost
       runCommand_ConfigureFSLogix
-      extension_CustomScriptExtension
+      postDeploymentScripts
     ]
   }
 ]
@@ -735,48 +718,6 @@ module setDrainMode '../../../../sharedModules/resources/compute/virtual-machine
   ]
 }
 
-module removeVMRunCommands '../../../../sharedModules/resources/compute/virtual-machine/runCommand/main.bicep' = {
-  name: 'RemoveVMRunCommands_${batchCount}_${timeStamp}'
-  scope: resourceGroup(resourceGroupManagement)
-  params: {
-    location: location
-    name: 'RemoveVMRunCommands_${batchCount}_${timeStamp}'
-    parameters: [
-      {
-        name: 'ResourceGroupId'
-        value: resourceGroup().id
-      }
-      {
-        name: 'ResourceManagerUri'
-        value: environment().resourceManager
-      }
-      {
-        name: 'SessionHostCount'
-        value: string(sessionHostCount)
-      }
-      {
-        name: 'SessionHostIndex'
-        value: string(sessionHostIndex)
-      }
-      {
-        name: 'UserAssignedIdentityClientId'
-        value: deploymentUserAssignedIdentityClientId
-      }      
-      {
-        name: 'VirtualMachineNamePrefix'
-        value: virtualMachineNamePrefix
-      }
-    ]
-    script: loadTextContent('../../../../../.common/scripts/Remove-RunCommands.ps1')
-    treatFailureAsDeploymentFailure: true
-    virtualMachineName: managementVirtualMachineName
-  }
-  dependsOn: [
-    runCommand_ConfigureFSLogix
-    runCommand_ConfigureSessionHost
-    extension_DSC_installAvdAgents
-  ]
-}
 // debugging outputs
 output virtualMachineNames array = [for i in range(0, sessionHostCount): virtualMachine[i].name]
 output fslogixPathExclusions string = fslogixPathExclusions

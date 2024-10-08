@@ -28,14 +28,11 @@ param envShortName string = ''
 @description('Azure Compute Gallery Resource Id.')
 param computeGalleryResourceId string
 
-@description('The resource Id of the storage account containing the artifacts (scripts, installers, etc) used during the image build.')
-param storageAccountResourceId string
+@description('Optional. The full Uri of the artifacts storage container which contains (scripts, installers, etc) used during the image build.')
+param artifactsContainerUri string = ''
 
-@description('The name of the storage blob container which contains the artifacts (scripts, installers, etc) used during the image build.')
-param artifactsContainerName string = 'artifacts'
-
-@description('The resource Id of the user assigned managed identity used to access the storage account.')
-param userAssignedIdentityResourceId string
+@description('Optional. The resource Id of the user assigned managed identity used to access the artifacts storage account.')
+param userAssignedIdentityResourceId string = ''
 
 @description('The resource Id of the subnet to which the image build VM will be attached.')
 param subnetResourceId string
@@ -68,11 +65,14 @@ param encryptionAtHost bool = true
 param vmSize string
 
 // Image customizers
+@description('Optional. Remove AppxProvisionedPackages. Default is false.')
+param removeApps bool = false
+
 @description('Optional. Install FSLogix Agent.')
 param installFsLogix bool = false
 
-@description('Conditional. The name of the blob that contains the FSlogix zip.')
-param fslogixBlobName string = 'FSLogix.zip'
+@description('Conditional. The name of the blob (or Full URI) of FSLogix.zip.')
+param fslogixSetupBlobName string = 'FSLogix.zip'
 
 @description('Optional. Install Microsoft Access.')
 param installAccess bool = false
@@ -83,8 +83,8 @@ param installExcel bool = false
 @description('Optional. Install OneDrive Per Machine.')
 param installOneDrive bool = false
 
-@description('Conditional. The name of the blob containing OneDriveSetup.exe.')
-param onedriveBlobName string = 'OneDriveSetup.exe'
+@description('Conditional. The name of the blob (or full URI) of OneDriveSetup.exe.')
+param onedriveSetupBlobName string = 'OneDriveSetup.exe'
 
 @description('Optional. Install Microsoft OneNote.')
 param installOneNote bool = false
@@ -99,7 +99,7 @@ param installPowerPoint bool = false
 param installProject bool = false
 
 @description('Optional. Install Microsoft Publisher.')
-param installpublisher bool = false
+param installPublisher bool = false
 
 @description('Optional. Install Microsoft Skype for Business.')
 param installSkypeForBusiness bool = false
@@ -110,20 +110,16 @@ param installVisio bool = false
 @description('Optional. Install Microsoft Word.')
 param installWord bool = false
 
-@description('Optional. The name of the blob containing the Office Deployment Tool.')
-param officeBlobName string = 'Office365DeploymentTool.exe'
+@description('Optional. The name of the blob (or full URI) of the Office Deployment Tool.')
+param officeDeploymentToolBlobName string = 'Office365DeploymentTool.exe'
 
 @description('Optional. Install Microsoft Teams.')
 param installTeams bool = false
 
-@description('Optional. The name of the zip blob containing the VC++Redistributables, MSRDC WebRTC Redirector, and Teams installer.')
-@allowed(['Classic', 'New'])
-param teamsVersion string = 'Classic'
-
 @allowed([
   'Commercial'
   'GCC'
-  'GCC-High'
+  'GCCH'
   'DoD'
   'USSec'
   'USNat'
@@ -131,6 +127,9 @@ param teamsVersion string = 'Classic'
 ])
 @description('Optional. The Teams Governmant Cloud type.')
 param teamsCloudType string = 'Commercial'
+
+@description('Conditional. The name of the blob (or full Uri) of the Teams installer.')
+param teamsInstallerBlobName string = 'Microsoft-Teams.zip'
 
 @description('Optional. Apply the Virtual Desktop Optimization Tool customizations.')
 param installVirtualDesktopOptimizationTool bool = false
@@ -143,13 +142,13 @@ BICEP example:
 [
   {
     name: 'FSLogix'
-    blobName: 'Install-FSLogix.zip'
-    arguments: 'latest'
+    blobNameOrUri: 'https://aka.ms/fslogix_download'
+    arguments: ''
   }
   {
     name: 'VSCode'
-    blobName: 'VSCode.zip'
-    arguments: ''
+    blobNameOrUri: 'VSCode.zip'
+    arguments: '/verysilent /mergetasks=!runcode'
   }
 ]
 ''')
@@ -271,9 +270,8 @@ param tags object = {}
 
 // * VARIABLE DECLARATIONS * //
 
-var teamsBlobName = teamsVersion == 'Classic' ? 'Microsoft-Teams-Classic.zip' : 'Microsoft-Teams.zip'
 var installers = []
-
+// elimnate duplicates
 var customizers = union(customizations, installers)
 
 var cloud = environment().name
@@ -316,11 +314,6 @@ var managementVmName = !empty(deploymentPrefix) ? take('${depPrefix}vmmgt-${uniq
 var securityType = galleryImageDefinitionSecurityType == 'TrustedLaunch' ? 'TrustedLaunch' : galleryImageDefinitionSecurityType == 'ConfidentialVM' ? 'ConfidentialVM' : 'Standard'
 
 // * Prerequisite Resources * //
-
-resource artifactsStorageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' existing = {
-  scope: resourceGroup(split(storageAccountResourceId, '/')[2], split(storageAccountResourceId, '/')[4])
-  name: last(split(storageAccountResourceId, '/'))
-}
 
 resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = {
   scope: resourceGroup(split(userAssignedIdentityResourceId, '/')[2], split(userAssignedIdentityResourceId, '/')[4])
@@ -558,38 +551,37 @@ module customizeImage 'modules/customizeImage.bicep' = {
   scope: resourceGroup(imageBuildRg.name)
   params: {
     cloud: cloud
+    removeApps: removeApps
     location: computeLocation
-    artifactsContainerName: artifactsContainerName
     customizations: customizers
     installFsLogix: installFsLogix
-    fslogixBlobName: fslogixBlobName
     installAccess:  installAccess
     installExcel: installExcel
     installOneDrive: installOneDrive
-    onedriveBlobName: onedriveBlobName
     installOneNote: installOneNote
     installOutlook: installOutlook
     installPowerPoint: installPowerPoint
     installProject: installProject
-    installPublisher: installpublisher
+    installPublisher: installPublisher
     installSkypeForBusiness: installSkypeForBusiness
     installTeams: installTeams
     installVirtualDesktopOptimizationTool: installVirtualDesktopOptimizationTool
     installVisio: installVisio
     installWord: installWord
-    storageEndpoint: artifactsStorageAccount.properties.primaryEndpoints.blob
     userAssignedIdentityClientId: managedIdentity.properties.clientId
     managementVmName: managementVm.outputs.name
     imageVmName: imageVm.outputs.name
-    vDotBlobName: vDotBlobName
-    officeBlobName: officeBlobName
-    teamsBlobName: teamsBlobName
     teamsCloudType: teamsCloudType
-    teamsVersion: teamsVersion
     logBlobContainerUri: logContainerUri
     installUpdates: installUpdates
     updateService: updateService
     wsusServer: wsusServer  
+    artifactsContainerUri: artifactsContainerUri
+    fslogixSetupBlobName: fslogixSetupBlobName
+    officeDeploymentToolBlobName: officeDeploymentToolBlobName
+    onedriveSetupBlobName: onedriveSetupBlobName
+    teamsInstallerBlobName: teamsInstallerBlobName
+    vDotBlobName: vDotBlobName
   }
 }
 

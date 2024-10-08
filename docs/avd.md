@@ -326,7 +326,7 @@ When this optional feature is deployed, the sessions hosts will be put in drain 
 **Deployed Resources:**
 
 - Virtual Machine
-  - Custom Script Extension
+  - Run Command
   
 ### FSLogix
 
@@ -341,6 +341,8 @@ Azure Files and Azure NetApp Files are the only two SMB storage services availab
 
 **Reference:** [FSLogix - Microsoft Docs](https://docs.microsoft.com/en-us/fslogix/overview)
 
+In addition to the optional deployment of resources, you can choose to configure the registry of session host VMs with the proper registry settings to support each of these container types whether or not the resources are deployed. In addition, if you choose one of the Cloud Cache options, you can provide storage accounts in remote regions to support an active/active Business Continuity and disaster recovery configuration as documented at https://learn.microsoft.com/en-us/fslogix/concepts-container-recovery-business-continuity#option-3-cloud-cache-active--active.
+ 
 **Deployed Resources:**
 
 - Azure Storage Account (Optional)
@@ -1152,8 +1154,6 @@ You might need to clear out the bicep exe which is located in the %USERPROFILE%.
 
 | Parameter | Description | Type | Allowed | Default |
 | --------- | ----------- | :--: | :-----: | ------- |
-| `artifactsStorageAccountResourceId` | The storage account resource Id of the storage account used when running custom scripts via the custom script extension. Only used when `cseUris` is not empty. | string | resource id | '' |
-| `artifactsUserAssignedIdentityResourceId` | The resource ID of the managed identity with Storage Blob Data Reader Access to the artifacts storage Account. Required when the cseUris parameter is not empty. | string | resource id | '' |
 | `avdGlobalFeedPrivateDnsZoneResourceId` | If using private endpoints with Azure Virtual Desktop, input the Resource Id for the Private DNS Zone used for initial feed discovery. (privatelink-global.wvd.microsoft.com) | string | resource id | '' |
 | `avdPrivateDnsZoneResourceId` | If using private endpoints with Azure Virtual Desktop, input the Resource ID for the Private DNS Zone used for feed download and connections to host pools. (privatelink.wvd.microsoft.com) | string | resource id | '' |
 | `azureFilesPrivateDnsZoneResourceId` | The resource Id of the Azure Files private DNS zone which is resolvable from the subnet where the session hosts are deployed. Required when `storagePrivateEndpoints` is set to true. | string | resource id | '' |
@@ -1175,15 +1175,14 @@ You might need to clear out the bicep exe which is located in the %USERPROFILE%.
 | Parameter | Description | Type | Allowed | Default |
 | --------- | ----------- | :--: | :-----: | ------- |
 | `appGroupSecurityGroups` | An array of objects that contain the Entra ID DisplayNames and ObjectIds that are assigned to the desktop application group created by this template. If you do not shard storage, then these groups are also granted permissions to the storage accounts. | array (of objects) | [{"DisplayName":"Entra Display Name", "ObjectId": "Entra Object Id"}] | [] |
-| `artifactsContainerName` | The name of the Azure Blobs container hosting the required artifacts. | string | all lowercase characters | 'artifacts' |
+| `artifactsContainerUri` | The full URI of the storage account and container that contains any scripts you want to run on each host during deployment. | string | resource id | '' |
+| `artifactsUserAssignedIdentityResourceId` | The resource ID of the managed identity with Storage Blob Data Reader Access to the artifacts storage Account. Required when the cseUris parameter is not empty. | string | resource id | '' |
 | `availability` | Set the desired availability / SLA with a pooled host pool.  The best practice is to deploy to availability Zones for resilency. | string | 'none'<br/>'availabilitySets'<br/>'availabilityZones' | 'availabilityZones' |
 | `avdAgentsModuleUri` | Sets the publically accessible download location for the Desired State Configuration zip file where the script and installers are located for the AVD Agents. This parameter may need to be updated periodically to ensure you are using the latest version. You can obtain this value by going through the Add new session host flow inside a host pool and showing the template and parameters. This value will be exposed in the parameters. | string | Allowed | url | https://wvdportalstorageblob.blob.${environment().suffixes.storage}/galleryartifacts/Configuration_*version*.zip | 
 | `avdPrivateLinkPrivateRoutes` | Determines if Azure Private Link with Azure Virtual Desktop is enabled. Selecting "None" disables AVD Private Link deployment. Selecting one of the other options enables deployment of the required endpoints. See [AVD Private Link Setup](https://learn.microsoft.com/en-us/azure/virtual-desktop/private-link-setup?tabs=portal%2Cportal-2) for more information. | string | 'None'<br/>'HostPool'<br/>'FeedAndHostPool' | 'None' |
 | `businessUnitIdentifier` | Identifier used to describe the business unit (or customer) utilizing AVD in your tenant. If not specified then centralized AVD Monitoring is assumed and resources and resource groups are named accordingly. If this is specified, then the "centralizedAVDMonitoring" parameter determines how resources are organized and deployed.| string | up to 10 characters | '' |
 | `centralizedAVDMonitoring` | When the `businessUnitIdentifier` parameter is not empty, this parameter determines if the AVD Monitoring Resource Group and associated resources are created in a centralized resource group (does not include "businessUnitIdentifier" in the name) and monitoring resources are named accordingly or if a Business unit specific AVD management resource group is created and monitoring resources are named accordingly. If the `businessUnitIdentifier` parameter is left empty ("") then this value has no effect.| bool | true<br/>false | false |
 | `confidentialVMOSDiskEncryption` | Confidential disk encryption is an additional layer of encryption which binds the disk encryption keys to the virtual machine TPM and makes the disk content accessible only to the VM. | bool | true<br/>false | false |
-| `cseBlobNames` | Array of script (or other artifact) names or full uris that will be downloaded by the Custom Script Extension on each Session Host Virtual Machine. Either specify the entire URL or just the name of the blob if is located within artifacts container of the artifacts storage account as defined in the `artifactsContainerName` and `artifactsStorageAccountResourceId` parameters.| array | | [] |
-| `cseScriptAddDynParameters` | Additional Custom Dynamic parameters passed to CSE Scripts. (ex: 'Script2Keys=@([pscustomobject]@{stringValue=\'storageAccountName\';booleanValue=\'false\'});Script3Keys=@([pscustomobject]@{intValue=\'10\'}') | string | | '' |
 | `customImageResourceId` | The resource ID for the Compute Gallery Image Version. Do not set this value if using a marketplace image. | string | resource id | '' |
 | `dedicatedHostResourceId` | The resource Id of a specific Dedicated Host on which to deploy the Virtual Machines. This parameter takes precedence over the `dedicatedHostGroupResourceId` parameter. | string | resource id | '' |
 | `dedicatedHostGroupResourceId` | The resource Id of the Dedicated Host Group on to which the Virtual Machines are to be deployed. The Dedicated Host Group must support Automatic Host Assignment for this value to be used. | string | resource id | '' |
@@ -1243,6 +1242,7 @@ You might need to clear out the bicep exe which is located in the %USERPROFILE%.
 | `securityLogAnalyticsWorkspaceResourceId` | The resource Id of an existing Log Analytics workspace for security monitoring. Setting this value will install the legacy Microsoft Monitoring Agent (Log Analytics Agent) on the Virtual Machines and connect it to this workspace for log collection. | string | resource id | '' |
 | `securityDataCollectionRulesResourceId` | The resource Id of an existing data collection rule designed to collect security relevant logs into a centralized Log Analytics workspace. Setting this value will install the Azure Monitor Agent on each virtual machine and associate the machine with the data collection rule. | string | resource id | '' |
 | `securityType` | The Security Type of the Azure Virtual Machine. | string | 'Standard'<br/>'TrustedLaunch'<br/>'ConfidentialVM' | 'TrustedLaunch' |
+| `sessionHostCustomizations` | An array of objects containing the customization scripts or application you want to run on each session host virtual machine. Each object must contain the 'name' and 'blobNameOrUri' properties and optionally an 'arguments' property that defines the script or installer arguments. | array (of objects) | | [] |
 | `vTpmEnabled` | Virtual Trusted Platform Module (vTPM) is TPM2.0 compliant and validates your VM boot integrity apart from securely storing keys and secrets. | bool | true<br/>false | true |
 | `workspaceResourceId` | The resource Id of an existing Azure Virtual Desktop Workspace that will be updated with the new desktop application group. If specified, then the `regionControlPlane` is not used and instead the region and resource group where this workspace is located is used. | string | resource id | '' |
 
@@ -1616,6 +1616,7 @@ This template deploys a Storage Account with a blob container (optionally with a
 
 | Parameter | Description | Type | Allowed | Default |
 | --- | --- | :---: | :---: | :---: |
+| `artifactsContainerUri` | The full URI of the storage account and container that contains the artifacts used uring the custom image build. This storage account, container, and custom script blobs were uploaded with deploy-imagemanagement.ps1. | string | Uri | '' |
 | `computeGalleryResourceId` | Azure Compute Gallery Resource Id. | string | resource id | |
 | `storageAccountResourceId` | The resource Id of the storage account containing the artifacts (scripts, installers, etc) used during the image build. | string | resource id |  |
 | `subnetResourceId` | The resource Id of the subnet to which the image build and management VMs will be attached. | string | resource id | |
@@ -1646,7 +1647,7 @@ This template deploys a Storage Account with a blob container (optionally with a
 | `collectCustomizationLogs` | Collect image customization logs. | bool | true<br/>false | false |
 | `customBuildResourceGroupName` | The custom name of the resource group where the image build and management vms will be created. Leave blank to create a new resource group based on Cloud Adoption Framework naming principals. | string | valid resource group name | '' |
 | `customSourceImageResourceId` | The resource Id of the source image to use for the image build. If not provided, the latest image from the specified publisher, offer, and sku will be used. | string | resource id | '' |
-| `customizations` | This parameter is array of objects that define additional installations and customizations that will be applied to your image. **Important**, the "blobName" property is case sensitive. | array (of objects) | | [] |
+| `customizations` | This parameter is array of objects that define additional installations and customizations that will be applied to your image. Each object must contain a 'name' property and 'blobNameOrUri' property. In addition, you can specify any script or installer arguments in the 'arguments' property on each object. **Important**, the "blobNameOrUri" property value is case sensitive. | array (of objects) | | [] |
 | `location` | Deployment location. Note that the compute resources will be deployed to the region where the subnet is located. | string | valid region | `deployment().location` |
 | `deploymentPrefix` | Value to prepend to the deployment names. | string | up to 6 characters | '' |
 | `encryptionAtHost` | Determines if "EncryptionAtHost" is enabled on the VMs. | bool | true<br/>false | true |

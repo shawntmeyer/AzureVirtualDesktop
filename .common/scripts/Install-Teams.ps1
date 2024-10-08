@@ -1,12 +1,13 @@
 param(
     [string]$APIVersion,
+    [string]$BlobStorageSuffix,
     [string]$BuildDir,
     [string]$UserAssignedIdentityClientId,
-    [string]$ContainerName,
-    [string]$StorageEndpoint,
     [string]$TeamsCloudType,
-    [string]$BlobName
+    [string]$Uri
 )
+
+$ErrorActionPreference = 'Stop'
 
 function Write-OutputWithTimeStamp {
     param(
@@ -14,26 +15,31 @@ function Write-OutputWithTimeStamp {
         [string]$Message
     )    
     $Timestamp = Get-Date -Format 'MM/dd/yyyy HH:mm:ss.ff'
-    $Entry = '[' + $Timestamp + ']' + $Message
+    $Entry = '[' + $Timestamp + '] ' + $Message
     Write-Output $Entry
 }
+If (!(Test-Path -Path "$env:SystemRoot\Logs\ImageBuild")) { New-Item -Path "$env:SystemRoot\Logs\ImageBuild" -ItemType Directory -Force | Out-Null }
 
-$ErrorActionPreference = 'Stop'
 $SoftwareName = 'Teams'
 Start-Transcript -Path "$env:SystemRoot\Logs\ImageBuild\$SoftwareName.log" -Force
 Write-OutputWithTimeStamp "Starting script to install $SoftwareName with the following parameters:"
-Write-Output $PSBoundParameters
-$TokenUri = "http://169.254.169.254/metadata/identity/oauth2/token?api-version=$APIVersion&resource=$StorageEndpoint&client_id=$UserAssignedIdentityClientId"
-$AccessToken = ((Invoke-WebRequest -Headers @{Metadata = $true } -Uri $TokenUri -UseBasicParsing).Content | ConvertFrom-Json).access_token
+Write-Output ( $PSBoundParameters | Format-Table -AutoSize )
+$WebClient = New-Object System.Net.WebClient
+If ($Uri -match $BlobStorageSuffix -and $UserAssignedIdentityClientId -ne '') {
+    $StorageEndpoint = ($Uri -split "://")[0] + "://" + ($Uri -split "/")[2] + "/"
+    $TokenUri = "http://169.254.169.254/metadata/identity/oauth2/token?api-version=$APIVersion&resource=$StorageEndpoint&client_id=$UserAssignedIdentityClientId"
+    $AccessToken = ((Invoke-WebRequest -Headers @{Metadata = $true } -Uri $TokenUri -UseBasicParsing).Content | ConvertFrom-Json).access_token
+    $WebClient.Headers.Add('x-ms-version', '2017-11-09')
+    $webClient.Headers.Add("Authorization", "Bearer $AccessToken")
+}
 $appDir = Join-Path -Path $BuildDir -ChildPath $SoftwareName
 New-Item -Path $appDir -ItemType Directory -Force | Out-Null
-$destFile = Join-Path -Path $appDir -ChildPath $BlobName
-$WebClient = New-Object System.Net.WebClient
-$WebClient.Headers.Add('x-ms-version', '2017-11-09')
-$webClient.Headers.Add("Authorization", "Bearer $AccessToken")
-$webClient.DownloadFile("$StorageEndpoint$ContainerName/$BlobName", "$destFile")
-Start-Sleep -seconds 10
-If (!(Test-Path -Path $DestFile)) { Write-Error "Failed to download $BlobName"; Exit 1 }
+$SourceFileName = ($Uri -Split "/")[-1]
+$DestFile = Join-Path -Path $appDir -ChildPath $SourceFileName
+Write-OutputWithTimeStamp "Downloading '$Uri' to '$DestFile'."
+$webClient.DownloadFile("$Uri", "$DestFile")
+Start-Sleep -Seconds 5
+If (!(Test-Path -Path $DestFile)) { Write-Error "Failed to download $SourceFileName"; Exit 1 }
 Expand-Archive -Path $destFile -DestinationPath $appDir -Force
 $WebView2File = (Get-ChildItem -Path $appDir -filter 'webview*.exe' -Recurse).FullName
 $vcRedistFile = (Get-ChildItem -Path $appDir -filter 'vc*.exe' -Recurse).FullName
@@ -95,9 +101,9 @@ Switch ($TeamsCloudType) {
 }
 If ($CloudType) {
     $null = Start-Process -FilePath reg.exe -ArgumentList "LOAD HKLM\Default $env:SystemDrive\Users\Default\ntuser.dat" -Wait
-    $Result = Start-Process -FilePath reg.exe -ArgumentList "ADD HKLM\Default\SOFTWARE\Microsoft\Office\16.0\Teams /n CloudType /t REG_DWORD /v $CloudType /f" -Wait -PassThru
-    $Result.Handle.Close()
-    [gc]::Collect()
+    $null = Start-Process -FilePath reg.exe -ArgumentList "ADD HKLM\Default\SOFTWARE\Microsoft\Office\16.0\Teams /n CloudType /t REG_DWORD /v $CloudType /f" -Wait -PassThru
+    Start-Sleep -Seconds 5
+    [System.GC]::Collect()
     $null = Start-Process -FilePath reg.exe -ArgumentList "UNLOAD HKLM\Default" -Wait -PassThru
 }
 Write-OutputWithTimeStamp "Completed Installation of all components."

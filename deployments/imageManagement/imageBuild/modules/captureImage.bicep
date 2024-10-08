@@ -32,7 +32,7 @@ module managedImage '../../../sharedModules/resources/compute/image/main.bicep' 
     location: location
     name: 'img-${last(split(virtualMachineResourceId, '/'))}'
     sourceVirtualMachineResourceId: virtualMachineResourceId
-    tags: contains(tags, 'Microsoft.Compute/images') ? tags['Microsoft.Compute/images'] : {}
+    tags: tags[?'Microsoft.Compute/images'] ?? {}
   }
 }
 
@@ -50,7 +50,7 @@ module imageVersion '../../../sharedModules/resources/compute/gallery/image/vers
     storageAccountType: imageVersionDefaultStorageAccountType
     sourceId: contains(imageDefinitionSecurityType, 'Supported') ? managedImage.outputs.resourceId : virtualMachineResourceId
     targetRegions: imageVersionReplicationRegions
-    tags: contains(tags, 'Microsoft.Compute/galleries/images/versions') ? tags['Microsoft.Compute/galleries/images/versions'] : {}
+    tags: tags[?'Microsoft.Compute/galleries/images/versions'] ?? {}
   }
 }
 

@@ -1,5 +1,5 @@
 DownloadUrl = https://aka.ms/msrdcwebrtcsvc/msi
-Download File = RW1jLHP
+Download File = RW1o9wm
 
 File                   : {Websocket.msi}
 UpgradeCode            : {66722E7E-5DF5-4C1D-841C-1BD9C36830CC}
@@ -8,10 +8,10 @@ ALLUSERS               : 1
 ARPNOMODIFY            : 1
 QtExecCmdLine          : "[SystemFolder]taskkill.exe" /F /T /IM Teams.exe /IM ms-teams.exe
 Manufacturer           : Microsoft Corporation
-ProductCode            : {97631453-DD6D-4789-9C86-76E59923F161}
+ProductCode            : {2270A09C-AF5A-4F19-BAF2-4DDC70C80F7B}
 ProductLanguage        : 1033
 ProductName            : Remote Desktop WebRTC Redirector Service
-ProductVersion         : 1.50.2402.29001
+ProductVersion         : 1.54.2408.19001
 DefaultUIFont          : WixUI_Font_Normal
 WixUI_Mode             : Minimal
 ErrorDialog            : ErrorDlg

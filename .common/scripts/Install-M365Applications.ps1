@@ -1,5 +1,6 @@
 param(
     [string]$APIVersion,
+    [string]$BlobStorageSuffix,
     [string]$BuildDir,
     [string]$Environment,
     [string]$InstallAccess,
@@ -12,11 +13,10 @@ param(
     [string]$InstallWord,
     [string]$InstallOneNote,
     [string]$InstallPowerPoint,
-    [string]$UserAssignedIdentityClientId,
-    [string]$ContainerName,
-    [string]$StorageEndpoint,
-    [string]$BlobName
+    [string]$Uri,
+    [string]$UserAssignedIdentityClientId
 )
+$ErrorActionPreference = "Stop"
 
 function Write-OutputWithTimeStamp {
     param(
@@ -24,29 +24,35 @@ function Write-OutputWithTimeStamp {
         [string]$Message
     )    
     $Timestamp = Get-Date -Format 'MM/dd/yyyy HH:mm:ss.ff'
-    $Entry = '[' + $Timestamp + ']' + $Message
+    $Entry = '[' + $Timestamp + '] ' + $Message
     Write-Output $Entry
 }
 
-$ErrorActionPreference = "Stop"
+If (!(Test-Path -Path "$env:SystemRoot\Logs\ImageBuild")) { New-Item -Path "$env:SystemRoot\Logs\ImageBuild" -ItemType Directory -Force | Out-Null }
 $SoftwareName = 'Microsoft-365-Applications'
 Start-Transcript -Path "$env:SystemRoot\Logs\ImageBuild\$SoftwareName.log" -Force
 Write-OutputWithTimeStamp "Starting Script to install '$SoftwareName' with the following parameters:"
-Write-Output $PSBoundParameters
-$TokenUri = "http://169.254.169.254/metadata/identity/oauth2/token?api-version=$APIVersion&resource=$StorageEndpoint&client_id=$UserAssignedIdentityClientId"
-$AccessToken = ((Invoke-WebRequest -Headers @{Metadata = $true } -Uri $TokenUri -UseBasicParsing).Content | ConvertFrom-Json).access_token
+Write-Output ( $PSBoundParameters | Format-Table -AutoSize )
+$WebClient = New-Object System.Net.WebClient
+If ($Uri -match $BlobStorageSuffix -and $UserAssignedIdentityClientId -ne '') {
+    $StorageEndpoint = ($Uri -split "://")[0] + "://" + ($Uri -split "/")[2] + "/"
+    $TokenUri = "http://169.254.169.254/metadata/identity/oauth2/token?api-version=$APIVersion&resource=$StorageEndpoint&client_id=$UserAssignedIdentityClientId"
+    $AccessToken = ((Invoke-WebRequest -Headers @{Metadata = $true } -Uri $TokenUri -UseBasicParsing).Content | ConvertFrom-Json).access_token
+    $WebClient.Headers.Add('x-ms-version', '2017-11-09')
+    $webClient.Headers.Add("Authorization", "Bearer $AccessToken")
+}
 $sku = (Get-ComputerInfo).OsName
 $appDir = Join-Path -Path $BuildDir -ChildPath $SoftwareName
 New-Item -Path $appDir -ItemType Directory -Force | Out-Null  
-$DestFile = Join-Path -Path $appDir -ChildPath $BlobName
-$WebClient = New-Object System.Net.WebClient
-$WebClient.Headers.Add('x-ms-version', '2017-11-09')
-$webClient.Headers.Add("Authorization", "Bearer $AccessToken")
-$webClient.DownloadFile("$StorageEndpoint$ContainerName/$BlobName", "$DestFile")
-Start-Sleep -seconds 5
-If (!(Test-Path -Path $DestFile)) { Write-Error "Failed to download $BlobName"; Exit 1 }
+$SourceFileName = ($Uri -Split "/")[-1]
+$DestFile = Join-Path -Path $appDir -ChildPath $SourceFileName
+Write-OutputWithTimeStamp "Downloading '$Uri' to '$DestFile'."
+$webClient.DownloadFile("$Uri", "$DestFile")
+Start-Sleep -Seconds 5
+If (!(Test-Path -Path $DestFile)) { Write-Error "Failed to download $SourceFileName"; Exit 1 }
+Write-OutputWithTimeStamp "Finished downloading"
+Write-OutputWithTimeStamp "Extracting the Office 365 Deployment Toolkit."
 Start-Process -FilePath $destFile -ArgumentList "/extract:`"$appDir\ODT`" /quiet /passive /norestart" -Wait -PassThru | Out-Null
-Write-OutputWithTimeStamp "Downloaded & extracted the Office 365 Deployment Toolkit"
 $Setup = (Get-ChildItem -Path "$appDir\ODT" -Filter '*setup*.exe').FullName
 Write-OutputWithTimeStamp "Found Office Deployment Tool Setup Executable - '$Setup'."
 Write-OutputWithTimeStamp "Dynamically creating $SoftwareName configuration file for setup."

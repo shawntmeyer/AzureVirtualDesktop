@@ -1,5 +1,6 @@
 targetScope = 'subscription' 
 
+param deleteManagementResourceGroup bool
 param location string
 param resourceGroupHosts string
 param resourceGroupManagement string
@@ -26,7 +27,7 @@ module removeRunCommands 'modules/removeRunCommands.bicep' = {
 // Remove role assignments for the user Assigned Identity for resource groups other than the management resource group to allow the deletion of the user assigned identity in certain scenarios.
 module removeRoleAssignments 'modules/removeRoleAssignments.bicep' = {
   scope: resourceGroup(resourceGroupManagement)
-  name: 'RemoveRoleAssignments_${timeStamp}'
+  name: 'Remove-Role-Assignments_${timeStamp}'
   params: {
     location: location
     managementVmName: managementVirtualMachineName
@@ -39,9 +40,9 @@ module removeRoleAssignments 'modules/removeRoleAssignments.bicep' = {
   ]
 }
 
-module removeManagementVirtualMachine 'modules/removeVirtualMachine.bicep' = {
+module removeManagementVirtualMachine 'modules/removeVirtualMachine.bicep' = if(!deleteManagementResourceGroup) {
   scope: resourceGroup(resourceGroupManagement)
-  name: 'RemoveManagementVirtualMachine_${timeStamp}'
+  name: 'Remove-Management-VirtualMachine_${timeStamp}'
   params: {
     location: location
     managementVmName: managementVirtualMachineName
@@ -53,3 +54,19 @@ module removeManagementVirtualMachine 'modules/removeVirtualMachine.bicep' = {
     removeRoleAssignments
   ]
 }
+
+module removeManagementResourceGroup 'modules/removeManagementResourceGroup.bicep' = if(deleteManagementResourceGroup) {
+  scope: resourceGroup(resourceGroupManagement)
+  name: 'Remove-Management-ResourceGroup_${timeStamp}'
+  params: {
+    location: location
+    managementVmName: managementVirtualMachineName
+    timeStamp: timeStamp
+    userAssignedIdentityClientId: userAssignedIdentityClientId
+  }
+  dependsOn: [
+    removeRunCommands
+    removeRoleAssignments
+  ]
+}
+

@@ -414,20 +414,27 @@ try {
                     Set-ADComputer -Credential $DomainCredential -Identity $DistinguishedName -KerberosEncryptionType 'AES256' | Out-Null
                     
                     # Reset the Kerberos key on the Storage Account
-                    Write-Log -message "Resetting the Kerberos key on the Storage Account"
+                    Write-Log -message "Resetting the kerb1 key on the Storage Account"
                     $null = Invoke-RestMethod `
                             -Body (@{keyName = 'kerb1' } | ConvertTo-Json) `
                             -Headers $AzureManagementHeader `
                             -Method 'POST' `
                             -Uri $($ResourceManagerUriFixed + '/subscriptions/' + $SubscriptionId + '/resourceGroups/' + $StorageAccountResourceGroupName + '/providers/Microsoft.Storage/storageAccounts/' + $StorageAccountName + '/regenerateKey?api-version=2023-05-01')
                     
+                    Write-Log -message "Resetting the kerb2 key on the Storage Account"
+                    $null = Invoke-RestMethod `
+                            -Body (@{keyName = 'kerb2' } | ConvertTo-Json) `
+                            -Headers $AzureManagementHeader `
+                            -Method 'POST' `
+                            -Uri $($ResourceManagerUriFixed + '/subscriptions/' + $SubscriptionId + '/resourceGroups/' + $StorageAccountResourceGroupName + '/providers/Microsoft.Storage/storageAccounts/' + $StorageAccountName + '/regenerateKey?api-version=2023-05-01')
+
                     $Key = ((Invoke-RestMethod `
                                 -Headers $AzureManagementHeader `
                                 -Method 'POST' `
                                 -Uri $($ResourceManagerUriFixed + '/subscriptions/' + $SubscriptionId + '/resourceGroups/' + $StorageAccountResourceGroupName + '/providers/Microsoft.Storage/storageAccounts/' + $StorageAccountName + '/listKeys?api-version=2023-05-01&$expand=kerb')).keys | Where-Object { $_.Keyname -contains 'kerb1' }).Value
                 
                     # Update the password on the computer object with the new Kerberos key on the Storage Account
-                    Write-Log -message "Updating the password on the computer object with the new Kerberos key on the Storage Account"
+                    Write-Log -message "Updating the password on the computer object with the new Kerberos key (kerb1) on the Storage Account"
                     $NewPassword = ConvertTo-SecureString -String $Key -AsPlainText -Force
                     Set-ADAccountPassword -Credential $DomainCredential -Identity $DistinguishedName -Reset -NewPassword $NewPassword | Out-Null
                 }
