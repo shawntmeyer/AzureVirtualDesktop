@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.30.23.60470",
-      "templateHash": "16545791454041793839"
+      "templateHash": "6261990517530029580"
     },
     "name": "Zero Trust Architecture Custom Windows Image Builder",
     "description": "This solution allows you to create a custom image much like Azure VM Image Builder, but utilizes zero trust architecture and does not require that service.",
@@ -881,7 +881,8 @@
       }
     },
     "$fxv#1": {
-      "automationAccounts": "aa",
+      "applicationInsights": "appi",
+      "appServicePlans": "asp",
       "availabilitySets": "as",
       "computeGalleries": "gal",
       "dataCollectionEndpoints": "dce",
@@ -891,6 +892,7 @@
       "remoteApplicationGroups": "vdrag",
       "disks": "disk",
       "diskEncryptionSets": "des",
+      "functionApps": "fa",
       "hostPools": "vdpool",
       "keyVaults": "kv",
       "logAnalyticsWorkspaces": "law",
@@ -898,6 +900,7 @@
       "netAppCapacityPools": "nacp",
       "networkInterfaces": "nic",
       "privateEndpoints": "pe",
+      "privateLinkScopes": "pls",
       "recoveryServicesVaults": "rsv",
       "resourceGroups": "rg",
       "scalingPlans": "vdscaling",
@@ -1572,7 +1575,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.30.23.60470",
-              "templateHash": "7703867069704838513"
+              "templateHash": "12979186646517347840"
             },
             "name": "Storage Accounts",
             "description": "This module deploys a Storage Account.",
@@ -1825,32 +1828,11 @@
                 "description": "Optional. If true, enables NFS 3.0 support for the storage account. Requires enableHierarchicalNamespace to be true."
               }
             },
-            "diagnosticStorageAccountId": {
-              "type": "string",
-              "defaultValue": "",
-              "metadata": {
-                "description": "Optional. Resource ID of the diagnostic storage account."
-              }
-            },
             "diagnosticWorkspaceId": {
               "type": "string",
               "defaultValue": "",
               "metadata": {
                 "description": "Optional. Resource ID of the diagnostic log analytics workspace."
-              }
-            },
-            "diagnosticEventHubAuthorizationRuleId": {
-              "type": "string",
-              "defaultValue": "",
-              "metadata": {
-                "description": "Optional. Resource ID of the diagnostic event hub authorization rule for the Event Hubs namespace in which the event hub should be created or streamed to."
-              }
-            },
-            "diagnosticEventHubName": {
-              "type": "string",
-              "defaultValue": "",
-              "metadata": {
-                "description": "Optional. Name of the diagnostic event hub within the namespace to which logs are streamed. Without this, an event hub is created for each log category."
               }
             },
             "tags": {
@@ -2010,23 +1992,20 @@
                 "isNfsV3Enabled": "[if(parameters('enableNfsV3'), parameters('enableNfsV3'), '')]",
                 "largeFileSharesState": "[if(or(equals(parameters('skuName'), 'Standard_LRS'), equals(parameters('skuName'), 'Standard_ZRS')), parameters('largeFileSharesState'), null())]",
                 "minimumTlsVersion": "[parameters('minimumTlsVersion')]",
-                "networkAcls": "[if(not(empty(parameters('networkAcls'))), createObject('bypass', if(contains(parameters('networkAcls'), 'bypass'), parameters('networkAcls').bypass, null()), 'defaultAction', if(contains(parameters('networkAcls'), 'defaultAction'), parameters('networkAcls').defaultAction, null()), 'virtualNetworkRules', if(contains(parameters('networkAcls'), 'virtualNetworkRules'), parameters('networkAcls').virtualNetworkRules, createArray()), 'ipRules', if(contains(parameters('networkAcls'), 'ipRules'), parameters('networkAcls').ipRules, createArray())), null())]",
+                "networkAcls": "[if(not(empty(parameters('networkAcls'))), createObject('bypass', coalesce(tryGet(parameters('networkAcls'), 'bypass'), null()), 'defaultAction', coalesce(tryGet(parameters('networkAcls'), 'defaultAction'), null()), 'virtualNetworkRules', coalesce(tryGet(parameters('networkAcls'), 'virtualNetworkRules'), createArray()), 'ipRules', coalesce(tryGet(parameters('networkAcls'), 'ipRules'), createArray())), null())]",
                 "allowBlobPublicAccess": "[parameters('allowBlobPublicAccess')]",
                 "publicNetworkAccess": "[if(not(empty(parameters('publicNetworkAccess'))), parameters('publicNetworkAccess'), if(and(not(empty(parameters('privateEndpoints'))), empty(parameters('networkAcls'))), 'Disabled', null()))]",
                 "azureFilesIdentityBasedAuthentication": "[if(not(empty(parameters('azureFilesIdentityBasedAuthentication'))), parameters('azureFilesIdentityBasedAuthentication'), null())]"
               }
             },
             {
-              "condition": "[or(or(or(not(empty(parameters('diagnosticStorageAccountId'))), not(empty(parameters('diagnosticWorkspaceId')))), not(empty(parameters('diagnosticEventHubAuthorizationRuleId')))), not(empty(parameters('diagnosticEventHubName'))))]",
+              "condition": "[not(empty(parameters('diagnosticWorkspaceId')))]",
               "type": "Microsoft.Insights/diagnosticSettings",
               "apiVersion": "2021-05-01-preview",
               "scope": "[format('Microsoft.Storage/storageAccounts/{0}', parameters('name'))]",
               "name": "[if(not(empty(parameters('diagnosticSettingsName'))), parameters('diagnosticSettingsName'), format('{0}-diagnosticSettings', parameters('name')))]",
               "properties": {
-                "storageAccountId": "[if(not(empty(parameters('diagnosticStorageAccountId'))), parameters('diagnosticStorageAccountId'), null())]",
                 "workspaceId": "[if(not(empty(parameters('diagnosticWorkspaceId'))), parameters('diagnosticWorkspaceId'), null())]",
-                "eventHubAuthorizationRuleId": "[if(not(empty(parameters('diagnosticEventHubAuthorizationRuleId'))), parameters('diagnosticEventHubAuthorizationRuleId'), null())]",
-                "eventHubName": "[if(not(empty(parameters('diagnosticEventHubName'))), parameters('diagnosticEventHubName'), null())]",
                 "metrics": "[variables('diagnosticsMetrics')]"
               },
               "dependsOn": [
@@ -2040,7 +2019,7 @@
               },
               "type": "Microsoft.Resources/deployments",
               "apiVersion": "2022-09-01",
-              "name": "[format('{0}-StorageAccount-PrivateEndpoint-{1}', uniqueString(deployment().name, parameters('location')), copyIndex())]",
+              "name": "[format('StorageAccount-PrivateEndpoint-{0}-{1}', copyIndex(), uniqueString(deployment().name, parameters('location')))]",
               "properties": {
                 "expressionEvaluationOptions": {
                   "scope": "inner"
@@ -2052,21 +2031,39 @@
                       "[parameters('privateEndpoints')[copyIndex()].service]"
                     ]
                   },
-                  "name": "[if(contains(parameters('privateEndpoints')[copyIndex()], 'name'), createObject('value', parameters('privateEndpoints')[copyIndex()].name), createObject('value', format('pe-{0}-{1}-{2}', last(split(resourceId('Microsoft.Storage/storageAccounts', parameters('name')), '/')), parameters('privateEndpoints')[copyIndex()].service, copyIndex())))]",
+                  "name": {
+                    "value": "[coalesce(tryGet(parameters('privateEndpoints')[copyIndex()], 'name'), format('pe-{0}-{1}-{2}', last(split(resourceId('Microsoft.Storage/storageAccounts', parameters('name')), '/')), parameters('privateEndpoints')[copyIndex()].service, copyIndex()))]"
+                  },
                   "serviceResourceId": {
                     "value": "[resourceId('Microsoft.Storage/storageAccounts', parameters('name'))]"
                   },
                   "subnetResourceId": {
                     "value": "[parameters('privateEndpoints')[copyIndex()].subnetResourceId]"
                   },
-                  "location": "[if(contains(parameters('privateEndpoints')[copyIndex()], 'location'), createObject('value', parameters('privateEndpoints')[copyIndex()].location), createObject('value', reference(split(parameters('privateEndpoints')[copyIndex()].subnetResourceId, '/subnets/')[0], '2020-06-01', 'Full').location))]",
-                  "privateDnsZoneGroup": "[if(contains(parameters('privateEndpoints')[copyIndex()], 'privateDnsZoneGroup'), createObject('value', parameters('privateEndpoints')[copyIndex()].privateDnsZoneGroup), createObject('value', createObject()))]",
-                  "tags": "[if(contains(parameters('privateEndpoints')[copyIndex()], 'tags'), createObject('value', parameters('privateEndpoints')[copyIndex()].tags), createObject('value', createObject()))]",
-                  "manualPrivateLinkServiceConnections": "[if(contains(parameters('privateEndpoints')[copyIndex()], 'manualPrivateLinkServiceConnections'), createObject('value', parameters('privateEndpoints')[copyIndex()].manualPrivateLinkServiceConnections), createObject('value', createArray()))]",
-                  "customDnsConfigs": "[if(contains(parameters('privateEndpoints')[copyIndex()], 'customDnsConfigs'), createObject('value', parameters('privateEndpoints')[copyIndex()].customDnsConfigs), createObject('value', createArray()))]",
-                  "ipConfigurations": "[if(contains(parameters('privateEndpoints')[copyIndex()], 'ipConfigurations'), createObject('value', parameters('privateEndpoints')[copyIndex()].ipConfigurations), createObject('value', createArray()))]",
-                  "applicationSecurityGroups": "[if(contains(parameters('privateEndpoints')[copyIndex()], 'applicationSecurityGroups'), createObject('value', parameters('privateEndpoints')[copyIndex()].applicationSecurityGroups), createObject('value', createArray()))]",
-                  "customNetworkInterfaceName": "[if(contains(parameters('privateEndpoints')[copyIndex()], 'customNetworkInterfaceName'), createObject('value', parameters('privateEndpoints')[copyIndex()].customNetworkInterfaceName), createObject('value', ''))]"
+                  "location": {
+                    "value": "[coalesce(tryGet(parameters('privateEndpoints')[copyIndex()], 'location'), reference(split(parameters('privateEndpoints')[copyIndex()].subnetResourceId, '/subnets/')[0], '2020-06-01', 'Full').location)]"
+                  },
+                  "privateDnsZoneGroup": {
+                    "value": "[coalesce(tryGet(parameters('privateEndpoints')[copyIndex()], 'privateDnsZoneGroup'), createObject())]"
+                  },
+                  "tags": {
+                    "value": "[coalesce(tryGet(parameters('privateEndpoints')[copyIndex()], 'tags'), createObject())]"
+                  },
+                  "manualPrivateLinkServiceConnections": {
+                    "value": "[coalesce(tryGet(parameters('privateEndpoints')[copyIndex()], 'manualPrivateLinkServiceConnections'), createArray())]"
+                  },
+                  "customDnsConfigs": {
+                    "value": "[coalesce(tryGet(parameters('privateEndpoints')[copyIndex()], 'customDnsConfigs'), createArray())]"
+                  },
+                  "ipConfigurations": {
+                    "value": "[coalesce(tryGet(parameters('privateEndpoints')[copyIndex()], 'ipConfigurations'), createArray())]"
+                  },
+                  "applicationSecurityGroups": {
+                    "value": "[coalesce(tryGet(parameters('privateEndpoints')[copyIndex()], 'applicationSecurityGroups'), createArray())]"
+                  },
+                  "customNetworkInterfaceName": {
+                    "value": "[coalesce(tryGet(parameters('privateEndpoints')[copyIndex()], 'customNetworkInterfaceName'), '')]"
+                  }
                 },
                 "template": {
                   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -2075,7 +2072,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.30.23.60470",
-                      "templateHash": "1823679347855159353"
+                      "templateHash": "14292475909061979612"
                     },
                     "name": "Private Endpoints"
                   },
@@ -2192,7 +2189,7 @@
                       "condition": "[not(empty(parameters('privateDnsZoneGroup')))]",
                       "type": "Microsoft.Resources/deployments",
                       "apiVersion": "2022-09-01",
-                      "name": "[format('{0}-PE-PrivateDnsZoneGroup', uniqueString(deployment().name))]",
+                      "name": "[format('PE-PrivateDnsZoneGroup-{0}', uniqueString(deployment().name))]",
                       "properties": {
                         "expressionEvaluationOptions": {
                           "scope": "inner"
@@ -2336,7 +2333,7 @@
               "condition": "[not(empty(parameters('managementPolicyRules')))]",
               "type": "Microsoft.Resources/deployments",
               "apiVersion": "2022-09-01",
-              "name": "[format('{0}-Storage-ManagementPolicies', uniqueString(deployment().name, parameters('location')))]",
+              "name": "[format('Storage-ManagementPolicies-{0}', uniqueString(deployment().name, parameters('location')))]",
               "properties": {
                 "expressionEvaluationOptions": {
                   "scope": "inner"
@@ -2418,7 +2415,7 @@
               },
               "dependsOn": [
                 "[resourceId('Microsoft.Storage/storageAccounts', parameters('name'))]",
-                "[resourceId('Microsoft.Resources/deployments', format('{0}-Storage-BlobServices', uniqueString(deployment().name, parameters('location'))))]"
+                "[resourceId('Microsoft.Resources/deployments', format('Storage-BlobServices-{0}', uniqueString(deployment().name, parameters('location'))))]"
               ]
             },
             {
@@ -2428,7 +2425,7 @@
               },
               "type": "Microsoft.Resources/deployments",
               "apiVersion": "2022-09-01",
-              "name": "[format('{0}-Storage-LocalUsers-{1}', uniqueString(deployment().name, parameters('location')), copyIndex())]",
+              "name": "[format('Storage-LocalUsers-{0}-{1}', copyIndex(), uniqueString(deployment().name, parameters('location')))]",
               "properties": {
                 "expressionEvaluationOptions": {
                   "scope": "inner"
@@ -2450,9 +2447,15 @@
                   "permissionScopes": {
                     "value": "[parameters('localUsers')[copyIndex()].permissionScopes]"
                   },
-                  "hasSharedKey": "[if(contains(parameters('localUsers')[copyIndex()], 'hasSharedKey'), createObject('value', parameters('localUsers')[copyIndex()].hasSharedKey), createObject('value', false()))]",
-                  "homeDirectory": "[if(contains(parameters('localUsers')[copyIndex()], 'homeDirectory'), createObject('value', parameters('localUsers')[copyIndex()].homeDirectory), createObject('value', ''))]",
-                  "sshAuthorizedKeys": "[if(contains(parameters('localUsers')[copyIndex()], 'sshAuthorizedKeys'), createObject('value', parameters('localUsers')[copyIndex()].sshAuthorizedKeys), createObject('value', createArray()))]"
+                  "hasSharedKey": {
+                    "value": "[coalesce(tryGet(parameters('localUsers')[copyIndex()], 'hasSharedKey'), false())]"
+                  },
+                  "homeDirectory": {
+                    "value": "[coalesce(tryGet(parameters('localUsers')[copyIndex()], 'homeDirectory'), '')]"
+                  },
+                  "sshAuthorizedKeys": {
+                    "value": "[coalesce(tryGet(parameters('localUsers')[copyIndex()], 'sshAuthorizedKeys'), createArray())]"
+                  }
                 },
                 "template": {
                   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -2569,7 +2572,7 @@
               "condition": "[not(empty(parameters('blobServices')))]",
               "type": "Microsoft.Resources/deployments",
               "apiVersion": "2022-09-01",
-              "name": "[format('{0}-Storage-BlobServices', uniqueString(deployment().name, parameters('location')))]",
+              "name": "[format('Storage-BlobServices-{0}', uniqueString(deployment().name, parameters('location')))]",
               "properties": {
                 "expressionEvaluationOptions": {
                   "scope": "inner"
@@ -2579,28 +2582,72 @@
                   "storageAccountName": {
                     "value": "[parameters('name')]"
                   },
-                  "containers": "[if(contains(parameters('blobServices'), 'containers'), createObject('value', parameters('blobServices').containers), createObject('value', createArray()))]",
-                  "automaticSnapshotPolicyEnabled": "[if(contains(parameters('blobServices'), 'automaticSnapshotPolicyEnabled'), createObject('value', parameters('blobServices').automaticSnapshotPolicyEnabled), createObject('value', false()))]",
-                  "changeFeedEnabled": "[if(contains(parameters('blobServices'), 'changeFeedEnabled'), createObject('value', parameters('blobServices').changeFeedEnabled), createObject('value', false()))]",
-                  "changeFeedRetentionInDays": "[if(contains(parameters('blobServices'), 'changeFeedRetentionInDays'), createObject('value', parameters('blobServices').changeFeedRetentionInDays), createObject('value', 7))]",
-                  "containerDeleteRetentionPolicyEnabled": "[if(contains(parameters('blobServices'), 'containerDeleteRetentionPolicyEnabled'), createObject('value', parameters('blobServices').containerDeleteRetentionPolicyEnabled), createObject('value', false()))]",
-                  "containerDeleteRetentionPolicyDays": "[if(contains(parameters('blobServices'), 'containerDeleteRetentionPolicyDays'), createObject('value', parameters('blobServices').containerDeleteRetentionPolicyDays), createObject('value', 7))]",
-                  "containerDeleteRetentionPolicyAllowPermanentDelete": "[if(contains(parameters('blobServices'), 'containerDeleteRetentionPolicyAllowPermanentDelete'), createObject('value', parameters('blobServices').containerDeleteRetentionPolicyAllowPermanentDelete), createObject('value', false()))]",
-                  "corsRules": "[if(contains(parameters('blobServices'), 'corsRules'), createObject('value', parameters('blobServices').corsRules), createObject('value', createArray()))]",
-                  "defaultServiceVersion": "[if(contains(parameters('blobServices'), 'defaultServiceVersion'), createObject('value', parameters('blobServices').defaultServiceVersion), createObject('value', ''))]",
-                  "deleteRetentionPolicyAllowPermanentDelete": "[if(contains(parameters('blobServices'), 'deleteRetentionPolicyAllowPermanentDelete'), createObject('value', parameters('blobServices').deleteRetentionPolicyAllowPermanentDelete), createObject('value', false()))]",
-                  "deleteRetentionPolicyEnabled": "[if(contains(parameters('blobServices'), 'deleteRetentionPolicyEnabled'), createObject('value', parameters('blobServices').deleteRetentionPolicyEnabled), createObject('value', false()))]",
-                  "deleteRetentionPolicyDays": "[if(contains(parameters('blobServices'), 'deleteRetentionPolicyDays'), createObject('value', parameters('blobServices').deleteRetentionPolicyDays), createObject('value', 7))]",
-                  "isVersioningEnabled": "[if(contains(parameters('blobServices'), 'isVersioningEnabled'), createObject('value', parameters('blobServices').isVersioningEnabled), createObject('value', false()))]",
-                  "lastAccessTimeTrackingPolicyEnabled": "[if(contains(parameters('blobServices'), 'lastAccessTimeTrackingPolicyEnabled'), createObject('value', parameters('blobServices').lastAccessTimeTrackingPolicyEnabled), createObject('value', false()))]",
-                  "restorePolicyEnabled": "[if(contains(parameters('blobServices'), 'restorePolicyEnabled'), createObject('value', parameters('blobServices').restorePolicyEnabled), createObject('value', false()))]",
-                  "restorePolicyDays": "[if(contains(parameters('blobServices'), 'restorePolicyDays'), createObject('value', parameters('blobServices').restorePolicyDays), createObject('value', 6))]",
-                  "diagnosticStorageAccountId": "[if(contains(parameters('blobServices'), 'diagnosticStorageAccountId'), createObject('value', parameters('blobServices').diagnosticStorageAccountId), createObject('value', ''))]",
-                  "diagnosticEventHubAuthorizationRuleId": "[if(contains(parameters('blobServices'), 'diagnosticEventHubAuthorizationRuleId'), createObject('value', parameters('blobServices').diagnosticEventHubAuthorizationRuleId), createObject('value', ''))]",
-                  "diagnosticEventHubName": "[if(contains(parameters('blobServices'), 'diagnosticEventHubName'), createObject('value', parameters('blobServices').diagnosticEventHubName), createObject('value', ''))]",
-                  "diagnosticLogCategoriesToEnable": "[if(contains(parameters('blobServices'), 'diagnosticLogCategoriesToEnable'), createObject('value', parameters('blobServices').diagnosticLogCategoriesToEnable), createObject('value', createArray()))]",
-                  "diagnosticMetricsToEnable": "[if(contains(parameters('blobServices'), 'diagnosticMetricsToEnable'), createObject('value', parameters('blobServices').diagnosticMetricsToEnable), createObject('value', createArray()))]",
-                  "diagnosticWorkspaceId": "[if(contains(parameters('blobServices'), 'diagnosticWorkspaceId'), createObject('value', parameters('blobServices').diagnosticWorkspaceId), createObject('value', ''))]"
+                  "containers": {
+                    "value": "[coalesce(tryGet(parameters('blobServices'), 'containers'), createArray())]"
+                  },
+                  "automaticSnapshotPolicyEnabled": {
+                    "value": "[coalesce(tryGet(parameters('blobServices'), 'automaticSnapshotPolicyEnabled'), false())]"
+                  },
+                  "changeFeedEnabled": {
+                    "value": "[coalesce(tryGet(parameters('blobServices'), 'changeFeedEnabled'), false())]"
+                  },
+                  "changeFeedRetentionInDays": {
+                    "value": "[coalesce(tryGet(parameters('blobServices'), 'changeFeedRetentionInDays'), 7)]"
+                  },
+                  "containerDeleteRetentionPolicyEnabled": {
+                    "value": "[coalesce(tryGet(parameters('blobServices'), 'containerDeleteRetentionPolicyEnabled'), false())]"
+                  },
+                  "containerDeleteRetentionPolicyDays": {
+                    "value": "[coalesce(tryGet(parameters('blobServices'), 'containerDeleteRetentionPolicyDays'), 7)]"
+                  },
+                  "containerDeleteRetentionPolicyAllowPermanentDelete": {
+                    "value": "[coalesce(tryGet(parameters('blobServices'), 'containerDeleteRetentionPolicyAllowPermanentDelete'), false())]"
+                  },
+                  "corsRules": {
+                    "value": "[coalesce(tryGet(parameters('blobServices'), 'corsRules'), createArray())]"
+                  },
+                  "defaultServiceVersion": {
+                    "value": "[coalesce(tryGet(parameters('blobServices'), 'defaultServiceVersion'), '')]"
+                  },
+                  "deleteRetentionPolicyAllowPermanentDelete": {
+                    "value": "[coalesce(tryGet(parameters('blobServices'), 'deleteRetentionPolicyAllowPermanentDelete'), false())]"
+                  },
+                  "deleteRetentionPolicyEnabled": {
+                    "value": "[coalesce(tryGet(parameters('blobServices'), 'deleteRetentionPolicyEnabled'), false())]"
+                  },
+                  "deleteRetentionPolicyDays": {
+                    "value": "[coalesce(tryGet(parameters('blobServices'), 'deleteRetentionPolicyDays'), 7)]"
+                  },
+                  "isVersioningEnabled": {
+                    "value": "[coalesce(tryGet(parameters('blobServices'), 'isVersioningEnabled'), false())]"
+                  },
+                  "lastAccessTimeTrackingPolicyEnabled": {
+                    "value": "[coalesce(tryGet(parameters('blobServices'), 'lastAccessTimeTrackingPolicyEnabled'), false())]"
+                  },
+                  "restorePolicyEnabled": {
+                    "value": "[coalesce(tryGet(parameters('blobServices'), 'restorePolicyEnabled'), false())]"
+                  },
+                  "restorePolicyDays": {
+                    "value": "[coalesce(tryGet(parameters('blobServices'), 'restorePolicyDays'), 6)]"
+                  },
+                  "diagnosticStorageAccountId": {
+                    "value": "[coalesce(tryGet(parameters('blobServices'), 'diagnosticStorageAccountId'), '')]"
+                  },
+                  "diagnosticEventHubAuthorizationRuleId": {
+                    "value": "[coalesce(tryGet(parameters('blobServices'), 'diagnosticEventHubAuthorizationRuleId'), '')]"
+                  },
+                  "diagnosticEventHubName": {
+                    "value": "[coalesce(tryGet(parameters('blobServices'), 'diagnosticEventHubName'), '')]"
+                  },
+                  "diagnosticLogCategoriesToEnable": {
+                    "value": "[coalesce(tryGet(parameters('blobServices'), 'diagnosticLogCategoriesToEnable'), createArray())]"
+                  },
+                  "diagnosticMetricsToEnable": {
+                    "value": "[coalesce(tryGet(parameters('blobServices'), 'diagnosticMetricsToEnable'), createArray())]"
+                  },
+                  "diagnosticWorkspaceId": {
+                    "value": "[coalesce(tryGet(parameters('blobServices'), 'diagnosticWorkspaceId'), '')]"
+                  }
                 },
                 "template": {
                   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -2610,7 +2657,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.30.23.60470",
-                      "templateHash": "17009723715614998783"
+                      "templateHash": "4698935663318552914"
                     },
                     "name": "Storage Account blob Services",
                     "description": "This module deploys a Storage Account Blob Service.",
@@ -2898,7 +2945,7 @@
                       },
                       "type": "Microsoft.Resources/deployments",
                       "apiVersion": "2022-09-01",
-                      "name": "[format('{0}-Container-{1}', deployment().name, copyIndex())]",
+                      "name": "[format('Container-{0}-{1}', copyIndex(), deployment().name)]",
                       "properties": {
                         "expressionEvaluationOptions": {
                           "scope": "inner"
@@ -2911,14 +2958,30 @@
                           "name": {
                             "value": "[parameters('containers')[copyIndex()].name]"
                           },
-                          "defaultEncryptionScope": "[if(contains(parameters('containers')[copyIndex()], 'defaultEncryptionScope'), createObject('value', parameters('containers')[copyIndex()].defaultEncryptionScope), createObject('value', ''))]",
-                          "denyEncryptionScopeOverride": "[if(contains(parameters('containers')[copyIndex()], 'denyEncryptionScopeOverride'), createObject('value', parameters('containers')[copyIndex()].denyEncryptionScopeOverride), createObject('value', false()))]",
-                          "enableNfsV3AllSquash": "[if(contains(parameters('containers')[copyIndex()], 'enableNfsV3AllSquash'), createObject('value', parameters('containers')[copyIndex()].enableNfsV3AllSquash), createObject('value', false()))]",
-                          "enableNfsV3RootSquash": "[if(contains(parameters('containers')[copyIndex()], 'enableNfsV3RootSquash'), createObject('value', parameters('containers')[copyIndex()].enableNfsV3RootSquash), createObject('value', false()))]",
-                          "immutableStorageWithVersioningEnabled": "[if(contains(parameters('containers')[copyIndex()], 'immutableStorageWithVersioningEnabled'), createObject('value', parameters('containers')[copyIndex()].immutableStorageWithVersioningEnabled), createObject('value', false()))]",
-                          "metadata": "[if(contains(parameters('containers')[copyIndex()], 'metadata'), createObject('value', parameters('containers')[copyIndex()].metadata), createObject('value', createObject()))]",
-                          "publicAccess": "[if(contains(parameters('containers')[copyIndex()], 'publicAccess'), createObject('value', parameters('containers')[copyIndex()].publicAccess), createObject('value', 'None'))]",
-                          "immutabilityPolicyProperties": "[if(contains(parameters('containers')[copyIndex()], 'immutabilityPolicyProperties'), createObject('value', parameters('containers')[copyIndex()].immutabilityPolicyProperties), createObject('value', createObject()))]"
+                          "defaultEncryptionScope": {
+                            "value": "[coalesce(tryGet(parameters('containers')[copyIndex()], 'defaultEncryptionScope'), '')]"
+                          },
+                          "denyEncryptionScopeOverride": {
+                            "value": "[coalesce(tryGet(parameters('containers')[copyIndex()], 'denyEncryptionScopeOverride'), false())]"
+                          },
+                          "enableNfsV3AllSquash": {
+                            "value": "[coalesce(tryGet(parameters('containers')[copyIndex()], 'enableNfsV3AllSquash'), false())]"
+                          },
+                          "enableNfsV3RootSquash": {
+                            "value": "[coalesce(tryGet(parameters('containers')[copyIndex()], 'enableNfsV3RootSquash'), false())]"
+                          },
+                          "immutableStorageWithVersioningEnabled": {
+                            "value": "[coalesce(tryGet(parameters('containers')[copyIndex()], 'immutableStorageWithVersioningEnabled'), false())]"
+                          },
+                          "metadata": {
+                            "value": "[coalesce(tryGet(parameters('containers')[copyIndex()], 'metadata'), createObject())]"
+                          },
+                          "publicAccess": {
+                            "value": "[coalesce(tryGet(parameters('containers')[copyIndex()], 'publicAccess'), 'None')]"
+                          },
+                          "immutabilityPolicyProperties": {
+                            "value": "[coalesce(tryGet(parameters('containers')[copyIndex()], 'immutabilityPolicyProperties'), createObject())]"
+                          }
                         },
                         "template": {
                           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -2927,11 +2990,8 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.30.23.60470",
-                              "templateHash": "2501203856648536751"
-                            },
-                            "name": "Storage Account Blob Containers",
-                            "description": "This module deploys a Storage Account Blob Container.",
-                            "owner": "Azure/module-maintainers"
+                              "templateHash": "8102418755104306407"
+                            }
                           },
                           "parameters": {
                             "storageAccountName": {
@@ -3048,9 +3108,15 @@
                                   "containerName": {
                                     "value": "[parameters('name')]"
                                   },
-                                  "immutabilityPeriodSinceCreationInDays": "[if(contains(parameters('immutabilityPolicyProperties'), 'immutabilityPeriodSinceCreationInDays'), createObject('value', parameters('immutabilityPolicyProperties').immutabilityPeriodSinceCreationInDays), createObject('value', 365))]",
-                                  "allowProtectedAppendWrites": "[if(contains(parameters('immutabilityPolicyProperties'), 'allowProtectedAppendWrites'), createObject('value', parameters('immutabilityPolicyProperties').allowProtectedAppendWrites), createObject('value', true()))]",
-                                  "allowProtectedAppendWritesAll": "[if(contains(parameters('immutabilityPolicyProperties'), 'allowProtectedAppendWritesAll'), createObject('value', parameters('immutabilityPolicyProperties').allowProtectedAppendWritesAll), createObject('value', true()))]"
+                                  "immutabilityPeriodSinceCreationInDays": {
+                                    "value": "[coalesce(tryGet(parameters('immutabilityPolicyProperties'), 'immutabilityPeriodSinceCreationInDays'), 365)]"
+                                  },
+                                  "allowProtectedAppendWrites": {
+                                    "value": "[coalesce(tryGet(parameters('immutabilityPolicyProperties'), 'allowProtectedAppendWrites'), true())]"
+                                  },
+                                  "allowProtectedAppendWritesAll": {
+                                    "value": "[coalesce(tryGet(parameters('immutabilityPolicyProperties'), 'allowProtectedAppendWritesAll'), true())]"
+                                  }
                                 },
                                 "template": {
                                   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -3206,7 +3272,7 @@
               "condition": "[not(empty(parameters('fileServices')))]",
               "type": "Microsoft.Resources/deployments",
               "apiVersion": "2022-09-01",
-              "name": "[format('{0}-Storage-FileServices', uniqueString(deployment().name, parameters('location')))]",
+              "name": "[format('Storage-FileServices-{0}', uniqueString(deployment().name, parameters('location')))]",
               "properties": {
                 "expressionEvaluationOptions": {
                   "scope": "inner"
@@ -3216,15 +3282,33 @@
                   "storageAccountName": {
                     "value": "[parameters('name')]"
                   },
-                  "diagnosticStorageAccountId": "[if(contains(parameters('fileServices'), 'diagnosticStorageAccountId'), createObject('value', parameters('fileServices').diagnosticStorageAccountId), createObject('value', ''))]",
-                  "diagnosticEventHubAuthorizationRuleId": "[if(contains(parameters('fileServices'), 'diagnosticEventHubAuthorizationRuleId'), createObject('value', parameters('fileServices').diagnosticEventHubAuthorizationRuleId), createObject('value', ''))]",
-                  "diagnosticEventHubName": "[if(contains(parameters('fileServices'), 'diagnosticEventHubName'), createObject('value', parameters('fileServices').diagnosticEventHubName), createObject('value', ''))]",
-                  "diagnosticLogCategoriesToEnable": "[if(contains(parameters('fileServices'), 'diagnosticLogCategoriesToEnable'), createObject('value', parameters('fileServices').diagnosticLogCategoriesToEnable), createObject('value', createArray()))]",
-                  "diagnosticMetricsToEnable": "[if(contains(parameters('fileServices'), 'diagnosticMetricsToEnable'), createObject('value', parameters('fileServices').diagnosticMetricsToEnable), createObject('value', createArray()))]",
-                  "protocolSettings": "[if(contains(parameters('fileServices'), 'protocolSettings'), createObject('value', parameters('fileServices').protocolSettings), createObject('value', createObject()))]",
-                  "shareDeleteRetentionPolicy": "[if(contains(parameters('fileServices'), 'shareDeleteRetentionPolicy'), createObject('value', parameters('fileServices').shareDeleteRetentionPolicy), createObject('value', createObject('enabled', true(), 'days', 7)))]",
-                  "shares": "[if(contains(parameters('fileServices'), 'shares'), createObject('value', parameters('fileServices').shares), createObject('value', createArray()))]",
-                  "diagnosticWorkspaceId": "[if(contains(parameters('fileServices'), 'diagnosticWorkspaceId'), createObject('value', parameters('fileServices').diagnosticWorkspaceId), createObject('value', ''))]"
+                  "diagnosticStorageAccountId": {
+                    "value": "[coalesce(tryGet(parameters('fileServices'), 'diagnosticStorageAccountId'), '')]"
+                  },
+                  "diagnosticEventHubAuthorizationRuleId": {
+                    "value": "[coalesce(tryGet(parameters('fileServices'), 'diagnosticEventHubAuthorizationRuleId'), '')]"
+                  },
+                  "diagnosticEventHubName": {
+                    "value": "[coalesce(tryGet(parameters('fileServices'), 'diagnosticEventHubName'), '')]"
+                  },
+                  "diagnosticLogCategoriesToEnable": {
+                    "value": "[coalesce(tryGet(parameters('fileServices'), 'diagnosticLogCategoriesToEnable'), createArray())]"
+                  },
+                  "diagnosticMetricsToEnable": {
+                    "value": "[coalesce(tryGet(parameters('fileServices'), 'diagnosticMetricsToEnable'), createArray())]"
+                  },
+                  "protocolSettings": {
+                    "value": "[coalesce(tryGet(parameters('fileServices'), 'protocolSettings'), createObject())]"
+                  },
+                  "shareDeleteRetentionPolicy": {
+                    "value": "[coalesce(tryGet(parameters('fileServices'), 'shareDeleteRetentionPolicy'), createObject('enabled', true(), 'days', 7))]"
+                  },
+                  "shares": {
+                    "value": "[coalesce(tryGet(parameters('fileServices'), 'shares'), createArray())]"
+                  },
+                  "diagnosticWorkspaceId": {
+                    "value": "[coalesce(tryGet(parameters('fileServices'), 'diagnosticWorkspaceId'), '')]"
+                  }
                 },
                 "template": {
                   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -3233,7 +3317,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.30.23.60470",
-                      "templateHash": "11366454767167455117"
+                      "templateHash": "4941506175709812775"
                     },
                     "name": "Storage Account File Share Services",
                     "description": "This module deploys a Storage Account File Share Service.",
@@ -3415,10 +3499,18 @@
                           "name": {
                             "value": "[parameters('shares')[copyIndex()].name]"
                           },
-                          "accessTier": "[if(contains(parameters('shares')[copyIndex()], 'accessTier'), createObject('value', parameters('shares')[copyIndex()].accessTier), if(equals(reference(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2021-09-01', 'full').kind, 'FileStorage'), createObject('value', 'Premium'), createObject('value', 'TransactionOptimized')))]",
-                          "enabledProtocols": "[if(contains(parameters('shares')[copyIndex()], 'enabledProtocols'), createObject('value', parameters('shares')[copyIndex()].enabledProtocols), createObject('value', 'SMB'))]",
-                          "rootSquash": "[if(contains(parameters('shares')[copyIndex()], 'rootSquash'), createObject('value', parameters('shares')[copyIndex()].rootSquash), createObject('value', 'NoRootSquash'))]",
-                          "shareQuota": "[if(contains(parameters('shares')[copyIndex()], 'shareQuota'), createObject('value', parameters('shares')[copyIndex()].shareQuota), createObject('value', 5120))]"
+                          "accessTier": {
+                            "value": "[coalesce(tryGet(parameters('shares')[copyIndex()], 'accessTier'), if(equals(reference(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2021-09-01', 'full').kind, 'FileStorage'), 'Premium', 'TransactionOptimized'))]"
+                          },
+                          "enabledProtocols": {
+                            "value": "[coalesce(tryGet(parameters('shares')[copyIndex()], 'enabledProtocols'), 'SMB')]"
+                          },
+                          "rootSquash": {
+                            "value": "[coalesce(tryGet(parameters('shares')[copyIndex()], 'rootSquash'), 'NoRootSquash')]"
+                          },
+                          "shareQuota": {
+                            "value": "[coalesce(tryGet(parameters('shares')[copyIndex()], 'shareQuota'), 5120)]"
+                          }
                         },
                         "template": {
                           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -3574,7 +3666,7 @@
               "condition": "[not(empty(parameters('queueServices')))]",
               "type": "Microsoft.Resources/deployments",
               "apiVersion": "2022-09-01",
-              "name": "[format('{0}-Storage-QueueServices', uniqueString(deployment().name, parameters('location')))]",
+              "name": "[format('Storage-QueueServices-{0}', uniqueString(deployment().name, parameters('location')))]",
               "properties": {
                 "expressionEvaluationOptions": {
                   "scope": "inner"
@@ -3584,13 +3676,27 @@
                   "storageAccountName": {
                     "value": "[parameters('name')]"
                   },
-                  "diagnosticStorageAccountId": "[if(contains(parameters('queueServices'), 'diagnosticStorageAccountId'), createObject('value', parameters('queueServices').diagnosticStorageAccountId), createObject('value', ''))]",
-                  "diagnosticEventHubAuthorizationRuleId": "[if(contains(parameters('queueServices'), 'diagnosticEventHubAuthorizationRuleId'), createObject('value', parameters('queueServices').diagnosticEventHubAuthorizationRuleId), createObject('value', ''))]",
-                  "diagnosticEventHubName": "[if(contains(parameters('queueServices'), 'diagnosticEventHubName'), createObject('value', parameters('queueServices').diagnosticEventHubName), createObject('value', ''))]",
-                  "diagnosticLogCategoriesToEnable": "[if(contains(parameters('queueServices'), 'diagnosticLogCategoriesToEnable'), createObject('value', parameters('queueServices').diagnosticLogCategoriesToEnable), createObject('value', createArray()))]",
-                  "diagnosticMetricsToEnable": "[if(contains(parameters('queueServices'), 'diagnosticMetricsToEnable'), createObject('value', parameters('queueServices').diagnosticMetricsToEnable), createObject('value', createArray()))]",
-                  "queues": "[if(contains(parameters('queueServices'), 'queues'), createObject('value', parameters('queueServices').queues), createObject('value', createArray()))]",
-                  "diagnosticWorkspaceId": "[if(contains(parameters('queueServices'), 'diagnosticWorkspaceId'), createObject('value', parameters('queueServices').diagnosticWorkspaceId), createObject('value', ''))]"
+                  "diagnosticStorageAccountId": {
+                    "value": "[coalesce(tryGet(parameters('queueServices'), 'diagnosticStorageAccountId'), '')]"
+                  },
+                  "diagnosticEventHubAuthorizationRuleId": {
+                    "value": "[coalesce(tryGet(parameters('queueServices'), 'diagnosticEventHubAuthorizationRuleId'), '')]"
+                  },
+                  "diagnosticEventHubName": {
+                    "value": "[coalesce(tryGet(parameters('queueServices'), 'diagnosticEventHubName'), '')]"
+                  },
+                  "diagnosticLogCategoriesToEnable": {
+                    "value": "[coalesce(tryGet(parameters('queueServices'), 'diagnosticLogCategoriesToEnable'), createArray())]"
+                  },
+                  "diagnosticMetricsToEnable": {
+                    "value": "[coalesce(tryGet(parameters('queueServices'), 'diagnosticMetricsToEnable'), createArray())]"
+                  },
+                  "queues": {
+                    "value": "[coalesce(tryGet(parameters('queueServices'), 'queues'), createArray())]"
+                  },
+                  "diagnosticWorkspaceId": {
+                    "value": "[coalesce(tryGet(parameters('queueServices'), 'diagnosticWorkspaceId'), '')]"
+                  }
                 },
                 "template": {
                   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -3599,7 +3705,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.30.23.60470",
-                      "templateHash": "4256949126288759320"
+                      "templateHash": "6922769932044918933"
                     },
                     "name": "Storage Account Queue Services",
                     "description": "This module deploys a Storage Account Queue Service.",
@@ -3739,7 +3845,7 @@
                       },
                       "type": "Microsoft.Resources/deployments",
                       "apiVersion": "2022-09-01",
-                      "name": "[format('{0}-Queue-{1}', deployment().name, copyIndex())]",
+                      "name": "[format('Queue-{0}-{1}', copyIndex(), deployment().name)]",
                       "properties": {
                         "expressionEvaluationOptions": {
                           "scope": "inner"
@@ -3752,7 +3858,9 @@
                           "name": {
                             "value": "[parameters('queues')[copyIndex()].name]"
                           },
-                          "metadata": "[if(contains(parameters('queues')[copyIndex()], 'metadata'), createObject('value', parameters('queues')[copyIndex()].metadata), createObject('value', createObject()))]"
+                          "metadata": {
+                            "value": "[coalesce(tryGet(parameters('queues')[copyIndex()], 'metadata'), createObject())]"
+                          }
                         },
                         "template": {
                           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -3859,7 +3967,7 @@
               "condition": "[not(empty(parameters('tableServices')))]",
               "type": "Microsoft.Resources/deployments",
               "apiVersion": "2022-09-01",
-              "name": "[format('{0}-Storage-TableServices', uniqueString(deployment().name, parameters('location')))]",
+              "name": "[format('Storage-TableServices-{0}', uniqueString(deployment().name, parameters('location')))]",
               "properties": {
                 "expressionEvaluationOptions": {
                   "scope": "inner"
@@ -3869,13 +3977,27 @@
                   "storageAccountName": {
                     "value": "[parameters('name')]"
                   },
-                  "diagnosticStorageAccountId": "[if(contains(parameters('tableServices'), 'diagnosticStorageAccountId'), createObject('value', parameters('tableServices').diagnosticStorageAccountId), createObject('value', ''))]",
-                  "diagnosticEventHubAuthorizationRuleId": "[if(contains(parameters('tableServices'), 'diagnosticEventHubAuthorizationRuleId'), createObject('value', parameters('tableServices').diagnosticEventHubAuthorizationRuleId), createObject('value', ''))]",
-                  "diagnosticEventHubName": "[if(contains(parameters('tableServices'), 'diagnosticEventHubName'), createObject('value', parameters('tableServices').diagnosticEventHubName), createObject('value', ''))]",
-                  "diagnosticLogCategoriesToEnable": "[if(contains(parameters('tableServices'), 'diagnosticLogCategoriesToEnable'), createObject('value', parameters('tableServices').diagnosticLogCategoriesToEnable), createObject('value', createArray()))]",
-                  "diagnosticMetricsToEnable": "[if(contains(parameters('tableServices'), 'diagnosticMetricsToEnable'), createObject('value', parameters('tableServices').diagnosticMetricsToEnable), createObject('value', createArray()))]",
-                  "tables": "[if(contains(parameters('tableServices'), 'tables'), createObject('value', parameters('tableServices').tables), createObject('value', createArray()))]",
-                  "diagnosticWorkspaceId": "[if(contains(parameters('tableServices'), 'diagnosticWorkspaceId'), createObject('value', parameters('tableServices').diagnosticWorkspaceId), createObject('value', ''))]"
+                  "diagnosticStorageAccountId": {
+                    "value": "[coalesce(tryGet(parameters('tableServices'), 'diagnosticStorageAccountId'), '')]"
+                  },
+                  "diagnosticEventHubAuthorizationRuleId": {
+                    "value": "[coalesce(tryGet(parameters('tableServices'), 'diagnosticEventHubAuthorizationRuleId'), '')]"
+                  },
+                  "diagnosticEventHubName": {
+                    "value": "[coalesce(tryGet(parameters('tableServices'), 'diagnosticEventHubName'), '')]"
+                  },
+                  "diagnosticLogCategoriesToEnable": {
+                    "value": "[coalesce(tryGet(parameters('tableServices'), 'diagnosticLogCategoriesToEnable'), createArray())]"
+                  },
+                  "diagnosticMetricsToEnable": {
+                    "value": "[coalesce(tryGet(parameters('tableServices'), 'diagnosticMetricsToEnable'), createArray())]"
+                  },
+                  "tables": {
+                    "value": "[coalesce(tryGet(parameters('tableServices'), 'tables'), createArray())]"
+                  },
+                  "diagnosticWorkspaceId": {
+                    "value": "[coalesce(tryGet(parameters('tableServices'), 'diagnosticWorkspaceId'), '')]"
+                  }
                 },
                 "template": {
                   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -3884,7 +4006,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.30.23.60470",
-                      "templateHash": "6885493419204208776"
+                      "templateHash": "1065616953098977276"
                     },
                     "name": "Storage Account Table Services",
                     "description": "This module deploys a Storage Account Table Service.",
@@ -4024,7 +4146,7 @@
                       },
                       "type": "Microsoft.Resources/deployments",
                       "apiVersion": "2022-09-01",
-                      "name": "[format('{0}-Table-{1}', deployment().name, copyIndex())]",
+                      "name": "[format('Table-{0}-{1}', copyIndex(), deployment().name)]",
                       "properties": {
                         "expressionEvaluationOptions": {
                           "scope": "inner"
@@ -11292,7 +11414,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.30.23.60470",
-              "templateHash": "1034312415750294580"
+              "templateHash": "5606966847982836760"
             }
           },
           "parameters": {
@@ -11411,7 +11533,7 @@
               }
             ],
             "$fxv#0": "function Write-OutputWithTimeStamp {\r\n    param(\r\n        [parameter(ValueFromPipeline=$True, Mandatory=$True, Position=0)]\r\n        [string]$Message\r\n    )    \r\n    $Timestamp = Get-Date -Format 'MM/dd/yyyy HH:mm:ss.ff'\r\n    $Entry = '[' + $Timestamp + '] ' + $Message\r\n    Write-Output $Entry\r\n}\r\n\r\n$LogDir = \"$env:SystemRoot\\Logs\\ImageBuild\"\r\nIf (-not (Test-Path $LogDir)) {\r\n    $null = New-Item -Path \"$LogDir\" -ItemType Directory -Force\r\n}\r\n\r\nStart-Transcript -Path \"$LogDir\\Remove-Apps.log\" -Force\r\nWrite-Output \"*********************************\"\r\nWrite-Output \"Removing Built-In Windows Apps\"\r\nWrite-Output \"*********************************\"\r\n$apps = \"Microsoft.3DBuilder\", \"Microsoft.BingWeather\", \"Microsoft.BingNews\", \"# Microsoft.DesktopAppInstaller\", \"Microsoft.GamingApp\",`\r\n    \"Microsoft.GetHelp\", \"Microsoft.Getstarted\", \"Microsoft.HEIFImageExtension\", `\r\n    \"Microsoft.Messaging\", \"Microsoft.Microsoft3DViewer\", \"Microsoft.MicrosoftOfficeHub\", `\r\n    \"Microsoft.MicrosoftSolitaireCollection\", \"# Microsoft.MicrosoftStickyNotes\", `\r\n    \"Microsoft.MixedReality.Portal\", \"# Microsoft.MSPaint\", \"Microsoft.Office.OneNote\", `\r\n    \"Microsoft.OneConnect\", \"Microsoft.Outlook.DesktopIntegrationServices\", \"Microsoft.OutlookForWindows\", `\r\n    \"# Microsoft.Paint\", \"Microsoft.People\", \"# Microsoft.PowerAutomateDesktop\", \"Microsoft.Print3D\", \"# Microsoft.ScreenSketch\", `\r\n    \"Microsoft.SkypeApp\", \"# Microsoft.StorePurchaseApp\", \"# Microsoft.VP9VideoExtensions\", `\r\n    \"Microsoft.Wallet\", \"# Microsoft.WebMediaExtensions\", \"# Microsoft.WebpImageExtension\", \"Microsoft.Windows.Photos\", `\r\n    \"Microsoft.WindowsAlarms\", \"Microsoft.WindowsCalculator\", \"Microsoft.WindowsCamera\", `\r\n    \"microsoft.windowscommunicationsapps\", \"Microsoft.WindowsFeedbackHub\", \"Microsoft.WindowsMaps\", `\r\n    \"Microsoft.WindowsSoundRecorder\", \"# Microsoft.WindowsStore\", \"Microsoft.Xbox.TCUI\", \"Microsoft.XboxApp\", `\r\n    \"Microsoft.XboxGameOverlay\", \"Microsoft.XboxGamingOverlay\", \"Microsoft.XboxIdentityProvider\", `\r\n    \"Microsoft.XboxSpeechToTextOverlay\", \"Microsoft.YourPhone\", \"Microsoft.ZuneMusic\", \"Microsoft.ZuneVideo\", `\r\n    \"MicrosoftCorporationII.QuickAssist\", \"Microsoft.Todos\", \"Clipchamp.Clipchamp\", \"# Microsoft.Whiteboard\", `\r\n    \"Microsoft.Windows.DevHome\", \"Microsoft.WindowsFeedbackHub\"\r\n\r\n$applist = $apps | Where-Object {$_ -inotlike '#*'}\r\n\r\n$ProvisionedApps = Get-AppxProvisionedPackage -online\r\n$InstalledApps = Get-AppxPackage -AllUsers\r\n\r\nForEach ($app in $applist) {\r\n\r\n    If ($($ProvisionedApps.DisplayName) -contains $app) {\r\n        Write-OutputWithTimeStamp \"Removing Provisioned AppX Package [$app]\"\r\n        Get-AppxProvisionedPackage -online | Where-Object {$_.DisplayName -eq \"$app\"} | Remove-AppxProvisionedPackage -online\r\n    }\r\n\r\n    If ($($InstalledApps.Name) -contains $app) {\r\n        Write-OutputWithTimeStamp \"Uninstalling Appx Package [$app] for all users.\"\r\n        Get-AppxPackage -AllUsers | Where-Object { $_.Name -eq \"$app\" } | Remove-AppxPackage -AllUsers\r\n    }\r\n\r\n}\r\nWrite-Output \"*********************************\"\r\nWrite-Output \"Removing Built-in Capabilities\"\r\nWrite-Output \"*********************************\"\r\n$capabilitylist = \"App.Support.ContactSupport\", \"App.Support.QuickAssist\"\r\n\r\nForEach ($capability in $capabilitylist) {\r\n    $InstalledCapability = $null\r\n    $InstalledCapability = Get-WindowsCapability -Online | Where-Object { $_.Name -like \"$capability*\" -and $_.State -ne \"NotPresent\" }\r\n    If ($InstalledCapability) {\r\n        Write-OutputWithTimeStamp \"Removing [$Capability]\"\r\n        $InstalledCapability | Remove-WindowsCapability -Online\r\n    }\r\n}\r\nStop-Transcript",
-            "$fxv#1": "param(\r\n  [string]$APIVersion,\r\n  [string]$Arguments,\r\n  [string]$BlobStorageSuffix,\r\n  [string]$BuildDir,\r\n  [string]$Name,\r\n  [string]$Uri,\r\n  [string]$UserAssignedIdentityClientId\r\n)\r\n\r\nfunction Write-OutputWithTimeStamp {\r\n  param(\r\n      [parameter(ValueFromPipeline=$True, Mandatory=$True, Position=0)]\r\n      [string]$Message\r\n  )    \r\n  $Timestamp = Get-Date -Format 'MM/dd/yyyy HH:mm:ss.ff'\r\n  $Entry = '[' + $Timestamp + '] ' + $Message\r\n  Write-Output $Entry\r\n}\r\n\r\nIf (!(Test-Path -Path \"$env:SystemRoot\\Logs\\ImageBuild\")) { New-Item -Path \"$env:SystemRoot\\Logs\\ImageBuild\" -ItemType Directory -Force | Out-Null }\r\nStart-Transcript -Path \"$env:SystemRoot\\Logs\\ImageBuild\\$Name.log\" -Force\r\n\r\nWrite-OutputWithTimeStamp \"Starting '$Name' script with the following parameters.\"\r\nWrite-Output ( $PSBoundParameters | Format-Table -AutoSize )\r\nIf ($Arguments -eq '') { $Arguments = $null }\r\nIf ($Null -eq $BuildDir -or $BuildDir -ne '') {\r\n  $TempDir = Join-Path $BuildDir -ChildPath $Name\r\n} Else {\r\n  $TempDir = Join-Path $Env:TEMP -ChildPath $Name\r\n}\r\n\r\nNew-Item -Path $TempDir -ItemType Directory -Force | Out-Null\r\n$WebClient = New-Object System.Net.WebClient\r\nIf ($Uri -match $BlobStorageSuffix -and $UserAssignedIdentityClientId -ne '') {\r\n  $StorageEndpoint = ($Uri -split \"://\")[0] + \"://\" + ($Uri -split \"/\")[2] + \"/\"\r\n  $TokenUri = \"http://169.254.169.254/metadata/identity/oauth2/token?api-version=$APIVersion&resource=$StorageEndpoint&client_id=$UserAssignedIdentityClientId\"\r\n  $AccessToken = ((Invoke-WebRequest -Headers @{Metadata = $true } -Uri $TokenUri -UseBasicParsing).Content | ConvertFrom-Json).access_token\r\n  $WebClient.Headers.Add('x-ms-version', '2017-11-09')\r\n  $webClient.Headers.Add(\"Authorization\", \"Bearer $AccessToken\")\r\n}\r\n$SourceFileName = ($Uri -Split \"/\")[-1]\r\nWrite-OutputWithTimeStamp \"Downloading '$Uri' to '$TempDir'.\"\r\n$DestFile = Join-Path -Path $TempDir -ChildPath $SourceFileName\r\n$webClient.DownloadFile(\"$Uri\", \"$DestFile\")\r\nStart-Sleep -Seconds 10\r\nIf (!(Test-Path -Path $DestFile)) { Write-Error \"Failed to download $SourceFileName\"; Exit 1 }\r\nWrite-OutputWithTimeStamp 'Finished downloading'\r\nSet-Location -Path $TempDir\r\n$Ext = [System.IO.Path]::GetExtension($DestFile).ToLower()\r\nswitch ($Ext) {\r\n  'exe' {\r\n      If ($Arguments) {\r\n        Write-OutputWithTimeStamp \"Executing '`\"$DestFile`\" $Arguments'\"\r\n        Start-Process -FilePath \"$DestFile\" -ArgumentList $Arguments -NoNewWindow -Wait -PassThru\r\n      }\r\n      Else {\r\n        Write-OutputWithTimeStamp \"Executing `\"$DestFile`\"\"\r\n        Start-Process -FilePath \"$DestFile\" -NoNewWindow -Wait -PassThru\r\n      }\r\n      $status = Get-WmiObject -Class Win32_Product | Where-Object Name -like \"*$($Name)*\"\r\n      if ($status) {\r\n        Write-OutputWithTimeStamp $status[0].Name \" is installed\"\r\n      }\r\n      else {\r\n        Write-OutputWithTimeStamp \"'$Name' did not install properly, please check arguments\"\r\n      } \r\n    }\r\n  'msi' {\r\n    If ($Arguments) {\r\n      If ($Arguments -notcontains $SourceFileName) {\r\n        $Arguments = \"/i $DestFile $Arguments\"\r\n      }\r\n      Write-OutputWithTimeStamp \"Executing 'msiexec.exe $Arguments'\"\r\n      Start-Process -FilePath msiexec.exe -ArgumentList $Arguments -Wait\r\n    }\r\n    Else {\r\n      Write-OutputWithTimeStamp \"Executing 'msiexec.exe /i $DestFile /qn'\"\r\n      Start-Process -FilePath msiexec.exe -ArgumentList \"/i $DestFile /qn\" -Wait\r\n    }\r\n    $status = Get-WmiObject -Class Win32_Product | Where-Object Name -like \"*$($Name)*\"\r\n    if ($status) {\r\n      Write-OutputWithTimeStamp $status.Name \" is installed\"\r\n    }\r\n    else {\r\n      Write-OutputWithTimeStamp \"'$Name' did not install properly, please check arguments\"\r\n    }\r\n  }\r\n  'bat' {\r\n    If ($Arguments) {\r\n      Write-OutputWithTimeStamp \"Executing 'cmd.exe `\"$DestFile`\" $Arguments'\"\r\n      Start-Process -FilePath cmd.exe -ArgumentList \"`\"$DestFile`\" $Arguments\" -Wait\r\n    }\r\n    Else {\r\n      Write-OutputWithTimeStamp \"Executing 'cmd.exe `\"$DestFile`\"'\"\r\n      Start-Process -FilePath cmd.exe -ArgumentList \"`\"$DestFile`\"\" -Wait\r\n    }\r\n  }\r\n  'ps1' {\r\n    If ($Arguments) {\r\n      Write-OutputWithTimeStamp \"Calling PowerShell Script '$DestFile' with arguments '$Arguments'\"\r\n      & $DestFileName $Arguments\r\n    }\r\n    Else {\r\n      Write-OutputWithTimeStamp \"Calling PowerShell Script '$DestFile'\"\r\n      & $DestFileName\r\n    }\r\n  }\r\n  'zip' {\r\n    $DestinationPath = Join-Path -Path \"$TempDir\" -ChildPath $([System.IO.Path]::GetFileNameWithoutExtension($SourceFileName))\r\n    Write-OutputWithTimeStamp \"Extracting '$DestFile' to '$DestinationPath'.\"\r\n    Expand-Archive -Path $DestFileName -DestinationPath $DestinationPath -Force\r\n    Write-OutputWithTimeStamp \"Finding PowerShell script in root of '$DestinationPath'.\"\r\n    $PSScript = (Get-ChildItem -Path $DestinationPath -filter '*.ps1').FullName\r\n    If ($PSScript.count -gt 1) { $PSScript = $PSScript[0] }\r\n    If ($Arguments) {\r\n      Write-OutputWithTimeStamp \"Calling PowerShell Script '$PSScript' with arguments '$Arguments'\"\r\n      & $PSScript $Arguments\r\n    }\r\n    Else {\r\n      Write-OutputWithTimeStamp \"Calling PowerShell Script '$PSScript'\"         \r\n      & $PSScript\r\n    }\r\n  }\r\n}\r\nIf ($null -eq $BuildDir -or $BuildDir -eq '') {Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue}\r\nStop-Transcript",
+            "$fxv#1": "param(\r\n  [string]$APIVersion,\r\n  [string]$Arguments,\r\n  [string]$BlobStorageSuffix,\r\n  [string]$BuildDir,\r\n  [string]$Name,\r\n  [string]$Uri,\r\n  [string]$UserAssignedIdentityClientId\r\n)\r\n\r\nfunction Write-OutputWithTimeStamp {\r\n  param(\r\n      [parameter(ValueFromPipeline=$True, Mandatory=$True, Position=0)]\r\n      [string]$Message\r\n  )    \r\n  $Timestamp = Get-Date -Format 'MM/dd/yyyy HH:mm:ss.ff'\r\n  $Entry = '[' + $Timestamp + '] ' + $Message\r\n  Write-Output $Entry\r\n}\r\n\r\nIf (!(Test-Path -Path \"$env:SystemRoot\\Logs\\ImageBuild\")) { New-Item -Path \"$env:SystemRoot\\Logs\\ImageBuild\" -ItemType Directory -Force | Out-Null }\r\nStart-Transcript -Path \"$env:SystemRoot\\Logs\\ImageBuild\\$Name.log\" -Force\r\n\r\nWrite-OutputWithTimeStamp \"Starting '$Name' script with the following parameters.\"\r\nWrite-Output ( $PSBoundParameters | Format-Table -AutoSize )\r\nIf ($Arguments -eq '') { $Arguments = $null }\r\nIf ($Null -eq $BuildDir -or $BuildDir -ne '') {\r\n  $TempDir = Join-Path $BuildDir -ChildPath $Name\r\n} Else {\r\n  $TempDir = Join-Path $Env:TEMP -ChildPath $Name\r\n}\r\n\r\nNew-Item -Path $TempDir -ItemType Directory -Force | Out-Null\r\n$WebClient = New-Object System.Net.WebClient\r\nIf ($Uri -match $BlobStorageSuffix -and $UserAssignedIdentityClientId -ne '') {\r\n  $StorageEndpoint = ($Uri -split \"://\")[0] + \"://\" + ($Uri -split \"/\")[2] + \"/\"\r\n  $TokenUri = \"http://169.254.169.254/metadata/identity/oauth2/token?api-version=$APIVersion&resource=$StorageEndpoint&client_id=$UserAssignedIdentityClientId\"\r\n  $AccessToken = ((Invoke-WebRequest -Headers @{Metadata = $true } -Uri $TokenUri -UseBasicParsing).Content | ConvertFrom-Json).access_token\r\n  $WebClient.Headers.Add('x-ms-version', '2017-11-09')\r\n  $webClient.Headers.Add(\"Authorization\", \"Bearer $AccessToken\")\r\n}\r\n$SourceFileName = ($Uri -Split \"/\")[-1]\r\nWrite-OutputWithTimeStamp \"Downloading '$Uri' to '$TempDir'.\"\r\n$DestFile = Join-Path -Path $TempDir -ChildPath $SourceFileName\r\n$webClient.DownloadFile(\"$Uri\", \"$DestFile\")\r\nStart-Sleep -Seconds 10\r\nIf (!(Test-Path -Path $DestFile)) { Write-Error \"Failed to download $SourceFileName\"; Exit 1 }\r\nWrite-OutputWithTimeStamp 'Finished downloading'\r\nSet-Location -Path $TempDir\r\n$Ext = [System.IO.Path]::GetExtension($DestFile).ToLower()\r\nswitch ($Ext) {\r\n  'exe' {\r\n      If ($Arguments) {\r\n        Write-OutputWithTimeStamp \"Executing '`\"$DestFile`\" $Arguments'\"\r\n        Start-Process -FilePath \"$DestFile\" -ArgumentList $Arguments -NoNewWindow -Wait -PassThru\r\n      }\r\n      Else {\r\n        Write-OutputWithTimeStamp \"Executing `\"$DestFile`\"\"\r\n        Start-Process -FilePath \"$DestFile\" -NoNewWindow -Wait -PassThru\r\n      }\r\n      $status = Get-WmiObject -Class Win32_Product | Where-Object Name -like \"*$($Name)*\"\r\n      if ($status) {\r\n        Write-OutputWithTimeStamp \"'$($status[0].Name)' is installed\"\r\n      }\r\n      else {\r\n        Write-OutputWithTimeStamp \"'$Name' did not install properly, please check arguments\"\r\n      } \r\n    }\r\n  'msi' {\r\n    If ($Arguments) {\r\n      If ($Arguments -notcontains $SourceFileName) {\r\n        $Arguments = \"/i $DestFile $Arguments\"\r\n      }\r\n      Write-OutputWithTimeStamp \"Executing 'msiexec.exe $Arguments'\"\r\n      Start-Process -FilePath msiexec.exe -ArgumentList $Arguments -Wait\r\n    }\r\n    Else {\r\n      Write-OutputWithTimeStamp \"Executing 'msiexec.exe /i $DestFile /qn'\"\r\n      Start-Process -FilePath msiexec.exe -ArgumentList \"/i $DestFile /qn\" -Wait\r\n    }\r\n    $status = Get-WmiObject -Class Win32_Product | Where-Object Name -like \"*$($Name)*\"\r\n    if ($status) {\r\n      Write-OutputWithTimeStamp \"'$($status[0].Name)' is installed\"\r\n    }\r\n    else {\r\n      Write-OutputWithTimeStamp \"'$Name' did not install properly, please check arguments\"\r\n    }\r\n  }\r\n  'bat' {\r\n    If ($Arguments) {\r\n      Write-OutputWithTimeStamp \"Executing 'cmd.exe `\"$DestFile`\" $Arguments'\"\r\n      Start-Process -FilePath cmd.exe -ArgumentList \"`\"$DestFile`\" $Arguments\" -Wait\r\n    }\r\n    Else {\r\n      Write-OutputWithTimeStamp \"Executing 'cmd.exe `\"$DestFile`\"'\"\r\n      Start-Process -FilePath cmd.exe -ArgumentList \"`\"$DestFile`\"\" -Wait\r\n    }\r\n  }\r\n  'ps1' {\r\n    If ($Arguments) {\r\n      Write-OutputWithTimeStamp \"Calling PowerShell Script '$DestFile' with arguments '$Arguments'\"\r\n      & $DestFileName $Arguments\r\n    }\r\n    Else {\r\n      Write-OutputWithTimeStamp \"Calling PowerShell Script '$DestFile'\"\r\n      & $DestFileName\r\n    }\r\n  }\r\n  'zip' {\r\n    $DestinationPath = Join-Path -Path \"$TempDir\" -ChildPath $([System.IO.Path]::GetFileNameWithoutExtension($SourceFileName))\r\n    Write-OutputWithTimeStamp \"Extracting '$DestFile' to '$DestinationPath'.\"\r\n    Expand-Archive -Path $DestFileName -DestinationPath $DestinationPath -Force\r\n    Write-OutputWithTimeStamp \"Finding PowerShell script in root of '$DestinationPath'.\"\r\n    $PSScript = (Get-ChildItem -Path $DestinationPath -filter '*.ps1').FullName\r\n    If ($PSScript.count -gt 1) { $PSScript = $PSScript[0] }\r\n    If ($Arguments) {\r\n      Write-OutputWithTimeStamp \"Calling PowerShell Script '$PSScript' with arguments '$Arguments'\"\r\n      & $PSScript $Arguments\r\n    }\r\n    Else {\r\n      Write-OutputWithTimeStamp \"Calling PowerShell Script '$PSScript'\"         \r\n      & $PSScript\r\n    }\r\n  }\r\n}\r\nIf ($null -eq $BuildDir -or $BuildDir -eq '') {Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue}\r\nStop-Transcript",
             "$fxv#10": "param(\r\n    [Parameter(Mandatory=$true)]\r\n    [string]$ResourceManagerUri,\r\n\r\n    [Parameter(Mandatory=$true)]\r\n    [string]$UserAssignedIdentityClientId,\r\n\r\n    [Parameter(Mandatory=$true)]\r\n    [string]$VmResourceId\r\n)\r\n\r\n$ErrorActionPreference = 'Stop'\r\n$WarningPreference = 'SilentlyContinue'\r\n\r\nTry {\r\n    # Fix the resource manager URI since only AzureCloud contains a trailing slash\r\n    $ResourceManagerUriFixed = if($ResourceManagerUri[-1] -eq '/'){$ResourceManagerUri.Substring(0,$ResourceManagerUri.Length - 1)} else {$ResourceManagerUri}\r\n\r\n    # Get an access token for Azure resources\r\n    $AzureManagementAccessToken = (Invoke-RestMethod `\r\n        -Headers @{Metadata=\"true\"} `\r\n        -Uri $('http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=' + $ResourceManagerUriFixed + '&client_id=' + $UserAssignedIdentityClientId)).access_token\r\n\r\n    # Set header for Azure Management API\r\n    $AzureManagementHeader = @{\r\n        'Content-Type'='application/json'\r\n        'Authorization'='Bearer ' + $AzureManagementAccessToken\r\n    }\r\n    \r\n    # Restart the VM\r\n    $null = Invoke-RestMethod -Headers $AzureManagementHeader -Method 'Post' -Uri $($ResourceManagerUriFixed + $VmResourceId + '/restart?api-version=2024-03-01')\r\n    $lastProvisioningState = \"\"\r\n    $VmStatus = Invoke-RestMethod -Headers $AzureManagementHeader -Method 'Get' -Uri $($ResourceManagerUriFixed + $VmResourceId + '/instanceView?api-version=2024-03-01')\r\n    $provisioningState = ($VMStatus.statuses | Where-Object {$_.code -like 'PowerState*'}).code\r\n    While ($provisioningState -ne \"PowerState/running\") {\r\n        $lastProvisioningState = $provisioningState\r\n        Start-Sleep -Seconds 5\r\n        $VmStatus = Invoke-RestMethod -Headers $AzureManagementHeader -Method 'Get' -Uri $($ResourceManagerUriFixed + $VmResourceId + '/instanceView?api-version=2024-03-01')\r\n        $provisioningState = ($VMStatus.statuses | Where-Object {$_.code -like 'PowerState*'}).code\r\n    }   \r\n}\r\ncatch {\r\n    throw\r\n}",
             "$fxv#11": "$Services = 'RdAgent', 'WindowsTelemetryService', 'WindowsAzureGuestAgent'        \r\nForEach ($Service in $Services) {\r\n    If (Get-Service | Where-Object {$_.Name -eq $Service}) {\r\n        While ((Get-Service -Name $Service).Status -ne 'Running') {\r\n            Write-Output \">>> Waiting for $Service to start...\"\r\n            Start-Sleep -Seconds 5\r\n        }\r\n    }\r\n}\r\n$Files = \"$env:SystemRoot\\System32\\sysprep\\unattend.xml\", \"$env:SystemRoot\\Panther\\Unattend.xml\"\r\nForEach ($file in $Files) {\r\n    if (Test-Path -Path $File) {\r\n      Write-Output \">>> Removing $file\"\r\n      Remove-Item $file -Force\r\n    }\r\n}\r\nWrite-Output '>>> Sysprepping VM ...'\r\nStart-Process -FilePath \"C:\\Windows\\System32\\Sysprep\\Sysprep.exe\" -ArgumentList \"/generalize /oobe /quit /mode:vm\" -Wait\r\nwhile($true) {\r\n    $imageState = (Get-ItemProperty HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Setup\\State).ImageState\r\n    Write-Output $imageState\r\n    if ($imageState -eq 'IMAGE_STATE_GENERALIZE_RESEAL_TO_OOBE') { break }\r\n    Start-Sleep -s 5\r\n}\r\nWrite-Output \">>> Sysprep complete ...\"",
             "$fxv#2": "param(\r\n    [string]$APIVersion,\r\n    [string]$BlobStorageSuffix,\r\n    [string]$BuildDir,\r\n    [string]$UserAssignedIdentityClientId,\r\n    [string]$Uri\r\n)\r\n\r\n$ErrorActionPreference = \"Stop\"\r\n\r\nfunction Write-OutputWithTimeStamp {\r\n    param(\r\n        [parameter(ValueFromPipeline=$True, Mandatory=$True, Position=0)]\r\n        [string]$Message\r\n    )    \r\n    $Timestamp = Get-Date -Format 'MM/dd/yyyy HH:mm:ss.ff'\r\n    $Entry = '[' + $Timestamp + '] ' + $Message\r\n    Write-Output $Entry\r\n}\r\nIf (!(Test-Path -Path \"$env:SystemRoot\\Logs\\ImageBuild\")) { New-Item -Path \"$env:SystemRoot\\Logs\\ImageBuild\" -ItemType Directory -Force | Out-Null }\r\n\r\n$SoftwareName = 'FSLogix'\r\nStart-Transcript -Path \"$env:SystemRoot\\Logs\\ImageBuild\\$SoftwareName.log\" -Force\r\nWrite-OutputWithTimeStamp \"Starting '$SoftwareName' install script with following Parameters:\"\r\n\r\nWrite-Output ( $PSBoundParameters | Format-Table -AutoSize )\r\n\r\n$WebClient = New-Object System.Net.WebClient\r\nIf ($Uri -match $BlobStorageSuffix -and $UserAssignedIdentityClientId -ne '') {\r\n    $StorageEndpoint = ($Uri -split \"://\")[0] + \"://\" + ($Uri -split \"/\")[2] + \"/\"\r\n    $TokenUri = \"http://169.254.169.254/metadata/identity/oauth2/token?api-version=$APIVersion&resource=$StorageEndpoint&client_id=$UserAssignedIdentityClientId\"\r\n    $AccessToken = ((Invoke-WebRequest -Headers @{Metadata = $true } -Uri $TokenUri -UseBasicParsing).Content | ConvertFrom-Json).access_token\r\n    $WebClient.Headers.Add('x-ms-version', '2017-11-09')\r\n    $webClient.Headers.Add(\"Authorization\", \"Bearer $AccessToken\")\r\n}\r\n$appDir = Join-Path -Path $BuildDir -ChildPath $SoftwareName\r\nNew-Item -Path $appDir -ItemType Directory -Force | Out-Null\r\n$SourceFileName = ($Uri -Split \"/\")[-1]\r\n$DestFile = Join-Path -Path $appDir -ChildPath $SourceFileName\r\nWrite-OutputWithTimeStamp \"Downloading '$Uri' to '$DestFile'.\"\r\n$webClient.DownloadFile(\"$Uri\", \"$DestFile\")\r\nStart-Sleep -seconds 10\r\nIf (!(Test-Path -Path $DestFile)) { Write-Error \"Failed to download $SourceFileName\"; Exit 1 }\r\nUnblock-File -Path $DestFile\r\nWrite-OutputWithTimeStamp \"Extracting Contents of Zip File\"\r\nExpand-Archive -Path $destFile -DestinationPath \"$appDir\" -Force\r\n$Installer = (Get-ChildItem -Path $appDir -File -Recurse -Filter 'FSLogixAppsSetup.exe' | Where-Object { $_.FullName -like '*x64*' }).FullName\r\nWrite-OutputWithTimeStamp \"Installation file found: [$Installer], executing installation.\"\r\n$Install = Start-Process -FilePath $Installer -ArgumentList \"/install /quiet /norestart\" -Wait -PassThru\r\nIf ($($Install.ExitCode) -eq 0) {\r\n    Write-OutputWithTimeStamp \"'Microsoft FSLogix Apps' installed successfully.\"\r\n}\r\nElse {\r\n    Write-Error \"The Install exit code is $($Install.ExitCode)\"\r\n}\r\nWrite-OutputWithTimeStamp \"Copying the FSLogix ADMX and ADML files to the PolicyDefinitions folders.\"\r\nGet-ChildItem -Path $appDir -File -Recurse -Filter '*.admx' | ForEach-Object { Write-OutputWithTimeStamp \"Copying $($_.Name)\"; Copy-Item -Path $_.FullName -Destination \"$env:WINDIR\\PolicyDefinitions\\\" -Force }\r\nGet-ChildItem -Path $appDir -File -Recurse -Filter '*.adml' | ForEach-Object { Write-OutputWithTimeStamp \"Copying $($_.Name)\"; Copy-Item -Path $_.FullName -Destination \"$env:WINDIR\\PolicyDefinitions\\en-us\\\" -Force }\r\nWrite-OutputWithTimeStamp \"Installation complete.\"\r\nStop-Transcript",
