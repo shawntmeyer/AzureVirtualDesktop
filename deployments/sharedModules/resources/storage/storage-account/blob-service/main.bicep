@@ -184,24 +184,18 @@ resource blobServices_diagnosticSettings 'Microsoft.Insights/diagnosticSettings@
 
 module blobServices_container 'container/main.bicep' = [
   for (container, index) in containers: {
-    name: '${deployment().name}-Container-${index}'
+    name: 'Container-${index}-${deployment().name}'
     params: {
       storageAccountName: storageAccount.name
       name: container.name
-      defaultEncryptionScope: contains(container, 'defaultEncryptionScope') ? container.defaultEncryptionScope : ''
-      denyEncryptionScopeOverride: contains(container, 'denyEncryptionScopeOverride')
-        ? container.denyEncryptionScopeOverride
-        : false
-      enableNfsV3AllSquash: contains(container, 'enableNfsV3AllSquash') ? container.enableNfsV3AllSquash : false
-      enableNfsV3RootSquash: contains(container, 'enableNfsV3RootSquash') ? container.enableNfsV3RootSquash : false
-      immutableStorageWithVersioningEnabled: contains(container, 'immutableStorageWithVersioningEnabled')
-        ? container.immutableStorageWithVersioningEnabled
-        : false
-      metadata: contains(container, 'metadata') ? container.metadata : {}
-      publicAccess: contains(container, 'publicAccess') ? container.publicAccess : 'None'
-      immutabilityPolicyProperties: contains(container, 'immutabilityPolicyProperties')
-        ? container.immutabilityPolicyProperties
-        : {}
+      defaultEncryptionScope: container.?defaultEncryptionScope ?? ''
+      denyEncryptionScopeOverride: container.?denyEncryptionScopeOverride ?? false
+      enableNfsV3AllSquash: container.?enableNfsV3AllSquash ?? false
+      enableNfsV3RootSquash: container.?enableNfsV3RootSquash ?? false
+      immutableStorageWithVersioningEnabled: container.?immutableStorageWithVersioningEnabled ?? false
+      metadata: container.?metadata ?? {}
+      publicAccess: container.?publicAccess ?? 'None'
+      immutabilityPolicyProperties: container.?immutabilityPolicyProperties ?? {}
     }
   }
 ]

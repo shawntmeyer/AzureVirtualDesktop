@@ -1,7 +1,3 @@
-metadata name = 'Storage Account Blob Containers'
-metadata description = 'This module deploys a Storage Account Blob Container.'
-metadata owner = 'Azure/module-maintainers'
-
 @maxLength(24)
 @description('Conditional. The name of the parent Storage Account. Required if the template is used in a standalone deployment.')
 param storageAccountName string
@@ -70,9 +66,9 @@ module immutabilityPolicy 'immutability-policy/main.bicep' = if (!empty(immutabi
   params: {
     storageAccountName: storageAccount.name
     containerName: container.name
-    immutabilityPeriodSinceCreationInDays: contains(immutabilityPolicyProperties, 'immutabilityPeriodSinceCreationInDays') ? immutabilityPolicyProperties.immutabilityPeriodSinceCreationInDays : 365
-    allowProtectedAppendWrites: contains(immutabilityPolicyProperties, 'allowProtectedAppendWrites') ? immutabilityPolicyProperties.allowProtectedAppendWrites : true
-    allowProtectedAppendWritesAll: contains(immutabilityPolicyProperties, 'allowProtectedAppendWritesAll') ? immutabilityPolicyProperties.allowProtectedAppendWritesAll : true
+    immutabilityPeriodSinceCreationInDays: immutabilityPolicyProperties.?immutabilityPeriodSinceCreationInDays ?? 365
+    allowProtectedAppendWrites: immutabilityPolicyProperties.?allowProtectedAppendWrites ?? true
+    allowProtectedAppendWritesAll: immutabilityPolicyProperties.?allowProtectedAppendWritesAll ?? true
   }
 }
 

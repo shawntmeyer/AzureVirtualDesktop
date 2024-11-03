@@ -129,17 +129,8 @@ param isLocalUserEnabled bool = false
 @description('Optional. If true, enables NFS 3.0 support for the storage account. Requires enableHierarchicalNamespace to be true.')
 param enableNfsV3 bool = false
 
-@description('Optional. Resource ID of the diagnostic storage account.')
-param diagnosticStorageAccountId string = ''
-
 @description('Optional. Resource ID of the diagnostic log analytics workspace.')
 param diagnosticWorkspaceId string = ''
-
-@description('Optional. Resource ID of the diagnostic event hub authorization rule for the Event Hubs namespace in which the event hub should be created or streamed to.')
-param diagnosticEventHubAuthorizationRuleId string = ''
-
-@description('Optional. Name of the diagnostic event hub within the namespace to which logs are streamed. Without this, an event hub is created for each log category.')
-param diagnosticEventHubName string = ''
 
 @description('Optional. Tags of the resource.')
 param tags object = {}
@@ -267,10 +258,10 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
     largeFileSharesState: (skuName == 'Standard_LRS') || (skuName == 'Standard_ZRS') ? largeFileSharesState : null
     minimumTlsVersion: minimumTlsVersion
     networkAcls: !empty(networkAcls) ? {
-      bypass: contains(networkAcls, 'bypass') ? networkAcls.bypass : null
-      defaultAction: contains(networkAcls, 'defaultAction') ? networkAcls.defaultAction : null
-      virtualNetworkRules: contains(networkAcls, 'virtualNetworkRules') ? networkAcls.virtualNetworkRules : []
-      ipRules: contains(networkAcls, 'ipRules') ? networkAcls.ipRules : []
+      bypass: networkAcls.?bypass ?? null
+      defaultAction: networkAcls.?defaultAction ?? null
+      virtualNetworkRules: networkAcls.?virtualNetworkRules ?? []
+      ipRules: networkAcls.?ipRules ?? []
     } : null
     allowBlobPublicAccess: allowBlobPublicAccess
     publicNetworkAccess: !empty(publicNetworkAccess) ? any(publicNetworkAccess) : (!empty(privateEndpoints) && empty(networkAcls) ? 'Disabled' : null)
@@ -278,41 +269,38 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
   }
 }
 
-resource storageAccount_diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if ((!empty(diagnosticStorageAccountId)) || (!empty(diagnosticWorkspaceId)) || (!empty(diagnosticEventHubAuthorizationRuleId)) || (!empty(diagnosticEventHubName))) {
+resource storageAccount_diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (!empty(diagnosticWorkspaceId)) {
   name: !empty(diagnosticSettingsName) ? diagnosticSettingsName : '${name}-diagnosticSettings'
-  properties: {
-    storageAccountId: !empty(diagnosticStorageAccountId) ? diagnosticStorageAccountId : null
+  properties: {    
     workspaceId: !empty(diagnosticWorkspaceId) ? diagnosticWorkspaceId : null
-    eventHubAuthorizationRuleId: !empty(diagnosticEventHubAuthorizationRuleId) ? diagnosticEventHubAuthorizationRuleId : null
-    eventHubName: !empty(diagnosticEventHubName) ? diagnosticEventHubName : null
     metrics: diagnosticsMetrics
   }
   scope: storageAccount
 }
 
 module storageAccount_privateEndpoints '../../network/private-endpoint/main.bicep' = [for (privateEndpoint, index) in privateEndpoints: {
-  name: '${uniqueString(deployment().name, location)}-StorageAccount-PrivateEndpoint-${index}'
+  name: 'StorageAccount-PrivateEndpoint-${index}-${uniqueString(deployment().name, location)}'
   params: {
     groupIds: [
       privateEndpoint.service
     ]
-    name: contains(privateEndpoint, 'name') ? privateEndpoint.name : 'pe-${last(split(storageAccount.id, '/'))}-${privateEndpoint.service}-${index}'
+    name: privateEndpoint.?name ?? 'pe-${last(split(storageAccount.id, '/'))}-${privateEndpoint.service}-${index}'
     serviceResourceId: storageAccount.id
     subnetResourceId: privateEndpoint.subnetResourceId
-    location: contains(privateEndpoint, 'location') ? privateEndpoint.location : reference(split(privateEndpoint.subnetResourceId, '/subnets/')[0], '2020-06-01', 'Full').location
-    privateDnsZoneGroup: contains(privateEndpoint, 'privateDnsZoneGroup') ? privateEndpoint.privateDnsZoneGroup : {}
-    tags: contains(privateEndpoint, 'tags') ? privateEndpoint.tags : {}
-    manualPrivateLinkServiceConnections: contains(privateEndpoint, 'manualPrivateLinkServiceConnections') ? privateEndpoint.manualPrivateLinkServiceConnections : []
-    customDnsConfigs: contains(privateEndpoint, 'customDnsConfigs') ? privateEndpoint.customDnsConfigs : []
-    ipConfigurations: contains(privateEndpoint, 'ipConfigurations') ? privateEndpoint.ipConfigurations : []
-    applicationSecurityGroups: contains(privateEndpoint, 'applicationSecurityGroups') ? privateEndpoint.applicationSecurityGroups : []
-    customNetworkInterfaceName: contains(privateEndpoint, 'customNetworkInterfaceName') ? privateEndpoint.customNetworkInterfaceName : ''
+    location: privateEndpoint.?location ?? reference(split(privateEndpoint.subnetResourceId, '/subnets/')[0], '2020-06-01', 'Full').location
+    privateDnsZoneGroup: privateEndpoint.?privateDnsZoneGroup ?? {}
+    tags: privateEndpoint.?tags ?? {}
+    manualPrivateLinkServiceConnections: privateEndpoint.?manualPrivateLinkServiceConnections ?? []
+    customDnsConfigs: privateEndpoint.?customDnsConfigs ?? []
+    ipConfigurations: privateEndpoint.?ipConfigurations ?? []
+    applicationSecurityGroups: privateEndpoint.?applicationSecurityGroups ?? []
+    customNetworkInterfaceName: privateEndpoint.?customNetworkInterfaceName ?? ''
   }
 }]
 
 // Lifecycle Policy
 module storageAccount_managementPolicies 'management-policy/main.bicep' = if (!empty(managementPolicyRules)) {
-  name: '${uniqueString(deployment().name, location)}-Storage-ManagementPolicies'
+  name: 'Storage-ManagementPolicies-${uniqueString(deployment().name, location)}'
   params: {
     storageAccountName: storageAccount.name
     rules: managementPolicyRules
@@ -324,96 +312,96 @@ module storageAccount_managementPolicies 'management-policy/main.bicep' = if (!e
 
 // SFTP user settings
 module storageAccount_localUsers 'local-user/main.bicep' = [for (localUser, index) in localUsers: {
-  name: '${uniqueString(deployment().name, location)}-Storage-LocalUsers-${index}'
+  name: 'Storage-LocalUsers-${index}-${uniqueString(deployment().name, location)}'
   params: {
     storageAccountName: storageAccount.name
     name: localUser.name
     hasSshKey: localUser.hasSshKey
     hasSshPassword: localUser.hasSshPassword
     permissionScopes: localUser.permissionScopes
-    hasSharedKey: contains(localUser, 'hasSharedKey') ? localUser.hasSharedKey : false
-    homeDirectory: contains(localUser, 'homeDirectory') ? localUser.homeDirectory : ''
-    sshAuthorizedKeys: contains(localUser, 'sshAuthorizedKeys') ? localUser.sshAuthorizedKeys : []
+    hasSharedKey: localUser.?hasSharedKey ?? false
+    homeDirectory: localUser.?homeDirectory ?? ''
+    sshAuthorizedKeys: localUser.?sshAuthorizedKeys ?? []
   }
 }]
 
 // Containers
 module storageAccount_blobServices 'blob-service/main.bicep' = if (!empty(blobServices)) {
-  name: '${uniqueString(deployment().name, location)}-Storage-BlobServices'
+  name: 'Storage-BlobServices-${uniqueString(deployment().name, location)}'
   params: {
     storageAccountName: storageAccount.name
-    containers: contains(blobServices, 'containers') ? blobServices.containers : []
-    automaticSnapshotPolicyEnabled: contains(blobServices, 'automaticSnapshotPolicyEnabled') ? blobServices.automaticSnapshotPolicyEnabled : false
-    changeFeedEnabled: contains(blobServices, 'changeFeedEnabled') ? blobServices.changeFeedEnabled : false
-    changeFeedRetentionInDays: contains(blobServices, 'changeFeedRetentionInDays') ? blobServices.changeFeedRetentionInDays : 7
-    containerDeleteRetentionPolicyEnabled: contains(blobServices, 'containerDeleteRetentionPolicyEnabled') ? blobServices.containerDeleteRetentionPolicyEnabled : false
-    containerDeleteRetentionPolicyDays: contains(blobServices, 'containerDeleteRetentionPolicyDays') ? blobServices.containerDeleteRetentionPolicyDays : 7
-    containerDeleteRetentionPolicyAllowPermanentDelete: contains(blobServices, 'containerDeleteRetentionPolicyAllowPermanentDelete') ? blobServices.containerDeleteRetentionPolicyAllowPermanentDelete : false
-    corsRules: contains(blobServices, 'corsRules') ? blobServices.corsRules : []
-    defaultServiceVersion: contains(blobServices, 'defaultServiceVersion') ? blobServices.defaultServiceVersion : ''
-    deleteRetentionPolicyAllowPermanentDelete: contains(blobServices, 'deleteRetentionPolicyAllowPermanentDelete') ? blobServices.deleteRetentionPolicyAllowPermanentDelete : false
-    deleteRetentionPolicyEnabled: contains(blobServices, 'deleteRetentionPolicyEnabled') ? blobServices.deleteRetentionPolicyEnabled : false
-    deleteRetentionPolicyDays: contains(blobServices, 'deleteRetentionPolicyDays') ? blobServices.deleteRetentionPolicyDays : 7
-    isVersioningEnabled: contains(blobServices, 'isVersioningEnabled') ? blobServices.isVersioningEnabled : false
-    lastAccessTimeTrackingPolicyEnabled: contains(blobServices, 'lastAccessTimeTrackingPolicyEnabled') ? blobServices.lastAccessTimeTrackingPolicyEnabled : false
-    restorePolicyEnabled: contains(blobServices, 'restorePolicyEnabled') ? blobServices.restorePolicyEnabled : false
-    restorePolicyDays: contains(blobServices, 'restorePolicyDays') ? blobServices.restorePolicyDays : 6
-    diagnosticStorageAccountId: contains(blobServices, 'diagnosticStorageAccountId') ? blobServices.diagnosticStorageAccountId : ''
-    diagnosticEventHubAuthorizationRuleId: contains(blobServices, 'diagnosticEventHubAuthorizationRuleId') ? blobServices.diagnosticEventHubAuthorizationRuleId : ''
-    diagnosticEventHubName: contains(blobServices, 'diagnosticEventHubName') ? blobServices.diagnosticEventHubName : ''
-    diagnosticLogCategoriesToEnable: contains(blobServices, 'diagnosticLogCategoriesToEnable') ? blobServices.diagnosticLogCategoriesToEnable : []
-    diagnosticMetricsToEnable: contains(blobServices, 'diagnosticMetricsToEnable') ? blobServices.diagnosticMetricsToEnable : []
-    diagnosticWorkspaceId: contains(blobServices, 'diagnosticWorkspaceId') ? blobServices.diagnosticWorkspaceId : ''
+    containers: blobServices.?containers ?? []
+    automaticSnapshotPolicyEnabled: blobServices.?automaticSnapshotPolicyEnabled ?? false
+    changeFeedEnabled: blobServices.?changeFeedEnabled ?? false
+    changeFeedRetentionInDays: blobServices.?changeFeedRetentionInDays ?? 7
+    containerDeleteRetentionPolicyEnabled: blobServices.?containerDeleteRetentionPolicyEnabled ?? false
+    containerDeleteRetentionPolicyDays: blobServices.?containerDeleteRetentionPolicyDays ?? 7
+    containerDeleteRetentionPolicyAllowPermanentDelete: blobServices.?containerDeleteRetentionPolicyAllowPermanentDelete ?? false
+    corsRules: blobServices.?corsRules ?? []
+    defaultServiceVersion: blobServices.?defaultServiceVersion ?? ''
+    deleteRetentionPolicyAllowPermanentDelete: blobServices.?deleteRetentionPolicyAllowPermanentDelete ?? false
+    deleteRetentionPolicyEnabled: blobServices.?deleteRetentionPolicyEnabled ?? false
+    deleteRetentionPolicyDays: blobServices.?deleteRetentionPolicyDays ?? 7
+    isVersioningEnabled: blobServices.?isVersioningEnabled ?? false
+    lastAccessTimeTrackingPolicyEnabled: blobServices.?lastAccessTimeTrackingPolicyEnabled ?? false
+    restorePolicyEnabled: blobServices.?restorePolicyEnabled ?? false
+    restorePolicyDays: blobServices.?restorePolicyDays ?? 6
+    diagnosticStorageAccountId: blobServices.?diagnosticStorageAccountId ?? ''
+    diagnosticEventHubAuthorizationRuleId: blobServices.?diagnosticEventHubAuthorizationRuleId ?? ''
+    diagnosticEventHubName: blobServices.?diagnosticEventHubName ?? ''
+    diagnosticLogCategoriesToEnable: blobServices.?diagnosticLogCategoriesToEnable ?? []
+    diagnosticMetricsToEnable: blobServices.?diagnosticMetricsToEnable ?? []
+    diagnosticWorkspaceId: blobServices.?diagnosticWorkspaceId ?? ''
   }
 }
 
 // File Shares
 module storageAccount_fileServices 'file-service/main.bicep' = if (!empty(fileServices)) {
-  name: '${uniqueString(deployment().name, location)}-Storage-FileServices'
+  name: 'Storage-FileServices-${uniqueString(deployment().name, location)}'
   params: {
     storageAccountName: storageAccount.name
-    diagnosticStorageAccountId: contains(fileServices, 'diagnosticStorageAccountId') ? fileServices.diagnosticStorageAccountId : ''
-    diagnosticEventHubAuthorizationRuleId: contains(fileServices, 'diagnosticEventHubAuthorizationRuleId') ? fileServices.diagnosticEventHubAuthorizationRuleId : ''
-    diagnosticEventHubName: contains(fileServices, 'diagnosticEventHubName') ? fileServices.diagnosticEventHubName : ''
-    diagnosticLogCategoriesToEnable: contains(fileServices, 'diagnosticLogCategoriesToEnable') ? fileServices.diagnosticLogCategoriesToEnable : []
-    diagnosticMetricsToEnable: contains(fileServices, 'diagnosticMetricsToEnable') ? fileServices.diagnosticMetricsToEnable : []
-    protocolSettings: contains(fileServices, 'protocolSettings') ? fileServices.protocolSettings : {}
-    shareDeleteRetentionPolicy: contains(fileServices, 'shareDeleteRetentionPolicy') ? fileServices.shareDeleteRetentionPolicy : {
+    diagnosticStorageAccountId: fileServices.?diagnosticStorageAccountId ?? ''
+    diagnosticEventHubAuthorizationRuleId: fileServices.?diagnosticEventHubAuthorizationRuleId ?? ''
+    diagnosticEventHubName: fileServices.?diagnosticEventHubName ?? ''
+    diagnosticLogCategoriesToEnable: fileServices.?diagnosticLogCategoriesToEnable ?? []
+    diagnosticMetricsToEnable: fileServices.?diagnosticMetricsToEnable ?? []
+    protocolSettings: fileServices.?protocolSettings ?? {}
+    shareDeleteRetentionPolicy: fileServices.?shareDeleteRetentionPolicy ?? {
       enabled: true
       days: 7
     }
-    shares: contains(fileServices, 'shares') ? fileServices.shares : []
-    diagnosticWorkspaceId: contains(fileServices, 'diagnosticWorkspaceId') ? fileServices.diagnosticWorkspaceId : ''
+    shares: fileServices.?shares ?? []
+    diagnosticWorkspaceId: fileServices.?diagnosticWorkspaceId ?? ''
   }
 }
 
 // Queue
 module storageAccount_queueServices 'queue-service/main.bicep' = if (!empty(queueServices)) {
-  name: '${uniqueString(deployment().name, location)}-Storage-QueueServices'
+  name: 'Storage-QueueServices-${uniqueString(deployment().name, location)}'
   params: {
     storageAccountName: storageAccount.name
-    diagnosticStorageAccountId: contains(queueServices, 'diagnosticStorageAccountId') ? queueServices.diagnosticStorageAccountId : ''
-    diagnosticEventHubAuthorizationRuleId: contains(queueServices, 'diagnosticEventHubAuthorizationRuleId') ? queueServices.diagnosticEventHubAuthorizationRuleId : ''
-    diagnosticEventHubName: contains(queueServices, 'diagnosticEventHubName') ? queueServices.diagnosticEventHubName : ''
-    diagnosticLogCategoriesToEnable: contains(queueServices, 'diagnosticLogCategoriesToEnable') ? queueServices.diagnosticLogCategoriesToEnable : []
-    diagnosticMetricsToEnable: contains(queueServices, 'diagnosticMetricsToEnable') ? queueServices.diagnosticMetricsToEnable : []
-    queues: contains(queueServices, 'queues') ? queueServices.queues : []
-    diagnosticWorkspaceId: contains(queueServices, 'diagnosticWorkspaceId') ? queueServices.diagnosticWorkspaceId : ''
+    diagnosticStorageAccountId: queueServices.?diagnosticStorageAccountId ?? ''
+    diagnosticEventHubAuthorizationRuleId: queueServices.?diagnosticEventHubAuthorizationRuleId ?? ''
+    diagnosticEventHubName: queueServices.?diagnosticEventHubName ?? ''
+    diagnosticLogCategoriesToEnable: queueServices.?diagnosticLogCategoriesToEnable ?? []
+    diagnosticMetricsToEnable: queueServices.?diagnosticMetricsToEnable ?? []
+    queues: queueServices.?queues ?? []
+    diagnosticWorkspaceId: queueServices.?diagnosticWorkspaceId ?? ''
   }
 }
 
 // Table
 module storageAccount_tableServices 'table-service/main.bicep' = if (!empty(tableServices)) {
-  name: '${uniqueString(deployment().name, location)}-Storage-TableServices'
+  name: 'Storage-TableServices-${uniqueString(deployment().name, location)}'
   params: {
     storageAccountName: storageAccount.name
-    diagnosticStorageAccountId: contains(tableServices, 'diagnosticStorageAccountId') ? tableServices.diagnosticStorageAccountId : ''
-    diagnosticEventHubAuthorizationRuleId: contains(tableServices, 'diagnosticEventHubAuthorizationRuleId') ? tableServices.diagnosticEventHubAuthorizationRuleId : ''
-    diagnosticEventHubName: contains(tableServices, 'diagnosticEventHubName') ? tableServices.diagnosticEventHubName : ''
-    diagnosticLogCategoriesToEnable: contains(tableServices, 'diagnosticLogCategoriesToEnable') ? tableServices.diagnosticLogCategoriesToEnable : []
-    diagnosticMetricsToEnable: contains(tableServices, 'diagnosticMetricsToEnable') ? tableServices.diagnosticMetricsToEnable : []
-    tables: contains(tableServices, 'tables') ? tableServices.tables : []
-    diagnosticWorkspaceId: contains(tableServices, 'diagnosticWorkspaceId') ? tableServices.diagnosticWorkspaceId : ''
+    diagnosticStorageAccountId: tableServices.?diagnosticStorageAccountId ?? ''
+    diagnosticEventHubAuthorizationRuleId: tableServices.?diagnosticEventHubAuthorizationRuleId ?? ''
+    diagnosticEventHubName: tableServices.?diagnosticEventHubName ?? ''
+    diagnosticLogCategoriesToEnable: tableServices.?diagnosticLogCategoriesToEnable ?? []
+    diagnosticMetricsToEnable: tableServices.?diagnosticMetricsToEnable ?? []
+    tables: tableServices.?tables ?? []
+    diagnosticWorkspaceId: tableServices.?diagnosticWorkspaceId ?? ''
   }
 }
 

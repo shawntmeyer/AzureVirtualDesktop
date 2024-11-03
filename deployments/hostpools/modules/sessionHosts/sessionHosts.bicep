@@ -10,19 +10,27 @@ param availabilitySetsIndex int
 param availabilityZones array
 param avdAgentsModuleUrl string
 param avdInsightsDataCollectionRulesResourceId string
-param confidentialVMOSDiskEncryptionType string
+param azureBackupPrivateDnsZoneResourceId string
+param azureBlobPrivateDnsZoneResourceId string
+param azureKeyVaultPrivateDnsZoneResourceId string
+param azureQueuePrivateDnsZoneResourceId string
+param confidentialVMOrchestratorObjectId string
+param confidentialVMOSDiskEncryption bool
 param customImageResourceId string
 param dataCollectionEndpointResourceId string
 param dedicatedHostGroupResourceId string
 param dedicatedHostGroupZones array
 param dedicatedHostResourceId string
+param deployDiskAccessPolicy bool
+param deployDiskAccessResource bool
+param deploymentUserAssignedIdentityClientId string
+param deploymentVirtualMachineName string
 @secure()
 param domainJoinUserPassword string
 @secure()
 param domainJoinUserPrincipalName string
-param enableAcceleratedNetworking bool
-param diskAccessId string
-param diskEncryptionSetResourceId string
+param diskEncryptionSetNames object
+param diskAccessName string
 param diskNamePrefix string
 param diskSizeGB int
 param diskSku string
@@ -30,6 +38,7 @@ param divisionRemainderValue int
 param domainName string
 param drainMode bool
 param drainModeUserAssignedIdentityClientId string
+param enableAcceleratedNetworking bool
 param encryptionAtHost bool
 param fslogixFileShareNames array
 param fslogixConfigureSessionHosts bool
@@ -47,18 +56,23 @@ param imageOffer string
 param imagePublisher string
 param imageSku string
 param integrityMonitoring bool
+param keyManagementDisks string
+param keyVaultNames object
 param location string
-param managementVirtualMachineName string
+param logAnalyticsWorkspaceResourceId string
 param maxResourcesPerTemplateDeployment int
+param privateEndpoint bool
+param privateEndpointNameConv string
+param privateEndpointNICNameConv string
+param privateEndpointSubnetResourceId string
 param enableMonitoring bool
 param networkInterfaceNamePrefix string
 param ouPath string
 param pooledHostPool bool
 param recoveryServices bool
 param recoveryServicesVaultName string
-param resourceGroupControlPlane string
+param resourceGroupDeployment string
 param resourceGroupHosts string
-param resourceGroupManagement string
 param roleDefinitions object
 param secureBootEnabled bool
 param securityDataCollectionRulesResourceId string
@@ -70,6 +84,7 @@ param storageSuffix string
 param subnetResourceId string
 param tags object
 param timeStamp string
+param timeZone string
 param virtualMachineNamePrefix string
 param virtualMachineSize string
 @secure()
@@ -79,7 +94,8 @@ param virtualMachineAdminUserName string
 param vTpmEnabled bool
 param vmInsightsDataCollectionRulesResourceId string
 
-var hostPoolName = last(split(hostPoolResourceId, '/'))
+var backupPolicyName = 'AvdPolicyVm'
+var confidentialVMOSDiskEncryptionType = confidentialVMOSDiskEncryption ? 'DiskWithVMGuestState' : 'VMGuestStateOnly'
 
 // create new arrays that always contain the profile-containers volume as the first element.
 var localNetAppProfileContainerVolumeResourceIds = !empty(fslogixLocalNetAppVolumeResourceIds) ? filter(fslogixLocalNetAppVolumeResourceIds, id => contains(id, fslogixFileShareNames[0])) : []
@@ -89,10 +105,70 @@ var remoteNetAppProfileContainerVolumeResourceIds = !empty(fslogixRemoteNetAppVo
 var remoteNetAppOfficeContainerVolumeResourceIds = !empty(fslogixRemoteNetAppVolumeResourceIds) && length(fslogixFileShareNames) > 1 ? filter(fslogixRemoteNetAppVolumeResourceIds, id => !contains(id, fslogixFileShareNames[0])) : []
 var sortedRemoteNetAppResourceIds = union(remoteNetAppProfileContainerVolumeResourceIds, remoteNetAppOfficeContainerVolumeResourceIds)
 
-var tagsAvailabilitySets = union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroupControlPlane}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'}, tags[?'Microsoft.Compute/availabilitySets'] ?? {})
-var tagsNetworkInterfaces = union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroupControlPlane}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'}, tags[?'Microsoft.Network/networkInterfaces'] ?? {})
-var tagsRecoveryServicesVault = union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroupControlPlane}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'}, tags[?'Microsoft.recoveryServices/vaults'] ?? {})
-var tagsVirtualMachines = union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroupControlPlane}/providers/Microsoft.DesktopVirtualization/hostpools/${hostPoolName}'}, tags[?'Microsoft.Compute/virtualMachines'] ?? {})
+module diskAccessResource '../../../sharedModules/resources/compute/disk-access/main.bicep' = if (deployDiskAccessResource) {
+  scope: resourceGroup(resourceGroupHosts)
+  name: 'DiskAccess_${timeStamp}'
+  params: {
+    name: diskAccessName
+    location: location
+    privateEndpoints:[
+      {
+        customNetworkInterfaceName: replace(
+          replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'disks'), 'RESOURCE', diskAccessName),
+          'VNETID',
+          '${split(privateEndpointSubnetResourceId, '/')[8]}'
+        )
+        name: replace(
+          replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'disks'), 'RESOURCE', diskAccessName),
+          'VNETID',
+          '${split(privateEndpointSubnetResourceId, '/')[8]}'
+        )
+        privateDnsZoneGroup: {
+          privateDNSResourceIds: [
+            azureBlobPrivateDnsZoneResourceId
+          ]
+        }
+        service: 'disks'
+        subnetResourceId: privateEndpointSubnetResourceId
+        tags: tags[?'Microsoft.Network/privateEndpoints'] ?? {}
+      }
+    ]
+    tags: union({'cm-resource-parent': hostPoolResourceId}, tags[?'Microsoft.Compute/diskAccesses'] ?? {})
+  }
+}
+
+module diskAccessPolicy 'modules/diskNetworkAccessPolicy.bicep' = if (deployDiskAccessPolicy) {
+  name: 'ManagedDisks_NetworkAccess_Policy_${timeStamp}'
+  params: {
+    diskAccessId: deployDiskAccessResource ? diskAccessResource.outputs.resourceId : ''
+    location: location
+    resourceGroupName: resourceGroupHosts
+  }
+}
+
+module diskEncryption 'modules/diskEncryption.bicep' =  if (keyManagementDisks != 'PlatformManaged' || confidentialVMOSDiskEncryption) {
+  name: 'DiskEncryption_${timeStamp}'
+  scope: resourceGroup(resourceGroupHosts)
+  params: {    
+    confidentialVMOrchestratorObjectId: confidentialVMOrchestratorObjectId
+    confidentialVMOSDiskEncryption: confidentialVMOSDiskEncryption
+    deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
+    deploymentVirtualMachineName: deploymentVirtualMachineName
+    diskEncryptionSetNames: diskEncryptionSetNames
+    hostPoolResourceId: hostPoolResourceId
+    keyManagementDisks: keyManagementDisks
+    keyVaultNames: keyVaultNames
+    azureKeyVaultPrivateDnsZoneResourceId: azureKeyVaultPrivateDnsZoneResourceId
+    logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
+    privateEndpoint: privateEndpoint
+    privateEndpointNameConv: privateEndpointNameConv
+    privateEndpointNICNameConv: privateEndpointNICNameConv
+    privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
+    resourceGroupDeployment: resourceGroupDeployment
+    tags: tags
+    timeStamp: timeStamp
+  }
+}
 
 module artifactsUserAssignedIdentity 'modules/getUserAssignedIdentity.bicep' = if(!empty(artifactsUserAssignedIdentityResourceId)) {
   name: 'ArtifactsUserAssignedIdentity_${timeStamp}'
@@ -101,17 +177,19 @@ module artifactsUserAssignedIdentity 'modules/getUserAssignedIdentity.bicep' = i
   }
 }
 
-module availabilitySets 'modules/availabilitySets.bicep' = if (pooledHostPool && availability == 'AvailabilitySets') {
-  name: 'AvailabilitySets_${timeStamp}'
+module availabilitySets '../../../sharedModules/resources/compute/availability-set/main.bicep' = [for i in range(0, availabilitySetsCount): if (pooledHostPool && availability == 'AvailabilitySets') {
+  name: '${availabilitySetNamePrefix}${padLeft((i + availabilitySetsIndex), 2, '0')}_${timeStamp}'
   scope: resourceGroup(resourceGroupHosts)
   params: {
-    availabilitySetNamePrefix: availabilitySetNamePrefix
-    availabilitySetsCount: availabilitySetsCount
-    availabilitySetsIndex: availabilitySetsIndex
+    name: '${availabilitySetNamePrefix}${padLeft((i + availabilitySetsIndex), 2, '0')}'
+    platformFaultDomainCount: 2
+    platformUpdateDomainCount: 5
+    proximityPlacementGroupResourceId: ''
     location: location
-    tagsAvailabilitySets: tagsAvailabilitySets
+    skuName: 'Aligned'
+    tags: union({'cm-resource-parent': hostPoolResourceId}, tags[?'Microsoft.Compute/availabilitySets'] ?? {})
   }
-}
+}]
 
 // Role Assignment for Virtual Machine Login User
 // This module deploys the role assignments to login to Azure AD joined session hosts
@@ -139,20 +217,18 @@ module remoteNetAppVolumes 'modules/getNetAppVolumeSmbServerFqdn.bicep' = [for i
   }
 }]
 
-@batchSize(1)
+@batchSize(5)
 module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sessionHostBatchCount): {
-  name: 'VirtualMachines_${i - 1}_${timeStamp}'
+  name: 'VirtualMachines_Batch_${i-1}_${timeStamp}'
   scope: resourceGroup(resourceGroupHosts)
   params: {
     artifactsContainerUri: artifactsContainerUri
-    avdAgentsModuleUrl: avdAgentsModuleUrl
-    enableAcceleratedNetworking: enableAcceleratedNetworking
-    identitySolution: identitySolution
     artifactsUserAssignedIdentityResourceId: artifactsUserAssignedIdentityResourceId
     artifactsUserAssignedIdentityClientId: empty(artifactsUserAssignedIdentityResourceId) ? '' : artifactsUserAssignedIdentity.outputs.clientId
     availability: availability
     availabilityZones: availabilityZones
     availabilitySetNamePrefix: availabilitySetNamePrefix
+    avdAgentsModuleUrl: avdAgentsModuleUrl
     batchCount: i
     confidentialVMOSDiskEncryptionType: confidentialVMOSDiskEncryptionType
     customImageResourceId: customImageResourceId
@@ -160,8 +236,8 @@ module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sess
     dedicatedHostGroupResourceId: dedicatedHostGroupResourceId
     dedicatedHostGroupZones: dedicatedHostGroupZones
     dedicatedHostResourceId: dedicatedHostResourceId
-    diskAccessId: diskAccessId
-    diskEncryptionSetResourceId: diskEncryptionSetResourceId
+    diskAccessId: deployDiskAccessResource ? diskAccessResource.outputs.resourceId : ''
+    diskEncryptionSetResourceId: keyManagementDisks != 'PlatformManaged' || confidentialVMOSDiskEncryption ? diskEncryption.outputs.diskEncryptionSetResourceId : ''
     diskNamePrefix: diskNamePrefix
     diskSizeGB: diskSizeGB
     diskSku: diskSku
@@ -170,6 +246,7 @@ module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sess
     domainName: domainName
     drainMode: drainMode
     drainModeUserAssignedIdentityClientId: drainModeUserAssignedIdentityClientId
+    enableAcceleratedNetworking: enableAcceleratedNetworking
     encryptionAtHost: encryptionAtHost
     fslogixConfigureSessionHosts: fslogixConfigureSessionHosts
     fslogixContainerType: fslogixContainerType
@@ -182,37 +259,124 @@ module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sess
     fslogixStorageService: fslogixStorageService
     hibernationEnabled: hibernationEnabled
     hostPoolResourceId: hostPoolResourceId
+    identitySolution: identitySolution
     imageOffer: imageOffer
     imagePublisher: imagePublisher
     imageSku: imageSku
     integrityMonitoring: integrityMonitoring
     location: location
-    managementVirtualMachineName: managementVirtualMachineName
+    deploymentVirtualMachineName: deploymentVirtualMachineName
     enableMonitoring: enableMonitoring
     networkInterfaceNamePrefix: networkInterfaceNamePrefix
     ouPath: ouPath
     sessionHostCustomizations: sessionHostCustomizations
     avdInsightsDataCollectionRulesResourceId: avdInsightsDataCollectionRulesResourceId
     vmInsightsDataCollectionRulesResourceId: vmInsightsDataCollectionRulesResourceId 
-    resourceGroupManagement: resourceGroupManagement
+    resourceGroupDeployment: resourceGroupDeployment
     securityDataCollectionRulesResourceId: securityDataCollectionRulesResourceId
-    securityType: securityType
     secureBootEnabled: secureBootEnabled
-    vTpmEnabled: vTpmEnabled
+    securityType: securityType
     sessionHostCount: i == sessionHostBatchCount && divisionRemainderValue > 0 ? divisionRemainderValue : maxResourcesPerTemplateDeployment
     sessionHostIndex: i == 1 ? sessionHostIndex : ((i - 1) * maxResourcesPerTemplateDeployment) + sessionHostIndex
     storageSuffix: storageSuffix
     subnetResourceId: subnetResourceId
-    tagsNetworkInterfaces: tagsNetworkInterfaces
-    tagsVirtualMachines: tagsVirtualMachines
+    tags: tags
     timeStamp: timeStamp
     virtualMachineAdminPassword: virtualMachineAdminPassword
     virtualMachineAdminUserName: virtualMachineAdminUserName
     virtualMachineNamePrefix: virtualMachineNamePrefix
     virtualMachineSize: virtualMachineSize
+    vTpmEnabled: vTpmEnabled
   }
   dependsOn: [
     availabilitySets
+  ]
+}]
+
+module recoveryServicesVault '../../../sharedModules/resources/recovery-services/vault/main.bicep' = if (recoveryServices) {
+  name: 'RecoveryServicesVault_VirtualMachines_${timeStamp}'
+  scope: resourceGroup(resourceGroupHosts)
+  params: {
+    location: location
+    name: recoveryServicesVaultName
+    backupPolicies: [
+      {
+        name: backupPolicyName
+        properties: {
+          backupManagementType: 'AzureIaasVM'
+          instantRpRetentionRangeInDays: 2
+          policyType: 'V2'
+          retentionPolicy: {
+            retentionPolicyType: 'LongTermRetentionPolicy'
+            dailySchedule: {
+              retentionDuration: {
+                count: 30
+                durationType: 'Days'
+              }
+              retentionTimes: [
+                '23:00'
+              ]
+            }
+          }
+          schedulePolicy: {
+            schedulePolicyType: 'SimpleSchedulePolicyV2'
+            scheduleRunFrequency: 'Daily'
+            dailySchedule: {
+              scheduleRunTimes: [
+                '23:00'
+              ]
+            }
+          }     
+          timeZone: timeZone
+        }
+      }
+    ]
+    privateEndpoints: privateEndpoint && !empty(privateEndpointSubnetResourceId) && !empty(azureBackupPrivateDnsZoneResourceId) && !empty(azureBlobPrivateDnsZoneResourceId) && !empty(azureQueuePrivateDnsZoneResourceId)
+      ? [
+          {
+            customNetworkInterfaceName: replace(
+              replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'AzureBackup'), 'RESOURCE', recoveryServicesVaultName),
+              'VNETID',
+              '${split(privateEndpointSubnetResourceId, '/')[8]}'
+            )            
+            name: replace(
+              replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'AzureBackup'), 'RESOURCE', recoveryServicesVaultName),
+              'VNETID',
+              '${split(privateEndpointSubnetResourceId, '/')[8]}'
+            )
+            privateDnsZoneGroup: {
+              privateDNSResourceIds: [
+                azureBackupPrivateDnsZoneResourceId
+                azureBlobPrivateDnsZoneResourceId
+                azureQueuePrivateDnsZoneResourceId
+              ]
+            }
+            service: 'AzureBackup'
+            subnetResourceId: privateEndpointSubnetResourceId
+            tags: union({'cm-resource-parent': hostPoolResourceId}, tags[?'Microsoft.Network/privateEndpoints'] ?? {})
+          }
+        ]
+      : null
+    diagnosticWorkspaceId: logAnalyticsWorkspaceResourceId
+    tags: union({'cm-resource-parent': hostPoolResourceId}, tags[?'Microsoft.recoveryServices/vaults'] ?? {})
+  }
+}
+
+module protectedItems_Vm 'modules/protectedItems.bicep' = [for i in range(1, sessionHostBatchCount): if (recoveryServices) {
+  name: 'BackupProtectedItems_VirtualMachines_${i-1}_${timeStamp}'
+  scope: resourceGroup(resourceGroupHosts)
+  params: {
+    location: location
+    PolicyId: recoveryServices ? '${recoveryServicesVault.outputs.resourceId}/backupPolicies/${backupPolicyName}' : ''
+    recoveryServicesVaultName: recoveryServices ? recoveryServicesVault.outputs.name : ''
+    sessionHostCount: i == sessionHostBatchCount && divisionRemainderValue > 0 ? divisionRemainderValue : maxResourcesPerTemplateDeployment
+    sessionHostIndex: i == 1 ? sessionHostIndex : ((i - 1) * maxResourcesPerTemplateDeployment) + sessionHostIndex
+    tags: union({'cm-resource-parent': hostPoolResourceId}, tags[?'Microsoft.recoveryServices/vaults'] ?? {})
+    virtualMachineNamePrefix: virtualMachineNamePrefix
+    VirtualMachineResourceGroupName: resourceGroupHosts
+  }
+  dependsOn: [
+    virtualMachines[i-1]
   ]
 }]
 
@@ -222,28 +386,6 @@ module getFlattenedVmNamesArray 'modules/flattenVirtualMachineNames.bicep' = {
   params: {
     virtualMachineNamesPerBatch: [for i in range(1, sessionHostBatchCount):virtualMachines[i-1].outputs.virtualMachineNames]
   }
-}
-
-module recServices 'modules/recoveryServices.bicep' = if (recoveryServices) {
-  name: 'RecoveryServices_VirtualMachines_${timeStamp}'
-  scope: resourceGroup(resourceGroupManagement)
-  params: {
-    divisionRemainderValue: divisionRemainderValue
-    pooledHostPool: pooledHostPool
-    location: location
-    maxResourcesPerTemplateDeployment: maxResourcesPerTemplateDeployment
-    recoveryServicesVaultName: recoveryServicesVaultName
-    resourceGroupHosts: resourceGroupHosts
-    resourceGroupManagement: resourceGroupManagement
-    sessionHostBatchCount: sessionHostBatchCount
-    sessionHostIndex: sessionHostIndex
-    tagsRecoveryServicesVault: tagsRecoveryServicesVault
-    timeStamp: timeStamp
-    virtualMachineNamePrefix: virtualMachineNamePrefix
-  }
-  dependsOn: [
-    virtualMachines
-  ]
 }
 
 output virtualMachineNames array = getFlattenedVmNamesArray.outputs.virtualMachineNames

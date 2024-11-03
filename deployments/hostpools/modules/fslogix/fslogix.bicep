@@ -3,48 +3,61 @@ targetScope = 'subscription'
 param activeDirectoryConnection bool
 param identitySolution string
 param availability string
-param azureFilesPrivateDnsZoneResourceId string
-param customerManagedKeysEnabled bool
+param azureBackupPrivateDnsZoneResourceId string
+param azureBlobPrivateDnsZoneResourceId string
+param azureFilePrivateDnsZoneResourceId string
+param azureFunctionAppPrivateDnsZoneResourceId string
+param azureFunctionAppScmPrivateDnsZoneResourceId string
+param azureKeyVaultPrivateDnsZoneResourceId string
+param azureQueuePrivateDnsZoneResourceId string
+param azureTablePrivateDnsZoneResourceId string
 param deploymentUserAssignedIdentityClientId string
+param deploymentVirtualMachineName string
 @secure()
 param domainJoinUserPassword string
 @secure()
 param domainJoinUserPrincipalName string
-param netAppVolumesSubnetResourceId string
 param domainName string
-param encryptionUserAssignedIdentityResourceId string
 param fslogixFileShares array
 param fslogixAdminGroups array
+param fslogixStorageAccountEncryptionKeysVaultNameConv string
 param fslogixUserGroups array
-param shareSizeInGB int
+param functionAppDelegatedSubnetResourceId string
+param hostPoolResourceId string
+param increaseQuota bool
+param increaseQuotaAppInsightsName string
+param increaseQuotaFunctionAppName string
+param increaseQuotaKeyVaultName string
+param increaseQuotaStorageAccountName string
 param kerberosEncryptionType string
-param storageEncryptionKeyVaultUris array
+param keyManagementStorageAccounts string
 param location string
 param logAnalyticsWorkspaceResourceId string
-param managementVirtualMachineName string
 param netAppAccountName string
 param netAppCapacityPoolName string
+param netAppVolumesSubnetResourceId string
 param ouPath string
 param privateEndpoint bool
 param privateEndpointNameConv string
 param privateEndpointNICNameConv string
 param privateEndpointSubnetResourceId string
+param privateLinkScopeResourceId string
 param recoveryServices bool
 param recoveryServicesVaultName string
-param resourceGroupManagement string
+param resourceGroupDeployment string
 param resourceGroupStorage string
+param serverFarmId string
+param shareSizeInGB int
 param smbServerLocation string
 param storageAccountNamePrefix string
 param storageCount int
-param storageEncryptionKeyName string
 param storageIndex int
 param storageSku string
 param storageSolution string
-param tagsNetAppAccount object
-param tagsPrivateEndpoints object
-param tagsRecoveryServicesVault object
-param tagsStorageAccounts object
+param tags object
 param timeStamp string
+param timeZone string
+param userAssignedIdentityNameConv string
 
 module privateEndpointVnet '../common/VnetLocation.bicep' = if (privateEndpoint && !empty(privateEndpointSubnetResourceId)) {
   name: 'PrivateEndpointVnet_${timeStamp}'
@@ -53,12 +66,36 @@ module privateEndpointVnet '../common/VnetLocation.bicep' = if (privateEndpoint 
   }
 }
 
+module customerManagedKeys 'modules/customerManagedKeys.bicep' = if(keyManagementStorageAccounts != 'MicrosoftManaged') {
+  name: 'CustomerManagedKeys_${timeStamp}'
+  scope: resourceGroup(resourceGroupStorage)
+  params: {
+    azureKeyVaultPrivateDnsZoneResourceId: azureKeyVaultPrivateDnsZoneResourceId
+    fslogixStorageAccountEncryptionKeysVaultNameConv: fslogixStorageAccountEncryptionKeysVaultNameConv
+    hostPoolResourceId: hostPoolResourceId
+    keyManagementStorageAccounts: keyManagementStorageAccounts
+    location: location
+    privateEndpoint: privateEndpoint
+    privateEndpointNICNameConv: privateEndpointNICNameConv
+    privateEndpointNameConv: privateEndpointNameConv
+    privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
+    storageAccountNamePrefix: storageAccountNamePrefix
+    storageCount: storageCount
+    storageIndex: storageIndex
+    storageSolution: storageSolution
+    tags: tags
+    timeStamp: timeStamp
+    userAssignedIdentityNameConv: userAssignedIdentityNameConv
+  }
+}
+
 // Azure NetApp files for fslogix
 module azureNetAppFiles 'modules/azureNetAppFiles.bicep' = if (storageSolution == 'AzureNetAppFiles' && contains(identitySolution, 'DomainServices')) {
   name: 'AzureNetAppFiles_${timeStamp}'
   scope: resourceGroup(resourceGroupStorage)
   params: {
-    activeDirectoryConnection: activeDirectoryConnection 
+    activeDirectoryConnection: activeDirectoryConnection
+    deploymentVirtualMachineName: deploymentVirtualMachineName 
     domainJoinUserPassword: domainJoinUserPassword
     domainJoinUserPrincipalName: domainJoinUserPrincipalName
     domainName: domainName
@@ -66,17 +103,16 @@ module azureNetAppFiles 'modules/azureNetAppFiles.bicep' = if (storageSolution =
     shareSizeInGB: shareSizeInGB
     shareAdminGroups: fslogixAdminGroups
     shareUserGroups: fslogixUserGroups
-    location: location
-    managementVirtualMachineName: managementVirtualMachineName
+    location: location    
     netAppAccountName: netAppAccountName
     netAppCapacityPoolName: netAppCapacityPoolName
     netAppVolumesSubnetResourceId: netAppVolumesSubnetResourceId
     ouPath: ouPath
-    resourceGroupManagement: resourceGroupManagement
+    resourceGroupDeployment: resourceGroupDeployment
     smbServerLocation: smbServerLocation
     storageSku: storageSku
     storageSolution: storageSolution
-    tagsNetAppAccount: tagsNetAppAccount
+    tagsNetAppAccount: union({'cm-resource-parent': hostPoolResourceId}, tags[?'Microsoft.NetApp/netAppAccounts'] ?? {})
     timeStamp: timeStamp
   }
 }
@@ -87,42 +123,57 @@ module azureFiles 'modules/azureFiles.bicep' = if (storageSolution == 'AzureFile
   scope: resourceGroup(resourceGroupStorage)
   params: {
     availability: availability
-    azureFilesPrivateDnsZoneResourceId: azureFilesPrivateDnsZoneResourceId
+    azureBackupPrivateDnsZoneResourceId: azureBackupPrivateDnsZoneResourceId
+    azureFunctionAppPrivateDnsZoneResourceId: azureFunctionAppPrivateDnsZoneResourceId
+    azureFunctionAppScmPrivateDnsZoneResourceId: azureFunctionAppScmPrivateDnsZoneResourceId
+    azureBlobPrivateDnsZoneResourceId: azureBlobPrivateDnsZoneResourceId
+    azureFilePrivateDnsZoneResourceId: azureFilePrivateDnsZoneResourceId
+    azureKeyVaultPrivateDnsZoneResourceId: azureKeyVaultPrivateDnsZoneResourceId
+    azureQueuePrivateDnsZoneResourceId: azureQueuePrivateDnsZoneResourceId
+    azureTablePrivateDnsZoneResourceId: azureTablePrivateDnsZoneResourceId
     deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
-    customerManagedKeysEnabled: customerManagedKeysEnabled
     domainJoinUserPassword: contains(identitySolution, 'DomainServices') ? domainJoinUserPassword : ''
     domainJoinUserPrincipalName: contains(identitySolution, 'DomainServices') ? domainJoinUserPrincipalName : ''
-    encryptionUserAssignedIdentityResourceId: encryptionUserAssignedIdentityResourceId
+    encryptionKeyKeyVaultUris: keyManagementStorageAccounts == 'MicrosoftManaged' ? [] : customerManagedKeys.outputs.keyVaultUris
+    encryptionUserAssignedIdentityResourceId: keyManagementStorageAccounts == 'MicrosoftManaged' ? '' : customerManagedKeys.outputs.userAssignedIdentityResourceId
     fileShares: fslogixFileShares
     fslogixShareSizeInGB: shareSizeInGB
     fslogixAdminGroups: fslogixAdminGroups
     fslogixUserGroups: fslogixUserGroups
+    functionAppDelegatedSubnetResourceId: functionAppDelegatedSubnetResourceId
+    hostPoolResourceId: hostPoolResourceId
     identitySolution: identitySolution
+    increaseQuota: increaseQuota
+    increaseQuotaApplicationInsightsName: increaseQuotaAppInsightsName
+    increaseQuotaFunctionAppName: increaseQuotaFunctionAppName
+    increaseQuotaKeyVaultName: increaseQuotaKeyVaultName
+    increaseQuotaStorageAccountName: increaseQuotaStorageAccountName
     kerberosEncryptionType: kerberosEncryptionType
-    encryptionKeyKeyVaultUris: storageEncryptionKeyVaultUris
+    keyManagementStorageAccounts: keyManagementStorageAccounts
     location: location
     logAnalyticsWorkspaceId: logAnalyticsWorkspaceResourceId
-    managementVirtualMachineName: managementVirtualMachineName
+    deploymentVirtualMachineName: deploymentVirtualMachineName
     ouPath: ouPath
     privateEndpoint: privateEndpoint
     privateEndpointLocation: privateEndpoint && !empty(privateEndpointSubnetResourceId) ? privateEndpointVnet.outputs.location : ''
     privateEndpointNameConv: privateEndpointNameConv
     privateEndpointNICNameConv: privateEndpointNICNameConv
     privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
+    privateLinkScopeResourceId: privateLinkScopeResourceId
     recoveryServices: recoveryServices
     recoveryServicesVaultName: recoveryServicesVaultName
-    resourceGroupManagement: resourceGroupManagement
+    resourceGroupDeployment: resourceGroupDeployment
     resourceGroupStorage: resourceGroupStorage
+    serverFarmId: serverFarmId
     storageAccountNamePrefix: storageAccountNamePrefix
     storageCount: storageCount
-    storageEncryptionKeyName: storageEncryptionKeyName
+    storageEncryptionKeyName: keyManagementStorageAccounts == 'MicrosoftManaged' ? '' : customerManagedKeys.outputs.storageEncryptionKeyName
     storageIndex: storageIndex
     storageSku: storageSku
     storageSolution: storageSolution
-    tagsPrivateEndpoints: tagsPrivateEndpoints
-    tagsRecoveryServicesVault: tagsRecoveryServicesVault
-    tagsStorageAccounts: tagsStorageAccounts
+    tags: tags
     timeStamp: timeStamp
+    timeZone: timeZone
   }
 }
 

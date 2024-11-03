@@ -21,39 +21,10 @@ param virtualMachineTemplate string
 
 var customRdpProperty = !contains(identitySolution, 'DomainServices') && !contains(hostPoolRDPProperties, 'targetisaadjoined:i:1') ? '${hostPoolRDPProperties};targetisaadjoined:i:1' : hostPoolRDPProperties
 
-var HostPoolLogs = [
-  {
-    category: 'Checkpoint'
-    enabled: true
-  }
-  {
-    category: 'Error'
-    enabled: true
-  }
-  {
-    category: 'Management'
-    enabled: true
-  }
-  {
-    category: 'Connection'
-    enabled: true
-  }
-  {
-    category: 'HostRegistration'
-    enabled: true
-  }
-  {
-    category: 'AgentHealthStatus'
-    enabled: true
-  }
-]
-
 resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' = {
   name: hostPoolName
   location: location
-  tags: union({
-    'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroup().name}/providers/Microsoft.DesktopVirtualization/hostPools/${hostPoolName}'
-  }, tags[?'Microsoft.DesktopVirtualization/hostPools'] ?? {})
+  tags: union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroup().name}/providers/Microsoft.DesktopVirtualization/hostPools/${hostPoolName}'}, tags[?'Microsoft.DesktopVirtualization/hostPools'] ?? {})
   properties: {
     hostPoolType: split(hostPoolType, ' ')[0]
     maxSessionLimit: hostPoolMaxSessionLimit
@@ -89,16 +60,25 @@ module hostPool_PrivateEndpoint '../../../../sharedModules/resources/network/pri
     serviceResourceId: hostPool.id
     subnetResourceId: privateEndpointSubnetResourceId
     tags: union({
-      'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroup().name}/providers/Microsoft.DesktopVirtualization/hostPools/${hostPoolName}'
+      'cm-resource-parent': hostPool.id
     }, tags[?'Microsoft.Network/privateEndpoints'] ?? {}) 
   }
 }
 
 resource hostPool_Diagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (enableMonitoring) {
-  name: 'diag-${hostPoolName}'
+  name: 'WVDInsights'
   scope: hostPool
   properties: {
-    logs: HostPoolLogs
+    logs: [
+      {
+        categoryGroup: 'allLogs'
+        enabled: true
+        retentionPolicy: {
+          days: 0
+          enabled: false
+        }
+      }
+    ]
     workspaceId: logAnalyticsWorkspaceResourceId
   }
 }

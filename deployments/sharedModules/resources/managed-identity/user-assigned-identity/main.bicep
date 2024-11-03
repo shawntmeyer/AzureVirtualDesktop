@@ -1,7 +1,3 @@
-metadata name = 'User Assigned Identities'
-metadata description = 'This module deploys a User Assigned Identity.'
-metadata owner = 'Azure/module-maintainers'
-
 @description('Optional. Name of the User Assigned Identity.')
 param name string = guid(resourceGroup().id)
 
@@ -21,7 +17,7 @@ resource userMsi 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' =
 }
 
 module userMsi_federatedIdentityCredentials 'federated-identity-credential/main.bicep' = [for (federatedIdentityCredential, index) in federatedIdentityCredentials: {
-  name: '${uniqueString(deployment().name, location)}-UserMSI-FederatedIdentityCredential-${index}'
+  name: 'UserMSI-FederatedIdentityCredential-${index}-${uniqueString(deployment().name, location)}'
   params: {
     name: federatedIdentityCredential.name
     userAssignedIdentityName: userMsi.name

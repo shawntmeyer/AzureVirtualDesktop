@@ -5,9 +5,9 @@ param hostPoolResourceId string
 param location string
 param locationVirtualMachines string
 param logAnalyticsWorkspaceResourceId string
-param managementVirtualMachineName string
+param deploymentVirtualMachineName string
 param roleDefinitions object
-param resourceGroupManagement string
+param resourceGroupDeployment string
 param appGroupSecurityGroups array
 param tags object
 param timeStamp string
@@ -43,14 +43,14 @@ resource applicationGroup_DiagnosticSettings 'Microsoft.Insights/diagnosticSetti
 // Adds a friendly name to the SessionDesktop application for the desktop application group
 module updateDesktopFriendlyName 'updateDesktopFriendlyName.bicep' = if (!empty(desktopFriendlyName)) {
   name: 'DesktopFriendlyName_${timeStamp}'
-  scope: resourceGroup(resourceGroupManagement)
+  scope: resourceGroup(resourceGroupDeployment)
   params: {
     applicationGroupResourceId: applicationGroup.id
     desktopFriendlyName: desktopFriendlyName
     userAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
     location: locationVirtualMachines
     timeStamp: timeStamp
-    virtualMachineName: managementVirtualMachineName
+    virtualMachineName: deploymentVirtualMachineName
   }
 }
 

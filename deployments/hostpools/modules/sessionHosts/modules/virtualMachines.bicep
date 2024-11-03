@@ -43,14 +43,14 @@ param imageSku string
 param integrityMonitoring bool
 param customImageResourceId string
 param location string
-param managementVirtualMachineName string
+param deploymentVirtualMachineName string
 param enableMonitoring bool
 param networkInterfaceNamePrefix string
 param ouPath string
 param sessionHostCustomizations array
 param avdInsightsDataCollectionRulesResourceId string
 param vmInsightsDataCollectionRulesResourceId string
-param resourceGroupManagement string
+param resourceGroupDeployment string
 param securityDataCollectionRulesResourceId string
 param securityType string
 param secureBootEnabled bool
@@ -59,8 +59,7 @@ param sessionHostCount int
 param sessionHostIndex int
 param storageSuffix string
 param subnetResourceId string
-param tagsNetworkInterfaces object
-param tagsVirtualMachines object
+param tags object
 param timeStamp string
 @secure()
 param virtualMachineAdminPassword string
@@ -69,13 +68,8 @@ param virtualMachineAdminUserName string
 param virtualMachineNamePrefix string
 param virtualMachineSize string
 
-var amdVmSize = contains(amdVmSizes, virtualMachineSize)
-var amdVmSizes = [
-  'Standard_NV4as_v4'
-  'Standard_NV8as_v4'
-  'Standard_NV16as_v4'
-  'Standard_NV32as_v4'
-]
+var amdVmSize = contains(virtualMachineSize, 'Standard_NV') && (endsWith(virtualMachineSize, 'as_v4') || endsWith(virtualMachineSize, '_V710_v5'))
+var nvidiaVmSize = contains(virtualMachineSize, 'Standard_NV') && (endsWith(virtualMachineSize, '_v3') || endsWith(virtualMachineSize, '_A10_v5'))
 
 var profileShareName = fslogixFileShareNames[0]
 var officeShareName = length(fslogixFileShareNames) > 1 ? fslogixFileShareNames[1] : ''
@@ -155,25 +149,6 @@ var ImageReference = empty(customImageResourceId) ? {
   id: customImageResourceId
 }
 var intune = contains(identitySolution, 'IntuneEnrollment')
-var nvidiaVmSize = contains(nvidiaVmSizes, virtualMachineSize)
-var nvidiaVmSizes = [
-  'Standard_NV6'
-  'Standard_NV12'
-  'Standard_NV24'
-  'Standard_NV12s_v3'
-  'Standard_NV24s_v3'
-  'Standard_NV48s_v3'
-  'Standard_NC4as_T4_v3'
-  'Standard_NC8as_T4_v3'
-  'Standard_NC16as_T4_v3'
-  'Standard_NC64as_T4_v3'
-  'Standard_NV6ads_A10_v5'
-  'Standard_NV12ads_A10_v5'
-  'Standard_NV18ads_A10_v5'
-  'Standard_NV36ads_A10_v5'
-  'Standard_NV36adms_A10_v5'
-  'Standard_NV72ads_A10_v5'
-]
 
 // call on the host pool to get the registration token
 resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' existing = {
@@ -196,7 +171,7 @@ resource remoteStorageAccounts 'Microsoft.Storage/storageAccounts@2023-01-01' ex
 resource networkInterface 'Microsoft.Network/networkInterfaces@2020-05-01' = [for i in range(0, sessionHostCount): {
   name: '${networkInterfaceNamePrefix}${padLeft((i + sessionHostIndex), 3, '0')}'
   location: location
-  tags: tagsNetworkInterfaces
+  tags: union({'cm-resource-parent': hostPoolResourceId}, tags[?'Microsoft.Network/networkInterfaces'] ?? {})
   properties: {
     ipConfigurations: [
       {
@@ -219,7 +194,7 @@ resource networkInterface 'Microsoft.Network/networkInterfaces@2020-05-01' = [fo
 resource virtualMachine 'Microsoft.Compute/virtualMachines@2022-11-01' = [for i in range(0, sessionHostCount): {
   name: '${virtualMachineNamePrefix}${padLeft((i + sessionHostIndex), 3, '0')}'
   location: location
-  tags: tagsVirtualMachines
+  tags: union({'cm-resource-parent': hostPoolResourceId}, tags[?'Microsoft.Compute/virtualMachines'] ?? {})
   zones: !empty(dedicatedHostResourceId) || !empty(dedicatedHostGroupResourceId) ? dedicatedHostGroupZones : availability == 'availabilityZones' && !empty(availabilityZones) ? [
     availabilityZones[i % length(availabilityZones)]
   ] : null
@@ -309,7 +284,6 @@ resource extension_JsonADDomainExtension 'Microsoft.Compute/virtualMachines/exte
   parent: virtualMachine[i]
   name: 'JsonADDomainExtension'
   location: location
-  tags: tagsVirtualMachines
   properties: {
     forceUpdateTag: timeStamp
     publisher: 'Microsoft.Compute'
@@ -333,7 +307,6 @@ resource extension_AADLoginForWindows 'Microsoft.Compute/virtualMachines/extensi
   parent: virtualMachine[i]
   name: 'AADLoginForWindows'
   location: location
-  tags: tagsVirtualMachines
   properties: {
     publisher: 'Microsoft.Azure.ActiveDirectory'
     type: 'AADLoginForWindows'
@@ -349,7 +322,6 @@ resource extension_IaasAntimalware 'Microsoft.Compute/virtualMachines/extensions
   parent: virtualMachine[i]
   name: 'IaaSAntimalware'
   location: location
-  tags: tagsVirtualMachines
   properties: {
     publisher: 'Microsoft.Azure.Security'
     type: 'IaaSAntimalware'
@@ -379,7 +351,6 @@ resource extension_AzureMonitorWindowsAgent 'Microsoft.Compute/virtualMachines/e
   parent: virtualMachine[i]
   name: 'AzureMonitorAgent'
   location: location
-  tags: tagsVirtualMachines
   properties: {
     publisher: 'Microsoft.Azure.Monitor'
     type: 'AzureMonitorWindowsAgent'
@@ -446,7 +417,6 @@ resource extension_GuestAttestation 'Microsoft.Compute/virtualMachines/extension
   parent: virtualMachine[i]
   name: 'GuestAttestation'
   location: location
-  tags: tagsVirtualMachines
   properties: {
     publisher: 'Microsoft.Azure.Security.WindowsAttestation'
     type: 'GuestAttestation'
@@ -479,7 +449,6 @@ resource extension_AmdGpuDriverWindows 'Microsoft.Compute/virtualMachines/extens
   parent: virtualMachine[i]
   name: 'AmdGpuDriverWindows'
   location: location
-  tags: tagsVirtualMachines
   properties: {
     publisher: 'Microsoft.HpcCompute'
     type: 'AmdGpuDriverWindows'
@@ -499,7 +468,6 @@ resource extension_NvidiaGpuDriverWindows 'Microsoft.Compute/virtualMachines/ext
   parent: virtualMachine[i]
   name: 'NvidiaGpuDriverWindows'
   location: location
-  tags: tagsVirtualMachines
   properties: {
     publisher: 'Microsoft.HpcCompute'
     type: 'NvidiaGpuDriverWindows'
@@ -679,7 +647,7 @@ module updateOSDiskNetworkAccess 'getOSDisk.bicep' = [for i in range(0, sessionH
 // Enables drain mode on the session hosts so users cannot login to hosts immediately after the deployment
 module setDrainMode '../../../../sharedModules/resources/compute/virtual-machine/runCommand/main.bicep' = if (drainMode) {
   name: 'DrainMode_${batchCount}_${timeStamp}'
-  scope: resourceGroup(resourceGroupManagement)
+  scope: resourceGroup(resourceGroupDeployment)
   params: {
     location: location
     name: 'DrainMode_${batchCount}_${timeStamp}'
@@ -711,7 +679,7 @@ module setDrainMode '../../../../sharedModules/resources/compute/virtual-machine
     ]
     script: loadTextContent('../../../../../.common/scripts/Set-AvdDrainMode.ps1')
     treatFailureAsDeploymentFailure: true
-    virtualMachineName: managementVirtualMachineName 
+    virtualMachineName: deploymentVirtualMachineName 
   }
   dependsOn: [
     extension_DSC_installAvdAgents

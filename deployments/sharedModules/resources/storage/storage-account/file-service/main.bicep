@@ -108,10 +108,10 @@ module fileServices_shares 'share/main.bicep' = [for (share, index) in shares: {
     storageAccountName: storageAccount.name
     fileServicesName: fileServices.name
     name: share.name
-    accessTier: contains(share, 'accessTier') ? share.accessTier : defaultShareAccessTier
-    enabledProtocols: contains(share, 'enabledProtocols') ? share.enabledProtocols : 'SMB'
-    rootSquash: contains(share, 'rootSquash') ? share.rootSquash : 'NoRootSquash'
-    shareQuota: contains(share, 'shareQuota') ? share.shareQuota : 5120
+    accessTier: share.?accessTier ?? defaultShareAccessTier
+    enabledProtocols: share.?enabledProtocols ?? 'SMB'
+    rootSquash: share.?rootSquash ?? 'NoRootSquash'
+    shareQuota: share.?shareQuota ?? 5120
   }
 }]
 
