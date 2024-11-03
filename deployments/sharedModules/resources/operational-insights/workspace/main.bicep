@@ -186,27 +186,27 @@ resource logAnalyticsWorkspace_diagnosticSettings 'Microsoft.Insights/diagnostic
 }
 
 module logAnalyticsWorkspace_storageInsightConfigs 'storage-insight-config/main.bicep' = [for (storageInsightsConfig, index) in storageInsightsConfigs: {
-  name: '${uniqueString(deployment().name, location)}-LAW-StorageInsightsConfig-${index}'
+  name: 'LAW-StorageInsightsConfig-${index}-${uniqueString(deployment().name, location)}'
   params: {
     logAnalyticsWorkspaceName: logAnalyticsWorkspace.name
-    containers: contains(storageInsightsConfig, 'containers') ? storageInsightsConfig.containers : []
-    tables: contains(storageInsightsConfig, 'tables') ? storageInsightsConfig.tables : []
+    containers: storageInsightsConfig.?containers ?? []
+    tables: storageInsightsConfig.?tables ?? []
     storageAccountResourceId: storageInsightsConfig.storageAccountResourceId
   }
 }]
 
 module logAnalyticsWorkspace_linkedServices 'linked-service/main.bicep' = [for (linkedService, index) in linkedServices: {
-  name: '${uniqueString(deployment().name, location)}-LAW-LinkedService-${index}'
+  name: 'LAW-LinkedService-${index}-${uniqueString(deployment().name, location)}'
   params: {
     logAnalyticsWorkspaceName: logAnalyticsWorkspace.name
     name: linkedService.name
-    resourceId: contains(linkedService, 'resourceId') ? linkedService.resourceId : ''
-    writeAccessResourceId: contains(linkedService, 'writeAccessResourceId') ? linkedService.writeAccessResourceId : ''
+    resourceId: linkedService.?resourceId ?? ''
+    writeAccessResourceId: linkedService.?writeAccessResourceId ?? ''
   }
 }]
 
 module logAnalyticsWorkspace_linkedStorageAccounts 'linked-storage-account/main.bicep' = [for (linkedStorageAccount, index) in linkedStorageAccounts: {
-  name: '${uniqueString(deployment().name, location)}-LAW-LinkedStorageAccount-${index}'
+  name: 'LAW-LinkedStorageAccount-${index}-${uniqueString(deployment().name, location)}'
   params: {
     logAnalyticsWorkspaceName: logAnalyticsWorkspace.name
     name: linkedStorageAccount.name
@@ -215,7 +215,7 @@ module logAnalyticsWorkspace_linkedStorageAccounts 'linked-storage-account/main.
 }]
 
 module logAnalyticsWorkspace_savedSearches 'saved-search/main.bicep' = [for (savedSearch, index) in savedSearches: {
-  name: '${uniqueString(deployment().name, location)}-LAW-SavedSearch-${index}'
+  name: 'LAW-SavedSearch-${index}-${uniqueString(deployment().name, location)}'
   params: {
     logAnalyticsWorkspaceName: logAnalyticsWorkspace.name
     name: '${savedSearch.name}${uniqueString(deployment().name)}'
@@ -223,9 +223,9 @@ module logAnalyticsWorkspace_savedSearches 'saved-search/main.bicep' = [for (sav
     displayName: savedSearch.displayName
     category: savedSearch.category
     query: savedSearch.query
-    functionAlias: contains(savedSearch, 'functionAlias') ? savedSearch.functionAlias : ''
-    functionParameters: contains(savedSearch, 'functionParameters') ? savedSearch.functionParameters : ''
-    version: contains(savedSearch, 'version') ? savedSearch.version : 2
+    functionAlias: savedSearch.?functionAlias ?? ''
+    functionParameters: savedSearch.?functionParameters ?? ''
+    version: savedSearch.?version ?? 2
   }
   dependsOn: [
     logAnalyticsWorkspace_linkedStorageAccounts
@@ -233,58 +233,58 @@ module logAnalyticsWorkspace_savedSearches 'saved-search/main.bicep' = [for (sav
 }]
 
 module logAnalyticsWorkspace_dataExports 'data-export/main.bicep' = [for (dataExport, index) in dataExports: {
-  name: '${uniqueString(deployment().name, location)}-LAW-DataExport-${index}'
+  name: 'LAW-DataExport-${index}-${uniqueString(deployment().name, location)}'
   params: {
     workspaceName: logAnalyticsWorkspace.name
     name: dataExport.name
-    destination: contains(dataExport, 'destination') ? dataExport.destination : {}
-    enable: contains(dataExport, 'enable') ? dataExport.enable : false
-    tableNames: contains(dataExport, 'tableNames') ? dataExport.tableNames : []
+    destination: dataExport.?destination ?? {}
+    enable: dataExport.?enable ?? false
+    tableNames: dataExport.?tableNames ?? []
   }
 }]
 
 module logAnalyticsWorkspace_dataSources 'data-source/main.bicep' = [for (dataSource, index) in dataSources: {
-  name: '${uniqueString(deployment().name, location)}-LAW-DataSource-${index}'
+  name: 'LAW-DataSource-${index}-${uniqueString(deployment().name, location)}'
   params: {
     logAnalyticsWorkspaceName: logAnalyticsWorkspace.name
     name: dataSource.name
     kind: dataSource.kind
-    linkedResourceId: contains(dataSource, 'linkedResourceId') ? dataSource.linkedResourceId : ''
-    eventLogName: contains(dataSource, 'eventLogName') ? dataSource.eventLogName : ''
-    eventTypes: contains(dataSource, 'eventTypes') ? dataSource.eventTypes : []
-    objectName: contains(dataSource, 'objectName') ? dataSource.objectName : ''
-    instanceName: contains(dataSource, 'instanceName') ? dataSource.instanceName : ''
-    intervalSeconds: contains(dataSource, 'intervalSeconds') ? dataSource.intervalSeconds : 60
-    counterName: contains(dataSource, 'counterName') ? dataSource.counterName : ''
-    state: contains(dataSource, 'state') ? dataSource.state : ''
-    syslogName: contains(dataSource, 'syslogName') ? dataSource.syslogName : ''
-    syslogSeverities: contains(dataSource, 'syslogSeverities') ? dataSource.syslogSeverities : []
-    performanceCounters: contains(dataSource, 'performanceCounters') ? dataSource.performanceCounters : []
+    linkedResourceId: dataSource.?linkedResourceId ?? ''
+    eventLogName: dataSource.?eventLogName ?? ''
+    eventTypes: dataSource.?eventTypes ?? []
+    objectName: dataSource.?objectName ?? ''
+    instanceName: dataSource.?instanceName ?? ''
+    intervalSeconds: dataSource.?intervalSeconds ?? 60
+    counterName: dataSource.?counterName ?? ''
+    state: dataSource.?state ?? ''
+    syslogName: dataSource.?syslogName ?? ''
+    syslogSeverities: dataSource.?syslogSeverities ?? []
+    performanceCounters: dataSource.?performanceCounters ?? []
   }
 }]
 
 module logAnalyticsWorkspace_tables 'table/main.bicep' = [for (table, index) in tables: {
-  name: '${uniqueString(deployment().name, location)}-LAW-Table-${index}'
+  name: 'LAW-Table-${index}-${uniqueString(deployment().name, location)}'
   params: {
     workspaceName: logAnalyticsWorkspace.name
     name: table.name
-    plan: contains(table, 'plan') ? table.plan : 'Analytics'
-    schema: contains(table, 'schema') ? table.schema : {}
-    retentionInDays: contains(table, 'retentionInDays') ? table.retentionInDays : -1
-    totalRetentionInDays: contains(table, 'totalRetentionInDays') ? table.totalRetentionInDays : -1
-    restoredLogs: contains(table, 'restoredLogs') ? table.restoredLogs : {}
-    searchResults: contains(table, 'searchResults') ? table.searchResults : {}
+    plan: table.?plan ?? 'Analytics'
+    schema: table.?schema ?? {}
+    retentionInDays: table.?retentionInDays ?? -1
+    totalRetentionInDays: table.?totalRetentionInDays ?? -1
+    restoredLogs: table.?restoredLogs ?? {}
+    searchResults: table.?searchResults ?? {}
   }
 }]
 
 module logAnalyticsWorkspace_solutions '../../operations-management/solution/main.bicep' = [for (gallerySolution, index) in gallerySolutions: if (!empty(gallerySolutions)) {
-  name: '${uniqueString(deployment().name, location)}-LAW-Solution-${index}'
+  name: 'LAW-Solution-${index}-${uniqueString(deployment().name, location)}'
   params: {
     name: gallerySolution.name
     location: location
     logAnalyticsWorkspaceName: logAnalyticsWorkspace.name
-    product: contains(gallerySolution, 'product') ? gallerySolution.product : 'OMSGallery'
-    publisher: contains(gallerySolution, 'publisher') ? gallerySolution.publisher : 'Microsoft'
+    product: gallerySolution.?product ?? 'OMSGallery'
+    publisher: gallerySolution.?publisher ?? 'Microsoft'
   }
 }]
 

@@ -17,7 +17,7 @@ param locationControlPlane string
 param locationGlobalFeed string
 param locationVirtualMachines string
 param logAnalyticsWorkspaceResourceId string
-param managementVirtualMachineName string
+param deploymentVirtualMachineName string
 param hostPoolMaxSessionLimit int
 param hostPoolPublicNetworkAccess string
 param enableMonitoring bool
@@ -28,7 +28,7 @@ param globalFeedPrivateEndpointSubnetResourceId string
 param hostPoolPrivateEndpointSubnetResourceId string
 param resourceGroupControlPlane string
 param resourceGroupGlobalFeed string
-param resourceGroupManagement string
+param resourceGroupDeployment string
 param roleDefinitions object
 param scalingPlanExclusionTag string
 param scalingPlanName string
@@ -109,8 +109,8 @@ module applicationGroup 'modules/applicationGroup.bicep' = {
     location: locationControlPlane
     locationVirtualMachines: locationVirtualMachines
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
-    managementVirtualMachineName: managementVirtualMachineName
-    resourceGroupManagement: resourceGroupManagement
+    deploymentVirtualMachineName: deploymentVirtualMachineName
+    resourceGroupDeployment: resourceGroupDeployment
     roleDefinitions: roleDefinitions
     appGroupSecurityGroups: appGroupSecurityGroups
     tags: tags  
@@ -131,7 +131,7 @@ module feedWorkspace 'modules/workspace.bicep' = {
     location: locationControlPlane
     locationVirtualMachines: locationVirtualMachines
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
-    managementVirtualMachineName: managementVirtualMachineName
+    deploymentVirtualMachineName: deploymentVirtualMachineName
     privateDnsZoneResourceId: avdPrivateDnsZoneResourceId
     privateEndpoint: avdPrivateLinkPrivateRoutes != 'None' || avdPrivateLinkPrivateRoutes != 'HostPool' ? true : false
     privateEndpointLocation: !empty(workspaceFeedPrivateEndpointSubnetResourceId) ? workspaceFeedPrivateEndpointVnet.outputs.location : ''
@@ -139,7 +139,7 @@ module feedWorkspace 'modules/workspace.bicep' = {
     privateEndpointNICName: feedPrivateEndpointNICName
     privateEndpointSubnetResourceId: workspaceFeedPrivateEndpointSubnetResourceId
     publicNetworkAccess: workspacePublicNetworkAccess
-    resourceGroupManagement: resourceGroupManagement
+    resourceGroupDeployment: resourceGroupDeployment
     tags: tags
     timeStamp: timeStamp
     workspaceName: workspaceName    
@@ -175,7 +175,7 @@ module globalWorkspace 'modules/workspace.bicep' = if(empty(existingGlobalWorksp
     location: locationGlobalFeed
     locationVirtualMachines: locationVirtualMachines
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
-    managementVirtualMachineName: managementVirtualMachineName
+    deploymentVirtualMachineName: deploymentVirtualMachineName
     privateDnsZoneResourceId: globalFeedPrivateDnsZoneResourceId
     privateEndpoint: true
     privateEndpointLocation: !empty(globalFeedPrivateEndpointSubnetResourceId) ? globalFeedPrivateEndpointVnet.outputs.location : ''
@@ -183,7 +183,7 @@ module globalWorkspace 'modules/workspace.bicep' = if(empty(existingGlobalWorksp
     privateEndpointNICName: globalFeedPrivateEndpointNICName
     privateEndpointSubnetResourceId: globalFeedPrivateEndpointSubnetResourceId
     publicNetworkAccess: 'Enabled'  
-    resourceGroupManagement: resourceGroupManagement
+    resourceGroupDeployment: resourceGroupDeployment
     tags: tags
     timeStamp: timeStamp
     workspaceName: globalWorkspaceName

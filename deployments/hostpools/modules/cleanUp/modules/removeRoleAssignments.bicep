@@ -10,7 +10,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2022-03-01' existing 
 
 resource removeRoleAssignments 'Microsoft.Compute/virtualMachines/runCommands@2023-09-01' = {
   parent: virtualMachine
-  name: 'Remove-Role-Assignments-${timeStamp}'
+  name: 'Remove_RoleAssignments_${timeStamp}'
   location: location
   properties: {    
     asyncExecution: true

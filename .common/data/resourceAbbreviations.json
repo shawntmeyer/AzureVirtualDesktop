@@ -1,5 +1,6 @@
 {
-    "automationAccounts": "aa",
+    "applicationInsights": "appi",
+    "appServicePlans": "asp",
     "availabilitySets": "as",
     "computeGalleries": "gal",
     "dataCollectionEndpoints": "dce",
@@ -9,6 +10,7 @@
     "remoteApplicationGroups": "vdrag",
     "disks": "disk",
     "diskEncryptionSets": "des",
+    "functionApps": "fa",
     "hostPools": "vdpool",
     "keyVaults": "kv",
     "logAnalyticsWorkspaces": "law",
@@ -16,6 +18,7 @@
     "netAppCapacityPools": "nacp",
     "networkInterfaces": "nic",
     "privateEndpoints": "pe",
+    "privateLinkScopes": "pls",
     "recoveryServicesVaults": "rsv",
     "resourceGroups": "rg",
     "scalingPlans": "vdscaling",

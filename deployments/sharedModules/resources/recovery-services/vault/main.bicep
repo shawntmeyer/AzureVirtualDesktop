@@ -148,9 +148,9 @@ module rsv_replicationFabrics 'replication-fabric/main.bicep' = [for (replicatio
   name: '${uniqueString(deployment().name, location)}-RSV-Fabric-${index}'
   params: {
     recoveryVaultName: rsv.name
-    name: contains(replicationFabric, 'name') ? replicationFabric.name : replicationFabric.location
+    name: replicationFabric.?name ?? replicationFabric.location
     location: replicationFabric.location
-    replicationContainers: contains(replicationFabric, 'replicationContainers') ? replicationFabric.replicationContainers : []
+    replicationContainers: replicationFabric.?replicationContainers ?? []
   }
   dependsOn: [
     rsv_replicationPolicies
@@ -162,10 +162,10 @@ module rsv_replicationPolicies 'replication-policy/main.bicep' = [for (replicati
   params: {
     name: replicationPolicy.name
     recoveryVaultName: rsv.name
-    appConsistentFrequencyInMinutes: contains(replicationPolicy, 'appConsistentFrequencyInMinutes') ? replicationPolicy.appConsistentFrequencyInMinutes : 60
-    crashConsistentFrequencyInMinutes: contains(replicationPolicy, 'crashConsistentFrequencyInMinutes') ? replicationPolicy.crashConsistentFrequencyInMinutes : 5
-    multiVmSyncStatus: contains(replicationPolicy, 'multiVmSyncStatus') ? replicationPolicy.multiVmSyncStatus : 'Enable'
-    recoveryPointHistory: contains(replicationPolicy, 'recoveryPointHistory') ? replicationPolicy.recoveryPointHistory : 1440
+    appConsistentFrequencyInMinutes: replicationPolicy.?appConsistentFrequencyInMinutes ?? 60
+    crashConsistentFrequencyInMinutes: replicationPolicy.?crashConsistentFrequencyInMinutes ?? 5
+    multiVmSyncStatus: replicationPolicy.?multiVmSyncStatus ?? 'Enable'
+    recoveryPointHistory: replicationPolicy.?recoveryPointHistory ?? 1440
   }
 }]
 
@@ -187,7 +187,7 @@ module rsv_backupFabric_protectionContainers 'backup-fabric/protection-container
     friendlyName: protectionContainer.friendlyName
     backupManagementType: protectionContainer.backupManagementType
     containerType: protectionContainer.containerType
-    protectedItems: contains(protectionContainer, 'protectedItems') ? protectionContainer.protectedItems : []
+    protectedItems: protectionContainer.?protectedItems ?? []
     location: location
   }
 }]
@@ -205,25 +205,25 @@ module rsv_backupConfig 'backup-config/main.bicep' = if (!empty(backupConfig)) {
   name: '${uniqueString(deployment().name, location)}-RSV-BackupConfig'
   params: {
     recoveryVaultName: rsv.name
-    name: contains(backupConfig, 'name') ? backupConfig.name : 'vaultconfig'
-    enhancedSecurityState: contains(backupConfig, 'enhancedSecurityState') ? backupConfig.enhancedSecurityState : 'Enabled'
-    resourceGuardOperationRequests: contains(backupConfig, 'resourceGuardOperationRequests') ? backupConfig.resourceGuardOperationRequests : []
-    softDeleteFeatureState: contains(backupConfig, 'softDeleteFeatureState') ? backupConfig.softDeleteFeatureState : 'Enabled'
-    storageModelType: contains(backupConfig, 'storageModelType') ? backupConfig.storageModelType : 'GeoRedundant'
-    storageType: contains(backupConfig, 'storageType') ? backupConfig.storageType : 'GeoRedundant'
-    storageTypeState: contains(backupConfig, 'storageTypeState') ? backupConfig.storageTypeState : 'Locked'
-    isSoftDeleteFeatureStateEditable: contains(backupConfig, 'isSoftDeleteFeatureStateEditable') ? backupConfig.isSoftDeleteFeatureStateEditable : true
+    name: backupConfig.?name ?? 'vaultconfig'
+    enhancedSecurityState: backupConfig.?enhancedSecurityState ?? 'Enabled'
+    resourceGuardOperationRequests: backupConfig.?resourceGuardOperationRequests ?? []
+    softDeleteFeatureState: backupConfig.?softDeleteFeatureState ?? 'Enabled'
+    storageModelType: backupConfig.?storageModelType ?? 'GeoRedundant'
+    storageType: backupConfig.?storageType ?? 'GeoRedundant'
+    storageTypeState: backupConfig.?storageTypeState ?? 'Locked'
+    isSoftDeleteFeatureStateEditable: backupConfig.?isSoftDeleteFeatureStateEditable ?? true
   }
 }
 
 module rsv_replicationAlertSettings 'replication-alert-setting/main.bicep' = if (!empty(replicationAlertSettings)) {
-  name: '${uniqueString(deployment().name, location)}-RSV-replicationAlertSettings'
+  name: 'RSV-replicationAlertSettings-${uniqueString(deployment().name, location)}'
   params: {
     name: 'defaultAlertSetting'
     recoveryVaultName: rsv.name
-    customEmailAddresses: contains(replicationAlertSettings, 'customEmailAddresses') ? replicationAlertSettings.customEmailAddresses : []
-    locale: contains(replicationAlertSettings, 'locale') ? replicationAlertSettings.locale : ''
-    sendToOwners: contains(replicationAlertSettings, 'sendToOwners') ? replicationAlertSettings.sendToOwners : 'Send'
+    customEmailAddresses: replicationAlertSettings.?customEmailAddresses ?? []
+    locale: replicationAlertSettings.?locale ?? ''
+    sendToOwners: replicationAlertSettings.?sendToOwners ?? 'Send'
   }
 }
 
@@ -234,29 +234,29 @@ resource rsv_diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-0
     workspaceId: !empty(diagnosticWorkspaceId) ? diagnosticWorkspaceId : null
     eventHubAuthorizationRuleId: !empty(diagnosticEventHubAuthorizationRuleId) ? diagnosticEventHubAuthorizationRuleId : null
     eventHubName: !empty(diagnosticEventHubName) ? diagnosticEventHubName : null
-    metrics: diagnosticsMetrics
+    metrics: environment().name == 'AzureCloud' ? diagnosticsMetrics : null
     logs: diagnosticsLogs
   }
   scope: rsv
 }
 
 module rsv_privateEndpoints '../../network/private-endpoint/main.bicep' = [for (privateEndpoint, index) in privateEndpoints: {
-  name: '${uniqueString(deployment().name, location)}-RSV-PrivateEndpoint-${index}'
+  name: 'RSV-PrivateEndpoint-${index}-${uniqueString(deployment().name, location)}'
   params: {
     groupIds: [
       privateEndpoint.service
     ]
-    name: contains(privateEndpoint, 'name') ? privateEndpoint.name : 'pe-${last(split(rsv.id, '/'))}-${privateEndpoint.service}-${index}'
+    name: privateEndpoint.?name ?? 'pe-${last(split(rsv.id, '/'))}-${privateEndpoint.service}-${index}'
     serviceResourceId: rsv.id
     subnetResourceId: privateEndpoint.subnetResourceId
-    location: contains(privateEndpoint, 'location') ? privateEndpoint.location : reference(split(privateEndpoint.subnetResourceId, '/subnets/')[0], '2020-06-01', 'Full').location
-    privateDnsZoneGroup: contains(privateEndpoint, 'privateDnsZoneGroup') ? privateEndpoint.privateDnsZoneGroup : {}
-    tags: contains(privateEndpoint, 'tags') ? privateEndpoint.tags : {}
-    manualPrivateLinkServiceConnections: contains(privateEndpoint, 'manualPrivateLinkServiceConnections') ? privateEndpoint.manualPrivateLinkServiceConnections : []
-    customDnsConfigs: contains(privateEndpoint, 'customDnsConfigs') ? privateEndpoint.customDnsConfigs : []
-    ipConfigurations: contains(privateEndpoint, 'ipConfigurations') ? privateEndpoint.ipConfigurations : []
-    applicationSecurityGroups: contains(privateEndpoint, 'applicationSecurityGroups') ? privateEndpoint.applicationSecurityGroups : []
-    customNetworkInterfaceName: contains(privateEndpoint, 'customNetworkInterfaceName') ? privateEndpoint.customNetworkInterfaceName : ''
+    location: privateEndpoint.?location ?? reference(split(privateEndpoint.subnetResourceId, '/subnets/')[0], '2020-06-01', 'Full').location
+    privateDnsZoneGroup: privateEndpoint.?privateDnsZoneGroup ?? {}
+    tags: privateEndpoint.?tags ?? {}
+    manualPrivateLinkServiceConnections: privateEndpoint.?manualPrivateLinkServiceConnections ?? []
+    customDnsConfigs: privateEndpoint.?customDnsConfigs ?? []
+    ipConfigurations: privateEndpoint.?ipConfigurations ?? []
+    applicationSecurityGroups: privateEndpoint.?applicationSecurityGroups ?? []
+    customNetworkInterfaceName: privateEndpoint.?customNetworkInterfaceName ?? ''
   }
 }]
 

@@ -1,7 +1,3 @@
-metadata name = 'Disk Encryption Sets'
-metadata description = 'This module deploys a Disk Encryption Set.'
-metadata owner = 'Azure/module-maintainers'
-
 @description('Required. The name of the disk encryption set that is being created.')
 param name string
 
@@ -19,6 +15,7 @@ param keyVersion string = ''
 
 @description('Optional. The type of key used to encrypt the data of the disk. For security reasons, it is recommended to set encryptionType to EncryptionAtRestWithPlatformAndCustomerKeys.')
 @allowed([
+  'ConfidentialVmEncryptedWithCustomerKey'
   'EncryptionAtRestWithCustomerKey'
   'EncryptionAtRestWithPlatformAndCustomerKeys'
 ])
@@ -35,9 +32,6 @@ param systemAssignedIdentity bool = true
 
 @description('Conditional. The ID(s) to assign to the resource. Required if systemAssignedIdentity is set to "false".')
 param userAssignedIdentities object = {}
-
-@description('Optional. Array of role assignment objects that contain the \'roleDefinitionIdOrName\' and \'principalId\' to define RBAC role assignments on this resource. In the roleDefinitionIdOrName attribute, you can provide either the display name of the role definition, or its fully qualified ID in the following format: \'/providers/Microsoft.Authorization/roleDefinitions/c2f4ef07-c644-48eb-af81-4b1b4947fb11\'.')
-param roleAssignments array = []
 
 @description('Optional. Tags of the disk encryption resource.')
 param tags object = {}
@@ -60,7 +54,7 @@ resource keyVault 'Microsoft.KeyVault/vaults@2021-10-01' existing = {
 
 // Note: This is only enabled for user-assigned identities as the service's system-assigned identity isn't available during its initial deployment
 module keyVaultPermissions '.bicep/nested_keyVaultPermissions.bicep' = [for (userAssignedIdentityId, index) in items(userAssignedIdentities): {
-  name: '${uniqueString(deployment().name, location)}-DiskEncrSet-KVPermissions-${index}'
+  name: 'DiskEncrSet-KVPermissions-${index}-${uniqueString(deployment().name, location)}'
   params: {
     location: location
     keyName: keyName
@@ -71,7 +65,7 @@ module keyVaultPermissions '.bicep/nested_keyVaultPermissions.bicep' = [for (use
   scope: resourceGroup(split(keyVaultResourceId, '/')[2], split(keyVaultResourceId, '/')[4])
 }]
 
-resource diskEncryptionSet 'Microsoft.Compute/diskEncryptionSets@2022-07-02' = {
+resource diskEncryptionSet 'Microsoft.Compute/diskEncryptionSets@2023-10-02' = {
   name: name
   location: location
   tags: tags
@@ -91,19 +85,6 @@ resource diskEncryptionSet 'Microsoft.Compute/diskEncryptionSets@2022-07-02' = {
     keyVaultPermissions
   ]
 }
-
-module diskEncryptionSet_roleAssignments '.bicep/nested_roleAssignments.bicep' = [for (roleAssignment, index) in roleAssignments: {
-  name: '${uniqueString(deployment().name, location)}-DiskEncrSet-Rbac-${index}'
-  params: {
-    description: contains(roleAssignment, 'description') ? roleAssignment.description : ''
-    principalIds: roleAssignment.principalIds
-    principalType: contains(roleAssignment, 'principalType') ? roleAssignment.principalType : ''
-    roleDefinitionIdOrName: roleAssignment.roleDefinitionIdOrName
-    condition: contains(roleAssignment, 'condition') ? roleAssignment.condition : ''
-    delegatedManagedIdentityResourceId: contains(roleAssignment, 'delegatedManagedIdentityResourceId') ? roleAssignment.delegatedManagedIdentityResourceId : ''
-    resourceId: diskEncryptionSet.id
-  }
-}]
 
 @description('The resource ID of the disk encryption set.')
 output resourceId string = diskEncryptionSet.id

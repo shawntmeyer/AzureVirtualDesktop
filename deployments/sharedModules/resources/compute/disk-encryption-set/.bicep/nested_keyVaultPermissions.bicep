@@ -22,7 +22,7 @@ resource keyVault 'Microsoft.KeyVault/vaults@2021-10-01' existing = {
 }
 
 module userAssignedIdentity 'nested_managedIdentityReference.bicep' = {
-  name: '${uniqueString(deployment().name, location)}-MSI-Reference'
+  name: 'UAI-Reference-${uniqueString(deployment().name, location)}'
   params: {
     location: location
     userAssignedIdentityName: last(split(userAssignedIdentityResourceId, '/'))!
@@ -41,29 +41,5 @@ resource keyVaultKeyRBAC 'Microsoft.Authorization/roleAssignments@2022-04-01' = 
     principalId: userAssignedIdentity.outputs.principalId
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '12338af0-0e69-4776-bea7-57ae8d297424') // Key Vault Crypto User
     principalType: 'ServicePrincipal'
-  }
-}
-
-// ============= //
-// Access Policy //
-// ============= //
-
-module keyVaultAccessPolicies '../../../key-vault/vault/access-policy/main.bicep' = if (rbacAuthorizationEnabled != true) {
-  name: '${uniqueString(deployment().name, location)}-DiskEncrSet-KVAccessPolicies'
-  params: {
-    keyVaultName: last(split(keyVaultResourceId, '/'))!
-    accessPolicies: [
-      {
-        tenantId: subscription().tenantId
-        objectId: userAssignedIdentity.outputs.principalId
-        permissions: {
-          keys: [
-            'get'
-            'wrapKey'
-            'unwrapKey'
-          ]
-        }
-      }
-    ]
   }
 }

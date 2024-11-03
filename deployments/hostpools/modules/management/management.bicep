@@ -1,348 +1,162 @@
 targetScope = 'subscription'
 
-param identitySolution string
-param azureBlobsPrivateDnsZoneResourceId string
-param avdObjectId string
-param confidentialVMOrchestratorObjectId string
-param confidentialVMOSDiskEncryptionType string
-param deployDiskAccessPolicy bool
-param deployDiskAccessResource bool
-param deployScalingPlan bool
-param diskAccessName string
-param diskEncryptionSetNames object
-param diskSku string
+param appServicePlanName string
+param azureKeyVaultPrivateDnsZoneResourceId string
+param azureMonitorPrivateLinkScopeResourceId string
+param dataCollectionEndpointName string
+param dataCollectionRulesNameConv string
+param enableMonitoring bool
+param enableQuotaManagement bool
 @secure()
 param domainJoinUserPassword string
 @secure()
 param domainJoinUserPrincipalName string
-param domainName string
-param encryptionAtHost bool
-param envShortName string
-param fslogix bool
-param fslogixStorageIndex int
-param keyManagementFSLogixStorage string
-param fslogixStorageSolution string
-param hostPoolType string
-param keyVaultNames object
-param keyVaultPrivateDnsZoneResourceId string
+param keyVaultName string
+param location string
+param logAnalyticsWorkspaceName string
+param logAnalyticsWorkspaceRetention int
+param logAnalyticsWorkspaceSku string
 param privateEndpointSubnetResourceId string
-param locationVirtualMachines string
-param keyManagementDisks string
-param managementVmSize string
 param privateEndpoint bool
 param privateEndpointNameConv string
 param privateEndpointNICNameConv string
-param recoveryServices bool
-param recoveryServicesVaultName string
-param resourceGroupControlPlane string
-param resourceGroupHosts string
 param resourceGroupManagement string
-param resourceGroupStorage string
-param roleDefinitions object
-param storageCount int
 param tags object
 param timeStamp string
-param timeZone string
-param userAssignedIdentityNameConv string
-param virtualMachineName string
-param virtualMachineNICName string
-param virtualMachineDiskName string
 @secure()
 param virtualMachineAdminPassword string
 @secure()
 param virtualMachineAdminUserName string
-param virtualMachineSubnetResourceId string
+param zoneRedundant bool
 
-var deploymentUserAssignedIdentityName = replace(userAssignedIdentityNameConv, 'UAIPURPOSE', 'avd-deployment')
+var secretList = union(
+  !empty(domainJoinUserPassword) ? [{ name: 'DomainJoinUserPassword', value: domainJoinUserPassword }] : [],
+  !empty(domainJoinUserPrincipalName)
+    ? [{ name: 'DomainJoinUserPrincipalName', value: domainJoinUserPrincipalName }]
+    : [],
+  !empty(virtualMachineAdminPassword)
+    ? [{ name: 'VirtualMachineAdminPassword', value: virtualMachineAdminPassword }]
+    : [],
+  !empty(virtualMachineAdminUserName)
+    ? [{ name: 'VirtualMachineAdminUserName', value: virtualMachineAdminUserName }]
+    : []
+)
 
-var confidentialVMOSDiskEncryption = confidentialVMOSDiskEncryptionType == 'DiskWithVMGuestState' ? true : false
-var diskEncryptionSetEncryptionType = confidentialVMOSDiskEncryption
-  ? 'ConfidentialVmEncryptedWithCustomerKey'
-  : (!contains(keyManagementDisks, 'Platform')
-      ? 'EncryptionAtRestWithCustomerKey'
-      : 'EncryptionAtRestWithPlatformAndCustomerKeys')
-
-var roleAssignmentsControlPlane = [
-  {
-    roleDefinitionId: roleDefinitions.DesktopVirtualizationApplicationGroupContributor // (Purpose: updates the friendly name for the desktop)
-    depName: 'DVAppGroupCont-ControlPlane'
-    resourceGroup: resourceGroupControlPlane
-    subscription: subscription().subscriptionId
-  }
-  {
-    roleDefinitionId: roleDefinitions.DesktopVirtualizationSessionHostOperator // (Purpose: sets drain mode on the AVD session hosts)
-    depName: 'DVSessionHostOp-ControlPlane'
-    resourceGroup: resourceGroupControlPlane
-    subscription: subscription().subscriptionId
-  }
-  {
-    roleDefinitionId: roleDefinitions.DesktopVirtualizationWorkspaceContributor // (Purpose: update the app group references on an existing feed workspace)
-    depName: 'DVWorkspaceCont-ControlPlane'
-    resourceGroup: resourceGroupControlPlane
-    subscription: subscription().subscriptionId
-  }
-  {
-    roleDefinitionId: roleDefinitions.RoleBasedAccessControlAdministrator // (Purpose: remove the control plane role assignments for the deployment identity. This role Assignment must remain last in the list.)
-    depName: 'RBACAdmin-ControlPlane'
-    resourceGroup: resourceGroupControlPlane
-    subscription: subscription().subscriptionId
-  }
-]
-
-var roleAssignmentsHosts = [
-  {
-    roleDefinitionId: roleDefinitions.VirtualMachineContributor // (Purpose: remove the run commands from the host VMs)
-    depName: 'VMCont-Hosts'
-    resourceGroup: resourceGroupHosts
-    subscription: subscription().subscriptionId
-  }
-  {
-    roleDefinitionId: roleDefinitions.RoleBasedAccessControlAdministrator // (Purpose: remove the hosts rsource group role assignment for the deployment identity. This role Assignment must remain last in the list.)
-    depName: 'RBACAdmin-Hosts'
-    resourceGroup: resourceGroupHosts
-    subscription: subscription().subscriptionId
-  }
-]
-
-var roleAssignmentsKeyVault = confidentialVMOSDiskEncryption && contains(keyManagementDisks, 'CustomerManaged')
-  ? [
-      {
-        roleDefinitionId: roleDefinitions.KeyVaultCryptoOfficer // (Purpose: Retrieve the customer managed keys from the key vault for idempotent deployment)
-        depName: 'KVCryptoOff-Management'
-        resourceGroup: resourceGroupManagement
-        subscription: subscription().subscriptionId
-      }
-    ]
-  : []
-
-
-var roleAssignmentsManagement = confidentialVMOSDiskEncryption || deployDiskAccessResource || keyManagementDisks !='PlatformManaged' || keyManagementFSLogixStorage != 'MicrosoftManaged'
-  ? union(roleAssignmentsKeyVault, [
-      {
-        roleDefinitionId: roleDefinitions.VirtualMachineContributor // (Purpose: remove the management virtual machine)
-        depName: 'VMCont-Management'
-        resourceGroup: resourceGroupManagement
-        subscription: subscription().subscriptionId
-      }
-    ]) : union(roleAssignmentsKeyVault, [
-      {
-        roleDefinitionId: roleDefinitions.Contributor // (Purpose: remove the management resource group during cleanup as there won't be any resources within.)
-        depName: 'Cont-Management'
-        resourceGroup: resourceGroupManagement
-        subscription: subscription().subscriptionId
-      }
-    ])
-
-var roleAssignmentStorage = fslogix && contains(identitySolution, 'DomainServices')
-  ? [
-      {
-        roleDefinitionId: roleDefinitions.StorageAccountContributor // (Purpose: domain join storage account & set NTFS permissions on the file share)
-        depName: 'StorageAcctCont-Storage'
-        resourceGroup: resourceGroupStorage
-        subscription: subscription().subscriptionId
-      }
-      {
-        roleDefinitionId: roleDefinitions.RoleBasedAccessControlAdministrator // (Purpose: remove the control plane role assignments for the deployment identity. This role assignment must remain last in the list.)
-        depName: 'RBACAdmin-Storage'
-        resourceGroup: resourceGroupStorage
-        subscription: subscription().subscriptionId
-      }
-    ]
-  : []
-var roleAssignments = union(roleAssignmentsControlPlane, roleAssignmentsHosts, roleAssignmentsManagement, roleAssignmentStorage)
-
-// Role Assignment required for Start VM On Connect
-resource roleAssignment_PowerOnContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(avdObjectId, roleDefinitions.DesktopVirtualizationPowerOnContributor, subscription().id)
-  properties: {
-    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', roleDefinitions.DesktopVirtualizationPowerOnContributor)
-    principalId: avdObjectId
-  }
-}
-
-// Role Assignment required for Scaling Plans
-resource roleAssignment_PowerOnOffContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (deployScalingPlan) {
-  name: guid(avdObjectId, roleDefinitions.DesktopVirtualizationPowerOnOffContributor, subscription().id)
-  properties: {
-    roleDefinitionId: resourceId(
-      'Microsoft.Authorization/roleDefinitions',
-      roleDefinitions.DesktopVirtualizationPowerOnOffContributor
-    )
-    principalId: avdObjectId
-  }
-}
-
-module deploymentUserAssignedIdentity 'modules/userAssignedIdentity.bicep' = {
+module secretsKeyVault '../../../sharedModules/resources/key-vault/vault/main.bicep' = if (!empty(secretList)) {
+  name: 'Secrets_KeyVault_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
-  name: 'UserAssignedIdentity_Deployment_${timeStamp}'
   params: {
-    location: locationVirtualMachines
-    name: deploymentUserAssignedIdentityName
-    tags: tags[?'Microsoft.ManagedIdentity/userAssignedIdentities'] ?? {}
-  }
-}
-
-module roleAssignments_deployment '../../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = [
-  for i in range(0, length(roleAssignments)): {
-    scope: resourceGroup(roleAssignments[i].subscription, roleAssignments[i].resourceGroup)
-    name: 'RA-${roleAssignments[i].depName}-${timeStamp}'
-    params: {
-      principalId: deploymentUserAssignedIdentity.outputs.principalId
-      principalType: 'ServicePrincipal'
-      roleDefinitionId: roleAssignments[i].roleDefinitionId
+    name: keyVaultName
+    diagnosticWorkspaceId: enableMonitoring ? logAnalyticsWorkspace.outputs.resourceId : ''
+    privateEndpoints: privateEndpoint && !empty(privateEndpointSubnetResourceId)
+      ? [
+          {
+            customNetworkInterfaceName: replace(
+              replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'vault'), 'RESOURCE', keyVaultName),
+              'VNETID',
+              '${split(privateEndpointSubnetResourceId, '/')[8]}'
+            )
+            name: replace(
+              replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'vault'), 'RESOURCE', keyVaultName),
+              'VNETID',
+              '${split(privateEndpointSubnetResourceId, '/')[8]}'
+            )
+            privateDnsZoneGroup: {
+              privateDNSResourceIds: [
+                azureKeyVaultPrivateDnsZoneResourceId
+              ]
+            }
+            service: 'vault'
+            subnetResourceId: privateEndpointSubnetResourceId
+            tags: tags[?'Microsoft.Network/privateEndpoints'] ?? {}
+          }
+        ]
+      : null
+    secrets: {
+      secureList: secretList
     }
-  }
-]
-
-module privateEndpointVnet '../common/vnetLocation.bicep' = if (privateEndpoint && !empty(privateEndpointSubnetResourceId)) {
-  name: 'PrivateEndpointVnet_${timeStamp}'
-  params: {
-    privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
+    tags: tags[?'Microsoft.KeyVault/vaults'] ?? {}
   }
 }
 
-module diskAccess 'modules/diskAccess.bicep' = if (deployDiskAccessResource) {
+module logAnalyticsWorkspace 'modules/logAnalyticsWorkspace.bicep' = if (enableMonitoring) {
   scope: resourceGroup(resourceGroupManagement)
-  name: 'DiskAccess_${timeStamp}'
+  name: 'LogAnalytics_${timeStamp}'
   params: {
-    diskAccessName: diskAccessName
-    location: locationVirtualMachines
-    privateDNSZoneResourceId: azureBlobsPrivateDnsZoneResourceId
-    privateEndpointNameConv: privateEndpointNameConv
-    privateEndpointNICNameConv: privateEndpointNICNameConv
-    privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
-    privateEndpointLocation: privateEndpoint && !empty(privateEndpointSubnetResourceId)
-      ? privateEndpointVnet.outputs.location
-      : ''
-    tags: tags
+    logAnalyticsWorkspaceName: logAnalyticsWorkspaceName
+    logAnalyticsWorkspaceRetention: logAnalyticsWorkspaceRetention
+    logAnalyticsWorkspaceSku: logAnalyticsWorkspaceSku
+    location: location
+    tags: tags[?'Microsoft.OperationalInsights/workspaces'] ?? {}
+  }
+}
+
+// Data Collection Rule for AVD Insights required for the Azure Monitor Agent
+module avdInsightsDataCollectionRules 'modules/avdInsightsDataCollectionRules.bicep' = if (enableMonitoring) {
+  name: 'AVDInsights_DataCollectionRule_${timeStamp}'
+  scope: resourceGroup(resourceGroupManagement)
+  params: {
+    dataCollectionEndpointId: dataCollectionEndpoint.outputs.resourceId
+    logAWorkspaceResourceId: enableMonitoring ? logAnalyticsWorkspace.outputs.resourceId : ''
+    location: location
+    nameConv: dataCollectionRulesNameConv
+    tags: tags[?'Microsoft.Insights/dataCollectionRules'] ?? {}
+  }
+}
+
+// Data Collection Rule for VM Insights required for the Azure Monitor Agent
+module vmInsightsDataCollectionRules 'modules/vmInsightsDataCollectionRules.bicep' = if (enableMonitoring) {
+  name: 'VMInsights_DataCollectionRule_${timeStamp}'
+  scope: resourceGroup(resourceGroupManagement)
+  params: {
+    dataCollectionEndpointId: dataCollectionEndpoint.outputs.resourceId
+    logAWorkspaceResourceId: enableMonitoring ? logAnalyticsWorkspace.outputs.resourceId : ''
+    location: location
+    nameConv: dataCollectionRulesNameConv
+    tags: tags[?'Microsoft.Insights/dataCollectionRules'] ?? {}
+  }
+}
+
+module dataCollectionEndpoint 'modules/dataCollectionEndpoint.bicep' = if (enableMonitoring) {
+  name: 'DataCollectionEndpoint_${timeStamp}'
+  scope: resourceGroup(resourceGroupManagement)
+  params: {
+    location: location
+    tags: tags[?'Microsoft.Insights/dataCollectionEndpoints'] ?? {}
+    name: dataCollectionEndpointName
+    publicNetworkAccess: privateEndpoint ? 'Disabled' : 'Enabled'
+  }
+}
+
+module updatePrivateLinkScope '../common/privateLinkScopes/get-PrivateLinkScope.bicep' = if (enableMonitoring && !empty(azureMonitorPrivateLinkScopeResourceId)) {
+  name: 'PrivateLlinkScope-${timeStamp}'
+  params: {
+    privateLinkScopeResourceId: azureMonitorPrivateLinkScopeResourceId
+    scopedResourceIds: [
+      logAnalyticsWorkspace.outputs.resourceId
+      dataCollectionEndpoint.outputs.resourceId
+    ]
     timeStamp: timeStamp
   }
 }
 
-module policy 'modules/policy.bicep' = if (deployDiskAccessPolicy) {
-  name: 'ManagedDisks_NetworkAccess_Policy_${timeStamp}'
-  params: {
-    diskAccessId: deployDiskAccessResource ? diskAccess.outputs.resourceId : ''
-    location: locationVirtualMachines
-    resourceGroupName: resourceGroupHosts
-  }
-}
-
-module vmKeyVault 'modules/keyVault.bicep' = if (confidentialVMOSDiskEncryption || contains(keyManagementDisks, 'CustomerManaged')) {
-  name: 'KeyVault_VMs_${timeStamp}'
+module hostingPlan 'modules/functionAppHostingPlan.bicep' = if (enableQuotaManagement) {
+  name: 'FunctionAppHostingPlan_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
-    enablePurgeProtection: confidentialVMOSDiskEncryption || contains(keyManagementDisks, 'CustomerManaged')
-      ? true
-      : false
-    envShortName: envShortName
-    keyVaultName: keyVaultNames.VMs
-    keyVaultPrivateDnsZoneResourceId: keyVaultPrivateDnsZoneResourceId
-    location: locationVirtualMachines
-    privateEndpoint: privateEndpoint
-    privateEndpointLocation: privateEndpoint && !empty(privateEndpointSubnetResourceId)
-      ? privateEndpointVnet.outputs.location
-      : ''
-    privateEndpointNameConv: privateEndpointNameConv
-    privateEndpointNICNameConv: privateEndpointNICNameConv
-    privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
-    skuName: confidentialVMOSDiskEncryption || contains(keyManagementDisks, 'HSM') ? 'premium' : 'standard'
-    tags: tags
-    timeStamp: timeStamp
+    functionAppKind: 'functionApp'
+    hostingPlanType: 'FunctionsPremium'
+    logAnalyticsWorkspaceId: enableMonitoring ? logAnalyticsWorkspace.outputs.resourceId : ''
+    location: location
+    name: appServicePlanName
+    planPricing: 'PremiumV3_P0v3'
+    tags: tags[?'Microsoft.Web/serverfarms'] ?? {}
+    zoneRedundant: zoneRedundant
   }
 }
 
-// Management VM
-// The management VM is required to validate the deployment and configure FSLogix storage. This deployment does not use customer managed keys for the management machine to allow it to remain idempotent.
-module virtualMachine 'modules/virtualMachine.bicep' = {
-  name: 'ManagementVirtualMachine_${timeStamp}'
-  scope: resourceGroup(resourceGroupManagement)
-  params: {
-    identitySolution: identitySolution
-    diskName: virtualMachineDiskName
-    diskSku: diskSku
-    domainJoinUserPassword: domainJoinUserPassword
-    domainJoinUserPrincipalName: domainJoinUserPrincipalName
-    domainName: domainName
-    encryptionAtHost: encryptionAtHost
-    location: locationVirtualMachines
-    networkInterfaceName: virtualMachineNICName
-    subnetResourceId: virtualMachineSubnetResourceId
-    tagsNetworkInterfaces: tags[?'Microsoft.Network/networkInterfaces'] ?? {}
-    tagsVirtualMachines: tags[?'Microsoft.Compute/virtualMachines'] ?? {}
-    userAssignedIdentitiesResourceIds: {
-      '${deploymentUserAssignedIdentity.outputs.resourceId}': {}
-    }
-    virtualMachineName: virtualMachineName
-    virtualMachineAdminPassword: virtualMachineAdminPassword
-    virtualMachineAdminUserName: virtualMachineAdminUserName
-    vmSize: managementVmSize
-  }
-}
-
-module customerManagedKeys 'modules/customerManagedKeys.bicep' = if (keyManagementDisks != 'PlatformManaged' || confidentialVMOSDiskEncryption || keyManagementFSLogixStorage != 'MicrosoftManaged') {
-  name: 'CustomerManagedKeys_${timeStamp}'
-  scope: resourceGroup(resourceGroupManagement)
-  params: {
-    confidentialVMOrchestratorObjectId: confidentialVMOrchestratorObjectId
-    confidentialVMOSDiskEncryption: confidentialVMOSDiskEncryption
-    deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentity.outputs.clientId
-    diskEncryptionSetEncryptionType: diskEncryptionSetEncryptionType
-    diskEncryptionSetNames: diskEncryptionSetNames
-    keyManagementFSLogixStorage: keyManagementFSLogixStorage
-    keyManagementDisks: keyManagementDisks
-    vmKeyVaultName: confidentialVMOSDiskEncryption || contains(keyManagementDisks, 'CustomerManaged')
-      ? last(split(vmKeyVault.outputs.keyVaultResourceId, '/'))
-      : ''
-    storageKeyVaultNameConv: keyVaultNames.StorageAccounts
-    storageIndex: fslogixStorageIndex
-    keyVaultPrivateDnsZoneResourceId: keyVaultPrivateDnsZoneResourceId
-    envShortName: envShortName
-    location: locationVirtualMachines
-    managementVirtualMachineName: virtualMachine.outputs.Name
-    privateEndpoint: privateEndpoint
-    privateEndpointLocation: privateEndpoint && !empty(privateEndpointSubnetResourceId)
-      ? privateEndpointVnet.outputs.location
-      : ''
-    privateEndpointNameConv: privateEndpointNameConv
-    privateEndpointNICNameConv: privateEndpointNICNameConv
-    privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
-    tags: tags
-    timeStamp: timeStamp
-    userAssignedIdentityNameConv: userAssignedIdentityNameConv
-    storageCount: storageCount
-  }
-}
-
-module recoveryServicesVault 'modules/recoveryServicesVault.bicep' = if (recoveryServices) {
-  name: 'RecoveryServicesVault_${timeStamp}'
-  scope: resourceGroup(resourceGroupManagement)
-  params: {
-    fslogix: fslogix
-    hostPoolType: hostPoolType
-    location: locationVirtualMachines
-    recoveryServicesVaultName: recoveryServicesVaultName
-    fslogixStorageSolution: fslogixStorageSolution
-    tags: tags
-    timeZone: timeZone
-  }
-}
-
-output deploymentUserAssignedIdentityClientId string = deploymentUserAssignedIdentity.outputs.clientId
-output deploymentUserAssignedIdentityResourceId string = deploymentUserAssignedIdentity.outputs.resourceId
-output deploymentUserAssignedIdentityRoleAssignmentIds array = [for i in range(0, length(roleAssignments)): roleAssignments_deployment[i].outputs.resourceId]
-output diskAccessResourceId string = deployDiskAccessResource ? diskAccess.outputs.resourceId : ''
-output diskEncryptionSetResourceId string = keyManagementDisks != 'PlatformManaged'
-  ? customerManagedKeys.outputs.diskEncryptionSetResourceId
-  : ''
-output encryptionUserAssignedIdentityResourceId string = keyManagementDisks != 'PlatformManaged'
-  ? customerManagedKeys.outputs.encryptionUserAssignedIdentityResourceId
-  : ''
-
-output storageAccountEncryptionKeyName string = keyManagementFSLogixStorage != 'MicrosoftManaged'
-  ? customerManagedKeys.outputs.storageKeyName
-  : ''
-output storageEncryptionKeyKeyVaultUris array = keyManagementFSLogixStorage != 'MicrosoftManaged'
-  ? customerManagedKeys.outputs.storageEncryptionKeyKeyVaultUris
-  : []
-output virtualMachineName string = virtualMachine.outputs.Name
+output appServicePlanId string = enableQuotaManagement ? hostingPlan.outputs.hostingPlanId : ''
+output avdInsightsDataCollectionRulesResourceId string = enableMonitoring ? avdInsightsDataCollectionRules.outputs.dataCollectionRulesId : ''
+output dataCollectionEndpointResourceId string = enableMonitoring ? dataCollectionEndpoint.outputs.resourceId : ''
+output logAnalyticsWorkspaceResourceId string = enableMonitoring ? logAnalyticsWorkspace.outputs.resourceId : ''
+output vmInsightsDataCollectionRulesResourceId string = enableMonitoring ? vmInsightsDataCollectionRules.outputs.dataCollectionRulesId : ''

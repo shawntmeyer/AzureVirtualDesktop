@@ -7,7 +7,6 @@ param customImageResourceId string
 param globalFeedPrivateEndpointSubnetResourceId string
 param dedicatedHostGroupResourceId string
 param dedicatedHostResourceId string
-param deployMonitoring bool
 param deployScalingPlan bool = false
 param diskSizeGB int
 param diskSku string
@@ -15,11 +14,11 @@ param domainName string
 param deployFSLogixStorage bool
 param fslogixContainerType string
 param fslogixFileShareNames object
+param fslogixOUPath string
 param fslogixShardOptions string
 param fslogixShardGroups array
 param fslogixStorageService string
 param hibernationEnabled bool
-param hostPoolOnly bool = false
 param hostPoolType string = 'Pooled DepthFirst'
 param imageOffer string
 param imagePublisher string
@@ -27,10 +26,10 @@ param imageSku string
 param locations object
 param locationVirtualMachines string
 param resourceGroupControlPlane string
+param resourceGroupDeployment string
 param resourceGroupGlobalFeed string
 param resourceGroupHosts string
 param resourceGroupManagement string
-param resourceGroupMonitoring string
 param resourceGroupStorage string
 param scalingPlanExclusionTag string
 param scalingPlanRampUpSchedule object = {}
@@ -39,7 +38,6 @@ param scalingPlanRampDownSchedule object = {}
 param scalingPlanOffPeakSchedule object = {}
 param scalingPlanForceLogoff bool = false
 param scalingPlanMinsBeforeLogoff int = 0
-
 param sessionHostCount int
 param sessionHostIndex int
 param securityType string
@@ -48,6 +46,7 @@ param vTpmEnabled bool
 param tags object
 param virtualMachineNamePrefix string
 param virtualMachineSize string
+param vmOUPath string
 param workspaceResourceId string
 
 var dedicatedHostGroupName = !empty(dedicatedHostResourceId)
@@ -129,7 +128,7 @@ var varTags = !empty(exclusionTag) ? union(tags, exclusionTag) : tags
 
 //  BATCH SESSION HOSTS
 // The following variables are used to determine the batches to deploy any number of AVD session hosts.
-var maxResourcesPerTemplateDeployment = 79 // This is the max number of session hosts that can be deployed from the sessionHosts.bicep file in each batch / for loop. Math: (800 - <Number of Static Resources>) / <Number of Looped Resources> 
+var maxResourcesPerTemplateDeployment = 40 // This is the max number of session hosts that can be deployed from the sessionHosts.bicep file in each batch / for loop. Math: (800 - <Number of Static Resources>) / <Number of Looped Resources> 
 var divisionValue = sessionHostCount / maxResourcesPerTemplateDeployment // This determines if any full batches are required.
 var divisionRemainderValue = sessionHostCount % maxResourcesPerTemplateDeployment // This determines if any partial batches are required.
 var sessionHostBatchCount = divisionRemainderValue > 0 ? divisionValue + 1 : divisionValue // This determines the total number of batches needed, whether full and / or partial.
@@ -151,26 +150,25 @@ var countStorage = identitySolution == 'EntraId' || identitySolution == 'EntraId
 var netbios = split(domainName, '.')[0]
 var pooledHostPool = split(hostPoolType, ' ')[0] == 'Pooled' ? true : false
 
+var resGroupDeployment = [resourceGroupDeployment]
 var resGroupHosts = [resourceGroupHosts]
 var resGroupControlPlane = empty(workspaceResourceId) ? [resourceGroupControlPlane] : []
 var resGroupGlobalFeed = avdPrivateLinkPrivateRoutes == 'All' && !empty(globalFeedPrivateEndpointSubnetResourceId)
   ? [resourceGroupGlobalFeed]
   : []
-var resGroupMonitoring = deployMonitoring ? [resourceGroupMonitoring] : []
-var resGroupManagement = !hostPoolOnly ? [resourceGroupManagement] : []
+var resGroupManagement = [resourceGroupManagement]
 var resGroupStorage = deployFSLogixStorage ? [resourceGroupStorage] : []
 
 var resourceGroupNames = union(
+  resGroupDeployment,
   resGroupHosts,
   resGroupControlPlane,
   resGroupGlobalFeed,
-  resGroupMonitoring,
   resGroupManagement,
   resGroupStorage
 )
 
 var roleDefinitions = {
-  AutomationContributor: 'f353d9bd-d4a6-484e-a77a-8050b599b867'
   Contributor: 'b24988ac-6180-42a0-ab88-20f7382dd24c'
   DesktopVirtualizationApplicationGroupContributor: '86240b0e-9422-4c43-887b-b61143f32ba8'
   DesktopVirtualizationPowerOnContributor: '489581de-a3bd-480d-9518-53dea7416b33'
@@ -194,6 +192,7 @@ var smbServerLocation = locations[locationVirtualMachines].abbreviation
 var fslogixStorageSku = fslogixStorageService == 'None' ? 'None' : split(fslogixStorageService, ' ')[1]
 var fslogixStorageSolution = split(fslogixStorageService, ' ')[0]
 var storageSuffix = environment().suffixes.storage
+
 var timeDifference = locations[locationVirtualMachines].timeDifference
 var timeZone = locations[locationVirtualMachines].timeZone
 var virtualMachineTemplateImage = empty(customImageResourceId) ? '"galleryImageOffer":"${imageOffer}","galleryImagePublisher":"${imagePublisher}","galleryImageSKU":"${imageSku}","imageType":"Gallery","imageUri":null,"customImageId":null' : '"galleryImageOffer":null,"galleryImagePublisher":null,"galleryImageSKU":null,"imageType":"CustomImage","imageUri":null,"customImageId":"${customImageResourceId}"'
@@ -206,6 +205,11 @@ output beginAvSetRange int = beginAvSetRange
 output dedicatedHostGroupZones array = !empty(dedicatedHostGroupName) ? dedicatedHostGroup.zones : []
 output divisionRemainderValue int = divisionRemainderValue
 output fslogixFileShareNames array = fslogixFileShares
+output fslogixOUPath string = empty(fslogixOUPath) ? vmOUPath : fslogixOUPath
+output fslogixStorageCount int = countStorage
+output fslogixStorageSku string = fslogixStorageSku
+output fslogixStorageSolution string = fslogixStorageSolution
+output fslogixUserGroups array = fslogixUserGroups
 output maxResourcesPerTemplateDeployment int = maxResourcesPerTemplateDeployment
 output netbios string = netbios
 output pooledHostPool bool = pooledHostPool
@@ -215,11 +219,7 @@ output scalingPlanSchedules array = scalingPlanSchedules
 output sessionHostBatchCount int = sessionHostBatchCount
 output SecurityGroupsCount int = SecurityGroupsCount
 output smbServerLocation string = smbServerLocation
-output fslogixStorageSku string = fslogixStorageSku
-output fslogixStorageSolution string = fslogixStorageSolution
-output fslogixUserGroups array = fslogixUserGroups
 output storageSuffix string = storageSuffix
-output fslogixStorageCount int = countStorage
 output tags object = varTags
 output timeDifference string = timeDifference
 output timeZone string = timeZone

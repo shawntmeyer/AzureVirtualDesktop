@@ -27,12 +27,12 @@ resource replicationFabric 'Microsoft.RecoveryServices/vaults/replicationFabrics
 }
 
 module fabric_replicationContainers 'replication-protection-container/main.bicep' = [for (container, index) in replicationContainers: {
-  name: '${deployment().name}-RCont-${index}'
+  name: 'RCont-${index}-${deployment().name}'
   params: {
     name: container.name
     recoveryVaultName: recoveryVaultName
     replicationFabricName: name
-    replicationContainerMappings: contains(container, 'replicationContainerMappings') ? container.replicationContainerMappings : []
+    replicationContainerMappings: container.?replicationContainerMappings ?? []
   }
   dependsOn: [
     replicationFabric

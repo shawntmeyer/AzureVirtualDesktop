@@ -60,7 +60,7 @@ switch ($Ext) {
       }
       $status = Get-WmiObject -Class Win32_Product | Where-Object Name -like "*$($Name)*"
       if ($status) {
-        Write-OutputWithTimeStamp $status[0].Name " is installed"
+        Write-OutputWithTimeStamp "'$($status[0].Name)' is installed"
       }
       else {
         Write-OutputWithTimeStamp "'$Name' did not install properly, please check arguments"
@@ -80,7 +80,7 @@ switch ($Ext) {
     }
     $status = Get-WmiObject -Class Win32_Product | Where-Object Name -like "*$($Name)*"
     if ($status) {
-      Write-OutputWithTimeStamp $status.Name " is installed"
+      Write-OutputWithTimeStamp "'$($status[0].Name)' is installed"
     }
     else {
       Write-OutputWithTimeStamp "'$Name' did not install properly, please check arguments"

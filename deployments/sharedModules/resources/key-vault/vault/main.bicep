@@ -1,19 +1,9 @@
-metadata name = 'Key Vaults'
-metadata description = 'This module deploys a Key Vault.'
-metadata owner = 'Azure/module-maintainers'
-
-// ================ //
-// Parameters       //
-// ================ //
 @description('Required. Name of the Key Vault. Must be globally unique.')
 @maxLength(24)
 param name string
 
 @description('Optional. Location for all resources.')
 param location string = resourceGroup().location
-
-@description('Optional. All access policies to create.')
-param accessPolicies array = []
 
 @description('Optional. All secrets to create.')
 @secure()
@@ -104,9 +94,6 @@ param diagnosticMetricsToEnable array = [
 @description('Optional. The name of the diagnostic setting, if deployed. If left empty, it defaults to "<resourceName>-diagnosticSettings".')
 param diagnosticSettingsName string = ''
 
-// =========== //
-// Variables   //
-// =========== //
 var diagnosticsLogsSpecified = [for category in filter(diagnosticLogCategoriesToEnable, item => item != 'allLogs' && item != ''): {
   category: category
   enabled: true
@@ -125,19 +112,7 @@ var diagnosticsMetrics = [for metric in diagnosticMetricsToEnable: {
   enabled: true
 }]
 
-var formattedAccessPolicies = [for accessPolicy in accessPolicies: {
-  applicationId: contains(accessPolicy, 'applicationId') ? accessPolicy.applicationId : ''
-  objectId: contains(accessPolicy, 'objectId') ? accessPolicy.objectId : ''
-  permissions: accessPolicy.permissions
-  tenantId: contains(accessPolicy, 'tenantId') ? accessPolicy.tenantId : tenant().tenantId
-}]
-
 var secretList = !empty(secrets) ? secrets.secureList : []
-
-
-// ============ //
-// Deployments  //
-// ============ //
 
 resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' = {
   name: name
@@ -153,16 +128,15 @@ resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' = {
     createMode: createMode
     enablePurgeProtection: enablePurgeProtection ? enablePurgeProtection : null
     tenantId: subscription().tenantId
-    accessPolicies: formattedAccessPolicies
     sku: {
       name: vaultSku
       family: 'A'
     }
     networkAcls: !empty(networkAcls) ? {
-      bypass: contains(networkAcls, 'bypass') ? networkAcls.bypass : null
-      defaultAction: contains(networkAcls, 'defaultAction') ? networkAcls.defaultAction : null
-      virtualNetworkRules: contains(networkAcls, 'virtualNetworkRules') ? networkAcls.virtualNetworkRules : []
-      ipRules: contains(networkAcls, 'ipRules') ? networkAcls.ipRules : []
+      bypass: networkAcls.?bypass ?? null
+      defaultAction: networkAcls.?defaultAction ?? null
+      virtualNetworkRules: networkAcls.?virtualNetworkRules ?? []
+      ipRules: networkAcls.?ipRules ?? []
     } : null
     publicNetworkAccess: !empty(publicNetworkAccess) ? any(publicNetworkAccess) : (!empty(privateEndpoints) && empty(networkAcls) ? 'Disabled' : null)
   }
@@ -181,68 +155,58 @@ resource keyVault_diagnosticSettings 'Microsoft.Insights/diagnosticsettings@2021
   scope: keyVault
 }
 
-module keyVault_accessPolicies 'access-policy/main.bicep' = if (!empty(accessPolicies)) {
-  name: '${uniqueString(deployment().name, location)}-KeyVault-AccessPolicies'
-  params: {
-    keyVaultName: keyVault.name
-    accessPolicies: formattedAccessPolicies
-  }
-}
-
 module keyVault_secrets 'secret/main.bicep' = [for (secret, index) in secretList: {
-  name: '${uniqueString(deployment().name, location)}-KeyVault-Secret-${index}'
+  name: 'KeyVault-Secret-${index}-${uniqueString(deployment().name, location)}'
   params: {
     name: secret.name
     value: secret.value
     keyVaultName: keyVault.name
-    attributesEnabled: contains(secret, 'attributesEnabled') ? secret.attributesEnabled : true
-    attributesExp: contains(secret, 'attributesExp') ? secret.attributesExp : -1
-    attributesNbf: contains(secret, 'attributesNbf') ? secret.attributesNbf : -1
-    contentType: contains(secret, 'contentType') ? secret.contentType : ''
-    tags: contains(secret, 'tags') ? secret.tags : {}
+    attributesEnabled: secret.?attributesEnabled ?? true
+    attributesExp: secret.?attributesExp ?? -1
+    attributesNbf: secret.?attributesNbf ?? -1
+    contentType: secret.?contentType ?? ''
+    tags: secret.?tags ?? {}
   }
 }]
 
 module keyVault_keys 'key/main.bicep' = [for (key, index) in keys: {
-  name: '${uniqueString(deployment().name, location)}-KeyVault-Key-${index}'
+  name: 'KeyVault-Key-${index}-${uniqueString(deployment().name, location)}'
   params: {
     name: key.name
     keyVaultName: keyVault.name
-    attributesEnabled: contains(key, 'attributesEnabled') ? key.attributesEnabled : true
-    attributesExp: contains(key, 'attributesExp') ? key.attributesExp : -1
-    attributesNbf: contains(key, 'attributesNbf') ? key.attributesNbf : -1
-    curveName: contains(key, 'curveName') ? key.curveName : 'P-256'
-    keyOps: contains(key, 'keyOps') ? key.keyOps : []
-    keySize: contains(key, 'keySize') ? key.keySize : -1
-    kty: contains(key, 'kty') ? key.kty : 'EC'
-    tags: contains(key, 'tags') ? key.tags : {}
-    rotationPolicy: contains(key, 'rotationPolicy') ? key.rotationPolicy : {}
+    attributesEnabled: key.?attributesEnabled ?? true
+    attributesExp: key.?attributesExp ?? -1
+    attributesExportable: key.?attributesExportable ?? false
+    attributesNbf: key.?attributesNbf ?? -1
+    curveName: key.?curveName ?? 'P-256'
+    keyOps: key.?keyOps ?? []
+    keySize: key.?keySize ?? -1
+    kty: key.?kty ?? 'EC'
+    tags: key.?tags ?? {}
+    rotationPolicy: key.?rotationPolicy ?? {}
   }
 }]
 
 module keyVault_privateEndpoints '../../network/private-endpoint/main.bicep' = [for (privateEndpoint, index) in privateEndpoints: {
-  name: '${uniqueString(deployment().name, location)}-KeyVault-PrivateEndpoint-${index}'
+  name: 'KeyVault-PrivateEndpoint-${index}-${uniqueString(deployment().name, location)}'
   params: {
     groupIds: [
       privateEndpoint.service
     ]
-    name: contains(privateEndpoint, 'name') ? privateEndpoint.name : 'pe-${last(split(keyVault.id, '/'))}-${privateEndpoint.service}-${index}'
+    name: privateEndpoint.?name ?? 'pe-${last(split(keyVault.id, '/'))}-${privateEndpoint.service}-${index}'
     serviceResourceId: keyVault.id
     subnetResourceId: privateEndpoint.subnetResourceId
-    location: contains(privateEndpoint, 'location') ? privateEndpoint.location : reference(split(privateEndpoint.subnetResourceId, '/subnets/')[0], '2020-06-01', 'Full').location
-    privateDnsZoneGroup: contains(privateEndpoint, 'privateDnsZoneGroup') ? privateEndpoint.privateDnsZoneGroup : {}
-    tags: contains(privateEndpoint, 'tags') ? privateEndpoint.tags : {}
-    manualPrivateLinkServiceConnections: contains(privateEndpoint, 'manualPrivateLinkServiceConnections') ? privateEndpoint.manualPrivateLinkServiceConnections : []
-    customDnsConfigs: contains(privateEndpoint, 'customDnsConfigs') ? privateEndpoint.customDnsConfigs : []
-    ipConfigurations: contains(privateEndpoint, 'ipConfigurations') ? privateEndpoint.ipConfigurations : []
-    applicationSecurityGroups: contains(privateEndpoint, 'applicationSecurityGroups') ? privateEndpoint.applicationSecurityGroups : []
-    customNetworkInterfaceName: contains(privateEndpoint, 'customNetworkInterfaceName') ? privateEndpoint.customNetworkInterfaceName : ''
+    location: privateEndpoint.?location ?? reference(split(privateEndpoint.subnetResourceId, '/subnets/')[0], '2020-06-01', 'Full').location
+    privateDnsZoneGroup: privateEndpoint.?privateDnsZoneGroup ?? {}
+    tags: privateEndpoint.?tags ?? {}
+    manualPrivateLinkServiceConnections: privateEndpoint.?manualPrivateLinkServiceConnections ?? []
+    customDnsConfigs: privateEndpoint.?customDnsConfigs ?? []
+    ipConfigurations: privateEndpoint.?ipConfigurations ?? []
+    applicationSecurityGroups: privateEndpoint.?applicationSecurityGroups ?? []
+    customNetworkInterfaceName: privateEndpoint.?customNetworkInterfaceName ?? ''
   }
 }]
 
-// =========== //
-// Outputs     //
-// =========== //
 @description('The resource ID of the key vault.')
 output resourceId string = keyVault.id
 

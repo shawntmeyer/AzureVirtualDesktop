@@ -89,7 +89,7 @@ resource tableServices_diagnosticSettings 'Microsoft.Insights/diagnosticSettings
 }
 
 module tableServices_tables 'table/main.bicep' = [for (tableName, index) in tables: {
-  name: '${deployment().name}-Table-${index}'
+  name: 'Table-${index}-${deployment().name}'
   params: {
     name: tableName
     storageAccountName: storageAccount.name

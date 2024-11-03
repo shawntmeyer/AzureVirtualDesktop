@@ -89,11 +89,11 @@ resource queueServices_diagnosticSettings 'Microsoft.Insights/diagnosticSettings
 }
 
 module queueServices_queues 'queue/main.bicep' = [for (queue, index) in queues: {
-  name: '${deployment().name}-Queue-${index}'
+  name: 'Queue-${index}-${deployment().name}'
   params: {
     storageAccountName: storageAccount.name
     name: queue.name
-    metadata: contains(queue, 'metadata') ? queue.metadata : {}
+    metadata: queue.?metadata ?? {}
   }
 }]
 

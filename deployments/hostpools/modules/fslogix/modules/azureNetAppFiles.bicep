@@ -6,12 +6,12 @@ param domainJoinUserPrincipalName string
 param domainName string
 param shareSizeInGB int
 param location string
-param managementVirtualMachineName string
+param deploymentVirtualMachineName string
 param netAppAccountName string
 param netAppCapacityPoolName string
 param netAppVolumesSubnetResourceId string
 param ouPath string
-param resourceGroupManagement string
+param resourceGroupDeployment string
 param shares array
 param shareAdminGroups array
 param shareUserGroups array
@@ -145,7 +145,7 @@ var netappServerFqdns = length(shares) > 1 ? [
 
 module SetNTFSPermissions 'domainJoinSetNTFSPermissions.bicep' = {
   name: 'Set-NTFSPermissions_${timeStamp}'
-  scope: resourceGroup(resourceGroupManagement)
+  scope: resourceGroup(resourceGroupDeployment)
   params: {
     adminGroupNames: map(shareAdminGroups, group => group.displayName)  
     domainJoinUserPrincipalName: domainJoinUserPrincipalName
@@ -156,7 +156,7 @@ module SetNTFSPermissions 'domainJoinSetNTFSPermissions.bicep' = {
     storageSolution: storageSolution
     timeStamp: timeStamp
     userGroupNames: map(shareUserGroups, group => group.displayName)
-    virtualMachineName: managementVirtualMachineName
+    virtualMachineName: deploymentVirtualMachineName
   }
   dependsOn: [
     volumes
