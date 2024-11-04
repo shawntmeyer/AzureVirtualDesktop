@@ -40,7 +40,7 @@ param(
     [Parameter(Mandatory = $false)]
     [string] $BlobStorageSuffix,
     [Parameter(Mandatory = $false)]
-    [array] $Customizers = @(),
+    [string] $Customizers,
     [Parameter(Mandatory = $false)]
     [string] $UserAssignedIdentityClientId
 )
@@ -120,7 +120,8 @@ New-Log "$env:SystemRoot\Logs"
 Write-Log -category Info -message "Starting '$PSCommandPath'."
 Write-Log -category Info -message "Current working dir: $((Get-Location).Path)"
 
-If ($Customizers) {   
+If ($Customizers) {
+    [array]$Customizers = $Customizers.replace('\"','"') | ConvertFrom-Json   
     ForEach ($Customizer in $Customizers) {
         $Name = $Customizer.Name
         $Uri = $Customizer.Uri
