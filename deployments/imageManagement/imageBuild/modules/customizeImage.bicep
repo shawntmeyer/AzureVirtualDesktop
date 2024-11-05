@@ -33,6 +33,7 @@ param teamsInstallerBlobName string
 param teamsCloudType string
 param timeStamp string = utcNow('yyMMddhhmm')
 param updateService string
+param vdiCustomizations array
 param userAssignedIdentityClientId string
 param wsusServer string
 
@@ -41,6 +42,12 @@ var buildDir = 'c:\\BuildDir'
 var apiVersion = environment().name == 'USNat' ? '2017-08-01' : '2018-02-01'
 
 var customizers = [for customization in customizations: {
+  name: replace(customization.name, ' ', '-')
+  uri: contains(customization.blobNameOrUri, '//:') ? customization.blobNameOrUri : '${artifactsContainerUri}/${customization.blobNameOrUri}'
+  arguments: customization.?arguments ?? ''
+}]
+
+var vdiCustomizers = [for customization in vdiCustomizations: {
   name: replace(customization.name, ' ', '-')
   uri: contains(customization.blobNameOrUri, '//:') ? customization.blobNameOrUri : '${artifactsContainerUri}/${customization.blobNameOrUri}'
   arguments: customization.?arguments ?? ''
@@ -110,7 +117,6 @@ resource createBuildDirs 'Microsoft.Compute/virtualMachines/runCommands@2023-03-
     }
     treatFailureAsDeploymentFailure: true
   }
-
 }
 
 resource removeAppxPackages 'Microsoft.Compute/virtualMachines/runCommands@2024-03-01' = if (removeApps) {
@@ -282,8 +288,8 @@ resource office 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if(
   dependsOn: [
     createBuildDirs
     removeAppxPackages
-    fslogix
     applications
+    fslogix
   ]
 }
 
@@ -384,6 +390,7 @@ resource firstImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023
     applications
     fslogix
     office
+    onedrive
     teams
   ]
 }
@@ -478,8 +485,65 @@ resource vdot 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (i
   ]
 }
 
-resource removeBuildDir 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
-  name: 'remove-BuildDir'
+resource thirdImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (installVirtualDesktopOptimizationTool) {
+  name: 'restart-vm-3'
+  location: location
+  parent: managementVm
+  properties: {    
+    asyncExecution: false
+    parameters: restartVMParameters
+    source: {
+      script: loadTextContent('../../../../.common/scripts/Restart-Vm.ps1')
+    }
+    treatFailureAsDeploymentFailure: true
+  }
+  dependsOn: [
+    vdot
+  ]
+}
+
+@batchSize(1)
+resource vdiApplications 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = [for customizer in vdiCustomizers: {
+  name: customizer.name
+  location: location
+  parent: imageVm
+  properties: {
+    errorBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
+      clientId: userAssignedIdentityClientId
+    }
+    errorBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-${customizer.name}-error-${timeStamp}.log' 
+    outputBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
+      clientId: userAssignedIdentityClientId
+    }
+    outputBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-${customizer.name}-output-${timeStamp}.log'
+    parameters: union(commonScriptParams, [      
+      {
+        name: 'Uri'
+        value: customizer.uri
+      }
+      {
+        name: 'Name'
+        value: customizer.name
+      }
+      {
+        name: 'Arguments'
+        value: customizer.arguments
+      }
+    ])
+    source: {
+      script: loadTextContent('../../../../.common/scripts/Invoke-Customizations.ps1')
+    }
+    treatFailureAsDeploymentFailure: true
+  }
+  dependsOn: [
+    firstImageVmRestart
+    secondImageVmRestart
+    thirdImageVmRestart
+  ]
+}]
+
+resource cleanup 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
+  name: 'cleanup-Image'
   location: location
   parent: imageVm
   properties: {
@@ -500,25 +564,10 @@ resource removeBuildDir 'Microsoft.Compute/virtualMachines/runCommands@2023-03-0
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
+    firstImageVmRestart
     secondImageVmRestart
-    vdot
-  ]
-}
-
-resource thirdImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (installVirtualDesktopOptimizationTool) {
-  name: 'restart-vm-3'
-  location: location
-  parent: managementVm
-  properties: {    
-    asyncExecution: false
-    parameters: restartVMParameters
-    source: {
-      script: loadTextContent('../../../../.common/scripts/Restart-Vm.ps1')
-    }
-    treatFailureAsDeploymentFailure: true
-  }
-  dependsOn: [
-    removeBuildDir
+    thirdImageVmRestart
+    vdiApplications
   ]
 }
 
@@ -542,7 +591,6 @@ resource sysprep 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
-    removeBuildDir
-    thirdImageVmRestart
+    cleanup
   ]
 }
