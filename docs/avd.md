@@ -496,23 +496,30 @@ This Azure Virtual Desktop (AVD) solution will deploy fully operational AVD host
 
 The deployment utilizes the Cloud Adoption Framework naming conventions and organizes resources and resource groups in accordance with several available parameters:
 
-- Business Unit (***businessUnitIdentifier***): This *optional* parameter is primarily designed to allow multiple business units to deploy AVD hostpools into the same subscription. When used, all resources and resource groups contain this string value in the name. All shared resources located in the management and control plane resource groups will also contain this string value. When this parameter value is not specified, it is assumed that the subscription is used by a single business unit and all shared resource groups will not contain a business unit identifier string.
+- Persona Identifier (***identifier***): This parameter is used to uniquely identify the persona of the host pool(s). Each persona, or each group of users with distinct business functions and technical requirements, would require a specific host-pool configuration and thus we use the persona term to identify the host pool. For more information about personas see [User Personas | AVD Cloud Adoption Framework](https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/scenarios/azure-virtual-desktop/migrate-assess#user-personas).
 
-- Host Pool Identifier (***hostpoolIdentifier***): This *required* parameter is used to uniquely identify the hostpool specific resources such as the control plane objects, compute resources, and FSLogix storage resources (when deployed).
+- Host Pool Index (***index***): This *optional* parameter is used when we must shard the unique persona across multiple host pools. For more information, see [Sharding Pattern](https://docs.microsoft.com/en-us/azure/architecture/patterns/sharding).
 
-- Centralized AVD Monitoring (***centralizedAVDMonitoring***): This *optional* boolean (defaults to True) parameter is only used when the Business Unit Identifier is specified. If set to true, then all monitoring resources are named without the Business Unit Identifier and thus will be shared subscription/region wide. When set to 'False', then the monitoring resources and resource groups are named with the Business Unit Identifier string located in the name and thus only shared across the Business Unit.
+- Name Convention Reversed (***nameConvResTypeAtEnd***): This bolean parameter, which is by default 'false', will move the resource type abbreviation to the end of the resource names effectively reversing the CAF naming standard.
 
-If AVD Private Link is configured, every AVD deployment within the same subscription will share the AVD global workspace.
-
-There will be one feed workspace deployed per region and per Business Unit Identifier (if specified).
-
-The diagram below highlights how the resource groups are named based on these parameters. In the diagram, ***buid*** is short ***businessUnitIdentifier*** and ***hpid*** is short for ***hostpoolIdentifier***.
+The diagram below highlights how the resource groups are created based on the parameters.
 
 ![ResourceGroupNaming](images/ResourceGroupNaming.png)
 
-The diagram below is designed to illustrate the deployment of multiple host pools (stamps) to a subscription and how the host pool specific resource groups and shared resource groups will be named. In this example the ***businessUnitIdentifier*** is left empty.
+The diagram illustrates the following resource group distribution. In the table below, the example names are utilizing the following parameter values:
+- **identifier**: 'hr'
+- **index**: '01', '02'
+- locationVirtualMachines (determined by **virtualMachineSubnetResourceId** location): 'USGovVirginia'
+- **locationControlPlane**: 'USGovVirginia'
+- **nameConvResTypeAtEnd**: false
 
-![Stamps](images/stamps.png)
+| Purpose | Resources | Example Name | Notes |
+| ------- | :-------: | ------------ | ----- |
+| Global Feed | global feed workspace | rg-avd-global-feed | One per Tenant |
+| Management | monitoring resources<br>key vault<br>app service plan  | rg-avd-management-va | One per region |
+| Control Plane | feed workspace<br>application groups<br>hostpools<br>scaling plans | rg-avd-control-plane-va | One per region |
+| Hosts | virtual machines<br>recovery service vault<br>disk encryption set<br>key vault | rg-hr-01-hosts-va<br>rg-hr-02-hosts-va | One per identifier or per index (if specified) |
+| Storage | NetApp Storage Accounts<br>Storage Account(s)<br>function app<br>key vault(s) | rg-hr-01-storage-va<br>rg-hr-02-storage-va | One per identifier or per index (if specified) |
 
 The code is idempotent, allowing you to scale storage and sessions hosts, but the core management resources will persist and update for any subsequent deployments. Some of those resources are the host pool, application group, and log analytics workspace.
 
@@ -1145,7 +1152,7 @@ You might need to clear out the bicep exe which is located in the %USERPROFILE%.
 | Parameter | Description | Type | Allowed | Default |
 | --------- | ----------- | :--: | :-----: | ------- |
 | `avdObjectId` | The Object ID for the Azure Virtual Desktop application in Entra Id with Application Id = '9cdead84-a844-4324-93f2-b2e6bb768d07'.  The Object ID can found by selecting Microsoft Applications using the Application type filter in the Enterprise Applications blade of Entra Id. If you use the custom UI and template spec, this value is obtained automatically. | string | object id | |
-| `hostPoolIdentifier` | An identifier used to distinquish each host pool. This can represent the user or use case. | string | 3- 10 characters | |
+| `identifier` | An identifier used to distinquish each host pool. This normally represents the persona. | string | 3- 10 characters | |
 | `identitySolution` | The service providing domain services for Azure Virtual Desktop.  This is needed to properly configure the session hosts and if applicable, the Azure Storage Account. | string | 'ActiveDirectoryDomainServices'<br/>'EntraDomainServices'<br/>'EntraId'<br/>'EntraIdIntuneEnrollment' | |
 | `virtualMachineNamePrefix` | The prefix of the virtual machine name. Virtual Machines are named based on the prefix with the 3 character index incremented at the end (i.e., prefix001, prefix002, etc.) | string | 2 - 12 characters | |
 | `virtualMachineSubnetResourceId` | The resource Id of the subnet onto which the Virtual Machines will be deployed. | string | resource id | |
@@ -1174,14 +1181,14 @@ You might need to clear out the bicep exe which is located in the %USERPROFILE%.
 
 | Parameter | Description | Type | Allowed | Default |
 | --------- | ----------- | :--: | :-----: | ------- |
+| `index` | A string of integers from 00 to 99. This parameter is designed to uniquely identify host pools when sharding of the host pool is necessary. | string | 0-99 | '' |
 | `appGroupSecurityGroups` | An array of objects that contain the Entra ID DisplayNames and ObjectIds that are assigned to the desktop application group created by this template. If you do not shard storage, then these groups are also granted permissions to the storage accounts. | array (of objects) | [{"DisplayName":"Entra Display Name", "ObjectId": "Entra Object Id"}] | [] |
 | `artifactsContainerUri` | The full URI of the storage account and container that contains any scripts you want to run on each host during deployment. | string | resource id | '' |
 | `artifactsUserAssignedIdentityResourceId` | The resource ID of the managed identity with Storage Blob Data Reader Access to the artifacts storage Account. Required when the cseUris parameter is not empty. | string | resource id | '' |
 | `availability` | Set the desired availability / SLA with a pooled host pool.  The best practice is to deploy to availability Zones for resilency. | string | 'none'<br/>'availabilitySets'<br/>'availabilityZones' | 'availabilityZones' |
 | `avdAgentsModuleUri` | Sets the publically accessible download location for the Desired State Configuration zip file where the script and installers are located for the AVD Agents. This parameter may need to be updated periodically to ensure you are using the latest version. You can obtain this value by going through the Add new session host flow inside a host pool and showing the template and parameters. This value will be exposed in the parameters. | string | Allowed | url | https://wvdportalstorageblob.blob.${environment().suffixes.storage}/galleryartifacts/Configuration_*version*.zip | 
 | `avdPrivateLinkPrivateRoutes` | Determines if Azure Private Link with Azure Virtual Desktop is enabled. Selecting "None" disables AVD Private Link deployment. Selecting one of the other options enables deployment of the required endpoints. See [AVD Private Link Setup](https://learn.microsoft.com/en-us/azure/virtual-desktop/private-link-setup?tabs=portal%2Cportal-2) for more information. | string | 'None'<br/>'HostPool'<br/>'FeedAndHostPool' | 'None' |
-| `businessUnitIdentifier` | Identifier used to describe the business unit (or customer) utilizing AVD in your tenant. If not specified then centralized AVD Monitoring is assumed and resources and resource groups are named accordingly. If this is specified, then the "centralizedAVDMonitoring" parameter determines how resources are organized and deployed.| string | up to 10 characters | '' |
-| `centralizedAVDMonitoring` | When the `businessUnitIdentifier` parameter is not empty, this parameter determines if the AVD Monitoring Resource Group and associated resources are created in a centralized resource group (does not include "businessUnitIdentifier" in the name) and monitoring resources are named accordingly or if a Business unit specific AVD management resource group is created and monitoring resources are named accordingly. If the `businessUnitIdentifier` parameter is left empty ("") then this value has no effect.| bool | true<br/>false | false |
+| `azureMonitorPrivateLinkScopeResourceId` | The resource Id of an existing Azure Monitor Private Link Scope resource. If specified, the log analytics workspace and data collection endpoint created by this solution will automatically be associated to this resource to configure private routing of Azure Monitor traffic. | string | valid resource Id | '' |
 | `confidentialVMOSDiskEncryption` | Confidential disk encryption is an additional layer of encryption which binds the disk encryption keys to the virtual machine TPM and makes the disk content accessible only to the VM. | bool | true<br/>false | false |
 | `customImageResourceId` | The resource ID for the Compute Gallery Image Version. Do not set this value if using a marketplace image. | string | resource id | '' |
 | `dedicatedHostResourceId` | The resource Id of a specific Dedicated Host on which to deploy the Virtual Machines. This parameter takes precedence over the `dedicatedHostGroupResourceId` parameter. | string | resource id | '' |

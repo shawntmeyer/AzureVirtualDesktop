@@ -10,7 +10,7 @@ Manufacturer             : Microsoft Corporation
 ProductCode              : {731F6BAA-A986-45A4-8936-7C3AAAAA760B}
 ProductLanguage          : 1033
 ProductName              : Teams Machine-Wide Installer
-ProductVersion           : 1.7.0.26062
+ProductVersion           : 1.7.0.27855
 UpgradeCode              : {4009BE0E-5D51-5D91-B94C-D00D7B5FE829}
 SecureCustomProperties   : NETFRAMEWORK45
 

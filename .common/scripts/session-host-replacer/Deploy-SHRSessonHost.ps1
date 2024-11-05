@@ -94,36 +94,31 @@ function Deploy-SHRSessionHost {
     $deploymentName = "{0}_{1}_Count_{2}_VMs" -f $DeploymentPrefix, $deploymentTimestamp, $sessionHostNames.count
     
     Write-OutputDetailed -Message "Deployment name: $deploymentName"
-    $paramNewAzResourceGroupDeployment = @{
-        Name                    = $deploymentName
-        ResourceGroupName       = $sessionHostResourceGroupName
-        TemplateParameterObject = $sessionHostParameters
-    }
+    Write-OutputDetailed -Message "Deploying using Template Spec: $sessionHostTemplate"
+    $templateSpecVersionResourceId = Get-SHRTemplateSpecVersionResourceId -ResourceId $SessionHostTemplate
 
-    # Check if using URI or Template Spec
-    if ($SessionHostTemplate -like "http*") {
-        #Using URIs
-        Write-PSFMessage -Level Host -Message 'Deploying using URI: {0}' -StringValues $sessionHostTemplate
-        $paramNewAzResourceGroupDeployment['TemplateUri'] = $SessionHostTemplate
-    }
-    else {
-        #Using Template Spec
-        Write-PSFMessage -Level Host -Message 'Deploying using Template Spec: {0}' -StringValues $sessionHostTemplate
-        $templateSpecVersionResourceId = Get-SHRTemplateSpecVersionResourceId -ResourceId $SessionHostTemplate
-        $paramNewAzResourceGroupDeployment['TemplateSpecId'] = $templateSpecVersionResourceId
-    }
-
-    Write-PSFMessage -Level Host -Message 'Deploying {0} session host(s) to resource group {1}' -StringValues  $NewSessionHostsCount,$sessionHostResourceGroupName
+    Write-OutputDetailed -Message "Deploying $NewSessionHostCount session host(s) to resource group $sessionHostResourceGroupName" 
     
-    $deploymentJob = New-AzResourceGroupDeployment @paramNewAzResourceGroupDeployment -ErrorAction Stop -AsJob
-
+    $Body = @{
+        properties = @{
+            parameters = $sessionHostParameters
+            templateLink = @{
+                id = $templateSpecVersionResourceId
+            }
+        }
+    }
+    $Uri = $ResourceManagerUrl + '/subscriptions/' + $SubscriptionId + '/resourceGroups/' + $SessionHostResourceGroupName + '/providers/Microsoft.Resources/deployments/' + $deploymentName + '?api-version=2021-04-01'
+    $DeploymentJob = Invoke-RestMethod `
+                        -Body ($Body | ConvertTo-Json -depth 10) `
+                        -Headers $RestHeader `
+                        -Method Put `
+                        -Uri $Uri `
     #TODO: Add logic to test if deployment is running (aka template is accepted) then finish running the function and let the deployment run in the background.
-    Write-PSFMessage -Level Host -Message 'Pausing for 30 seconds to allow deployment to start'
+    Write-LogDetailed -Message 'Pausing for 30 seconds to allow deployment to start'
     Start-Sleep -Seconds 30
-
     # Check deployment status, if any has failed we report an error
     if ($deploymentJob.Error) {
-        Write-PSFMessage -Level Error "DeploymentFailed" -EnableException $true
+        Write-OutputDetailed "DeploymentFailed"
         throw $deploymentJob.Error
     }
 }

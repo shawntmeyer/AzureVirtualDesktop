@@ -28,6 +28,7 @@ Function Get-InternetFile {
     )
 
     Begin {
+        $ProgressPreference = 'SilentlyContinue'
         [string]${CmdletName} = $PSCmdlet.MyInvocation.MyCommand.Name
     }
     Process {

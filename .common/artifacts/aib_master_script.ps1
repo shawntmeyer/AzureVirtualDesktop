@@ -11,7 +11,7 @@
     The suffix of the blob storage account of the azure environment where you are building the image. Default is 'core.windows.net'.  For Azure US Government, use 'core.usgovcloudapi.net'.
     
     .PARAMETER Customizers
-    An array of customizers to execute. Each customizer is a hashtable with the following keys:
+    A JSON formatted array of customizers to execute. Each customizer is an object with the following keys:
     - Name: The name of the customizer. (required)
     - Uri: The URI of the customizer. (required)
     - Arguments: The arguments to pass to the customizer. (optional)
@@ -20,17 +20,7 @@
     The client ID of the user assigned identity to use to get an access token for the storage account(s) via the VM Instance Metadata Service.
 
     .EXAMPLE
-    $Customizers = @(
-        @{
-            Name = 'Customizer1'
-            Uri = 'https://myblobstorage.blob.core.windows.net/mycontainer/Customizer1.ps1'
-            Arguments = '-arg1 value1 -arg2 value2'
-        },
-        @{
-            Name = 'Customizer2'
-            Uri = 'https://myblobstorage.blob.core.windows.net/mycontainer/Customizer2.ps1'
-        }
-    )
+    $Customizers = '[{\"name\":\"FSLogix\",\"Uri\":\"https://saimageassetsusgvaa4a449.blob.core.usgovcloudapi.net/artifacts/FSLogix.zip\"},{\"name\":\"LGPO\",\"Uri\":\"https://saimageassetsusgvaa4a449.blob.core.usgovcloudapi.net/artifacts/LGPO.zip\"}]'
 #>
 
 [CmdletBinding()]
@@ -40,7 +30,7 @@ param(
     [Parameter(Mandatory = $false)]
     [string] $BlobStorageSuffix,
     [Parameter(Mandatory = $false)]
-    [array] $Customizers = @(),
+    [string] $Customizers,
     [Parameter(Mandatory = $false)]
     [string] $UserAssignedIdentityClientId
 )
@@ -120,7 +110,8 @@ New-Log "$env:SystemRoot\Logs"
 Write-Log -category Info -message "Starting '$PSCommandPath'."
 Write-Log -category Info -message "Current working dir: $((Get-Location).Path)"
 
-If ($Customizers) {   
+If ($Customizers) {
+    [array]$Customizers = $Customizers.replace('\"','"') | ConvertFrom-Json   
     ForEach ($Customizer in $Customizers) {
         $Name = $Customizer.Name
         $Uri = $Customizer.Uri

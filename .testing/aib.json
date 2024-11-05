@@ -1,0 +1,164 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.30.23.60470",
+      "templateHash": "9311783467509910660"
+    }
+  },
+  "parameters": {
+    "imageTemplateName": {
+      "type": "string",
+      "defaultValue": "test2"
+    },
+    "galleryImageId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/70c1bb3a-115f-4300-becd-5f74200999bb/resourceGroups/avd-image-management-usgva-rg/providers/Microsoft.Compute/galleries/avd_usgva_gal/images/vmid-MicrosoftWindowsDesktop-Windows11-win1124h2avd"
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "imagePublisher": {
+      "type": "string",
+      "defaultValue": "MicrosoftWindowsDesktop"
+    },
+    "imageOffer": {
+      "type": "string",
+      "defaultValue": "Windows-11"
+    },
+    "imageSku": {
+      "type": "string",
+      "defaultValue": "win11-24h2-avd"
+    },
+    "userAssignedIdentityResourceId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/70c1bb3a-115f-4300-becd-5f74200999bb/resourceGroups/avd-image-management-usgva-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/uai-avd-image-management-va"
+    },
+    "vmSize": {
+      "type": "string",
+      "defaultValue": "Standard_D4ads_v5"
+    },
+    "customizations": {
+      "type": "array",
+      "defaultValue": [
+        {
+          "name": "FSLogix",
+          "Uri": "https://saimageassetsusgvaa4a449.blob.core.usgovcloudapi.net/artifacts/FSLogix.zip"
+        },
+        {
+          "name": "LGPO",
+          "Uri": "https://saimageassetsusgvaa4a449.blob.core.usgovcloudapi.net/artifacts/LGPO.zip"
+        }
+      ]
+    },
+    "osDiskSizeGB": {
+      "type": "int",
+      "defaultValue": 127
+    },
+    "subnetId": {
+      "type": "string",
+      "defaultValue": "/subscriptions/70c1bb3a-115f-4300-becd-5f74200999bb/resourceGroups/rg-avd-networking-lab-va/providers/Microsoft.Network/virtualNetworks/vnet-avd-lab-va/subnets/sn-avd-jumphosts-lab-va"
+    }
+  },
+  "variables": {
+    "buildDir": "C:\\BuildDir",
+    "masterScriptName": "aib_master_script.ps1"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.VirtualMachineImages/imageTemplates",
+      "apiVersion": "2023-07-01",
+      "name": "[parameters('imageTemplateName')]",
+      "location": "[parameters('location')]",
+      "identity": {
+        "type": "UserAssigned",
+        "userAssignedIdentities": {
+          "[format('{0}', parameters('userAssignedIdentityResourceId'))]": {}
+        }
+      },
+      "properties": {
+        "vmProfile": {
+          "osDiskSizeGB": "[parameters('osDiskSizeGB')]",
+          "userAssignedIdentities": [
+            "[format('{0}', parameters('userAssignedIdentityResourceId'))]"
+          ],
+          "vmSize": "[parameters('vmSize')]",
+          "vnetConfig": "[if(not(empty(parameters('subnetId'))), createObject('subnetId', parameters('subnetId')), null())]"
+        },
+        "source": {
+          "type": "PlatformImage",
+          "publisher": "[parameters('imagePublisher')]",
+          "offer": "[parameters('imageOffer')]",
+          "sku": "[parameters('imageSku')]",
+          "version": "latest"
+        },
+        "distribute": [
+          {
+            "type": "SharedImage",
+            "galleryImageId": "[parameters('galleryImageId')]",
+            "replicationRegions": [
+              "[parameters('location')]"
+            ],
+            "excludeFromLatest": false,
+            "runOutputName": "runOutputImageVersion"
+          }
+        ],
+        "customize": [
+          {
+            "type": "PowerShell",
+            "name": "powershellcommandscript1",
+            "inline": [
+              "[format('new-item -path {0} -itemtype directory', variables('buildDir'))]"
+            ],
+            "runElevated": true,
+            "runAsSystem": true
+          },
+          {
+            "type": "File",
+            "name": "downloadMasterScript",
+            "sourceUri": "https://raw.githubusercontent.com/shawntmeyer/AzureVirtualDesktop/refs/heads/master/.common/artifacts/aib_master_script.ps1",
+            "destination": "[format('{0}\\{1}', variables('buildDir'), variables('masterScriptName'))]"
+          },
+          {
+            "type": "PowerShell",
+            "name": "executeMasterScript",
+            "inline": [
+              "[format('{0}\\{1} {2}', variables('buildDir'), variables('masterScriptName'), format('-BlobStorageSuffix {0} -Customizers {1} -UserAssignedIdentity {2}', environment().suffixes.storage, string(parameters('customizations')), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('userAssignedIdentityResourceId'), '/')[2], split(parameters('userAssignedIdentityResourceId'), '/')[4]), 'Microsoft.ManagedIdentity/userAssignedIdentities', last(split(parameters('userAssignedIdentityResourceId'), '/'))), '2023-01-31').clientId))]"
+            ],
+            "runElevated": true,
+            "runAsSystem": true
+          },
+          {
+            "type": "WindowsRestart"
+          },
+          {
+            "type": "WindowsUpdate",
+            "updateLimit": 20
+          },
+          {
+            "type": "WindowsRestart"
+          },
+          {
+            "type": "PowerShell",
+            "name": "powershellcommand",
+            "inline": [
+              "[format('Remove-Item -Path {0} -Recurse -Force', variables('buildDir'))]"
+            ],
+            "runElevated": false,
+            "runAsSystem": false
+          }
+        ]
+      },
+      "tags": {}
+    }
+  ],
+  "outputs": {
+    "parameters": {
+      "type": "string",
+      "value": "[format('-BlobStorageSuffix {0} -Customizers {1} -UserAssignedIdentity {2}', environment().suffixes.storage, string(parameters('customizations')), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('userAssignedIdentityResourceId'), '/')[2], split(parameters('userAssignedIdentityResourceId'), '/')[4]), 'Microsoft.ManagedIdentity/userAssignedIdentities', last(split(parameters('userAssignedIdentityResourceId'), '/'))), '2023-01-31').clientId)]"
+    }
+  }
+}

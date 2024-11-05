@@ -2,20 +2,6 @@ targetScope = 'subscription'
 
 param location string = deployment().location
 
-@maxLength(10)
-@description('''Identifier used to describe the business unit (or customer) utilizing AVD images in your tenant.
-If not specified then centralized AVD Management is assumed and resources and resource groups are named accordingly.
-If this is specified, then the "centralizedImageManagement" parameter determines how resources are organized and deployed.
-''')
-param businessUnitIdentifier string = ''
-
-@description('''Optional. When the "businessUnitIdentifier" parameter is not empty, this parameter determines if the Image Management Resource Group and associated resources
-are created in a centralized resource group (does not include "businessUnitIdentifier" in the name) and management resources are named accordingly or if a Business unit
-specific image management resource group is created and management resources are named accordingly.
-If the "businessUnitIdentifier" parameter is left empty ("") then this value has no effect.
-''')
-param centralizedImageManagement bool = false
-
 @description('Optional. Reverse the normal Cloud Adoption Framework naming convention by putting the resource type abbreviation at the end of the resource name.')
 param nameConvResTypeAtEnd bool = false
 
@@ -46,15 +32,6 @@ param artifactsContainerName string = 'artifacts'
 
 @description('Optional. Resource Id of an existing Log Analytics Workspace to which diagnostic logs will be sent.')
 param logAnalyticsWorkspaceResourceId string = ''
-
-@allowed([
-  'd'
-  't'
-  'p'
-  ''
-])
-@description('Optional. The environment for which image management is being deployed. "d" = Development, "t" = Test, and "p" = Production. Leave blank to eliminate this field from the naming convention.')
-param envShortName string = ''
 
 @allowed([
   'Standard_LRS'
@@ -122,23 +99,19 @@ param timeStamp string = utcNow('yyyyMMddhhmm')
 
 var locations = loadJsonContent('../../.common/data/locations.json')[environment().name]
 var resourceAbbreviations = loadJsonContent('../../.common/data/resourceAbbreviations.json')
-var busUnitId = toLower(businessUnitIdentifier)
-var nameConv_Suffix_withoutResType = !empty(envShortName) ? '${envShortName}-LOCATION' : 'LOCATION'
+var nameConv_Suffix_withoutResType = 'LOCATION'
 var nameConvSuffix = nameConvResTypeAtEnd ? '${nameConv_Suffix_withoutResType}-RESOURCETYPE' : nameConv_Suffix_withoutResType
-var nameConv_Shared_ResGroups = nameConvResTypeAtEnd ? ( !empty(busUnitId) ? '${busUnitId}-RESGROUPPURPOSE-${nameConvSuffix}' : 'RESGROUPPURPOSE-${nameConvSuffix}' ) : ( !empty(busUnitId) ? 'RESOURCETYPE-${busUnitId}-RESGROUPPURPOSE-${nameConvSuffix}' : 'RESOURCETYPE-RESGROUPPURPOSE-${nameConvSuffix}' )
-var nameConv_ImageManagement_ResGroup = centralizedImageManagement ? ( nameConvResTypeAtEnd ? 'RESGROUPPURPOSE-${nameConvSuffix}' : 'RESOURCETYPE-RESGROUPPURPOSE-${nameConvSuffix}' ) : nameConv_Shared_ResGroups
-var nameConv_ImageManagement_Resources = centralizedImageManagement ? ( nameConvResTypeAtEnd ? 'image-management-${nameConvSuffix}' : 'RESOURCETYPE-image-management-${nameConvSuffix}' ) : ( nameConvResTypeAtEnd ? ( !empty(busUnitId) ? '${busUnitId}-image-management-${nameConvSuffix}' : 'image-management-${nameConvSuffix}' ) : ( !empty(busUnitId) ? 'RESOURCETYPE-${busUnitId}-image-management-${nameConvSuffix}' : 'RESOURCETYPE-image-managmeent-${nameConvSuffix}' ) )
-
-var resourceGroupName = customResourceGroupName != 'none' ? customResourceGroupName : replace(replace(replace(nameConv_ImageManagement_ResGroup, 'RESGROUPPURPOSE', 'avd-image-management'), 'LOCATION', locations[location].abbreviation), 'RESOURCETYPE', resourceAbbreviations.resourceGroups)
+var nameConv_ImageManagement_ResGroup = nameConvResTypeAtEnd ? 'avd-image-management-${nameConvSuffix}' : 'RESOURCETYPE-avd-image-management-${nameConvSuffix}'
+var nameConv_ImageManagement_Resources = nameConvResTypeAtEnd ? 'avd-image-management-${nameConvSuffix}' : 'RESOURCETYPE-avd-image-management-${nameConvSuffix}'
+var resourceGroupName = customResourceGroupName != 'none' ? customResourceGroupName : replace(replace(nameConv_ImageManagement_ResGroup, 'LOCATION', locations[location].abbreviation), 'RESOURCETYPE', resourceAbbreviations.resourceGroups)
 var blobContainerName = replace(replace(toLower(artifactsContainerName), '_', '-'), ' ', '-')
 var galleryName = customComputeGalleryName != 'none' ? customComputeGalleryName : replace(replace(nameConv_ImageManagement_Resources, 'RESOURCETYPE', resourceAbbreviations.computeGalleries), 'LOCATION', locations[location].abbreviation)
 var computeGalleryName = replace(galleryName, '-', '_')
 var identityName = customManagedIdentityName != 'none' ? customManagedIdentityName : replace(replace(nameConv_ImageManagement_Resources, 'RESOURCETYPE', resourceAbbreviations.userAssignedIdentities), 'LOCATION', locations[location].abbreviation)
 var vnetName = !empty(privateEndpointSubnetResourceId) ? split(privateEndpointSubnetResourceId, '/')[8] : ''
-var snetName = !empty(privateEndpointSubnetResourceId) ? split(privateEndpointSubnetResourceId, '/')[10] : ''
-var privateEndpointNameConv = replace('${nameConvResTypeAtEnd ? 'RESOURCE-SUBRESOURCE-${vnetName}-${snetName}-RESOURCETYPE' : 'RESOURCETYPE-RESOURCE-SUBRESOURCE-${vnetName}-${snetName}'}', 'RESOURCETYPE', resourceAbbreviations.privateEndpoints)
+var privateEndpointNameConv = replace('${nameConvResTypeAtEnd ? 'RESOURCE-SUBRESOURCE-${vnetName}-RESOURCETYPE' : 'RESOURCETYPE-RESOURCE-SUBRESOURCE-${vnetName}'}', 'RESOURCETYPE', resourceAbbreviations.privateEndpoints)
 var privateEndpointName = replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'blob'), 'RESOURCE', storageName)
-var storageName = customArtifactsStorageAccountName != 'none' ? customArtifactsStorageAccountName : !empty(envShortName) ? take('${resourceAbbreviations.storageAccounts}imageassets${envShortName}${locations[location].abbreviation}${uniqueString(subscription().subscriptionId, resourceGroupName)}', 24) : take('${resourceAbbreviations.storageAccounts}imageassets${locations[location].abbreviation}${uniqueString(subscription().subscriptionId, resourceGroupName)}', 24)
+var storageName = customArtifactsStorageAccountName != 'none' ? customArtifactsStorageAccountName : take('${resourceAbbreviations.storageAccounts}imageassets${locations[location].abbreviation}${uniqueString(subscription().subscriptionId, resourceGroupName)}', 24)
 var storageKind = 'StorageV2'
 
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
