@@ -1,4 +1,4 @@
-param imageTemplateName string = 'test2'
+param imageTemplateName string = 'test4'
 param galleryImageId string = '/subscriptions/70c1bb3a-115f-4300-becd-5f74200999bb/resourceGroups/avd-image-management-usgva-rg/providers/Microsoft.Compute/galleries/avd_usgva_gal/images/vmid-MicrosoftWindowsDesktop-Windows11-win1124h2avd'
 param location string = resourceGroup().location
 param imagePublisher string = 'MicrosoftWindowsDesktop'
@@ -26,7 +26,9 @@ resource userAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@
 
 var buildDir = 'C:\\BuildDir'
 var masterScriptName = 'aib_master_script.ps1'
-var masterScriptParameters = '-BlobStorageSuffix ${environment().suffixes.storage} -Customizers ${string(customizations)} -UserAssignedIdentity ${userAssignedIdentity.properties.clientId}'
+var masterScriptParameters = '-BlobStorageSuffix ${environment().suffixes.storage} -Customizers \'${string(customizations)}\' -UserAssignedIdentity ${userAssignedIdentity.properties.clientId}'
+
+var masterScript = loadFileAsBase64('../.common/artifacts/aib_master_script.ps1')
 
 resource imgTemplate 'Microsoft.VirtualMachineImages/imageTemplates@2023-07-01' = {
   name: imageTemplateName
@@ -34,7 +36,7 @@ resource imgTemplate 'Microsoft.VirtualMachineImages/imageTemplates@2023-07-01' 
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: {
-      '${userAssignedIdentityResourceId}' : {}
+      '${userAssignedIdentityResourceId}': {}
     }
   }
   properties: {
@@ -44,9 +46,11 @@ resource imgTemplate 'Microsoft.VirtualMachineImages/imageTemplates@2023-07-01' 
         '${userAssignedIdentityResourceId}'
       ]
       vmSize: vmSize
-      vnetConfig: !empty(subnetId) ? {
-        subnetId: subnetId
-      } : null
+      vnetConfig: !empty(subnetId)
+        ? {
+            subnetId: subnetId
+          }
+        : null
     }
     source: {
       type: 'PlatformImage'
@@ -78,11 +82,16 @@ resource imgTemplate 'Microsoft.VirtualMachineImages/imageTemplates@2023-07-01' 
         runAsSystem: true
       }
       {
-        type: 'File'
-        name: 'downloadMasterScript'
-        sourceUri: 'https://raw.githubusercontent.com/shawntmeyer/AzureVirtualDesktop/refs/heads/master/.common/artifacts/aib_master_script.ps1'
-        destination: '${buildDir}\\${masterScriptName}'
-      }
+        type: 'PowerShell'
+        name: 'CreateMasterScript'
+        inline: [
+          '$Script = @"'
+          '${masterScript}'
+          '"@'
+          '$DecodedScript = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($Script))'
+          'Set-Content -Path "${buildDir}\\${masterScriptName}" -Value $DecodedScript'
+        ]
+      }      
       {
         type: 'PowerShell'
         name: 'executeMasterScript'

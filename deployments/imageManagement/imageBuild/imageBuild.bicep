@@ -363,11 +363,14 @@ resource imageBuildRg 'Microsoft.Resources/resourceGroups@2023-07-01' = if(empty
 
 module roleAssignmentContributorBuildRg '../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = {
   name: '${depPrefix}RoleAssign-MI-Contributor-BuildRG-${timeStamp}'
-  scope: resourceGroup(imageBuildRg.name)
+  scope: resourceGroup(imageBuildResourceGroupName)
   params: {
     principalId: managedIdentity.properties.principalId
     roleDefinitionId: 'b24988ac-6180-42a0-ab88-20f7382dd24c' //Contributor
   }
+  dependsOn: [
+    imageBuildRg
+  ]
 }
 
 // * Logging * //
@@ -414,7 +417,7 @@ module logsStorageAccount '../../sharedModules/resources/storage/storage-account
     ]
     privateEndpoints: !empty(privateEndpointSubnetResourceId) && !empty(blobPrivateDnsZoneResourceId) ? [
       {
-        name: 'pe-sa${deploymentPrefix}log${uniqueString(subscription().id,imageBuildRg.name,depPrefix)}-blob-${locations[computeLocation].abbreviation}'
+        name: 'pe-sa${deploymentPrefix}log${uniqueString(subscription().id,imageBuildResourceGroupName,depPrefix)}-blob-${locations[computeLocation].abbreviation}'
         privateDnsZoneGroup: {
           privateDNSResourceIds: ['${blobPrivateDnsZoneResourceId}']
         }
@@ -429,7 +432,7 @@ module logsStorageAccount '../../sharedModules/resources/storage/storage-account
     tags: tags
   }
   dependsOn: [
-    //imageDefinitionValidation
+    imageBuildRg
   ]
 }
 
@@ -439,14 +442,17 @@ module roleAssignmentBlobDataContributorBuilderRg '../../sharedModules/resources
   params: {
     principalId: managedIdentity.properties.principalId
     roleDefinitionId: 'ba92f5b4-2d11-453d-a403-e96b0029c9fe' // Storage Blob Data Contributor
-  }  
+  }
+  dependsOn: [
+    logsStorageAccount
+  ]  
 }
 
 // * Management VM * //
 
 module managementVm '../../sharedModules/resources/compute/virtual-machine/main.bicep' = {
   name: '${depPrefix}Management-VM-${timeStamp}'
-  scope: resourceGroup(imageBuildRg.name)
+  scope: resourceGroup(imageBuildResourceGroupName)
   params: {
     location: computeLocation
     name: managementVmName
@@ -489,6 +495,7 @@ module managementVm '../../sharedModules/resources/compute/virtual-machine/main.
     vmSize: 'Standard_B2s'
   }
   dependsOn: [
+    imageBuildRg
     roleAssignmentContributorBuildRg
   ]
 }
@@ -497,7 +504,7 @@ module managementVm '../../sharedModules/resources/compute/virtual-machine/main.
 
 module imageVm '../../sharedModules/resources/compute/virtual-machine/main.bicep' = {
   name: '${depPrefix}Image-VM-${timeStamp}'
-  scope: resourceGroup(imageBuildRg.name)
+  scope: resourceGroup(imageBuildResourceGroupName)
   params: {
     location: computeLocation
     name: imageVmName
@@ -545,13 +552,16 @@ module imageVm '../../sharedModules/resources/compute/virtual-machine/main.bicep
     }
     vmSize: vmSize
   }
+  dependsOn: [
+    imageBuildRg
+  ]
 }
 
 // * Image Customizations * //
 
 module customizeImage 'modules/customizeImage.bicep' = {
   name: '${depPrefix}Customize-Image-${timeStamp}'
-  scope: resourceGroup(imageBuildRg.name)
+  scope: resourceGroup(imageBuildResourceGroupName)
   params: {
     cloud: cloud
     removeApps: removeApps
