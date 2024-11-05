@@ -795,6 +795,15 @@
 									"visible": true
 								},
 								{
+									"name": "customizationInfoBox",
+									"type": "Microsoft.Common.InfoBox",
+									"visible": "[steps('imageCustomizations').customSoftware.addCustomSoftware]",
+									"options": {
+										"icon": "Warning",
+										"text": "The list of customizations and software in this section must be installed silently without user interaction. In addition they must be able to survive restarts, sysprep, and not generate system specific identifier as the image will be used on multiple session host virtual machines. Use the VDI Customizations section below to install software that can be installed in a way not to generate a system specific identifier until after a system restart."
+									}
+								},
+								{
 									"name": "customizationText",
 									"type": "Microsoft.Common.TextBlock",
 									"visible": "[steps('imageCustomizations').customSoftware.addCustomSoftware]",
@@ -808,6 +817,101 @@
 									"ariaLabel": "Customizations",
 									"label": "Custom Scripts and Software",
 									"visible": "[steps('imageCustomizations').customSoftware.addCustomSoftware]",
+									"constraints": {
+										"width": "Full",
+										"rows": {
+											"count": {
+												"min": 0,
+												"max": 10
+											}
+										},
+										"columns": [
+											{
+												"id": "name",
+												"header": "Name",
+												"width": "1fr",
+												"element": {
+													"type": "Microsoft.Common.TextBox",
+													"placeholder": "Example: vscode",
+													"validations": [
+														{
+															"regex": "^[A-Za-z0-9-]{1,24}$",
+															"message": "Only alphanumerics and dashes (-) are allowed up to 24 characters"
+														}
+													]
+												}
+											},
+											{
+												"id": "blobNameOrUri",
+												"header": "Blob Name (or URI)",
+												"width": "10fr",
+												"element": {
+													"type": "Microsoft.Common.TextBox",
+													"placeholder": "Example: VSCodeSetup-x64-1.81.1.exe",
+													"constraints": {														
+														"required": true
+													}
+												}
+											},
+											{
+												"id": "arguments",
+												"header": "Arguments",
+												"width": "1fr",
+												"element": {
+													"type": "Microsoft.Common.TextBox",
+													"placeholder": "Example: /verysilent /mergetasks='!runcode'",
+													"constraints": {														
+														"required": false
+													}
+												}
+											}
+										]
+									}
+								},
+								{
+									"name": "addVDICustomSoftware",
+									"type": "Microsoft.Common.OptionsGroup",
+									"label": "Add VDI Custom Software",
+									"defaultValue": "No",
+									"toolTip": "Select 'Yes' to add custom software to the image",
+									"constraints": {
+										"allowedValues": [
+											{
+												"label": "Yes",
+												"value": true
+											},
+											{
+												"label": "No",
+												"value": false
+											}
+										],
+										"required": false
+									},
+									"visible": true
+								},
+								{
+									"name": "vdiCustomizationInfoBox",
+									"type": "Microsoft.Common.InfoBox",
+									"visible": "[steps('imageCustomizations').customSoftware.addVDICustomSoftware]",
+									"options": {
+										"icon": "Warning",
+										"text": "The list of customizations and software in this section must be installed silently without user interaction. In addition, they must be able to survive sysprep. Installing software using this parameter allows the installation of agents and other software items that can be configured to generate a unique system identifier after a restart."
+									}
+								},
+								{
+									"name": "customizationText",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": "[steps('imageCustomizations').customSoftware.addVDICustomSoftware]",
+									"options": {
+										"text": "Enter customizations for your image below. The first column is a free-form text field that can only contain alphanumerics and no spaces. The second column is the blob name and is case-sensitive. The third column is for any arguments."
+									}
+								},
+								{
+									"name": "vdiCustomizations",
+									"type": "Microsoft.Common.EditableGrid",
+									"ariaLabel": "VDICustomizations",
+									"label": "Custom Scripts and Software",
+									"visible": "[steps('imageCustomizations').customSoftware.addVDICustomSoftware]",
 									"constraints": {
 										"width": "Full",
 										"rows": {
@@ -1552,6 +1656,7 @@
 				"offer": "[steps('imageVm').imageSource.offer]",
 				"sku": "[steps('imageVm').imageSource.sku]",
 				"customizations": "[if(equals(steps('imageCustomizations').customSoftware.addCustomSoftware, true), steps('imageCustomizations').customSoftware.customizations, '')]",
+				"vdiCustomizations": "[if(equals(steps('imageCustomizations').customSoftware.addVDICustomSoftware, true), steps('imageCustomizations').customSoftware.vdiCustomizations, '')]",
 				"installFsLogix": "[if(equals(steps('imageCustomizations').fslogix.installFsLogix, true), steps('imageCustomizations').fslogix.installFsLogix,'false')]",
 				"installAccess": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installAccess,'false')]",
 				"installExcel": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installExcel,'false')]",

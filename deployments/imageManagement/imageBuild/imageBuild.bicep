@@ -137,10 +137,11 @@ param installVirtualDesktopOptimizationTool bool = false
 @description('Conditional. The name of the zip blob containing the Virtual Desktop Optimization Tool Script and files.')
 param vDotBlobName string = 'VDOT.zip'
 
-@description('''An array of image customization objects containing the following properties:
--name: The name of the script or application that is running minus extension
--blobNameOrUri: The blob name when used with the artifactsContainerUri or the full URI of the file to download.
--arguments: Arguments required by the installer or script being ran.
+@description('''An array of image customization objects that are executed first before any restarts or updates.
+Each object contains the following properties:
+-name: Required. The name of the script or application that is running minus extension
+-blobNameOrUri: Required. The blob name when used with the artifactsContainerUri or the full URI of the file to download.
+-arguments: Optional. Arguments required by the installer or script being ran.
 
 JSON example:
 [
@@ -156,6 +157,26 @@ JSON example:
 ]
 ''')
 param customizations array = []
+
+@description('''An array of image customization objects that are executed just before sysprep. These customizations are applications that
+generate unique identifiers that should be removed before the image is generalized. Therefore, these customizations are executed without
+restart switches to prevent the generation of these unique identifiers.
+Each object contains the following properties:
+-name: Required. The name of the script or application that is running minus extension
+-blobNameOrUri: Required. The blob name when used with the artifactsContainerUri or the full URI of the file to download.
+-arguments: Optional. Arguments required by the installer or script being ran.
+
+
+JSON example:
+[
+  {
+    "name": "ThirdPartyApp",
+    "blobNameOrUri": "ThirdPartyApp.zip",
+    "arguments": "MODE=VDI /norestart"
+  }
+]
+''')
+param vdiCustomizations array = []
 
 @description('Optional. Collect image customization logs.')
 param collectCustomizationLogs bool = false
@@ -594,6 +615,7 @@ module customizeImage 'modules/customizeImage.bicep' = {
     officeDeploymentToolBlobName: officeDeploymentToolBlobName
     onedriveSetupBlobName: onedriveSetupBlobName
     teamsInstallerBlobName: teamsInstallerBlobName
+    vdiCustomizations: vdiCustomizations
     vDotBlobName: vDotBlobName
   }
 }
