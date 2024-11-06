@@ -554,12 +554,7 @@ resource cleanup 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
       }
     ]
     source: {
-      script: '''
-        param(
-          [string]$BuildDir
-        )
-        Remove-Item -Path $BuildDir -Recurse -Force | Out-Null
-      '''
+      script: loadTextContent('../../../../.common/scripts/Invoke-DiskCleanup.ps1')
     }
     treatFailureAsDeploymentFailure: true
   }

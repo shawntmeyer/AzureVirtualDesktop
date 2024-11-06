@@ -44,6 +44,6 @@ $ScriptPath = (Get-ChildItem -Path $VDOTDir -Recurse | Where-Object { $_.Name -e
 $ScriptContents = Get-Content -Path $ScriptPath
 $ScriptUpdate = $ScriptContents.Replace("Set-NetAdapterAdvancedProperty", "#Set-NetAdapterAdvancedProperty")
 $ScriptUpdate | Set-Content -Path $ScriptPath
-& $ScriptPath -Optimizations @("Autologgers", "DefaultUserSettings", "DiskCleanup", "LocalPolicy", "NetworkOptimizations", "ScheduledTasks", "Services", "WindowsMediaPlayer") -AdvancedOptimizations @("Edge", "RemoveLegacyIE") -AcceptEULA
+& $ScriptPath -Optimizations @("Autologgers", "DefaultUserSettings", "LocalPolicy", "NetworkOptimizations", "ScheduledTasks", "Services", "WindowsMediaPlayer") -AdvancedOptimizations @("Edge", "RemoveLegacyIE") -AcceptEULA
 Write-OutputWithTimeStamp "Optimized the operating system using the Virtual Desktop Optimization Tool"
 Stop-Transcript
