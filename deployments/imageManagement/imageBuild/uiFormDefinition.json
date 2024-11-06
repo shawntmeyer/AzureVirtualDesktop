@@ -821,8 +821,8 @@
 										"width": "Full",
 										"rows": {
 											"count": {
-												"min": 0,
-												"max": 10
+												"min": 1,
+												"max": 25
 											}
 										},
 										"columns": [
@@ -916,8 +916,8 @@
 										"width": "Full",
 										"rows": {
 											"count": {
-												"min": 0,
-												"max": 10
+												"min": 1,
+												"max": 5
 											}
 										},
 										"columns": [
@@ -1655,8 +1655,8 @@
 				"publisher": "[steps('imageVm').imageSource.publisher]",
 				"offer": "[steps('imageVm').imageSource.offer]",
 				"sku": "[steps('imageVm').imageSource.sku]",
-				"customizations": "[if(equals(steps('imageCustomizations').customSoftware.addCustomSoftware, true), steps('imageCustomizations').customSoftware.customizations, '')]",
-				"vdiCustomizations": "[if(equals(steps('imageCustomizations').customSoftware.addVDICustomSoftware, true), steps('imageCustomizations').customSoftware.vdiCustomizations, '')]",
+				"customizations": "[if(steps('imageCustomizations').customSoftware.addCustomSoftware, steps('imageCustomizations').customSoftware.customizations, parse('[]'))]",
+				"vdiCustomizations": "[if(steps('imageCustomizations').customSoftware.addVDICustomSoftware, steps('imageCustomizations').customSoftware.vdiCustomizations, parse ('[]'))]",
 				"installFsLogix": "[if(equals(steps('imageCustomizations').fslogix.installFsLogix, true), steps('imageCustomizations').fslogix.installFsLogix,'false')]",
 				"installAccess": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installAccess,'false')]",
 				"installExcel": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installExcel,'false')]",
