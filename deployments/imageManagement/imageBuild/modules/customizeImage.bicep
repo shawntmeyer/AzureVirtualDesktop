@@ -1,9 +1,8 @@
 targetScope = 'resourceGroup'
 
+param appsToRemove array
 param cloud string
 param location string = resourceGroup().location
-
-
 param artifactsContainerUri string
 param customizations array
 param logBlobContainerUri string
@@ -28,7 +27,6 @@ param installOneDrive bool
 param onedriveSetupBlobName string
 param vDotBlobName string
 param officeDeploymentToolBlobName string
-param removeApps bool
 param teamsInstallerBlobName string
 param teamsCloudType string
 param timeStamp string = utcNow('yyMMddhhmm')
@@ -119,7 +117,7 @@ resource createBuildDirs 'Microsoft.Compute/virtualMachines/runCommands@2023-03-
   }
 }
 
-resource removeAppxPackages 'Microsoft.Compute/virtualMachines/runCommands@2024-03-01' = if (removeApps) {
+resource removeAppxPackages 'Microsoft.Compute/virtualMachines/runCommands@2024-03-01' = if (!empty(appsToRemove)) {
   name: 'remove-appxPackages'
   location: location
   parent: imageVm
@@ -132,6 +130,12 @@ resource removeAppxPackages 'Microsoft.Compute/virtualMachines/runCommands@2024-
       clientId: userAssignedIdentityClientId
     }
     outputBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-Remove-AppxPackages-output-${timeStamp}.log'
+    parameters: [
+      {
+        name: 'AppsToRemove'
+        value: string(appsToRemove)
+      }
+    ]
     source: {
       script: loadTextContent('../../../../.common/scripts/Remove-AppXPackages.ps1')
     }

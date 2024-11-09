@@ -71,7 +71,7 @@ If (-not $WebView2Installed) {
 }
 
 # install the Remote Desktop WebRTC Redirector Service
-$WebRTCInstall = Start-Process -FilePath msiexec.exe -ArgumentList "/i $webRTCFile /quiet /qn /norestart /passive" -Wait -PassThru
+$WebRTCInstall = Start-Process -FilePath msiexec.exe -ArgumentList "/i $webRTCFile /quiet /norestart" -Wait -PassThru
 If ($($WebRTCInstall.ExitCode) -eq 0) {
     Write-OutputWithTimeStamp "Installed the Remote Desktop WebRTC Redirector Service"
 }

@@ -1,0 +1,121 @@
+[
+    {
+      "destination": "C:\\AVDImage\\TeamsOptimization.ps1",
+      "name": "avdBuiltInScript_teamsOptimization",
+      "sourceUri": "https://raw.githubusercontent.com/Azure/RDS-Templates/master/CustomImageTemplateScripts/CustomImageTemplateScripts_2024-03-27/TeamsOptimization.ps1",
+      "type": "File"
+    },
+    {
+      "inline": [
+        "C:\\AVDImage\\TeamsOptimization.ps1 -WebRTCInstaller \"https://aka.ms/msrdcwebrtcsvc/msi\" -VCRedistributableLink \"https://aka.ms/vs/17/release/vc_redist.x64.exe\" -TeamsBootStrapperUrl \"https://go.microsoft.com/fwlink/?linkid=2243204&clcid=0x409\""
+      ],
+      "name": "avdBuiltInScript_teamsOptimization-parameter",
+      "runAsSystem": true,
+      "runElevated": true,
+      "type": "PowerShell"
+    },
+    {
+      "name": "avdBuiltInScript_configureRdpShortpath",
+      "runElevated": true,
+      "runAsSystem": true,
+      "scriptUri": "https://raw.githubusercontent.com/Azure/RDS-Templates/master/CustomImageTemplateScripts/CustomImageTemplateScripts_2024-03-27/RDPShortpath.ps1",
+      "type": "PowerShell"
+    },
+    {
+      "name": "avdBuiltInScript_timeZoneRedirection",
+      "runElevated": true,
+      "runAsSystem": true,
+      "scriptUri": "https://raw.githubusercontent.com/Azure/RDS-Templates/master/CustomImageTemplateScripts/CustomImageTemplateScripts_2024-03-27/TimezoneRedirection.ps1",
+      "type": "PowerShell"
+    },
+    {
+      "name": "avdBuiltInScript_disableStorageSense",
+      "runElevated": true,
+      "runAsSystem": true,
+      "scriptUri": "https://raw.githubusercontent.com/Azure/RDS-Templates/master/CustomImageTemplateScripts/CustomImageTemplateScripts_2024-03-27/DisableStorageSense.ps1",
+      "type": "PowerShell"
+    },
+    {
+      "destination": "C:\\AVDImage\\configureSessionTimeouts.ps1",
+      "name": "avdBuiltInScript_configureSessionTimeouts",
+      "sourceUri": "https://raw.githubusercontent.com/Azure/RDS-Templates/master/CustomImageTemplateScripts/CustomImageTemplateScripts_2024-03-27/ConfigureSessionTimeoutsV2.ps1",
+      "type": "File"
+    },
+    {
+      "name": "avdBuiltInScript_configureSessionTimeouts-parameter",
+      "inline": [
+        "C:\\AVDImage\\configureSessionTimeouts.ps1 -MaxIdleTime \"360\" -MaxDisconnectionTime \"30\" -RemoteAppLogoffTimeLimit \"0\" -MaxConnectionTime \"0\""
+      ],
+      "runAsSystem": true,
+      "runElevated": true,
+      "type": "PowerShell"
+    },
+    {
+      "destination": "C:\\AVDImage\\multiMediaRedirection.ps1",
+      "name": "avdBuiltInScript_multiMediaRedirection",
+      "sourceUri": "https://raw.githubusercontent.com/Azure/RDS-Templates/master/CustomImageTemplateScripts/CustomImageTemplateScripts_2024-03-27/MultiMediaRedirection.ps1",
+      "type": "File"
+    },
+    {
+      "inline": [
+        "C:\\AVDImage\\multiMediaRedirection.ps1 -VCRedistributableLink \"https://aka.ms/vs/17/release/vc_redist.x64.exe\" -EnableEdge \"true\" -EnableChrome \"true\""
+      ],
+      "name": "avdBuiltInScript_multiMediaRedirection-parameter",
+      "runAsSystem": true,
+      "runElevated": true,
+      "type": "PowerShell"
+    },
+    {
+      "destination": "C:\\AVDImage\\windowsOptimization.ps1",
+      "name": "avdBuiltInScript_windowsOptimization",
+      "sourceUri": "https://raw.githubusercontent.com/Azure/RDS-Templates/master/CustomImageTemplateScripts/CustomImageTemplateScripts_2024-03-27/WindowsOptimization.ps1",
+      "type": "File"
+    },
+    {
+      "inline": [
+        "C:\\AVDImage\\windowsOptimization.ps1 -Optimizations \"ScheduledTasks\",\"DefaultUserSettings\",\"Autologgers\",\"Services\",\"LGPO\",\"NetworkOptimizations\",\"Edge\",\"RemoveLegacyIE\""
+      ],
+      "name": "avdBuiltInScript_windowsOptimization-parameter",
+      "runAsSystem": true,
+      "runElevated": true,
+      "type": "PowerShell"
+    },
+    {
+      "name": "avdBuiltInScript_windowsOptimization-windowsUpdate",
+      "type": "WindowsUpdate"
+    },
+    {
+      "name": "avdBuiltInScript_windowsOptimization-windowsRestart",
+      "type": "WindowsRestart"
+    },
+    {
+      "name": "avdBuiltInScript_disableAutoUpdates",
+      "runElevated": true,
+      "runAsSystem": true,
+      "scriptUri": "https://raw.githubusercontent.com/Azure/RDS-Templates/master/CustomImageTemplateScripts/CustomImageTemplateScripts_2024-03-27/DisableAutoUpdates.ps1",
+      "type": "PowerShell"
+    },
+    {
+      "name": "avdBuiltInScript_removeAppxPackages",
+      "type": "File",
+      "destination": "C:\\AVDImage\\removeAppxPackages.ps1",
+      "sourceUri": "https://raw.githubusercontent.com/Azure/RDS-Templates/master/CustomImageTemplateScripts/CustomImageTemplateScripts_2024-03-27/RemoveAppxPackages.ps1"
+    },
+    {
+      "name": "avdBuiltInScript_removeAppxPackages-parameter",
+      "type": "PowerShell",
+      "inline": [
+        "C:\\AVDImage\\removeAppxPackages.ps1 -AppxPackages \"Microsoft.BingNews\",\"Clipchamp.Clipchamp\",\"Microsoft.BingWeather\",\"Microsoft.GamingApp\""
+      ],
+      "runAsSystem": true,
+      "runElevated": true
+    },
+    {
+      "name": "avdBuiltInScript_windowsUpdate",
+      "type": "WindowsUpdate"
+    },
+    {
+      "name": "avdBuiltInScript_windowsUpdate-windowsRestart",
+      "type": "WindowsRestart"
+    }
+  ]

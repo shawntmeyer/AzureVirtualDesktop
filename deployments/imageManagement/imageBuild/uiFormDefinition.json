@@ -138,41 +138,13 @@
 									"label": "Deployment Prefix",
 									"subLabel": "",
 									"placeholder": "imgbld",
-									"toolTip": "Provide a prefix (from 2 to 6 characters) for the deployments created by this template.",
+									"toolTip": "Optionally, provide a prefix (from 2 to 6 characters) for the deployments created by this template.",
 									"constraints": {
-										"required": true,
+										"required": false,
 										"regex": "^[a-z0-9A-Z-]{2,6}$",
 										"validationMessage": "The prefix must be between 2 and 6 characters"
 									}
-								},
-								{
-									"name": "envShortName",
-									"type": "Microsoft.Common.DropDown",
-									"label": "Env Classification",
-									"defaultValue": "Not Defined",
-									"toolTip": "Select the type of environment (Development (d), Test (t), Production (p)) for which this solution is being deployed. This information will be use as part of the resources naming. Select (or leave the value as) \"Not Specified\" to omit this option.",
-									"constraints": {
-										"required": false,
-										"allowedValues": [
-											{
-												"label": "Not Defined",
-												"value": ""
-											},
-											{
-												"label": "Development",
-												"value": "d"
-											},
-											{
-												"label": "Test",
-												"value": "t"
-											},
-											{
-												"label": "Production",
-												"value": "p"
-											}
-										]
-									}
-								}
+								}								
 							]
 						}
 					]
@@ -723,23 +695,208 @@
 							"name": "customizations",
 							"type": "Microsoft.Common.Section",
 							"label": "Other Customizations",
-							"elements": [
+							"elements": [								
 								{
-									"name": "removeApps",
-									"type": "Microsoft.Common.OptionsGroup",
-									"label": "Remove Built-In Apps",
-									"defaultValue": "Yes",
-									"toolTip": "Select 'True' to remove most of the built-in apps that are not applicable in AVD.",
+									"name": "appsToRemove",
+									"type": "Microsoft.Common.DropDown",
+									"label": "Built-in Apps to Remove",
+									"placeholder": "",
+									"multiselect": true,
+									"toolTip": "Select the built-in AppX packages you wish to remove.",
 									"constraints": {
 										"allowedValues": [
 											{
-												"label": "Yes",
-												"value": true
+												"label": "Clipchamp.Clipchamp",
+												"value": "Clipchamp.Clipchamp"
+											},											
+											{
+												"label": "Microsoft.BingNews",
+												"value": "Microsoft.BingNews"
 											},
 											{
-												"label": "No",
-												"value": false
-											}
+												"label": "Microsoft.BingWeather",
+												"value": "Microsoft.BingWeather"
+											},											
+											{
+												"label": "Microsoft.GamingApp",
+												"value": "Microsoft.GamingApp"
+											},
+											{
+												"label": "Microsoft.GetHelp",
+												"value": "Microsoft.GetHelp"
+											},
+											{
+												"label": "Microsoft.Getstarted",
+												"value": "Microsoft.Getstarted"
+											},
+											{
+												"label": "Microsoft.HEIFImageExtension",
+												"value": "Microsoft.HEIFImageExtension"
+											},
+											{
+												"label": "Microsoft.Messaging",
+												"value": "Microsoft.Messaging"
+											},
+											{
+												"label": "Microsoft.Microsoft3DViewer",
+												"value": "Microsoft.Microsoft3DViewer"
+											},
+											{
+												"label": "Microsoft.MicrosoftOfficeHub",
+												"value": "Microsoft.MicrosoftOfficeHub"
+											},
+											{
+												"label": "Microsoft.MicrosoftSolitaireCollection",
+												"value": "Microsoft.MicrosoftSolitaireCollection"
+											},
+											{
+												"label": "Microsoft.MicrosoftStickyNotes",
+												"value": "Microsoft.MicrosoftStickyNotes"
+											},
+											{
+												"label": "Microsoft.MixedReality.Portal",
+												"value": "Microsoft.MixedReality.Portal"
+											},
+											{
+												"label": "Microsoft.MSPaint",
+												"value": "Microsoft.MSPaint"
+											},
+											{
+												"label": "Microsoft.Office.OneNote",
+												"value": "Microsoft.Office.OneNote"
+											},
+											{
+												"label": "Microsoft.OneConnect",
+												"value": "Microsoft.OneConnect"
+											},
+											{
+												"label": "Microsoft.Outlook.DesktopIntegrationServices",
+												"value": "Microsoft.Outlook.DesktopIntegrationServices"
+											},
+											{
+												"label": "Microsoft.OutlookForWindows",
+												"value": "Microsoft.OutlookForWindows"
+											},											
+											{
+												"label": "Microsoft.People",
+												"value": "Microsoft.People"
+											},
+											{
+												"label": "Microsoft.PowerAutomateDesktop",
+												"value": "Microsoft.PowerAutomateDesktop"
+											},											
+											{
+												"label": "Microsoft.ScreenSketch",
+												"value": "Microsoft.ScreenSketch"
+											},
+											{
+												"label": "Microsoft.SkypeApp",
+												"value": "Microsoft.SkypeApp"
+											},
+											{
+												"label": "Microsoft.Todos",
+												"value": "Microsoft.Todos"
+											},
+											{
+												"label": "Microsoft.VP9VideoExtensions",
+												"value": "Microsoft.VP9VideoExtensions"
+											},
+											{
+												"label": "Microsoft.Wallet",
+												"value": "Microsoft.Wallet"
+											},
+											{
+												"label": "Microsoft.WebMediaExtensions",
+												"value": "Microsoft.WebMediaExtensions"
+											},
+											{
+												"label": "Microsoft.WebpImageExtension",
+												"value": "Microsoft.WebpImageExtension"
+											},
+											{
+												"label": "Microsoft.Whiteboard",
+												"value": "Microsoft.Whiteboard"
+											},											
+											{
+												"label": "Microsoft.Windows.Photos",
+												"value": "Microsoft.Windows.Photos"
+											},
+											{
+												"label": "Microsoft.WindowsAlarms",
+												"value": "Microsoft.WindowsAlarms"
+											},
+											{
+												"label": "Microsoft.WindowsCalculator",
+												"value": "Microsoft.WindowsCalculator"
+											},
+											{
+												"label": "Microsoft.WindowsCamera",
+												"value": "Microsoft.WindowsCamera"
+											},
+											{
+												"label": "microsoft.windowscommunicationsapps",
+												"value": "microsoft.windowscommunicationsapps"
+											},											
+											{
+												"label": "Microsoft.WindowsFeedbackHub",
+												"value": "Microsoft.WindowsFeedbackHub"
+											},
+											{
+												"label": "Microsoft.WindowsMaps",
+												"value": "Microsoft.WindowsMaps"
+											},
+											{
+												"label": "Microsoft.WindowsNotepad",
+												"value": "Microsoft.WindowsNotepad"
+											},
+											{
+												"label": "Microsoft.WindowsSoundRecorder",
+												"value": "Microsoft.WindowsSoundRecorder"
+											},
+											{
+												"label": "Microsoft.WindowsTerminal",
+												"value": "Microsoft.WindowsTerminal"
+											},
+											{
+												"label": "Microsoft.Xbox.TCUI",
+												"value": "Microsoft.Xbox.TCUI"
+											},
+											{
+												"label": "Microsoft.XboxApp",
+												"value": "Microsoft.XboxApp"
+											},
+											{
+												"label": "Microsoft.XboxGameOverlay",
+												"value": "Microsoft.XboxGameOverlay"
+											},
+											{
+												"label": "Microsoft.XboxGamingOverlay",
+												"value": "Microsoft.XboxGamingOverlay"
+											},
+											{
+												"label": "Microsoft.XboxIdentityProvider",
+												"value": "Microsoft.XboxIdentityProvider"
+											},
+											{
+												"label": "Microsoft.XboxSpeechToTextOverlay",
+												"value": "Microsoft.XboxSpeechToTextOverlay"
+											},
+											{
+												"label": "Microsoft.YourPhone",
+												"value": "Microsoft.YourPhone"
+											},
+											{
+												"label": "Microsoft.ZuneMusic",
+												"value": "Microsoft.ZuneMusic"
+											},
+											{
+												"label": "Microsoft.ZuneVideo",
+												"value": "Microsoft.ZuneVideo"
+											},
+											{
+												"label": "MicrosoftCorporationII.QuickAssist",
+												"value": "MicrosoftCorporationII.QuickAssist"
+											}											
 										],
 										"required": false
 									},
@@ -1642,7 +1799,6 @@
 			"parameters": {
 				"location": "[steps('basics').scope.location.name]",
 				"deploymentPrefix": "[steps('basics').deploymentSpecs.deploymentPrefix]",
-				"envShortName": "[steps('basics').deploymentSpecs.envShortName]",
 				"imageBuildResourceGroupId": "[if(equals(steps('basics').resGroup.useExResGroup, true), concat(steps('basics').scope.subscription.id, '/resourceGroups/',steps('basics').resGroup.resourceGroup), '')]",
 				"customBuildResourceGroupName": "[if(equals(steps('basics').resGroup.useExResGroup, false), steps('basics').resGroup.customBuildResourceGroupName, '')]",
 				"computeGalleryResourceId": "[steps('prereqs').gallery.gallery.id]",		
@@ -1669,7 +1825,7 @@
 				"installSkypeForBusiness": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installSkypeForBusiness,'false')]",
 				"installTeams": "[steps('imageCustomizations').office.installTeams]",
 				"teamsCloudType": "[if(steps('imageCustomizations').office.installTeams, steps('imageCustomizations').office.teamsCloudType, 'Commercial')]",
-				"removeApps": "[steps('imageCustomizations').customizations.removeApps]",
+				"appsToRemove": "[steps('imageCustomizations').customizations.appsToRemove]",
 				"installVirtualDesktopOptimizationTool": "[steps('imageCustomizations').customizations.installVirtualDesktopOptimizationTool]",
 				"installVisio": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installVisio,'false')]",
 				"installWord": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installWord,'false')]",

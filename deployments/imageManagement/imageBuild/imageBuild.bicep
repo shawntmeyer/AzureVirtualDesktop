@@ -15,15 +15,6 @@ param location string = deployment().location
 @maxLength(6)
 param deploymentPrefix string = ''
 
-@allowed([
-  'd'
-  't'
-  'p'
-  ''
-])
-@description('Optional. The environment for which the images are being created.')
-param envShortName string = ''
-
 // Required Existing Resources
 @description('Azure Compute Gallery Resource Id.')
 param computeGalleryResourceId string
@@ -65,8 +56,8 @@ param encryptionAtHost bool = true
 param vmSize string
 
 // Image customizers
-@description('Optional. Remove AppxProvisionedPackages. Default is false.')
-param removeApps bool = false
+@description('Optional. List of Appx Apps to Remove. Default is [].')
+param appsToRemove array = []
 
 @description('Optional. Install FSLogix Agent.')
 param installFsLogix bool = false
@@ -305,7 +296,7 @@ var resourceAbbreviations = loadJsonContent('../../../.common/data/resourceAbbre
 var computeLocation = vnet.location
 var depPrefix = !empty(deploymentPrefix) ? '${deploymentPrefix}-' : ''
 
-var imageBuildResourceGroupName = empty(imageBuildResourceGroupId) ? (empty(customBuildResourceGroupName) ? (!empty(envShortName) ? '${resourceAbbreviations.resourceGroups}-image-builder-${envShortName}-${locations[location].abbreviation}' : '${resourceAbbreviations.resourceGroups}-image-builder-${locations[location].abbreviation}') : customBuildResourceGroupName) : last(split(imageBuildResourceGroupId, '/'))
+var imageBuildResourceGroupName = empty(imageBuildResourceGroupId) ? ( empty(customBuildResourceGroupName) ? '${resourceAbbreviations.resourceGroups}-image-builder-${locations[location].abbreviation}' : customBuildResourceGroupName ) : last(split(imageBuildResourceGroupId, '/'))
 
 var adminPw = '1qaz@WSX${uniqueString(subscription().id, timeStamp)}'
 var adminUserName = 'vmadmin'
@@ -332,8 +323,8 @@ var imageVersionReplicationRegions = !empty(imageVersionTargetRegions) ? imageVe
   }
 ]
 
-var imageVmName = !empty(deploymentPrefix) ? take('${depPrefix}vmimg-${uniqueString(timeStamp)}', 15) : take('vmimg-${uniqueString(timeStamp)}', 15)
-var managementVmName = !empty(deploymentPrefix) ? take('${depPrefix}vmmgt-${uniqueString(timeStamp)}', 15) : take('vmmgt-${uniqueString(timeStamp)}', 15)
+var imageVmName = take('${depPrefix}vmimg-${uniqueString(timeStamp)}', 15)
+var managementVmName = take('${depPrefix}vmmgt-${uniqueString(timeStamp)}', 15)
 
 var securityType = galleryImageDefinitionSecurityType == 'TrustedLaunch' ? 'TrustedLaunch' : galleryImageDefinitionSecurityType == 'ConfidentialVM' ? 'ConfidentialVM' : 'Standard'
 
@@ -383,11 +374,11 @@ resource imageBuildRg 'Microsoft.Resources/resourceGroups@2023-07-01' = if(empty
 // * Role Assignments * //
 
 module roleAssignmentContributorBuildRg '../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = {
-  name: '${depPrefix}RoleAssign-MI-Contributor-BuildRG-${timeStamp}'
+  name: '${depPrefix}RoleAssign-MI-VirtMachContr-BuildRG-${timeStamp}'
   scope: resourceGroup(imageBuildResourceGroupName)
   params: {
     principalId: managedIdentity.properties.principalId
-    roleDefinitionId: 'b24988ac-6180-42a0-ab88-20f7382dd24c' //Contributor
+    roleDefinitionId: '9980e02c-c2be-4d73-94e8-173b1dc7cf3c' // Virtual Machine Contributor
   }
   dependsOn: [
     imageBuildRg
@@ -458,7 +449,7 @@ module logsStorageAccount '../../sharedModules/resources/storage/storage-account
 }
 
 module roleAssignmentBlobDataContributorBuilderRg '../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = if (collectCustomizationLogs) {
-  name: '${depPrefix}RoleAssign-MI-BlobDataContr-BuildRG-${timeStamp}'
+  name: '${depPrefix}RoleAssign-MI-StorageBlobDataContr-BuildRG-${timeStamp}'
   scope: resourceGroup(imageBuildResourceGroupName)
   params: {
     principalId: managedIdentity.properties.principalId
@@ -585,7 +576,7 @@ module customizeImage 'modules/customizeImage.bicep' = {
   scope: resourceGroup(imageBuildResourceGroupName)
   params: {
     cloud: cloud
-    removeApps: removeApps
+    appsToRemove: appsToRemove
     location: computeLocation
     customizations: customizers
     installFsLogix: installFsLogix

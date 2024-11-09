@@ -29,15 +29,14 @@ Try {
     
     # Restart the VM
     $null = Invoke-RestMethod -Headers $AzureManagementHeader -Method 'Post' -Uri $($ResourceManagerUriFixed + $VmResourceId + '/restart?api-version=2024-03-01')
-    $lastProvisioningState = ""
     $VmStatus = Invoke-RestMethod -Headers $AzureManagementHeader -Method 'Get' -Uri $($ResourceManagerUriFixed + $VmResourceId + '/instanceView?api-version=2024-03-01')
     $provisioningState = ($VMStatus.statuses | Where-Object {$_.code -like 'PowerState*'}).code
     While ($provisioningState -ne "PowerState/running") {
-        $lastProvisioningState = $provisioningState
         Start-Sleep -Seconds 5
         $VmStatus = Invoke-RestMethod -Headers $AzureManagementHeader -Method 'Get' -Uri $($ResourceManagerUriFixed + $VmResourceId + '/instanceView?api-version=2024-03-01')
         $provisioningState = ($VMStatus.statuses | Where-Object {$_.code -like 'PowerState*'}).code
-    }   
+    }
+    Start-Sleep -Seconds 15   
 }
 catch {
     throw
