@@ -149,6 +149,7 @@ resource applications 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01'
   location: location
   parent: imageVm
   properties: {
+    asyncExecution: false
     errorBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
       clientId: userAssignedIdentityClientId
     }
@@ -187,6 +188,7 @@ resource fslogix 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = if
   location: location
   parent: imageVm
   properties: {
+    asyncExecution: false
     errorBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
       clientId: userAssignedIdentityClientId
     }
@@ -222,6 +224,7 @@ resource office 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if(
   location: location
   parent: imageVm
   properties: {
+    asyncExecution: false
     errorBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
       clientId: userAssignedIdentityClientId
     }
@@ -302,6 +305,7 @@ resource onedrive 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = i
   location: location
   parent: imageVm
   properties: {
+    asyncExecution: false
     errorBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
       clientId: userAssignedIdentityClientId
     }
@@ -339,6 +343,7 @@ resource teams 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (
   location: location
   parent: imageVm
   properties: {
+    asyncExecution: false
     errorBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
       clientId: userAssignedIdentityClientId
     }
@@ -460,6 +465,7 @@ resource vdot 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (i
   location: location
   parent: imageVm
   properties: {
+    asyncExecution: false
     errorBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
       clientId: userAssignedIdentityClientId
     }
@@ -512,6 +518,7 @@ resource vdiApplications 'Microsoft.Compute/virtualMachines/runCommands@2023-03-
   location: location
   parent: imageVm
   properties: {
+    asyncExecution: false
     errorBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
       clientId: userAssignedIdentityClientId
     }
@@ -551,6 +558,7 @@ resource cleanup 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
   location: location
   parent: imageVm
   properties: {
+    asyncExecution: false
     parameters: [
       {
         name: 'BuildDir'
