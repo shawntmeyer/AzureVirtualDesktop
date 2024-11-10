@@ -1441,10 +1441,6 @@ This example deploys an AVD host pool with Virtual Machines joined to an Active 
                 {
                     "name": "AVD_Users",
                     "objectId": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                },
-                {
-                    "name": "AVD_East_Storage_2_Users",
-                    "objectId": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
                 }
             ]
         },
@@ -1655,9 +1651,8 @@ This template deploys a Storage Account with a blob container (optionally with a
 | `customSourceImageResourceId` | The resource Id of the source image to use for the image build. If not provided, the latest image from the specified publisher, offer, and sku will be used. | string | resource id | '' |
 | `customizations` | This parameter is array of objects that define additional installations and customizations that will be applied to your image. Each object must contain a 'name' property and 'blobNameOrUri' property. In addition, you can specify any script or installer arguments in the 'arguments' property on each object. **Important**, the "blobNameOrUri" property value is case sensitive. | array (of objects) | | [] |
 | `location` | Deployment location. Note that the compute resources will be deployed to the region where the subnet is located. | string | valid region | `deployment().location` |
-| `deploymentPrefix` | Value to prepend to the deployment names. | string | up to 6 characters | '' |
 | `encryptionAtHost` | Determines if "EncryptionAtHost" is enabled on the VMs. | bool | true<br/>false | true |
-| `imageBuildResourceGroupId` | The resource Id of an existing resource group in which to create the vms to build the image. Leave blank to create a new resource group. | string | resource id |'' |
+| `imageBuildResourceGroupId` | The resource Id of an existing resource group in which to create the vms to build the image. Leave blank to create a new resource group. | string | resource id | '' |
 | `imageDefinitionIsAcceleratedNetworkSupported` | Specifies whether the image definition supports the deployment of virtual machines with accelerated networking enabled. | bool | true<br/>false | false |
 | `imageDefinitionIsHibernateSupported` | Specifies whether the image definition supports creating VMs with support for hibernation. | bool | true<br/>false | false |
 | `imageDefinitionIsHigherStoragePerformanceSupported` | Specifies whether the image definition supports capturing images of NVMe disks or Virtual Machines. | bool | true<br/>false | false |
@@ -1674,7 +1669,7 @@ This template deploys a Storage Account with a blob container (optionally with a
 | `appsToRemove` | A list of the built-in Appx Packages to remove. | array |  | [] |
 | `office365AppsToInstall` | A list of Office 365 ProPlus apps to install | array | Access</br>Excel<br/>PowerPoint<br/>OneNote<br/>Outlook<br/>Project<br/>Publisher<br/>SkypeForBusiness<br/>Vision<br/>Word | [] |
 | `installFsLogix` | Install FSLogix Agent. | bool | true<br/>false | false |
-| `installOneDrive` | Install OneDrive Per Machine. | bool | true<br/>false | false |
+| `installOneDrive` | Install OneDrive (Per Machine) | bool | true<br/>false | false |
 | `installTeams` | Install Microsoft Teams. | bool | true<br/>false | false |
 | `installUpdates` | Determines if the latest updates from the specified update service will be installed. | bool | true<br/>false | true |
 | `installVirtualDesktopOptimizationTool` | Apply the Virtual Desktop Optimization Tool customizations. | bool | true<br/>false | false |
