@@ -49,68 +49,77 @@ $Setup = (Get-ChildItem -Path "$appDir\ODT" -Filter '*setup*.exe').FullName
 Write-OutputWithTimeStamp "Found Office Deployment Tool Setup Executable - '$Setup'."
 Write-OutputWithTimeStamp "Dynamically creating $SoftwareName configuration file for setup."
 $ConfigFile = Join-Path -Path $appDir -ChildPath 'office365x64.xml'
-Set-Content -Path $ConfigFile -Value '<Configuration>'
-Switch ($Environment) {
-    "USSec" {
-        Add-Content -Path $ConfigFile -Value '  <Add AllowCdnFallback="TRUE" SourcePath="https://officexo.azurefd.microsoft.scloud/prsstelecontainer/55336b82-a18d-4dd6-b5f6-9e5095c314a6/" Channel="MonthlyEnterprise" OfficeClientEdition="64">'
-    }
-    "USNat" { 
-        Add-Content -Path $ConfigFile -Value '  <Add AllowCdnFallback="TRUE" SourcePath="https://officexo.azurefd.eaglex.ic.gov/prsstelecontainer/55336b82-a18d-4dd6-b5f6-9e5095c314a6/" Channel="MonthlyEnterprise" OfficeClientEdition="64">'
-    }
-    Default {
-        Add-Content -Path $ConfigFile -Value '  <Add OfficeClientEdition="64" Channel="MonthlyEnterprise">'
-    }
-}        
-Add-Content -Path $ConfigFile -Value '    <Product ID="O365ProPlusRetail">'
-Add-Content -Path $ConfigFile -Value '      <Language ID="en-us" />'
-Add-Content -Path $ConfigFile -Value '      <ExcludeApp ID="Groove" />'
-Add-Content -Path $ConfigFile -Value '      <ExcludeApp ID="OneDrive" />'
-Add-Content -Path $ConfigFile -Value '      <ExcludeApp ID="Teams" />'
+
+[array]$Content = @()
+
+[array]$ExcludedApps = @()
+$ExcludedApps += '      <ExcludeApp ID="Groove" />'
+$ExcludedApps += '      <ExcludeApp ID="OneDrive" />'
+$ExcludedApps += '      <ExcludeApp ID="Teams" />'
 if ($AppsToInstall -notcontains 'Access') {
-    Add-Content -Path $ConfigFile -Value '      <ExcludeApp ID="Access" />'
+    $ExcludedApps += '      <ExcludeApp ID="Access" />'
 }
 if ($AppsToInstall -notcontains 'Excel') {
-    Add-Content -Path $ConfigFile -Value '      <ExcludeApp ID="Excel" />'
+    $ExcludedApps += '      <ExcludeApp ID="Excel" />'
 }
 if ($AppsToInstall -notcontains 'OneNote') {
-    Add-Content -Path $ConfigFile -Value '      <ExcludeApp ID="OneNote" />'
+    $ExcludedApps += '      <ExcludeApp ID="OneNote" />'
 }
 if ($AppsToInstall -notcontains 'Outlook') {
-    Add-Content -Path $ConfigFile -Value '      <ExcludeApp ID="Outlook" />'
+    $ExcludedApps += '      <ExcludeApp ID="Outlook" />'
 }
 if ($AppsToInstall -notcontains 'PowerPoint') {
-    Add-Content -Path $ConfigFile -Value '      <ExcludeApp ID="PowerPoint" />'
+    $ExcludedApps += '      <ExcludeApp ID="PowerPoint" />'
 }
 if ($AppsToInstall -notcontains 'Publisher') {
-    Add-Content -Path $ConfigFile -Value '      <ExcludeApp ID="Publisher" />'
+    $ExcludedApps += '      <ExcludeApp ID="Publisher" />'
 }
-if ($AppsToInstall -notcontains 'Lync') {
-    Add-Content -Path $ConfigFile -Value '      <ExcludeApp ID="Lync" />'
+if ($AppsToInstall -notcontains 'SkypeForBusiness') {
+    $ExcludedApps += '      <ExcludeApp ID="Lync" />'
 }
 if ($AppsToInstall -notcontains 'Word') {
-    Add-Content -Path $ConfigFile -Value '      <ExcludeApp ID="Word" />'
+   $ExcludedApps += '      <ExcludeApp ID="Word" />'
 }
-Add-Content -Path $ConfigFile -Value '    </Product>'
+
+$Content += '<Configuration>'
+
+Switch ($Environment) {
+    "USSec" {
+        $Content += '  <Add AllowCdnFallback="TRUE" SourcePath="https://officexo.azurefd.microsoft.scloud/prsstelecontainer/55336b82-a18d-4dd6-b5f6-9e5095c314a6/" Channel="MonthlyEnterprise" OfficeClientEdition="64">'
+    }
+    "USNat" { 
+        $Content += '  <Add AllowCdnFallback="TRUE" SourcePath="https://officexo.azurefd.eaglex.ic.gov/prsstelecontainer/55336b82-a18d-4dd6-b5f6-9e5095c314a6/" Channel="MonthlyEnterprise" OfficeClientEdition="64">'
+    }
+    Default {
+        $Content += '  <Add OfficeClientEdition="64" Channel="MonthlyEnterprise">'
+    }
+}
+
+If ($AppsToInstall -contains 'Access' -or $AppsToInstall -contains 'Excel' -or $AppsToInstall -contains 'OneNote' -or $AppsToInstall -contains 'Outlook' -or $AppsToInstall -contains 'PowerPoint' -or $AppsToInstall -contains 'Publisher' -or $AppsToInstall -contains 'Word') {
+    $Content += '    <Product ID="O365ProPlusRetail">'
+    $Content += '      <Language ID="en-us" />'
+    $Content += $ExcludedApps
+    $Content += '    </Product>'
+}
 if ($AppsToInstall -contains 'Project') {
-    Add-Content -Path $ConfigFile -Value '    <Product ID="ProjectProRetail">'
-    Add-Content -Path $ConfigFile -Value '      <Language ID="en-us" /></Product>'
-    Add-Content -Path $ConfigFile -Value '      <ExcludeApp ID="Groove" />'
-    Add-Content -Path $ConfigFile -Value '      <ExcludeApp ID="Lync" />'
-    Add-Content -Path $ConfigFile -Value '    </Product>'
+    $Content += '    <Product ID="ProjectProRetail">'
+    $Content += '      <Language ID="en-us" /></Product>'
+    $Content += $ExcludedApps
+    $Content += '    </Product>'
 }
 if ($AppsToInstall -contains 'Visio') {
-    Add-Content -Path $ConfigFile -Value '    <Product ID="VisioProRetail">'
-    Add-Content -Path $ConfigFile -Value '      <Language ID="en-us" /></Product>'
-    Add-Content -Path $ConfigFile -Value '      <ExcludeApp ID="Groove" />'
-    Add-Content -Path $ConfigFile -Value '      <ExcludeApp ID="Lync" />'
-    Add-Content -Path $ConfigFile -Value '    </Product>'
+    $Content += '    <Product ID="VisioProRetail">'
+    $Content += '      <Language ID="en-us" /></Product>'
+    $Content += $ExcludedApps
+    $Content += '    </Product>'
 }
-Add-Content -Path $ConfigFile -Value '  </Add>'
-Add-Content -Path $ConfigFile -Value '  <Property Name="SharedComputerLicensing" Value="1" />'
-Add-Content -Path $ConfigFile -Value '  <Property Name="FORCEAPPSHUTDOWN" Value="TRUE" />'
-Add-Content -Path $ConfigFile -Value '  <Updates Enabled="FALSE" />'
-Add-Content -Path $ConfigFile -Value '  <Display Level="None" AcceptEULA="TRUE" />'
-Add-Content -Path $ConfigFile -Value '</Configuration>'
+$Content += '  </Add>'
+$Content += '  <Property Name="SharedComputerLicensing" Value="1" />'
+$Content += '  <Property Name="FORCEAPPSHUTDOWN" Value="TRUE" />'
+$Content += '  <Updates Enabled="FALSE" />'
+$Content += '  <Display Level="None" AcceptEULA="TRUE" />'
+$Content += '</Configuration>'
+Add-Content -Path $ConfigFile -Value $Content
 Write-OutputWithTimeStamp "Config File Content:"
 Write-OutputWithTimeStamp "---------------------------------------------------------------------------------------------------------"
 $ConfigFileContent = Get-Content -Path $ConfigFile
