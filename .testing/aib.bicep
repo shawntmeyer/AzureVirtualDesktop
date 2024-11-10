@@ -28,7 +28,10 @@ var buildDir = 'C:\\BuildDir'
 var masterScriptName = 'aib_master_script.ps1'
 var masterScriptParameters = '-BlobStorageSuffix ${environment().suffixes.storage} -Customizers \'${string(customizations)}\' -UserAssignedIdentity ${userAssignedIdentity.properties.clientId}'
 
-var masterScript = loadFileAsBase64('../.common/artifacts/aib_master_script.ps1')
+var masterScript = loadTextContent('../.common/artifacts/aib_master_script.ps1')
+var lines = split(masterScript, '\r\n')
+//var newLines = [for line in lines: '${line}']
+var inlineScript = union(['$Script = @"'], lines, ['"@', 'Set-Content -Path "${buildDir}\\${masterScriptName}" -Value $Script'])
 
 resource imgTemplate 'Microsoft.VirtualMachineImages/imageTemplates@2023-07-01' = {
   name: imageTemplateName
@@ -84,13 +87,7 @@ resource imgTemplate 'Microsoft.VirtualMachineImages/imageTemplates@2023-07-01' 
       {
         type: 'PowerShell'
         name: 'CreateMasterScript'
-        inline: [
-          '$Script = @"'
-          '${masterScript}'
-          '"@'
-          '$DecodedScript = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($Script))'
-          'Set-Content -Path "${buildDir}\\${masterScriptName}" -Value $DecodedScript'
-        ]
+        inline: inlineScript
       }      
       {
         type: 'PowerShell'

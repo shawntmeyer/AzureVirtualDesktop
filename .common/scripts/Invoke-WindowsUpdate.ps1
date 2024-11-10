@@ -34,7 +34,7 @@ Function ConvertFrom-InstallationResult {
 
 function Write-OutputWithTimeStamp {
     param(
-        [parameter(ValueFromPipeline = $True, Mandatory = $True, Position = 0)]
+        [parameter(ValueFromPipeline=$True, Mandatory=$True, Position=0)]
         [string]$Message
     )    
     $Timestamp = Get-Date -Format 'MM/dd/yyyy HH:mm:ss.ff'
@@ -58,7 +58,7 @@ Switch ($Service.ToUpper()) {
 If ($Service -eq 'MU') {
     $UpdateServiceManager = New-Object -ComObject Microsoft.Update.ServiceManager
     $UpdateServiceManager.ClientApplicationID = $AppName
-    $UpdateServiceManager.AddService2("$ServiceId", 7, "") | Out-Null
+    $UpdateServiceManager.AddService2("7971f918-a847-4430-9279-4a52d1efe18d", 7, "")
     $null = cmd /c reg.exe ADD "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" /v AllowMUUpdateService /t REG_DWORD /d 1 /f '2>&1'
     Write-OutputWithTimeStamp "Added Registry entry to configure Microsoft Update. Exit Code: [$LastExitCode]"
 }
@@ -76,86 +76,81 @@ If ($ServerSelection -eq 3) {
 }
 Write-OutputWithTimeStamp -Message "Searching for Updates..."
 $SearchResult = $UpdateSearcher.Search($Criteria)
-If ($null -ne $SearchResult) {
-    If ($($SearchResult.Updates).Count -gt 0) {
-        Write-OutputWithTimeStamp "List of applicable items found for this computer:"
-        For ($i = 0; $i -lt $($SearchResult.Updates).Count; $i++) {
-            $Update = $SearchResult.Updates[$i]
-            Write-Output "$($i + 1) > $($update.Title)"
-        }
-        $AtLeastOneAdded = $false
-        $ExclusiveAdded = $false   
-        $UpdatesToDownload = New-Object -ComObject Microsoft.Update.UpdateColl
-        Write-OutputWithTimeStamp "Checking search results:"
-        For ($i = 0; $i -lt $($SearchResult.Updates).Count; $i++) {
-            $Update = $SearchResult.Updates[$i]
-            $AddThisUpdate = $false        
-            If ($ExclusiveAdded) {
-                Write-Output "$($i + 1) > skipping: '$($update.Title)' because an exclusive update has already been selected."
-            }
-            Else {
-                $AddThisUpdate = $true
-            }        
-            if ($ExcludePreviewUpdates -and $update.Title -like '*Preview*') {
-                Write-Output "$($i + 1) > Skipping: '$($update.Title)' because it is a preview update."
-                $AddThisUpdate = $false
-            }        
-            If ($AddThisUpdate) {
-                $PropertyTest = 0
-                $ErrorActionPreference = 'SilentlyContinue'
-                $PropertyTest = $Update.InstallationBehavior.Impact
-                $ErrorActionPreference = 'Stop'
-                If ($PropertyTest -eq 2) {
-                    If ($AtLeastOneAdded) {
-                        Write-Output "$($i + 1) > skipping: '$($update.Title)' because it is exclusive and other updates are being installed first."
-                        $AddThisUpdate = $false
-                    }
-                }
-            }
-            If ($AddThisUpdate) {
-                Write-Output "$($i + 1) > adding: '$($update.Title)'"
-                $UpdatesToDownload.Add($Update) | out-null
-                $AtLeastOneAdded = $true
-                $ErrorActionPreference = 'SilentlyContinue'
-                $PropertyTest = $Update.InstallationBehavior.Impact
-                $ErrorActionPreference = 'Stop'
-                If ($PropertyTest -eq 2) {
-                    Write-Output "This update is exclusive; skipping remaining updates"
-                    $ExclusiveAdded = $true
-                }
-            }
-        }        
-        $UpdatesToInstall = New-Object -ComObject Microsoft.Update.UpdateColl
-        Write-OutputWithTimeStamp "Downloading updates..."
-        $Downloader = $UpdateSession.CreateUpdateDownloader()
-        $Downloader.Updates = $UpdatesToDownload
-        $Downloader.Download()
-        Write-OutputWithTimeStamp "Successfully downloaded updates:"        
-        For ($i = 0; $i -lt $UpdatesToDownload.Count; $i++) {
-            $Update = $UpdatesToDownload[$i]
-            If ($Update.IsDownloaded -eq $true) {
-                Write-Output "$($i + 1) > $($update.title)"
-                $UpdatesToInstall.Add($Update) | out-null
-            }
-        }        
-        If ($UpdatesToInstall.Count -gt 0) {
-            Write-OutputWithTimeStamp "Now installing updates..."
-            $Installer = New-Object -ComObject Microsoft.Update.Installer
-            $Installer.Updates = $UpdatesToInstall
-            $InstallationResult = $Installer.Install()
-            $Text = ConvertFrom-InstallationResult -Result $InstallationResult.ResultCode
-            Write-OutputWithTimeStamp "Installation Result: $($Text)"        
-            If ($InstallationResult.RebootRequired) {
-                Write-OutputWithTimeStamp "Atleast one update requires a reboot to complete the installation."
-            }
-        }
+If ($($SearchResult.Updates).Count -gt 0) {
+    Write-OutputWithTimeStamp "List of applicable items found for this computer:"
+    For ($i = 0; $i -lt $($SearchResult.Updates).Count; $i++) {
+        $Update = $SearchResult.Updates[$i]
+        Write-Output "$($i + 1) > $($update.Title)"
     }
-    Else {
-        Write-OutputWithTimeStamp "No missing updates found."
+    $AtLeastOneAdded = $false
+    $ExclusiveAdded = $false   
+    $UpdatesToDownload = New-Object -ComObject Microsoft.Update.UpdateColl
+    Write-OutputWithTimeStamp "Checking search results:"
+    For ($i = 0; $i -lt $($SearchResult.Updates).Count; $i++) {
+        $Update = $SearchResult.Updates[$i]
+        $AddThisUpdate = $false        
+        If ($ExclusiveAdded) {
+            Write-Output "$($i + 1) > skipping: '$($update.Title)' because an exclusive update has already been selected."
+        }
+        Else {
+            $AddThisUpdate = $true
+        }        
+        if ($ExcludePreviewUpdates -and $update.Title -like '*Preview*') {
+            Write-Output "$($i + 1) > Skipping: '$($update.Title)' because it is a preview update."
+            $AddThisUpdate = $false
+        }        
+        If ($AddThisUpdate) {
+            $PropertyTest = 0
+            $ErrorActionPreference = 'SilentlyContinue'
+            $PropertyTest = $Update.InstallationBehavior.Impact
+            $ErrorActionPreference = 'Stop'
+            If ($PropertyTest -eq 2) {
+                If ($AtLeastOneAdded) {
+                    Write-Output "$($i + 1) > skipping: '$($update.Title)' because it is exclusive and other updates are being installed first."
+                    $AddThisUpdate = $false
+                }
+            }
+        }
+        If ($AddThisUpdate) {
+            Write-Output "$($i + 1) > adding: '$($update.Title)'"
+            $UpdatesToDownload.Add($Update) | out-null
+            $AtLeastOneAdded = $true
+            $ErrorActionPreference = 'SilentlyContinue'
+            $PropertyTest = $Update.InstallationBehavior.Impact
+            $ErrorActionPreference = 'Stop'
+            If ($PropertyTest -eq 2) {
+                Write-Output "This update is exclusive; skipping remaining updates"
+                $ExclusiveAdded = $true
+            }
+        }
+    }        
+    $UpdatesToInstall = New-Object -ComObject Microsoft.Update.UpdateColl
+    Write-OutputWithTimeStamp "Downloading updates..."
+    $Downloader = $UpdateSession.CreateUpdateDownloader()
+    $Downloader.Updates = $UpdatesToDownload
+    $Downloader.Download()
+    Write-OutputWithTimeStamp "Successfully downloaded updates:"        
+    For ($i = 0; $i -lt $UpdatesToDownload.Count; $i++) {
+        $Update = $UpdatesToDownload[$i]
+        If ($Update.IsDownloaded -eq $true) {
+            Write-Output "$($i + 1) > $($update.title)"
+            $UpdatesToInstall.Add($Update) | out-null
+        }
+    }        
+    If ($UpdatesToInstall.Count -gt 0) {
+        Write-OutputWithTimeStamp "Now installing updates..."
+        $Installer = New-Object -ComObject Microsoft.Update.Installer
+        $Installer.Updates = $UpdatesToInstall
+        $InstallationResult = $Installer.Install()
+        $Text = ConvertFrom-InstallationResult -Result $InstallationResult.ResultCode
+        Write-OutputWithTimeStamp "Installation Result: $($Text)"        
+        If ($InstallationResult.RebootRequired) {
+            Write-OutputWithTimeStamp "Atleast one update requires a reboot to complete the installation."
+        }
     }
 }
 Else {
-    Write-OutputWithTimeStamp "Unable to search for updates."
+    Write-OutputWithTimeStamp "No missiong updates found."
 }
 
 If ($service -eq 'MU') {
