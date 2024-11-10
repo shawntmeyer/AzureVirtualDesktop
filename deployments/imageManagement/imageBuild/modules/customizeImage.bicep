@@ -10,20 +10,11 @@ param managementVmName string
 param imageVmName string
 param installFsLogix bool
 param fslogixSetupBlobName string
-param installAccess bool
-param installExcel bool
-param installOneNote bool
-param installOutlook bool
-param installPowerPoint bool
-param installProject bool
-param installPublisher bool
-param installSkypeForBusiness bool
+param installOneDrive bool
 param installTeams bool
 param installUpdates bool
 param installVirtualDesktopOptimizationTool bool
-param installVisio bool
-param installWord bool
-param installOneDrive bool
+param office365AppsToInstall array
 param onedriveSetupBlobName string
 param vDotBlobName string
 param officeDeploymentToolBlobName string
@@ -219,7 +210,7 @@ resource fslogix 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = if
   ]
 }
 
-resource office 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if(installAccess || installExcel || installOneNote || installOutlook || installPowerPoint || installProject || installPublisher || installSkypeForBusiness || installVisio || installWord) {
+resource office 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if(!empty(office365AppsToInstall)) {
   name: 'm365Apps'
   location: location
   parent: imageVm
@@ -239,44 +230,8 @@ resource office 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if(
         value: cloud
       }
       {
-        name: 'InstallAccess'
-        value: string(installAccess)
-      }
-      {
-        name: 'InstallWord'
-        value: string(installWord)
-      }
-      {
-        name: 'InstallExcel'
-        value: string(installExcel)
-      }
-      {
-        name: 'InstallOneNote'
-        value: string(installOneNote)
-      }
-      {
-        name: 'InstallOutlook'
-        value: string(installOutlook)
-      }
-      {
-        name: 'InstallPowerPoint'
-        value: string(installPowerPoint)
-      }
-      {
-        name: 'InstallProject'
-        value: string(installProject)
-      }
-      {
-        name: 'InstallPublisher'
-        value: string(installPublisher)
-      }
-      {
-        name: 'InstallSkypeForBusiness'
-        value: string(installSkypeForBusiness)
-      }
-      {
-        name: 'InstallVisio'
-        value: string(installVisio)
+        name: 'AppsToInstall'
+        value: string(office365AppsToInstall)
       }
       {
         name: 'Name'

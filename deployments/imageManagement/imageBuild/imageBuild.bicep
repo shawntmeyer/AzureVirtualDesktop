@@ -65,44 +65,17 @@ param installFsLogix bool = false
 @description('Conditional. The name of the blob (or Full URI) of FSLogix.zip.')
 param fslogixSetupBlobName string = 'FSLogix.zip'
 
-@description('Optional. Install Microsoft Access.')
-param installAccess bool = false
+@description('Optional. List of Office 365 ProPlus Apps to Install. Default is [].')
+param office365AppsToInstall array = []
 
-@description('Optional. Install Microsoft Excel.')
-param installExcel bool = false
+@description('Optional. The name of the blob (or full URI) of the Office Deployment Tool.')
+param officeDeploymentToolBlobName string = 'Office365DeploymentTool.exe'
 
 @description('Optional. Install OneDrive Per Machine.')
 param installOneDrive bool = false
 
 @description('Conditional. The name of the blob (or full URI) of OneDriveSetup.exe.')
 param onedriveSetupBlobName string = 'OneDriveSetup.exe'
-
-@description('Optional. Install Microsoft OneNote.')
-param installOneNote bool = false
-
-@description('Optional. Install Microsoft Outlook.')
-param installOutlook bool = false
-
-@description('Optional. Install Microsoft PowerPoint.')
-param installPowerPoint bool = false
-
-@description('Optional. Install Microsoft Project.')
-param installProject bool = false
-
-@description('Optional. Install Microsoft Publisher.')
-param installPublisher bool = false
-
-@description('Optional. Install Microsoft Skype for Business.')
-param installSkypeForBusiness bool = false
-
-@description('Optional. Install Microsoft Visio.')
-param installVisio bool = false
-
-@description('Optional. Install Microsoft Word.')
-param installWord bool = false
-
-@description('Optional. The name of the blob (or full URI) of the Office Deployment Tool.')
-param officeDeploymentToolBlobName string = 'Office365DeploymentTool.exe'
 
 @description('Optional. Install Microsoft Teams.')
 param installTeams bool = false
@@ -580,21 +553,12 @@ module customizeImage 'modules/customizeImage.bicep' = {
     location: computeLocation
     customizations: customizers
     installFsLogix: installFsLogix
-    installAccess:  installAccess
-    installExcel: installExcel
     installOneDrive: installOneDrive
-    installOneNote: installOneNote
-    installOutlook: installOutlook
-    installPowerPoint: installPowerPoint
-    installProject: installProject
-    installPublisher: installPublisher
-    installSkypeForBusiness: installSkypeForBusiness
     installTeams: installTeams
     installVirtualDesktopOptimizationTool: installVirtualDesktopOptimizationTool
-    installVisio: installVisio
-    installWord: installWord
     userAssignedIdentityClientId: managedIdentity.properties.clientId
     managementVmName: managementVm.outputs.name
+    office365AppsToInstall: office365AppsToInstall
     imageVmName: imageVm.outputs.name
     teamsCloudType: teamsCloudType
     logBlobContainerUri: logContainerUri

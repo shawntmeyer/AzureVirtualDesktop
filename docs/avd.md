@@ -1216,7 +1216,6 @@ You might need to clear out the bicep exe which is located in the %USERPROFILE%.
 | `drainMode` | Enable drain mode on new sessions hosts to prevent users from accessing them until they are validated. | bool | true<br/>false | false |
 | `enableMonitoring` | Deploys the required monitoring resources to enable AVD and VM Insights. | bool | true<br/>false | true |
 | `encryptionAtHost` | Encryption at host encrypts temporary disks and ephemeral OS disks with platform-managed keys, OS and data disk caches with the key specified in the "keyManagementDisksAndStorage" parameter, and flows encrypted to the Storage service. | bool | true<br/>false | true |
-| `envShortName` | The target environment for the solution. 'd' for Development, 't' for Test, and 'p' for Production | string | ''<br/>'d'<br/>'t'<br/>'p' | '' |
 | `existingGlobalFeedResourceId` | The resource Id of the existing global feed workspace. If provided, then the global feed will not be deployed/redeployed regardless of the settings specified in `avdPrivateLinkPrivateRoutes` | string | string | '' |
 | `fslogixConfigureSessionHosts` | Configure FSLogix agent on the session hosts via local registry keys. Only applicable when `identitySolution` is "EntraId" or "EntraIdIntuneEnrollment". | bool | true<br/>false | false |
 | `fslogixContainerType` | The type of FSLogix containers to use for FSLogix. | string | 'CloudCacheProfileContainer'<br/>'CloudCacheProfileOfficeContainer'<br/>'ProfileContainer'<br/>'ProfileOfficeContainer' | 'ProfileContainer' |
@@ -1658,7 +1657,6 @@ This template deploys a Storage Account with a blob container (optionally with a
 | `location` | Deployment location. Note that the compute resources will be deployed to the region where the subnet is located. | string | valid region | `deployment().location` |
 | `deploymentPrefix` | Value to prepend to the deployment names. | string | up to 6 characters | '' |
 | `encryptionAtHost` | Determines if "EncryptionAtHost" is enabled on the VMs. | bool | true<br/>false | true |
-| `envShortName` | The environment for which the images are being created. | string | ''<br/>'d'<br/>'t'<br/>'p' | '' |
 | `imageBuildResourceGroupId` | The resource Id of an existing resource group in which to create the vms to build the image. Leave blank to create a new resource group. | string | resource id |'' |
 | `imageDefinitionIsAcceleratedNetworkSupported` | Specifies whether the image definition supports the deployment of virtual machines with accelerated networking enabled. | bool | true<br/>false | false |
 | `imageDefinitionIsHibernateSupported` | Specifies whether the image definition supports creating VMs with support for hibernation. | bool | true<br/>false | false |
@@ -1673,23 +1671,14 @@ This template deploys a Storage Account with a blob container (optionally with a
 | `imageVersionEOLinDays` | The number of days from now that the image version will reach end of life. | int | 0 to 720 | 0 |
 | `imageVersionExcludeFromLatest` | Exclude this image version from the latest. This property can be overwritten by the regional value. | bool | true<br/>false | false |
 | `imageVersionTargetRegions` | The regions to which the image version will be replicated. (Default: deployment location with Standard_LRS storage and 1 replica.) | array | array of valid regions | [] |
-| `installAccess` | Install Microsoft Access. | bool | true<br/>false | false |
-| `installExcel` | Install Microsoft Excel. | bool | true<br/>false | false |
+| `appsToRemove` | A list of the built-in Appx Packages to remove. | array |  | [] |
+| `office365AppsToInstall` | A list of Office 365 ProPlus apps to install | array | Access</br>Excel<br/>PowerPoint<br/>OneNote<br/>Outlook<br/>Project<br/>Publisher<br/>SkypeForBusiness<br/>Vision<br/>Word | [] |
 | `installFsLogix` | Install FSLogix Agent. | bool | true<br/>false | false |
 | `installOneDrive` | Install OneDrive Per Machine. | bool | true<br/>false | false |
-| `installOneNote` | Install Microsoft OneNote. | bool | true<br/>false | false |
-| `installOutlook` | Install Microsoft Outlook. | bool | true<br/>false | false |
-| `installPowerPoint` | Install Microsoft PowerPoint. | bool | true<br/>false | false |
-| `installProject` | Install Microsoft Project. | bool | true<br/>false | false |
-| `installpublisher` | Install Microsoft Publisher. | bool | true<br/>false | false |
-| `installSkypeForBusiness` | Install Microsoft Skype for Business. | bool | true<br/>false | false |
 | `installTeams` | Install Microsoft Teams. | bool | true<br/>false | false |
 | `installUpdates` | Determines if the latest updates from the specified update service will be installed. | bool | true<br/>false | true |
 | `installVirtualDesktopOptimizationTool` | Apply the Virtual Desktop Optimization Tool customizations. | bool | true<br/>false | false |
-| `installVisio` | Install Microsoft Visio. | bool | true<br/>false | false |
-| `installWord` | Install Microsoft Word. | bool | true<br/>false | false |
 | `tags` | The tags to apply to all resources deployed by this template. | object | | {} |
-| `teamsVersion` | The Teams version | string | 'Classic'<br/>'New' | 'Classic' |
 | `updateService` | The update service. | string | 'WU'<br/>'MU'<br/>'WSUS'<br/>'DCAT'<br/>'STORE'<br/>'OTHER' | 'MU' |
 
 ## Examples
@@ -1931,7 +1920,6 @@ This template deploys a Storage Account with a blob container (optionally with a
 | `customComputeGalleryName` |  The custom name of the Image Gallery to Deploy. If left as "none", then the gallery is named automatically. | string | from 3 to 128 characters | 'none' |
 | `customManagedIdentityName` | The name of the User Assigned Managed Identity that will be created. If left as "none", then the managed identity is named automatically. The managed identity is granted Storage Blob Data Reader Rights to the storage account for the image artifacts. | string | from 3 to 128 characters | 'none' |
 | `customResourceGroupName` | The resource group name where the compute gallery, managed identity, and storage account will be created. If left as "none", then the resource group is named automatically in accordance with the businessUnitIdentifier, centralizedImageManagement and location parameters. | string | from 3 to 63 characters | 'none' |
-| `envShortName` | The environment for which image management is being deployed. "d" = Development, "t" = Test, and "p" = Production. Leave blank to eliminate this field from the naming convention. | string | ''<br/>'d'<br/>'p'<br/>'t' | '' |
 | `location` | The region where the image management resources are being deployed. | string | valid region | `deployment().location` |
 | `logAnalyticsWorkspaceResourceId` | Resource Id of an existing Log Analytics Workspace to which the storage account diagnostic logs will be sent. If not specified, then no diagnostic logs are collected. | string | resource id | '' |
 | `nameConvResTypeAtEnd` | Reverse the normal Cloud Adoption Framework naming convention by putting the resource type abbreviation at the end of the resource name. | bool | true<br/>false | false |

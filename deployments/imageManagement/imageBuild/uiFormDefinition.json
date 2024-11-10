@@ -144,7 +144,7 @@
 										"regex": "^[a-z0-9A-Z-]{2,6}$",
 										"validationMessage": "The prefix must be between 2 and 6 characters"
 									}
-								}								
+								}
 							]
 						}
 					]
@@ -181,20 +181,20 @@
 									"condition": "[not(empty(steps('basics').scope.subscription))]",
 									"request": {
 										"method": "GET",
-										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Storage/storageAccounts?api-version=2023-01-01')]"										
+										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Storage/storageAccounts?api-version=2023-01-01')]"
 									}
 								},
 								{
 									"name": "storageAccount",
 									"type": "Microsoft.Common.DropDown",
 									"label": "Image Artifacts Storage Account",
-									"multiLine": true,									
+									"multiLine": true,
 									"toolTip": "Select the storage account containing the image customization artifacts (i.e., installers, scripts).",
 									"constraints": {
 										"allowedValues": "[map(steps('prereqs').storage.storageAccountsApi.value, (sa) => parse(concat('{\"label\":\"', sa.name, '\",\"description\":\"<b>Location</b>: ', sa.location, ' <b>Resource Group</b>: ', first(skip(split(sa.id, '/'), 4)), '\",\"value\":{\"id\":\"', sa.id, '\",\"blobEndpoint\":\"', sa.properties.primaryEndpoints.blob, '\"}}')))]",
 										"required": true
-									}									
-								},								
+									}
+								},
 								{
 									"name": "containersApi",
 									"type": "Microsoft.Solutions.ArmApiControl",
@@ -206,7 +206,7 @@
 								},
 								{
 									"name": "container",
-									"type": "Microsoft.Common.DropDown",									
+									"type": "Microsoft.Common.DropDown",
 									"label": "Image Artifacts Container",
 									"defaultValue": "",
 									"toolTip": "Select the container which contains the software and script blobs.",
@@ -400,24 +400,15 @@
 										"required": false
 									},
 									"visible": "[equals(steps('imageVm').imageSource.source, 'marketplace')]"
-								},
-								{
-									"name": "offersApi",
-									"type": "Microsoft.Solutions.ArmApiControl",
-									"condition": "[not(empty(steps('imageVm').imageSource.publisher))]",
-									"request": {
-										"method": "GET",
-										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Compute/locations/', steps('basics').scope.location.name, '/publishers/', steps('imageVm').imageSource.publisher, '/artifacttypes/vmimage/offers?api-version=2023-07-01')]"
-									}
-								},
+								},								
 								{
 									"name": "offer",
 									"type": "Microsoft.Common.DropDown",
 									"label": "Offer",
-									"defaultValue": "windows-11",
+									"defaultValue": "Windows-11",
 									"toolTip": "Select the desired marketplace image offer.",
 									"constraints": {
-										"allowedValues": "[map(steps('imageVm').imageSource.offersApi, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.name, '\"}')))]",
+										"allowedValues": "[if(equals(steps('imageVm').imageSource.publisher, 'MicrosoftWindowsServer'), parse('[{\"label\":\"WindowsServer\",\"value\":\"WindowsServer\"}]'), parse('[{\"label\":\"Office-365\",\"value\":\"office-365\"},{\"label\":\"Windows-10\",\"value\":\"Windows-10\"},{\"label\":\"Windows-11\",\"value\":\"windows-11\"}]'))]",
 										"required": true
 									},
 									"visible": "[equals(steps('imageVm').imageSource.source, 'marketplace')]"
@@ -438,7 +429,7 @@
 									"defaultValue": "win11-24h2-avd",
 									"toolTip": "Select the desired marketplace image SKU.",
 									"constraints": {
-										"allowedValues": "[map(steps('imageVm').imageSource.skusApi, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.name, '\"}')))]",
+										"allowedValues": "[if(equals(steps('imageVm').imageSource.publisher, 'MicrosoftWindowsServer'), map(steps('imageVm').imageSource.skusApi, (sku) => parse(concat('{\"label\":\"', sku.name, '\",\"value\":\"', sku.name, '\"}'))), map(filter(steps('imageVm').imageSource.skusApi, (sku) => and(contains(sku.name, 'win'), or(contains(sku.name, '-avd'), contains(sku.name, '-ent')))), (sku) => parse(concat('{\"label\":\"', sku.name, '\",\"value\":\"', sku.name, '\"}'))))]",
 										"required": true
 									},
 									"visible": "[equals(steps('imageVm').imageSource.source, 'marketplace')]"
@@ -495,23 +486,9 @@
 							"elements": [
 								{
 									"name": "installFsLogix",
-									"type": "Microsoft.Common.OptionsGroup",
+									"type": "Microsoft.Common.CheckBox",
 									"label": "Install FsLogix Agent",
-									"defaultValue": "No",
-									"toolTip": "Select 'Yes' to install FsLogix Agent",
-									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Yes",
-												"value": true
-											},
-											{
-												"label": "No",
-												"value": false
-											}
-										],
-										"required": false
-									}
+									"toolTip": "Check to install FsLogix Agent"									
 								}
 							]
 						},
@@ -521,137 +498,78 @@
 							"label": "Microsoft 365 Apps",
 							"elements": [
 								{
-									"name": "installOffice",
-									"type": "Microsoft.Common.OptionsGroup",
-									"label": "Install Office",
-									"defaultValue": "No",
-									"toolTip": "Select 'Yes' to install Office",
+									"name": "office365AppsToInstall",
+									"type": "Microsoft.Common.DropDown",
+									"label": "Office 365 ProPlus Apps",
+									"defaultValue": [{"value": "Access"}, {"value": "Excel"}, {"value": "OneNote"}, {"value": "Outlook"}, {"value": "PowerPoint"}, {"value": "Word"}],
+									"multiselect": true,
+									"toolTip": "Select the list of Office 365 ProPlus apps you wish to install.",
 									"constraints": {
 										"allowedValues": [
 											{
-												"label": "Yes",
-												"value": true
+												"label": "Access",
+												"value": "Access"
 											},
 											{
-												"label": "No",
-												"value": false
+												"label": "Excel",
+												"value": "Excel"
+											},
+											{
+												"label": "OneNote",
+												"value": "OneNote"
+											},
+											{
+												"label": "Outlook",
+												"value": "Outlook"
+											},
+											{
+												"label": "PowerPoint",
+												"value": "PowerPoint"
+											},
+											{
+												"label": "Project",
+												"value": "Project"
+											},
+											{
+												"label": "Publisher",
+												"value": "Publisher"
+											},
+											{
+												"label": "SkypeForBusiness",
+												"value": "SkypeForBusiness"
+											},
+											{
+												"label": "Visio",
+												"value": "Visio"
+											},
+											{
+												"label": "Word",
+												"value": "Word"
 											}
 										],
 										"required": false
-									}
-								},
-								{
-									"name": "installAccess",
-									"type": "Microsoft.Common.CheckBox",
-									"label": "Install Access",
-									"defaultValue": true,
-									"visible": "[steps('imageCustomizations').office.installOffice]"
-								},
-								{
-									"name": "installExcel",
-									"type": "Microsoft.Common.CheckBox",
-									"label": "Install Excel",
-									"defaultValue": true,
-									"visible": "[steps('imageCustomizations').office.installOffice]"
-								},
-								{
-									"name": "installOneNote",
-									"type": "Microsoft.Common.CheckBox",
-									"label": "Install OneNote",
-									"defaultValue": true,
-									"visible": "[steps('imageCustomizations').office.installOffice]"
-								},
-								{
-									"name": "installOutlook",
-									"type": "Microsoft.Common.CheckBox",
-									"label": "Install Outlook",
-									"defaultValue": true,
-									"visible": "[steps('imageCustomizations').office.installOffice]"
-								},
-								{
-									"name": "installPowerPoint",
-									"type": "Microsoft.Common.CheckBox",
-									"label": "Install PowerPoint",
-									"defaultValue": true,
-									"visible": "[steps('imageCustomizations').office.installOffice]"
-								},
-								{
-									"name": "installProject",
-									"type": "Microsoft.Common.CheckBox",
-									"label": "Install Project",
-									"defaultValue": false,
-									"visible": "[steps('imageCustomizations').office.installOffice]"
-								},
-								{
-									"name": "installPublisher",
-									"type": "Microsoft.Common.CheckBox",
-									"label": "Install Publisher",
-									"defaultValue": false,
-									"visible": "[steps('imageCustomizations').office.installOffice]"
-								},
-								{
-									"name": "installSkypeForBusiness",
-									"type": "Microsoft.Common.CheckBox",
-									"label": "Install Skype for Business",
-									"defaultValue": false,
-									"visible": "[steps('imageCustomizations').office.installOffice]"
-								},
-								{
-									"name": "installVisio",
-									"type": "Microsoft.Common.CheckBox",
-									"label": "Install Visio",
-									"defaultValue": false,
-									"visible": "[steps('imageCustomizations').office.installOffice]"
-								},
-								{
-									"name": "installWord",
-									"type": "Microsoft.Common.CheckBox",
-									"label": "Install Word",
-									"defaultValue": true,
-									"visible": "[steps('imageCustomizations').office.installOffice]"
+									},
+									"visible": "[not(equals(steps('imageVm').imageSource.offer, 'office-365'))]"
 								},
 								{
 									"name": "installOneDrive",
-									"type": "Microsoft.Common.OptionsGroup",
+									"type": "Microsoft.Common.CheckBox",
 									"label": "Install OneDrive (Per Machine)",
-									"defaultValue": "Yes",
-									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Yes",
-												"value": true
-											},
-											{
-												"label": "No",
-												"value": false
-											}
-										]
-									},
-									"visible": true
+									"defaultValue": true,
+									"toolTip": "Select to install OneDrive in per-machine mode for VDI",
+									"visible": "[not(equals(steps('imageVm').imageSource.offer, 'office-365'))]"
 								},
 								{
 									"name": "installTeams",
-									"type": "Microsoft.Common.OptionsGroup",
-									"label": "Install Teams",
-									"defaultValue": "Yes",
-									"toolTip": "Note that Teams requires that the Office Suite is installed.",
-									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Yes",
-												"value": true
-											},
-											{
-												"label": "No",
-												"value": false
-											}
-										]
-									},
-									"visible": true
-								},								
+									"type": "Microsoft.Common.CheckBox",
+									"label": "Install Teams for VDI",
+									"defaultValue": true,
+									"toolTip": "Select to install the New Teams client for VDI.",									
+									"visible": "[not(equals(steps('imageVm').imageSource.offer, 'office-365'))]"
+								},
 								{
 									"name": "teamsCloudType",
-									"type": "Microsoft.Common.OptionsGroup",
+									"type": "Microsoft.Common.DropDown",
 									"label": "Teams Cloud Type",
 									"defaultValue": "Commercial",
 									"constraints": {
@@ -695,12 +613,12 @@
 							"name": "customizations",
 							"type": "Microsoft.Common.Section",
 							"label": "Other Customizations",
-							"elements": [								
+							"elements": [
 								{
 									"name": "appsToRemove",
 									"type": "Microsoft.Common.DropDown",
 									"label": "Built-in Apps to Remove",
-									"placeholder": "",
+									"defaultValue": [{"value": "Microsoft.BingNews"}, {"value": "Microsoft.BingWeather"}, {"value": "Microsoft.GamingApp"}, {"value": "Microsoft.GetHelp"}, {"value": "Microsoft.Getstarted"}, {"value": "Microsoft.Messaging"}, {"value": "Microsoft.Microsoft3DViewer"}, {"value": "Microsoft.MicrosoftSolitaireCollection"}, {"value": "Microsoft.Microsoft3DViewer"}, {"value": "Microsoft.MixedReality.Portal"}, {"value": "Microsoft.Office.OneNote"}, {"value": "Microsoft.OutlookForWindows"}, {"value": "Microsoft.Outlook.DesktopIntegrationServices"}, {"value": "Microsoft.OneConnect"}, {"value": "Microsoft.MicrosoftSolitaireCollection"}, {"value": "Microsoft.People"}, {"value": "Microsoft.PowerAutomateDesktop"}, {"value": "Microsoft.SkypeApp"}, {"value": "Microsoft.Todos"}, {"value": "Microsoft.Wallet"}, {"value": "Microsoft.WindowsAlarms"}, {"value": "Microsoft.WindowsCamera"}, {"value": "microsoft.windowscommunicationsapps"}, {"value": "Microsoft.WindowsFeedbackHub"}, {"value": "Microsoft.WindowsFeedbackHub"}, {"value": "Microsoft.WindowsMaps"}, {"value": "Microsoft.WindowsSoundRecorder"}, {"value": "Microsoft.Xbox.TCUI"}, {"value": "Microsoft.XboxApp"}, {"value": "Microsoft.XboxGameOverlay"}, {"value": "Microsoft.XboxGamingOverlay"}, {"value": "Microsoft.XboxIdentityProvider"}, {"value": "Microsoft.XboxSpeechToTextOverlay"}, {"value": "Microsoft.YourPhone"}, {"value": "Microsoft.ZuneMusic"}, {"value": "Microsoft.ZuneVideo"}, {"value": "MicrosoftCorporationII.QuickAssist"}],
 									"multiselect": true,
 									"toolTip": "Select the built-in AppX packages you wish to remove.",
 									"constraints": {
@@ -708,7 +626,7 @@
 											{
 												"label": "Clipchamp.Clipchamp",
 												"value": "Clipchamp.Clipchamp"
-											},											
+											},
 											{
 												"label": "Microsoft.BingNews",
 												"value": "Microsoft.BingNews"
@@ -716,7 +634,7 @@
 											{
 												"label": "Microsoft.BingWeather",
 												"value": "Microsoft.BingWeather"
-											},											
+											},
 											{
 												"label": "Microsoft.GamingApp",
 												"value": "Microsoft.GamingApp"
@@ -776,7 +694,7 @@
 											{
 												"label": "Microsoft.OutlookForWindows",
 												"value": "Microsoft.OutlookForWindows"
-											},											
+											},
 											{
 												"label": "Microsoft.People",
 												"value": "Microsoft.People"
@@ -784,7 +702,7 @@
 											{
 												"label": "Microsoft.PowerAutomateDesktop",
 												"value": "Microsoft.PowerAutomateDesktop"
-											},											
+											},
 											{
 												"label": "Microsoft.ScreenSketch",
 												"value": "Microsoft.ScreenSketch"
@@ -816,7 +734,7 @@
 											{
 												"label": "Microsoft.Whiteboard",
 												"value": "Microsoft.Whiteboard"
-											},											
+											},
 											{
 												"label": "Microsoft.Windows.Photos",
 												"value": "Microsoft.Windows.Photos"
@@ -836,7 +754,7 @@
 											{
 												"label": "microsoft.windowscommunicationsapps",
 												"value": "microsoft.windowscommunicationsapps"
-											},											
+											},
 											{
 												"label": "Microsoft.WindowsFeedbackHub",
 												"value": "Microsoft.WindowsFeedbackHub"
@@ -896,7 +814,7 @@
 											{
 												"label": "MicrosoftCorporationII.QuickAssist",
 												"value": "MicrosoftCorporationII.QuickAssist"
-											}											
+											}
 										],
 										"required": false
 									},
@@ -904,23 +822,9 @@
 								},
 								{
 									"name": "installVirtualDesktopOptimizationTool",
-									"type": "Microsoft.Common.OptionsGroup",
+									"type": "Microsoft.Common.CheckBox",
 									"label": "Apply Virtual Desktop Optimizations",
-									"defaultValue": "No",
-									"toolTip": "Select 'True' to apply the customizations prescribed in the Virtual Desktop Optimization Tool",
-									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Yes",
-												"value": true
-											},
-											{
-												"label": "No",
-												"value": false
-											}
-										],
-										"required": false
-									},
+									"toolTip": "Select to apply the customizations prescribed in the Virtual Desktop Optimization Tool",									
 									"visible": true
 								}
 							]
@@ -932,23 +836,9 @@
 							"elements": [
 								{
 									"name": "addCustomSoftware",
-									"type": "Microsoft.Common.OptionsGroup",
-									"label": "Add Custom Software",
-									"defaultValue": "No",
-									"toolTip": "Select 'Yes' to add custom software to the image",
-									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Yes",
-												"value": true
-											},
-											{
-												"label": "No",
-												"value": false
-											}
-										],
-										"required": false
-									},
+									"type": "Microsoft.Common.CheckBox",
+									"label": "Add Custom Software",									
+									"toolTip": "Select to add custom software to the image",									
 									"visible": true
 								},
 								{
@@ -1005,7 +895,7 @@
 												"element": {
 													"type": "Microsoft.Common.TextBox",
 													"placeholder": "Example: VSCodeSetup-x64-1.81.1.exe",
-													"constraints": {														
+													"constraints": {
 														"required": true
 													}
 												}
@@ -1017,7 +907,7 @@
 												"element": {
 													"type": "Microsoft.Common.TextBox",
 													"placeholder": "Example: /verysilent /mergetasks='!runcode'",
-													"constraints": {														
+													"constraints": {
 														"required": false
 													}
 												}
@@ -1027,23 +917,9 @@
 								},
 								{
 									"name": "addVDICustomSoftware",
-									"type": "Microsoft.Common.OptionsGroup",
+									"type": "Microsoft.Common.CheckBox",
 									"label": "Add VDI Custom Software",
-									"defaultValue": "No",
-									"toolTip": "Select 'Yes' to add custom software to the image",
-									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Yes",
-												"value": true
-											},
-											{
-												"label": "No",
-												"value": false
-											}
-										],
-										"required": false
-									},
+									"toolTip": "Select to add custom software to the image",									
 									"visible": true
 								},
 								{
@@ -1100,7 +976,7 @@
 												"element": {
 													"type": "Microsoft.Common.TextBox",
 													"placeholder": "Example: VSCodeSetup-x64-1.81.1.exe",
-													"constraints": {														
+													"constraints": {
 														"required": true
 													}
 												}
@@ -1112,7 +988,7 @@
 												"element": {
 													"type": "Microsoft.Common.TextBox",
 													"placeholder": "Example: /verysilent /mergetasks='!runcode'",
-													"constraints": {														
+													"constraints": {
 														"required": false
 													}
 												}
@@ -1130,23 +1006,9 @@
 							"elements": [
 								{
 									"name": "installUpdates",
-									"type": "Microsoft.Common.OptionsGroup",
+									"type": "Microsoft.Common.CheckBox",
 									"label": "Install Windows Updates",
-									"defaultValue": "No",
-									"toolTip": "Select 'Yes' to install updates and specify an update source.",
-									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Yes",
-												"value": true
-											},
-											{
-												"label": "No",
-												"value": false
-											}
-										],
-										"required": false
-									}
+									"toolTip": "Select to install updates and specify an update source."									
 								},
 								{
 									"name": "updateService",
@@ -1801,7 +1663,7 @@
 				"deploymentPrefix": "[steps('basics').deploymentSpecs.deploymentPrefix]",
 				"imageBuildResourceGroupId": "[if(equals(steps('basics').resGroup.useExResGroup, true), concat(steps('basics').scope.subscription.id, '/resourceGroups/',steps('basics').resGroup.resourceGroup), '')]",
 				"customBuildResourceGroupName": "[if(equals(steps('basics').resGroup.useExResGroup, false), steps('basics').resGroup.customBuildResourceGroupName, '')]",
-				"computeGalleryResourceId": "[steps('prereqs').gallery.gallery.id]",		
+				"computeGalleryResourceId": "[steps('prereqs').gallery.gallery.id]",
 				"artifactsContainerUri": "[concat(steps('prereqs').storage.storageAccount.blobEndpoint, steps('prereqs').storage.container)]",
 				"userAssignedIdentityResourceId": "[steps('prereqs').storage.managedIdentity.id]",
 				"subnetResourceId": "[steps('prereqs').network.subnet]",
@@ -1814,21 +1676,12 @@
 				"customizations": "[if(steps('imageCustomizations').customSoftware.addCustomSoftware, steps('imageCustomizations').customSoftware.customizations, parse('[]'))]",
 				"vdiCustomizations": "[if(steps('imageCustomizations').customSoftware.addVDICustomSoftware, steps('imageCustomizations').customSoftware.vdiCustomizations, parse ('[]'))]",
 				"installFsLogix": "[if(equals(steps('imageCustomizations').fslogix.installFsLogix, true), steps('imageCustomizations').fslogix.installFsLogix,'false')]",
-				"installAccess": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installAccess,'false')]",
-				"installExcel": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installExcel,'false')]",
-				"installOneDrive": "[steps('imageCustomizations').office.installOneDrive]",
-				"installOneNote": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installOneNote,'false')]",
-				"installOutlook": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installOutlook,'false')]",
-				"installPowerPoint": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installPowerPoint,'false')]",
-				"installProject": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installProject,'false')]",
-				"installPublisher": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installPublisher,'false')]",
-				"installSkypeForBusiness": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installSkypeForBusiness,'false')]",
-				"installTeams": "[steps('imageCustomizations').office.installTeams]",
+				"office365AppsToInstall": "[if(equals(steps('imageVm').imageSource.offer, 'office-365'), parse('[]'), steps('imageCustomizations').office.office365AppsToInstall)]",
+				"installOneDrive": "[if(equals(steps('imageVm').imageSource.offer, 'office-365'), false, steps('imageCustomizations').office.installOneDrive)]",
+				"installTeams": "[if(equals(steps('imageVm').imageSource.offer, 'office-365'), false, steps('imageCustomizations').office.installTeams)]",
 				"teamsCloudType": "[if(steps('imageCustomizations').office.installTeams, steps('imageCustomizations').office.teamsCloudType, 'Commercial')]",
 				"appsToRemove": "[steps('imageCustomizations').customizations.appsToRemove]",
 				"installVirtualDesktopOptimizationTool": "[steps('imageCustomizations').customizations.installVirtualDesktopOptimizationTool]",
-				"installVisio": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installVisio,'false')]",
-				"installWord": "[if(equals(steps('imageCustomizations').office.installOffice, true), steps('imageCustomizations').office.installWord,'false')]",
 				"installUpdates": "[steps('imageCustomizations').updates.installUpdates]",
 				"updateService": "[steps('imageCustomizations').updates.updateService]",
 				"wsusServer": "[if(equals(steps('imageCustomizations').updates.updateService, 'WSUS'), steps('imageCustomizations').updates.wsusServer, '')]",

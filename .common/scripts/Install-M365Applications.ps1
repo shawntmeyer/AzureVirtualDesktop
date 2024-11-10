@@ -1,18 +1,9 @@
 param(
     [string]$APIVersion,
+    [string]$AppsToInstall,
     [string]$BlobStorageSuffix,
     [string]$BuildDir,
     [string]$Environment,
-    [string]$InstallAccess,
-    [string]$InstallExcel,
-    [string]$InstallOutlook,
-    [string]$InstallProject,
-    [string]$InstallPublisher,
-    [string]$InstallSkypeForBusiness,
-    [string]$InstallVisio,
-    [string]$InstallWord,
-    [string]$InstallOneNote,
-    [string]$InstallPowerPoint,
     [string]$Uri,
     [string]$UserAssignedIdentityClientId
 )
@@ -28,6 +19,8 @@ function Write-OutputWithTimeStamp {
     Write-Output $Entry
 }
 
+[array]$AppsToInstall = $AppsToInstall.Replace('\"', '"') | ConvertFrom-Json
+
 If (!(Test-Path -Path "$env:SystemRoot\Logs\ImageBuild")) { New-Item -Path "$env:SystemRoot\Logs\ImageBuild" -ItemType Directory -Force | Out-Null }
 $SoftwareName = 'Microsoft-365-Applications'
 Start-Transcript -Path "$env:SystemRoot\Logs\ImageBuild\$SoftwareName.log" -Force
@@ -41,7 +34,6 @@ If ($Uri -match $BlobStorageSuffix -and $UserAssignedIdentityClientId -ne '') {
     $WebClient.Headers.Add('x-ms-version', '2017-11-09')
     $webClient.Headers.Add("Authorization", "Bearer $AccessToken")
 }
-$sku = (Get-ComputerInfo).OsName
 $appDir = Join-Path -Path $BuildDir -ChildPath $SoftwareName
 New-Item -Path $appDir -ItemType Directory -Force | Out-Null  
 $SourceFileName = ($Uri -Split "/")[-1]
@@ -74,39 +66,39 @@ Add-Content -Path $ConfigFile -Value '      <Language ID="en-us" />'
 Add-Content -Path $ConfigFile -Value '      <ExcludeApp ID="Groove" />'
 Add-Content -Path $ConfigFile -Value '      <ExcludeApp ID="OneDrive" />'
 Add-Content -Path $ConfigFile -Value '      <ExcludeApp ID="Teams" />'
-if ($InstallAccess -ne 'True') {
+if ($AppsToInstall -notcontains 'Access') {
     Add-Content -Path $ConfigFile -Value '      <ExcludeApp ID="Access" />'
 }
-if ($InstallExcel -ne 'True') {
+if ($AppsToInstall -notcontains 'Excel') {
     Add-Content -Path $ConfigFile -Value '      <ExcludeApp ID="Excel" />'
 }
-if ($InstallOneNote -ne 'True') {
+if ($AppsToInstall -notcontains 'OneNote') {
     Add-Content -Path $ConfigFile -Value '      <ExcludeApp ID="OneNote" />'
 }
-if ($InstallOutlook -ne 'True') {
+if ($AppsToInstall -notcontains 'Outlook') {
     Add-Content -Path $ConfigFile -Value '      <ExcludeApp ID="Outlook" />'
 }
-if ($InstallPowerPoint -ne 'True') {
+if ($AppsToInstall -notcontains 'PowerPoint') {
     Add-Content -Path $ConfigFile -Value '      <ExcludeApp ID="PowerPoint" />'
 }
-if ($InstallPublisher -ne 'True') {
+if ($AppsToInstall -notcontains 'Publisher') {
     Add-Content -Path $ConfigFile -Value '      <ExcludeApp ID="Publisher" />'
 }
-if ($InstallSkypeForBusiness -ne 'True') {
+if ($AppsToInstall -notcontains 'Lync') {
     Add-Content -Path $ConfigFile -Value '      <ExcludeApp ID="Lync" />'
 }
-if ($InstallWord -ne 'True') {
+if ($AppsToInstall -notcontains 'Word') {
     Add-Content -Path $ConfigFile -Value '      <ExcludeApp ID="Word" />'
 }
 Add-Content -Path $ConfigFile -Value '    </Product>'
-if ($InstallProject -eq 'True') {
+if ($AppsToInstall -contains 'Project') {
     Add-Content -Path $ConfigFile -Value '    <Product ID="ProjectProRetail">'
     Add-Content -Path $ConfigFile -Value '      <Language ID="en-us" /></Product>'
     Add-Content -Path $ConfigFile -Value '      <ExcludeApp ID="Groove" />'
     Add-Content -Path $ConfigFile -Value '      <ExcludeApp ID="Lync" />'
     Add-Content -Path $ConfigFile -Value '    </Product>'
 }
-if ($InstallVisio -eq 'True') {
+if ($AppsToInstall -contains 'Visio') {
     Add-Content -Path $ConfigFile -Value '    <Product ID="VisioProRetail">'
     Add-Content -Path $ConfigFile -Value '      <Language ID="en-us" /></Product>'
     Add-Content -Path $ConfigFile -Value '      <ExcludeApp ID="Groove" />'
@@ -114,9 +106,7 @@ if ($InstallVisio -eq 'True') {
     Add-Content -Path $ConfigFile -Value '    </Product>'
 }
 Add-Content -Path $ConfigFile -Value '  </Add>'
-if (($Sku).Contains("multi") -eq "true") {
-    Add-Content -Path $ConfigFile -Value '  <Property Name="SharedComputerLicensing" Value="1" />'
-}
+Add-Content -Path $ConfigFile -Value '  <Property Name="SharedComputerLicensing" Value="1" />'
 Add-Content -Path $ConfigFile -Value '  <Property Name="FORCEAPPSHUTDOWN" Value="TRUE" />'
 Add-Content -Path $ConfigFile -Value '  <Updates Enabled="FALSE" />'
 Add-Content -Path $ConfigFile -Value '  <Display Level="None" AcceptEULA="TRUE" />'
