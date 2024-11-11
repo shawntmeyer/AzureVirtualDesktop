@@ -411,7 +411,7 @@ output resourceGroupStorage string = resourceGroupStorage
 output scalingPlanName string = scalingPlanName
 output storageAccountNames object = {
   FSLogix: fslogixStorageAccountNamePrefix
-  IncreaseStorageQuota: toLower(replace(replace(storageAccountNameConv, 'TOKEN-', 'stquota'), '-', ''))
+  IncreaseStorageQuota: toLower(replace(replace(storageAccountNameConv, 'TOKEN-', 'saq'), '-', ''))
   SessionHostReplacement: toLower(replace(replace(storageAccountNameConv, 'TOKEN-', 'shr'), '-', ''))
 }
 output userAssignedIdentityNameConv string = userAssignedIdentityNameConv
