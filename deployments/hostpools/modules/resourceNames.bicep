@@ -82,17 +82,13 @@ var appServicePlanName = replace(
   ''
 )
 var keyVaultNameSecretsTemp = replace(
-  replace(
-    replace(nameConv_Shared_Resources, 'RESOURCETYPE', resourceAbbreviations.keyVaults),
-    'LOCATION',
-    locations[locationVirtualMachines].abbreviation
-  ),
-  'TOKEN-',
-  'secrets-'
+  replace(nameConv_Shared_Resources, 'RESOURCETYPE', resourceAbbreviations.keyVaults),
+  'LOCATION',
+  locations[locationVirtualMachines].abbreviation
 )
-var keyVaultNameSecrets = length(keyVaultNameSecretsTemp) > 24
-  ? replace(keyVaultNameSecretsTemp, '-', '')
-  : keyVaultNameSecretsTemp
+// key vaults must be named with a length of 3 - 24 characters and must be globally unique.
+var keyVaultNameSecretsRemainingCharacters = 24 - length(keyVaultNameSecretsTemp) + 1
+var keyVaultNameSecrets = replace(keyVaultNameSecretsTemp, 'TOKEN', 'sec-${take(uniqueString(tenant().tenantId, subscription().subscriptionId), keyVaultNameSecretsRemainingCharacters)}')
 
 var dataCollectionEndpointName = replace(
   replace(
@@ -261,12 +257,10 @@ var diskEncryptionSetNameConv = replace(
   'LOCATION',
   locations[locationVirtualMachines].abbreviation
 )
-var keyVaultNameVMs = length(replace(keyVaultHPNameConv, 'TOKEN-', 'vmde-')) > 24
-  ? replace(replace(keyVaultHPNameConv, 'TOKEN-', 'vmde-'), '-', '')
-  : replace(keyVaultHPNameConv, 'TOKEN-', 'vmde-')
-var keyVaultNameSHR = length(replace(keyVaultHPNameConv, 'TOKEN-', 'shr-')) > 24
-  ? replace(replace(keyVaultHPNameConv, 'TOKEN-', 'shr-'), '-', '')
-  : replace(keyVaultHPNameConv, 'TOKEN-', 'shr-')
+
+var keyVaultNameHPsRemainingCharacters = 24 - length(keyVaultHPNameConv) + 1 // replace TOKEN with 4 characters and uniqueString. Need to get max length of uniqueString
+var keyVaultNameVMs = replace(keyVaultHPNameConv, 'TOKEN', 'vme-${take(uniqueString(tenant().tenantId, subscription().subscriptionId), keyVaultNameHPsRemainingCharacters)}')
+var keyVaultNameSHR = replace(keyVaultHPNameConv, 'TOKEN', 'shr-${take(uniqueString(tenant().tenantId, subscription().subscriptionId), keyVaultNameHPsRemainingCharacters)}')
 
 // Storage Resources
 var resourceGroupStorage = replace(
@@ -324,10 +318,7 @@ var fslogixfileShareNames = {
     'office-containers'
   ]
 }
-
-var keyVaultNameIncreaseQuota = length(replace(keyVaultHPNameConv, 'TOKEN-', 'stquota-')) > 24
-  ? replace(replace(keyVaultHPNameConv, '-TOKEN-', '-stquota-'), '-', '')
-  : replace(keyVaultHPNameConv, 'TOKEN-', 'stquota-')
+var keyVaultNameIncreaseQuota = replace(keyVaultHPNameConv, 'TOKEN', 'saq-${take(uniqueString(tenant().tenantId, subscription().subscriptionId), keyVaultNameHPsRemainingCharacters)}')  
 
 var keyVaultNameConvStorage = length(replace(
     replace(
@@ -368,7 +359,7 @@ var keyVaultNameConvStorage = length(replace(
     )
 
 output appInsightsNames object = {
-  IncreaseStorageQuota: replace(appInsightsNameConv, 'TOKEN-', 'stquota-')
+  IncreaseStorageQuota: replace(appInsightsNameConv, 'TOKEN-', 'saq-')
   SessionHostReplacement: replace(appInsightsNameConv, 'TOKEN-', 'shr-')
 }
 output appServicePlanName string = appServicePlanName
@@ -388,7 +379,7 @@ output diskEncryptionSetNames object = {
 output diskNamePrefix string = diskNamePrefix
 output fslogixFileShareNames object = fslogixfileShareNames
 output functionAppNames object = {
-  IncreaseStorageQuota: replace(functionAppNameConv, 'TOKEN-', 'stquota-')
+  IncreaseStorageQuota: replace(functionAppNameConv, 'TOKEN-', 'saq-')
   SessionHostReplacement: replace(functionAppNameConv, 'TOKEN-', 'shr-')
 }
 output globalFeedWorkspaceName string = globalFeedWorkspaceName

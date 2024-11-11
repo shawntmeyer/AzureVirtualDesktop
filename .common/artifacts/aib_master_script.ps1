@@ -59,7 +59,7 @@ ForEach ($Customizer in $Customizers) {
     $WebClient = $null
     If (!(Test-Path -Path $DestFile)) { Write-Error "Failed to download $SourceFileName"; Exit 1 }
     Write-Output 'Finished downloading'
-    $Extension = [System.IO.Path]::GetExtension($DestFile).ToLower()
+    $Extension = [System.IO.Path]::GetExtension($DestFile).ToLower().Replace('.','')
     switch ($Extension) {
         'exe' {
             If ($Arguments) {
