@@ -103,13 +103,13 @@ If ($AppsToInstall -contains 'Access' -or $AppsToInstall -contains 'Excel' -or $
 }
 if ($AppsToInstall -contains 'Project') {
     $Content += '    <Product ID="ProjectProRetail">'
-    $Content += '      <Language ID="en-us" /></Product>'
+    $Content += '      <Language ID="en-us" />'
     $Content += $ExcludedApps
     $Content += '    </Product>'
 }
 if ($AppsToInstall -contains 'Visio') {
     $Content += '    <Product ID="VisioProRetail">'
-    $Content += '      <Language ID="en-us" /></Product>'
+    $Content += '      <Language ID="en-us" />'
     $Content += $ExcludedApps
     $Content += '    </Product>'
 }

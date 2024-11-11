@@ -114,7 +114,7 @@ function Deploy-SHRSessionHost {
                         -Method Put `
                         -Uri $Uri `
     #TODO: Add logic to test if deployment is running (aka template is accepted) then finish running the function and let the deployment run in the background.
-    Write-LogDetailed -Message 'Pausing for 30 seconds to allow deployment to start'
+    Write-OutputDetailed -Message 'Pausing for 30 seconds to allow deployment to start'
     Start-Sleep -Seconds 30
     # Check deployment status, if any has failed we report an error
     if ($deploymentJob.Error) {

@@ -37,84 +37,83 @@ function Get-SHRHostPoolDecision {
         [int] $ReplaceSessionHostOnNewImageVersionDelayDays = (Get-FunctionConfig _ReplaceSessionHostOnNewImageVersionDelayDays)
     )
     # Basic Info
-    Write-PSFMessage -Level Host -Message "We have {0} session hosts (included in Automation)" -StringValues $SessionHosts.Count
-
+    Write-OutputDetailed "We have $($SessionHosts.Count) session hosts (included in Automation)"
     # Identify Session hosts that should be replaced
     if ($TargetVMAgeDays -gt 0) {
         $targetReplacementDate = (Get-Date).AddDays(-$TargetVMAgeDays)
         [array] $sessionHostsOldAge = $SessionHosts | Where-Object { $_.DeployTimestamp -lt $targetReplacementDate }
-        Write-PSFMessage -Level Host -Message "Found {0} session hosts to replace due to old age. {1}" -StringValues $sessionHostsOldAge.Count, ($sessionHostsOldAge.VMName -join ',')
+        Write-OutputDetailed "Found $($sessionHostsOldAge.Count) hosts to replace due to old age. $($($sessionHostsOldAge.VMName) -join ',')"
 
     }
 
     if ($ReplaceSessionHostOnNewImageVersion) {
         $latestImageAge = (New-TimeSpan -Start $LatestImageVersion.Date -End (Get-Date -AsUTC)).TotalDays
-        Write-PSFMessage -Level Host -Message "Latest Image {0} is {1:N0} days old." -StringValues $LatestImageVersion.Version, $latestImageAge
+        Write-OutputDetailed "Latest Image $($LatestImageVersion.Version) is $latestImageAge days old."
         if ($latestImageAge -ge $ReplaceSessionHostOnNewImageVersionDelayDays) {
-            Write-PSFMessage -Level Host -Message "Latest Image age is older than (or equal) New Image Delay value {0}" -StringValues $ReplaceSessionHostOnNewImageVersionDelayDays
+            Write-OutputDetailed "Latest Image age is older than (or equal) New Image Delay value $ReplaceSessionHostOnNewImageVersionDelayDays"
             [array] $sessionHostsOldVersion = $sessionHosts | Where-Object { $_.ImageVersion -ne $LatestImageVersion.Version }
-            Write-PSFMessage -Level Host -Message "Found {0} session hosts to replace due to new image version. {1}" -StringValues $sessionHostsOldVersion.Count, ($sessionHostsOldVersion.VMName -Join ',')
+            Write-OutputDetailed "Found $($sessionHostsOldVersion.Count) session hosts to replace due to new image version. $($($sessionHostsOldVersion.VMName) -Join ',')"
         }
     }
 
     [array] $sessionHostsToReplace = ($sessionHostsOldAge + $sessionHostsOldVersion) | Select-Object -Property * -Unique
-    Write-PSFMessage -Level Host -Message "Found {0} session hosts to replace in total. {1}" -StringValues $sessionHostsToReplace.Count, ($sessionHostsToReplace.VMName -join ',')
+    Write-OutputDetailed "Found $($sessionHostsToReplace.Count) session hosts to replace in total. $($($sessionHostsToReplace.VMName) -join ',')"
 
     # Good Session Hosts
 
     $goodSessionHosts = $SessionHosts | Where-Object { $_.VMName -notin $sessionHostsToReplace.VMName }
     $sessionHostsCurrentTotal = ([array]$goodSessionHosts.VMName + [array]$runningDeployments.SessionHostNames ) | Select-Object -Unique
 
-    Write-PSFMessage -Level Host -Message "We have {0} good session hosts including {1} session hosts being deployed" -StringValues $sessionHostsCurrentTotal.Count, $runningDeployments.SessionHostNames.Count
-    Write-PSFMessage -Level Host -Message "We target having {0} session hosts in good shape" -StringValues $TargetSessionHostCount
-    Write-PSFMessage -Level Host -Message "We have a buffer of {0} session hosts more than the target." -StringValues $TargetSessionHostBuffer
+    Write-OutputDetailed "We have $($sessionHostsCurrentTotal.Count) good session hosts including $($runningDeployments.SessionHostName.Count) session hosts being deployed"
+    Write-OutputDetailed "We target having $TargetSessionHostCount session hosts in good shape"
+    Write-OutputDetailed "We have a buffer of $TargetSessionHostBuffer session hosts more than the target."
 
     $weCanDeployUpTo = $TargetSessionHostCount + $TargetSessionHostBuffer - $SessionHosts.count - $RunningDeployments.SessionHostNames.Count
     if ($weCanDeployUpTo -ge 0) {
-        Write-PSFMessage -Level Host -Message "We can deploy up to {0} session hosts" -StringValues $weCanDeployUpTo
+        Write-OutputDetailed "We can deploy up to $weCanDeployUpTo session hosts" 
 
         $weNeedToDeploy = $TargetSessionHostCount - $sessionHostsCurrentTotal.Count
         if ($weNeedToDeploy -gt 0) {
-            Write-PSFMessage -Level Host -Message "We need to deploy {0} new session hosts" -StringValues $weNeedToDeploy
+            Write-OutputDetailed "We need to deploy $weNeedToDeploy new session hosts"
             $weCanDeploy = if ($weNeedToDeploy -gt $weCanDeployUpTo) { $weCanDeployUpTo } else { $weNeedToDeploy } # If we need to deploy 10 machines, and we can deploy 5, we should only deploy 5.
-            Write-PSFMessage -Level Host -Message "Buffer allows deploying {0} session hosts" -StringValues $weCanDeploy
+            Write-OutputDetailed "Buffer allows deploying $weCanDeploy session hosts"
         }
         else {
             $weCanDeploy = 0
-            Write-PSFMessage -Level Host -Message "We have enough session hosts in good shape."
+            Write-OutputDetailed "We have enough session hosts in good shape."
         }
     }
     else {
-        Write-PSFMessage -Level Host -Message "Buffer is full. We can not deploy more session hosts"
+        Write-OutputDetailed "Buffer is full. We can not deploy more session hosts"
         $weCanDeploy = 0
     }
 
 
     $weCanDelete = $SessionHosts.Count - $TargetSessionHostCount
     if ($weCanDelete -gt 0) {
-        Write-PSFMessage -Level Host -Message "We need to delete {0} session hosts" -StringValues $weCanDelete
+        Write-OutputDetailed "We need to delete $weCanDelete session hosts"
         if ($weCanDelete -gt $sessionHostsToReplace.Count) {
-            Write-PSFMessage -Level Host -Message "Host pool is over populated"
+            Write-OutputDetailed "Host pool is over populated"
 
             $goodSessionHostsToDeleteCount = $weCanDelete - $sessionHostsToReplace.Count
-            Write-PSFMessage -Level Host -Message "We will delete {0} good session hosts" -StringValues $goodSessionHostsToDeleteCount
+            Write-OutputDetailed "We will delete $goodSessionHostsToDeleteCount good session hosts"
 
             $selectedGoodHostsTotDelete = [array] ($goodSessionHosts | Sort-Object -Property Session | Select-Object -First $goodSessionHostsToDeleteCount)
-            Write-PSFMessage -Level Host -Message "Selected the following good session hosts to delete: {0}" -StringValues ($selectedGoodHostsTotDelete.VMName -join ',')
+            Write-OutputDetailed "Selected the following good session hosts to delete: $($($selectedGoodHostsTotDelete.VMName) -join ',')"
         }
         else {
             $selectedGoodHostsTotDelete = @()
-            Write-PSFMessage -Level Host -Message "Host pool is not over populated"
+            Write-OutputDetailed "Host pool is not over populated"
         }
 
         $sessionHostsPendingDelete = ($sessionHostsToReplace + $selectedGoodHostsTotDelete) | Select-Object -First $weCanDelete
-        Write-PSFMessage -Level Host -Message "The following Session Hosts are now pending delete: {0}" -StringValues ($SessionHostsPendingDelete.VMName -join ',')
+        Write-OutputDetailed "The following Session Hosts are now pending delete: $($($SessionHostsPendingDelete.VMName) -join ',')"
 
     }
     elseif ($sessionHostsToReplace.Count -gt 0) {
-        Write-PSFMessage -Level Host -Message "We need to delete {0} session hosts but we don't have enough session hosts in the host pool." -StringValues ($sessionHostsToReplace.Count)
+        Write-OutputDetailed "We need to delete $($sessionHostsToReplace.Count) session hosts but we don't have enough session hosts in the host pool."
     }
-    else { Write-PSFMessage -Level Host -Message "We do not need to delete any session hosts" }
+    else { Write-OutputDetailed "We do not need to delete any session hosts" }
 
 
     [PSCustomObject]@{
