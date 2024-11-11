@@ -1,4 +1,4 @@
-param imageTemplateName string = 'test4'
+param imageTemplateName string = 'test5'
 param galleryImageId string = '/subscriptions/70c1bb3a-115f-4300-becd-5f74200999bb/resourceGroups/avd-image-management-usgva-rg/providers/Microsoft.Compute/galleries/avd_usgva_gal/images/vmid-MicrosoftWindowsDesktop-Windows11-win1124h2avd'
 param location string = resourceGroup().location
 param imagePublisher string = 'MicrosoftWindowsDesktop'
@@ -31,7 +31,7 @@ var masterScriptParameters = '-BlobStorageSuffix ${environment().suffixes.storag
 var masterScript = loadTextContent('../.common/artifacts/aib_master_script.ps1')
 var lines = split(masterScript, '\r\n')
 //var newLines = [for line in lines: '${line}']
-var inlineScript = union(['$Script = @"'], lines, ['"@', 'Set-Content -Path "${buildDir}\\${masterScriptName}" -Value $Script'])
+var inlineScript = union(['$Script = @\''], lines, ['\'@', 'Set-Content -Path "${buildDir}\\${masterScriptName}" -Value $Script'])
 
 resource imgTemplate 'Microsoft.VirtualMachineImages/imageTemplates@2023-07-01' = {
   name: imageTemplateName

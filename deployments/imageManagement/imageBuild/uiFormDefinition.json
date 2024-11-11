@@ -605,7 +605,7 @@
 										],
 										"required": false
 									},
-									"visible": "[steps('imageCustomizations').office.installTeams]"
+									"visible": "[and(not(equals(steps('imageVm').imageSource.offer, 'office-365')), steps('imageCustomizations').office.installTeams)]"
 								}
 							]
 						},
