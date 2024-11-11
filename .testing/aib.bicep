@@ -1,4 +1,4 @@
-param imageTemplateName string = 'test5'
+param imageTemplateName string = 'test9'
 param galleryImageId string = '/subscriptions/70c1bb3a-115f-4300-becd-5f74200999bb/resourceGroups/avd-image-management-usgva-rg/providers/Microsoft.Compute/galleries/avd_usgva_gal/images/vmid-MicrosoftWindowsDesktop-Windows11-win1124h2avd'
 param location string = resourceGroup().location
 param imagePublisher string = 'MicrosoftWindowsDesktop'
@@ -26,12 +26,11 @@ resource userAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@
 
 var buildDir = 'C:\\BuildDir'
 var masterScriptName = 'aib_master_script.ps1'
-var masterScriptParameters = '-BlobStorageSuffix ${environment().suffixes.storage} -Customizers \'${string(customizations)}\' -UserAssignedIdentity ${userAssignedIdentity.properties.clientId}'
+var masterScriptParameters = '-BlobStorageSuffix ${environment().suffixes.storage} -Customizers "${string(customizations)}" -UserAssignedIdentity ${userAssignedIdentity.properties.clientId}'
 
-var masterScript = loadTextContent('../.common/artifacts/aib_master_script.ps1')
-var lines = split(masterScript, '\r\n')
-//var newLines = [for line in lines: '${line}']
-var inlineScript = union(['$Script = @\''], lines, ['\'@', 'Set-Content -Path "${buildDir}\\${masterScriptName}" -Value $Script'])
+var masterScript = loadTextContent('../.common/artifacts/aib_master_script.ps1', 'utf-8')
+var masterScriptLines = split(masterScript, '\r\n')
+var inlineScript = union(['$ScriptContent = @\''], masterScriptLines, ['\'@', 'Set-Content -Path "${buildDir}\\${masterScriptName}" -Value $ScriptContent'])
 
 resource imgTemplate 'Microsoft.VirtualMachineImages/imageTemplates@2023-07-01' = {
   name: imageTemplateName
@@ -123,3 +122,4 @@ resource imgTemplate 'Microsoft.VirtualMachineImages/imageTemplates@2023-07-01' 
 }
 
 output parameters string = masterScriptParameters
+output inlineScript array = inlineScript

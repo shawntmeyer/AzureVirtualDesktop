@@ -20,7 +20,7 @@
     The client ID of the user assigned identity to use to get an access token for the storage account(s) via the VM Instance Metadata Service.
 
     .EXAMPLE
-    $Customizers = '[{\"name\":\"FSLogix\",\"Uri\":\"https://saimageassetsusgvaa4a449.blob.core.usgovcloudapi.net/artifacts/FSLogix.zip\"},{\"name\":\"LGPO\",\"Uri\":\"https://saimageassetsusgvaa4a449.blob.core.usgovcloudapi.net/artifacts/LGPO.zip\"}]'
+    $Customizers = '[{"name":"FSLogix","Uri":"https://saimageassetsusgvaa4a449.blob.core.usgovcloudapi.net/artifacts/FSLogix.zip"},{"name":"LGPO","Uri":"https://saimageassetsusgvaa4a449.blob.core.usgovcloudapi.net/artifacts/LGPO.zip"}]'
 #>
 
 [CmdletBinding()]
@@ -30,191 +30,108 @@ param(
     [Parameter(Mandatory = $false)]
     [string] $BlobStorageSuffix,
     [Parameter(Mandatory = $false)]
-    [string] $Customizers,
+    [string] $Customizers = '[]',
     [Parameter(Mandatory = $false)]
     [string] $UserAssignedIdentityClientId
 )
-
-#region Functions
-
-function Write-Log {
-
-    <#
-    .SYNOPSIS
-    Creates a log file and stores logs based on categories with tab seperation
-
-    .PARAMETER category
-    Category to put into the trace
-
-    .PARAMETER message
-    Message to be loged
-
-    .EXAMPLE
-    Log 'Info' 'Message'
-
-    #>
-
-    Param (
-        [Parameter(Mandatory = $false, Position = 0)]
-        [ValidateSet("Info", "Warning", "Error")]
-        $category = 'Info',
-        [Parameter(Mandatory = $true, Position = 1)]
-        $message
-    )
-
-    $date = get-date
-    $content = "[$date]`t$category`t`t$message`n" 
-    Add-Content $Script:Log $content -ErrorAction Stop
-}
-
-function New-Log {
-    <#
-    .SYNOPSIS
-    Sets default log file and stores in a script accessible variable $script:Log
-    Log File name "packageExecution_$date.log"
-
-    .PARAMETER Path
-    Path to the log file
-
-    .EXAMPLE
-    New-Log c:\Windows\Logs
-    Create a new log file in c:\Windows\Logs
-    #>
-
-    Param (
-        [Parameter(Mandatory = $true, Position = 0)]
-        [string] $Path
-    )
-
-    # Create central log file with given date
-
-    $date = Get-Date -UFormat "%Y-%m-%d %H-%M-%S"
-    Set-Variable logFile -Scope Script
-    $script:logFile = "$Script:Name-$date.log"
-
-    if ((Test-Path $path ) -eq $false) {
-        $null = New-Item -Path $path -type directory
-    }
-
-    $script:Log = Join-Path $path $logfile
-
-    Add-Content $script:Log "Date`t`t`tCategory`t`tDetails"
-}
-
-#endregion Functions
-
-#region Initialization
 $ErrorActionPreference = 'Stop'
 $Script:Name = [System.IO.Path]::GetFileNameWithoutExtension($PSCommandPath)
-New-Log "$env:SystemRoot\Logs"
-Write-Log -category Info -message "Starting '$PSCommandPath'."
-Write-Log -category Info -message "Current working dir: $((Get-Location).Path)"
-
-If ($Customizers) {
-    [array]$Customizers = $Customizers.replace('\"','"') | ConvertFrom-Json   
-    ForEach ($Customizer in $Customizers) {
-        $Name = $Customizer.Name
-        $Uri = $Customizer.Uri
-        $Arguments = $Customizer.Arguments
-        Write-Log -category Info -message "Processing '$Name' customizer."
-        $TempDir = Join-Path $Env:TEMP -ChildPath $Name
-        New-Item -Path $TempDir -ItemType Directory -Force | Out-Null  
-        $WebClient = New-Object System.Net.WebClient
-        If ($Uri -match $BlobStorageSuffix -and $UserAssignedIdentityClientId -ne '') {
-            $StorageEndpoint = ($Uri -split "://")[0] + "://" + ($Uri -split "/")[2] + "/"
-            $TokenUri = "http://169.254.169.254/metadata/identity/oauth2/token?api-version=$APIVersion&resource=$StorageEndpoint&client_id=$UserAssignedIdentityClientId"
-            $AccessToken = ((Invoke-WebRequest -Headers @{Metadata = $true } -Uri $TokenUri -UseBasicParsing).Content | ConvertFrom-Json).access_token
-            $WebClient.Headers.Add('x-ms-version', '2017-11-09')
-            $webClient.Headers.Add("Authorization", "Bearer $AccessToken")
-        }
-        Write-Log -category Info -message "Downloading '$Uri' to '$TempDir'."
-        $SourceFileName = ($Uri -Split "/")[-1]
-        $DestFile = Join-Path -Path $TempDir -ChildPath $SourceFileName
-        $WebClient.DownloadFile("$Uri", "$DestFile")
-        Start-Sleep -Seconds 5
-        $WebClient = $null
-        If (!(Test-Path -Path $DestFile)) { Write-Error "Failed to download $SourceFileName"; Exit 1 }
-        Write-Log -category Info -message 'Finished downloading'
-        $Extension = [System.IO.Path]::GetExtension($DestFile).ToLower()
-        switch ($Extension) {
-            'exe' {
-                If ($Arguments) {
-                    Write-Log -category Info -message "Executing '`"$DestFile`" $Arguments'"
-                    Start-Process -FilePath "$DestFile" -ArgumentList $Arguments -NoNewWindow -Wait -PassThru
-                }
-                Else {
-                    Write-Log -category Info -message "Executing `"$DestFile`""
-                    Start-Process -FilePath "$DestFile" -NoNewWindow -Wait -PassThru
-                }
-                $status = Get-WmiObject -Class Win32_Product | Where-Object Name -like "*$($Name)*"
-                if ($status) {
-                    Write-Log -category Info -message "'$($status[0].Name)'  is installed"
-                }
-                else {
-                    Write-Log -category Info -message "'$Name' did not install properly, please check arguments"
-                }                 
-            }
-            'msi' {
-                If ($Arguments) {
-                    If ($Arguments -notcontains $SourceFileName) {
-                        $Arguments = "/i $DestFile $Arguments"
-                    }
-                    Write-Log -category Info -message "Executing 'msiexec.exe $Arguments'"
-                    Start-Process -FilePath msiexec.exe -ArgumentList $Arguments -Wait
-                }
-                Else {
-                    Write-Log -category Info -message "Executing 'msiexec.exe /i $DestFile /qn'"
-                    Start-Process -FilePath msiexec.exe -ArgumentList "/i $DestFile /qn" -Wait
-                }
-                $status = Get-WmiObject -Class Win32_Product | Where-Object Name -like "*$($Name)*"
-                if ($status) {
-                    Write-Log -category Info -message "'$($status[0].Name)' is installed"
-                }
-                else {
-                    Write-Log -category Info -message "'$Name' did not install properly, please check arguments"
-                }
-            }
-            'bat' {
-                If ($Arguments) {
-                    Write-Log -category Info -message "Executing 'cmd.exe `"$DestFile`" $Arguments'"
-                    Start-Process -FilePath cmd.exe -ArgumentList "`"$DestFile`" $Arguments" -Wait
-                }
-                Else {
-                    Write-Log -category Info -message "Executing 'cmd.exe `"$DestFile`"'"
-                    Start-Process -FilePath cmd.exe -ArgumentList "`"$DestFile`"" -Wait
-                }
-            }
-            'ps1' {
-                If ($Arguments) {
-                    Write-Log -category Info -message "Calling PowerShell Script '$DestFile' with arguments '$Arguments'"
-                    & $DestFileName $Arguments
-                }
-                Else {
-                    Write-Log -category Info -message "Calling PowerShell Script '$DestFile'"
-                    & $DestFileName
-                }
-            }
-            'zip' {
-                $DestinationPath = Join-Path -Path "$TempDir" -ChildPath $([System.IO.Path]::GetFileNameWithoutExtension($SourceFileName))
-                Write-Log -category Info -message "Extracting '$DestFile' to '$DestinationPath'."
-                Expand-Archive -Path $DestFileName -DestinationPath $DestinationPath -Force
-                Write-Log -category Info -message "Finding PowerShell script in root of '$DestinationPath'."
-                $PSScript = (Get-ChildItem -Path $DestinationPath -filter '*.ps1').FullName
-                If ($PSScript) {
-                    If ($PSScript.count -gt 1) { $PSScript = $PSScript[0] }
-                    If ($Arguments) {
-                        Write-Log -category Info -message "Calling PowerShell Script '$PSScript' with arguments '$Arguments'"
-                        & $PSScript $Arguments
-                    }
-                    Else {
-                        Write-Log -category Info -message "Calling PowerShell Script '$PSScript'"         
-                        & $PSScript
-                    }
-                }
-            }
-        }
+Start-Transcript -Path "$env:SystemRoot\Logs\$($Script:Name).log" -Force
+Write-Output "Starting '$PSCommandPath'."
+Write-Output "Current working dir: $((Get-Location).Path)"
+[array]$Customizers = $Customizers | ConvertFrom-Json
+ForEach ($Customizer in $Customizers) {
+    $Name = $Customizer.Name
+    $Uri = $Customizer.Uri
+    $Arguments = $Customizer.Arguments
+    Write-Output "Processing '$Name' customizer."
+    $TempDir = Join-Path $Env:TEMP -ChildPath $Name
+    New-Item -Path $TempDir -ItemType Directory -Force | Out-Null  
+    $WebClient = New-Object System.Net.WebClient
+    If ($Uri -match $BlobStorageSuffix -and $UserAssignedIdentityClientId -ne '') {
+        $StorageEndpoint = ($Uri -split '://')[0] + '://' + ($Uri -split '/')[2] + '/'
+        $TokenUri = "http://169.254.169.254/metadata/identity/oauth2/token?api-version=$APIVersion&resource=$StorageEndpoint&client_id=$UserAssignedIdentityClientId"
+        $AccessToken = ((Invoke-WebRequest -Headers @{Metadata = $true } -Uri $TokenUri -UseBasicParsing).Content | ConvertFrom-Json).access_token
+        $WebClient.Headers.Add('x-ms-version', '2017-11-09')
+        $WebClient.Headers.Add("Authorization", "Bearer $AccessToken")
     }
-    Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue
+    Write-Output "Downloading '$Uri' to '$TempDir'."
+    $SourceFileName = ($Uri -Split '/')[-1]
+    $DestFile = Join-Path -Path $TempDir -ChildPath $SourceFileName
+    $WebClient.DownloadFile("$Uri", "$DestFile")
+    Start-Sleep -Seconds 5
+    $WebClient = $null
+    If (!(Test-Path -Path $DestFile)) {
+        Write-Error "Failed to download $SourceFileName"
+        Exit 1
+    }
+    Write-Output 'Finished downloading'
+    $Extension = [System.IO.Path]::GetExtension($DestFile).ToLower()
+    switch ($Extension) {
+        'exe' {
+            If ($Arguments) {
+                Write-Output "Executing '$DestFile $Arguments'"
+                Start-Process -FilePath $DestFile -ArgumentList $Arguments -NoNewWindow -Wait -PassThru
+            }
+            Else {
+                Write-Output "Executing '$DestFile'"
+                Start-Process -FilePath $DestFile -NoNewWindow -Wait -PassThru
+            }                          
+        } # end exe
+        'msi' {
+            If ($Arguments) {
+                If ($Arguments -notcontains $SourceFileName) {
+                    $Arguments = "/i $DestFile $Arguments"
+                }
+                Write-Output "Executing 'msiexec.exe $Arguments'"
+                Start-Process -FilePath msiexec.exe -ArgumentList $Arguments -Wait
+            }
+            Else {
+                Write-Output "Executing 'msiexec.exe /i $DestFile /qn'"
+                Start-Process -FilePath msiexec.exe -ArgumentList "/i $DestFile /qn" -Wait
+            }            
+        } # end msi
+        'bat' {
+            If ($Arguments) {
+                Write-Output "Executing 'cmd.exe $DestFile $Arguments'"
+                Start-Process -FilePath cmd.exe -ArgumentList "$DestFile $Arguments" -Wait
+            }
+            Else {
+                Write-Output "Executing 'cmd.exe $DestFile'"
+                Start-Process -FilePath cmd.exe -ArgumentList $DestFile -Wait
+            }
+        } # end bat
+        'ps1' {
+            If ($Arguments) {
+                Write-Output "Calling PowerShell Script '$DestFile' with arguments '$Arguments'"
+                & $DestFile $Arguments
+            }
+            Else {
+                Write-Output "Calling PowerShell Script '$DestFile'"
+                & $DestFile
+            }
+        } # end ps1
+        'zip' {
+            $DestinationPath = Join-Path -Path $TempDir -ChildPath $([System.IO.Path]::GetFileNameWithoutExtension($SourceFileName))
+            Write-Output "Extracting '$DestFile' to '$DestinationPath'."
+            Expand-Archive -Path $DestFile -DestinationPath $DestinationPath -Force
+            Write-Output "Finding PowerShell script in root of '$DestinationPath'."
+            $PSScript = (Get-ChildItem -Path $DestinationPath -filter '*.ps1').FullName
+            If ($PSScript) {
+                If ($PSScript.count -gt 1) { $PSScript = $PSScript[0] }
+                If ($Arguments) {
+                    Write-Output "Calling PowerShell Script '$PSScript' with arguments '$Arguments'"
+                    & $PSScript $Arguments
+                }
+                Else {
+                    Write-Output "Calling PowerShell Script '$PSScript'"         
+                    & $PSScript
+                }
+            }
+        } # end zip
+    }
 }
+Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue
 
-Write-Log -category Info -message "Ending '$PSCommandPath'."
+Write-Output "Ending '$PSCommandPath'."
+Stop-Transcript
