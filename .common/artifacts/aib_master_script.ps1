@@ -25,13 +25,9 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $false)]
     [string] $APIVersion = '2018-02-01',
-    [Parameter(Mandatory = $false)]
     [string] $BlobStorageSuffix,
-    [Parameter(Mandatory = $false)]
     [string] $Customizers = '[]',
-    [Parameter(Mandatory = $false)]
     [string] $UserAssignedIdentityClientId
 )
 $ErrorActionPreference = 'Stop'
@@ -61,10 +57,7 @@ ForEach ($Customizer in $Customizers) {
     $WebClient.DownloadFile("$Uri", "$DestFile")
     Start-Sleep -Seconds 5
     $WebClient = $null
-    If (!(Test-Path -Path $DestFile)) {
-        Write-Error "Failed to download $SourceFileName"
-        Exit 1
-    }
+    If (!(Test-Path -Path $DestFile)) { Write-Error "Failed to download $SourceFileName"; Exit 1 }
     Write-Output 'Finished downloading'
     $Extension = [System.IO.Path]::GetExtension($DestFile).ToLower()
     switch ($Extension) {
@@ -132,6 +125,5 @@ ForEach ($Customizer in $Customizers) {
     }
 }
 Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue
-
 Write-Output "Ending '$PSCommandPath'."
 Stop-Transcript
