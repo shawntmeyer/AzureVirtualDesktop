@@ -557,26 +557,26 @@ To successfully deploy this solution, you will need to ensure the following prer
     | Azure Blob Storage | privatelink.blob.core.windows.net | privatelink.blob.core.usgovcloudapi.net | privatelink.blob.core.microsoft.scloud | privatelink.blob.core.eaglex.ic.gov |
     | Azure Files | privatelink.file.core.windows.net | privatelink.file.core.usgovcloudapi.net | privatelink.file.core.microsoft.scloud | privatelink.file.core.eaglex.ic.gov |
     | Azure Key Vault | privatelink.vaultcore.azure.net | privatelink.vaultcore.usgovcloudapi.net | privatelink.vaultcore.microsoft.scloud | privatelink.vaultcore.eaglex.ic.gov |
-    | Azure Automation | privatelink.azure-automation.net | privatelink.azure-automation.us | privatelink.azure-automation.microsoft.scloud | privatelink.azure-automation.eaglex.ic.gov |
+    | Azure Web Sites | privatelink.azurewebsites.net</br>scm.privatelink.azurewebsites.net | privatelink.azurewebsites.us</br>scm.privatelink.azurewebsites.us | privatelink.appservice.microsoft.scloud</br>scm.privatelink.appservice.microsoft.scloud | privatelink.appservice.eaglex.ic.gov</br>scm.privatelink.appservice.eaglex.ic.gov |
 
 - **Domain Permissions**
   - For Active Directory Domain Services, create a principal to domain join the session hosts and Azure Files, using the following steps:
     1. Open **Active Directory Users and Computers**.
-    1. Navigate to your service accounts Organizational Unit (OU).
-    1. Right-click on the OU and select **New > User**.
-    1. Type the appropriate values into the dialog box. Recommend that you set a strong password and set the *Password never expires* option. Complete the creation of the *service* account.
-    1. In the **Active Directory Users and Computers** mmc, select **View > Advanced Features** from the menu bar.
-    1. Create an OU for the AVD computers if not already present.
-    1. Right-click on the AVD computer OU and select **Properties**.
-    1. Select the **Security** tab.
-    1. Click the **Advanced** button.
-    1. In the **Advanced Security Settings for *OU Name*** window, click the **Add** button.
-    1. Select a principal by clicking on the **Select a principal** link. Search for the newly created *service* account, click on **Check Names**, and then click **OK**.
-    1. In the **Permission Entry for *OU Name*** window, ensure that the "Applies to:" drop down is set to "This object and all descendant objects" and then under Permissions, select only "Create Computer Objects" and "Delete Computer Objects". Select **OK** to save the entry.
-    1. Back in the **Advanced Security Settings for *OU Name*** window, click the **Add** button.
-    1. Select a principal by clicking on the **Select a principal** link. Search for the newly created *service* account, click on **Check Names**, and then click **OK**.
-    1. In the **Permission Entry for *OU Name*** window, ensure that the "Applies to:" drop down is set to "Descendant Computer objects" and then under Permissions, select only "Read all properties", "Write all properties", "Read permissions", "Modify permissions", "Change password", "Reset password", "Validated write to DNS host name", and "Validated write to service principal name". Select **OK** to save the entry.
-    1. Select **OK** until you are returned to the **Active Directory Users and Computers** window.
+    2. Navigate to your service accounts Organizational Unit (OU).
+    3. Right-click on the OU and select **New > User**.
+    4. Type the appropriate values into the dialog box. Recommend that you set a strong password and set the *Password never expires* option. Complete the creation of the *service* account.
+    5. In the **Active Directory Users and Computers** mmc, select **View > Advanced Features** from the menu bar.
+    6. Create an OU for the AVD computers if not already present.
+    7. Right-click on the AVD computer OU and select **Properties**.
+    8. Select the **Security** tab.
+    9. Click the **Advanced** button.
+    10. In the **Advanced Security Settings for *OU Name*** window, click the **Add** button.
+    11. Select a principal by clicking on the **Select a principal** link. Search for the newly created *service* account, click on **Check Names**, and then click **OK**.
+    12. In the **Permission Entry for *OU Name*** window, ensure that the "Applies to:" drop down is set to "This object and all descendant objects" and then under Permissions, select only "Create Computer Objects" and "Delete Computer Objects". Select **OK** to save the entry.
+    13. Back in the **Advanced Security Settings for *OU Name*** window, click the **Add** button.
+    14. Select a principal by clicking on the **Select a principal** link. Search for the newly created *service* account, click on **Check Names**, and then click **OK**.
+    15. In the **Permission Entry for *OU Name*** window, ensure that the "Applies to:" drop down is set to "Descendant Computer objects" and then under Permissions, select only "Read all properties", "Write all properties", "Read permissions", "Modify permissions", "Change password", "Reset password", "Validated write to DNS host name", and "Validated write to service principal name". Select **OK** to save the entry.
+    16. Select **OK** until you are returned to the **Active Directory Users and Computers** window.
   - for Entra ID Domain Services, ensure the principal is a member of the "AAD DC Administrators" group in Azure AD.
 - **FSLogix with Azure NetApp Files:** the following steps must be completed if you plan to use this service.
   - [Register the resource provider](https://learn.microsoft.com/azure/azure-netapp-files/azure-netapp-files-register)
