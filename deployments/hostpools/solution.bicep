@@ -10,7 +10,7 @@ param avdAgentsModuleUrl string = 'https://wvdportalstorageblob.blob.${environme
 
 // Resource and Resource Group naming and organization
 
-@maxLength(7)
+@maxLength(9)
 @description('''Required. Identifier used to describe the persona of the hostpool(s).
 A persona refers to a detailed profile that represents a specific user type, considering their unique needs,
 usage patterns, and requirements. Essentially, it's a fictional character that helps IT professionals
