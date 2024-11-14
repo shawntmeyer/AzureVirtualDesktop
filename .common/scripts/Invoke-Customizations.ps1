@@ -47,7 +47,7 @@ Start-Sleep -Seconds 10
 If (!(Test-Path -Path $DestFile)) { Write-Error "Failed to download $SourceFileName"; Exit 1 }
 Write-OutputWithTimeStamp 'Finished downloading'
 Set-Location -Path $TempDir
-$Ext = [System.IO.Path]::GetExtension($DestFile).ToLower()
+$Ext = [System.IO.Path]::GetExtension($DestFile).ToLower().Replace('.','')
 switch ($Ext) {
   'exe' {
       If ($Arguments) {
