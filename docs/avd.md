@@ -52,8 +52,8 @@
         - [Bicep Installation](#bicep-installation)
       - [Authentication to Azure](#authentication-to-azure)
       - [Resource Provider Registration](#resource-provider-registration)
-      - [Virtual Network](#virtual-network)
-      - [Private DNS](#private-dns)
+      - [Template Spec Creation](#template-spec-creation)
+      - [Networking](#networking)
       - [Confidential VM Disk Encryption with Customer Managed Keys (Optional)](#confidential-vm-disk-encryption-with-customer-managed-keys-optional)
     - [Deployment](#deployment)
       - [Deploy Image Management Resources](#deploy-image-management-resources)
@@ -627,7 +627,7 @@ The AVD solution is a subscription level deployment and requires the person or p
 
 ##### PowerShell Az Module Installation
 
-In order to run the script and complete the prerequisites you will need the Az PowerShell module.
+In order to run the scripts that simplify setup and complete the prerequisites you will need the Az PowerShell module.
 
 You can install PowerShell modules for all users or for the current user. In order to install modules for all users, you must launch PowerShell as an administrator.
 
@@ -649,7 +649,7 @@ Additional Information can be found [here](https://learn.microsoft.com/en-us/pow
 
 ##### Bicep Installation
 
-You will need to install Bicep to complete the deployments as all templates are maintained as Bicep and need to be transpiled to ARM templates during deployment or Template Spec creation.
+You *should* install Bicep to complete the deployments as all templates are more easily maintained as Bicep and need to be transpiled to ARM templates during deployment or Template Spec creation when not referencing the transpiled json.
 
 Launch a PowerShell window and enter the following commands:
 
@@ -698,11 +698,47 @@ Optionally, to comply with Zero Trust and other IC customer baselines, you must 
 Register-AzProviderFeature -FeatureName EncryptionAtHost -ProviderNamespace Microsoft.Compute
 ```
 
-#### Virtual Network
+#### Template Spec Creation
 
-In order to deploy the image management storage account with private endpoints, create a custom image, and deploy session hosts (virtual machines), you must have an existing Virtual Network with at least one subnet. Ideally, you have already created an Azure Landing Zone including a hub network, private DNS zones (as required), and a AVD spoke VNet peered to the hub.
+A template spec is a resource type for storing an Azure Resource Manager template (ARM template) in Azure for later deployment. This resource type enables you to share ARM templates with other users in your organization. Just like any other Azure resource, you can use Azure role-based access control (Azure RBAC) to share the template spec.
 
-For the purposes of deploying a Proof of Concept where you do not have the prerequite networking in place, you can use the following instructions to create the Virtual Network (be sure to updated the variable values).
+Template specs provide the following benefits:
+
+* You use standard ARM templates for your template spec.
+* You manage access through Azure RBAC, rather than SAS tokens.
+* Users can deploy the template spec without having write access to the template.
+* You can integrate the template spec into existing deployment process, such as PowerShell script or DevOps pipeline.
+* You can generate custom portal forms for ease of use and understanding.
+
+For more information see [Template-Specs | Microsoft Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-specs?tabs=azure-powershell) and [Portal Forms for Template Specs] (https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-specs-create-portal-forms).
+
+The AVD deployments created in this repo come with custom portal forms for each template. The easiest way to create the Template Specs from the templates in this repo is to utilize the [New-TemplateSpecs.ps1] file located in the [../deployments] folder. Follow these instructions to execute this script.
+
+1. Connect to the correct Azure Environment where "<Environment>" equals "AzureCloud", "AzureUSGovernment", "USNat", or "USSec".
+
+   ``` powershell
+   Connect-AzAccount -Environment <Environment>
+   ```
+
+2. Ensure that your context is configured with the subscription to where you want to deploy the image management resources.
+
+   ``` powershell
+   Set-AzContext -Subscription <subscriptionID>
+   ```
+
+3. Change your directory to the [deployments] folder and execute the following command replacing the '<location>' placeholder with a valid region name.
+
+   ``` powershell
+   .\New-TemplateSpecs.ps1 -Location '<location>'
+   ```
+
+#### Networking
+
+In order to deploy the image management storage account with private endpoints, create a custom image, and deploy session hosts (virtual machines), you must have an existing Virtual Network with at least one subnet. Ideally, you have already created an Azure Landing Zone including a hub network and private DNS zones (as required).
+
+In order to deploy the Azure Virtual Desktop standalone or spoke network and required private DNS Zones, you can utilize the [AVD-Networking] template spec with portal ui which will automate the creation of the spoke virtual network, required subnets, peering (if needed), route tables (if needed), NAT gateway (if needed), and missing private DNS zones (if needed).
+
+If you do not wish to utilize the template spec to deploy the required networking, you can follow the instructions below to create the required networking components via PowerShell. These instructions assume a standalone network for deploying a Proof of Concept (be sure to updated the variable values).
 
 1. Create a new resource group if one does not already exist:
 
@@ -712,7 +748,7 @@ For the purposes of deploying a Proof of Concept where you do not have the prere
     New-AzResourceGroup -Location $Location -Name $ResGroupName
     ```
 
-1. Create the VNet:
+2. Create the VNet:
 
     ``` powershell
     $VnetName           = '<VNet Name>'
@@ -720,7 +756,7 @@ For the purposes of deploying a Proof of Concept where you do not have the prere
     $VirtualNetwork     = New-AzVirtualNetwork -Name $VnetName -ResourceGroupName $ResGroupName -Location $Location -AddressPrefix $VnetAddressPrefix
     ```
 
-1. Create the virtual machine subnet configuration:
+3. Create the virtual machine subnet configuration:
 
    ``` powershell
    $SubnetName          = '<Virtual Machine Subnet Name>'
@@ -728,13 +764,13 @@ For the purposes of deploying a Proof of Concept where you do not have the prere
    $SubnetConfig        = Add-AzVirtualNetworkSubnetConfig -Name $SubnetName -VirtualNetwork $VirtualNetwork -AddressPrefix $SubnetAddressPrefix
    ```
 
-1. Associate the subnet configuration to the virtual network:
+4. Associate the subnet configuration to the virtual network:
 
    ``` powershell
    $VirtualNetwork | Set-AzVirtualNetwork
    ```
 
-1. Retrieve the Subnet Resource Id:
+5. Retrieve the Subnet Resource Id:
 
    ``` powershell
    $VNet = Get-AzVirtualNetwork -Name $VnetName -ResourceGroupName $ResGroupName
@@ -746,7 +782,7 @@ For the purposes of deploying a Proof of Concept where you do not have the prere
    1. imageBuild - 'subnetResourceId'
    2. hostpools = 'virtualMachineSubnetResourceId'
 
-1. Create the private endpoint subnet configuration:
+6. Create the private endpoint subnet configuration:
 
    ``` powershell
    $SubnetName          = '<Private Endpoint Subnet Name>'
@@ -754,13 +790,13 @@ For the purposes of deploying a Proof of Concept where you do not have the prere
    $SubnetConfig        = Add-AzVirtualNetworkSubnetConfig -Name $SubnetName -VirtualNetwork $VirtualNetwork -AddressPrefix $SubnetAddressPrefix
    ```
 
-1. Associate the subnet configuration to the virtual network:
+7. Associate the subnet configuration to the virtual network:
 
    ``` powershell
    $VirtualNetwork | Set-AzVirtualNetwork
    ```
 
-1. Retrieve the Subnet Resource Id:
+8. Retrieve the Subnet Resource Id:
 
    ``` powershell
    $VNet = Get-AzVirtualNetwork -Name $VnetName -ResourceGroupName $ResGroupName
@@ -773,13 +809,11 @@ For the purposes of deploying a Proof of Concept where you do not have the prere
    2. imageBuild = 'privateEndpointSubnetResourceId'
    3. hostpools = 'managementAndStoragePrivateEndpointSubnetResourceId'
 
-#### Private DNS
-
 While utilizing a private endpoints is optional, it must be deployed in order to follow Zero Trust principles. Both the image management and AVD deployments can use private endpoints for the following:
 
 - Image Management - Blob Storage Account
 - Image Build - Blob Storage Account for logging customizations
-- AVD Deployment - Azure Files for FSLogix profiles, Azure Key Vault for storing Customer Managed Keys, and AVD Private Link
+- AVD Deployment - Azure Files for FSLogix profiles, Azure Key Vault for storing secrets and Customer Managed Keys, AVD Private Link, Azure Recovery Services, and the Function App deployed to increase premium storage account quotas.
 
 Prior to running the Deploy-ImageManagement script, the Azure Blob private DNS zone should be created either in the portal or through Powershell. See [DNS Prerequisites](#prerequisites) for the correct values per environment.:
 
@@ -837,9 +871,9 @@ You will then need to specify the objectId property of this new service principa
 
 If you plan to build custom images or to add custom software or run scripts during the deployment of your session hosts, you must deploy the image management resources.
 
-The *deployments/imageManagement/Deploy-ImageManagement.ps1* is the easiest way to ensure all necessary image management resources (scripts and installers and Compute Gallery for custom image option.) are present for the AVD deployment.
+The [deployments/Deploy-ImageManagement.ps1] script is the easiest way to ensure all necessary image management resources (scripts and installers and Compute Gallery for custom image option.) are present for the AVD deployment.
 
-1. Set required parameters and make any optional updates desired in *deployments/imageManagement/parameters/imageManagement.parameters.json*. **Important**: For Zero Trust deployments and other details, see [image management parameters](#avd-image-management-parameters) for an explanation of all the available parameters.
+1. Set required parameters and make any optional updates desired in [deployments/imageManagement/parameters/imageManagement.parameters.json] file. **Important**: For Zero Trust deployments and other details, see [image management parameters](#avd-image-management-parameters) for an explanation of all the available parameters.
 
 2. **[Optional]** If you wish to add any custom scripts or installers beyond what is already included in the artifacts directory [../.common/artifacts], then gather your installers and create a new folder inside the artifacts directory for each customizer or application. In the folder create or place one and only one PowerShell script (.ps1) that installs the application or performs the desired customization. For an example of the installation script and supporting files, see the *.common/artifacts/Microsoft-Teams* folder. These customizations can be applied to the custom image via the [customizations] parameter.
 
@@ -857,7 +891,7 @@ The *deployments/imageManagement/Deploy-ImageManagement.ps1* is the easiest way 
     Set-AzContext -Subscription <subscriptionID>
     ```
 
-6. Run the *deployments/imageManagement/Deploy-ImageManagement.ps1*
+6. Change directories to the [deployments] folder and execute the [Deploy-ImageManagement.ps1] script as follows:
 
     ``` powershell
     .\Deploy-ImageManagement.ps1 -DeployImageManagementResources -Location <Region> [-SkipDownloadingNewSources] [-TempDir <Temp directory for artifacts>] [-DeleteExistingBlobs] [-TeamsTenantType <TeamsTenantType>]
@@ -945,7 +979,7 @@ The AVD solution includes all necessary resources to deploy a usable virtual des
     ``` powershell
     $Location = '<Region>'
     $DeploymentName = '<valid deployment name>'
-    New-AzDeployment -Location $Location -Name $DeploymentName -TemplateFile '.\deployments\hostpools\solution.bicep' -TemplateParameterFile '.\deployments\hostpools\parameters\hostpoolid.parameters.json' -Verbose
+    New-AzDeployment -Location $Location -Name $DeploymentName -TemplateFile '.\deployments\hostpools\hostpool.bicep' -TemplateParameterFile '.\deployments\hostpools\parameters\hostpoolid.parameters.json' -Verbose
     ```
 
 **Option 2: Using a Template Spec and Portal Form**
@@ -958,7 +992,7 @@ The AVD solution includes all necessary resources to deploy a usable virtual des
     $Name = 'AVDHostPoolDeployment'
     $DisplayName = 'AVD Host Pool Deployment'
     $Version = '<#.#.#>'
-    $TemplateFile = './deployments/hostpools/solution.bicep'
+    $TemplateFile = './deployments/hostpools/hostpool.bicep'
     $UIFormDefinitionFile = './deployments/hostpools/uiFormDefinition.json'
     New-AzTemplateSpec -ResourceGroupName $ResGroupName -Location $Location -Name $Name -DisplayName $DisplayName -TemplateFile $TemplateFile -UIFormDefinitionFile $UIFormDefinitionFile -Version $Version
     ```

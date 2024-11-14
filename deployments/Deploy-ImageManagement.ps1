@@ -63,8 +63,8 @@ if ([string]::IsNullOrEmpty($TempDir)) {
 $TempArtifactsDir = Join-Path -Path $TempDir -ChildPath 'Artifacts'
 
 $Time = Get-Date -Format 'yyyyMMddhhmmss'
-$ArtifactsDir = (Get-Item -Path (Join-Path -Path  $PSScriptRoot -ChildPath '..\..\.common\artifacts')).FullName
-$FunctionsPath = (Get-Item -Path (Join-Path -Path $PSScriptRoot -ChildPath '..\..\.common\powerShellFunctions')).FullName
+$ArtifactsDir = (Get-Item -Path (Join-Path -Path  $PSScriptRoot -ChildPath '..\.common\artifacts')).FullName
+$FunctionsPath = (Get-Item -Path (Join-Path -Path $PSScriptRoot -ChildPath '..\.common\powerShellFunctions')).FullName
 
 If (Test-Path -Path $TempArtifactsDir) {
     Remove-Item -Path $TempArtifactsDir -Recurse -Force -ErrorAction SilentlyContinue

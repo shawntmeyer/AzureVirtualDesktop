@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.31.34.60546",
-      "templateHash": "12293129992371963449"
+      "templateHash": "6776430081048680879"
     }
   },
   "parameters": {
@@ -965,7 +965,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.31.34.60546",
-              "templateHash": "12278430233512546878"
+              "templateHash": "6438258599356718257"
             }
           },
           "parameters": {
@@ -1398,13 +1398,16 @@
               "hostPools": "vdpool",
               "keyVaults": "kv",
               "logAnalyticsWorkspaces": "law",
+              "natGateways": "ng",
               "netAppAccounts": "naa",
               "netAppCapacityPools": "nacp",
               "networkInterfaces": "nic",
               "privateEndpoints": "pe",
               "privateLinkScopes": "pls",
+              "publicIPAddresses": "pip",
               "recoveryServicesVaults": "rsv",
               "resourceGroups": "rg",
+              "routeTables": "rt",
               "scalingPlans": "vdscaling",
               "storageAccounts": "sa",
               "userAssignedIdentities": "uai",
@@ -1636,7 +1639,7 @@
               "type": "object",
               "value": {
                 "FSLogix": "[variables('fslogixStorageAccountNamePrefix')]",
-                "IncreaseStorageQuota": "[toLower(replace(replace(variables('storageAccountNameConv'), 'TOKEN-', 'stquota'), '-', ''))]",
+                "IncreaseStorageQuota": "[toLower(replace(replace(variables('storageAccountNameConv'), 'TOKEN-', 'saq'), '-', ''))]",
                 "SessionHostReplacement": "[toLower(replace(replace(variables('storageAccountNameConv'), 'TOKEN-', 'shr'), '-', ''))]"
               }
             },
