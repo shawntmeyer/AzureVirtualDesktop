@@ -710,11 +710,11 @@ Template specs provide the following benefits:
 * You can integrate the template spec into existing deployment process, such as PowerShell script or DevOps pipeline.
 * You can generate custom portal forms for ease of use and understanding.
 
-For more information see [Template-Specs | Microsoft Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-specs?tabs=azure-powershell) and [Portal Forms for Template Specs] (https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-specs-create-portal-forms).
+For more information see [Template-Specs | Microsoft Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-specs?tabs=azure-powershell) and [Portal Forms for Template Specs](https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-specs-create-portal-forms).
 
-The AVD deployments created in this repo come with custom portal forms for each template. The easiest way to create the Template Specs from the templates in this repo is to utilize the [New-TemplateSpecs.ps1] file located in the [../deployments] folder. Follow these instructions to execute this script.
+The AVD deployments created in this repo come with the custom portal forms for each template. The easiest way to create the Template Specs from the templates in this repo is to utilize the **New-TemplateSpecs.ps1** file located in the **deployments** folder. Follow these instructions to execute this script.
 
-1. Connect to the correct Azure Environment where "<Environment>" equals "AzureCloud", "AzureUSGovernment", "USNat", or "USSec".
+1. Connect to the correct Azure Environment where '\<Environment\>' equals 'AzureCloud', 'AzureUSGovernment', 'USNat', or 'USSec'.
 
    ``` powershell
    Connect-AzAccount -Environment <Environment>
@@ -726,7 +726,7 @@ The AVD deployments created in this repo come with custom portal forms for each 
    Set-AzContext -Subscription <subscriptionID>
    ```
 
-3. Change your directory to the [deployments] folder and execute the following command replacing the '<location>' placeholder with a valid region name.
+3. Change your directory to the [deployments] folder and execute the following command replacing the '\<location>\' placeholder with a valid region name.
 
    ``` powershell
    .\New-TemplateSpecs.ps1 -Location '<location>'
@@ -736,7 +736,21 @@ The AVD deployments created in this repo come with custom portal forms for each 
 
 In order to deploy the image management storage account with private endpoints, create a custom image, and deploy session hosts (virtual machines), you must have an existing Virtual Network with at least one subnet. Ideally, you have already created an Azure Landing Zone including a hub network and private DNS zones (as required).
 
-In order to deploy the Azure Virtual Desktop standalone or spoke network and required private DNS Zones, you can utilize the [AVD-Networking] template spec with portal ui which will automate the creation of the spoke virtual network, required subnets, peering (if needed), route tables (if needed), NAT gateway (if needed), and missing private DNS zones (if needed).
+In order to deploy the Azure Virtual Desktop standalone or spoke network and required private DNS Zones, you can utilize the **Azure Virtual Desktop Networking** template spec with portal ui which will automate the creation of the spoke virtual network, required subnets, peering (if needed), route tables (if needed), NAT gateway (if needed), and missing private DNS zones (if needed).
+
+1. Deploy the Template Spec
+
+    a. Go to Template Specs in the Azure Portal.
+
+    ![Template Spec](images/templateSpecs.png)
+
+    b. Choose the **Azure Virtual Desktop Networking** Template Spec and click "Deploy"
+
+    ![Deploy Template Spec](images/deployButton.png)
+
+    c. Populate the form with correct values. Use the the tool tips for more detailed parameter information.
+
+    ![Image Build Form](images/networking-virtualNetwork.png)
 
 If you do not wish to utilize the template spec to deploy the required networking, you can follow the instructions below to create the required networking components via PowerShell. These instructions assume a standalone network for deploying a Proof of Concept (be sure to updated the variable values).
 
@@ -871,15 +885,15 @@ You will then need to specify the objectId property of this new service principa
 
 If you plan to build custom images or to add custom software or run scripts during the deployment of your session hosts, you must deploy the image management resources.
 
-The [deployments/Deploy-ImageManagement.ps1] script is the easiest way to ensure all necessary image management resources (scripts and installers and Compute Gallery for custom image option.) are present for the AVD deployment.
+The **deployments/Deploy-ImageManagement.ps1** script is the easiest way to ensure all necessary image management resources (scripts and installers and Compute Gallery for custom image option.) are present for the AVD deployment.
 
-1. Set required parameters and make any optional updates desired in [deployments/imageManagement/parameters/imageManagement.parameters.json] file. **Important**: For Zero Trust deployments and other details, see [image management parameters](#avd-image-management-parameters) for an explanation of all the available parameters.
+1. Set required parameters and make any optional updates desired in **deployments/imageManagement/parameters/imageManagement.parameters.json** file. **Important**: For Zero Trust deployments and other details, see [image management parameters](#avd-image-management-parameters) for an explanation of all the available parameters.
 
 2. **[Optional]** If you wish to add any custom scripts or installers beyond what is already included in the artifacts directory [../.common/artifacts], then gather your installers and create a new folder inside the artifacts directory for each customizer or application. In the folder create or place one and only one PowerShell script (.ps1) that installs the application or performs the desired customization. For an example of the installation script and supporting files, see the *.common/artifacts/Microsoft-Teams* folder. These customizations can be applied to the custom image via the [customizations] parameter.
 
 3. **[Optional]** The `DownloadNewSources` switch parameter determines if the script downloads the latest installers (or other files) from the Internet (or other network) to enable an "evergreen" capability that helps you keep your images and session hosts up to date. If you wish to use this capability, update the Urls specified in the *.common/artifacts/downloads/parameters.json* file to match your network environment. You can also not depend on this automated capability and add source files directly to the appropriate location in the artifacts directory *.common/artifacts*. This directory is processed by zipping the contents of each child directory into a zip file and then all existing files in the root plus the zip files are added to the blob storage container in the Storage Account.
 
-4. Open the PowerShell version where you installed the Az module above. If not already connected to your Azure Environment, then connect to the correct Azure Environment where "\<Environment>" equals "AzureCloud", "AzureUSGovernment", "USNat", or "USSec".
+4. Open the PowerShell version where you installed the Az module above. If not already connected to your Azure Environment, then connect to the correct Azure Environment where "\<Environment\>" equals "AzureCloud", "AzureUSGovernment", "USNat", or "USSec".
 
     ``` powershell
     Connect-AzAccount -Environment <Environment>
@@ -891,7 +905,7 @@ The [deployments/Deploy-ImageManagement.ps1] script is the easiest way to ensure
     Set-AzContext -Subscription <subscriptionID>
     ```
 
-6. Change directories to the [deployments] folder and execute the [Deploy-ImageManagement.ps1] script as follows:
+6. Change directories to the **deployments** folder and execute the **Deploy-ImageManagement.ps1** script as follows:
 
     ``` powershell
     .\Deploy-ImageManagement.ps1 -DeployImageManagementResources -Location <Region> [-SkipDownloadingNewSources] [-TempDir <Temp directory for artifacts>] [-DeleteExistingBlobs] [-TeamsTenantType <TeamsTenantType>]
@@ -935,28 +949,15 @@ This deployment can be done via Command Line or through a Template Spec UI in th
 
 **Option 2: Using a Template Spec and Portal Form**
 
-1. Create the Template Spec:
+1. Deploy the Template Spec
 
-    ``` powershell
-    $Location = '<Region>'
-    $ResGroupName = '<Template Spec Resource Group>'
-    $Name = 'AVDCustomImageBuild'
-    $DisplayName = 'AVD Custom Image Build'
-    $Version = '<#.#.#>'
-    $TemplateFile = './deployments/imageManagement/imageBuild/imageBuild.bicep'
-    $UIFormDefinitionFile = './deployments/imageManagement/imageBuild/uiFormDefinition.json'
-    New-AzTemplateSpec -ResourceGroupName $ResGroupName -Location $Location -Name $Name -DisplayName $DisplayName -TemplateFile $TemplateFile -UIFormDefinitionFile $UIFormDefinitionFile -Version $Version
-    ```
+    a. Go to Template Specs in the Azure Portal.
 
-2. Deploy the Template Spec
+    ![Template Spec](images/templateSpecs.png)
 
-    a. Go to Template Specs in the Azure Portal
+    b. Choose the **Azure Virtual Desktop Custom Image** Template Spec and click "Deploy"
 
-    ![Template Spec](images/templateSpec.png)
-
-    b. Choose the Template Spec that was just created and choose "Deploy"
-
-    ![Deploy Template Spec](images/deployTemplateSpec.png)
+    ![Deploy Template Spec](images/deployButton.png)
 
     c. Populate the form with correct values. Use the the tool tips for more detailed parameter information.
 
@@ -984,32 +985,19 @@ The AVD solution includes all necessary resources to deploy a usable virtual des
 
 **Option 2: Using a Template Spec and Portal Form**
 
-1. Create the Template Spec:
-
-    ``` powershell
-    $Location = '<Region>'
-    $ResGroupName = '<Template Spec Resource Group>'
-    $Name = 'AVDHostPoolDeployment'
-    $DisplayName = 'AVD Host Pool Deployment'
-    $Version = '<#.#.#>'
-    $TemplateFile = './deployments/hostpools/hostpool.bicep'
-    $UIFormDefinitionFile = './deployments/hostpools/uiFormDefinition.json'
-    New-AzTemplateSpec -ResourceGroupName $ResGroupName -Location $Location -Name $Name -DisplayName $DisplayName -TemplateFile $TemplateFile -UIFormDefinitionFile $UIFormDefinitionFile -Version $Version
-    ```
-
-2. Deploy the Template Spec
+1. Deploy the Template Spec
 
     a. Go to Template Specs in the Azure Portal
 
-    ![templateSpec](images/templateSpec.png)
+    ![templateSpec](images/templateSpecs.png)
 
-    b. Choose the Template Spec that was just created and choose "Deploy"
+    b. Choose the **Azure Virtual Desktop HostPool** Template Spec click "Deploy"
 
-    ![Deploy Template Spec](images/deployAVDTemplateSpec.png)
+    ![Deploy Template Spec](images/deployButton.png)
 
     c. Populate the form with correct values. Use the table above or the tool tips for more detailed parameter information 
 
-    ![AVD Form](images/avdForm.png)
+    ![AVD Form](images/hostPoolForm.png)
 
     d. Once all values are populated, deploy the template. Parameter values and the template can be downloaded from the deployment view
 

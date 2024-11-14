@@ -44,7 +44,7 @@ if ($createNetwork) {
 if ($createCustomImage) {
     Write-Output 'Creating AVD Custom Image Template Spec'
     $templateFile = Join-Path -Path $PSScriptRoot -ChildPath '\imageManagement\imageBuild\imageBuild.bicep'
-    $uiFormDefinition = Join-Path -Path $PSScriptRoot -ChildPath '\imageManagement\customimage\uiFormDefinition.json'
+    $uiFormDefinition = Join-Path -Path $PSScriptRoot -ChildPath '\imageManagement\imageBuild\uiFormDefinition.json'
     New-AzTemplateSpec -ResourceGroupName $ResourceGroupName -Name 'AVD-CustomImage' -DisplayName 'Azure Virtual Desktop Custom Image' -Description 'Generates a custom image for Azure Virtual Desktop' -TemplateFile $templateFile -UiFormDefinitionFile $uiFormDefinition -Location $Location -Version '1.0.0' -Force
 }
 
