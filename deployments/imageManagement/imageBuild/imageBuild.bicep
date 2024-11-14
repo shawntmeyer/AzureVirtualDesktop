@@ -268,6 +268,7 @@ var resourceAbbreviations = loadJsonContent('../../../.common/data/resourceAbbre
 
 var computeLocation = vnet.location
 var depPrefix = !empty(deploymentPrefix) ? '${deploymentPrefix}-' : ''
+var logStorageAccountName = toLower('sa${depPrefix}log${uniqueString(subscription().id,imageBuildResourceGroupName)}')
 
 var imageBuildResourceGroupName = empty(imageBuildResourceGroupId) ? ( empty(customBuildResourceGroupName) ? '${resourceAbbreviations.resourceGroups}-image-builder-${locations[location].abbreviation}' : customBuildResourceGroupName ) : last(split(imageBuildResourceGroupId, '/'))
 
@@ -364,7 +365,8 @@ module logsStorageAccount '../../sharedModules/resources/storage/storage-account
   name: '${depPrefix}Logs-StorageAccount-${timeStamp}'
   scope: resourceGroup(imageBuildResourceGroupName)
   params: {
-    name: 'sa${deploymentPrefix}log${uniqueString(subscription().id,imageBuildResourceGroupName)}'
+    #disable-next-line BCP335
+    name: logStorageAccountName
     location: computeLocation
     allowCrossTenantReplication: false
     allowSharedKeyAccess: true
@@ -402,7 +404,7 @@ module logsStorageAccount '../../sharedModules/resources/storage/storage-account
     ]
     privateEndpoints: !empty(privateEndpointSubnetResourceId) && !empty(blobPrivateDnsZoneResourceId) ? [
       {
-        name: 'pe-sa${deploymentPrefix}log${uniqueString(subscription().id,imageBuildResourceGroupName,depPrefix)}-blob-${locations[computeLocation].abbreviation}'
+        name: 'pe-sa${logStorageAccountName}-blob-${locations[computeLocation].abbreviation}'
         privateDnsZoneGroup: {
           privateDNSResourceIds: ['${blobPrivateDnsZoneResourceId}']
         }
