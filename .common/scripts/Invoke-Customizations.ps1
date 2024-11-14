@@ -60,7 +60,7 @@ switch ($Ext) {
       }
       $status = Get-WmiObject -Class Win32_Product | Where-Object Name -like "*$($Name)*"
       if ($status) {
-        Write-OutputWithTimeStamp "'$($status[0].Name)' is installed"
+        Write-OutputWithTimeStamp "$($status[0].Name) is installed"
       }
       else {
         Write-OutputWithTimeStamp "'$Name' did not install properly, please check arguments"
@@ -99,17 +99,17 @@ switch ($Ext) {
   'ps1' {
     If ($Arguments) {
       Write-OutputWithTimeStamp "Calling PowerShell Script '$DestFile' with arguments '$Arguments'"
-      & $DestFileName $Arguments
+      & $DestFile $Arguments
     }
     Else {
       Write-OutputWithTimeStamp "Calling PowerShell Script '$DestFile'"
-      & $DestFileName
+      & $DestFile
     }
   }
   'zip' {
     $DestinationPath = Join-Path -Path "$TempDir" -ChildPath $([System.IO.Path]::GetFileNameWithoutExtension($SourceFileName))
     Write-OutputWithTimeStamp "Extracting '$DestFile' to '$DestinationPath'."
-    Expand-Archive -Path $DestFileName -DestinationPath $DestinationPath -Force
+    Expand-Archive -Path $DestFile -DestinationPath $DestinationPath -Force
     Write-OutputWithTimeStamp "Finding PowerShell script in root of '$DestinationPath'."
     $PSScript = (Get-ChildItem -Path $DestinationPath -filter '*.ps1').FullName
     If ($PSScript.count -gt 1) { $PSScript = $PSScript[0] }
