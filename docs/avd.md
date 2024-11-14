@@ -738,19 +738,19 @@ In order to deploy the image management storage account with private endpoints, 
 
 In order to deploy the Azure Virtual Desktop standalone or spoke network and required private DNS Zones, you can utilize the **Azure Virtual Desktop Networking** template spec with portal ui which will automate the creation of the spoke virtual network, required subnets, peering (if needed), route tables (if needed), NAT gateway (if needed), and missing private DNS zones (if needed).
 
-1. Deploy the Template Spec
-
-    a. Go to Template Specs in the Azure Portal.
+1. Go to Template Specs in the Azure Portal.
 
     ![Template Spec](images/templateSpecs.png)
 
-    b. Choose the **Azure Virtual Desktop Networking** Template Spec and click "Deploy"
+2. Choose the **Azure Virtual Desktop Networking** Template Spec and click "Deploy"
 
     ![Deploy Template Spec](images/deployButton.png)
 
-    c. Populate the form with correct values. Use the the tool tips for more detailed parameter information.
+3. Populate the form with correct values. Use the the tool tips for more detailed parameter information.
 
     ![Image Build Form](images/networking-virtualNetwork.png)
+
+4. Once all values are populated, deploy the template. Parameter values and the template can be downloaded from the deployment view
 
 If you do not wish to utilize the template spec to deploy the required networking, you can follow the instructions below to create the required networking components via PowerShell. These instructions assume a standalone network for deploying a Proof of Concept (be sure to updated the variable values).
 
@@ -949,21 +949,19 @@ This deployment can be done via Command Line or through a Template Spec UI in th
 
 **Option 2: Using a Template Spec and Portal Form**
 
-1. Deploy the Template Spec
-
-    a. Go to Template Specs in the Azure Portal.
+1. Go to Template Specs in the Azure Portal.
 
     ![Template Spec](images/templateSpecs.png)
 
-    b. Choose the **Azure Virtual Desktop Custom Image** Template Spec and click "Deploy"
+2. Choose the **Azure Virtual Desktop Custom Image** Template Spec and click "Deploy"
 
     ![Deploy Template Spec](images/deployButton.png)
 
-    c. Populate the form with correct values. Use the the tool tips for more detailed parameter information.
+3. Populate the form with correct values. Use the the tool tips for more detailed parameter information.
 
     ![Image Build Form](images/imageBuildForm.png)
 
-    d. Once all values are populated, deploy the template. Parameter values and the template can be downloaded from the deployment view
+4. Once all values are populated, deploy the template. Parameter values and the template can be downloaded from the deployment view
 
 #### Deploy an AVD Host Pool
 
@@ -985,21 +983,19 @@ The AVD solution includes all necessary resources to deploy a usable virtual des
 
 **Option 2: Using a Template Spec and Portal Form**
 
-1. Deploy the Template Spec
-
-    a. Go to Template Specs in the Azure Portal
+1. Go to Template Specs in the Azure Portal
 
     ![templateSpec](images/templateSpecs.png)
 
-    b. Choose the **Azure Virtual Desktop HostPool** Template Spec click "Deploy"
+2. Choose the **Azure Virtual Desktop HostPool** Template Spec click "Deploy"
 
     ![Deploy Template Spec](images/deployButton.png)
 
-    c. Populate the form with correct values. Use the table above or the tool tips for more detailed parameter information 
+3. Populate the form with correct values. Use the table above or the tool tips for more detailed parameter information 
 
     ![AVD Form](images/hostPoolForm.png)
 
-    d. Once all values are populated, deploy the template. Parameter values and the template can be downloaded from the deployment view
+4. Once all values are populated, deploy the template. Parameter values and the template can be downloaded from the deployment view
 
 ### Validation
 
