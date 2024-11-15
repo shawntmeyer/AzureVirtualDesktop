@@ -34,13 +34,13 @@ module networkInterface_publicIPAddresses '../../../network/public-ip-address/ma
     diagnosticStorageAccountId: diagnosticStorageAccountId
     diagnosticWorkspaceId: diagnosticWorkspaceId
     location: location
-    publicIPAddressVersion: contains(ipConfiguration, 'publicIPAddressVersion') ? ipConfiguration.publicIPAddressVersion : 'IPv4'
-    publicIPAllocationMethod: contains(ipConfiguration, 'publicIPAllocationMethod') ? ipConfiguration.publicIPAllocationMethod : 'Static'
-    publicIPPrefixResourceId: contains(ipConfiguration, 'publicIPPrefixResourceId') ? ipConfiguration.publicIPPrefixResourceId : ''
-    skuName: contains(ipConfiguration, 'skuName') ? ipConfiguration.skuName : 'Standard'
-    skuTier: contains(ipConfiguration, 'skuTier') ? ipConfiguration.skuTier : 'Regional'
+    publicIPAddressVersion: ipConfiguration.?publicIPAddressVersion ?? 'IPv4'
+    publicIPAllocationMethod: ipConfiguration.?publicIPAllocationMethod ?? 'Static'
+    publicIPPrefixResourceId: ipConfiguration.?publicIPPrefixResourceId ?? ''
+    skuName: ipConfiguration.?skuName ?? 'Standard'
+    skuTier: ipConfiguration.?skuTier ?? 'Regional'
     tags: tags
-    zones: contains(ipConfiguration, 'zones') ? ipConfiguration.zones : []
+    zones: ipConfiguration.?zones ?? []
   }
 }]
 
@@ -55,13 +55,13 @@ module networkInterface '../../../network/network-interface/main.bicep' = {
       privateIPAddress: contains(ipConfiguration, 'privateIPAddress') ? (!empty(ipConfiguration.privateIPAddress) ? ipConfiguration.privateIPAddress : null) : null
       publicIPAddressResourceId: contains(ipConfiguration, 'pipconfiguration') ? resourceId('Microsoft.Network/publicIPAddresses', '${virtualMachineName}${ipConfiguration.pipconfiguration.publicIpNameSuffix}') : null
       subnetResourceId: ipConfiguration.subnetResourceId
-      loadBalancerBackendAddressPools: contains(ipConfiguration, 'loadBalancerBackendAddressPools') ? ipConfiguration.loadBalancerBackendAddressPools : null
-      applicationSecurityGroups: contains(ipConfiguration, 'applicationSecurityGroups') ? ipConfiguration.applicationSecurityGroups : null
-      applicationGatewayBackendAddressPools: contains(ipConfiguration, 'applicationGatewayBackendAddressPools') ? ipConfiguration.applicationGatewayBackendAddressPools : null
-      gatewayLoadBalancer: contains(ipConfiguration, 'gatewayLoadBalancer') ? ipConfiguration.gatewayLoadBalancer : null
-      loadBalancerInboundNatRules: contains(ipConfiguration, 'loadBalancerInboundNatRules') ? ipConfiguration.loadBalancerInboundNatRules : null
-      privateIPAddressVersion: contains(ipConfiguration, 'privateIPAddressVersion') ? ipConfiguration.privateIPAddressVersion : null
-      virtualNetworkTaps: contains(ipConfiguration, 'virtualNetworkTaps') ? ipConfiguration.virtualNetworkTaps : null
+      loadBalancerBackendAddressPools: ipConfiguration.?loadBalancerBackendAddressPools ?? null
+      applicationSecurityGroups: ipConfiguration.?applicationSecurityGroups ?? null
+      applicationGatewayBackendAddressPools: ipConfiguration.?applicationGatewayBackendAddressPools ?? null
+      gatewayLoadBalancer: ipConfiguration.?gatewayLoadBalancer ?? null
+      loadBalancerInboundNatRules: ipConfiguration.?loadBalancerInboundNatRules ?? null
+      privateIPAddressVersion: ipConfiguration.?privateIPAddressVersion ?? null
+      virtualNetworkTaps: ipConfiguration.?virtualNetworkTaps ?? null
     }]
     location: location
     tags: tags

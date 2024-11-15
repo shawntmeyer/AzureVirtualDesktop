@@ -93,7 +93,7 @@ resource networkInterface 'Microsoft.Network/networkInterfaces@2023-04-01' = {
       id: networkSecurityGroupResourceId
     } : null
     ipConfigurations: [for (ipConfiguration, index) in ipConfigurations: {
-      name: contains(ipConfiguration, 'name') ? ipConfiguration.name : 'ipconfig0${index + 1}'
+      name: ipConfiguration.?name ?? 'ipconfig0${index + 1}'
       properties: {
         primary: index == 0 ? true : false
         privateIPAllocationMethod: contains(ipConfiguration, 'privateIPAllocationMethod') ? (!empty(ipConfiguration.privateIPAllocationMethod) ? ipConfiguration.privateIPAllocationMethod : null) : null
@@ -104,13 +104,13 @@ resource networkInterface 'Microsoft.Network/networkInterfaces@2023-04-01' = {
         subnet: {
           id: ipConfiguration.subnetResourceId
         }
-        loadBalancerBackendAddressPools: contains(ipConfiguration, 'loadBalancerBackendAddressPools') ? ipConfiguration.loadBalancerBackendAddressPools : null
-        applicationSecurityGroups: contains(ipConfiguration, 'applicationSecurityGroups') ? ipConfiguration.applicationSecurityGroups : null
-        applicationGatewayBackendAddressPools: contains(ipConfiguration, 'applicationGatewayBackendAddressPools') ? ipConfiguration.applicationGatewayBackendAddressPools : null
-        gatewayLoadBalancer: contains(ipConfiguration, 'gatewayLoadBalancer') ? ipConfiguration.gatewayLoadBalancer : null
-        loadBalancerInboundNatRules: contains(ipConfiguration, 'loadBalancerInboundNatRules') ? ipConfiguration.loadBalancerInboundNatRules : null
-        privateIPAddressVersion: contains(ipConfiguration, 'privateIPAddressVersion') ? ipConfiguration.privateIPAddressVersion : null
-        virtualNetworkTaps: contains(ipConfiguration, 'virtualNetworkTaps') ? ipConfiguration.virtualNetworkTaps : null
+        loadBalancerBackendAddressPools: ipConfiguration.?loadBalancerBackendAddressPools ?? null
+        applicationSecurityGroups: ipConfiguration.?applicationSecurityGroups ?? null
+        applicationGatewayBackendAddressPools: ipConfiguration.?applicationGatewayBackendAddressPools ?? null
+        gatewayLoadBalancer: ipConfiguration.?gatewayLoadBalancer ?? null
+        loadBalancerInboundNatRules: ipConfiguration.?loadBalancerInboundNatRules ?? null
+        privateIPAddressVersion: ipConfiguration.?privateIPAddressVersion ?? null
+        virtualNetworkTaps: ipConfiguration.?virtualNetworkTaps ?? null
       }
     }]
   }

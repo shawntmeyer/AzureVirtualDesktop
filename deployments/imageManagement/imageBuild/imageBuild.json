@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.31.92.45157",
-      "templateHash": "16818141499792355160"
+      "templateHash": "3192669009049783689"
     },
     "name": "Zero Trust Architecture Custom Windows Image Builder",
     "description": "This solution allows you to create a custom image much like Azure VM Image Builder, but utilizes zero trust architecture and does not require that service.",
@@ -4487,7 +4487,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.31.92.45157",
-              "templateHash": "9732415924271382420"
+              "templateHash": "10678941968278867333"
             },
             "name": "Virtual Machines",
             "description": "This module deploys a Virtual Machine with one or multiple NICs and optionally one or multiple public IPs.",
@@ -5256,7 +5256,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.31.92.45157",
-                      "templateHash": "15352618113313903945"
+                      "templateHash": "17138575512717387052"
                     }
                   },
                   "parameters": {
@@ -5373,15 +5373,27 @@
                           "location": {
                             "value": "[parameters('location')]"
                           },
-                          "publicIPAddressVersion": "[if(contains(parameters('ipConfigurations')[copyIndex()], 'publicIPAddressVersion'), createObject('value', parameters('ipConfigurations')[copyIndex()].publicIPAddressVersion), createObject('value', 'IPv4'))]",
-                          "publicIPAllocationMethod": "[if(contains(parameters('ipConfigurations')[copyIndex()], 'publicIPAllocationMethod'), createObject('value', parameters('ipConfigurations')[copyIndex()].publicIPAllocationMethod), createObject('value', 'Static'))]",
-                          "publicIPPrefixResourceId": "[if(contains(parameters('ipConfigurations')[copyIndex()], 'publicIPPrefixResourceId'), createObject('value', parameters('ipConfigurations')[copyIndex()].publicIPPrefixResourceId), createObject('value', ''))]",
-                          "skuName": "[if(contains(parameters('ipConfigurations')[copyIndex()], 'skuName'), createObject('value', parameters('ipConfigurations')[copyIndex()].skuName), createObject('value', 'Standard'))]",
-                          "skuTier": "[if(contains(parameters('ipConfigurations')[copyIndex()], 'skuTier'), createObject('value', parameters('ipConfigurations')[copyIndex()].skuTier), createObject('value', 'Regional'))]",
+                          "publicIPAddressVersion": {
+                            "value": "[coalesce(tryGet(parameters('ipConfigurations')[copyIndex()], 'publicIPAddressVersion'), 'IPv4')]"
+                          },
+                          "publicIPAllocationMethod": {
+                            "value": "[coalesce(tryGet(parameters('ipConfigurations')[copyIndex()], 'publicIPAllocationMethod'), 'Static')]"
+                          },
+                          "publicIPPrefixResourceId": {
+                            "value": "[coalesce(tryGet(parameters('ipConfigurations')[copyIndex()], 'publicIPPrefixResourceId'), '')]"
+                          },
+                          "skuName": {
+                            "value": "[coalesce(tryGet(parameters('ipConfigurations')[copyIndex()], 'skuName'), 'Standard')]"
+                          },
+                          "skuTier": {
+                            "value": "[coalesce(tryGet(parameters('ipConfigurations')[copyIndex()], 'skuTier'), 'Regional')]"
+                          },
                           "tags": {
                             "value": "[parameters('tags')]"
                           },
-                          "zones": "[if(contains(parameters('ipConfigurations')[copyIndex()], 'zones'), createObject('value', parameters('ipConfigurations')[copyIndex()].zones), createObject('value', createArray()))]"
+                          "zones": {
+                            "value": "[coalesce(tryGet(parameters('ipConfigurations')[copyIndex()], 'zones'), createArray())]"
+                          }
                         },
                         "template": {
                           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -5390,7 +5402,7 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.31.92.45157",
-                              "templateHash": "2966238152737359632"
+                              "templateHash": "13261663117383207551"
                             },
                             "name": "Public IP Addresses",
                             "description": "This module deploys a Public IP Address.",
@@ -5663,7 +5675,7 @@
                               "metadata": {
                                 "description": "The public IP address of the public IP address resource."
                               },
-                              "value": "[if(contains(reference(resourceId('Microsoft.Network/publicIPAddresses', parameters('name')), '2023-04-01'), 'ipAddress'), reference(resourceId('Microsoft.Network/publicIPAddresses', parameters('name')), '2023-04-01').ipAddress, '')]"
+                              "value": "[coalesce(tryGet(reference(resourceId('Microsoft.Network/publicIPAddresses', parameters('name')), '2023-04-01'), 'ipAddress'), '')]"
                             },
                             "location": {
                               "type": "string",
@@ -5694,7 +5706,7 @@
                               {
                                 "name": "value",
                                 "count": "[length(parameters('ipConfigurations'))]",
-                                "input": "[createObject('name', if(not(empty(parameters('ipConfigurations')[copyIndex('value')].name)), parameters('ipConfigurations')[copyIndex('value')].name, null()), 'primary', equals(copyIndex('value'), 0), 'privateIPAllocationMethod', if(contains(parameters('ipConfigurations')[copyIndex('value')], 'privateIPAllocationMethod'), if(not(empty(parameters('ipConfigurations')[copyIndex('value')].privateIPAllocationMethod)), parameters('ipConfigurations')[copyIndex('value')].privateIPAllocationMethod, null()), null()), 'privateIPAddress', if(contains(parameters('ipConfigurations')[copyIndex('value')], 'privateIPAddress'), if(not(empty(parameters('ipConfigurations')[copyIndex('value')].privateIPAddress)), parameters('ipConfigurations')[copyIndex('value')].privateIPAddress, null()), null()), 'publicIPAddressResourceId', if(contains(parameters('ipConfigurations')[copyIndex('value')], 'pipconfiguration'), resourceId('Microsoft.Network/publicIPAddresses', format('{0}{1}', parameters('virtualMachineName'), parameters('ipConfigurations')[copyIndex('value')].pipconfiguration.publicIpNameSuffix)), null()), 'subnetResourceId', parameters('ipConfigurations')[copyIndex('value')].subnetResourceId, 'loadBalancerBackendAddressPools', if(contains(parameters('ipConfigurations')[copyIndex('value')], 'loadBalancerBackendAddressPools'), parameters('ipConfigurations')[copyIndex('value')].loadBalancerBackendAddressPools, null()), 'applicationSecurityGroups', if(contains(parameters('ipConfigurations')[copyIndex('value')], 'applicationSecurityGroups'), parameters('ipConfigurations')[copyIndex('value')].applicationSecurityGroups, null()), 'applicationGatewayBackendAddressPools', if(contains(parameters('ipConfigurations')[copyIndex('value')], 'applicationGatewayBackendAddressPools'), parameters('ipConfigurations')[copyIndex('value')].applicationGatewayBackendAddressPools, null()), 'gatewayLoadBalancer', if(contains(parameters('ipConfigurations')[copyIndex('value')], 'gatewayLoadBalancer'), parameters('ipConfigurations')[copyIndex('value')].gatewayLoadBalancer, null()), 'loadBalancerInboundNatRules', if(contains(parameters('ipConfigurations')[copyIndex('value')], 'loadBalancerInboundNatRules'), parameters('ipConfigurations')[copyIndex('value')].loadBalancerInboundNatRules, null()), 'privateIPAddressVersion', if(contains(parameters('ipConfigurations')[copyIndex('value')], 'privateIPAddressVersion'), parameters('ipConfigurations')[copyIndex('value')].privateIPAddressVersion, null()), 'virtualNetworkTaps', if(contains(parameters('ipConfigurations')[copyIndex('value')], 'virtualNetworkTaps'), parameters('ipConfigurations')[copyIndex('value')].virtualNetworkTaps, null()))]"
+                                "input": "[createObject('name', if(not(empty(parameters('ipConfigurations')[copyIndex('value')].name)), parameters('ipConfigurations')[copyIndex('value')].name, null()), 'primary', equals(copyIndex('value'), 0), 'privateIPAllocationMethod', if(contains(parameters('ipConfigurations')[copyIndex('value')], 'privateIPAllocationMethod'), if(not(empty(parameters('ipConfigurations')[copyIndex('value')].privateIPAllocationMethod)), parameters('ipConfigurations')[copyIndex('value')].privateIPAllocationMethod, null()), null()), 'privateIPAddress', if(contains(parameters('ipConfigurations')[copyIndex('value')], 'privateIPAddress'), if(not(empty(parameters('ipConfigurations')[copyIndex('value')].privateIPAddress)), parameters('ipConfigurations')[copyIndex('value')].privateIPAddress, null()), null()), 'publicIPAddressResourceId', if(contains(parameters('ipConfigurations')[copyIndex('value')], 'pipconfiguration'), resourceId('Microsoft.Network/publicIPAddresses', format('{0}{1}', parameters('virtualMachineName'), parameters('ipConfigurations')[copyIndex('value')].pipconfiguration.publicIpNameSuffix)), null()), 'subnetResourceId', parameters('ipConfigurations')[copyIndex('value')].subnetResourceId, 'loadBalancerBackendAddressPools', coalesce(tryGet(parameters('ipConfigurations')[copyIndex('value')], 'loadBalancerBackendAddressPools'), null()), 'applicationSecurityGroups', coalesce(tryGet(parameters('ipConfigurations')[copyIndex('value')], 'applicationSecurityGroups'), null()), 'applicationGatewayBackendAddressPools', coalesce(tryGet(parameters('ipConfigurations')[copyIndex('value')], 'applicationGatewayBackendAddressPools'), null()), 'gatewayLoadBalancer', coalesce(tryGet(parameters('ipConfigurations')[copyIndex('value')], 'gatewayLoadBalancer'), null()), 'loadBalancerInboundNatRules', coalesce(tryGet(parameters('ipConfigurations')[copyIndex('value')], 'loadBalancerInboundNatRules'), null()), 'privateIPAddressVersion', coalesce(tryGet(parameters('ipConfigurations')[copyIndex('value')], 'privateIPAddressVersion'), null()), 'virtualNetworkTaps', coalesce(tryGet(parameters('ipConfigurations')[copyIndex('value')], 'virtualNetworkTaps'), null()))]"
                               }
                             ]
                           },
@@ -5738,7 +5750,7 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.31.92.45157",
-                              "templateHash": "9857385538057187673"
+                              "templateHash": "692064765657858157"
                             },
                             "name": "Network Interface",
                             "description": "This module deploys a Network Interface.",
@@ -5906,7 +5918,7 @@
                                     "name": "ipConfigurations",
                                     "count": "[length(parameters('ipConfigurations'))]",
                                     "input": {
-                                      "name": "[if(contains(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'name'), parameters('ipConfigurations')[copyIndex('ipConfigurations')].name, format('ipconfig0{0}', add(copyIndex('ipConfigurations'), 1)))]",
+                                      "name": "[coalesce(tryGet(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'name'), format('ipconfig0{0}', add(copyIndex('ipConfigurations'), 1)))]",
                                       "properties": {
                                         "primary": "[if(equals(copyIndex('ipConfigurations'), 0), true(), false())]",
                                         "privateIPAllocationMethod": "[if(contains(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'privateIPAllocationMethod'), if(not(empty(parameters('ipConfigurations')[copyIndex('ipConfigurations')].privateIPAllocationMethod)), parameters('ipConfigurations')[copyIndex('ipConfigurations')].privateIPAllocationMethod, null()), null())]",
@@ -5915,13 +5927,13 @@
                                         "subnet": {
                                           "id": "[parameters('ipConfigurations')[copyIndex('ipConfigurations')].subnetResourceId]"
                                         },
-                                        "loadBalancerBackendAddressPools": "[if(contains(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'loadBalancerBackendAddressPools'), parameters('ipConfigurations')[copyIndex('ipConfigurations')].loadBalancerBackendAddressPools, null())]",
-                                        "applicationSecurityGroups": "[if(contains(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'applicationSecurityGroups'), parameters('ipConfigurations')[copyIndex('ipConfigurations')].applicationSecurityGroups, null())]",
-                                        "applicationGatewayBackendAddressPools": "[if(contains(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'applicationGatewayBackendAddressPools'), parameters('ipConfigurations')[copyIndex('ipConfigurations')].applicationGatewayBackendAddressPools, null())]",
-                                        "gatewayLoadBalancer": "[if(contains(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'gatewayLoadBalancer'), parameters('ipConfigurations')[copyIndex('ipConfigurations')].gatewayLoadBalancer, null())]",
-                                        "loadBalancerInboundNatRules": "[if(contains(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'loadBalancerInboundNatRules'), parameters('ipConfigurations')[copyIndex('ipConfigurations')].loadBalancerInboundNatRules, null())]",
-                                        "privateIPAddressVersion": "[if(contains(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'privateIPAddressVersion'), parameters('ipConfigurations')[copyIndex('ipConfigurations')].privateIPAddressVersion, null())]",
-                                        "virtualNetworkTaps": "[if(contains(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'virtualNetworkTaps'), parameters('ipConfigurations')[copyIndex('ipConfigurations')].virtualNetworkTaps, null())]"
+                                        "loadBalancerBackendAddressPools": "[coalesce(tryGet(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'loadBalancerBackendAddressPools'), null())]",
+                                        "applicationSecurityGroups": "[coalesce(tryGet(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'applicationSecurityGroups'), null())]",
+                                        "applicationGatewayBackendAddressPools": "[coalesce(tryGet(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'applicationGatewayBackendAddressPools'), null())]",
+                                        "gatewayLoadBalancer": "[coalesce(tryGet(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'gatewayLoadBalancer'), null())]",
+                                        "loadBalancerInboundNatRules": "[coalesce(tryGet(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'loadBalancerInboundNatRules'), null())]",
+                                        "privateIPAddressVersion": "[coalesce(tryGet(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'privateIPAddressVersion'), null())]",
+                                        "virtualNetworkTaps": "[coalesce(tryGet(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'virtualNetworkTaps'), null())]"
                                       }
                                     }
                                   }
@@ -7904,7 +7916,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.31.92.45157",
-              "templateHash": "9732415924271382420"
+              "templateHash": "10678941968278867333"
             },
             "name": "Virtual Machines",
             "description": "This module deploys a Virtual Machine with one or multiple NICs and optionally one or multiple public IPs.",
@@ -8673,7 +8685,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.31.92.45157",
-                      "templateHash": "15352618113313903945"
+                      "templateHash": "17138575512717387052"
                     }
                   },
                   "parameters": {
@@ -8790,15 +8802,27 @@
                           "location": {
                             "value": "[parameters('location')]"
                           },
-                          "publicIPAddressVersion": "[if(contains(parameters('ipConfigurations')[copyIndex()], 'publicIPAddressVersion'), createObject('value', parameters('ipConfigurations')[copyIndex()].publicIPAddressVersion), createObject('value', 'IPv4'))]",
-                          "publicIPAllocationMethod": "[if(contains(parameters('ipConfigurations')[copyIndex()], 'publicIPAllocationMethod'), createObject('value', parameters('ipConfigurations')[copyIndex()].publicIPAllocationMethod), createObject('value', 'Static'))]",
-                          "publicIPPrefixResourceId": "[if(contains(parameters('ipConfigurations')[copyIndex()], 'publicIPPrefixResourceId'), createObject('value', parameters('ipConfigurations')[copyIndex()].publicIPPrefixResourceId), createObject('value', ''))]",
-                          "skuName": "[if(contains(parameters('ipConfigurations')[copyIndex()], 'skuName'), createObject('value', parameters('ipConfigurations')[copyIndex()].skuName), createObject('value', 'Standard'))]",
-                          "skuTier": "[if(contains(parameters('ipConfigurations')[copyIndex()], 'skuTier'), createObject('value', parameters('ipConfigurations')[copyIndex()].skuTier), createObject('value', 'Regional'))]",
+                          "publicIPAddressVersion": {
+                            "value": "[coalesce(tryGet(parameters('ipConfigurations')[copyIndex()], 'publicIPAddressVersion'), 'IPv4')]"
+                          },
+                          "publicIPAllocationMethod": {
+                            "value": "[coalesce(tryGet(parameters('ipConfigurations')[copyIndex()], 'publicIPAllocationMethod'), 'Static')]"
+                          },
+                          "publicIPPrefixResourceId": {
+                            "value": "[coalesce(tryGet(parameters('ipConfigurations')[copyIndex()], 'publicIPPrefixResourceId'), '')]"
+                          },
+                          "skuName": {
+                            "value": "[coalesce(tryGet(parameters('ipConfigurations')[copyIndex()], 'skuName'), 'Standard')]"
+                          },
+                          "skuTier": {
+                            "value": "[coalesce(tryGet(parameters('ipConfigurations')[copyIndex()], 'skuTier'), 'Regional')]"
+                          },
                           "tags": {
                             "value": "[parameters('tags')]"
                           },
-                          "zones": "[if(contains(parameters('ipConfigurations')[copyIndex()], 'zones'), createObject('value', parameters('ipConfigurations')[copyIndex()].zones), createObject('value', createArray()))]"
+                          "zones": {
+                            "value": "[coalesce(tryGet(parameters('ipConfigurations')[copyIndex()], 'zones'), createArray())]"
+                          }
                         },
                         "template": {
                           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -8807,7 +8831,7 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.31.92.45157",
-                              "templateHash": "2966238152737359632"
+                              "templateHash": "13261663117383207551"
                             },
                             "name": "Public IP Addresses",
                             "description": "This module deploys a Public IP Address.",
@@ -9080,7 +9104,7 @@
                               "metadata": {
                                 "description": "The public IP address of the public IP address resource."
                               },
-                              "value": "[if(contains(reference(resourceId('Microsoft.Network/publicIPAddresses', parameters('name')), '2023-04-01'), 'ipAddress'), reference(resourceId('Microsoft.Network/publicIPAddresses', parameters('name')), '2023-04-01').ipAddress, '')]"
+                              "value": "[coalesce(tryGet(reference(resourceId('Microsoft.Network/publicIPAddresses', parameters('name')), '2023-04-01'), 'ipAddress'), '')]"
                             },
                             "location": {
                               "type": "string",
@@ -9111,7 +9135,7 @@
                               {
                                 "name": "value",
                                 "count": "[length(parameters('ipConfigurations'))]",
-                                "input": "[createObject('name', if(not(empty(parameters('ipConfigurations')[copyIndex('value')].name)), parameters('ipConfigurations')[copyIndex('value')].name, null()), 'primary', equals(copyIndex('value'), 0), 'privateIPAllocationMethod', if(contains(parameters('ipConfigurations')[copyIndex('value')], 'privateIPAllocationMethod'), if(not(empty(parameters('ipConfigurations')[copyIndex('value')].privateIPAllocationMethod)), parameters('ipConfigurations')[copyIndex('value')].privateIPAllocationMethod, null()), null()), 'privateIPAddress', if(contains(parameters('ipConfigurations')[copyIndex('value')], 'privateIPAddress'), if(not(empty(parameters('ipConfigurations')[copyIndex('value')].privateIPAddress)), parameters('ipConfigurations')[copyIndex('value')].privateIPAddress, null()), null()), 'publicIPAddressResourceId', if(contains(parameters('ipConfigurations')[copyIndex('value')], 'pipconfiguration'), resourceId('Microsoft.Network/publicIPAddresses', format('{0}{1}', parameters('virtualMachineName'), parameters('ipConfigurations')[copyIndex('value')].pipconfiguration.publicIpNameSuffix)), null()), 'subnetResourceId', parameters('ipConfigurations')[copyIndex('value')].subnetResourceId, 'loadBalancerBackendAddressPools', if(contains(parameters('ipConfigurations')[copyIndex('value')], 'loadBalancerBackendAddressPools'), parameters('ipConfigurations')[copyIndex('value')].loadBalancerBackendAddressPools, null()), 'applicationSecurityGroups', if(contains(parameters('ipConfigurations')[copyIndex('value')], 'applicationSecurityGroups'), parameters('ipConfigurations')[copyIndex('value')].applicationSecurityGroups, null()), 'applicationGatewayBackendAddressPools', if(contains(parameters('ipConfigurations')[copyIndex('value')], 'applicationGatewayBackendAddressPools'), parameters('ipConfigurations')[copyIndex('value')].applicationGatewayBackendAddressPools, null()), 'gatewayLoadBalancer', if(contains(parameters('ipConfigurations')[copyIndex('value')], 'gatewayLoadBalancer'), parameters('ipConfigurations')[copyIndex('value')].gatewayLoadBalancer, null()), 'loadBalancerInboundNatRules', if(contains(parameters('ipConfigurations')[copyIndex('value')], 'loadBalancerInboundNatRules'), parameters('ipConfigurations')[copyIndex('value')].loadBalancerInboundNatRules, null()), 'privateIPAddressVersion', if(contains(parameters('ipConfigurations')[copyIndex('value')], 'privateIPAddressVersion'), parameters('ipConfigurations')[copyIndex('value')].privateIPAddressVersion, null()), 'virtualNetworkTaps', if(contains(parameters('ipConfigurations')[copyIndex('value')], 'virtualNetworkTaps'), parameters('ipConfigurations')[copyIndex('value')].virtualNetworkTaps, null()))]"
+                                "input": "[createObject('name', if(not(empty(parameters('ipConfigurations')[copyIndex('value')].name)), parameters('ipConfigurations')[copyIndex('value')].name, null()), 'primary', equals(copyIndex('value'), 0), 'privateIPAllocationMethod', if(contains(parameters('ipConfigurations')[copyIndex('value')], 'privateIPAllocationMethod'), if(not(empty(parameters('ipConfigurations')[copyIndex('value')].privateIPAllocationMethod)), parameters('ipConfigurations')[copyIndex('value')].privateIPAllocationMethod, null()), null()), 'privateIPAddress', if(contains(parameters('ipConfigurations')[copyIndex('value')], 'privateIPAddress'), if(not(empty(parameters('ipConfigurations')[copyIndex('value')].privateIPAddress)), parameters('ipConfigurations')[copyIndex('value')].privateIPAddress, null()), null()), 'publicIPAddressResourceId', if(contains(parameters('ipConfigurations')[copyIndex('value')], 'pipconfiguration'), resourceId('Microsoft.Network/publicIPAddresses', format('{0}{1}', parameters('virtualMachineName'), parameters('ipConfigurations')[copyIndex('value')].pipconfiguration.publicIpNameSuffix)), null()), 'subnetResourceId', parameters('ipConfigurations')[copyIndex('value')].subnetResourceId, 'loadBalancerBackendAddressPools', coalesce(tryGet(parameters('ipConfigurations')[copyIndex('value')], 'loadBalancerBackendAddressPools'), null()), 'applicationSecurityGroups', coalesce(tryGet(parameters('ipConfigurations')[copyIndex('value')], 'applicationSecurityGroups'), null()), 'applicationGatewayBackendAddressPools', coalesce(tryGet(parameters('ipConfigurations')[copyIndex('value')], 'applicationGatewayBackendAddressPools'), null()), 'gatewayLoadBalancer', coalesce(tryGet(parameters('ipConfigurations')[copyIndex('value')], 'gatewayLoadBalancer'), null()), 'loadBalancerInboundNatRules', coalesce(tryGet(parameters('ipConfigurations')[copyIndex('value')], 'loadBalancerInboundNatRules'), null()), 'privateIPAddressVersion', coalesce(tryGet(parameters('ipConfigurations')[copyIndex('value')], 'privateIPAddressVersion'), null()), 'virtualNetworkTaps', coalesce(tryGet(parameters('ipConfigurations')[copyIndex('value')], 'virtualNetworkTaps'), null()))]"
                               }
                             ]
                           },
@@ -9155,7 +9179,7 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.31.92.45157",
-                              "templateHash": "9857385538057187673"
+                              "templateHash": "692064765657858157"
                             },
                             "name": "Network Interface",
                             "description": "This module deploys a Network Interface.",
@@ -9323,7 +9347,7 @@
                                     "name": "ipConfigurations",
                                     "count": "[length(parameters('ipConfigurations'))]",
                                     "input": {
-                                      "name": "[if(contains(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'name'), parameters('ipConfigurations')[copyIndex('ipConfigurations')].name, format('ipconfig0{0}', add(copyIndex('ipConfigurations'), 1)))]",
+                                      "name": "[coalesce(tryGet(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'name'), format('ipconfig0{0}', add(copyIndex('ipConfigurations'), 1)))]",
                                       "properties": {
                                         "primary": "[if(equals(copyIndex('ipConfigurations'), 0), true(), false())]",
                                         "privateIPAllocationMethod": "[if(contains(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'privateIPAllocationMethod'), if(not(empty(parameters('ipConfigurations')[copyIndex('ipConfigurations')].privateIPAllocationMethod)), parameters('ipConfigurations')[copyIndex('ipConfigurations')].privateIPAllocationMethod, null()), null())]",
@@ -9332,13 +9356,13 @@
                                         "subnet": {
                                           "id": "[parameters('ipConfigurations')[copyIndex('ipConfigurations')].subnetResourceId]"
                                         },
-                                        "loadBalancerBackendAddressPools": "[if(contains(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'loadBalancerBackendAddressPools'), parameters('ipConfigurations')[copyIndex('ipConfigurations')].loadBalancerBackendAddressPools, null())]",
-                                        "applicationSecurityGroups": "[if(contains(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'applicationSecurityGroups'), parameters('ipConfigurations')[copyIndex('ipConfigurations')].applicationSecurityGroups, null())]",
-                                        "applicationGatewayBackendAddressPools": "[if(contains(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'applicationGatewayBackendAddressPools'), parameters('ipConfigurations')[copyIndex('ipConfigurations')].applicationGatewayBackendAddressPools, null())]",
-                                        "gatewayLoadBalancer": "[if(contains(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'gatewayLoadBalancer'), parameters('ipConfigurations')[copyIndex('ipConfigurations')].gatewayLoadBalancer, null())]",
-                                        "loadBalancerInboundNatRules": "[if(contains(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'loadBalancerInboundNatRules'), parameters('ipConfigurations')[copyIndex('ipConfigurations')].loadBalancerInboundNatRules, null())]",
-                                        "privateIPAddressVersion": "[if(contains(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'privateIPAddressVersion'), parameters('ipConfigurations')[copyIndex('ipConfigurations')].privateIPAddressVersion, null())]",
-                                        "virtualNetworkTaps": "[if(contains(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'virtualNetworkTaps'), parameters('ipConfigurations')[copyIndex('ipConfigurations')].virtualNetworkTaps, null())]"
+                                        "loadBalancerBackendAddressPools": "[coalesce(tryGet(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'loadBalancerBackendAddressPools'), null())]",
+                                        "applicationSecurityGroups": "[coalesce(tryGet(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'applicationSecurityGroups'), null())]",
+                                        "applicationGatewayBackendAddressPools": "[coalesce(tryGet(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'applicationGatewayBackendAddressPools'), null())]",
+                                        "gatewayLoadBalancer": "[coalesce(tryGet(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'gatewayLoadBalancer'), null())]",
+                                        "loadBalancerInboundNatRules": "[coalesce(tryGet(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'loadBalancerInboundNatRules'), null())]",
+                                        "privateIPAddressVersion": "[coalesce(tryGet(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'privateIPAddressVersion'), null())]",
+                                        "virtualNetworkTaps": "[coalesce(tryGet(parameters('ipConfigurations')[copyIndex('ipConfigurations')], 'virtualNetworkTaps'), null())]"
                                       }
                                     }
                                   }
