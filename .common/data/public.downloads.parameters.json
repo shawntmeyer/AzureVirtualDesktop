@@ -87,18 +87,7 @@
             "GitHubFileNamePattern": "",
             "DestinationFileName": "WebView2.exe",
             "DestinationFolders": ["Microsoft-Teams"]
-        },
-        {
-            "Name": "Teams Classic 64-bit MSI",
-            "DownloadUrl": "",
-            "WebSiteUrl": "",
-            "SearchString": "",
-            "APIUrl": "",
-            "GitHubRepo": "",
-            "GitHubFileNamePattern": "",
-            "DestinationFileName": "Teams-windows-x64.msi",
-            "DestinationFolders": ["Microsoft-Teams-Classic"]
-        },
+        },        
         {
             "Name": "Remote Desktop WebRTC Redirector Service",
             "DownloadUrl": "",
@@ -107,7 +96,7 @@
             "APIUrl": "",
             "GitHubRepo": "",
             "GitHubFileNamePattern": "",
-            "DestinationFileName": "Websocket.msi",
+            "DestinationFileName": "MsRdcWebRTCSvc.msi",
             "DestinationFolders": [
                 "Microsoft-Teams",
                 "Microsoft-Teams-Classic"

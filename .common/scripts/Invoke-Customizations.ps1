@@ -52,19 +52,14 @@ switch ($Ext) {
   'exe' {
       If ($Arguments) {
         Write-OutputWithTimeStamp "Executing '`"$DestFile`" $Arguments'"
-        Start-Process -FilePath "$DestFile" -ArgumentList $Arguments -NoNewWindow -Wait -PassThru
+        $Install = Start-Process -FilePath "$DestFile" -ArgumentList $Arguments -NoNewWindow -Wait -PassThru
+        Write-OutputWithTimeStamp "Installation ended with exit code $($Install.ExitCode)."
       }
       Else {
         Write-OutputWithTimeStamp "Executing `"$DestFile`""
-        Start-Process -FilePath "$DestFile" -NoNewWindow -Wait -PassThru
-      }
-      $status = Get-WmiObject -Class Win32_Product | Where-Object Name -like "*$($Name)*"
-      if ($status) {
-        Write-OutputWithTimeStamp "$($status[0].Name) is installed"
-      }
-      else {
-        Write-OutputWithTimeStamp "'$Name' did not install properly, please check arguments"
-      } 
+        $Install = Start-Process -FilePath "$DestFile" -NoNewWindow -Wait -PassThru
+        Write-OutputWithTimeStamp "Installation ended with exit code $($Install.ExitCode)."
+      }      
     }
   'msi' {
     If ($Arguments) {
@@ -72,19 +67,15 @@ switch ($Ext) {
         $Arguments = "/i $DestFile $Arguments"
       }
       Write-OutputWithTimeStamp "Executing 'msiexec.exe $Arguments'"
-      Start-Process -FilePath msiexec.exe -ArgumentList $Arguments -Wait
+      $MsiExec = Start-Process -FilePath msiexec.exe -ArgumentList $Arguments -Wait -PassThru
+      Write-OutputWithTimeStamp "Installation ended with exit code $($MsiExec.ExitCode)."
+
     }
     Else {
       Write-OutputWithTimeStamp "Executing 'msiexec.exe /i $DestFile /qn'"
-      Start-Process -FilePath msiexec.exe -ArgumentList "/i $DestFile /qn" -Wait
-    }
-    $status = Get-WmiObject -Class Win32_Product | Where-Object Name -like "*$($Name)*"
-    if ($status) {
-      Write-OutputWithTimeStamp "'$($status[0].Name)' is installed"
-    }
-    else {
-      Write-OutputWithTimeStamp "'$Name' did not install properly, please check arguments"
-    }
+      $MsiExec = Start-Process -FilePath msiexec.exe -ArgumentList "/i $DestFile /qn" -Wait -PassThru
+      Write-OutputWithTimeStamp "Installation ended with exit code $($MsiExec.ExitCode)."
+    }    
   }
   'bat' {
     If ($Arguments) {

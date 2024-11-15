@@ -43,7 +43,7 @@ If (!(Test-Path -Path $DestFile)) { Write-Error "Failed to download $SourceFileN
 Expand-Archive -Path $destFile -DestinationPath $appDir -Force
 $WebView2File = (Get-ChildItem -Path $appDir -filter 'webview*.exe' -Recurse).FullName
 $vcRedistFile = (Get-ChildItem -Path $appDir -filter 'vc*.exe' -Recurse).FullName
-$webRTCFile = (Get-ChildItem -Path $appDir -filter '*WebRTC*.msi' -Recurse).FullName
+$webRTCFile = (Get-ChildItem -Path $appDir -filter 'MsRdcWebRTCSvc.msi' -Recurse).FullName
 $BootStrapperFile = (Get-ChildItem -Path $appDir -filter '*bootstrapper.exe' -Recurse).FullName
 $MSIXFile = (Get-ChildItem -Path $appDir -filter '*.msix' -Recurse).FullName
 # Enable media optimizations for Team
@@ -71,6 +71,7 @@ If (-not $WebView2Installed) {
 }
 
 # install the Remote Desktop WebRTC Redirector Service
+Write-OutputWithTimeStamp "Installing the Remote Desktop WebRTC Redirector Service"
 $WebRTCInstall = Start-Process -FilePath msiexec.exe -ArgumentList "/i $webRTCFile /quiet /norestart" -Wait -PassThru
 If ($($WebRTCInstall.ExitCode) -eq 0) {
     Write-OutputWithTimeStamp "Installed the Remote Desktop WebRTC Redirector Service"
