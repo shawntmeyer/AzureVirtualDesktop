@@ -8,6 +8,9 @@ param avdObjectId string
 @description('Optional. The URL of the AVD Agent and Session Host DSC Configuration.zip.')
 param avdAgentsModuleUrl string = 'https://wvdportalstorageblob.blob.${environment().suffixes.storage}/galleryartifacts/Configuration_1.0.02790.438.zip'
 
+@description('Optional. Instruct the AVD Agent Installation script to automatically download the latest agent version during installation.zip.')
+param useAgentDownloadEndpoint bool = false
+
 // Resource and Resource Group naming and organization
 
 @maxLength(9)
@@ -996,6 +999,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     tags: deployScalingPlan ? logic.outputs.tags : tags
     timeStamp: timeStamp
     timeZone: logic.outputs.timeZone
+    useAgentDownloadEndpoint: useAgentDownloadEndpoint
     virtualMachineAdminPassword: !empty(virtualMachineAdminPwdKvReference) ? kvVirtualMachineAdminPassword.getSecret(virtualMachineAdminPwdKvReference.secretName) : virtualMachineAdminPassword
     virtualMachineAdminUserName: !empty(virtualMachineAdminUserNameKvReference) ? kvVirtualMachineAdminUserName.getSecret(virtualMachineAdminUserNameKvReference.secretName) : virtualMachineAdminUserName
     virtualMachineNamePrefix: resourceNames.outputs.virtualMachineNamePrefix

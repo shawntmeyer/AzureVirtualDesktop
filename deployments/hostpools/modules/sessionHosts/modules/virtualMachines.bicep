@@ -61,6 +61,7 @@ param storageSuffix string
 param subnetResourceId string
 param tags object
 param timeStamp string
+param useAgentDownloadEndpoint bool
 @secure()
 param virtualMachineAdminPassword string
 @secure()
@@ -615,7 +616,7 @@ resource extension_DSC_installAvdAgents 'Microsoft.Compute/virtualMachines/exten
             Password: 'PrivateSettingsRef:RegistrationInfoToken'
           }
           aadJoin: !contains(identitySolution, 'DomainServices')
-          UseAgentDownloadEndpoint: false
+          UseAgentDownloadEndpoint: useAgentDownloadEndpoint
           mdmId: intune ? '0000000a-0000-0000-c000-000000000000' : ''
         }
       }

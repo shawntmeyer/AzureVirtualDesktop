@@ -906,6 +906,13 @@
 							}
 						},
 						{
+							"name": "useAgentDownloadEndpoint",
+							"type": "Microsoft.Common.CheckBox",
+							"label": "Download latest Agent",
+							"defaultValue": true,
+							"toolTip": "Automatically downloads the latest agent software during installation rather than waiting for an upgrade."
+						},
+						{
 							"name": "drainMode",
 							"type": "Microsoft.Common.CheckBox",
 							"label": "Drain Mode",
@@ -3784,6 +3791,7 @@
 				"scalingPlanForceLogoff": "[if(steps('controlPlane').scalingPlan.deployScalingPlan, steps('controlPlane').scalingPlan.forceLogoff, false)]",
 				"scalingPlanMinsBeforeLogoff": "[if(and(steps('controlPlane').scalingPlan.deployScalingPlan, steps('controlPlane').scalingPlan.forceLogoff), steps('controlPlane').scalingPlan.minsToLogoff, 0)]",
 				"drainMode": "[steps('hosts').drainMode]",
+				"useAgentDownloadEndpoint": "[steps('hosts').useAgentDownloadEndpoint]", 
 				"virtualMachineNamePrefix": "[steps('hosts').virtualMachineNamePrefix]",
 				"sessionHostCount": "[steps('hosts').specs.count]",
 				"sessionHostIndex": "[steps('hosts').index]",
