@@ -4,128 +4,12 @@ param (
     [Hashtable] $DynParameters
 )
 
-[uri]$LGPOWebUrl = "https://www.microsoft.com/en-us/download/confirmation.aspx?id=55319"
 [string]$LogDir = "$env:SystemRoot\Logs\Configuration"
 [string]$ScriptName = "Apply-STIG-AVD-Exceptions"
 [string]$Log = Join-Path -Path $LogDir -ChildPath "$ScriptName.log"
 [string]$tempDir = Join-Path -Path $env:Temp -ChildPath $ScriptName
 
 #region Functions
-Function Get-InternetUrl {
-    [CmdletBinding()]
-    Param (
-        [Parameter(Mandatory = $true, Position = 0)]
-        [uri]$Url,
-        [Parameter(Mandatory = $true, Position = 1)]
-        [string]$searchstring
-    )
-    Begin {
-        [string]${CmdletName} = $PSCmdlet.MyInvocation.MyCommand.Name
-    }
-    Process {
-        Try {
-            Write-Verbose "${CmdletName}: Now extracting download URL from '$Url'."
-            $HTML = Invoke-WebRequest -Uri $Url -UseBasicParsing
-            $Links = $HTML.Links
-            $ahref = $null
-            $ahref=@()
-            $ahref = ($Links | Where-Object {$_.href -like "*$searchstring*"}).href
-            If ($ahref.count -eq 0 -or $null -eq $ahref) {
-                $ahref = ($Links | Where-Object {$_.OuterHTML -like "*$searchstring*"}).href
-            }
-            If ($ahref.Count -eq 1) {
-                Write-Verbose "${CmdletName}: Download URL = '$ahref'"
-                $ahref
-
-            }
-            Elseif ($ahref.Count -gt 1) {
-                Write-Verbose "${CmdletName}: Download URL = '$($ahref[0])'"
-                $ahref[0]
-            }
-        }
-        Catch {
-            Write-Error "${CmdletName}: Error Downloading HTML and determining link for download."
-            Exit 1
-        }
-    }
-    End {
-    }
-}
-Function Get-InternetFile {
-    [CmdletBinding()]
-    Param (
-        [Parameter(Mandatory = $true, Position = 0)]
-        [uri]$Url,
-        [Parameter(Mandatory = $true, Position = 1)]
-        [string]$OutputDirectory,
-        [Parameter(Mandatory = $false, Position = 2)]
-        [string]$OutputFileName
-    )
-
-    Begin {
-        [string]${CmdletName} = $PSCmdlet.MyInvocation.MyCommand.Name
-    }
-    Process {
-
-        $start_time = Get-Date
-
-        If (!$OutputFileName) {
-            Write-Verbose "${CmdletName}: No OutputFileName specified. Trying to get file name from URL."
-            If ((split-path -path $Url -leaf).Contains('.')) {
-                $OutputFileName = split-path -path $url -leaf
-                Write-Verbose "${CmdletName}: Url contains file name - '$OutputFileName'."
-            }
-            Else {
-                Write-Verbose "${CmdletName}: Url does not contain file name. Trying 'Location' Response Header."
-                $request = [System.Net.WebRequest]::Create($url)
-                $request.AllowAutoRedirect=$false
-                $response=$request.GetResponse()
-                $Location = $response.GetResponseHeader("Location")
-                If ($Location) {
-                    $OutputFileName = [System.IO.Path]::GetFileName($Location)
-                    Write-Verbose "${CmdletName}: File Name from 'Location' Response Header is '$OutputFileName'."
-                }
-                Else {
-                    Write-Verbose "${CmdletName}: No 'Location' Response Header returned. Trying 'Content-Disposition' Response Header."
-                    $result = Invoke-WebRequest -Method GET -Uri $Url -UseBasicParsing
-                    $contentDisposition = $result.Headers.'Content-Disposition'
-                    If ($contentDisposition) {
-                        $OutputFileName = $contentDisposition.Split("=")[1].Replace("`"","")
-                        Write-Verbose "${CmdletName}: File Name from 'Content-Disposition' Response Header is '$OutputFileName'."
-                    }
-                }
-            }
-        }
-
-        If ($OutputFileName) { 
-            $wc = New-Object System.Net.WebClient
-            $OutputFile = Join-Path $OutputDirectory $OutputFileName
-            Write-Verbose "${CmdletName}: Downloading file at '$url' to '$OutputFile'."
-            Try {
-                $wc.DownloadFile($url, $OutputFile)
-                $time = (Get-Date).Subtract($start_time).Seconds
-                
-                Write-Verbose "Time taken: '$time' seconds."
-                if (Test-Path -Path $outputfile) {
-                    $totalSize = (Get-Item $outputfile).Length / 1MB
-                    Write-Verbose "${CmdletName}: Download was successful. Final file size: '$totalsize' mb"
-                    $OutputFile
-                }
-            }
-            Catch {
-                Write-Error "${CmdletName}: Error downloading file. Please check url."
-                Exit 2
-            }
-        }
-        Else {
-            Write-Error "${CmdletName}: No OutputFileName specified. Unable to download file."
-            Exit 2
-        }
-    }
-    End {
-    }
-}
-
 Function Update-LocalGPOTextFile {
     [CmdletBinding(DefaultParameterSetName = 'Set')]
     Param (
@@ -276,24 +160,15 @@ Start-Transcript -Path $Log -Force -IncludeInvocationHeader
 Write-Output "Checking for lgpo.exe in '$env:SystemRoot\system32'."
 
 If (-not(Test-Path -Path "$env:SystemRoot\System32\Lgpo.exe")) {
-    Write-Output "Not found. Downloading Local GPO tool (lgpo.exe) from Internet."
-    $LGPOUrl = Get-InternetUrl -Url $LGPOWebUrl -Searchstring "LGPO" -Verbose
-    If ($LGPOUrl) {
-        $LGPOZip = Get-InternetFile -url $LGPOUrl -OutputDir $TempDir -Verbose
-        If ($LGPOZip) {
-            Write-Output "Expanding '$LGPOZip' to '$TempDir'."
-            Expand-Archive -path "$LGPOZip" -DestinationPath "$TempDir" -force
-            $algpoexe = Get-ChildItem -Path $TempDir -filter 'lgpo.exe' -recurse
-            If ($algpoexe.count -gt 0) {
-                $lgpoexe=$algpoexe[0].FullName
-                Write-Output "Copying '$lgpoexe' to '$env:SystemRoot\system32'."
-                Copy-Item -Path $lgpoexe -Destination "$env:SystemRoot\System32" -force
-            }
-            Else {
-                Write-Error "'lgpo.exe' not found in downloaded zip."
-                Exit 2
-            }
-        }
+    $azipfiles = Get-ChildItem -Path $PSScriptRoot -filter '*.zip' -recurse
+    $lgpozip = $azipfiles[0].FullName
+    Write-Log -category Info -message "Expanding '$lgpozip' to '$DirTemp'."
+    expand-archive -path "$lgpozip" -DestinationPath "$DirTemp" -force
+    $algpoexe = Get-ChildItem -Path "$DirTemp" -filter 'lgpo.exe' -recurse
+    If ($algpoexe.count -gt 0) {
+        $lgpoexe = $algpoexe[0].FullName
+        Write-Log -category Info -message "Copying '$lgpoexe' to '$env:SystemRoot\system32'."
+        Copy-Item -Path $lgpoexe -Destination "$env:SystemRoot\System32" -force        
     }
 }
 
