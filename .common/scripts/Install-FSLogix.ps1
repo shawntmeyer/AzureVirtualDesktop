@@ -7,7 +7,9 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-
+If ($Uri -eq '' -or $null -eq $Uri) {
+    $Uri = 'https://aka.ms/fslogix_download'
+}
 function Write-OutputWithTimeStamp {
     param(
         [parameter(ValueFromPipeline=$True, Mandatory=$True, Position=0)]
@@ -17,12 +19,12 @@ function Write-OutputWithTimeStamp {
     $Entry = '[' + $Timestamp + '] ' + $Message
     Write-Output $Entry
 }
+
 If (!(Test-Path -Path "$env:SystemRoot\Logs\ImageBuild")) { New-Item -Path "$env:SystemRoot\Logs\ImageBuild" -ItemType Directory -Force | Out-Null }
 
 $SoftwareName = 'FSLogix'
 Start-Transcript -Path "$env:SystemRoot\Logs\ImageBuild\$SoftwareName.log" -Force
 Write-OutputWithTimeStamp "Starting '$SoftwareName' install script with following Parameters:"
-
 Write-Output ( $PSBoundParameters | Format-Table -AutoSize )
 
 $WebClient = New-Object System.Net.WebClient
@@ -35,9 +37,8 @@ If ($Uri -match $BlobStorageSuffix -and $UserAssignedIdentityClientId -ne '') {
 }
 $appDir = Join-Path -Path $BuildDir -ChildPath $SoftwareName
 New-Item -Path $appDir -ItemType Directory -Force | Out-Null
-$SourceFileName = ($Uri -Split "/")[-1]
-$DestFile = Join-Path -Path $appDir -ChildPath $SourceFileName
-Write-OutputWithTimeStamp "Downloading '$Uri' to '$DestFile'."
+$DestFile = Join-Path -Path $appDir -ChildPath 'FSLogix.zip'
+Write-OutputWithTimeStamp "Downloading 'FSLogix.zip' from '$uri' to '$DestFile'."
 $webClient.DownloadFile("$Uri", "$DestFile")
 Start-Sleep -seconds 10
 If (!(Test-Path -Path $DestFile)) { Write-Error "Failed to download $SourceFileName"; Exit 1 }

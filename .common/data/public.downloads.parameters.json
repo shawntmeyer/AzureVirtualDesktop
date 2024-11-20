@@ -162,28 +162,6 @@
             "DestinationFolders": ["VSCode"]
         },
         {
-            "Name": "AVD Bootloader",
-            "DownloadUrl": "https://query.prod.cms.rt.microsoft.com/cms/api/am/binary/RWrxrH",
-            "WebsiteUrl": "",
-            "SearchString": "",
-            "APIUrl": "",
-            "GitHubRepo": "",
-            "GitHubFileNamePattern": "",
-            "DestinationFileName": "AVD-Bootloader.msi",
-            "DestinationFolders": ["Set-SessionHostConfiguration"]
-        },
-        {
-            "Name": "AVD Agent",
-            "DownloadUrl": "https://query.prod.cms.rt.microsoft.com/cms/api/am/binary/RWrmXv",
-            "WebsiteUrl": "",
-            "SearchString": "",
-            "APIUrl": "",
-            "GitHubRepo": "",
-            "GitHubFileNamePattern": "",
-            "DestinationFileName": "AVD-Agent.msi",
-            "DestinationFolders": ["Set-SessionHostConfiguration"]
-        },
-        {
             "Name": "DoD STIG GPO Package",
             "DownloadUrl": "",
             "WebSiteUrl": "https://public.cyber.mil/stigs/gpo",

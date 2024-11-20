@@ -535,7 +535,7 @@ To successfully deploy this solution, you will need to ensure the following prer
 
 - **Licenses:** ensure you have the [required licensing for AVD](https://learn.microsoft.com/en-us/azure/virtual-desktop/overview#requirements).
 - **Networking:** deployment requires a minimum of 1 Azure Virtual Network with one subnet to which the management virtual machine (deployment helper) and the session host(s) will be attached. For a PoC type implementation of AVD with Entra ID authentication, this Vnet can be standalone as there are no custom DNS requirements; however, for hybrid identity scenarios and zero trust implementations, the Virtual Network has DNS requirements as documented below under optional.
-- **Image Management Resources:** the deployment of the custom image build option depends on many artifacts that must be hosted in Azure Blob storage. This repo contains a helper script that should be used to deploy the image management resources and upload the artifacts to the created storage account. See *deployments/imageManagement/Deploy-ImageManagement.ps1*.
+- **Image Management Resources:** the deployment of the custom image build option depends on many artifacts that must be hosted in Azure Blob storage to satisfy Zero Trust principals or to build the custom image on Air-Gapped clouds. This repo contains a helper script that should be used to deploy the image management resources and upload the artifacts to the created storage account. See *deployments/imageManagement/Deploy-ImageManagement.ps1*.
 - **Azure Permissions:** ensure the principal deploying the solution has "Owner" and "Key Vault Administrator" roles assigned on the target Azure subscription. This solution contains many role assignments at different scopes and deploys a key vault with keys and secrets to enhance security.
 - **Security Group:** create a security group for your AVD users.
   - Active Directory Domain Services: create the group in ADUC and ensure the group has synchronized to Azure AD.
@@ -829,7 +829,7 @@ While utilizing a private endpoints is optional, it must be deployed in order to
 - Image Build - Blob Storage Account for logging customizations
 - AVD Deployment - Azure Files for FSLogix profiles, Azure Key Vault for storing secrets and Customer Managed Keys, AVD Private Link, Azure Recovery Services, and the Function App deployed to increase premium storage account quotas.
 
-Prior to running the Deploy-ImageManagement script, the Azure Blob private DNS zone should be created either in the portal or through Powershell. See [DNS Prerequisites](#prerequisites) for the correct values per environment.:
+Prior to running the Deploy-ImageManagement script, the Azure Blob private DNS zone should be created either in the portal, via the Azure Virtual Desktop Networking template spec, or through Powershell. See [DNS Prerequisites](#prerequisites) for the correct values per environment.:
 
 ``` powershell
 $ResGroupName = '<Resource Group Name>'
@@ -883,7 +883,7 @@ You will then need to specify the objectId property of this new service principa
 
 #### Deploy Image Management Resources
 
-If you plan to build custom images or to add custom software or run scripts during the deployment of your session hosts, you must deploy the image management resources.
+If you plan to build custom images or to add custom software or run scripts during the deployment of your session hosts, you should deploy the image management resources to support Zero Trust. You can also chose not to deploy these resources, but the image build VM will need access to the Internet to download the source files required for installation/configuration.
 
 The **deployments/Deploy-ImageManagement.ps1** script is the easiest way to ensure all necessary image management resources (scripts and installers and Compute Gallery for custom image option.) are present for the AVD deployment.
 

@@ -10,6 +10,10 @@ $ErrorActionPreference = "Stop"
 
 $SoftwareName = 'OneDrive'
 
+If ($null -eq $Uri -or $Uri -eq '') {
+    $Uri = 'https://go.microsoft.com/fwlink/p/?linkid=2121808'
+}
+
 function Write-OutputWithTimeStamp {
     param(
         [parameter(ValueFromPipeline=$True, Mandatory=$True, Position=0)]
@@ -43,9 +47,8 @@ Else {
     }
     $appDir = Join-Path -Path $BuildDir -ChildPath $SoftwareName
     New-Item -Path $appDir -ItemType Directory -Force | Out-Null
-    $SourceFileName = ($Uri -Split "/")[-1]
-    $DestFile = Join-Path -Path $appDir -ChildPath $SourceFileName
-    Write-OutputWithTimeStamp "Downloading '$Uri' to '$DestFile'."
+    $DestFile = Join-Path -Path $appDir -ChildPath 'OneDriveSetup.exe'
+    Write-OutputWithTimeStamp "Downloading 'OneDriveSetup.exe' from '$Uri' to '$DestFile'."
     $webClient.DownloadFile("$Uri", "$DestFile")
     Start-Sleep -Seconds 5
     If (!(Test-Path -Path $DestFile)) { Write-Error "Failed to download $SourceFileName"; Exit 1 }

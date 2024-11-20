@@ -9,6 +9,11 @@ param(
 )
 $ErrorActionPreference = "Stop"
 
+If ($Uri -eq '' -or $null -eq $Uri) {
+    $WebsiteUri = 'https://www.microsoft.com/en-us/download/confirmation.aspx?id=49117'
+    $Uri = ((Invoke-WebRequest -Uri $WebsiteUri -UseBasicParsing).Links | Where-Object { $_.href -like '*exe' } | Select-Object -ExpandProperty href)[0]
+}
+
 function Write-OutputWithTimeStamp {
     param(
         [parameter(ValueFromPipeline=$True, Mandatory=$True, Position=0)]

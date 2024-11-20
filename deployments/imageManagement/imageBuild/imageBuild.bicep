@@ -32,7 +32,7 @@ param subnetResourceId string
 param imageBuildResourceGroupId string = ''
 
 // Optional Custom Naming
-@description('The custom name of the resource group where the image build and management vms will be created. Leave blank to create a new resource group based on Cloud Adoption Framework naming principals.')
+@description('The custom name of the resource group where the image build vm and orchestration vm will be created. Leave blank to create a new resource group based on Cloud Adoption Framework naming principals.')
 param customBuildResourceGroupName string = ''
 
 // Source Image Properties
@@ -52,7 +52,7 @@ param sku string
 @description('Optional. Determines if "EncryptionAtHost" is enabled on the VMs.')
 param encryptionAtHost bool = true
 
-@description('The size of the Image build and Management VMs.')
+@description('The size of the Image build and Orchestration VMs.')
 param vmSize string
 
 // Image customizers
@@ -62,19 +62,19 @@ param appsToRemove array = []
 @description('Optional. Install FSLogix Agent.')
 param installFsLogix bool = false
 
-@description('Conditional. The name of the blob (or Full URI) of FSLogix.zip.')
+@description('Conditional. The name of the blob (or Full URI) of FSLogix.zip. Required when "InstallFSLogix" is true and "DownloadLatestCustomizationSources" is false.')
 param fslogixSetupBlobName string = 'FSLogix.zip'
 
 @description('Optional. List of Office 365 ProPlus Apps to Install. Default is [].')
 param office365AppsToInstall array = []
 
-@description('Optional. The name of the blob (or full URI) of the Office Deployment Tool.')
+@description('Conditional. The name of the blob (or full URI) of the Office Deployment Tool. Required when "Office365AppsToInstall" is not empty and "DownloadLatestCustomizationSources" is false.')
 param officeDeploymentToolBlobName string = 'Office365DeploymentTool.exe'
 
 @description('Optional. Install OneDrive Per Machine.')
 param installOneDrive bool = false
 
-@description('Conditional. The name of the blob (or full URI) of OneDriveSetup.exe.')
+@description('Conditional. The name of the blob (or full URI) of OneDriveSetup.exe. Required when "InstallOneDrive" is true and "DownloadLatestCustomizationSources" is false.')
 param onedriveSetupBlobName string = 'OneDriveSetup.exe'
 
 @description('Optional. Install Microsoft Teams.')
@@ -92,13 +92,13 @@ param installTeams bool = false
 @description('Optional. The Teams Governmant Cloud type.')
 param teamsCloudType string = 'Commercial'
 
-@description('Conditional. The name of the blob (or full Uri) of the Teams installer.')
+@description('Conditional. The name of the blob (or full Uri) of the Teams installer. Required when "InstallTeams" is true and "DownloadLatestCustomizationSources" is false.')
 param teamsInstallerBlobName string = 'Microsoft-Teams.zip'
 
 @description('Optional. Apply the Virtual Desktop Optimization Tool customizations.')
 param installVirtualDesktopOptimizationTool bool = false
 
-@description('Conditional. The name of the zip blob containing the Virtual Desktop Optimization Tool Script and files.')
+@description('Conditional. The name of the zip blob containing the Virtual Desktop Optimization Tool Script and files. Required when "InstallVirtualDesktopOptimizationTool" is true and "DownloadLatestCustomizationSources" is false.')
 param vDotBlobName string = 'VDOT.zip'
 
 @description('''An array of image customization objects that are executed first before any restarts or updates.
@@ -270,41 +270,61 @@ var computeLocation = vnet.location
 var depPrefix = !empty(deploymentPrefix) ? '${deploymentPrefix}-' : ''
 var logStorageAccountName = toLower('sa${depPrefix}log${uniqueString(subscription().id,imageBuildResourceGroupName)}')
 
-var imageBuildResourceGroupName = empty(imageBuildResourceGroupId) ? ( empty(customBuildResourceGroupName) ? '${resourceAbbreviations.resourceGroups}-image-builder-${locations[location].abbreviation}' : customBuildResourceGroupName ) : last(split(imageBuildResourceGroupId, '/'))
+var imageBuildResourceGroupName = empty(imageBuildResourceGroupId)
+  ? (empty(customBuildResourceGroupName)
+      ? '${resourceAbbreviations.resourceGroups}-image-builder-${locations[location].abbreviation}'
+      : customBuildResourceGroupName)
+  : last(split(imageBuildResourceGroupId, '/'))
 
 var adminPw = '1qaz@WSX${uniqueString(subscription().id, timeStamp)}'
 var adminUserName = 'vmadmin'
 
 var logContainerName = 'image-customization-logs'
-var logContainerUri = collectCustomizationLogs ? '${logsStorageAccount.outputs.primaryBlobEndpoint}${logContainerName}/' : ''
+var logContainerUri = collectCustomizationLogs
+  ? '${logsStorageAccount.outputs.primaryBlobEndpoint}${logContainerName}/'
+  : ''
 
 var galleryImageDefinitionHyperVGeneration = endsWith(sku, 'g2') || startsWith(sku, 'win11') ? 'V2' : 'V1'
-var galleryImageDefinitionName = empty(imageDefinitionResourceId) ? (empty(customImageDefinitionName) ? '${replace('${resourceAbbreviations.imageDefinitions}-${replace(galleryImageDefinitionPublisher, '-', '')}-${replace(galleryImageDefinitionOffer, '-', '')}-${replace(galleryImageDefinitionSku, '-', '')}', ' ', '')}' : customImageDefinitionName) : last(split(imageDefinitionResourceId, '/'))
+var galleryImageDefinitionName = empty(imageDefinitionResourceId)
+  ? (empty(customImageDefinitionName)
+      ? '${replace('${resourceAbbreviations.imageDefinitions}-${replace(galleryImageDefinitionPublisher, '-', '')}-${replace(galleryImageDefinitionOffer, '-', '')}-${replace(galleryImageDefinitionSku, '-', '')}', ' ', '')}'
+      : customImageDefinitionName)
+  : last(split(imageDefinitionResourceId, '/'))
 var galleryImageDefinitionOffer = !empty(imageDefinitionOffer) ? replace(imageDefinitionOffer, ' ', '') : offer
-var galleryImageDefinitionPublisher = !empty(imageDefinitionPublisher) ? replace(imageDefinitionPublisher, ' ', '') : publisher
+var galleryImageDefinitionPublisher = !empty(imageDefinitionPublisher)
+  ? replace(imageDefinitionPublisher, ' ', '')
+  : publisher
 
-var galleryImageDefinitionSecurityType = empty(imageDefinitionResourceId) ? imageDefinitionSecurityType : filter(reference(imageDefinitionResourceId, '2023-07-03').features, feature => feature.name == 'SecurityType')[0].value
+var galleryImageDefinitionSecurityType = empty(imageDefinitionResourceId)
+  ? imageDefinitionSecurityType
+  : filter(reference(imageDefinitionResourceId, '2023-07-03').features, feature => feature.name == 'SecurityType')[0].value
 var galleryImageDefinitionSku = !empty(imageDefinitionSku) ? replace(imageDefinitionSku, ' ', '') : sku
 
 var autoImageVersionName = '${substring(timeStamp, 0, 2)}.${substring(timeStamp, 2, 4)}.${substring(timeStamp, 6, 4)}'
-var imageVersionName = imageMajorVersion != -1 && imageMajorVersion != -1 && imagePatch != -1 ? '${imageMajorVersion}.${imageMinorVersion}.${imagePatch}' : autoImageVersionName
-var imageVersionReplicationRegions = !empty(imageVersionTargetRegions) ? imageVersionTargetRegions : [
-  {
-    excludeFromLatest: imageVersionExcludeFromLatest
-    name: !empty(imageVersionDefaultRegion) ? imageVersionDefaultRegion : location
-    regionalReplicaCount: imageVersionDefaultReplicaCount
-    storageAccountType: imageVersionDefaultStorageAccountType
-  }
-]
+var imageVersionName = imageMajorVersion != -1 && imageMajorVersion != -1 && imagePatch != -1
+  ? '${imageMajorVersion}.${imageMinorVersion}.${imagePatch}'
+  : autoImageVersionName
+var imageVersionReplicationRegions = !empty(imageVersionTargetRegions)
+  ? imageVersionTargetRegions
+  : [
+      {
+        excludeFromLatest: imageVersionExcludeFromLatest
+        name: !empty(imageVersionDefaultRegion) ? imageVersionDefaultRegion : location
+        regionalReplicaCount: imageVersionDefaultReplicaCount
+        storageAccountType: imageVersionDefaultStorageAccountType
+      }
+    ]
 
 var imageVmName = take('${depPrefix}vmimg-${uniqueString(timeStamp)}', 15)
-var managementVmName = take('${depPrefix}vmmgt-${uniqueString(timeStamp)}', 15)
+var orchestrationVmName = take('${depPrefix}vmmgt-${uniqueString(timeStamp)}', 15)
 
-var securityType = galleryImageDefinitionSecurityType == 'TrustedLaunch' ? 'TrustedLaunch' : galleryImageDefinitionSecurityType == 'ConfidentialVM' ? 'ConfidentialVM' : 'Standard'
+var securityType = galleryImageDefinitionSecurityType == 'TrustedLaunch'
+  ? 'TrustedLaunch'
+  : galleryImageDefinitionSecurityType == 'ConfidentialVM' ? 'ConfidentialVM' : 'Standard'
 
 // * Prerequisite Resources * //
 
-resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = {
+resource existingUserAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = if (!empty(userAssignedIdentityResourceId)) {
   scope: resourceGroup(split(userAssignedIdentityResourceId, '/')[2], split(userAssignedIdentityResourceId, '/')[4])
   name: last(split(userAssignedIdentityResourceId, '/'))
 }
@@ -314,14 +334,24 @@ resource vnet 'Microsoft.Network/virtualNetworks@2023-05-01' existing = {
   scope: resourceGroup(split(subnetResourceId, '/')[2], split(subnetResourceId, '/')[4])
 }
 
+module userAssignedIdentity '../../sharedModules/resources/managed-identity/user-assigned-identity/main.bicep' = if (empty(userAssignedIdentityResourceId)) {
+  name: '${depPrefix}ManagedIdentity-${timeStamp}'
+  scope: resourceGroup(imageBuildResourceGroupName)
+  params: {
+    location: location
+    name: '${resourceAbbreviations.userAssignedIdentities}-image-builder-${locations[location].abbreviation}'
+    tags: tags[?'Microsoft.ManagedIdentity/userAssignedIdentities'] ?? {}
+  }
+}
+
 // * Image Definition * //
 
-module imageDefinition '../../sharedModules/resources/compute/gallery/image/main.bicep' = if(empty(imageDefinitionResourceId)) {
+module imageDefinition '../../sharedModules/resources/compute/gallery/image/main.bicep' = if (empty(imageDefinitionResourceId)) {
   name: '${depPrefix}Gallery-Image-Definition-${timeStamp}'
   scope: resourceGroup(split(computeGalleryResourceId, '/')[2], split(computeGalleryResourceId, '/')[4])
   params: {
     location: location
-    galleryName: last(split(computeGalleryResourceId,'/'))
+    galleryName: last(split(computeGalleryResourceId, '/'))
     name: galleryImageDefinitionName
     hyperVGeneration: galleryImageDefinitionHyperVGeneration
     isHibernateSupported: imageDefinitionIsHibernateSupported
@@ -339,7 +369,7 @@ module imageDefinition '../../sharedModules/resources/compute/gallery/image/main
 
 // * Resource Group * //
 
-resource imageBuildRg 'Microsoft.Resources/resourceGroups@2023-07-01' = if(empty(imageBuildResourceGroupId)) {
+resource imageBuildRg 'Microsoft.Resources/resourceGroups@2023-07-01' = if (empty(imageBuildResourceGroupId)) {
   name: imageBuildResourceGroupName
   location: location
   tags: tags[?'Microsoft.Resources/resourceGroups'] ?? {}
@@ -351,7 +381,9 @@ module roleAssignmentContributorBuildRg '../../sharedModules/resources/authoriza
   name: '${depPrefix}RoleAssign-MI-VirtMachContr-BuildRG-${timeStamp}'
   scope: resourceGroup(imageBuildResourceGroupName)
   params: {
-    principalId: managedIdentity.properties.principalId
+    principalId: empty(userAssignedIdentityResourceId)
+      ? userAssignedIdentity.outputs.principalId
+      : existingUserAssignedIdentity.properties.principalId
     roleDefinitionId: '9980e02c-c2be-4d73-94e8-173b1dc7cf3c' // Virtual Machine Contributor
   }
   dependsOn: [
@@ -361,7 +393,7 @@ module roleAssignmentContributorBuildRg '../../sharedModules/resources/authoriza
 
 // * Logging * //
 
-module logsStorageAccount '../../sharedModules/resources/storage/storage-account/main.bicep' = if(collectCustomizationLogs) {
+module logsStorageAccount '../../sharedModules/resources/storage/storage-account/main.bicep' = if (collectCustomizationLogs) {
   name: '${depPrefix}Logs-StorageAccount-${timeStamp}'
   scope: resourceGroup(imageBuildResourceGroupName)
   params: {
@@ -402,18 +434,22 @@ module logsStorageAccount '../../sharedModules/resources/storage/storage-account
         }
       }
     ]
-    privateEndpoints: !empty(privateEndpointSubnetResourceId) && !empty(blobPrivateDnsZoneResourceId) ? [
-      {
-        name: 'pe-sa${logStorageAccountName}-blob-${locations[computeLocation].abbreviation}'
-        privateDnsZoneGroup: {
-          privateDNSResourceIds: ['${blobPrivateDnsZoneResourceId}']
-        }
-        service: 'blob'
-        subnetResourceId: privateEndpointSubnetResourceId
-        tags: tags[?'Microsoft.Storage/storageAccounts'] ?? {}
-      }
-    ] : null
-    publicNetworkAccess: !empty(privateEndpointSubnetResourceId) && !empty(blobPrivateDnsZoneResourceId) ? 'Disabled' : 'Enabled'
+    privateEndpoints: !empty(privateEndpointSubnetResourceId) && !empty(blobPrivateDnsZoneResourceId)
+      ? [
+          {
+            name: '${resourceAbbreviations.privateEndpoints}-${logStorageAccountName}-blob-${locations[computeLocation].abbreviation}'
+            privateDnsZoneGroup: {
+              privateDNSResourceIds: ['${blobPrivateDnsZoneResourceId}']
+            }
+            service: 'blob'
+            subnetResourceId: privateEndpointSubnetResourceId
+            tags: tags[?'Microsoft.Storage/storageAccounts'] ?? {}
+          }
+        ]
+      : null
+    publicNetworkAccess: !empty(privateEndpointSubnetResourceId) && !empty(blobPrivateDnsZoneResourceId)
+      ? 'Disabled'
+      : 'Enabled'
     sasExpirationPeriod: '180.00:00:00'
     skuName: 'Standard_LRS'
     tags: tags
@@ -427,22 +463,24 @@ module roleAssignmentBlobDataContributorBuilderRg '../../sharedModules/resources
   name: '${depPrefix}RoleAssign-MI-StorageBlobDataContr-BuildRG-${timeStamp}'
   scope: resourceGroup(imageBuildResourceGroupName)
   params: {
-    principalId: managedIdentity.properties.principalId
+    principalId: empty(userAssignedIdentityResourceId)
+      ? userAssignedIdentity.outputs.principalId
+      : existingUserAssignedIdentity.properties.principalId
     roleDefinitionId: 'ba92f5b4-2d11-453d-a403-e96b0029c9fe' // Storage Blob Data Contributor
   }
   dependsOn: [
     logsStorageAccount
-  ]  
+  ]
 }
 
 // * Management VM * //
 
-module managementVm '../../sharedModules/resources/compute/virtual-machine/main.bicep' = {
-  name: '${depPrefix}Management-VM-${timeStamp}'
+module orchestrationVm '../../sharedModules/resources/compute/virtual-machine/main.bicep' = {
+  name: '${depPrefix}Orchestration-VM-${timeStamp}'
   scope: resourceGroup(imageBuildResourceGroupName)
   params: {
     location: computeLocation
-    name: managementVmName
+    name: orchestrationVmName
     adminPassword: adminPw
     adminUsername: adminUserName
     encryptionAtHost: encryptionAtHost
@@ -476,9 +514,13 @@ module managementVm '../../sharedModules/resources/compute/virtual-machine/main.
     }
     osType: 'Windows'
     tags: tags[?'Microsoft.Compute/virtualMachines'] ?? {}
-    userAssignedIdentities: {
-      '${userAssignedIdentityResourceId}': {}
-    }
+    userAssignedIdentities: empty(userAssignedIdentityResourceId)
+      ? {
+          '${userAssignedIdentity.outputs.resourceId}': {}
+        }
+      : {
+          '${userAssignedIdentityResourceId}': {}
+        }
     vmSize: 'Standard_B2s'
   }
   dependsOn: [
@@ -499,14 +541,16 @@ module imageVm '../../sharedModules/resources/compute/virtual-machine/main.bicep
     adminUsername: adminUserName
     bootDiagnostics: false
     encryptionAtHost: encryptionAtHost
-    imageReference: empty(customSourceImageResourceId) ? {
-      publisher: publisher
-      offer: offer
-      sku: sku
-      version: 'latest'
-    } : {
-      id: customSourceImageResourceId
-    }
+    imageReference: empty(customSourceImageResourceId)
+      ? {
+          publisher: publisher
+          offer: offer
+          sku: sku
+          version: 'latest'
+        }
+      : {
+          id: customSourceImageResourceId
+        }
     nicConfigurations: [
       {
         enableAcceleratedNetworking: imageDefinitionIsAcceleratedNetworkSupported
@@ -534,9 +578,13 @@ module imageVm '../../sharedModules/resources/compute/virtual-machine/main.bicep
     secureBootEnabled: securityType == 'TrustedLaunch' ? true : false
     vTpmEnabled: securityType == 'TrustedLaunch' ? true : false
     tags: tags[?'Microsoft.Compute/virtualMachines'] ?? {}
-    userAssignedIdentities: {
-      '${userAssignedIdentityResourceId}': {}
-    }
+    userAssignedIdentities: empty(userAssignedIdentityResourceId)
+    ? {
+        '${userAssignedIdentity.outputs.resourceId}': {}
+      }
+    : {
+        '${userAssignedIdentityResourceId}': {}
+      }
     vmSize: vmSize
   }
   dependsOn: [
@@ -558,15 +606,17 @@ module customizeImage 'modules/customizeImage.bicep' = {
     installOneDrive: installOneDrive
     installTeams: installTeams
     installVirtualDesktopOptimizationTool: installVirtualDesktopOptimizationTool
-    userAssignedIdentityClientId: managedIdentity.properties.clientId
-    managementVmName: managementVm.outputs.name
+    userAssignedIdentityClientId: empty(userAssignedIdentityResourceId)
+      ? userAssignedIdentity.outputs.clientId
+      : existingUserAssignedIdentity.properties.clientId
+    orchestrationVmName: orchestrationVm.outputs.name
     office365AppsToInstall: office365AppsToInstall
     imageVmName: imageVm.outputs.name
     teamsCloudType: teamsCloudType
     logBlobContainerUri: logContainerUri
     installUpdates: installUpdates
     updateService: updateService
-    wsusServer: wsusServer  
+    wsusServer: wsusServer
     artifactsContainerUri: artifactsContainerUri
     fslogixSetupBlobName: fslogixSetupBlobName
     officeDeploymentToolBlobName: officeDeploymentToolBlobName
@@ -584,7 +634,7 @@ module stopAndGeneralizeImageVM '../../sharedModules/resources/compute/virtual-m
   scope: resourceGroup(imageBuildResourceGroupName)
   params: {
     location: computeLocation
-    name: 'StopAndGeneralize'    
+    name: 'StopAndGeneralize'
     parameters: [
       {
         name: 'ResourceManagerUri'
@@ -592,16 +642,18 @@ module stopAndGeneralizeImageVM '../../sharedModules/resources/compute/virtual-m
       }
       {
         name: 'UserAssignedIdentityClientId'
-        value: managedIdentity.properties.clientId
+        value: empty(userAssignedIdentityResourceId)
+          ? userAssignedIdentity.outputs.clientId
+          : existingUserAssignedIdentity.properties.clientId
       }
       {
         name: 'VmResourceId'
         value: imageVm.outputs.resourceId
       }
-    ]    
+    ]
     script: loadTextContent('../../../.common/scripts/Generalize-Vm.ps1')
     treatFailureAsDeploymentFailure: true
-    virtualMachineName: managementVm.outputs.name
+    virtualMachineName: orchestrationVm.outputs.name
   }
   dependsOn: [
     customizeImage
@@ -618,7 +670,9 @@ module captureImage 'modules/captureImage.bicep' = {
     hyperVGeneration: galleryImageDefinitionHyperVGeneration
     imageBuildResourceGroupName: imageBuildResourceGroupName
     imageDefinitionSecurityType: galleryImageDefinitionSecurityType
-    imageName: !empty(imageDefinitionResourceId) ? last(split(imageDefinitionResourceId, '/')) : imageDefinition.outputs.name
+    imageName: !empty(imageDefinitionResourceId)
+      ? last(split(imageDefinitionResourceId, '/'))
+      : imageDefinition.outputs.name
     imageVersionDefaultReplicaCount: imageVersionDefaultReplicaCount
     imageVersionDefaultStorageAccountType: imageVersionDefaultStorageAccountType
     imageVersionEOLinDays: imageVersionEOLinDays
@@ -628,7 +682,7 @@ module captureImage 'modules/captureImage.bicep' = {
     location: computeLocation
     tags: tags
     timeStamp: timeStamp
-    virtualMachineResourceId: imageVm.outputs.resourceId 
+    virtualMachineResourceId: imageVm.outputs.resourceId
   }
   dependsOn: [
     stopAndGeneralizeImageVM
@@ -642,16 +696,28 @@ module removeImageBuildResources '../../sharedModules/resources/compute/virtual-
   scope: resourceGroup(imageBuildResourceGroupName)
   params: {
     asyncExecution: true
-    errorBlobManagedIdentity: empty(logContainerUri) ? null : {
-      clientId: managedIdentity.properties.clientId
-    }
-    errorBlobContainerUri: empty(logContainerUri) ? null : '${logContainerUri}${managementVm.outputs.name}-Remove-Resources-error-${timeStamp}.log' 
-    outputBlobManagedIdentity: empty(logContainerUri) ? null : {
-      clientId: managedIdentity.properties.clientId
-    }
-    outputBlobContainerUri: empty(logContainerUri) ? null : '${logContainerUri}${managementVm.outputs.name}-Remove-Resources-output-${timeStamp}.log'
+    errorBlobManagedIdentity: empty(logContainerUri)
+      ? null
+      : {
+          clientId: empty(userAssignedIdentityResourceId)
+            ? userAssignedIdentity.outputs.clientId
+            : existingUserAssignedIdentity.properties.clientId
+        }
+    errorBlobContainerUri: empty(logContainerUri)
+      ? null
+      : '${logContainerUri}${orchestrationVm.outputs.name}-Remove-Resources-error-${timeStamp}.log'
+    outputBlobManagedIdentity: empty(logContainerUri)
+      ? null
+      : {
+          clientId: empty(userAssignedIdentityResourceId)
+            ? userAssignedIdentity.outputs.clientId
+            : existingUserAssignedIdentity.properties.clientId
+        }
+    outputBlobContainerUri: empty(logContainerUri)
+      ? null
+      : '${logContainerUri}${orchestrationVm.outputs.name}-Remove-Resources-output-${timeStamp}.log'
     location: computeLocation
-    name: 'RemoveImageBuildResources'    
+    name: 'RemoveImageBuildResources'
     parameters: [
       {
         name: 'ResourceManagerUri'
@@ -659,7 +725,9 @@ module removeImageBuildResources '../../sharedModules/resources/compute/virtual-
       }
       {
         name: 'UserAssignedIdentityClientId'
-        value: managedIdentity.properties.clientId
+        value: empty(userAssignedIdentityResourceId)
+          ? userAssignedIdentity.outputs.clientId
+          : existingUserAssignedIdentity.properties.clientId
       }
       {
         name: 'ImageResourceId'
@@ -671,12 +739,12 @@ module removeImageBuildResources '../../sharedModules/resources/compute/virtual-
       }
       {
         name: 'ManagementVmResourceId'
-        value: managementVm.outputs.resourceId
+        value: orchestrationVm.outputs.resourceId
       }
-    ]    
+    ]
     script: loadTextContent('../../../.common/scripts/Remove-ImageBuildResources.ps1')
     treatFailureAsDeploymentFailure: false
-    virtualMachineName: managementVm.outputs.name
+    virtualMachineName: orchestrationVm.outputs.name
   }
   dependsOn: [
     captureImage

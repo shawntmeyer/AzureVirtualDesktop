@@ -9,6 +9,37 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+Function Get-InternetUrl {
+    [CmdletBinding()]
+    Param (
+        [uri]$WebSiteUrl,
+        [string]$SearchString
+    )
+
+    Try {
+        $HTML = Invoke-WebRequest -Uri $WebSiteUrl -UseBasicParsing
+        $Links = $HTML.Links
+        $ahref = $null
+        $ahref=@()
+        $ahref = ($Links | Where-Object {$_.href -like "*$searchstring*"})
+        If ($ahref.count -eq 0 -or $null -eq $ahref) {
+            $ahref = ($Links | Where-Object {$_.OuterHTML -like "*$searchstring*"})
+        }
+        
+        If ($ahref.Count -gt 0) {
+            Return $ahref[0].href
+        }
+        Else {
+            Write-Warning "No download URL found using search term."
+            Return $null
+        }
+    }
+    Catch {
+        Write-Error "Error Downloading HTML and determining link for download."
+        Return
+    }
+}
+
 function Write-OutputWithTimeStamp {
     param(
         [parameter(ValueFromPipeline=$True, Mandatory=$True, Position=0)]
@@ -24,32 +55,52 @@ $SoftwareName = 'Teams'
 Start-Transcript -Path "$env:SystemRoot\Logs\ImageBuild\$SoftwareName.log" -Force
 Write-OutputWithTimeStamp "Starting script to install $SoftwareName with the following parameters:"
 Write-Output ( $PSBoundParameters | Format-Table -AutoSize )
+$appDir = Join-Path -Path $BuildDir -ChildPath $SoftwareName
+New-Item -Path $appDir -ItemType Directory -Force | Out-Null
 $WebClient = New-Object System.Net.WebClient
-If ($Uri -match $BlobStorageSuffix -and $UserAssignedIdentityClientId -ne '') {
+If ($Null -ne $Uri -and $Uri -ne '' -and $Uri -match $BlobStorageSuffix -and $UserAssignedIdentityClientId -ne '') {
     $StorageEndpoint = ($Uri -split "://")[0] + "://" + ($Uri -split "/")[2] + "/"
     $TokenUri = "http://169.254.169.254/metadata/identity/oauth2/token?api-version=$APIVersion&resource=$StorageEndpoint&client_id=$UserAssignedIdentityClientId"
     $AccessToken = ((Invoke-WebRequest -Headers @{Metadata = $true } -Uri $TokenUri -UseBasicParsing).Content | ConvertFrom-Json).access_token
     $WebClient.Headers.Add('x-ms-version', '2017-11-09')
     $webClient.Headers.Add("Authorization", "Bearer $AccessToken")
+    $SourceFileName = ($Uri -Split "/")[-1]
+    $DestFile = Join-Path -Path $appDir -ChildPath $SourceFileName
+    Write-OutputWithTimeStamp "Downloading '$Uri' to '$DestFile'."
+    $webClient.DownloadFile("$Uri", "$DestFile")
+    Start-Sleep -Seconds 5
+    If (!(Test-Path -Path $DestFile)) { Write-Error "Failed to download $SourceFileName"; Exit 1 }
+    Expand-Archive -Path $destFile -DestinationPath $appDir -Force
+    $WebView2File = (Get-ChildItem -Path $appDir -filter 'webview*.exe' -Recurse).FullName
+    $vcRedistFile = (Get-ChildItem -Path $appDir -filter 'vc*.exe' -Recurse).FullName
+    $webRTCFile = (Get-ChildItem -Path $appDir -filter 'MsRdcWebRTCSvc.msi' -Recurse).FullName
+    $BootStrapperFile = (Get-ChildItem -Path $appDir -filter '*bootstrapper.exe' -Recurse).FullName
+    $MSIXFile = (Get-ChildItem -Path $appDir -filter '*.msix' -Recurse).FullName
 }
-$appDir = Join-Path -Path $BuildDir -ChildPath $SoftwareName
-New-Item -Path $appDir -ItemType Directory -Force | Out-Null
-$SourceFileName = ($Uri -Split "/")[-1]
-$DestFile = Join-Path -Path $appDir -ChildPath $SourceFileName
-Write-OutputWithTimeStamp "Downloading '$Uri' to '$DestFile'."
-$webClient.DownloadFile("$Uri", "$DestFile")
-Start-Sleep -Seconds 5
-If (!(Test-Path -Path $DestFile)) { Write-Error "Failed to download $SourceFileName"; Exit 1 }
-Expand-Archive -Path $destFile -DestinationPath $appDir -Force
-$WebView2File = (Get-ChildItem -Path $appDir -filter 'webview*.exe' -Recurse).FullName
-$vcRedistFile = (Get-ChildItem -Path $appDir -filter 'vc*.exe' -Recurse).FullName
-$webRTCFile = (Get-ChildItem -Path $appDir -filter 'MsRdcWebRTCSvc.msi' -Recurse).FullName
-$BootStrapperFile = (Get-ChildItem -Path $appDir -filter '*bootstrapper.exe' -Recurse).FullName
-$MSIXFile = (Get-ChildItem -Path $appDir -filter '*.msix' -Recurse).FullName
+Else {
+    Write-OutputWithTimeStamp "No valid Uri provided. Downloading required installers from the internet."
+    $WebView2File = Join-Path -Path $AppDir -ChildPath 'webview2RuntimeInstaller.exe'
+    Write-OutputWithTimeStamp "Downloading WebView2 Runtime Installer"
+    $WebClient.DownloadFile('https://go.microsoft.com/fwlink/?linkid=2124703', $WebView2File)
+    Write-OutputWithTimeStamp "Downloading Visual C++ Redistributables"
+    $vcRedistFile = Join-Path -Path $AppDir -ChildPath 'vc_redist.x64.exe'
+    $WebClient.DownloadFile('https://aka.ms/vs/16/release/vc_redist.x64.exe', $vcRedistFile)
+    Write-OutputWithTimeStamp "Downloading Remote Desktop WebRTC Redirector Service"
+    $webRTCFile = Join-Path -Path $AppDir -ChildPath 'MsRdcWebRTCSvc.msi'
+    $DownloadUri = Get-InternetUrl -WebSiteUrl 'https://docs.microsoft.com/en-us/azure/virtual-desktop/teams-on-wvd' -SearchString 'Remote Desktop WebRTC'
+    $WebClient.DownloadFile($DownloadUri, $webRTCFile)
+    Write-OutputWithTimeStamp "Downloading Teams Bootstrapper"
+    $BootStrapperFile = Join-Path -Path $AppDir -ChildPath 'Teams_bootstrapper.exe'
+    $WebClient.DownloadFile('https://go.microsoft.com/fwlink/?linkid=2243204&clcid=0x409', $BootStrapperFile)
+    Write-OutputWithTimeStamp "Downloading Teams MSIX"
+    $MSIXFile = Join-Path -Path $AppDir -ChildPath 'Teams_windows_x64.msix'
+    $WebClient.DownloadFile('https://go.microsoft.com/fwlink/?linkid=2196106', $MSIXFile)    
+}
+Write-OutputWithTimeStamp "Enabling media optimizations for Teams"
 # Enable media optimizations for Team
 New-Item -Path "HKLM:\SOFTWARE\Microsoft\Teams" -Force
 New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Teams" -Name IsWVDEnvironment -PropertyType DWORD -Value 1 -Force
-Write-OutputWithTimeStamp "Enabled media optimizations for Teams"
+Write-OutputWithTimeStamp "Installing Microsoft Visual C++ Redistributables."
 $VCRedistInstaller = Start-Process -FilePath $vcRedistFile -ArgumentList "/install /quiet /norestart" -Wait -PassThru
 If ($($VCRedistInstaller.ExitCode) -eq 0 ) {
     Write-OutputWithTimeStamp "Installed the latest version of Microsoft Visual C++ Redistributable"

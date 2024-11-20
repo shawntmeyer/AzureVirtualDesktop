@@ -7,6 +7,10 @@ param(
 )
 $ErrorActionPreference = "Stop"
 
+If ($null -eq $Uri -or $Uri -eq '') {
+    $Uri = 'https://github.com/The-Virtual-Desktop-Team/Virtual-Desktop-Optimization-Tool/archive/refs/heads/main.zip'
+}
+
 function Write-OutputWithTimeStamp {
     param(
         [parameter(ValueFromPipeline=$True, Mandatory=$True, Position=0)]

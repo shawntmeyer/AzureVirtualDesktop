@@ -6,7 +6,7 @@ param location string = resourceGroup().location
 param artifactsContainerUri string
 param customizations array
 param logBlobContainerUri string
-param managementVmName string
+param orchestrationVmName string
 param imageVmName string
 param installFsLogix bool
 param fslogixSetupBlobName string
@@ -80,8 +80,8 @@ resource imageVm 'Microsoft.Compute/virtualMachines@2022-11-01' existing = {
   name: imageVmName
 }
 
-resource managementVm 'Microsoft.Compute/virtualMachines@2022-03-01' existing = {
-  name: managementVmName
+resource orchestrationVm 'Microsoft.Compute/virtualMachines@2022-03-01' existing = {
+  name: orchestrationVmName
 }
 
 resource createBuildDirs 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
@@ -195,7 +195,7 @@ resource fslogix 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = if
       }
       {
         name: 'Uri'
-        value: contains(fslogixSetupBlobName, '//:') ? fslogixSetupBlobName : '${artifactsContainerUri}/${fslogixSetupBlobName}'
+        value: !empty(artifactsContainerUri) ? '${artifactsContainerUri}/${fslogixSetupBlobName}' : ''
       }
     ])
     source: {
@@ -239,7 +239,7 @@ resource office 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if(
       }
       {
         name: 'Uri'
-        value: contains(officeDeploymentToolBlobName, '//:') ? officeDeploymentToolBlobName : '${artifactsContainerUri}/${officeDeploymentToolBlobName}'
+        value: !empty(artifactsContainerUri) ? '${artifactsContainerUri}/${officeDeploymentToolBlobName}' : ''
       }
     ])
     source: {
@@ -276,7 +276,7 @@ resource onedrive 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = i
       }
       {
         name: 'Uri'
-        value: contains(onedriveSetupBlobName, '//:') ? onedriveSetupBlobName : '${artifactsContainerUri}/${onedriveSetupBlobName}'
+        value: !empty(artifactsContainerUri) ? '${artifactsContainerUri}/${onedriveSetupBlobName}' : ''
       }
     ])
     source: {
@@ -314,7 +314,7 @@ resource teams 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (
       }      
       {
         name: 'Uri'
-        value: contains(teamsInstallerBlobName, '//:') ? teamsInstallerBlobName : '${artifactsContainerUri}/${teamsInstallerBlobName}'
+        value: !empty(artifactsContainerUri) ? '${artifactsContainerUri}/${teamsInstallerBlobName}' : ''
       }
       {
         name: 'TeamsCloudType'
@@ -339,7 +339,7 @@ resource teams 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (
 resource firstImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
   name: 'restart-vm-1'
   location: location
-  parent: managementVm
+  parent: orchestrationVm
   properties: {    
     asyncExecution: false
     parameters: restartVMParameters
@@ -401,7 +401,7 @@ resource microsoftUpdates 'Microsoft.Compute/virtualMachines/runCommands@2023-03
 resource secondImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if(installUpdates) {
   name: 'restart-vm-2'
   location: location
-  parent: managementVm
+  parent: orchestrationVm
   properties: {    
     asyncExecution: false
     parameters: restartVMParameters
@@ -436,7 +436,7 @@ resource vdot 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (i
       }
       {
         name: 'Uri'
-        value: contains(vDotBlobName, '//:') ? vDotBlobName : '${artifactsContainerUri}/${vDotBlobName}'
+        value: !empty(artifactsContainerUri) ? '${artifactsContainerUri}/${vDotBlobName}' : ''
       }
     ])
     source: {
@@ -453,7 +453,7 @@ resource vdot 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (i
 resource thirdImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (installVirtualDesktopOptimizationTool) {
   name: 'restart-vm-3'
   location: location
-  parent: managementVm
+  parent: orchestrationVm
   properties: {    
     asyncExecution: false
     parameters: restartVMParameters
