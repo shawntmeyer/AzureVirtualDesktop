@@ -124,7 +124,7 @@ Write-Output "`t`$ArtifactsContainerUrl = $ArtifactsContainerUrl"
 
 #region Download New Sources
 
-$downloadFilePath = (Join-Path -Path "$ArtifactsDir\..\data" -ChildPath "$downloadsParametersPrefix.downloads.parameters.json")
+$downloadFilePath = (Join-Path -Path "$PSScriptRoot\imageManagement\parameters" -ChildPath "$downloadsParametersPrefix.downloads.parameters.json")
 if ((!$SkipDownloadingNewSources) -and (Test-Path -Path $downloadFilePath)) {
     Write-Verbose "###########################################################################"
     Write-Verbose "## 2 - Download New Source Files into the artifacts Directory            ##"
