@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.31.92.45157",
-      "templateHash": "7661199654329058281"
+      "templateHash": "5433424611601541563"
     },
     "name": "Zero Trust Architecture Custom Windows Image Builder",
     "description": "This solution allows you to create a custom image much like Azure VM Image Builder, but utilizes zero trust architecture and does not require that service.",
@@ -866,7 +866,7 @@
     "imageVersionName": "[if(and(and(not(equals(parameters('imageMajorVersion'), -1)), not(equals(parameters('imageMajorVersion'), -1))), not(equals(parameters('imagePatch'), -1))), format('{0}.{1}.{2}', parameters('imageMajorVersion'), parameters('imageMinorVersion'), parameters('imagePatch')), variables('autoImageVersionName'))]",
     "imageVersionReplicationRegions": "[if(not(empty(parameters('imageVersionTargetRegions'))), parameters('imageVersionTargetRegions'), createArray(createObject('excludeFromLatest', parameters('imageVersionExcludeFromLatest'), 'name', if(not(empty(parameters('imageVersionDefaultRegion'))), parameters('imageVersionDefaultRegion'), parameters('location')), 'regionalReplicaCount', parameters('imageVersionDefaultReplicaCount'), 'storageAccountType', parameters('imageVersionDefaultStorageAccountType'))))]",
     "imageVmName": "[take(format('{0}vmimg-{1}', variables('depPrefix'), uniqueString(parameters('timeStamp'))), 15)]",
-    "orchestrationVmName": "[take(format('{0}vmmgt-{1}', variables('depPrefix'), uniqueString(parameters('timeStamp'))), 15)]"
+    "orchestrationVmName": "[take(format('{0}vmorch-{1}', variables('depPrefix'), uniqueString(parameters('timeStamp'))), 15)]"
   },
   "resources": [
     {

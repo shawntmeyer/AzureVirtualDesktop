@@ -1,7 +1,7 @@
 DownloadUrl = https://aka.ms/msrdcwebrtcsvc/msi
 Download File = RW1o9wm
 
-File                   : {Websocket.msi}
+File                   : {MsRdcWebRTCSvc.msi}
 UpgradeCode            : {66722E7E-5DF5-4C1D-841C-1BD9C36830CC}
 WixUIRMOption          : UseRM
 ALLUSERS               : 1

@@ -91,7 +91,7 @@ Write-Verbose "## 1 - Deploy/Update Storage Account and gather variables        
 Write-Verbose "###########################################################################"
 
 If ($DeployImageManagementResources) {
-    $BicepPath = $PSScriptRoot
+    $BicepPath = Join-Path -Path $PSScriptRoot -ChildPath 'imageManagement'
     $Template = (Get-ChildItem -Path $BicepPath -filter 'imageManagement.bicep').FullName
     $Parameters = (Get-ChildItem -Path (Join-Path -Path $BicepPath -ChildPath 'parameters') -Filter 'imagemanagement.parameters.json').FullName  
     Write-Output "Deploying Image Management Resources using BICEP template and parameter file."

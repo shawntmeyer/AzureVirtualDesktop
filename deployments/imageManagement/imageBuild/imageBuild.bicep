@@ -316,7 +316,7 @@ var imageVersionReplicationRegions = !empty(imageVersionTargetRegions)
     ]
 
 var imageVmName = take('${depPrefix}vmimg-${uniqueString(timeStamp)}', 15)
-var orchestrationVmName = take('${depPrefix}vmmgt-${uniqueString(timeStamp)}', 15)
+var orchestrationVmName = take('${depPrefix}vmorch-${uniqueString(timeStamp)}', 15)
 
 var securityType = galleryImageDefinitionSecurityType == 'TrustedLaunch'
   ? 'TrustedLaunch'
