@@ -66,7 +66,7 @@ module privateEndpointVnet '../common/VnetLocation.bicep' = if (privateEndpoint 
   }
 }
 
-module customerManagedKeys 'modules/customerManagedKeys.bicep' = if(keyManagementStorageAccounts != 'MicrosoftManaged') {
+module customerManagedKeys 'modules/customerManagedKeys.bicep' = if(storageSolution == 'AzureFiles' && keyManagementStorageAccounts != 'MicrosoftManaged') {
   name: 'CustomerManagedKeys_${timeStamp}'
   scope: resourceGroup(resourceGroupStorage)
   params: {
@@ -82,7 +82,6 @@ module customerManagedKeys 'modules/customerManagedKeys.bicep' = if(keyManagemen
     storageAccountNamePrefix: storageAccountNamePrefix
     storageCount: storageCount
     storageIndex: storageIndex
-    storageSolution: storageSolution
     tags: tags
     timeStamp: timeStamp
     userAssignedIdentityNameConv: userAssignedIdentityNameConv

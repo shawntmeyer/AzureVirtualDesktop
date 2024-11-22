@@ -323,8 +323,8 @@ var keyVaultNameIncreaseQuota = replace(keyVaultHPNameConv, 'TOKEN', 'saq-${take
 var keyVaultNameConvStorage = length(replace(
     replace(
       nameConvResTypeAtEnd
-        ? 'STORAGEACCOUNTNAME-${nameConvSuffix}'
-        : 'RESOURCETYPE-STORAGEACCOUNTNAME-${nameConvSuffix}',
+        ? 'cmk-STORAGEACCOUNTNAME-${nameConvSuffix}'
+        : 'RESOURCETYPE-cmk-STORAGEACCOUNTNAME-${nameConvSuffix}',
       'LOCATION',
       locations[locationVirtualMachines].abbreviation
     ),
@@ -335,8 +335,8 @@ var keyVaultNameConvStorage = length(replace(
       replace(
         replace(
           nameConvResTypeAtEnd
-            ? 'STORAGEACCOUNTNAME-${nameConvSuffix}'
-            : 'RESOURCETYPE-STORAGEACCOUNTNAME-${nameConvSuffix}',
+            ? 'cmk-STORAGEACCOUNTNAME-${nameConvSuffix}'
+            : 'RESOURCETYPE-cmk-STORAGEACCOUNTNAME-${nameConvSuffix}',
           'LOCATION',
           locations[locationVirtualMachines].abbreviation
         ),
@@ -349,8 +349,8 @@ var keyVaultNameConvStorage = length(replace(
   : replace(
       replace(
         nameConvResTypeAtEnd
-          ? 'STORAGEACCOUNTNAME-${nameConvSuffix}'
-          : 'RESOURCETYPE-STORAGEACCOUNTNAME-${nameConvSuffix}',
+          ? 'cmk-STORAGEACCOUNTNAME-${nameConvSuffix}'
+          : 'RESOURCETYPE-cmk-STORAGEACCOUNTNAME-${nameConvSuffix}',
         'LOCATION',
         locations[locationVirtualMachines].abbreviation
       ),

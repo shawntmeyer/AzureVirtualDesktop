@@ -497,7 +497,7 @@ resource privateDnsZoneGroup_functionApp 'Microsoft.Network/privateEndpoints/pri
   }
 }
 
-module roleAssignments_resourceGroups '../roleAssignment-ResourceGroup.bicep' = [
+module roleAssignments_resourceGroups '../../../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = [
   for i in range(0, length(resourceGroupRoleAssignments)): {
     name: 'set-role-assignment-${i}-${timeStamp}'
     scope: resourceGroup(resourceGroupRoleAssignments[i].scope)
