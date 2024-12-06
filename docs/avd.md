@@ -1,6 +1,7 @@
 # Azure Virtual Desktop
 
 <details><summary>Table of Contents</summmary>
+
 - [Azure Virtual Desktop](#azure-virtual-desktop)
   - [Scope](#scope)
     - [Solution](#solution)
@@ -106,6 +107,7 @@
     - [Private Endpoints](#private-endpoints)
     - [Service Endpoints](#service-endpoints)
     - [Tags](#tags)
+
 </details>
 
 ## Scope
@@ -884,10 +886,10 @@ If you plan to build custom images or to add custom software or run scripts duri
 
 The **deployments/Deploy-ImageManagement.ps1** script is the easiest way to ensure all necessary image management resources (scripts and installers and Compute Gallery for custom image option.) are present for the AVD deployment.
 
-1. Set required parameters and make any optional updates desired in **deployments/imageManagement/parameters/imageManagement.parameters.json** file.
-
 > [!Important]
 > For Zero Trust deployments and other details, see [image management parameters](#avd-image-management-parameters) for an explanation of all the available parameters.
+
+1. Set required parameters and make any optional updates desired in **deployments/imageManagement/parameters/imageManagement.parameters.json** file.
 
 1. **[Optional]** If you wish to add any custom scripts or installers beyond what is already included in the artifacts directory [../.common/artifacts], then gather your installers and create a new folder inside the artifacts directory for each customizer or application. In the folder create or place one and only one PowerShell script (.ps1) that installs the application or performs the desired customization. For an example of the installation script and supporting files, see the *.common/artifacts/VSCode* folder. These customizations can be applied to the custom image via the [customizations] parameter.
 
