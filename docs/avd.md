@@ -867,7 +867,7 @@ Use the following steps to complete this prerequisite.
    Install-Module -Name Microsoft.Graph -AllowClobber -Force -Scope CurrentUser
    ```
 
-2. From the same PowerShell (or pwsh) console, execute the following PowerShell commands replacing "your tenant ID" with the correct value.
+1. From the same PowerShell (or pwsh) console, execute the following PowerShell commands replacing "your tenant ID" with the correct value.
 
    ``` powershell
    Connect-Graph -Tenant "your tenant ID" Application.ReadWrite.All
@@ -884,25 +884,28 @@ If you plan to build custom images or to add custom software or run scripts duri
 
 The **deployments/Deploy-ImageManagement.ps1** script is the easiest way to ensure all necessary image management resources (scripts and installers and Compute Gallery for custom image option.) are present for the AVD deployment.
 
-1. Set required parameters and make any optional updates desired in **deployments/imageManagement/parameters/imageManagement.parameters.json** file. **Important**: For Zero Trust deployments and other details, see [image management parameters](#avd-image-management-parameters) for an explanation of all the available parameters.
+1. Set required parameters and make any optional updates desired in **deployments/imageManagement/parameters/imageManagement.parameters.json** file.
 
-2. **[Optional]** If you wish to add any custom scripts or installers beyond what is already included in the artifacts directory [../.common/artifacts], then gather your installers and create a new folder inside the artifacts directory for each customizer or application. In the folder create or place one and only one PowerShell script (.ps1) that installs the application or performs the desired customization. For an example of the installation script and supporting files, see the *.common/artifacts/VSCode* folder. These customizations can be applied to the custom image via the [customizations] parameter.
+> [!Important]
+> For Zero Trust deployments and other details, see [image management parameters](#avd-image-management-parameters) for an explanation of all the available parameters.
 
-3. **[Optional]** The `DownloadNewSources` switch parameter determines if the script downloads the latest installers (or other files) from the Internet (or other network) to enable an "evergreen" capability that helps you keep your images and session hosts up to date. If you wish to use this capability, update the Urls specified in the *.common/artifacts/downloads/parameters.json* file to match your network environment. You can also not depend on this automated capability and add source files directly to the appropriate location in the artifacts directory *.common/artifacts*. This directory is processed by zipping the contents of each child directory into a zip file and then all existing files in the root plus the zip files are added to the blob storage container in the Storage Account.
+1. **[Optional]** If you wish to add any custom scripts or installers beyond what is already included in the artifacts directory [../.common/artifacts], then gather your installers and create a new folder inside the artifacts directory for each customizer or application. In the folder create or place one and only one PowerShell script (.ps1) that installs the application or performs the desired customization. For an example of the installation script and supporting files, see the *.common/artifacts/VSCode* folder. These customizations can be applied to the custom image via the [customizations] parameter.
 
-4. Open the PowerShell version where you installed the Az module above. If not already connected to your Azure Environment, then connect to the correct Azure Environment where "\<Environment\>" equals "AzureCloud", "AzureUSGovernment", "USNat", or "USSec".
+1. **[Optional]** The `DownloadNewSources` switch parameter determines if the script downloads the latest installers (or other files) from the Internet (or other network) to enable an "evergreen" capability that helps you keep your images and session hosts up to date. If you wish to use this capability, update the Urls specified in the *.common/artifacts/downloads/parameters.json* file to match your network environment. You can also not depend on this automated capability and add source files directly to the appropriate location in the artifacts directory *.common/artifacts*. This directory is processed by zipping the contents of each child directory into a zip file and then all existing files in the root plus the zip files are added to the blob storage container in the Storage Account.
+
+1. Open the PowerShell version where you installed the Az module above. If not already connected to your Azure Environment, then connect to the correct Azure Environment where "\<Environment\>" equals "AzureCloud", "AzureUSGovernment", "USNat", or "USSec".
 
     ``` powershell
     Connect-AzAccount -Environment <Environment>
     ```
 
-5. Ensure that your context is configured with the subscription to where you want to deploy the image management resources.
+1. Ensure that your context is configured with the subscription to where you want to deploy the image management resources.
 
     ``` powershell
     Set-AzContext -Subscription <subscriptionID>
     ```
 
-6. Change directories to the **deployments** folder and execute the **Deploy-ImageManagement.ps1** script as follows:
+1. Change directories to the **deployments** folder and execute the **Deploy-ImageManagement.ps1** script as follows:
 
     ``` powershell
     .\Deploy-ImageManagement.ps1 -DeployImageManagementResources -Location <Region> [-SkipDownloadingNewSources] [-TempDir <Temp directory for artifacts>] [-DeleteExistingBlobs] [-TeamsTenantType <TeamsTenantType>]
@@ -964,7 +967,8 @@ This deployment can be done via Command Line or through a Template Spec UI in th
 
 The AVD solution includes all necessary resources to deploy a usable virtual desktop experience within Azure. This includes a host pool, application group, virtual machine(s) as well as other auxilary resources such as monitoring and profile management.
 
->**Important**: When choosing the settings for the source image, make sure that all settings are compatible or the build may fail. For example, choose a VM size that is compatible with the storage type (ie. Premium_LRS)
+> [!Important]
+> When choosing the settings for the source image, make sure that all settings are compatible or the build may fail. For example, choose a VM size that is compatible with the storage type (ie. Premium_LRS)
 
 **Option 1: Using Command Line**
 
@@ -1555,7 +1559,8 @@ This instance deploys a scaling plan and associates it with the host pool.
 
 This example shows a deployment to Azure US Government Regions which are IL4 that meets the isolation guidelines for IL5 workloads. This deployment includes Dedicated Hosts and Customer Managed Keys for the Virtual Machines and FSLogix Storage Accounts.
 
->**Note:** The `virtualMachineSize` must be compatible with the Dedicated Host (or one of the Dedicated Hosts in the Dedicated Host Group).
+> [!Note]
+> The `virtualMachineSize` must be compatible with the Dedicated Host (or one of the Dedicated Hosts in the Dedicated Host Group).
 
 ```json
 {
@@ -1727,7 +1732,8 @@ This instance builds an AVD image from the latest Windows AVD SKU without Office
 
 This instance builds an image that has LGPO and VS Code installed.
 
->**Note**: The blobName is case sensitive.
+> [!Warning]
+> The blobName is case sensitive.
 
 ```json
 {
@@ -1973,7 +1979,8 @@ This instance deploys the storage account with private endpoints to meet Zero Tr
 
 This instance deploys the storage account with service endpoints and additionally allows a public ip range.
 
->**Note**: This configuration does not meet Zero Trust requirements, but it is more secure than not configuring the storage account firewall when enabling public access.
+> [!Note]
+> This configuration does not meet Zero Trust requirements, but it is more secure than not configuring the storage account firewall when enabling public access.
 
 ```json
 {
