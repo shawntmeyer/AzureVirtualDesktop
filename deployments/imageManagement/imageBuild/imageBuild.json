@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.31.92.45157",
-      "templateHash": "352167200620371465"
+      "templateHash": "3009735618747743468"
     },
     "name": "Zero Trust Architecture Custom Windows Image Builder",
     "description": "This solution allows you to create a custom image much like Azure VM Image Builder, but utilizes zero trust architecture and does not require that service.",
@@ -1377,11 +1377,8 @@
             "_generator": {
               "name": "bicep",
               "version": "0.31.92.45157",
-              "templateHash": "8330803780857420148"
-            },
-            "name": "Role Assignments (Resource Group scope)",
-            "description": "This module deploys a Role Assignment at a Resource Group scope.",
-            "owner": "Azure/module-maintainers"
+              "templateHash": "7864079299827052609"
+            }
           },
           "parameters": {
             "roleDefinitionId": {
@@ -1408,37 +1405,6 @@
               "defaultValue": "[subscription().subscriptionId]",
               "metadata": {
                 "description": "Optional. Subscription ID of the subscription to assign the RBAC role to. If not provided, will use the current scope for deployment."
-              }
-            },
-            "description": {
-              "type": "string",
-              "defaultValue": "",
-              "metadata": {
-                "description": "Optional. The description of the role assignment."
-              }
-            },
-            "delegatedManagedIdentityResourceId": {
-              "type": "string",
-              "defaultValue": "",
-              "metadata": {
-                "description": "Optional. ID of the delegated managed identity resource."
-              }
-            },
-            "condition": {
-              "type": "string",
-              "defaultValue": "",
-              "metadata": {
-                "description": "Optional. The conditions on the role assignment. This limits the resources it can be assigned to."
-              }
-            },
-            "conditionVersion": {
-              "type": "string",
-              "defaultValue": "2.0",
-              "allowedValues": [
-                "2.0"
-              ],
-              "metadata": {
-                "description": "Optional. Version of the condition. Currently accepted value is \"2.0\"."
               }
             },
             "principalType": {
@@ -1468,49 +1434,14 @@
               "properties": {
                 "roleDefinitionId": "[variables('roleDefinitionIdVar')]",
                 "principalId": "[parameters('principalId')]",
-                "description": "[if(not(empty(parameters('description'))), parameters('description'), null())]",
-                "principalType": "[if(not(empty(parameters('principalType'))), parameters('principalType'), null())]",
-                "delegatedManagedIdentityResourceId": "[if(not(empty(parameters('delegatedManagedIdentityResourceId'))), parameters('delegatedManagedIdentityResourceId'), null())]",
-                "conditionVersion": "[if(and(not(empty(parameters('conditionVersion'))), not(empty(parameters('condition')))), parameters('conditionVersion'), null())]",
-                "condition": "[if(not(empty(parameters('condition'))), parameters('condition'), null())]"
+                "principalType": "[if(not(empty(parameters('principalType'))), parameters('principalType'), null())]"
               }
             }
           ],
           "outputs": {
-            "name": {
-              "type": "string",
-              "metadata": {
-                "description": "The GUID of the Role Assignment."
-              },
-              "value": "[guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId'))]"
-            },
             "resourceId": {
               "type": "string",
-              "metadata": {
-                "description": "The resource ID of the Role Assignment."
-              },
               "value": "[resourceId('Microsoft.Authorization/roleAssignments', guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId')))]"
-            },
-            "resourceGroupName": {
-              "type": "string",
-              "metadata": {
-                "description": "The name of the resource group the role assignment was applied at."
-              },
-              "value": "[resourceGroup().name]"
-            },
-            "scope": {
-              "type": "string",
-              "metadata": {
-                "description": "The scope this Role Assignment applies to."
-              },
-              "value": "[resourceGroup().id]"
-            },
-            "roleDefinitionId": {
-              "type": "string",
-              "metadata": {
-                "description": "The role Definition Id of the Role Assignment."
-              },
-              "value": "[reference(resourceId('Microsoft.Authorization/roleAssignments', guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId'))), '2022-04-01').roleDefinitionId]"
             }
           }
         }
@@ -4354,11 +4285,8 @@
             "_generator": {
               "name": "bicep",
               "version": "0.31.92.45157",
-              "templateHash": "8330803780857420148"
-            },
-            "name": "Role Assignments (Resource Group scope)",
-            "description": "This module deploys a Role Assignment at a Resource Group scope.",
-            "owner": "Azure/module-maintainers"
+              "templateHash": "7864079299827052609"
+            }
           },
           "parameters": {
             "roleDefinitionId": {
@@ -4385,37 +4313,6 @@
               "defaultValue": "[subscription().subscriptionId]",
               "metadata": {
                 "description": "Optional. Subscription ID of the subscription to assign the RBAC role to. If not provided, will use the current scope for deployment."
-              }
-            },
-            "description": {
-              "type": "string",
-              "defaultValue": "",
-              "metadata": {
-                "description": "Optional. The description of the role assignment."
-              }
-            },
-            "delegatedManagedIdentityResourceId": {
-              "type": "string",
-              "defaultValue": "",
-              "metadata": {
-                "description": "Optional. ID of the delegated managed identity resource."
-              }
-            },
-            "condition": {
-              "type": "string",
-              "defaultValue": "",
-              "metadata": {
-                "description": "Optional. The conditions on the role assignment. This limits the resources it can be assigned to."
-              }
-            },
-            "conditionVersion": {
-              "type": "string",
-              "defaultValue": "2.0",
-              "allowedValues": [
-                "2.0"
-              ],
-              "metadata": {
-                "description": "Optional. Version of the condition. Currently accepted value is \"2.0\"."
               }
             },
             "principalType": {
@@ -4445,49 +4342,14 @@
               "properties": {
                 "roleDefinitionId": "[variables('roleDefinitionIdVar')]",
                 "principalId": "[parameters('principalId')]",
-                "description": "[if(not(empty(parameters('description'))), parameters('description'), null())]",
-                "principalType": "[if(not(empty(parameters('principalType'))), parameters('principalType'), null())]",
-                "delegatedManagedIdentityResourceId": "[if(not(empty(parameters('delegatedManagedIdentityResourceId'))), parameters('delegatedManagedIdentityResourceId'), null())]",
-                "conditionVersion": "[if(and(not(empty(parameters('conditionVersion'))), not(empty(parameters('condition')))), parameters('conditionVersion'), null())]",
-                "condition": "[if(not(empty(parameters('condition'))), parameters('condition'), null())]"
+                "principalType": "[if(not(empty(parameters('principalType'))), parameters('principalType'), null())]"
               }
             }
           ],
           "outputs": {
-            "name": {
-              "type": "string",
-              "metadata": {
-                "description": "The GUID of the Role Assignment."
-              },
-              "value": "[guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId'))]"
-            },
             "resourceId": {
               "type": "string",
-              "metadata": {
-                "description": "The resource ID of the Role Assignment."
-              },
               "value": "[resourceId('Microsoft.Authorization/roleAssignments', guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId')))]"
-            },
-            "resourceGroupName": {
-              "type": "string",
-              "metadata": {
-                "description": "The name of the resource group the role assignment was applied at."
-              },
-              "value": "[resourceGroup().name]"
-            },
-            "scope": {
-              "type": "string",
-              "metadata": {
-                "description": "The scope this Role Assignment applies to."
-              },
-              "value": "[resourceGroup().id]"
-            },
-            "roleDefinitionId": {
-              "type": "string",
-              "metadata": {
-                "description": "The role Definition Id of the Role Assignment."
-              },
-              "value": "[reference(resourceId('Microsoft.Authorization/roleAssignments', guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId'))), '2022-04-01').roleDefinitionId]"
             }
           }
         }

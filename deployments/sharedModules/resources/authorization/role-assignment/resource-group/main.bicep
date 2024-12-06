@@ -33,3 +33,5 @@ resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
     principalType: !empty(principalType) ? any(principalType) : null
   }
 }
+
+output resourceId string = roleAssignment.id

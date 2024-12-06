@@ -24,7 +24,6 @@ var diskEncryptionSetEncryptionType = confidentialVMOSDiskEncryption
   : (!contains(keyManagementDisks, 'Platform')
       ? 'EncryptionAtRestWithCustomerKey'
       : 'EncryptionAtRestWithPlatformAndCustomerKeys')
-    
 
 module KeyVault '../../../../sharedModules/resources/key-vault/vault/main.bicep' = {
   name: 'Encryption_KeyVault_${timeStamp}'
@@ -128,17 +127,6 @@ module set_confidentialVM_key_disks '../../../../sharedModules/resources/compute
     virtualMachineName: deploymentVirtualMachineName  
   }
 }
-
-/*
-module userAssignedIdentity '../../../../sharedModules/resources/managed-identity/user-assigned-identity/main.bicep' = {
-  name: 'UAI_Encryption_${timeStamp}'
-  params: {
-    location: location
-    name: replace(userAssignedIdentityNameConv, 'TOKEN', 'os-disk-encryption')
-    tags: union({'cm-resource-parent': hostPoolResourceId}, tags[?'Microsoft.ManagedIdentity/userAssignedIdentities'] ?? {})
-  }
-}
-*/
 
 module roleAssignment_ConfVMOrchestrator_EncryptUser '../../../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = if (confidentialVMOSDiskEncryption) {
   name: 'RoleAssignment_ConfVMOrchestrator_EncryptUser_${timeStamp}'

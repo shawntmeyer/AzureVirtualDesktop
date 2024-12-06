@@ -59,13 +59,6 @@ param timeStamp string
 param timeZone string
 param userAssignedIdentityNameConv string
 
-module privateEndpointVnet '../common/VnetLocation.bicep' = if (privateEndpoint && !empty(privateEndpointSubnetResourceId)) {
-  name: 'PrivateEndpointVnet_${timeStamp}'
-  params: {
-    privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
-  }
-}
-
 module customerManagedKeys 'modules/customerManagedKeys.bicep' = if(storageSolution == 'AzureFiles' && keyManagementStorageAccounts != 'MicrosoftManaged') {
   name: 'CustomerManagedKeys_${timeStamp}'
   scope: resourceGroup(resourceGroupStorage)
@@ -75,6 +68,7 @@ module customerManagedKeys 'modules/customerManagedKeys.bicep' = if(storageSolut
     hostPoolResourceId: hostPoolResourceId
     keyManagementStorageAccounts: keyManagementStorageAccounts
     location: location
+    logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
     privateEndpoint: privateEndpoint
     privateEndpointNICNameConv: privateEndpointNICNameConv
     privateEndpointNameConv: privateEndpointNameConv
@@ -154,7 +148,7 @@ module azureFiles 'modules/azureFiles.bicep' = if (storageSolution == 'AzureFile
     deploymentVirtualMachineName: deploymentVirtualMachineName
     ouPath: ouPath
     privateEndpoint: privateEndpoint
-    privateEndpointLocation: privateEndpoint && !empty(privateEndpointSubnetResourceId) ? privateEndpointVnet.outputs.location : ''
+    privateEndpointLocation: privateEndpoint && !empty(privateEndpointSubnetResourceId) ? reference(split(privateEndpointSubnetResourceId, '/subnets/')[0], '2020-06-01', 'Full').location : ''
     privateEndpointNameConv: privateEndpointNameConv
     privateEndpointNICNameConv: privateEndpointNICNameConv
     privateEndpointSubnetResourceId: privateEndpointSubnetResourceId

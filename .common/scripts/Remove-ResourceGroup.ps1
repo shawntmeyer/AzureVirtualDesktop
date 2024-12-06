@@ -34,8 +34,6 @@ Try {
     If ($StopWatch.Elapsed.TotalSeconds -lt 30) {
         Start-Sleep -Seconds (30 - $StopWatch.Elapsed.TotalSeconds)
     }
-
-    # Delete the Management VM
     Invoke-RestMethod -Headers $AzureManagementHeader -Method 'DELETE' -Uri $($ResourceManagerUriFixed + $ResourceGroupResourceId + '?forceDeletionTypes=Microsoft.Compute/virtualMachines&api-version=2021-04-01')
 }
 catch {

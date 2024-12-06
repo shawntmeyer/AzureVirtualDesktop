@@ -39,25 +39,25 @@ var deploymentUserAssignedIdentityName = replace(userAssignedIdentityNameConv, '
 var roleAssignmentsControlPlane = [
   {
     roleDefinitionId: roleDefinitions.DesktopVirtualizationApplicationGroupContributor // (Purpose: updates the friendly name for the desktop)
-    depName: 'DVAppGroupCont-ControlPlane'
+    depName: 'ControlPlane-DVAppGroupCont'
     resourceGroup: resourceGroupControlPlane
     subscription: subscription().subscriptionId
   }
   {
     roleDefinitionId: roleDefinitions.DesktopVirtualizationSessionHostOperator // (Purpose: sets drain mode on the AVD session hosts)
-    depName: 'DVSessionHostOp-ControlPlane'
+    depName: 'ControlPlane-DVSessionHostOp'
     resourceGroup: resourceGroupControlPlane
     subscription: subscription().subscriptionId
   }
   {
     roleDefinitionId: roleDefinitions.DesktopVirtualizationWorkspaceContributor // (Purpose: update the app group references on an existing feed workspace)
-    depName: 'DVWorkspaceCont-ControlPlane'
+    depName: 'ControlPlane-DVWorkspaceCont'
     resourceGroup: resourceGroupControlPlane
     subscription: subscription().subscriptionId
   }
   {
     roleDefinitionId: roleDefinitions.RoleBasedAccessControlAdministrator // (Purpose: remove the control plane role assignments for the deployment identity. This role Assignment must remain last in the list.)
-    depName: 'RBACAdmin-ControlPlane'
+    depName: 'ControlPlane-RBACAdmin'
     resourceGroup: resourceGroupControlPlane
     subscription: subscription().subscriptionId
   }
@@ -67,13 +67,13 @@ var roleAssignmentsHosts = union(
   [
     {
       roleDefinitionId: roleDefinitions.VirtualMachineContributor // (Purpose: remove the run commands from the host VMs)
-      depName: 'VMCont-Hosts'
+      depName: 'Hosts-VMCont'
       resourceGroup: resourceGroupHosts
       subscription: subscription().subscriptionId
     }
     {
       roleDefinitionId: roleDefinitions.RoleBasedAccessControlAdministrator // (Purpose: remove the hosts rsource group role assignment for the deployment identity. This role Assignment must remain last in the list.)
-      depName: 'RBACAdmin-Hosts'
+      depName: 'Hosts-RBACAdmin'
       resourceGroup: resourceGroupHosts
       subscription: subscription().subscriptionId
     }
@@ -82,7 +82,7 @@ var roleAssignmentsHosts = union(
     ? [
         {
           roleDefinitionId: roleDefinitions.KeyVaultCryptoOfficer // (Purpose: Retrieve the customer managed keys from the key vault for idempotent deployment)
-          depName: 'KVCryptoOff-Management'
+          depName: 'Hosts-KVCryptoOff'
           resourceGroup: resourceGroupHosts
           subscription: subscription().subscriptionId
         }
@@ -93,7 +93,7 @@ var roleAssignmentsHosts = union(
 var roleAssignmentsDeployment = [
   {
     roleDefinitionId: roleDefinitions.Contributor // (Purpose: remove the deployment resource group during cleanup as there won't be any resources within.)
-    depName: 'Cont-Deployment'
+    depName: 'Deployment-Cont'
     resourceGroup: resourceGroupDeployment
     subscription: subscription().subscriptionId
   }
@@ -103,13 +103,13 @@ var roleAssignmentStorage = fslogix && contains(identitySolution, 'DomainService
   ? [
       {
         roleDefinitionId: roleDefinitions.StorageAccountContributor // (Purpose: domain join storage account & set NTFS permissions on the file share)
-        depName: 'StorageAcctCont-Storage'
+        depName: 'Storage-StorageAcctCont'
         resourceGroup: resourceGroupStorage
         subscription: subscription().subscriptionId
       }
       {
         roleDefinitionId: roleDefinitions.RoleBasedAccessControlAdministrator // (Purpose: remove the control plane role assignments for the deployment identity. This role assignment must remain last in the list.)
-        depName: 'RBACAdmin-Storage'
+        depName: 'Storage-RBACAdmin'
         resourceGroup: resourceGroupStorage
         subscription: subscription().subscriptionId
       }

@@ -1,9 +1,6 @@
 # Azure Virtual Desktop
 
-<details>
-
-<summary>Table of Contents</summmary>
-
+<details><summary>Table of Contents</summmary>
 - [Azure Virtual Desktop](#azure-virtual-desktop)
   - [Scope](#scope)
     - [Solution](#solution)
@@ -109,7 +106,6 @@
     - [Private Endpoints](#private-endpoints)
     - [Service Endpoints](#service-endpoints)
     - [Tags](#tags)
-
 </details>
 
 ## Scope
@@ -342,7 +338,7 @@ Azure Files and Azure NetApp Files are the only two SMB storage services availab
 **Reference:** [FSLogix - Microsoft Docs](https://docs.microsoft.com/en-us/fslogix/overview)
 
 In addition to the optional deployment of resources, you can choose to configure the registry of session host VMs with the proper registry settings to support each of these container types whether or not the resources are deployed. In addition, if you choose one of the Cloud Cache options, you can provide storage accounts in remote regions to support an active/active Business Continuity and disaster recovery configuration as documented at https://learn.microsoft.com/en-us/fslogix/concepts-container-recovery-business-continuity#option-3-cloud-cache-active--active.
- 
+
 **Deployed Resources:**
 
 - Azure Storage Account (Optional)
@@ -507,6 +503,7 @@ The diagram below highlights how the resource groups are created based on the pa
 ![ResourceGroupNaming](images/ResourceGroupNaming.png)
 
 The diagram illustrates the following resource group distribution. In the table below, the example names are utilizing the following parameter values:
+
 - **identifier**: 'hr'
 - **index**: '01', '02'
 - locationVirtualMachines (determined by **virtualMachineSubnetResourceId** location): 'USGovVirginia'
@@ -704,11 +701,11 @@ A template spec is a resource type for storing an Azure Resource Manager templat
 
 Template specs provide the following benefits:
 
-* You use standard ARM templates for your template spec.
-* You manage access through Azure RBAC, rather than SAS tokens.
-* Users can deploy the template spec without having write access to the template.
-* You can integrate the template spec into existing deployment process, such as PowerShell script or DevOps pipeline.
-* You can generate custom portal forms for ease of use and understanding.
+- You use standard ARM templates for your template spec.
+- You manage access through Azure RBAC, rather than SAS tokens.
+- Users can deploy the template spec without having write access to the template.
+- You can integrate the template spec into existing deployment process, such as PowerShell script or DevOps pipeline.
+- You can generate custom portal forms for ease of use and understanding.
 
 For more information see [Template-Specs | Microsoft Learn](https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-specs?tabs=azure-powershell) and [Portal Forms for Template Specs](https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-specs-create-portal-forms).
 
@@ -1216,13 +1213,13 @@ You might need to clear out the bicep exe which is located in the %USERPROFILE%.
 | `diskSizeGB` | The size of the session host OS disks. When set to 0, it defaults to the image size. | int | 0<br/>32<br/>64<br/>128<br/>256<br/>512<br/>1024<br/>2048<br/> | 0 |
 | `enableAcceleratedNetworking` | Determines whether or not to enable accelerated networking on the session host vms. | bool | true<br/>false | true | 
 | `existingFeedWorkspaceResourceId` | The resource Id of an existing AVD Workspace that you want to update with the new application group reference for the desktop application group. This parameter is required when deploying additional host pools to the same region and using the same businessUnitIdentifier or the workspace application groups will be overwritten with only the new application group reference. | string | valid resource id | '' |
-| `fslogixAdminGroups ` |  An array of objects, defining the administrator groups who will be granted full control access to the FSLogix share. The groups must exist in AD and Entra.<br/>Each object must include the following key value pairs:<br/>- 'displayName': The display name of the security group.<br/>- 'objectId': The Object ID of the security group. | array (of objects) | [{"displayName":"EntraGroupDisplayName","objectId":"guid"}] | [] |
+| `fslogixAdminGroups` |  An array of objects, defining the administrator groups who will be granted full control access to the FSLogix share. The groups must exist in AD and Entra.<br/>Each object must include the following key value pairs:<br/>- 'displayName': The display name of the security group.<br/>- 'objectId': The Object ID of the security group. | array (of objects) | [{"displayName":"EntraGroupDisplayName","objectId":"guid"}] | [] |
 | `fslogixEXistingLocalNetAppVolumeResourceIds` | Existing local (in the same region as the session host VMs) NetApp Files Volume Resource Ids. If Office Containers are used, then list the FSLogix Profile Container Volume first and the Office Container Volume second. Only used when `deployFSLogixStorage` = 'false', `fslogixConfigureSessionHosts` = 'true' and `fslogixStorageService` contains 'AzureNetAppFiles'. | array | [] |
 | `fslogixEXistingLocalStorageAccountResourceIds` | Existing local (in the same region as the session host VMs) Azure Storage account Resource Ids. Only used when `deployFSLogixStorage` = 'false', `fslogixConfigureSessionHosts` = 'true' and `fslogixStorageService` contains 'AzureFilesFiles'. | array | [] |
 | `fslogixEXistingRemoteNetAppVolumeResourceIds` | Existing remote (not in the same region as the session host VMs) NetApp Files Volume Resource Ids. If Office Containers are used, then list the FSLogix Profile Container Volume first and the Office Container Volume second. Only used when `fslogixConfigureSessionHosts` = 'true', `fslogixContainerType` contains 'CloudCache' and `fslogixStorageService` contains 'AzureNetAppFiles'. | array | [] |
 | `fslogixEXistingRemoteStorageAccountResourceIds` | Existing remote (not in the same region as the session host VMs) Azure Storage Account Resource Ids. Only used when `fslogixConfigureSessionHosts` = 'true', `fslogixContainerType` contains 'CloudCache' and `fslogixStorageService` contains 'AzureFiles'. | array | [] |
 | `fslogixShardOptions` |  Determines whether or not to Shard Azure Files Storage by deploying more than one storage account, and if so how the Session Hosts are Configured.<br/>If 'None' is selected, then no sharding is performed and only 1 storage account is deployed when deploying storage accounts.<br/>If 'ShardOSS' is selected, then the fslogixShardGroups are used to assign share permissions and configure the session hosts with Object Specific Settings.<br/>If 'ShardPerms' is selected, then storage account permissions are assigned based on the groups defined in `appGroupSecurityGroups` or `fslogixUserGroups`. | string | 'None'<br/>'ShardPerms'<br/>'ShardOSS' | 'None' |
-| `fslogixUserGroups ` |  An array of objects, defining the user groups who will be granted full control access to the FSLogix share. For `fslogixShardOptions`='ShardOSS' or `fslogixStorageService` contains 'AzureNetAppFiles' the groups must exist in AD and Entra. Otherwise, they can be Entra ID only groups.<br/>Each object must include the following key value pairs:<br/>- 'displayName': The display name of the security group.<br/>- 'objectId': The Object ID of the security group. | array (of objects) | [{"displayName":"EntraGroupDisplayName","objectId":"guid"}] | [] |
+| `fslogixUserGroups` |  An array of objects, defining the user groups who will be granted full control access to the FSLogix share. For `fslogixShardOptions`='ShardOSS' or `fslogixStorageService` contains 'AzureNetAppFiles' the groups must exist in AD and Entra. Otherwise, they can be Entra ID only groups.<br/>Each object must include the following key value pairs:<br/>- 'displayName': The display name of the security group.<br/>- 'objectId': The Object ID of the security group. | array (of objects) | [{"displayName":"EntraGroupDisplayName","objectId":"guid"}] | [] |
 | `scalingPlanExclusionTag` | The tag used to exclude virtual machines from the scaling plan. | string | | '' |
 | `desktopFriendlyName` | The friendly name for the Desktop in the AVD workspace. | string | | '' |
 | `workspaceFriendlyName` | The friendly name of the AVD Workspace. This name is displayed in the AVD client. | string | | '' |
@@ -1294,7 +1291,7 @@ This instance deploys an AVD host pool with default values.
         "avdObjectId": {
             "value": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
         },
-        "hostPoolIdentifier": {
+        "identifier": {
             "value": "admin"
         },
         "identitySolution": {
@@ -1329,7 +1326,7 @@ This example shows a Zero Trust Compliant host pool that includes AVD Private Li
         "avdObjectId": {
             "value": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
         },
-        "hostPoolIdentifier": {
+        "identifier": {
             "value": "admin"
         },
         "identitySolution": {
@@ -1420,7 +1417,7 @@ This example deploys an AVD host pool with Virtual Machines joined to an Active 
         "avdObjectId": {
             "value": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
         },
-        "hostPoolIdentifier": {
+        "identifier": {
             "value": "admin"
         },
         // must use Domain Services to Shard Storage
@@ -1497,7 +1494,7 @@ This instance deploys a scaling plan and associates it with the host pool.
         "artifactsStorageAccountResourceId": {
             "value": "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/rg-avd-image-management-use/providers/Microsoft.Storage/storageAccounts/saimageassetsusexj5oy5dp"
         },
-        "hostPoolIdentifier": {
+        "identifier": {
             "value": "admin"
         },
         "identitySolution": {
@@ -1569,7 +1566,7 @@ This example shows a deployment to Azure US Government Regions which are IL4 tha
         "avdObjectId": {
             "value": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
         },
-        "hostPoolIdentifier": {
+        "identifier": {
             "value": "IL5"
         },
         "identitySolution": {
