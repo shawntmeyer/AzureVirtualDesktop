@@ -14,7 +14,7 @@
 							"type": "Microsoft.Common.InfoBox",
 							"visible": true,
 							"options": {
-								"icon": "Info",
+								"style": "Info",
 								"text": "This solution will deploy a fully functional Azure Virtual Desktop Hostpool with associated resources. The resources deployed are dependent upon your choices within the form. All resources and resource groups are named in accordance with Cloud Adoption Framework (CAF) naming standards.",
 								"uri": "https://www.github.com/shawntmeyer/azurevirtualdesktop"
 							}
@@ -69,7 +69,7 @@
 									"type": "Microsoft.Common.InfoBox",
 									"visible": "[not(equals(steps('basics').prereqs.desktopVirtualizationProviderApi.registrationState, 'Registered'))]",
 									"options": {
-										"icon": "Error",
+										"style": "Error",
 										"text": "The Desktop Virtualization Resource Provider is not registered. Follow the instructions in the link to register the resource provider",
 										"uri": "https://learn.microsoft.com/en-us/azure/virtual-desktop/prerequisites?tabs=portal"
 									}
@@ -271,7 +271,7 @@
 									"type": "Microsoft.Common.InfoBox",
 									"visible": "[equals(steps('controlPlane').workspace.createOption, 'new')]",
 									"options": {
-										"icon": "Warning",
+										"style": "Warning",
 										"text": "When you choose create to create a new workspace this solution will overwrite any existing application group references <u>if the workspace already exists</u>. This could cause an outage if existing hostpools and application groups are already registered with this workspace."
 									}
 								},
@@ -1103,7 +1103,7 @@
 									"type": "Microsoft.Common.InfoBox",
 									"visible": "[and(not(equals(steps('basics').prereqs.encryptionAtHostFeatureApi.properties.state, 'Registered')), steps('hosts').diskEncryption.encryptionAtHost)]",
 									"options": {
-										"icon": "Error",
+										"style": "Error",
 										"text": "The 'Encryption At Host' feature is not registered in your subscription. Follow the guidance at this link to enable the feature and restart the deployment.",
 										"uri": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-enable-host-based-encryption-portal?tabs=azure-powershell"
 									}
@@ -1153,7 +1153,7 @@
 									"type": "Microsoft.Common.InfoBox",
 									"visible": "[and( steps('hosts').diskEncryption.confidentialVMOSDiskEncryption, equals(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged') )]",
 									"options": {
-										"icon": "Warning",
+										"style": "Warning",
 										"text": "You must have completed the prerequistes to support Confidential VM Disk Encryption.",
 										"uri": "https://learn.microsoft.com/en-us/azure/confidential-computing/quick-create-confidential-vm-portal#prerequisites"
 									}
@@ -2147,7 +2147,7 @@
 									"type": "Microsoft.Common.InfoBox",
 									"visible": "[and(not(empty(steps('userProfiles').azureNetAppFiles.virtualNetwork)), empty(map(filter(steps('userProfiles').azureNetAppFiles.subnetsApi.value, (snet) => equals(first(map(snet.properties.delegations, (del) => del.properties.serviceName)), 'Microsoft.NetApp/volumes')), (snet) => snet.name)))]",
 									"options": {
-										"icon": "Error",
+										"style": "Error",
 										"text": "There are no subnets in the virtual network chosen above that are delegated to the 'Microsoft.Netapp/volumes' service. You must either select another network (or region on the basics page) or create a subnet in the chosen virtual network and delegate it to 'Microsoft.Netapp/volumes', and then restart this deployment."
 									}
 								},
@@ -2444,7 +2444,7 @@
 									"type": "Microsoft.Common.InfoBox",
 									"visible": "[and(or(steps('userProfiles').configureSessionHosts, steps('userProfiles').deployStorage), not(equals(steps('hosts').identity.solution, 'EntraId')))]",
 									"options": {
-										"icon": "Info",
+										"style": "Info",
 										"text": "If you choose to Shard the user profile storage, you must provide a group to assign to each storage account. In order to minimize login times, to provide create more than four (4) storage accounts, you must select the 'Sharding via Object Specific Settings' option below and use the instructions found in the link here to configure object specific settings for the VHDLocations or CCDLocations paths.",
 										"uri": "https://learn.microsoft.com/en-us/fslogix/how-to-configure-object-specific-settings"
 									}
@@ -2528,7 +2528,7 @@
 									"type": "Microsoft.Common.InfoBox",
 									"visible": "[and(equals(steps('userProfiles').azureFiles.shardingOption, 'ShardPerms'), greater(length(steps('userProfiles').azureFiles.groupPickerBlade.transformed.selection), 4))]",
 									"options": {
-										"icon": "Error",
+										"style": "Error",
 										"text": "You selected (or provided) over 4 groups. You can select/provide a maximum of 4 groups when choosing 'Sharding with Permissions' in order to minimize login time and maintain compatibility with Cloud Cache (if used). Either reduce the number of groups, or select 'Sharding with Object Specific Settings' and follow the instructions provided in the link to configure the registry on the session hosts.",
 										"uri": "https://learn.microsoft.com/en-us/fslogix/how-to-configure-object-specific-settings"
 									}
@@ -2741,7 +2741,7 @@
 									"type": "Microsoft.Common.InfoBox",
 									"visible": "[and(steps('userProfiles').configureSessionHosts, equals(steps('userProfiles').deployStorage, false), not(equals(steps('userProfiles').azureFiles.storageCount, length(steps('userProfiles').azureFiles.existingLocalStorageAccounts))))]",
 									"options": {
-										"icon": "Error",
+										"style": "Error",
 										"text": "You have not selected the correct number of storage accounts. You must select the correct number before continuing or the session hosts will not be configured properly."
 									}
 								},
@@ -2811,7 +2811,7 @@
 									"type": "Microsoft.Common.InfoBox",
 									"visible": "[and(steps('userProfiles').configureSessionHosts, contains(steps('userProfiles').fslogixContainerType, 'CloudCache'), not(equals(length(steps('userProfiles').azureFiles.existingRemoteStorageAccounts), 0)) , not(equals(steps('userProfiles').azureFiles.storageCount, length(steps('userProfiles').azureFiles.existingRemoteStorageAccounts))))]",
 									"options": {
-										"icon": "Error",
+										"style": "Error",
 										"text": "You have not selected the correct number of storage accounts. You must select the correct number before continuing or the session hosts will not be configured properly."
 									}
 								}
@@ -3358,7 +3358,7 @@
 									"type": "Microsoft.Common.InfoBox",
 									"visible": "[and(steps('zeroTrust').avdPrivateLink.enablePrivateLink, not(empty(filter(steps('controlPlane').workspacesApi.value, (ws) => contains(ws.name, 'global-feed')))))]",
 									"options": {
-										"icon": "Info",
+										"style": "Info",
 										"text": "[concat('An existing global feed workspace has been detected: ', first(map(filter(steps('controlPlane').workspacesApi.value, (ws) => contains(ws.name, 'global-feed')), (ws) => ws.name)), '. Therefore, you can only choose either option 2 or 3, because you can only have one global-feed workspace with one private endpoint.')]"
 									}
 								},
@@ -3380,7 +3380,7 @@
 									"type": "Microsoft.Common.InfoBox",
 									"visible": "[and(steps('zeroTrust').avdPrivateLink.enablePrivateLink, equals(steps('controlPlane').workspace.createOption, 'update'), not(equals(steps('zeroTrust').avdPrivateLink.avdPrivateLinkConfig, 'Hostpool')))]",
 									"options": {
-										"icon": "Warning",
+										"style": "Warning",
 										"text": "Because you have chosen to update an existing AVD workspace on the <b>Control Plane</b> blade, use caution when updating the AVD Private Link configuration for the <u>Workspace Feed</u>.\n\nYou can only have one private endpoint per workspace; therefore, if your workspace is already configured with a private endpoint to support private routes for the workspace feed, it is best to select \"Only remote session connections use private routes\" as the <b><i>AVD Private Link Configuration</i></b>. The \"Feed download and remote session connections use private routes\" option is primarily provided to allow an existing workspace to be updated with this option."
 									}
 								},
