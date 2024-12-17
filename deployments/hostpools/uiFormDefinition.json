@@ -901,7 +901,7 @@
 								"method": "GET",
 								"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Compute/locations/', steps('basics').scope.location.name, '/vmSizes?api-version=2023-03-01')]",
 								"transforms": {
-									"confidentialVMSizes": "value[?ends_with(name, `v5`)&&(starts_with(name, `Standard_DC`)||starts_with(name, `Standard_EC`))]|[*].{label:name, value:name}"
+									"confidentialVMSizes": "value[?ends_with(name, `v5`)&&(starts_with(name, `Standard_DC`)||starts_with(name, `Standard_EC`)||starts_with(name, `Standard_NCC`))]|[*].{label:name, value:name}"
 								}
 							}
 						},
