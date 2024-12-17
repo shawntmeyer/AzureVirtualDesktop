@@ -894,17 +894,17 @@
 					"label": "Session Hosts",
 					"elements": [
 						{
-							"name": "vmSizesApi",
+							"name": "resourceSkusApi",
 							"type": "Microsoft.Solutions.ArmApiControl",
 							"condition": "[and(not(empty(steps('basics').scope.subscription)), not(empty(steps('basics').scope.location)))]",
 							"request": {
 								"method": "GET",
-								"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Compute/locations/', steps('basics').scope.location.name, '/vmSizes?api-version=2023-03-01')]",
+								"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Compute/skus?api-version=2021-07-01&$filter=location eq ', decodeUriComponent('%27'), steps('basics').scope.location.name, decodeUriComponent('%27'))]",
 								"transforms": {
-									"confidentialVMSizes": "value[?ends_with(name, `v5`)&&(starts_with(name, `Standard_DC`)||starts_with(name, `Standard_EC`)||starts_with(name, `Standard_NCC`))]|[*].{label:name, value:name}"
+									"confidentialVMSizes": "value[?resourceType=='virtualMachines'&&ends_with(name, `v5`)&&(starts_with(name, `Standard_DC`)||starts_with(name, `Standard_EC`)||starts_with(name, `Standard_NCC`))]|[*].{label:name, value:name}"
 								}
 							}
-						},
+						},						
 						{
 							"name": "useAgentDownloadEndpoint",
 							"type": "Microsoft.Common.CheckBox",
@@ -1014,7 +1014,7 @@
 									"defaultValue": "Trusted Launch",
 									"toolTip": "Select the appropriate Security Type configuration for the Virtual Machine. Note that 'Confidential Virtual Machines' are not available in all regions and the option may not appear.",
 									"constraints": {
-										"allowedValues": "[if(not(empty(steps('hosts').vmSizesApi.transformed.confidentialVMSizes)), parse('[{\"label\":\"Confidential Virtual Machine\",\"value\":\"ConfidentialVM\"},{\"label\":\"Standard\",\"value\":\"Standard\"},{\"label\":\"Trusted Launch\",\"value\":\"TrustedLaunch\"}]'), parse('[{\"label\":\"Standard\",\"value\":\"Standard\"},{\"label\":\"Trusted Launch\",\"value\":\"TrustedLaunch\"}]'))]",
+										"allowedValues": "[if(not(empty(steps('hosts').resourceSkusApi.transformed.confidentialVMSizes)), parse('[{\"label\":\"Confidential Virtual Machine\",\"value\":\"ConfidentialVM\"},{\"label\":\"Standard\",\"value\":\"Standard\"},{\"label\":\"Trusted Launch\",\"value\":\"TrustedLaunch\"}]'), parse('[{\"label\":\"Standard\",\"value\":\"Standard\"},{\"label\":\"Trusted Launch\",\"value\":\"TrustedLaunch\"}]'))]",
 										"required": true
 									},
 									"visible": true
@@ -1392,26 +1392,17 @@
 									"toolTip": "Select the size of the virtual machines. Multi-session hosts should have 4 - 24 vCPUs. Single session host should have 2 or more vCPUs.",
 									"defaultDescription": "",
 									"constraints": {
-										"allowedValues": "[steps('hosts').vmSizesApi.transformed.confidentialVMSizes]",
+										"allowedValues": "[steps('hosts').resourceSkusApi.transformed.confidentialVMSizes]",
 										"required": true
 									},
 									"visible": "[equals(steps('hosts').security.securityType, 'ConfidentialVM')]"
-								},
-								{
-									"name": "resourceSkusApi",
-									"type": "Microsoft.Solutions.ArmApiControl",
-									"condition": "[and(not(empty(steps('basics').scope.subscription)), not(empty(steps('basics').scope.location)))]",
-									"request": {
-										"method": "GET",
-										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Compute/skus?api-version=2021-07-01&$filter=location eq ', decodeUriComponent('%27'), steps('basics').scope.location.name, decodeUriComponent('%27'))]"
-									}
-								},
+								},								
 								{
 									"name": "hibernationEnabled",
 									"type": "Microsoft.Common.CheckBox",
 									"label": "Enable Hibernation",
 									"toolTip": "Hibernation allows you to pause VMs that aren't being used and save on compute costs where the VMs don't need to run 24/7.",
-									"visible": "[and(equals(steps('controlPlane').hostPool.type, 'Personal'), bool(first(map(filter(first(map(filter(steps('hosts').specs.resourceSkusApi.value, (sku) => contains(sku.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (sku) => sku.capabilities)), (sku) => equals(sku.name, 'HibernationSupported')), (sku) => sku.value))))]"
+									"visible": "[and(equals(steps('controlPlane').hostPool.type, 'Personal'), bool(first(map(filter(first(map(filter(steps('hosts').resourceSkusApi.value, (sku) => contains(sku.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (sku) => sku.capabilities)), (sku) => equals(sku.name, 'HibernationSupported')), (sku) => sku.value))))]"
 								}
 							]
 						},
@@ -1423,12 +1414,12 @@
 								{
 									"name": "availability",
 									"type": "Microsoft.Common.DropDown",
-									"defaultValue": "[if(empty(first(map(first(map(filter(steps('hosts').specs.resourceSkusApi.value, (sku) => contains(sku.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (sku) => sku.locationInfo)), (sku) => sku.zones))), 'No infrastructure redundancy required', 'Availability Zones')]",
+									"defaultValue": "[if(empty(first(map(first(map(filter(steps('hosts').resourceSkusApi.value, (sku) => contains(sku.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (sku) => sku.locationInfo)), (sku) => sku.zones))), 'No infrastructure redundancy required', 'Availability Zones')]",
 									"label": "Availability Options",
 									"toolTip": "Select the redundancy / resiliency for the virtual machines.",
 									"constraints": {
 										"required": true,
-										"allowedValues": "[if(empty(first(map(first(map(filter(steps('hosts').specs.resourceSkusApi.value, (sku) => contains(sku.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (sku) => sku.locationInfo)), (sku) => sku.zones))), parse('[{\"label\":\"No infrastructure redundancy required\",\"value\":\"None\"},{\"label\":\"Availability Sets\",\"value\":\"AvailabilitySets\"}]'), parse('[{\"label\":\"Availability Zones\",\"value\":\"AvailabilityZones\"},{\"label\":\"Availability Sets\",\"value\":\"AvailabilitySets\"},{\"label\":\"No infrastructure redundancy required\",\"value\":\"None\"}]'))]"
+										"allowedValues": "[if(empty(first(map(first(map(filter(steps('hosts').resourceSkusApi.value, (sku) => contains(sku.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (sku) => sku.locationInfo)), (sku) => sku.zones))), parse('[{\"label\":\"No infrastructure redundancy required\",\"value\":\"None\"},{\"label\":\"Availability Sets\",\"value\":\"AvailabilitySets\"}]'), parse('[{\"label\":\"Availability Zones\",\"value\":\"AvailabilityZones\"},{\"label\":\"Availability Sets\",\"value\":\"AvailabilitySets\"},{\"label\":\"No infrastructure redundancy required\",\"value\":\"None\"}]'))]"
 									}
 								}
 							],
@@ -3809,9 +3800,9 @@
 				"diskSku": "[steps('hosts').specs.diskSku]",
 				"diskSizeGB": "[steps('hosts').specs.diskSizeGB]",
 				"virtualMachineSize": "[if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric)]",
-				"availabilityZones": "[first(map(first(map(filter(steps('hosts').specs.resourceSkusApi.value, (sku) => contains(sku.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (sku) => sku.locationInfo)), (sku) => sku.zones))]",
-				"enableAcceleratedNetworking": "[bool(first(map(filter(first(map(filter(steps('hosts').specs.resourceSkusApi.value, (sku) => contains(sku.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (sku) => sku.capabilities)), (sku) => equals(sku.name, 'AcceleratedNetworkingEnabled')), (sku) => sku.value)))]",
-				"hibernationEnabled": "[if(bool(first(map(filter(first(map(filter(steps('hosts').specs.resourceSkusApi.value, (sku) => contains(sku.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (sku) => sku.capabilities)), (sku) => equals(sku.name, 'HibernationSupported')), (sku) => sku.value))), steps('hosts').specs.hibernationEnabled, false)]",
+				"availabilityZones": "[first(map(first(map(filter(steps('hosts').resourceSkusApi.value, (sku) => contains(sku.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (sku) => sku.locationInfo)), (sku) => sku.zones))]",
+				"enableAcceleratedNetworking": "[bool(first(map(filter(first(map(filter(steps('hosts').resourceSkusApi.value, (sku) => contains(sku.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (sku) => sku.capabilities)), (sku) => equals(sku.name, 'AcceleratedNetworkingEnabled')), (sku) => sku.value)))]",
+				"hibernationEnabled": "[if(bool(first(map(filter(first(map(filter(steps('hosts').resourceSkusApi.value, (sku) => contains(sku.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (sku) => sku.capabilities)), (sku) => equals(sku.name, 'HibernationSupported')), (sku) => sku.value))), steps('hosts').specs.hibernationEnabled, false)]",
 				"imageOffer": "[if(equals(steps('hosts').image.source, 'marketplace'), steps('hosts').image.offer, '')]",
 				"imagePublisher": "[if(equals(steps('hosts').image.source, 'marketplace'), 'MicrosoftWindowsDesktop', '')]",
 				"imageSku": "[if(equals(steps('hosts').image.source, 'marketplace'), steps('hosts').image.sku, '')]",
