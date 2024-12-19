@@ -82,7 +82,7 @@ module KeyVault '../../../../sharedModules/resources/key-vault/vault/main.bicep'
               'VNETID',
               '${split(privateEndpointSubnetResourceId, '/')[8]}'
             )
-            privateDnsZoneGroup: {
+            privateDnsZoneGroup: empty(azureKeyVaultPrivateDnsZoneResourceId) ? null : {
               privateDNSResourceIds: [
                 azureKeyVaultPrivateDnsZoneResourceId
               ]

@@ -158,8 +158,7 @@
 									"scope": {
 										"subscriptionId": "[steps('basics').scope.subscription.subscriptionId]"
 									}
-								},
-								
+								},								
 								{
 									"name": "vnetMinimum",
 									"type": "Microsoft.Network.VirtualNetworkCombo",

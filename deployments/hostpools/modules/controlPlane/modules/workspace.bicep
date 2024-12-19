@@ -44,14 +44,14 @@ resource workspace 'Microsoft.DesktopVirtualization/workspaces@2023-09-05' = if 
   }
 }
 
-module workspace_privateEndpoint '../../../../sharedModules/resources/network/private-endpoint/main.bicep' = if (privateEndpoint && !empty(privateEndpointSubnetResourceId) && !empty(privateDnsZoneResourceId)) {
+module workspace_privateEndpoint '../../../../sharedModules/resources/network/private-endpoint/main.bicep' = if (privateEndpoint && !empty(privateEndpointSubnetResourceId)) {
   name: '${workspaceName}_privateEndpoint_${timeStamp}'
   params: {
     customNetworkInterfaceName: privateEndpointNICName
     groupIds: groupIds
     location: !empty(privateEndpointLocation) ? privateEndpointLocation : location
     name: privateEndpointName
-    privateDnsZoneGroup: {
+    privateDnsZoneGroup: empty(privateDnsZoneResourceId) ? null : {
       privateDNSResourceIds: [
         privateDnsZoneResourceId
       ]

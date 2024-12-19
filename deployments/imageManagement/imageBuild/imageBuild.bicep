@@ -434,11 +434,11 @@ module logsStorageAccount '../../sharedModules/resources/storage/storage-account
         }
       }
     ]
-    privateEndpoints: !empty(privateEndpointSubnetResourceId) && !empty(blobPrivateDnsZoneResourceId)
+    privateEndpoints: !empty(privateEndpointSubnetResourceId)
       ? [
           {
             name: '${resourceAbbreviations.privateEndpoints}-${logStorageAccountName}-blob-${locations[computeLocation].abbreviation}'
-            privateDnsZoneGroup: {
+            privateDnsZoneGroup: empty(blobPrivateDnsZoneResourceId) ? null : {
               privateDNSResourceIds: ['${blobPrivateDnsZoneResourceId}']
             }
             service: 'blob'

@@ -106,6 +106,14 @@ var remoteNetAppProfileContainerVolumeResourceIds = !empty(fslogixRemoteNetAppVo
 var remoteNetAppOfficeContainerVolumeResourceIds = !empty(fslogixRemoteNetAppVolumeResourceIds) && length(fslogixFileShareNames) > 1 ? filter(fslogixRemoteNetAppVolumeResourceIds, id => !contains(id, fslogixFileShareNames[0])) : []
 var sortedRemoteNetAppResourceIds = union(remoteNetAppProfileContainerVolumeResourceIds, remoteNetAppOfficeContainerVolumeResourceIds)
 
+var backupPrivateDNSZoneResourceIds = [
+  azureBackupPrivateDnsZoneResourceId
+  azureBlobPrivateDnsZoneResourceId
+  azureQueuePrivateDnsZoneResourceId
+]
+
+var nonEmptyBackupPrivateDNSZoneResourceIds = filter(backupPrivateDNSZoneResourceIds, zone => !empty(zone))
+
 module diskAccessResource '../../../sharedModules/resources/compute/disk-access/main.bicep' = if (deployDiskAccessResource) {
   scope: resourceGroup(resourceGroupHosts)
   name: 'DiskAccess_${timeStamp}'
@@ -124,7 +132,7 @@ module diskAccessResource '../../../sharedModules/resources/compute/disk-access/
           'VNETID',
           '${split(privateEndpointSubnetResourceId, '/')[8]}'
         )
-        privateDnsZoneGroup: {
+        privateDnsZoneGroup: empty(azureBlobPrivateDnsZoneResourceId) ? null : {
           privateDNSResourceIds: [
             azureBlobPrivateDnsZoneResourceId
           ]
@@ -346,12 +354,8 @@ module recoveryServicesVault '../../../sharedModules/resources/recovery-services
               'VNETID',
               '${split(privateEndpointSubnetResourceId, '/')[8]}'
             )
-            privateDnsZoneGroup: {
-              privateDNSResourceIds: [
-                azureBackupPrivateDnsZoneResourceId
-                azureBlobPrivateDnsZoneResourceId
-                azureQueuePrivateDnsZoneResourceId
-              ]
+            privateDnsZoneGroup: empty(nonEmptyBackupPrivateDNSZoneResourceIds) ? null :{
+              privateDNSResourceIds: nonEmptyBackupPrivateDNSZoneResourceIds
             }
             service: 'AzureBackup'
             subnetResourceId: privateEndpointSubnetResourceId

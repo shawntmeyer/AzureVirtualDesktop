@@ -112,7 +112,7 @@ resource privateEndpoint_vault 'Microsoft.Network/privateEndpoints@2023-04-01' =
   }
 }
 
-resource privateDnsZoneGroup_vault 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2021-08-01' = if (keyManagementStorageAccounts != 'MicrosoftManaged' && privateEndpoint) {
+resource privateDnsZoneGroup_vault 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2021-08-01' = if (keyManagementStorageAccounts != 'MicrosoftManaged' && privateEndpoint && !empty(azureKeyVaultPrivateDnsZoneResourceId)) {
   parent: privateEndpoint_vault
   name: keyVaultName
   properties: {
@@ -287,7 +287,7 @@ resource privateEndpoints_storage 'Microsoft.Network/privateEndpoints@2023-04-01
 ]
 
 resource privateDnsZoneGroups_storage 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2021-08-01' = [
-  for i in range(0, length(azureStoragePrivateDnsZoneResourceIds) - 1): if(privateEndpoint) {
+  for i in range(0, length(azureStoragePrivateDnsZoneResourceIds) - 1): if(privateEndpoint && !empty(azureStoragePrivateDnsZoneResourceIds[i])) {
     parent: privateEndpoints_storage[i]
     name: storageAccount.name
     properties: {

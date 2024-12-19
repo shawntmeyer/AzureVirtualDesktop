@@ -52,7 +52,7 @@ module hostPool_PrivateEndpoint '../../../../sharedModules/resources/network/pri
     ]
     location: !empty(privateEndpointLocation) ? privateEndpointLocation : location
     name: privateEndpointName
-    privateDnsZoneGroup: {
+    privateDnsZoneGroup: empty(hostPoolPrivateDnsZoneResourceId) ? null : {
       privateDNSResourceIds: [
         hostPoolPrivateDnsZoneResourceId
       ]

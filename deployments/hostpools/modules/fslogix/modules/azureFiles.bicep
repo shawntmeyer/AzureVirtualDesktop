@@ -75,6 +75,14 @@ var smbSettings = {
 }
 var storageRedundancy = availability == 'availabilityZones' ? '_ZRS' : '_LRS'
 
+var backupPrivateDNSZoneResourceIds = [
+  azureBackupPrivateDnsZoneResourceId
+  azureBlobPrivateDnsZoneResourceId
+  azureQueuePrivateDnsZoneResourceId
+]
+
+var nonEmptyBackupPrivateDNSZoneResourceIds = filter(backupPrivateDNSZoneResourceIds, zone => !empty(zone))
+
 resource storageAccounts 'Microsoft.Storage/storageAccounts@2022-09-01' = [
   for i in range(0, storageCount): {
     name: '${storageAccountNamePrefix}${string(padLeft(i + storageIndex, 2, '0'))}'
@@ -244,7 +252,7 @@ module privateEndpoints '../../../../sharedModules/resources/network/private-end
         'VNETID',
         privateEndpointVnetName
       )
-      privateDnsZoneGroup: {
+      privateDnsZoneGroup: empty(azureFilePrivateDnsZoneResourceId) ? null : {
         privateDNSResourceIds: [
           azureFilePrivateDnsZoneResourceId
         ]
@@ -363,7 +371,7 @@ module recoveryServicesVault '../../../../sharedModules/resources/recovery-servi
       }
     ]
     diagnosticWorkspaceId: logAnalyticsWorkspaceId
-    privateEndpoints: privateEndpoint && !empty(privateEndpointSubnetResourceId) && !empty(azureBackupPrivateDnsZoneResourceId) && !empty(azureBlobPrivateDnsZoneResourceId) && !empty(azureQueuePrivateDnsZoneResourceId)
+    privateEndpoints: privateEndpoint && !empty(privateEndpointSubnetResourceId)
       ? [
           {
             customNetworkInterfaceName: replace(
@@ -384,12 +392,8 @@ module recoveryServicesVault '../../../../sharedModules/resources/recovery-servi
               'VNETID',
               '${split(privateEndpointSubnetResourceId, '/')[8]}'
             )
-            privateDnsZoneGroup: {
-              privateDNSResourceIds: [
-                azureBackupPrivateDnsZoneResourceId
-                azureBlobPrivateDnsZoneResourceId
-                azureQueuePrivateDnsZoneResourceId
-              ]
+            privateDnsZoneGroup: empty(nonEmptyBackupPrivateDNSZoneResourceIds) ? null : {
+              privateDNSResourceIds: nonEmptyBackupPrivateDNSZoneResourceIds
             }
             service: 'AzureBackup'
             subnetResourceId: privateEndpointSubnetResourceId

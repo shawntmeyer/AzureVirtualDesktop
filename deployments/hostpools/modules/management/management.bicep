@@ -61,7 +61,7 @@ module secretsKeyVault '../../../sharedModules/resources/key-vault/vault/main.bi
               'VNETID',
               '${split(privateEndpointSubnetResourceId, '/')[8]}'
             )
-            privateDnsZoneGroup: {
+            privateDnsZoneGroup: empty(azureKeyVaultPrivateDnsZoneResourceId) ? null : {
               privateDNSResourceIds: [
                 azureKeyVaultPrivateDnsZoneResourceId
               ]

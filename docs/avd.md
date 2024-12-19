@@ -1182,14 +1182,12 @@ You might need to clear out the bicep exe which is located in the %USERPROFILE%.
 
 | Parameter | Description | Type | Allowed | Default |
 | --------- | ----------- | :--: | :-----: | ------- |
-| `avdGlobalFeedPrivateDnsZoneResourceId` | If using private endpoints with Azure Virtual Desktop, input the Resource Id for the Private DNS Zone used for initial feed discovery. (privatelink-global.wvd.microsoft.com) | string | resource id | '' |
-| `avdPrivateDnsZoneResourceId` | If using private endpoints with Azure Virtual Desktop, input the Resource ID for the Private DNS Zone used for feed download and connections to host pools. (privatelink.wvd.microsoft.com) | string | resource id | '' |
-| `azureFilesPrivateDnsZoneResourceId` | The resource Id of the Azure Files private DNS zone which is resolvable from the subnet where the session hosts are deployed. Required when `storagePrivateEndpoints` is set to true. | string | resource id | '' |
+
 | `confidentialVMOrchestratorObjectId` | The object ID of the Confidential VM Orchestrator enterprise application with application ID "bf7b6499-ff71-4aa2-97a4-f372087be7f0". Required when `confidentialVMOSDiskEncryption` is set to true.  You must create this application in your tenant before deploying this solution using the powershell provided at https://learn.microsoft.com/en-us/azure/confidential-computing/quick-create-confidential-vm-portal#prerequisites. | string | object id | '' |
 | `domainName` | The name of the domain that provides ADDS to the AVD session hosts and is synchronized with Azure AD. Required when `identitySolution` contains 'DomainServices'. | string | | '' |
 | `domainJoinUserPrincipalName` | The User Principal Name of the user with the rights to join the computer to the domain in the specified OU path. Required when `identitySolution` contains 'DomainServices'. | secure string | either a secure string or a reference to a key vault following the guidance at https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/key-vault-parameter?tabs=azure-cli or see the Zero Trust example below. | '' |
 | `domainJoinUserPassword` | The password of the user with the rights to join the computer to the domain in the specified OU path. Required when `identitySolution` contains 'DomainServices'. | secure string | either a secure string or a reference to a key vault following the guidance at https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/key-vault-parameter?tabs=azure-cli or see the Zero Trust example below. | '' |
-| `azureKeyVaultPrivateDnsZoneResourceId` | The resource Id of the Azure Key Vault private dns zone which is resolvable from the subnet that the session hosts will be placed upon. Required when the `managementPrivateEndpoints` parameter is set to true. | string | resource id | '' |
+
 | `managementPrivateEndpointSubnetResourceId` | The resource id of the subnet on which to create the management resource private endpoints. Required when the `managementPrivateEndpoints` parameter is set to true. | string | resource id | '' |
 | `storagePrivateEndpointSubnetResourceId` | The resource id of the subnet on which the storage private endpoints will be attached. Required when the `storagePrivateEndpoints` parameter is set to true. | string | resource id | '' |
 | `hostPoolPrivateEndpointSubnetResourceId` | The resource ID of the subnet where the AVD Private Link endpoints will be created. Required when `avdPrivateLinkPrivateRoutes` is not set to 'None'. | string | resource id | '' |
@@ -1202,6 +1200,11 @@ You might need to clear out the bicep exe which is located in the %USERPROFILE%.
 
 | Parameter | Description | Type | Allowed | Default |
 | --------- | ----------- | :--: | :-----: | ------- |
+| `azureFilesPrivateDnsZoneResourceId` | The resource Id of the Azure Files private DNS zone which is resolvable from the subnet where the session hosts are deployed. | string | resource id | '' |
+| `azureKeyVaultPrivateDnsZoneResourceId` | The resource Id of the Azure Key Vault private dns zone which is resolvable from the subnet that the session hosts will be placed upon. | string | resource id | '' |
+| `avdGlobalFeedPrivateDnsZoneResourceId` | If using private endpoints with Azure Virtual Desktop, input the Resource Id for the Private DNS Zone used for initial feed discovery. (privatelink-global.wvd.microsoft.com) | string | resource id | '' |
+| `avdPrivateDnsZoneResourceId` | If using private endpoints with Azure Virtual Desktop, input the Resource ID for the Private DNS Zone used for feed download and connections to host pools. (privatelink.wvd.microsoft.com) | string | resource id | '' |
+
 | `index` | A string of integers from 00 to 99. This parameter is designed to uniquely identify host pools when sharding of the host pool is necessary. | string | 0-99 | '' |
 | `appGroupSecurityGroups` | An array of objects that contain the Entra ID DisplayNames and ObjectIds that are assigned to the desktop application group created by this template. If you do not shard storage, then these groups are also granted permissions to the storage accounts. | array (of objects) | [{"DisplayName":"Entra Display Name", "ObjectId": "Entra Object Id"}] | [] |
 | `artifactsContainerUri` | The full URI of the storage account and container that contains any scripts you want to run on each host during deployment. | string | resource id | '' |
@@ -1652,7 +1655,6 @@ This template deploys a Storage Account with a blob container (optionally with a
 | Parameter | Description | Type | Allowed | Default |
 | --- | --- | :---: | :---: | :---: |
 | `privateEndpointSubnetResourceId` | The resource id of the private endpoint subnet. Must be provided if `collectCustomizationLogs` is set to 'true'. | string | resource id | '' |
-| `blobPrivateDnsZoneResourceId` | The resource id of the existing Azure storage account blob service private dns zone. Must be provided if `collectCustomizationLogs` is set to "true". This zone must be linked to or resolvable from the vnet referenced in the `privateEndpointSubnetResourceId` parameter. | string | resource id | '' |
 | `customImageDefinitionName` | The name of the image Definition to create in the Compute Gallery. Only valid if `imageDefinitionResourceId` is not provided. If left blank, the image definition name will be built on Cloud Adoption Framework principals and based on the `imageDefinitonPublisher`, `imageDefinitionOffer`, and `imageDefinitionSku` values. | string | up to 80 characters | '' |
 | `imageDefinitionOffer` | The computer gallery image definition Offer. Required when the `imageDefinitionResourceId` is not defined. | string | up to 64 characters | '' |
 | `imageDefinitionPublisher` | The compute gallery image definition Publisher. Required when the `imageDefinitionResourceId` is not defined. | string | up to 128 characters | '' |
@@ -1668,6 +1670,7 @@ This template deploys a Storage Account with a blob container (optionally with a
 | Parameter | Description | Type | Allowed | Default |
 | --- | --- | :---: | :---: | :---: |
 | `artifactsContainerName` | The name of the storage blob container which contains the artifacts (scripts, installers, etc) used during the image build. | string | lowercase string | 'artifacts' |
+| `blobPrivateDnsZoneResourceId` | The resource id of the existing Azure storage account blob service private dns zone. This zone must be linked to or resolvable from the vnet referenced in the `privateEndpointSubnetResourceId` parameter. | string | resource id | '' |
 | `collectCustomizationLogs` | Collect image customization logs. | bool | true<br/>false | false |
 | `customBuildResourceGroupName` | The custom name of the resource group where the image build and management vms will be created. Leave blank to create a new resource group based on Cloud Adoption Framework naming principals. | string | valid resource group name | '' |
 | `customSourceImageResourceId` | The resource Id of the source image to use for the image build. If not provided, the latest image from the specified publisher, offer, and sku will be used. | string | resource id | '' |

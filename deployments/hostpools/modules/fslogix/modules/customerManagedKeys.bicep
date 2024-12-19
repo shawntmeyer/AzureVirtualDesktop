@@ -76,7 +76,7 @@ module storageAccountKeyVaults '../../../../sharedModules/resources/key-vault/va
               'VNETID',
               '${split(privateEndpointSubnetResourceId, '/')[8]}'
             )
-            privateDnsZoneGroup: {
+            privateDnsZoneGroup: empty(azureKeyVaultPrivateDnsZoneResourceId) ? null :{
               privateDNSResourceIds: [
                 azureKeyVaultPrivateDnsZoneResourceId
               ]

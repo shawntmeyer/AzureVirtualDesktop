@@ -4,8 +4,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.30.23.60470",
-      "templateHash": "15906150008606790384"
+      "version": "0.32.4.45862",
+      "templateHash": "6926702662263852124"
     }
   },
   "parameters": {
@@ -258,6 +258,9 @@
     "timeZone": {
       "type": "string"
     },
+    "useAgentDownloadEndpoint": {
+      "type": "bool"
+    },
     "virtualMachineNamePrefix": {
       "type": "string"
     },
@@ -285,7 +288,13 @@
     "sortedLocalNetAppResourceIds": "[union(variables('localNetAppProfileContainerVolumeResourceIds'), variables('localNetAppOfficeContainerVolumeResourceIds'))]",
     "remoteNetAppProfileContainerVolumeResourceIds": "[if(not(empty(parameters('fslogixRemoteNetAppVolumeResourceIds'))), filter(parameters('fslogixRemoteNetAppVolumeResourceIds'), lambda('id', contains(lambdaVariables('id'), parameters('fslogixFileShareNames')[0]))), createArray())]",
     "remoteNetAppOfficeContainerVolumeResourceIds": "[if(and(not(empty(parameters('fslogixRemoteNetAppVolumeResourceIds'))), greater(length(parameters('fslogixFileShareNames')), 1)), filter(parameters('fslogixRemoteNetAppVolumeResourceIds'), lambda('id', not(contains(lambdaVariables('id'), parameters('fslogixFileShareNames')[0])))), createArray())]",
-    "sortedRemoteNetAppResourceIds": "[union(variables('remoteNetAppProfileContainerVolumeResourceIds'), variables('remoteNetAppOfficeContainerVolumeResourceIds'))]"
+    "sortedRemoteNetAppResourceIds": "[union(variables('remoteNetAppProfileContainerVolumeResourceIds'), variables('remoteNetAppOfficeContainerVolumeResourceIds'))]",
+    "backupPrivateDNSZoneResourceIds": [
+      "[parameters('azureBackupPrivateDnsZoneResourceId')]",
+      "[parameters('azureBlobPrivateDnsZoneResourceId')]",
+      "[parameters('azureQueuePrivateDnsZoneResourceId')]"
+    ],
+    "nonEmptyBackupPrivateDNSZoneResourceIds": "[filter(variables('backupPrivateDNSZoneResourceIds'), lambda('zone', not(empty(lambdaVariables('zone')))))]"
   },
   "resources": [
     {
@@ -311,11 +320,7 @@
               {
                 "customNetworkInterfaceName": "[replace(replace(replace(parameters('privateEndpointNICNameConv'), 'SUBRESOURCE', 'disks'), 'RESOURCE', parameters('diskAccessName')), 'VNETID', format('{0}', split(parameters('privateEndpointSubnetResourceId'), '/')[8]))]",
                 "name": "[replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', 'disks'), 'RESOURCE', parameters('diskAccessName')), 'VNETID', format('{0}', split(parameters('privateEndpointSubnetResourceId'), '/')[8]))]",
-                "privateDnsZoneGroup": {
-                  "privateDNSResourceIds": [
-                    "[parameters('azureBlobPrivateDnsZoneResourceId')]"
-                  ]
-                },
+                "privateDnsZoneGroup": "[if(empty(parameters('azureBlobPrivateDnsZoneResourceId')), null(), createObject('privateDNSResourceIds', createArray(parameters('azureBlobPrivateDnsZoneResourceId'))))]",
                 "service": "disks",
                 "subnetResourceId": "[parameters('privateEndpointSubnetResourceId')]",
                 "tags": "[coalesce(tryGet(parameters('tags'), 'Microsoft.Network/privateEndpoints'), createObject())]"
@@ -332,8 +337,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.30.23.60470",
-              "templateHash": "4282336606532401695"
+              "version": "0.32.4.45862",
+              "templateHash": "6646599061272227540"
             }
           },
           "parameters": {
@@ -419,8 +424,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.30.23.60470",
-                      "templateHash": "14292475909061979612"
+                      "version": "0.32.4.45862",
+                      "templateHash": "8861436825010776156"
                     },
                     "name": "Private Endpoints"
                   },
@@ -557,8 +562,8 @@
                           "metadata": {
                             "_generator": {
                               "name": "bicep",
-                              "version": "0.30.23.60470",
-                              "templateHash": "10007477398631549590"
+                              "version": "0.32.4.45862",
+                              "templateHash": "16404989872324800297"
                             },
                             "name": "Private Endpoint Private DNS Zone Groups",
                             "description": "This module deploys a Private Endpoint Private DNS Zone Group.",
@@ -713,8 +718,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.30.23.60470",
-              "templateHash": "11354589420619136854"
+              "version": "0.32.4.45862",
+              "templateHash": "18356986199480121594"
             }
           },
           "parameters": {
@@ -796,8 +801,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.30.23.60470",
-                      "templateHash": "10284064946273745151"
+                      "version": "0.32.4.45862",
+                      "templateHash": "1864825197368315459"
                     }
                   },
                   "parameters": {
@@ -916,8 +921,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.30.23.60470",
-              "templateHash": "12770380565994766734"
+              "version": "0.32.4.45862",
+              "templateHash": "15211441803371240570"
             }
           },
           "parameters": {
@@ -1013,7 +1018,7 @@
                       "defaultAction": "[if(parameters('privateEndpoint'), 'Deny', 'Allow')]"
                     }
                   },
-                  "privateEndpoints": "[if(and(parameters('privateEndpoint'), not(empty(parameters('privateEndpointSubnetResourceId')))), createObject('value', createArray(createObject('customNetworkInterfaceName', replace(replace(replace(parameters('privateEndpointNICNameConv'), 'SUBRESOURCE', 'vault'), 'RESOURCE', parameters('keyVaultNames').VMEncryptionKeys), 'VNETID', format('{0}', split(parameters('privateEndpointSubnetResourceId'), '/')[8])), 'name', replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', 'vault'), 'RESOURCE', parameters('keyVaultNames').VMEncryptionKeys), 'VNETID', format('{0}', split(parameters('privateEndpointSubnetResourceId'), '/')[8])), 'privateDnsZoneGroup', createObject('privateDNSResourceIds', createArray(parameters('azureKeyVaultPrivateDnsZoneResourceId'))), 'service', 'vault', 'subnetResourceId', parameters('privateEndpointSubnetResourceId'), 'tags', coalesce(tryGet(parameters('tags'), 'Microsoft.Network/privateEndpoints'), createObject())))), createObject('value', null()))]",
+                  "privateEndpoints": "[if(and(parameters('privateEndpoint'), not(empty(parameters('privateEndpointSubnetResourceId')))), createObject('value', createArray(createObject('customNetworkInterfaceName', replace(replace(replace(parameters('privateEndpointNICNameConv'), 'SUBRESOURCE', 'vault'), 'RESOURCE', parameters('keyVaultNames').VMEncryptionKeys), 'VNETID', format('{0}', split(parameters('privateEndpointSubnetResourceId'), '/')[8])), 'name', replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', 'vault'), 'RESOURCE', parameters('keyVaultNames').VMEncryptionKeys), 'VNETID', format('{0}', split(parameters('privateEndpointSubnetResourceId'), '/')[8])), 'privateDnsZoneGroup', if(empty(parameters('azureKeyVaultPrivateDnsZoneResourceId')), null(), createObject('privateDNSResourceIds', createArray(parameters('azureKeyVaultPrivateDnsZoneResourceId')))), 'service', 'vault', 'subnetResourceId', parameters('privateEndpointSubnetResourceId'), 'tags', coalesce(tryGet(parameters('tags'), 'Microsoft.Network/privateEndpoints'), createObject())))), createObject('value', null()))]",
                   "tags": {
                     "value": "[union(createObject('cm-resource-parent', parameters('hostPoolResourceId')), coalesce(tryGet(parameters('tags'), 'Microsoft.KeyVault/vaults'), createObject()))]"
                   },
@@ -1028,8 +1033,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.30.23.60470",
-                      "templateHash": "17327355216593271510"
+                      "version": "0.32.4.45862",
+                      "templateHash": "4123283262228727821"
                     }
                   },
                   "parameters": {
@@ -1335,8 +1340,8 @@
                           "metadata": {
                             "_generator": {
                               "name": "bicep",
-                              "version": "0.30.23.60470",
-                              "templateHash": "9379568452007527074"
+                              "version": "0.32.4.45862",
+                              "templateHash": "17765053938067528949"
                             }
                           },
                           "parameters": {
@@ -1460,8 +1465,8 @@
                           "metadata": {
                             "_generator": {
                               "name": "bicep",
-                              "version": "0.30.23.60470",
-                              "templateHash": "15655950678718596287"
+                              "version": "0.32.4.45862",
+                              "templateHash": "10414695777290488732"
                             }
                           },
                           "parameters": {
@@ -1608,8 +1613,8 @@
                           "metadata": {
                             "_generator": {
                               "name": "bicep",
-                              "version": "0.30.23.60470",
-                              "templateHash": "14292475909061979612"
+                              "version": "0.32.4.45862",
+                              "templateHash": "8861436825010776156"
                             },
                             "name": "Private Endpoints"
                           },
@@ -1746,8 +1751,8 @@
                                   "metadata": {
                                     "_generator": {
                                       "name": "bicep",
-                                      "version": "0.30.23.60470",
-                                      "templateHash": "10007477398631549590"
+                                      "version": "0.32.4.45862",
+                                      "templateHash": "16404989872324800297"
                                     },
                                     "name": "Private Endpoint Private DNS Zone Groups",
                                     "description": "This module deploys a Private Endpoint Private DNS Zone Group.",
@@ -1958,8 +1963,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.30.23.60470",
-                      "templateHash": "17336101086742432731"
+                      "version": "0.32.4.45862",
+                      "templateHash": "17069898366734689581"
                     },
                     "name": "Virtual Machine RunCommand",
                     "description": "This module deploys a Virtual Machine Run Command.",
@@ -2171,12 +2176,9 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.30.23.60470",
-                      "templateHash": "6075179903623111547"
-                    },
-                    "name": "Role Assignments (Resource Group scope)",
-                    "description": "This module deploys a Role Assignment at a Resource Group scope.",
-                    "owner": "Azure/module-maintainers"
+                      "version": "0.32.4.45862",
+                      "templateHash": "13059863331620288616"
+                    }
                   },
                   "parameters": {
                     "roleDefinitionId": {
@@ -2203,37 +2205,6 @@
                       "defaultValue": "[subscription().subscriptionId]",
                       "metadata": {
                         "description": "Optional. Subscription ID of the subscription to assign the RBAC role to. If not provided, will use the current scope for deployment."
-                      }
-                    },
-                    "description": {
-                      "type": "string",
-                      "defaultValue": "",
-                      "metadata": {
-                        "description": "Optional. The description of the role assignment."
-                      }
-                    },
-                    "delegatedManagedIdentityResourceId": {
-                      "type": "string",
-                      "defaultValue": "",
-                      "metadata": {
-                        "description": "Optional. ID of the delegated managed identity resource."
-                      }
-                    },
-                    "condition": {
-                      "type": "string",
-                      "defaultValue": "",
-                      "metadata": {
-                        "description": "Optional. The conditions on the role assignment. This limits the resources it can be assigned to."
-                      }
-                    },
-                    "conditionVersion": {
-                      "type": "string",
-                      "defaultValue": "2.0",
-                      "allowedValues": [
-                        "2.0"
-                      ],
-                      "metadata": {
-                        "description": "Optional. Version of the condition. Currently accepted value is \"2.0\"."
                       }
                     },
                     "principalType": {
@@ -2263,49 +2234,14 @@
                       "properties": {
                         "roleDefinitionId": "[variables('roleDefinitionIdVar')]",
                         "principalId": "[parameters('principalId')]",
-                        "description": "[if(not(empty(parameters('description'))), parameters('description'), null())]",
-                        "principalType": "[if(not(empty(parameters('principalType'))), parameters('principalType'), null())]",
-                        "delegatedManagedIdentityResourceId": "[if(not(empty(parameters('delegatedManagedIdentityResourceId'))), parameters('delegatedManagedIdentityResourceId'), null())]",
-                        "conditionVersion": "[if(and(not(empty(parameters('conditionVersion'))), not(empty(parameters('condition')))), parameters('conditionVersion'), null())]",
-                        "condition": "[if(not(empty(parameters('condition'))), parameters('condition'), null())]"
+                        "principalType": "[if(not(empty(parameters('principalType'))), parameters('principalType'), null())]"
                       }
                     }
                   ],
                   "outputs": {
-                    "name": {
-                      "type": "string",
-                      "metadata": {
-                        "description": "The GUID of the Role Assignment."
-                      },
-                      "value": "[guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId'))]"
-                    },
                     "resourceId": {
                       "type": "string",
-                      "metadata": {
-                        "description": "The resource ID of the Role Assignment."
-                      },
                       "value": "[resourceId('Microsoft.Authorization/roleAssignments', guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId')))]"
-                    },
-                    "resourceGroupName": {
-                      "type": "string",
-                      "metadata": {
-                        "description": "The name of the resource group the role assignment was applied at."
-                      },
-                      "value": "[resourceGroup().name]"
-                    },
-                    "scope": {
-                      "type": "string",
-                      "metadata": {
-                        "description": "The scope this Role Assignment applies to."
-                      },
-                      "value": "[resourceGroup().id]"
-                    },
-                    "roleDefinitionId": {
-                      "type": "string",
-                      "metadata": {
-                        "description": "The role Definition Id of the Role Assignment."
-                      },
-                      "value": "[reference(resourceId('Microsoft.Authorization/roleAssignments', guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId'))), '2022-04-01').roleDefinitionId]"
                     }
                   }
                 }
@@ -2338,12 +2274,9 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.30.23.60470",
-                      "templateHash": "6075179903623111547"
-                    },
-                    "name": "Role Assignments (Resource Group scope)",
-                    "description": "This module deploys a Role Assignment at a Resource Group scope.",
-                    "owner": "Azure/module-maintainers"
+                      "version": "0.32.4.45862",
+                      "templateHash": "13059863331620288616"
+                    }
                   },
                   "parameters": {
                     "roleDefinitionId": {
@@ -2370,37 +2303,6 @@
                       "defaultValue": "[subscription().subscriptionId]",
                       "metadata": {
                         "description": "Optional. Subscription ID of the subscription to assign the RBAC role to. If not provided, will use the current scope for deployment."
-                      }
-                    },
-                    "description": {
-                      "type": "string",
-                      "defaultValue": "",
-                      "metadata": {
-                        "description": "Optional. The description of the role assignment."
-                      }
-                    },
-                    "delegatedManagedIdentityResourceId": {
-                      "type": "string",
-                      "defaultValue": "",
-                      "metadata": {
-                        "description": "Optional. ID of the delegated managed identity resource."
-                      }
-                    },
-                    "condition": {
-                      "type": "string",
-                      "defaultValue": "",
-                      "metadata": {
-                        "description": "Optional. The conditions on the role assignment. This limits the resources it can be assigned to."
-                      }
-                    },
-                    "conditionVersion": {
-                      "type": "string",
-                      "defaultValue": "2.0",
-                      "allowedValues": [
-                        "2.0"
-                      ],
-                      "metadata": {
-                        "description": "Optional. Version of the condition. Currently accepted value is \"2.0\"."
                       }
                     },
                     "principalType": {
@@ -2430,49 +2332,14 @@
                       "properties": {
                         "roleDefinitionId": "[variables('roleDefinitionIdVar')]",
                         "principalId": "[parameters('principalId')]",
-                        "description": "[if(not(empty(parameters('description'))), parameters('description'), null())]",
-                        "principalType": "[if(not(empty(parameters('principalType'))), parameters('principalType'), null())]",
-                        "delegatedManagedIdentityResourceId": "[if(not(empty(parameters('delegatedManagedIdentityResourceId'))), parameters('delegatedManagedIdentityResourceId'), null())]",
-                        "conditionVersion": "[if(and(not(empty(parameters('conditionVersion'))), not(empty(parameters('condition')))), parameters('conditionVersion'), null())]",
-                        "condition": "[if(not(empty(parameters('condition'))), parameters('condition'), null())]"
+                        "principalType": "[if(not(empty(parameters('principalType'))), parameters('principalType'), null())]"
                       }
                     }
                   ],
                   "outputs": {
-                    "name": {
-                      "type": "string",
-                      "metadata": {
-                        "description": "The GUID of the Role Assignment."
-                      },
-                      "value": "[guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId'))]"
-                    },
                     "resourceId": {
                       "type": "string",
-                      "metadata": {
-                        "description": "The resource ID of the Role Assignment."
-                      },
                       "value": "[resourceId('Microsoft.Authorization/roleAssignments', guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId')))]"
-                    },
-                    "resourceGroupName": {
-                      "type": "string",
-                      "metadata": {
-                        "description": "The name of the resource group the role assignment was applied at."
-                      },
-                      "value": "[resourceGroup().name]"
-                    },
-                    "scope": {
-                      "type": "string",
-                      "metadata": {
-                        "description": "The scope this Role Assignment applies to."
-                      },
-                      "value": "[resourceGroup().id]"
-                    },
-                    "roleDefinitionId": {
-                      "type": "string",
-                      "metadata": {
-                        "description": "The role Definition Id of the Role Assignment."
-                      },
-                      "value": "[reference(resourceId('Microsoft.Authorization/roleAssignments', guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId'))), '2022-04-01').roleDefinitionId]"
                     }
                   }
                 }
@@ -2510,8 +2377,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.30.23.60470",
-                      "templateHash": "16346810939482431412"
+                      "version": "0.32.4.45862",
+                      "templateHash": "6647895603996811432"
                     }
                   },
                   "parameters": {
@@ -2663,8 +2530,8 @@
                           "metadata": {
                             "_generator": {
                               "name": "bicep",
-                              "version": "0.30.23.60470",
-                              "templateHash": "360451604799914769"
+                              "version": "0.32.4.45862",
+                              "templateHash": "5283177639870150208"
                             }
                           },
                           "parameters": {
@@ -2742,8 +2609,8 @@
                                   "metadata": {
                                     "_generator": {
                                       "name": "bicep",
-                                      "version": "0.30.23.60470",
-                                      "templateHash": "13574484817034122281"
+                                      "version": "0.32.4.45862",
+                                      "templateHash": "10086502609955371528"
                                     }
                                   },
                                   "parameters": {
@@ -2870,8 +2737,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.30.23.60470",
-                      "templateHash": "11505138767315023963"
+                      "version": "0.32.4.45862",
+                      "templateHash": "9914050695254287882"
                     }
                   },
                   "parameters": {
@@ -2943,8 +2810,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.30.23.60470",
-              "templateHash": "737554178245885632"
+              "version": "0.32.4.45862",
+              "templateHash": "10795349553411555453"
             }
           },
           "parameters": {
@@ -3010,8 +2877,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.30.23.60470",
-              "templateHash": "14141528550673871787"
+              "version": "0.32.4.45862",
+              "templateHash": "17475915626491263957"
             },
             "name": "Availability Sets",
             "description": "This module deploys an Availability Set.",
@@ -3149,12 +3016,9 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.30.23.60470",
-              "templateHash": "6075179903623111547"
-            },
-            "name": "Role Assignments (Resource Group scope)",
-            "description": "This module deploys a Role Assignment at a Resource Group scope.",
-            "owner": "Azure/module-maintainers"
+              "version": "0.32.4.45862",
+              "templateHash": "13059863331620288616"
+            }
           },
           "parameters": {
             "roleDefinitionId": {
@@ -3181,37 +3045,6 @@
               "defaultValue": "[subscription().subscriptionId]",
               "metadata": {
                 "description": "Optional. Subscription ID of the subscription to assign the RBAC role to. If not provided, will use the current scope for deployment."
-              }
-            },
-            "description": {
-              "type": "string",
-              "defaultValue": "",
-              "metadata": {
-                "description": "Optional. The description of the role assignment."
-              }
-            },
-            "delegatedManagedIdentityResourceId": {
-              "type": "string",
-              "defaultValue": "",
-              "metadata": {
-                "description": "Optional. ID of the delegated managed identity resource."
-              }
-            },
-            "condition": {
-              "type": "string",
-              "defaultValue": "",
-              "metadata": {
-                "description": "Optional. The conditions on the role assignment. This limits the resources it can be assigned to."
-              }
-            },
-            "conditionVersion": {
-              "type": "string",
-              "defaultValue": "2.0",
-              "allowedValues": [
-                "2.0"
-              ],
-              "metadata": {
-                "description": "Optional. Version of the condition. Currently accepted value is \"2.0\"."
               }
             },
             "principalType": {
@@ -3241,49 +3074,14 @@
               "properties": {
                 "roleDefinitionId": "[variables('roleDefinitionIdVar')]",
                 "principalId": "[parameters('principalId')]",
-                "description": "[if(not(empty(parameters('description'))), parameters('description'), null())]",
-                "principalType": "[if(not(empty(parameters('principalType'))), parameters('principalType'), null())]",
-                "delegatedManagedIdentityResourceId": "[if(not(empty(parameters('delegatedManagedIdentityResourceId'))), parameters('delegatedManagedIdentityResourceId'), null())]",
-                "conditionVersion": "[if(and(not(empty(parameters('conditionVersion'))), not(empty(parameters('condition')))), parameters('conditionVersion'), null())]",
-                "condition": "[if(not(empty(parameters('condition'))), parameters('condition'), null())]"
+                "principalType": "[if(not(empty(parameters('principalType'))), parameters('principalType'), null())]"
               }
             }
           ],
           "outputs": {
-            "name": {
-              "type": "string",
-              "metadata": {
-                "description": "The GUID of the Role Assignment."
-              },
-              "value": "[guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId'))]"
-            },
             "resourceId": {
               "type": "string",
-              "metadata": {
-                "description": "The resource ID of the Role Assignment."
-              },
               "value": "[resourceId('Microsoft.Authorization/roleAssignments', guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId')))]"
-            },
-            "resourceGroupName": {
-              "type": "string",
-              "metadata": {
-                "description": "The name of the resource group the role assignment was applied at."
-              },
-              "value": "[resourceGroup().name]"
-            },
-            "scope": {
-              "type": "string",
-              "metadata": {
-                "description": "The scope this Role Assignment applies to."
-              },
-              "value": "[resourceGroup().id]"
-            },
-            "roleDefinitionId": {
-              "type": "string",
-              "metadata": {
-                "description": "The role Definition Id of the Role Assignment."
-              },
-              "value": "[reference(resourceId('Microsoft.Authorization/roleAssignments', guid(parameters('subscriptionId'), parameters('resourceGroupName'), variables('roleDefinitionIdVar'), parameters('principalId'))), '2022-04-01').roleDefinitionId]"
             }
           }
         }
@@ -3315,8 +3113,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.30.23.60470",
-              "templateHash": "9027957505827839243"
+              "version": "0.32.4.45862",
+              "templateHash": "12718120843696180905"
             }
           },
           "parameters": {
@@ -3360,8 +3158,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.30.23.60470",
-              "templateHash": "9027957505827839243"
+              "version": "0.32.4.45862",
+              "templateHash": "12718120843696180905"
             }
           },
           "parameters": {
@@ -3578,6 +3376,9 @@
           "timeStamp": {
             "value": "[parameters('timeStamp')]"
           },
+          "useAgentDownloadEndpoint": {
+            "value": "[parameters('useAgentDownloadEndpoint')]"
+          },
           "virtualMachineAdminPassword": {
             "value": "[parameters('virtualMachineAdminPassword')]"
           },
@@ -3600,8 +3401,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.30.23.60470",
-              "templateHash": "12533801566077517544"
+              "version": "0.32.4.45862",
+              "templateHash": "4534832362492172455"
             }
           },
           "parameters": {
@@ -3787,6 +3588,9 @@
             },
             "timeStamp": {
               "type": "string"
+            },
+            "useAgentDownloadEndpoint": {
+              "type": "bool"
             },
             "virtualMachineAdminPassword": {
               "type": "securestring"
@@ -4398,7 +4202,7 @@
                       "Password": "PrivateSettingsRef:RegistrationInfoToken"
                     },
                     "aadJoin": "[not(contains(parameters('identitySolution'), 'DomainServices'))]",
-                    "UseAgentDownloadEndpoint": false,
+                    "UseAgentDownloadEndpoint": "[parameters('useAgentDownloadEndpoint')]",
                     "mdmId": "[if(variables('intune'), '0000000a-0000-0000-c000-000000000000', '')]"
                   }
                 },
@@ -4449,8 +4253,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.30.23.60470",
-                      "templateHash": "8394291073098749075"
+                      "version": "0.32.4.45862",
+                      "templateHash": "15957740069128380532"
                     }
                   },
                   "parameters": {
@@ -4483,7 +4287,7 @@
                         }
                       }
                     ],
-                    "$fxv#0": "param(\r\n  [string]$APIVersion,\r\n  [string]$Arguments,\r\n  [string]$BlobStorageSuffix,\r\n  [string]$BuildDir,\r\n  [string]$Name,\r\n  [string]$Uri,\r\n  [string]$UserAssignedIdentityClientId\r\n)\r\n\r\nfunction Write-OutputWithTimeStamp {\r\n  param(\r\n      [parameter(ValueFromPipeline=$True, Mandatory=$True, Position=0)]\r\n      [string]$Message\r\n  )    \r\n  $Timestamp = Get-Date -Format 'MM/dd/yyyy HH:mm:ss.ff'\r\n  $Entry = '[' + $Timestamp + '] ' + $Message\r\n  Write-Output $Entry\r\n}\r\n\r\nIf (!(Test-Path -Path \"$env:SystemRoot\\Logs\\ImageBuild\")) { New-Item -Path \"$env:SystemRoot\\Logs\\ImageBuild\" -ItemType Directory -Force | Out-Null }\r\nStart-Transcript -Path \"$env:SystemRoot\\Logs\\ImageBuild\\$Name.log\" -Force\r\n\r\nWrite-OutputWithTimeStamp \"Starting '$Name' script with the following parameters.\"\r\nWrite-Output ( $PSBoundParameters | Format-Table -AutoSize )\r\nIf ($Arguments -eq '') { $Arguments = $null }\r\nIf ($Null -eq $BuildDir -or $BuildDir -ne '') {\r\n  $TempDir = Join-Path $BuildDir -ChildPath $Name\r\n} Else {\r\n  $TempDir = Join-Path $Env:TEMP -ChildPath $Name\r\n}\r\n\r\nNew-Item -Path $TempDir -ItemType Directory -Force | Out-Null\r\n$WebClient = New-Object System.Net.WebClient\r\nIf ($Uri -match $BlobStorageSuffix -and $UserAssignedIdentityClientId -ne '') {\r\n  $StorageEndpoint = ($Uri -split \"://\")[0] + \"://\" + ($Uri -split \"/\")[2] + \"/\"\r\n  $TokenUri = \"http://169.254.169.254/metadata/identity/oauth2/token?api-version=$APIVersion&resource=$StorageEndpoint&client_id=$UserAssignedIdentityClientId\"\r\n  $AccessToken = ((Invoke-WebRequest -Headers @{Metadata = $true } -Uri $TokenUri -UseBasicParsing).Content | ConvertFrom-Json).access_token\r\n  $WebClient.Headers.Add('x-ms-version', '2017-11-09')\r\n  $webClient.Headers.Add(\"Authorization\", \"Bearer $AccessToken\")\r\n}\r\n$SourceFileName = ($Uri -Split \"/\")[-1]\r\nWrite-OutputWithTimeStamp \"Downloading '$Uri' to '$TempDir'.\"\r\n$DestFile = Join-Path -Path $TempDir -ChildPath $SourceFileName\r\n$webClient.DownloadFile(\"$Uri\", \"$DestFile\")\r\nStart-Sleep -Seconds 10\r\nIf (!(Test-Path -Path $DestFile)) { Write-Error \"Failed to download $SourceFileName\"; Exit 1 }\r\nWrite-OutputWithTimeStamp 'Finished downloading'\r\nSet-Location -Path $TempDir\r\n$Ext = [System.IO.Path]::GetExtension($DestFile).ToLower()\r\nswitch ($Ext) {\r\n  'exe' {\r\n      If ($Arguments) {\r\n        Write-OutputWithTimeStamp \"Executing '`\"$DestFile`\" $Arguments'\"\r\n        Start-Process -FilePath \"$DestFile\" -ArgumentList $Arguments -NoNewWindow -Wait -PassThru\r\n      }\r\n      Else {\r\n        Write-OutputWithTimeStamp \"Executing `\"$DestFile`\"\"\r\n        Start-Process -FilePath \"$DestFile\" -NoNewWindow -Wait -PassThru\r\n      }\r\n      $status = Get-WmiObject -Class Win32_Product | Where-Object Name -like \"*$($Name)*\"\r\n      if ($status) {\r\n        Write-OutputWithTimeStamp \"'$($status[0].Name)' is installed\"\r\n      }\r\n      else {\r\n        Write-OutputWithTimeStamp \"'$Name' did not install properly, please check arguments\"\r\n      } \r\n    }\r\n  'msi' {\r\n    If ($Arguments) {\r\n      If ($Arguments -notcontains $SourceFileName) {\r\n        $Arguments = \"/i $DestFile $Arguments\"\r\n      }\r\n      Write-OutputWithTimeStamp \"Executing 'msiexec.exe $Arguments'\"\r\n      Start-Process -FilePath msiexec.exe -ArgumentList $Arguments -Wait\r\n    }\r\n    Else {\r\n      Write-OutputWithTimeStamp \"Executing 'msiexec.exe /i $DestFile /qn'\"\r\n      Start-Process -FilePath msiexec.exe -ArgumentList \"/i $DestFile /qn\" -Wait\r\n    }\r\n    $status = Get-WmiObject -Class Win32_Product | Where-Object Name -like \"*$($Name)*\"\r\n    if ($status) {\r\n      Write-OutputWithTimeStamp \"'$($status[0].Name)' is installed\"\r\n    }\r\n    else {\r\n      Write-OutputWithTimeStamp \"'$Name' did not install properly, please check arguments\"\r\n    }\r\n  }\r\n  'bat' {\r\n    If ($Arguments) {\r\n      Write-OutputWithTimeStamp \"Executing 'cmd.exe `\"$DestFile`\" $Arguments'\"\r\n      Start-Process -FilePath cmd.exe -ArgumentList \"`\"$DestFile`\" $Arguments\" -Wait\r\n    }\r\n    Else {\r\n      Write-OutputWithTimeStamp \"Executing 'cmd.exe `\"$DestFile`\"'\"\r\n      Start-Process -FilePath cmd.exe -ArgumentList \"`\"$DestFile`\"\" -Wait\r\n    }\r\n  }\r\n  'ps1' {\r\n    If ($Arguments) {\r\n      Write-OutputWithTimeStamp \"Calling PowerShell Script '$DestFile' with arguments '$Arguments'\"\r\n      & $DestFileName $Arguments\r\n    }\r\n    Else {\r\n      Write-OutputWithTimeStamp \"Calling PowerShell Script '$DestFile'\"\r\n      & $DestFileName\r\n    }\r\n  }\r\n  'zip' {\r\n    $DestinationPath = Join-Path -Path \"$TempDir\" -ChildPath $([System.IO.Path]::GetFileNameWithoutExtension($SourceFileName))\r\n    Write-OutputWithTimeStamp \"Extracting '$DestFile' to '$DestinationPath'.\"\r\n    Expand-Archive -Path $DestFileName -DestinationPath $DestinationPath -Force\r\n    Write-OutputWithTimeStamp \"Finding PowerShell script in root of '$DestinationPath'.\"\r\n    $PSScript = (Get-ChildItem -Path $DestinationPath -filter '*.ps1').FullName\r\n    If ($PSScript.count -gt 1) { $PSScript = $PSScript[0] }\r\n    If ($Arguments) {\r\n      Write-OutputWithTimeStamp \"Calling PowerShell Script '$PSScript' with arguments '$Arguments'\"\r\n      & $PSScript $Arguments\r\n    }\r\n    Else {\r\n      Write-OutputWithTimeStamp \"Calling PowerShell Script '$PSScript'\"         \r\n      & $PSScript\r\n    }\r\n  }\r\n}\r\nIf ($null -eq $BuildDir -or $BuildDir -eq '') {Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue}\r\nStop-Transcript",
+                    "$fxv#0": "param(\r\n  [string]$APIVersion,\r\n  [string]$Arguments,\r\n  [string]$BlobStorageSuffix,\r\n  [string]$BuildDir,\r\n  [string]$Name,\r\n  [string]$Uri,\r\n  [string]$UserAssignedIdentityClientId\r\n)\r\n\r\nfunction Write-OutputWithTimeStamp {\r\n  param(\r\n      [parameter(ValueFromPipeline=$True, Mandatory=$True, Position=0)]\r\n      [string]$Message\r\n  )    \r\n  $Timestamp = Get-Date -Format 'MM/dd/yyyy HH:mm:ss.ff'\r\n  $Entry = '[' + $Timestamp + '] ' + $Message\r\n  Write-Output $Entry\r\n}\r\n\r\nIf (!(Test-Path -Path \"$env:SystemRoot\\Logs\\ImageBuild\")) { New-Item -Path \"$env:SystemRoot\\Logs\\ImageBuild\" -ItemType Directory -Force | Out-Null }\r\nStart-Transcript -Path \"$env:SystemRoot\\Logs\\ImageBuild\\$Name.log\" -Force\r\n\r\nWrite-OutputWithTimeStamp \"Starting '$Name' script with the following parameters.\"\r\nWrite-Output ( $PSBoundParameters | Format-Table -AutoSize )\r\nIf ($Arguments -eq '') { $Arguments = $null }\r\nIf ($Null -eq $BuildDir -or $BuildDir -ne '') {\r\n  $TempDir = Join-Path $BuildDir -ChildPath $Name\r\n} Else {\r\n  $TempDir = Join-Path $Env:TEMP -ChildPath $Name\r\n}\r\n\r\nNew-Item -Path $TempDir -ItemType Directory -Force | Out-Null\r\n$WebClient = New-Object System.Net.WebClient\r\nIf ($Uri -match $BlobStorageSuffix -and $UserAssignedIdentityClientId -ne '') {\r\n  $StorageEndpoint = ($Uri -split \"://\")[0] + \"://\" + ($Uri -split \"/\")[2] + \"/\"\r\n  $TokenUri = \"http://169.254.169.254/metadata/identity/oauth2/token?api-version=$APIVersion&resource=$StorageEndpoint&client_id=$UserAssignedIdentityClientId\"\r\n  $AccessToken = ((Invoke-WebRequest -Headers @{Metadata = $true } -Uri $TokenUri -UseBasicParsing).Content | ConvertFrom-Json).access_token\r\n  $WebClient.Headers.Add('x-ms-version', '2017-11-09')\r\n  $webClient.Headers.Add(\"Authorization\", \"Bearer $AccessToken\")\r\n}\r\n$SourceFileName = ($Uri -Split \"/\")[-1]\r\nWrite-OutputWithTimeStamp \"Downloading '$Uri' to '$TempDir'.\"\r\n$DestFile = Join-Path -Path $TempDir -ChildPath $SourceFileName\r\n$webClient.DownloadFile(\"$Uri\", \"$DestFile\")\r\nStart-Sleep -Seconds 10\r\nIf (!(Test-Path -Path $DestFile)) { Write-Error \"Failed to download $SourceFileName\"; Exit 1 }\r\nWrite-OutputWithTimeStamp 'Finished downloading'\r\nSet-Location -Path $TempDir\r\n$Ext = [System.IO.Path]::GetExtension($DestFile).ToLower().Replace('.','')\r\nswitch ($Ext) {\r\n  'exe' {\r\n      If ($Arguments) {\r\n        Write-OutputWithTimeStamp \"Executing '`\"$DestFile`\" $Arguments'\"\r\n        $Install = Start-Process -FilePath \"$DestFile\" -ArgumentList $Arguments -NoNewWindow -Wait -PassThru\r\n        Write-OutputWithTimeStamp \"Installation ended with exit code $($Install.ExitCode).\"\r\n      }\r\n      Else {\r\n        Write-OutputWithTimeStamp \"Executing `\"$DestFile`\"\"\r\n        $Install = Start-Process -FilePath \"$DestFile\" -NoNewWindow -Wait -PassThru\r\n        Write-OutputWithTimeStamp \"Installation ended with exit code $($Install.ExitCode).\"\r\n      }      \r\n    }\r\n  'msi' {\r\n    If ($Arguments) {\r\n      If ($Arguments -notcontains $SourceFileName) {\r\n        $Arguments = \"/i $DestFile $Arguments\"\r\n      }\r\n      Write-OutputWithTimeStamp \"Executing 'msiexec.exe $Arguments'\"\r\n      $MsiExec = Start-Process -FilePath msiexec.exe -ArgumentList $Arguments -Wait -PassThru\r\n      Write-OutputWithTimeStamp \"Installation ended with exit code $($MsiExec.ExitCode).\"\r\n\r\n    }\r\n    Else {\r\n      Write-OutputWithTimeStamp \"Executing 'msiexec.exe /i $DestFile /qn'\"\r\n      $MsiExec = Start-Process -FilePath msiexec.exe -ArgumentList \"/i $DestFile /qn\" -Wait -PassThru\r\n      Write-OutputWithTimeStamp \"Installation ended with exit code $($MsiExec.ExitCode).\"\r\n    }    \r\n  }\r\n  'bat' {\r\n    If ($Arguments) {\r\n      Write-OutputWithTimeStamp \"Executing 'cmd.exe `\"$DestFile`\" $Arguments'\"\r\n      Start-Process -FilePath cmd.exe -ArgumentList \"`\"$DestFile`\" $Arguments\" -Wait\r\n    }\r\n    Else {\r\n      Write-OutputWithTimeStamp \"Executing 'cmd.exe `\"$DestFile`\"'\"\r\n      Start-Process -FilePath cmd.exe -ArgumentList \"`\"$DestFile`\"\" -Wait\r\n    }\r\n  }\r\n  'ps1' {\r\n    If ($Arguments) {\r\n      Write-OutputWithTimeStamp \"Calling PowerShell Script '$DestFile' with arguments '$Arguments'\"\r\n      & $DestFile $Arguments\r\n    }\r\n    Else {\r\n      Write-OutputWithTimeStamp \"Calling PowerShell Script '$DestFile'\"\r\n      & $DestFile\r\n    }\r\n  }\r\n  'zip' {\r\n    $DestinationPath = Join-Path -Path \"$TempDir\" -ChildPath $([System.IO.Path]::GetFileNameWithoutExtension($SourceFileName))\r\n    Write-OutputWithTimeStamp \"Extracting '$DestFile' to '$DestinationPath'.\"\r\n    Expand-Archive -Path $DestFile -DestinationPath $DestinationPath -Force\r\n    Write-OutputWithTimeStamp \"Finding PowerShell script in root of '$DestinationPath'.\"\r\n    $PSScript = (Get-ChildItem -Path $DestinationPath -filter '*.ps1').FullName\r\n    If ($PSScript.count -gt 1) { $PSScript = $PSScript[0] }\r\n    If ($Arguments) {\r\n      Write-OutputWithTimeStamp \"Calling PowerShell Script '$PSScript' with arguments '$Arguments'\"\r\n      & $PSScript $Arguments\r\n    }\r\n    Else {\r\n      Write-OutputWithTimeStamp \"Calling PowerShell Script '$PSScript'\"         \r\n      & $PSScript\r\n    }\r\n  }\r\n}\r\nIf ($null -eq $BuildDir -or $BuildDir -eq '') {Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue}\r\nStop-Transcript",
                     "apiVersion": "[if(equals(environment().name, 'USNat'), '2017-08-01', '2018-02-01')]"
                   },
                   "resources": [
@@ -4577,8 +4381,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.30.23.60470",
-                      "templateHash": "6892589686213067293"
+                      "version": "0.32.4.45862",
+                      "templateHash": "11732306424258073986"
                     }
                   },
                   "parameters": {
@@ -4628,8 +4432,8 @@
                           "metadata": {
                             "_generator": {
                               "name": "bicep",
-                              "version": "0.30.23.60470",
-                              "templateHash": "17000121396476068751"
+                              "version": "0.32.4.45862",
+                              "templateHash": "9284342199236517061"
                             }
                           },
                           "parameters": {
@@ -4734,8 +4538,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.30.23.60470",
-                      "templateHash": "17336101086742432731"
+                      "version": "0.32.4.45862",
+                      "templateHash": "17069898366734689581"
                     },
                     "name": "Virtual Machine RunCommand",
                     "description": "This module deploys a Virtual Machine Run Command.",
@@ -5005,7 +4809,7 @@
               }
             ]
           },
-          "privateEndpoints": "[if(and(and(and(and(parameters('privateEndpoint'), not(empty(parameters('privateEndpointSubnetResourceId')))), not(empty(parameters('azureBackupPrivateDnsZoneResourceId')))), not(empty(parameters('azureBlobPrivateDnsZoneResourceId')))), not(empty(parameters('azureQueuePrivateDnsZoneResourceId')))), createObject('value', createArray(createObject('customNetworkInterfaceName', replace(replace(replace(parameters('privateEndpointNICNameConv'), 'SUBRESOURCE', 'AzureBackup'), 'RESOURCE', parameters('recoveryServicesVaultName')), 'VNETID', format('{0}', split(parameters('privateEndpointSubnetResourceId'), '/')[8])), 'name', replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', 'AzureBackup'), 'RESOURCE', parameters('recoveryServicesVaultName')), 'VNETID', format('{0}', split(parameters('privateEndpointSubnetResourceId'), '/')[8])), 'privateDnsZoneGroup', createObject('privateDNSResourceIds', createArray(parameters('azureBackupPrivateDnsZoneResourceId'), parameters('azureBlobPrivateDnsZoneResourceId'), parameters('azureQueuePrivateDnsZoneResourceId'))), 'service', 'AzureBackup', 'subnetResourceId', parameters('privateEndpointSubnetResourceId'), 'tags', union(createObject('cm-resource-parent', parameters('hostPoolResourceId')), coalesce(tryGet(parameters('tags'), 'Microsoft.Network/privateEndpoints'), createObject()))))), createObject('value', null()))]",
+          "privateEndpoints": "[if(and(and(and(and(parameters('privateEndpoint'), not(empty(parameters('privateEndpointSubnetResourceId')))), not(empty(parameters('azureBackupPrivateDnsZoneResourceId')))), not(empty(parameters('azureBlobPrivateDnsZoneResourceId')))), not(empty(parameters('azureQueuePrivateDnsZoneResourceId')))), createObject('value', createArray(createObject('customNetworkInterfaceName', replace(replace(replace(parameters('privateEndpointNICNameConv'), 'SUBRESOURCE', 'AzureBackup'), 'RESOURCE', parameters('recoveryServicesVaultName')), 'VNETID', format('{0}', split(parameters('privateEndpointSubnetResourceId'), '/')[8])), 'name', replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', 'AzureBackup'), 'RESOURCE', parameters('recoveryServicesVaultName')), 'VNETID', format('{0}', split(parameters('privateEndpointSubnetResourceId'), '/')[8])), 'privateDnsZoneGroup', if(empty(variables('nonEmptyBackupPrivateDNSZoneResourceIds')), null(), createObject('privateDNSResourceIds', variables('nonEmptyBackupPrivateDNSZoneResourceIds'))), 'service', 'AzureBackup', 'subnetResourceId', parameters('privateEndpointSubnetResourceId'), 'tags', union(createObject('cm-resource-parent', parameters('hostPoolResourceId')), coalesce(tryGet(parameters('tags'), 'Microsoft.Network/privateEndpoints'), createObject()))))), createObject('value', null()))]",
           "diagnosticWorkspaceId": {
             "value": "[parameters('logAnalyticsWorkspaceResourceId')]"
           },
@@ -5019,8 +4823,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.30.23.60470",
-              "templateHash": "18406563659091565212"
+              "version": "0.32.4.45862",
+              "templateHash": "11522276788388056533"
             },
             "name": "Recovery Services Vaults",
             "description": "This module deploys a Recovery Services Vault.",
@@ -5313,8 +5117,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.30.23.60470",
-                      "templateHash": "8677463129553588959"
+                      "version": "0.32.4.45862",
+                      "templateHash": "5519200666331866371"
                     },
                     "name": "Recovery Services Vault Replication Fabrics",
                     "description": "This module deploys a Replication Fabric for Azure to Azure disaster recovery scenario of Azure Site Recovery.\r\n\r\n> Note: this module currently support only the `instanceType: 'Azure'` scenario.",
@@ -5394,8 +5198,8 @@
                           "metadata": {
                             "_generator": {
                               "name": "bicep",
-                              "version": "0.30.23.60470",
-                              "templateHash": "14831430140511432763"
+                              "version": "0.32.4.45862",
+                              "templateHash": "17034026056952476733"
                             },
                             "name": "Recovery Services Vault Replication Fabric Replication Protection Containers",
                             "description": "This module deploys a Recovery Services Vault Replication Protection Container.\r\n\r\n> **Note**: this version of the module only supports the `instanceType: 'A2A'` scenario.",
@@ -5489,8 +5293,8 @@
                                   "metadata": {
                                     "_generator": {
                                       "name": "bicep",
-                                      "version": "0.30.23.60470",
-                                      "templateHash": "2355604949274825130"
+                                      "version": "0.32.4.45862",
+                                      "templateHash": "7362200516842326742"
                                     },
                                     "name": "Recovery Services Vault Replication Fabric Replication Protection Container Replication Protection Container Mappings",
                                     "description": "This module deploys a Recovery Services Vault (RSV) Replication Protection Container Mapping.\r\n\r\n> **Note**: this version of the module only supports the `instanceType: 'A2A'` scenario.",
@@ -5706,8 +5510,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.30.23.60470",
-                      "templateHash": "2714556373342549048"
+                      "version": "0.32.4.45862",
+                      "templateHash": "11430358973211411009"
                     },
                     "name": "Recovery Services Vault Replication Policies",
                     "description": "This module deploys a Recovery Services Vault Replication Policy for Disaster Recovery scenario.\r\n\r\n> **Note**: this version of the module only supports the `instanceType: 'A2A'` scenario.",
@@ -5831,8 +5635,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.30.23.60470",
-                      "templateHash": "8831096651733297926"
+                      "version": "0.32.4.45862",
+                      "templateHash": "10094439213599978270"
                     },
                     "name": "Recovery Services Vault Backup Storage Config",
                     "description": "This module deploys a Recovery Service Vault Backup Storage Configuration.",
@@ -5958,8 +5762,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.30.23.60470",
-                      "templateHash": "8222252302218652032"
+                      "version": "0.32.4.45862",
+                      "templateHash": "15785636040301022180"
                     },
                     "name": "Recovery Services Vault Protection Container",
                     "description": "This module deploys a Recovery Services Vault Protection Container.",
@@ -6099,8 +5903,8 @@
                           "metadata": {
                             "_generator": {
                               "name": "bicep",
-                              "version": "0.30.23.60470",
-                              "templateHash": "12193073774274736616"
+                              "version": "0.32.4.45862",
+                              "templateHash": "8409556960090427141"
                             },
                             "name": "Recovery Service Vaults Protection Container Protected Item",
                             "description": "This module deploys a Recovery Services Vault Protection Container Protected Item.",
@@ -6265,8 +6069,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.30.23.60470",
-                      "templateHash": "2997233827023702889"
+                      "version": "0.32.4.45862",
+                      "templateHash": "7139861727518132001"
                     },
                     "name": "Recovery Services Vault Backup Policies",
                     "description": "This module deploys a Recovery Services Vault Backup Policy.",
@@ -6374,8 +6178,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.30.23.60470",
-                      "templateHash": "11104609825546301514"
+                      "version": "0.32.4.45862",
+                      "templateHash": "985903164551110149"
                     },
                     "name": "Recovery Services Vault Backup Config",
                     "description": "This module deploys a Recovery Services Vault Backup Config.",
@@ -6547,8 +6351,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.30.23.60470",
-                      "templateHash": "7857651426193262933"
+                      "version": "0.32.4.45862",
+                      "templateHash": "17490215492719435947"
                     },
                     "name": "Recovery Services Vault Replication Alert Settings",
                     "description": "This module deploys a Recovery Services Vault Replication Alert Settings.",
@@ -6694,8 +6498,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.30.23.60470",
-                      "templateHash": "14292475909061979612"
+                      "version": "0.32.4.45862",
+                      "templateHash": "8861436825010776156"
                     },
                     "name": "Private Endpoints"
                   },
@@ -6832,8 +6636,8 @@
                           "metadata": {
                             "_generator": {
                               "name": "bicep",
-                              "version": "0.30.23.60470",
-                              "templateHash": "10007477398631549590"
+                              "version": "0.32.4.45862",
+                              "templateHash": "16404989872324800297"
                             },
                             "name": "Private Endpoint Private DNS Zone Groups",
                             "description": "This module deploys a Private Endpoint Private DNS Zone Group.",
@@ -7032,8 +6836,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.30.23.60470",
-              "templateHash": "1583856294017003003"
+              "version": "0.32.4.45862",
+              "templateHash": "4998054504379783509"
             }
           },
           "parameters": {
@@ -7118,8 +6922,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.30.23.60470",
-              "templateHash": "3636665144262433238"
+              "version": "0.32.4.45862",
+              "templateHash": "10132979135812863421"
             }
           },
           "parameters": {
