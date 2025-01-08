@@ -9,6 +9,28 @@ Function Get-AccessToken {
     Return $AccessToken
 }
 
+Function Get-GraphToken {
+    param(
+        [parameter(Mandatory = $false)]
+        [string]$GraphEndpoint = $env:GRAPH_ENDPOINT,
+        [parameter(Mandatory = $false)]
+        [string]$ClientId,
+        [parameter(Mandatory = $false)]
+        [string]$TenantId,
+        [parameter(Mandatory = $false)]
+        [string]$LoginUrl
+
+    )
+    $Body = @{
+        client_id     = $ClientId
+        scope         = $GraphEndpoint + '/.default'
+        grant_type    = 'client_credentials'
+    }
+    $TokenResponse = Invoke-RestMethod -Method Post -Uri ($LoginUrl + '/' + $TenantId + '/oauth2/v2.0/token') -Body $Body -ContentType 'application/x-www-form-urlencoded'
+    $AccessToken = $TokenResponse.access_token
+    Return $AccessToken
+}
+
 Function Invoke-AzureRestMethod {
     <#
         .SYNOPSIS
@@ -745,6 +767,49 @@ function Remove-SHRSessionHost {
         }
     }
 }
+
+function Remove-SHRSessionHostEntraDevice {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $false)]
+        $GraphEndpoint = $env:GraphEndpoint,
+        [Parameter(Mandatory = $true)]
+        $GraphToken,
+        [Parameter(Mandatory = $true)]
+        [string] $VMName
+    )
+    $Headers = @{
+        'Authorization' = "Bearer $GraphToken"
+    }
+    $Device = Invoke-RestMethod -Method Get -Uri $GraphEndpoint + '/v1.0/devices?$filter=equals(displayName,' + $VMName + ')' -Headers $Headers
+    If ($Device) {
+        $Id = $Device.id
+        Write-HostDetailed -Message "Removing device from Entra ID for VM $VMName"
+        Invoke-RestMethod -Method Delete -Uri $GraphEndpoint + '/v1.0/devices/' + $Id -Headers $Headers
+    }    
+}
+
+function Remove-SHRSessionHostIntuneDevice {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $false)]
+        $GraphEndpoint = $env:GraphEndpoint,
+        [Parameter(Mandatory = $true)]
+        $GraphToken,
+        [Parameter(Mandatory = $true)]
+        [string] $VMName
+    )
+    $Headers = @{
+        'Authorization' = "Bearer $GraphToken"
+    }
+    $Device = Invoke-RestMethod -Method Get -Uri $GraphEndpoint + '/v1.0/deviceManagement/managedDevices?$filter=equals(displayName,' + $VMName + ')' -Headers $Headers
+    If ($Device) {
+        $Id = $Device.id
+        Write-HostDetailed -Message "Removing device from Intune for VM $VMName"
+        Invoke-RestMethod -Method Delete -Uri $GraphEndpoint + '/v1.0/deviceManagement/managedDevices/' + $Id -Headers $Headers
+    }
+}
+
 function Write-HostDetailed {
     [CmdletBinding()]
     param (
@@ -777,6 +842,8 @@ function Write-HostDetailed {
         Write-Host $WriteMessage
     }
 }
+
+
 
 ## Can get environment dynamically: https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/bicep-functions-deployment#environment
 ## https://learn.microsoft.com/en-us/graph/deployments
