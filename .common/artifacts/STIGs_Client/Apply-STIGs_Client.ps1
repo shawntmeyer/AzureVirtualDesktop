@@ -164,8 +164,8 @@ If (-not(Test-Path -Path "$env:SystemRoot\System32\Lgpo.exe")) {
     $azipfiles = Get-ChildItem -Path $PSScriptRoot -filter '*.zip' -recurse
     $lgpozip = $azipfiles[0].FullName
     Write-Log -category Info -message "Expanding '$lgpozip' to '$DirTemp'."
-    expand-archive -path "$lgpozip" -DestinationPath "$DirTemp" -force
-    $algpoexe = Get-ChildItem -Path "$DirTemp" -filter 'lgpo.exe' -recurse
+    expand-archive -path "$lgpozip" -DestinationPath $Script:TempDir -force
+    $algpoexe = Get-ChildItem -Path $Script:TempDir -filter 'lgpo.exe' -recurse
     If ($algpoexe.count -gt 0) {
         $lgpoexe = $algpoexe[0].FullName
         Write-Log -category Info -message "Copying '$lgpoexe' to '$env:SystemRoot\system32'."
