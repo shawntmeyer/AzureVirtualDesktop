@@ -1,15 +1,89 @@
-[CmdletBinding(SupportsShouldProcess = $true)]
-param (
-    [Parameter(Mandatory = $false)]
-    [Hashtable] $DynParameters
-)
-
-[string]$LogDir = "$env:SystemRoot\Logs\Configuration"
+[string]$Script:LogDir = "$env:SystemRoot\Logs\Configuration"
 [string]$ScriptName = "Apply-STIG-AVD-Exceptions"
-[string]$Log = Join-Path -Path $LogDir -ChildPath "$ScriptName.log"
-[string]$tempDir = Join-Path -Path $env:Temp -ChildPath $ScriptName
+[string]$Log = Join-Path -Path $Script:LogDir -ChildPath "$ScriptName.log"
+[string]$Script:TempDir = Join-Path -Path $env:Temp -ChildPath $ScriptName
 
 #region Functions
+
+Function Get-InternetFile {
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory = $true, Position = 0)]
+        [uri]$Url,
+        [Parameter(Mandatory = $true, Position = 1)]
+        [string]$OutputDirectory,
+        [Parameter(Mandatory = $false, Position = 2)]
+        [string]$OutputFileName
+    )
+
+    Begin {
+        $ProgressPreference = 'SilentlyContinue'
+        ## Get the name of this function and write header
+        [string]${CmdletName} = $PSCmdlet.MyInvocation.MyCommand.Name
+        Write-Verbose "Starting ${CmdletName} with the following parameters: $PSBoundParameters"
+    }
+    Process {
+
+        $start_time = Get-Date
+
+        If (!$OutputFileName) {
+            Write-Verbose "${CmdletName}: No OutputFileName specified. Trying to get file name from URL."
+            If ((split-path -path $Url -leaf).Contains('.')) {
+
+                $OutputFileName = split-path -path $url -leaf
+                Write-Verbose "${CmdletName}: Url contains file name - '$OutputFileName'."
+            }
+            Else {
+                Write-Verbose "${CmdletName}: Url does not contain file name. Trying 'Location' Response Header."
+                $request = [System.Net.WebRequest]::Create($url)
+                $request.AllowAutoRedirect=$false
+                $response=$request.GetResponse()
+                $Location = $response.GetResponseHeader("Location")
+                If ($Location) {
+                    $OutputFileName = [System.IO.Path]::GetFileName($Location)
+                    Write-Verbose "${CmdletName}: File Name from 'Location' Response Header is '$OutputFileName'."
+                }
+                Else {
+                    Write-Verbose "${CmdletName}: No 'Location' Response Header returned. Trying 'Content-Disposition' Response Header."
+                    $result = Invoke-WebRequest -Method GET -Uri $Url -UseBasicParsing
+                    $contentDisposition = $result.Headers.'Content-Disposition'
+                    If ($contentDisposition) {
+                        $OutputFileName = $contentDisposition.Split("=")[1].Replace("`"","")
+                        Write-Verbose "${CmdletName}: File Name from 'Content-Disposition' Response Header is '$OutputFileName'."
+                    }
+                }
+            }
+        }
+
+        If ($OutputFileName) { 
+            $wc = New-Object System.Net.WebClient
+            $OutputFile = Join-Path $OutputDirectory $OutputFileName
+            Write-Verbose "${CmdletName}: Downloading file at '$url' to '$OutputFile'."
+            Try {
+                $wc.DownloadFile($url, $OutputFile)
+                $time = (Get-Date).Subtract($start_time).Seconds
+                
+                Write-Verbose "${CmdletName}: Time taken: '$time' seconds."
+                if (Test-Path -Path $outputfile) {
+                    $totalSize = (Get-Item $outputfile).Length / 1MB
+                    Write-Verbose "${CmdletName}: Download was successful. Final file size: '$totalsize' mb"
+                    Return $OutputFile
+                }
+            }
+            Catch {
+                Write-Error "${CmdletName}: Error downloading file. Please check url."
+                Return $Null
+            }
+        }
+        Else {
+            Write-Error "${CmdletName}: No OutputFileName specified. Unable to download file."
+            Return $Null
+        }
+    }
+    End {
+        Write-Verbose "Ending ${CmdletName}"
+    }
+}
 Function Update-LocalGPOTextFile {
     [CmdletBinding(DefaultParameterSetName = 'Set')]
     Param (
@@ -93,7 +167,7 @@ Function Update-LocalGPOTextFile {
 Function Invoke-LGPO {
     [CmdletBinding()]
     Param (
-        [string]$InputDir = "$TempDir",
+        [string]$InputDir = "$Script:TempDir",
         [string]$SearchTerm
     )
     Begin {
@@ -149,32 +223,43 @@ SeDenyRemoteInteractiveLogonRight = *S-1-5-32-546
 If (-not (Test-Path $env:SystemRoot\Logs)) {
     New-Item -Path $env:SystemRoot -Name 'Logs' -ItemType Directory -Force
 }
-If (-not (Test-Path $LogDir)) {
+If (-not (Test-Path $Script:LogDir)) {
     New-Item -Path "$env:SystemRoot\Logs" -Name 'Configuration' -ItemType Directory -Force
 }
-If (-not (Test-Path $TempDir)) {
-    New-Item -Path "$env:Temp" -Name $ScriptName -ItemType Directory -Force
+If (-not (Test-Path $Script:TempDir)) {
+    New-Item -Path $Script:TempDir -ItemType Directory -Force
 }
 Start-Transcript -Path $Log -Force -IncludeInvocationHeader
 
 Write-Output "Checking for lgpo.exe in '$env:SystemRoot\system32'."
 
 If (-not(Test-Path -Path "$env:SystemRoot\System32\Lgpo.exe")) {
-    $azipfiles = Get-ChildItem -Path $PSScriptRoot -filter '*.zip' -recurse
-    $lgpozip = $azipfiles[0].FullName
-    Write-Log -category Info -message "Expanding '$lgpozip' to '$DirTemp'."
-    expand-archive -path "$lgpozip" -DestinationPath "$DirTemp" -force
-    $algpoexe = Get-ChildItem -Path "$DirTemp" -filter 'lgpo.exe' -recurse
-    If ($algpoexe.count -gt 0) {
-        $lgpoexe = $algpoexe[0].FullName
-        Write-Log -category Info -message "Copying '$lgpoexe' to '$env:SystemRoot\system32'."
-        Copy-Item -Path $lgpoexe -Destination "$env:SystemRoot\System32" -force        
+    $LGPOZip = Join-Path -Path $PSScriptRoot -ChildPath 'LGPO.zip'
+    If (Test-Path $LPGOZip) {
+        Write-Log -category Info -message "Expanding '$LGPO' to '$Script:TempDir'."
+        expand-archive -path "$lgpozip" -DestinationPath $Script:TempDir -force
+        $algpoexe = Get-ChildItem -Path $Script:TempDir -filter 'lgpo.exe' -recurse
+        If ($algpoexe.count -gt 0) {
+            $lgpoexe = $algpoexe[0].FullName
+            Write-Log -category Info -message "Copying '$lgpoexe' to '$env:SystemRoot\system32'."
+            Copy-Item -Path $lgpoexe -Destination "$env:SystemRoot\System32" -force        
+        }
+    } Else {
+        $urlLGPO = 'https://download.microsoft.com/download/8/5/C/85C25433-A1B0-4FFA-9429-7E023E7DA8D8/LGPO.zip'
+        $fileLGPODownload = Get-InternetFile -Url $urlLGPO -OutputDirectory $Script:TempDir
+        $outputDir = Join-Path $Script:TempDir -ChildPath 'LGPO'
+        Expand-Archive -Path $fileLGPODownload -DestinationPath $outputDir
+        Remove-Item $fileLGPODownload -Force
+        $fileLGPO = (Get-ChildItem -Path $outputDir -file -Filter 'lgpo.exe' -Recurse)[0].FullName
+        Write-Output "Copying `"$fileLGPO`" to System32"
+        Copy-Item -Path $fileLGPO -Destination "$env:SystemRoot\System32" -Force
+        Remove-Item -Path $outputDir -Recurse -Force
     }
 }
 
 If (Test-Path -Path "$env:SystemRoot\System32\Lgpo.exe") {
 
-    $SecFileContent | Out-File -FilePath "$tempDir\STIGExceptions.inf" -Encoding unicode
+    $SecFileContent | Out-File -FilePath "$Script:TempDir\STIGExceptions.inf" -Encoding unicode
 
     $appName = 'STIG_Exceptions'
 
