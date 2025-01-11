@@ -263,7 +263,7 @@ If (-not(Test-Path -Path "$env:SystemRoot\System32\Lgpo.exe")) {
     $LGPOZip = Join-Path -Path $PSScriptRoot -ChildPath 'LGPO.zip'
     If (Test-Path $LGPOZip) {
         Write-Log -category Info -message "Expanding '$LGPO' to '$Script:TempDir'."
-        expand-archive -path $LGPOZip -DestinationPath $Script:TempDir -force
+        Expand-Archive -path $LGPOZip -DestinationPath $Script:TempDir -force
         $algpoexe = Get-ChildItem -Path $Script:TempDir -filter 'lgpo.exe' -recurse
         If ($algpoexe.count -gt 0) {
             $fileLGPO = $algpoexe[0].FullName
@@ -277,7 +277,7 @@ If (-not(Test-Path -Path "$env:SystemRoot\System32\Lgpo.exe")) {
         Expand-Archive -Path $LGPOZip -DestinationPath $outputDir
         Remove-Item $LGPOZip -Force
         $fileLGPO = (Get-ChildItem -Path $outputDir -file -Filter 'lgpo.exe' -Recurse)[0].FullName
-        Write-Output "Copying `"$fileLGPO`" to System32"
+        Write-Log -message "Copying `"$fileLGPO`" to System32"
         Copy-Item -Path $fileLGPO -Destination "$env:SystemRoot\System32" -Force
         Remove-Item -Path $outputDir -Recurse -Force
     }
@@ -288,7 +288,7 @@ If (-not (Test-Path $stigZip)) {
     #Download the STIG GPOs
     $uriSTIGs = 'https://public.cyber.mil/stigs/gpo'
     $uriGPODownload = Get-InternetUrl -Url $uriSTIGs -searchstring 'GPOs'
-    Write-Output "Downloading STIG GPOs from `"$uriGPODownload`"."
+    Write-Log -message "Downloading STIG GPOs from `"$uriGPODownload`"."
     If ($uriGPODownload) {
         $stigZip = Get-InternetFile -url $uriGPODownload -OutputDirectory $Script:TempDir
     }
