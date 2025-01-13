@@ -14,8 +14,7 @@
                 "Configure-EdgePolicy",
                 "Configure-Office365Policy",
                 "Configure-OneDriveKFMPolicy",
-                "STIGs_AVDExceptions",
-                "STIGs_Client"
+                "STIGs"
             ]
         },
         {
@@ -173,7 +172,7 @@
             "GitHubRepo": "",
             "GitHubFileNamePattern": "",
             "DestinationFileName": "STIGs.zip",
-            "DestinationFolders": ["STIGs_Client"]
+            "DestinationFolders": ["STIGs"]
         },
         {
             "Name": "Virtual Desktop Optimization Tool (VDOT)",
