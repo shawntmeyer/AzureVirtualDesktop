@@ -363,7 +363,7 @@ function Write-Log {
 
     $Date = get-date
     $Content = "[$Date]`t$Category`t`t$Message`n" 
-    #Add-Content $Script:Log $content -ErrorAction Stop
+    Add-Content $Script:Log $content -ErrorAction Stop
     If ($Verbose) {
         Write-Verbose $Content
     } Else {
@@ -555,17 +555,17 @@ $null = Get-ChildItem -Path $Script:TempDir -Directory -Recurse | Where-Object {
 Write-Log -Message "Getting List of Applicable GPO folders."
 
 $GPOFolders = Get-ChildItem -Path $Script:TempDir -Directory
-[array]$arrApplicableFolders = $GPOFolders | Where-Object {$_.Name -like "DoD*Windows $osVersion*" -or $_.Name -like 'DoD*Edge*' -or $_.Name -like 'DoD*Firewall*' -or $_.Name -like 'DoD*Internet Explorer*' -or $_.Name -like 'DoD*Defender Antivirus*'} 
-$InstalledAppsToSTIG = (Get-InstalledApplication -Name $AppsToSTIG).Name
+[array]$ApplicableFolders = $GPOFolders | Where-Object {$_.Name -like "DoD*Windows $osVersion*" -or $_.Name -like 'DoD*Edge*' -or $_.Name -like 'DoD*Firewall*' -or $_.Name -like 'DoD*Internet Explorer*' -or $_.Name -like 'DoD*Defender Antivirus*'} 
+$InstalledAppsToSTIG = (Get-InstalledApplication -Name $AppsToSTIG).SearchString
 ForEach($SearchString in $InstalledAppsToSTIG) {
-   $arrApplicableFolders += $GPOFolders | Where-Object ($_.Name -match "$SearchString")
+   $ApplicableFolders += $GPOFolders | Where-Object {$_.Name -match "$SearchString"}
 }
-[array]$arrGPOFolders = @()
-ForEach ($folder in $arrApplicableGPOFolders.FullName) {
+[array]$GPOFolders = @()
+ForEach ($folder in $ApplicableFolders.FullName) {
     $gpoFolderPath = (Get-ChildItem -Path $folder -Filter 'GPOs' -Directory).FullName
-    $arrGPOFolders += $gpoFolderPath
+    $GPOFolders += $gpoFolderPath
 }
-ForEach ($gpoFolder in $arrGPOFolders) {
+ForEach ($gpoFolder in $GPOFolders) {
     Write-Log -Message "Running 'LGPO.exe /g `"$gpoFolder`"'"
     $lgpo = Start-Process -FilePath "$env:SystemRoot\System32\lgpo.exe" -ArgumentList "/g `"$gpoFolder`"" -Wait -PassThru
     Write-Log -Message "'lgpo.exe' exited with code [$($lgpo.ExitCode)]."
