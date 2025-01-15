@@ -10,7 +10,6 @@ param privateEndpoint bool
 param privateEndpointNameConv string
 param privateEndpointNICNameConv string
 param privateEndpointSubnetResourceId string
-param storageAccountNamePrefix string
 param storageCount int
 param storageIndex int
 param tags object
@@ -19,14 +18,11 @@ param userAssignedIdentityNameConv string
 
 var storageAccountEncryptionKeyName = 'StorageAccountEncryptionKey'
 
-// Ensure that the Key Vault Name doesn't exceed 24 characters because the storage account name could be up to 24 characters
-var storageAccountToken = length(replace(fslogixStorageAccountEncryptionKeysVaultNameConv, 'TOKEN-', '${storageAccountNamePrefix}-')) > 22 ? substring(storageAccountNamePrefix, 0, 3) : storageAccountNamePrefix
-
 module storageAccountKeyVaults '../../../../sharedModules/resources/key-vault/vault/main.bicep' = [for i in range(0, storageCount): {
-  name: '${replace(fslogixStorageAccountEncryptionKeysVaultNameConv, 'TOKEN-', '${storageAccountNamePrefix}${string(padLeft(i + storageIndex, 2, '0'))}-')}_${timeStamp}'
+  name: '${replace(fslogixStorageAccountEncryptionKeysVaultNameConv, '##-', '${string(padLeft(i + storageIndex, 2, '0'))}-')}_${timeStamp}'
   params: {
     location: location
-    name: replace(fslogixStorageAccountEncryptionKeysVaultNameConv, 'TOKEN-', '${storageAccountToken}${string(padLeft(i + storageIndex, 2, '0'))}-')
+    name: replace(fslogixStorageAccountEncryptionKeysVaultNameConv, '##-', '${string(padLeft(i + storageIndex, 2, '0'))}-')
     enablePurgeProtection: true
     enableSoftDelete: true
     enableVaultForDiskEncryption: false
@@ -72,12 +68,12 @@ module storageAccountKeyVaults '../../../../sharedModules/resources/key-vault/va
       ? [
           {
             customNetworkInterfaceName: replace(
-              replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'vault'), 'RESOURCE', replace(fslogixStorageAccountEncryptionKeysVaultNameConv, 'TOKEN-', '${storageAccountToken}${string(padLeft(i + storageIndex, 2, '0'))}-')),
+              replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'vault'), 'RESOURCE', replace(fslogixStorageAccountEncryptionKeysVaultNameConv, '##-', '${string(padLeft(i + storageIndex, 2, '0'))}-')),
               'VNETID',
               '${split(privateEndpointSubnetResourceId, '/')[8]}'
             )
             name: replace(
-              replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'vault'), 'RESOURCE', replace(fslogixStorageAccountEncryptionKeysVaultNameConv, 'TOKEN-', '${storageAccountToken}${string(padLeft(i + storageIndex, 2, '0'))}-')),
+              replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'vault'), 'RESOURCE', replace(fslogixStorageAccountEncryptionKeysVaultNameConv, '##-', '${string(padLeft(i + storageIndex, 2, '0'))}-')),
               'VNETID',
               '${split(privateEndpointSubnetResourceId, '/')[8]}'
             )

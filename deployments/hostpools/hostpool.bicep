@@ -909,9 +909,6 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (deployFSLogixStorage) {
     privateLinkScopeResourceId: azureMonitorPrivateLinkScopeResourceId
     serverFarmId: management.outputs.appServicePlanId
   }
-  dependsOn: [
-    controlPlane
-  ]
 }
 
 module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
@@ -1025,7 +1022,4 @@ module cleanUp 'modules/cleanUp/cleanUp.bicep' = {
     userAssignedIdentityClientId: deploymentPrereqs.outputs.deploymentUserAssignedIdentityClientId
     virtualMachineNames: sessionHosts.outputs.virtualMachineNames
   } 
-  dependsOn: [
-    sessionHosts
-  ]
 }
