@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.32.4.45862",
-      "templateHash": "9535617702252533214"
+      "templateHash": "7329680397750971035"
     }
   },
   "parameters": {
@@ -7528,7 +7528,7 @@
             "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Logic_{0}', parameters('timeStamp'))), '2022-09-01').outputs.fslogixFileShareNames.value]"
           },
           "fslogixStorageAccountEncryptionKeysVaultNameConv": {
-            "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.keyVaultNames.value.FSLogixStorageAccountEncryptionKeysNameConv]"
+            "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.keyVaultNames.value.FSLogixEncryptionKeys]"
           },
           "fslogixUserGroups": {
             "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Logic_{0}', parameters('timeStamp'))), '2022-09-01').outputs.fslogixUserGroups.value]"
@@ -7546,7 +7546,7 @@
             "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.functionAppNames.value.IncreaseStorageQuota]"
           },
           "increaseQuotaKeyVaultName": {
-            "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.keyVaultNames.value.IncreaseStorageQuota]"
+            "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.keyVaultNames.value.IncreaseStorageQuotaEncryptionKeys]"
           },
           "increaseQuotaStorageAccountName": {
             "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.storageAccountNames.value.IncreaseStorageQuota]"

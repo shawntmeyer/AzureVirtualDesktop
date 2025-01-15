@@ -869,13 +869,13 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (deployFSLogixStorage) {
     domainName: domainName
     fslogixAdminGroups: fslogixAdminGroups
     fslogixFileShares: logic.outputs.fslogixFileShareNames
-    fslogixStorageAccountEncryptionKeysVaultNameConv: resourceNames.outputs.keyVaultNames.FSLogixStorageAccountEncryptionKeysNameConv
+    fslogixStorageAccountEncryptionKeysVaultNameConv: resourceNames.outputs.keyVaultNames.FSLogixEncryptionKeys
     fslogixUserGroups: logic.outputs.fslogixUserGroups
     hostPoolResourceId: controlPlane.outputs.hostPoolResourceId
     identitySolution: identitySolution
     increaseQuotaAppInsightsName: resourceNames.outputs.appInsightsNames.IncreaseStorageQuota
     increaseQuotaFunctionAppName: resourceNames.outputs.functionAppNames.IncreaseStorageQuota
-    increaseQuotaKeyVaultName: resourceNames.outputs.keyVaultNames.IncreaseStorageQuota
+    increaseQuotaKeyVaultName: resourceNames.outputs.keyVaultNames.IncreaseStorageQuotaEncryptionKeys
     increaseQuotaStorageAccountName: resourceNames.outputs.storageAccountNames.IncreaseStorageQuota
     kerberosEncryptionType: fslogixStorageAccountADKerberosEncryption
     keyManagementStorageAccounts: keyManagementStorageAccounts
