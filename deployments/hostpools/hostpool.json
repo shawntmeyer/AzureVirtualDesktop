@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.32.4.45862",
-      "templateHash": "6864321756436421368"
+      "templateHash": "17329470041979921993"
     }
   },
   "parameters": {
@@ -3120,7 +3120,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.32.4.45862",
-              "templateHash": "3629374224215241993"
+              "templateHash": "8629464189890270699"
             }
           },
           "parameters": {
@@ -3234,7 +3234,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.32.4.45862",
-                      "templateHash": "4123283262228727821"
+                      "templateHash": "866727054146909118"
                     }
                   },
                   "parameters": {
@@ -3473,7 +3473,7 @@
                           "name": "[parameters('vaultSku')]",
                           "family": "A"
                         },
-                        "networkAcls": "[if(not(empty(parameters('networkAcls'))), createObject('bypass', coalesce(tryGet(parameters('networkAcls'), 'bypass'), null()), 'defaultAction', coalesce(tryGet(parameters('networkAcls'), 'defaultAction'), null()), 'virtualNetworkRules', coalesce(tryGet(parameters('networkAcls'), 'virtualNetworkRules'), createArray()), 'ipRules', coalesce(tryGet(parameters('networkAcls'), 'ipRules'), createArray())), null())]",
+                        "networkAcls": "[if(not(empty(parameters('networkAcls'))), createObject('bypass', coalesce(tryGet(parameters('networkAcls'), 'bypass'), null()), 'defaultAction', coalesce(tryGet(parameters('networkAcls'), 'defaultAction'), null()), 'virtualNetworkRules', coalesce(tryGet(parameters('networkAcls'), 'virtualNetworkRules'), createArray()), 'ipRules', coalesce(tryGet(parameters('networkAcls'), 'ipRules'), createArray())), createObject('bypass', 'None', 'defaultAction', 'Deny', 'virtualNetworkRules', createArray(), 'ipRules', createArray()))]",
                         "publicNetworkAccess": "[if(not(empty(parameters('publicNetworkAccess'))), parameters('publicNetworkAccess'), if(and(not(empty(parameters('privateEndpoints'))), empty(parameters('networkAcls'))), 'Disabled', null()))]"
                       }
                     },
@@ -7638,7 +7638,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.32.4.45862",
-              "templateHash": "14808003943145905396"
+              "templateHash": "14206611028142032807"
             }
           },
           "parameters": {
@@ -7880,7 +7880,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.32.4.45862",
-                      "templateHash": "9611403670083797203"
+                      "templateHash": "17123562714571162273"
                     }
                   },
                   "parameters": {
@@ -8031,7 +8031,7 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.32.4.45862",
-                              "templateHash": "4123283262228727821"
+                              "templateHash": "866727054146909118"
                             }
                           },
                           "parameters": {
@@ -8270,7 +8270,7 @@
                                   "name": "[parameters('vaultSku')]",
                                   "family": "A"
                                 },
-                                "networkAcls": "[if(not(empty(parameters('networkAcls'))), createObject('bypass', coalesce(tryGet(parameters('networkAcls'), 'bypass'), null()), 'defaultAction', coalesce(tryGet(parameters('networkAcls'), 'defaultAction'), null()), 'virtualNetworkRules', coalesce(tryGet(parameters('networkAcls'), 'virtualNetworkRules'), createArray()), 'ipRules', coalesce(tryGet(parameters('networkAcls'), 'ipRules'), createArray())), null())]",
+                                "networkAcls": "[if(not(empty(parameters('networkAcls'))), createObject('bypass', coalesce(tryGet(parameters('networkAcls'), 'bypass'), null()), 'defaultAction', coalesce(tryGet(parameters('networkAcls'), 'defaultAction'), null()), 'virtualNetworkRules', coalesce(tryGet(parameters('networkAcls'), 'virtualNetworkRules'), createArray()), 'ipRules', coalesce(tryGet(parameters('networkAcls'), 'ipRules'), createArray())), createObject('bypass', 'None', 'defaultAction', 'Deny', 'virtualNetworkRules', createArray(), 'ipRules', createArray()))]",
                                 "publicNetworkAccess": "[if(not(empty(parameters('publicNetworkAccess'))), parameters('publicNetworkAccess'), if(and(not(empty(parameters('privateEndpoints'))), empty(parameters('networkAcls'))), 'Disabled', null()))]"
                               }
                             },
@@ -14352,7 +14352,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.32.4.45862",
-              "templateHash": "614132496832023123"
+              "templateHash": "11176381041685843228"
             }
           },
           "parameters": {
@@ -15269,7 +15269,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.32.4.45862",
-                      "templateHash": "6528915659829634676"
+                      "templateHash": "12440768007232875486"
                     }
                   },
                   "parameters": {
@@ -15385,7 +15385,7 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.32.4.45862",
-                              "templateHash": "4123283262228727821"
+                              "templateHash": "866727054146909118"
                             }
                           },
                           "parameters": {
@@ -15624,7 +15624,7 @@
                                   "name": "[parameters('vaultSku')]",
                                   "family": "A"
                                 },
-                                "networkAcls": "[if(not(empty(parameters('networkAcls'))), createObject('bypass', coalesce(tryGet(parameters('networkAcls'), 'bypass'), null()), 'defaultAction', coalesce(tryGet(parameters('networkAcls'), 'defaultAction'), null()), 'virtualNetworkRules', coalesce(tryGet(parameters('networkAcls'), 'virtualNetworkRules'), createArray()), 'ipRules', coalesce(tryGet(parameters('networkAcls'), 'ipRules'), createArray())), null())]",
+                                "networkAcls": "[if(not(empty(parameters('networkAcls'))), createObject('bypass', coalesce(tryGet(parameters('networkAcls'), 'bypass'), null()), 'defaultAction', coalesce(tryGet(parameters('networkAcls'), 'defaultAction'), null()), 'virtualNetworkRules', coalesce(tryGet(parameters('networkAcls'), 'virtualNetworkRules'), createArray()), 'ipRules', coalesce(tryGet(parameters('networkAcls'), 'ipRules'), createArray())), createObject('bypass', 'None', 'defaultAction', 'Deny', 'virtualNetworkRules', createArray(), 'ipRules', createArray()))]",
                                 "publicNetworkAccess": "[if(not(empty(parameters('publicNetworkAccess'))), parameters('publicNetworkAccess'), if(and(not(empty(parameters('privateEndpoints'))), empty(parameters('networkAcls'))), 'Disabled', null()))]"
                               }
                             },
