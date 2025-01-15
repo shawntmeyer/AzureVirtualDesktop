@@ -352,8 +352,8 @@ var keyVaultNameIncreaseQuota = replace(
 var keyVaultNameConvStorage = replace(
       replace(
         nameConvResTypeAtEnd
-          ? 'cmk-STORAGEACCOUNTTOKEN-${nameConvSuffix}'
-          : 'RESOURCETYPE-cmk-STORAGEACCOUNTTOKEN-${nameConvSuffix}',
+          ? 'cmk-TOKEN-${nameConvSuffix}'
+          : 'RESOURCETYPE-cmk-TOKEN-${nameConvSuffix}',
         'LOCATION',
         locations[locationVirtualMachines].abbreviation
       ),
