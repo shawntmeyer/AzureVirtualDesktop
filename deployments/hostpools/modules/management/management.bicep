@@ -48,6 +48,10 @@ module secretsKeyVault '../../../sharedModules/resources/key-vault/vault/main.bi
   params: {
     name: keyVaultName
     diagnosticWorkspaceId: enableMonitoring ? logAnalyticsWorkspace.outputs.resourceId : ''
+    networkAcls: {
+      bypass: 'AzureServices'
+      defaultAction: privateEndpoint ? 'Deny' : 'Allow'
+    }
     privateEndpoints: privateEndpoint && !empty(privateEndpointSubnetResourceId)
       ? [
           {

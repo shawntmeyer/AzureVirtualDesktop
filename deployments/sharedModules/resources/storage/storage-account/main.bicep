@@ -263,7 +263,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
       virtualNetworkRules: networkAcls.?virtualNetworkRules ?? []
       ipRules: networkAcls.?ipRules ?? []
     } : {
-      bypass: 'None'
+      bypass: 'AzureServices'
       defaultAction: 'Deny'
     }
     allowBlobPublicAccess: allowBlobPublicAccess

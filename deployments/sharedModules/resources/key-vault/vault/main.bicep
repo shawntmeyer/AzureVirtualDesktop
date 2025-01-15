@@ -138,7 +138,7 @@ resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' = {
       virtualNetworkRules: networkAcls.?virtualNetworkRules ?? []
       ipRules: networkAcls.?ipRules ?? []
     } : {
-      bypass: 'None'
+      bypass: enableVaultForDeployment ? 'AzureServices' : 'None'
       defaultAction: 'Deny'
     }
     publicNetworkAccess: !empty(publicNetworkAccess) ? any(publicNetworkAccess) : (!empty(privateEndpoints) && empty(networkAcls) ? 'Disabled' : null)
