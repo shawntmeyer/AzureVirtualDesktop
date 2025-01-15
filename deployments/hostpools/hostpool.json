@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.32.4.45862",
-      "templateHash": "6864321756436421368"
+      "templateHash": "7479119751531740246"
     }
   },
   "parameters": {
@@ -945,6 +945,9 @@
           "identifier": {
             "value": "[parameters('identifier')]"
           },
+          "identitySolution": {
+            "value": "[parameters('identitySolution')]"
+          },
           "index": {
             "value": "[parameters('index')]"
           },
@@ -972,11 +975,14 @@
             "_generator": {
               "name": "bicep",
               "version": "0.32.4.45862",
-              "templateHash": "4688143932645931992"
+              "templateHash": "1116035725556370912"
             }
           },
           "parameters": {
             "identifier": {
+              "type": "string"
+            },
+            "identitySolution": {
               "type": "string"
             },
             "index": {
@@ -1470,10 +1476,13 @@
             "keyVaultNameVMs": "[replace(variables('keyVaultHPNameConv'), 'TOKEN', format('vme-{0}', take(uniqueString(tenant().tenantId, subscription().subscriptionId), variables('keyVaultNameHPsRemainingCharacters'))))]",
             "keyVaultNameSHR": "[replace(variables('keyVaultHPNameConv'), 'TOKEN', format('shr-{0}', take(uniqueString(tenant().tenantId, subscription().subscriptionId), variables('keyVaultNameHPsRemainingCharacters'))))]",
             "resourceGroupStorage": "[replace(replace(replace(variables('nameConv_HP_ResGroups'), 'TOKEN', 'storage'), 'LOCATION', format('{0}', variables('locations')[parameters('locationVirtualMachines')].abbreviation)), 'RESOURCETYPE', format('{0}', variables('resourceAbbreviations').resourceGroups))]",
-            "storageAccountNameConv": "[replace(replace(variables('nameConv_HP_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').storageAccounts), 'LOCATION', variables('locations')[parameters('locationVirtualMachines')].abbreviation)]",
             "netAppAccountName": "[replace(replace(replace(variables('nameConv_HP_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').netAppAccounts), 'LOCATION', variables('locations')[parameters('locationVirtualMachines')].abbreviation), 'TOKEN-', '')]",
             "netAppCapacityPoolName": "[replace(replace(replace(variables('nameConv_HP_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').netAppCapacityPools), 'LOCATION', variables('locations')[parameters('locationVirtualMachines')].abbreviation), 'TOKEN-', '')]",
-            "fslogixStorageAccountNamePrefix": "[if(empty(parameters('fslogixStorageCustomPrefix')), toLower(format('{0}', replace(replace(replace(replace(replace(replace(variables('nameConv_HP_Resources'), 'RESOURCETYPE', ''), variables('hpBaseName'), format('{0}ud', variables('hpBaseName'))), 'LOCATION', variables('locations')[parameters('locationVirtualMachines')].abbreviation), 'TOKEN-', ''), 'avd-', ''), '-', ''))), toLower(parameters('fslogixStorageCustomPrefix')))]",
+            "appAttachStorageAccountName": "[if(contains(parameters('identitySolution'), 'DomainServices'), format('aa{0}', uniqueString(variables('resourceGroupManagement'), subscription().subscriptionId)), take(format('{0}{1}', replace(replace(replace(replace(variables('nameConv_Shared_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').storageAccounts), 'LOCATION', variables('locations')[parameters('locationControlPlane')].abbreviation), 'TOKEN-', 'aa'), '-', ''), uniqueString(subscription().subscriptionId, variables('resourceGroupManagement'))), 24))]",
+            "hpStorageAccountNameConv": "[replace(replace(variables('nameConv_HP_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').storageAccounts), 'LOCATION', variables('locations')[parameters('locationVirtualMachines')].abbreviation)]",
+            "fslogixStorageAccountNamePrefix": "[if(empty(parameters('fslogixStorageCustomPrefix')), if(contains(parameters('identitySolution'), 'DomainServices'), take(format('up{0}', uniqueString(subscription().subscriptionId, variables('resourceGroupStorage'))), 13), take(format('{0}{1}', toLower(replace(replace(variables('hpStorageAccountNameConv'), 'TOKEN-', 'ud'), '-', '')), uniqueString(subscription().subscriptionId, variables('resourceGroupStorage'))), 22)), toLower(parameters('fslogixStorageCustomPrefix')))]",
+            "increaseQuotaFAStorageAccountName": "[take(format('{0}{1}', toLower(replace(replace(variables('hpStorageAccountNameConv'), 'TOKEN-', 'saq'), '-', '')), uniqueString(subscription().subscriptionId, variables('resourceGroupStorage'))), 24)]",
+            "sessionHostReplacerFAStorageAccountName": "[take(format('{0}{1}', toLower(replace(replace(variables('hpStorageAccountNameConv'), 'TOKEN-', 'shr'), '-', '')), uniqueString(subscription().subscriptionId, variables('resourceGroupHosts'))), 24)]",
             "fslogixfileShareNames": {
               "CloudCacheProfileContainer": [
                 "profile-containers"
@@ -1645,9 +1654,10 @@
             "storageAccountNames": {
               "type": "object",
               "value": {
+                "AppAttach": "[variables('appAttachStorageAccountName')]",
                 "FSLogix": "[variables('fslogixStorageAccountNamePrefix')]",
-                "IncreaseStorageQuota": "[toLower(replace(replace(variables('storageAccountNameConv'), 'TOKEN-', 'saq'), '-', ''))]",
-                "SessionHostReplacement": "[toLower(replace(replace(variables('storageAccountNameConv'), 'TOKEN-', 'shr'), '-', ''))]"
+                "IncreaseStorageQuota": "[variables('increaseQuotaFAStorageAccountName')]",
+                "SessionHostReplacement": "[variables('sessionHostReplacerFAStorageAccountName')]"
               }
             },
             "userAssignedIdentityNameConv": {

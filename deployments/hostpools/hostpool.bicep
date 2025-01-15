@@ -647,6 +647,7 @@ module resourceNames 'modules/resourceNames.bicep' = {
   params: {
     fslogixStorageCustomPrefix: fslogixStorageCustomPrefix
     identifier: identifier
+    identitySolution: identitySolution
     index: index
     locationControlPlane: locationControlPlane
     locationGlobalFeed: locationGlobalFeed
