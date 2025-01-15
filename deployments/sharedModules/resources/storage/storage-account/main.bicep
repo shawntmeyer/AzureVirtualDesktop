@@ -262,7 +262,10 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
       defaultAction: networkAcls.?defaultAction ?? null
       virtualNetworkRules: networkAcls.?virtualNetworkRules ?? []
       ipRules: networkAcls.?ipRules ?? []
-    } : null
+    } : {
+      bypass: 'None'
+      defaultAction: 'Deny'
+    }
     allowBlobPublicAccess: allowBlobPublicAccess
     publicNetworkAccess: !empty(publicNetworkAccess) ? any(publicNetworkAccess) : (!empty(privateEndpoints) && empty(networkAcls) ? 'Disabled' : null)
     azureFilesIdentityBasedAuthentication: !empty(azureFilesIdentityBasedAuthentication) ? azureFilesIdentityBasedAuthentication : null

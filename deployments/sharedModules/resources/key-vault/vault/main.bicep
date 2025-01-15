@@ -137,7 +137,10 @@ resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' = {
       defaultAction: networkAcls.?defaultAction ?? null
       virtualNetworkRules: networkAcls.?virtualNetworkRules ?? []
       ipRules: networkAcls.?ipRules ?? []
-    } : null
+    } : {
+      bypass: 'None'
+      defaultAction: 'Deny'
+    }
     publicNetworkAccess: !empty(publicNetworkAccess) ? any(publicNetworkAccess) : (!empty(privateEndpoints) && empty(networkAcls) ? 'Disabled' : null)
   }
 }
