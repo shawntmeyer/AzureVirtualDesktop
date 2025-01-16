@@ -263,8 +263,8 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
       virtualNetworkRules: networkAcls.?virtualNetworkRules ?? []
       ipRules: networkAcls.?ipRules ?? []
     } : {
-      bypass: 'AzureServices'
       defaultAction: 'Deny'
+      bypass: 'None'
     }
     allowBlobPublicAccess: allowBlobPublicAccess
     publicNetworkAccess: !empty(publicNetworkAccess) ? any(publicNetworkAccess) : (!empty(privateEndpoints) && empty(networkAcls) ? 'Disabled' : null)
