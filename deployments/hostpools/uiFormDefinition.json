@@ -2914,9 +2914,19 @@
 						{
 							"name": "backup",
 							"type": "Microsoft.Common.Section",
-							"label": "Backup",
+							"label": "Backup and Recovery",
 							"visible": true,
 							"elements": [
+								{
+									"name": "keyVaultRetentionInDays",
+									"type": "Microsoft.Common.Slider",
+									"label": "Key Vault Soft Delete Retention (in Days)",
+									"defaultValue": 90,
+									"showStepMarkers": false,
+									"toolTip": "The number of days Key Vaults are kept in the recycle bin. Soft delete is designed to prevent accidental deletion of your key vault and keys, secrets, and certificates stored inside key vault. When you delete a key vault or a key vault object, it remains recoverable for a user configurable retention period or a default of 90 days.",
+									"min": 7,
+									"max": 90
+								},								
 								{
 									"name": "recoveryServices",
 									"type": "Microsoft.Common.CheckBox",
@@ -3874,6 +3884,7 @@
 				"fslogixExistingRemoteStorageAccountResourceIds": "[if(and(steps('userProfiles').configureSessionHosts, contains(steps('userProfiles').fslogixContainerType, 'CloudCache'), equals(steps('userProfiles').storageService, 'AzureFiles')), steps('userProfiles').azureFiles.existingRemoteStorageAccounts, parse('[]'))]",
 				"fslogixAdminGroups": "[if(steps('userProfiles').shareManagement.configureAdminAccess, steps('userProfiles').shareManagement.groupPickerBlade.transformed.selection, parse('[]'))]",
 				"deployIncreaseQuota": "[if(equals(steps('userProfiles').azureFiles.storageSku, 'Premium'), steps('management').automation.deployIncreaseQuota, false)]",
+				"keyVaultRetentionInDays": "[steps('management').backup.keyVaultRetentionInDays]",
 				"recoveryServices": "[steps('management').backup.recoveryServices]",
 				"enableMonitoring": "[steps('management').monitoring.enableMonitoring]",
 				"logAnalyticsWorkspaceRetention": 30,
