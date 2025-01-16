@@ -647,6 +647,7 @@ module resourceNames 'modules/resourceNames.bicep' = {
   params: {
     fslogixStorageCustomPrefix: fslogixStorageCustomPrefix
     identifier: identifier
+    identitySolution: identitySolution
     index: index
     locationControlPlane: locationControlPlane
     locationGlobalFeed: locationGlobalFeed
@@ -868,13 +869,13 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (deployFSLogixStorage) {
     domainName: domainName
     fslogixAdminGroups: fslogixAdminGroups
     fslogixFileShares: logic.outputs.fslogixFileShareNames
-    fslogixStorageAccountEncryptionKeysVaultNameConv: resourceNames.outputs.keyVaultNames.FSLogixStorageAccountEncryptionKeysNameConv
+    fslogixStorageAccountEncryptionKeysVaultNameConv: resourceNames.outputs.keyVaultNames.FSLogixEncryptionKeys
     fslogixUserGroups: logic.outputs.fslogixUserGroups
     hostPoolResourceId: controlPlane.outputs.hostPoolResourceId
     identitySolution: identitySolution
     increaseQuotaAppInsightsName: resourceNames.outputs.appInsightsNames.IncreaseStorageQuota
     increaseQuotaFunctionAppName: resourceNames.outputs.functionAppNames.IncreaseStorageQuota
-    increaseQuotaKeyVaultName: resourceNames.outputs.keyVaultNames.IncreaseStorageQuota
+    increaseQuotaKeyVaultName: resourceNames.outputs.keyVaultNames.IncreaseStorageQuotaEncryptionKeys
     increaseQuotaStorageAccountName: resourceNames.outputs.storageAccountNames.IncreaseStorageQuota
     kerberosEncryptionType: fslogixStorageAccountADKerberosEncryption
     keyManagementStorageAccounts: keyManagementStorageAccounts
@@ -908,9 +909,6 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (deployFSLogixStorage) {
     privateLinkScopeResourceId: azureMonitorPrivateLinkScopeResourceId
     serverFarmId: management.outputs.appServicePlanId
   }
-  dependsOn: [
-    controlPlane
-  ]
 }
 
 module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
@@ -1024,7 +1022,4 @@ module cleanUp 'modules/cleanUp/cleanUp.bicep' = {
     userAssignedIdentityClientId: deploymentPrereqs.outputs.deploymentUserAssignedIdentityClientId
     virtualMachineNames: sessionHosts.outputs.virtualMachineNames
   } 
-  dependsOn: [
-    sessionHosts
-  ]
 }

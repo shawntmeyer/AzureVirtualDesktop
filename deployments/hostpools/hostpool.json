@@ -945,6 +945,9 @@
           "identifier": {
             "value": "[parameters('identifier')]"
           },
+          "identitySolution": {
+            "value": "[parameters('identitySolution')]"
+          },
           "index": {
             "value": "[parameters('index')]"
           },
@@ -972,11 +975,14 @@
             "_generator": {
               "name": "bicep",
               "version": "0.32.4.45862",
-              "templateHash": "4688143932645931992"
+              "templateHash": "3712427508179825041"
             }
           },
           "parameters": {
             "identifier": {
+              "type": "string"
+            },
+            "identitySolution": {
               "type": "string"
             },
             "index": {
@@ -1438,9 +1444,9 @@
             "depVirtualMachineNicName": "[if(parameters('nameConvResTypeAtEnd'), format('{0}-{1}', variables('depVirtualMachineName'), variables('resourceAbbreviations').networkInterfaces), format('{0}-{1}', variables('resourceAbbreviations').networkInterfaces, variables('depVirtualMachineName')))]",
             "resourceGroupManagement": "[replace(replace(replace(variables('nameConv_Shared_ResGroup'), 'TOKEN', 'management'), 'LOCATION', variables('locations')[parameters('locationVirtualMachines')].abbreviation), 'RESOURCETYPE', variables('resourceAbbreviations').resourceGroups)]",
             "appServicePlanName": "[replace(replace(replace(variables('nameConv_Shared_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').appServicePlans), 'LOCATION', variables('locations')[parameters('locationVirtualMachines')].abbreviation), 'TOKEN-', '')]",
-            "keyVaultNameSecretsTemp": "[replace(replace(variables('nameConv_Shared_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').keyVaults), 'LOCATION', variables('locations')[parameters('locationVirtualMachines')].abbreviation)]",
-            "keyVaultNameSecretsRemainingCharacters": "[add(sub(24, length(variables('keyVaultNameSecretsTemp'))), 1)]",
-            "keyVaultNameSecrets": "[replace(variables('keyVaultNameSecretsTemp'), 'TOKEN', format('sec-{0}', take(uniqueString(tenant().tenantId, subscription().subscriptionId), variables('keyVaultNameSecretsRemainingCharacters'))))]",
+            "keyVaultSharedResourcesNameConv": "[replace(replace(variables('nameConv_Shared_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').keyVaults), 'LOCATION', variables('locations')[parameters('locationVirtualMachines')].abbreviation)]",
+            "keyVaultSharedResourcesNameConvRemainingCharacters": "[add(sub(24, length(variables('keyVaultSharedResourcesNameConv'))), 1)]",
+            "keyVaultNameSecrets": "[replace(variables('keyVaultSharedResourcesNameConv'), 'TOKEN', format('sec-{0}', take(uniqueString(subscription().subscriptionId, variables('resourceGroupManagement')), variables('keyVaultSharedResourcesNameConvRemainingCharacters'))))]",
             "dataCollectionEndpointName": "[replace(replace(replace(variables('nameConv_Shared_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').dataCollectionEndpoints), 'LOCATION', variables('locations')[parameters('locationVirtualMachines')].abbreviation), 'TOKEN-', '')]",
             "dataCollectionRulesNameConv": "[replace(replace(replace(variables('nameConv_Shared_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').dataCollectionRules), 'LOCATION', variables('locations')[parameters('locationVirtualMachines')].abbreviation), 'TOKEN-', '')]",
             "logAnalyticsWorkspaceName": "[replace(replace(replace(variables('nameConv_Shared_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').logAnalyticsWorkspaces), 'LOCATION', variables('locations')[parameters('locationVirtualMachines')].abbreviation), 'TOKEN-', '')]",
@@ -1467,13 +1473,17 @@
             "diskAccessName": "[replace(replace(replace(variables('nameConv_HP_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').diskAccesses), 'LOCATION', variables('locations')[parameters('locationVirtualMachines')].abbreviation), 'TOKEN-', '')]",
             "diskEncryptionSetNameConv": "[replace(replace(variables('nameConv_HP_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').diskEncryptionSets), 'LOCATION', variables('locations')[parameters('locationVirtualMachines')].abbreviation)]",
             "keyVaultNameHPsRemainingCharacters": "[add(sub(24, length(variables('keyVaultHPNameConv'))), 1)]",
-            "keyVaultNameVMs": "[replace(variables('keyVaultHPNameConv'), 'TOKEN', format('vme-{0}', take(uniqueString(tenant().tenantId, subscription().subscriptionId), variables('keyVaultNameHPsRemainingCharacters'))))]",
-            "keyVaultNameSHR": "[replace(variables('keyVaultHPNameConv'), 'TOKEN', format('shr-{0}', take(uniqueString(tenant().tenantId, subscription().subscriptionId), variables('keyVaultNameHPsRemainingCharacters'))))]",
+            "keyVaultNameVMs": "[replace(variables('keyVaultHPNameConv'), 'TOKEN', format('vme-{0}', take(uniqueString(subscription().subscriptionId, variables('resourceGroupHosts')), variables('keyVaultNameHPsRemainingCharacters'))))]",
+            "keyVaultNameSHR": "[replace(variables('keyVaultHPNameConv'), 'TOKEN', format('shr-{0}', take(uniqueString(subscription().subscriptionId, variables('resourceGroupHosts')), variables('keyVaultNameHPsRemainingCharacters'))))]",
             "resourceGroupStorage": "[replace(replace(replace(variables('nameConv_HP_ResGroups'), 'TOKEN', 'storage'), 'LOCATION', format('{0}', variables('locations')[parameters('locationVirtualMachines')].abbreviation)), 'RESOURCETYPE', format('{0}', variables('resourceAbbreviations').resourceGroups))]",
-            "storageAccountNameConv": "[replace(replace(variables('nameConv_HP_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').storageAccounts), 'LOCATION', variables('locations')[parameters('locationVirtualMachines')].abbreviation)]",
             "netAppAccountName": "[replace(replace(replace(variables('nameConv_HP_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').netAppAccounts), 'LOCATION', variables('locations')[parameters('locationVirtualMachines')].abbreviation), 'TOKEN-', '')]",
             "netAppCapacityPoolName": "[replace(replace(replace(variables('nameConv_HP_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').netAppCapacityPools), 'LOCATION', variables('locations')[parameters('locationVirtualMachines')].abbreviation), 'TOKEN-', '')]",
-            "fslogixStorageAccountNamePrefix": "[if(empty(parameters('fslogixStorageCustomPrefix')), toLower(format('{0}', replace(replace(replace(replace(replace(replace(variables('nameConv_HP_Resources'), 'RESOURCETYPE', ''), variables('hpBaseName'), format('{0}ud', variables('hpBaseName'))), 'LOCATION', variables('locations')[parameters('locationVirtualMachines')].abbreviation), 'TOKEN-', ''), 'avd-', ''), '-', ''))), toLower(parameters('fslogixStorageCustomPrefix')))]",
+            "appAttachStorageAccountName": "[if(contains(parameters('identitySolution'), 'DomainServices'), format('aa{0}', uniqueString(subscription().subscriptionId, variables('resourceGroupManagement'))), take(format('{0}{1}', replace(replace(replace(replace(variables('nameConv_Shared_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').storageAccounts), 'LOCATION', variables('locations')[parameters('locationControlPlane')].abbreviation), 'TOKEN-', 'aa'), '-', ''), uniqueString(subscription().subscriptionId, variables('resourceGroupManagement'))), 24))]",
+            "keyVaultNameAppAttach": "[if(less(length(replace(variables('keyVaultSharedResourcesNameConv'), 'TOKEN', variables('appAttachStorageAccountName'))), 25), replace(variables('keyVaultSharedResourcesNameConv'), 'TOKEN', variables('appAttachStorageAccountName')), replace(variables('keyVaultSharedResourcesNameConv'), 'TOKEN', format('app-{0}', take(uniqueString(subscription().subscriptionId, variables('resourceGroupManagement')), variables('keyVaultSharedResourcesNameConvRemainingCharacters')))))]",
+            "hpStorageAccountNameConv": "[replace(replace(variables('nameConv_HP_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').storageAccounts), 'LOCATION', variables('locations')[parameters('locationVirtualMachines')].abbreviation)]",
+            "fslogixStorageAccountNamePrefix": "[if(empty(parameters('fslogixStorageCustomPrefix')), if(contains(parameters('identitySolution'), 'DomainServices'), take(format('fsl{0}', uniqueString(subscription().subscriptionId, variables('resourceGroupStorage'))), 13), take(format('{0}{1}', toLower(replace(replace(variables('hpStorageAccountNameConv'), 'TOKEN-', 'fsl'), '-', '')), uniqueString(subscription().subscriptionId, variables('resourceGroupStorage'))), 22)), toLower(parameters('fslogixStorageCustomPrefix')))]",
+            "increaseQuotaFAStorageAccountName": "[take(format('{0}{1}', toLower(replace(replace(variables('hpStorageAccountNameConv'), 'TOKEN-', 'saq'), '-', '')), uniqueString(subscription().subscriptionId, variables('resourceGroupStorage'))), 24)]",
+            "sessionHostReplacerFAStorageAccountName": "[take(format('{0}{1}', toLower(replace(replace(variables('hpStorageAccountNameConv'), 'TOKEN-', 'shr'), '-', '')), uniqueString(subscription().subscriptionId, variables('resourceGroupHosts'))), 24)]",
             "fslogixfileShareNames": {
               "CloudCacheProfileContainer": [
                 "profile-containers"
@@ -1490,8 +1500,8 @@
                 "office-containers"
               ]
             },
-            "keyVaultNameIncreaseQuota": "[replace(variables('keyVaultHPNameConv'), 'TOKEN', format('saq-{0}', take(uniqueString(tenant().tenantId, subscription().subscriptionId), variables('keyVaultNameHPsRemainingCharacters'))))]",
-            "keyVaultNameConvStorage": "[if(greater(length(replace(replace(if(parameters('nameConvResTypeAtEnd'), format('cmk-STORAGEACCOUNTNAME-{0}', variables('nameConvSuffix')), format('RESOURCETYPE-cmk-STORAGEACCOUNTNAME-{0}', variables('nameConvSuffix'))), 'LOCATION', variables('locations')[parameters('locationVirtualMachines')].abbreviation), 'RESOURCETYPE', variables('resourceAbbreviations').keyVaults)), 24), replace(replace(replace(if(parameters('nameConvResTypeAtEnd'), format('cmk-STORAGEACCOUNTNAME-{0}', variables('nameConvSuffix')), format('RESOURCETYPE-cmk-STORAGEACCOUNTNAME-{0}', variables('nameConvSuffix'))), 'LOCATION', variables('locations')[parameters('locationVirtualMachines')].abbreviation), 'RESOURCETYPE', variables('resourceAbbreviations').keyVaults), '-', ''), replace(replace(if(parameters('nameConvResTypeAtEnd'), format('cmk-STORAGEACCOUNTNAME-{0}', variables('nameConvSuffix')), format('RESOURCETYPE-cmk-STORAGEACCOUNTNAME-{0}', variables('nameConvSuffix'))), 'LOCATION', variables('locations')[parameters('locationVirtualMachines')].abbreviation), 'RESOURCETYPE', variables('resourceAbbreviations').keyVaults))]"
+            "keyVaultNameIncreaseQuota": "[replace(variables('keyVaultHPNameConv'), 'TOKEN', format('saq-{0}', take(uniqueString(subscription().subscriptionId, variables('resourceGroupStorage')), variables('keyVaultNameHPsRemainingCharacters'))))]",
+            "keyVaultNameConvProfileStorage": "[if(less(length(replace(variables('keyVaultHPNameConv'), 'TOKEN', format('{0}##', variables('fslogixStorageAccountNamePrefix')))), 25), replace(variables('keyVaultHPNameConv'), 'TOKEN', format('{0}##', variables('fslogixStorageAccountNamePrefix'))), replace(variables('keyVaultHPNameConv'), 'TOKEN', format('fsl##-{0}', take(uniqueString(subscription().subscriptionId, variables('resourceGroupStorage')), sub(variables('keyVaultNameHPsRemainingCharacters'), 2)))))]"
           },
           "resources": [],
           "outputs": {
@@ -1572,9 +1582,10 @@
             "keyVaultNames": {
               "type": "object",
               "value": {
-                "FSLogixStorageAccountEncryptionKeysNameConv": "[variables('keyVaultNameConvStorage')]",
-                "IncreaseStorageQuota": "[variables('keyVaultNameIncreaseQuota')]",
-                "SessionHostReplacement": "[variables('keyVaultNameSHR')]",
+                "AppAttachEncryptionKeys": "[variables('keyVaultNameAppAttach')]",
+                "FSLogixEncryptionKeys": "[variables('keyVaultNameConvProfileStorage')]",
+                "IncreaseStorageQuotaEncryptionKeys": "[variables('keyVaultNameIncreaseQuota')]",
+                "SessionHostReplacementEncryptionKeys": "[variables('keyVaultNameSHR')]",
                 "VMEncryptionKeys": "[variables('keyVaultNameVMs')]",
                 "VMSecrets": "[variables('keyVaultNameSecrets')]"
               }
@@ -1645,9 +1656,10 @@
             "storageAccountNames": {
               "type": "object",
               "value": {
+                "AppAttach": "[variables('appAttachStorageAccountName')]",
                 "FSLogix": "[variables('fslogixStorageAccountNamePrefix')]",
-                "IncreaseStorageQuota": "[toLower(replace(replace(variables('storageAccountNameConv'), 'TOKEN-', 'saq'), '-', ''))]",
-                "SessionHostReplacement": "[toLower(replace(replace(variables('storageAccountNameConv'), 'TOKEN-', 'shr'), '-', ''))]"
+                "IncreaseStorageQuota": "[variables('increaseQuotaFAStorageAccountName')]",
+                "SessionHostReplacement": "[variables('sessionHostReplacerFAStorageAccountName')]"
               }
             },
             "userAssignedIdentityNameConv": {
@@ -3120,7 +3132,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.32.4.45862",
-              "templateHash": "8629464189890270699"
+              "templateHash": "14605278967063789079"
             }
           },
           "parameters": {
@@ -3217,6 +3229,12 @@
                     "value": "[parameters('keyVaultName')]"
                   },
                   "diagnosticWorkspaceId": "[if(parameters('enableMonitoring'), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupManagement')), 'Microsoft.Resources/deployments', format('LogAnalytics_{0}', parameters('timeStamp'))), '2022-09-01').outputs.resourceId.value), createObject('value', ''))]",
+                  "networkAcls": {
+                    "value": {
+                      "bypass": "AzureServices",
+                      "defaultAction": "[if(parameters('privateEndpoint'), 'Deny', 'Allow')]"
+                    }
+                  },
                   "privateEndpoints": "[if(and(parameters('privateEndpoint'), not(empty(parameters('privateEndpointSubnetResourceId')))), createObject('value', createArray(createObject('customNetworkInterfaceName', replace(replace(replace(parameters('privateEndpointNICNameConv'), 'SUBRESOURCE', 'vault'), 'RESOURCE', parameters('keyVaultName')), 'VNETID', format('{0}', split(parameters('privateEndpointSubnetResourceId'), '/')[8])), 'name', replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', 'vault'), 'RESOURCE', parameters('keyVaultName')), 'VNETID', format('{0}', split(parameters('privateEndpointSubnetResourceId'), '/')[8])), 'privateDnsZoneGroup', if(empty(parameters('azureKeyVaultPrivateDnsZoneResourceId')), null(), createObject('privateDNSResourceIds', createArray(parameters('azureKeyVaultPrivateDnsZoneResourceId')))), 'service', 'vault', 'subnetResourceId', parameters('privateEndpointSubnetResourceId'), 'tags', coalesce(tryGet(parameters('tags'), 'Microsoft.Network/privateEndpoints'), createObject())))), createObject('value', null()))]",
                   "secrets": {
                     "value": {
@@ -3234,7 +3252,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.32.4.45862",
-                      "templateHash": "866727054146909118"
+                      "templateHash": "2243303643768061873"8
                     }
                   },
                   "parameters": {
@@ -7516,7 +7534,7 @@
             "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Logic_{0}', parameters('timeStamp'))), '2022-09-01').outputs.fslogixFileShareNames.value]"
           },
           "fslogixStorageAccountEncryptionKeysVaultNameConv": {
-            "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.keyVaultNames.value.FSLogixStorageAccountEncryptionKeysNameConv]"
+            "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.keyVaultNames.value.FSLogixEncryptionKeys]"
           },
           "fslogixUserGroups": {
             "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Logic_{0}', parameters('timeStamp'))), '2022-09-01').outputs.fslogixUserGroups.value]"
@@ -7534,7 +7552,7 @@
             "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.functionAppNames.value.IncreaseStorageQuota]"
           },
           "increaseQuotaKeyVaultName": {
-            "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.keyVaultNames.value.IncreaseStorageQuota]"
+            "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.keyVaultNames.value.IncreaseStorageQuotaEncryptionKeys]"
           },
           "increaseQuotaStorageAccountName": {
             "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.storageAccountNames.value.IncreaseStorageQuota]"
@@ -7854,9 +7872,6 @@
                   "privateEndpointSubnetResourceId": {
                     "value": "[parameters('privateEndpointSubnetResourceId')]"
                   },
-                  "storageAccountNamePrefix": {
-                    "value": "[parameters('storageAccountNamePrefix')]"
-                  },
                   "storageCount": {
                     "value": "[parameters('storageCount')]"
                   },
@@ -7922,9 +7937,6 @@
                     "privateEndpointSubnetResourceId": {
                       "type": "string"
                     },
-                    "storageAccountNamePrefix": {
-                      "type": "string"
-                    },
                     "storageCount": {
                       "type": "int"
                     },
@@ -7952,7 +7964,7 @@
                       },
                       "type": "Microsoft.Resources/deployments",
                       "apiVersion": "2022-09-01",
-                      "name": "[format('KeyVault_{0}_{1}', replace(parameters('fslogixStorageAccountEncryptionKeysVaultNameConv'), 'STORAGEACCOUNTNAME', format('{0}{1}', parameters('storageAccountNamePrefix'), string(padLeft(add(range(0, parameters('storageCount'))[copyIndex()], parameters('storageIndex')), 2, '0')))), parameters('timeStamp'))]",
+                      "name": "[format('{0}_{1}', replace(parameters('fslogixStorageAccountEncryptionKeysVaultNameConv'), '##-', format('{0}-', string(padLeft(add(range(0, parameters('storageCount'))[copyIndex()], parameters('storageIndex')), 2, '0')))), parameters('timeStamp'))]",
                       "properties": {
                         "expressionEvaluationOptions": {
                           "scope": "inner"
@@ -7963,7 +7975,7 @@
                             "value": "[parameters('location')]"
                           },
                           "name": {
-                            "value": "[replace(parameters('fslogixStorageAccountEncryptionKeysVaultNameConv'), 'STORAGEACCOUNTNAME', format('{0}{1}', parameters('storageAccountNamePrefix'), string(padLeft(add(range(0, parameters('storageCount'))[copyIndex()], parameters('storageIndex')), 2, '0'))))]"
+                            "value": "[replace(parameters('fslogixStorageAccountEncryptionKeysVaultNameConv'), '##-', format('{0}-', string(padLeft(add(range(0, parameters('storageCount'))[copyIndex()], parameters('storageIndex')), 2, '0'))))]"
                           },
                           "enablePurgeProtection": {
                             "value": true
@@ -8018,7 +8030,7 @@
                               "defaultAction": "[if(parameters('privateEndpoint'), 'Deny', 'Allow')]"
                             }
                           },
-                          "privateEndpoints": "[if(and(and(parameters('privateEndpoint'), not(empty(parameters('privateEndpointSubnetResourceId')))), not(empty(parameters('azureKeyVaultPrivateDnsZoneResourceId')))), createObject('value', createArray(createObject('customNetworkInterfaceName', replace(replace(replace(parameters('privateEndpointNICNameConv'), 'SUBRESOURCE', 'vault'), 'RESOURCE', replace(parameters('fslogixStorageAccountEncryptionKeysVaultNameConv'), 'STORAGEACCOUNTNAME', format('{0}{1}', parameters('storageAccountNamePrefix'), string(padLeft(add(range(0, parameters('storageCount'))[copyIndex()], parameters('storageIndex')), 2, '0'))))), 'VNETID', format('{0}', split(parameters('privateEndpointSubnetResourceId'), '/')[8])), 'name', replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', 'vault'), 'RESOURCE', replace(parameters('fslogixStorageAccountEncryptionKeysVaultNameConv'), 'STORAGEACCOUNTNAME', format('{0}{1}', parameters('storageAccountNamePrefix'), string(padLeft(add(range(0, parameters('storageCount'))[copyIndex()], parameters('storageIndex')), 2, '0'))))), 'VNETID', format('{0}', split(parameters('privateEndpointSubnetResourceId'), '/')[8])), 'privateDnsZoneGroup', if(empty(parameters('azureKeyVaultPrivateDnsZoneResourceId')), null(), createObject('privateDNSResourceIds', createArray(parameters('azureKeyVaultPrivateDnsZoneResourceId')))), 'service', 'vault', 'subnetResourceId', parameters('privateEndpointSubnetResourceId'), 'tags', union(createObject('cm-resource-parent', parameters('hostPoolResourceId')), coalesce(tryGet(parameters('tags'), 'Microsoft.Network/privateEndpoints'), createObject()))))), createObject('value', null()))]",
+                          "privateEndpoints": "[if(and(and(parameters('privateEndpoint'), not(empty(parameters('privateEndpointSubnetResourceId')))), not(empty(parameters('azureKeyVaultPrivateDnsZoneResourceId')))), createObject('value', createArray(createObject('customNetworkInterfaceName', replace(replace(replace(parameters('privateEndpointNICNameConv'), 'SUBRESOURCE', 'vault'), 'RESOURCE', replace(parameters('fslogixStorageAccountEncryptionKeysVaultNameConv'), '##-', format('{0}-', string(padLeft(add(range(0, parameters('storageCount'))[copyIndex()], parameters('storageIndex')), 2, '0'))))), 'VNETID', format('{0}', split(parameters('privateEndpointSubnetResourceId'), '/')[8])), 'name', replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', 'vault'), 'RESOURCE', replace(parameters('fslogixStorageAccountEncryptionKeysVaultNameConv'), '##-', format('{0}-', string(padLeft(add(range(0, parameters('storageCount'))[copyIndex()], parameters('storageIndex')), 2, '0'))))), 'VNETID', format('{0}', split(parameters('privateEndpointSubnetResourceId'), '/')[8])), 'privateDnsZoneGroup', if(empty(parameters('azureKeyVaultPrivateDnsZoneResourceId')), null(), createObject('privateDNSResourceIds', createArray(parameters('azureKeyVaultPrivateDnsZoneResourceId')))), 'service', 'vault', 'subnetResourceId', parameters('privateEndpointSubnetResourceId'), 'tags', union(createObject('cm-resource-parent', parameters('hostPoolResourceId')), coalesce(tryGet(parameters('tags'), 'Microsoft.Network/privateEndpoints'), createObject()))))), createObject('value', null()))]",
                           "tags": {
                             "value": "[union(createObject('cm-resource-parent', parameters('hostPoolResourceId')), coalesce(tryGet(parameters('tags'), 'Microsoft.KeyVault/vaults'), createObject()))]"
                           },
@@ -9107,7 +9119,7 @@
                       "type": "array",
                       "copy": {
                         "count": "[length(range(0, parameters('storageCount')))]",
-                        "input": "[reference(resourceId('Microsoft.Resources/deployments', format('KeyVault_{0}_{1}', replace(parameters('fslogixStorageAccountEncryptionKeysVaultNameConv'), 'STORAGEACCOUNTNAME', format('{0}{1}', parameters('storageAccountNamePrefix'), string(padLeft(add(range(0, parameters('storageCount'))[range(0, parameters('storageCount'))[copyIndex()]], parameters('storageIndex')), 2, '0')))), parameters('timeStamp'))), '2022-09-01').outputs.uri.value]"
+                        "input": "[reference(resourceId('Microsoft.Resources/deployments', format('{0}_{1}', replace(parameters('fslogixStorageAccountEncryptionKeysVaultNameConv'), '##-', format('{0}-', string(padLeft(add(range(0, parameters('storageCount'))[range(0, parameters('storageCount'))[copyIndex()]], parameters('storageIndex')), 2, '0')))), parameters('timeStamp'))), '2022-09-01').outputs.uri.value]"
                       }
                     },
                     "storageEncryptionKeyName": {

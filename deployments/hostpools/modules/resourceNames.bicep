@@ -1,6 +1,7 @@
 targetScope = 'subscription'
 
 param identifier string
+param identitySolution string
 param index string
 param existingFeedWorkspaceResourceId string
 param fslogixStorageCustomPrefix string
@@ -81,14 +82,18 @@ var appServicePlanName = replace(
   'TOKEN-',
   ''
 )
-var keyVaultNameSecretsTemp = replace(
+var keyVaultSharedResourcesNameConv = replace(
   replace(nameConv_Shared_Resources, 'RESOURCETYPE', resourceAbbreviations.keyVaults),
   'LOCATION',
   locations[locationVirtualMachines].abbreviation
 )
 // key vaults must be named with a length of 3 - 24 characters and must be globally unique.
-var keyVaultNameSecretsRemainingCharacters = 24 - length(keyVaultNameSecretsTemp) + 1
-var keyVaultNameSecrets = replace(keyVaultNameSecretsTemp, 'TOKEN', 'sec-${take(uniqueString(tenant().tenantId, subscription().subscriptionId), keyVaultNameSecretsRemainingCharacters)}')
+var keyVaultSharedResourcesNameConvRemainingCharacters = 24 - length(keyVaultSharedResourcesNameConv) + 1
+var keyVaultNameSecrets = replace(
+  keyVaultSharedResourcesNameConv,
+  'TOKEN',
+  'sec-${take(uniqueString(subscription().subscriptionId, resourceGroupManagement), keyVaultSharedResourcesNameConvRemainingCharacters)}'
+)
 
 var dataCollectionEndpointName = replace(
   replace(
@@ -259,8 +264,16 @@ var diskEncryptionSetNameConv = replace(
 )
 
 var keyVaultNameHPsRemainingCharacters = 24 - length(keyVaultHPNameConv) + 1 // replace TOKEN with 4 characters and uniqueString. Need to get max length of uniqueString
-var keyVaultNameVMs = replace(keyVaultHPNameConv, 'TOKEN', 'vme-${take(uniqueString(tenant().tenantId, subscription().subscriptionId), keyVaultNameHPsRemainingCharacters)}')
-var keyVaultNameSHR = replace(keyVaultHPNameConv, 'TOKEN', 'shr-${take(uniqueString(tenant().tenantId, subscription().subscriptionId), keyVaultNameHPsRemainingCharacters)}')
+var keyVaultNameVMs = replace(
+  keyVaultHPNameConv,
+  'TOKEN',
+  'vme-${take(uniqueString(subscription().subscriptionId, resourceGroupHosts), keyVaultNameHPsRemainingCharacters)}'
+)
+var keyVaultNameSHR = replace(
+  keyVaultHPNameConv,
+  'TOKEN',
+  'shr-${take(uniqueString(subscription().subscriptionId, resourceGroupHosts), keyVaultNameHPsRemainingCharacters)}'
+)
 
 // Storage Resources
 var resourceGroupStorage = replace(
@@ -271,12 +284,6 @@ var resourceGroupStorage = replace(
   ),
   'RESOURCETYPE',
   '${resourceAbbreviations.resourceGroups}'
-)
-
-var storageAccountNameConv = replace(
-  replace(nameConv_HP_Resources, 'RESOURCETYPE', resourceAbbreviations.storageAccounts),
-  'LOCATION',
-  locations[locationVirtualMachines].abbreviation
 )
 
 var netAppAccountName = replace(
@@ -297,10 +304,43 @@ var netAppCapacityPoolName = replace(
   'TOKEN-',
   ''
 )
-// Storage Account Naming Prefix
+
+// App Attach and FSLogix Storage Account Naming Convention (max 15 characters for domain join)
+var appAttachStorageAccountName = contains(identitySolution, 'DomainServices')
+  ? 'aa${uniqueString(subscription().subscriptionId, resourceGroupManagement)}'
+  : take(
+      '${replace(replace(replace(replace(nameConv_Shared_Resources, 'RESOURCETYPE', resourceAbbreviations.storageAccounts), 'LOCATION', locations[locationControlPlane].abbreviation), 'TOKEN-', 'aa'), '-', '')}${uniqueString(subscription().subscriptionId, resourceGroupManagement)}',
+      24
+    )
+
+var keyVaultNameAppAttach = length(replace(keyVaultSharedResourcesNameConv, 'TOKEN', appAttachStorageAccountName)) < 25
+  ? replace(keyVaultSharedResourcesNameConv, 'TOKEN', appAttachStorageAccountName)
+  : replace(keyVaultSharedResourcesNameConv, 'TOKEN', 'app-${take(uniqueString(subscription().subscriptionId, resourceGroupManagement), keyVaultSharedResourcesNameConvRemainingCharacters)}')
+
+// Non-Domain Joined Hostpool Specific Storage Account Naming Convention
+var hpStorageAccountNameConv = replace(
+  replace(nameConv_HP_Resources, 'RESOURCETYPE', resourceAbbreviations.storageAccounts),
+  'LOCATION',
+  locations[locationVirtualMachines].abbreviation
+)
+
 var fslogixStorageAccountNamePrefix = empty(fslogixStorageCustomPrefix)
-  ? toLower('${replace(replace(replace(replace(replace(replace(nameConv_HP_Resources, 'RESOURCETYPE', ''), hpBaseName, '${hpBaseName}ud'), 'LOCATION', locations[locationVirtualMachines].abbreviation), 'TOKEN-', ''), 'avd-', ''), '-', '')}')
+  ? contains(identitySolution, 'DomainServices')
+      ? take('fsl${uniqueString(subscription().subscriptionId, resourceGroupStorage)}', 13)
+      : take(
+          '${toLower(replace(replace(hpStorageAccountNameConv, 'TOKEN-', 'fsl'), '-', ''))}${uniqueString(subscription().subscriptionId, resourceGroupStorage)}',
+          22
+        )
   : toLower(fslogixStorageCustomPrefix)
+
+var increaseQuotaFAStorageAccountName = take(
+  '${toLower(replace(replace(hpStorageAccountNameConv, 'TOKEN-', 'saq'), '-', ''))}${uniqueString(subscription().subscriptionId, resourceGroupStorage)}',
+  24
+)
+var sessionHostReplacerFAStorageAccountName = take(
+  '${toLower(replace(replace(hpStorageAccountNameConv, 'TOKEN-', 'shr'), '-', ''))}${uniqueString(subscription().subscriptionId, resourceGroupHosts)}',
+  24
+)
 
 var fslogixfileShareNames = {
   CloudCacheProfileContainer: [
@@ -318,44 +358,19 @@ var fslogixfileShareNames = {
     'office-containers'
   ]
 }
-var keyVaultNameIncreaseQuota = replace(keyVaultHPNameConv, 'TOKEN', 'saq-${take(uniqueString(tenant().tenantId, subscription().subscriptionId), keyVaultNameHPsRemainingCharacters)}')  
 
-var keyVaultNameConvStorage = length(replace(
-    replace(
-      nameConvResTypeAtEnd
-        ? 'cmk-STORAGEACCOUNTNAME-${nameConvSuffix}'
-        : 'RESOURCETYPE-cmk-STORAGEACCOUNTNAME-${nameConvSuffix}',
-      'LOCATION',
-      locations[locationVirtualMachines].abbreviation
-    ),
-    'RESOURCETYPE',
-    resourceAbbreviations.keyVaults
-  )) > 24
-  ? replace(
-      replace(
-        replace(
-          nameConvResTypeAtEnd
-            ? 'cmk-STORAGEACCOUNTNAME-${nameConvSuffix}'
-            : 'RESOURCETYPE-cmk-STORAGEACCOUNTNAME-${nameConvSuffix}',
-          'LOCATION',
-          locations[locationVirtualMachines].abbreviation
-        ),
-        'RESOURCETYPE',
-        resourceAbbreviations.keyVaults
-      ),
-      '-',
-      ''
-    )
+var keyVaultNameIncreaseQuota = replace(
+  keyVaultHPNameConv,
+  'TOKEN',
+  'saq-${take(uniqueString(subscription().subscriptionId, resourceGroupStorage), keyVaultNameHPsRemainingCharacters)}'
+)
+
+var keyVaultNameConvProfileStorage = length(replace(keyVaultHPNameConv, 'TOKEN', '${fslogixStorageAccountNamePrefix}##')) < 25
+  ? replace(keyVaultHPNameConv, 'TOKEN', '${fslogixStorageAccountNamePrefix}##')
   : replace(
-      replace(
-        nameConvResTypeAtEnd
-          ? 'cmk-STORAGEACCOUNTNAME-${nameConvSuffix}'
-          : 'RESOURCETYPE-cmk-STORAGEACCOUNTNAME-${nameConvSuffix}',
-        'LOCATION',
-        locations[locationVirtualMachines].abbreviation
-      ),
-      'RESOURCETYPE',
-      resourceAbbreviations.keyVaults
+      keyVaultHPNameConv,
+      'TOKEN',
+      'fsl##-${take(uniqueString(subscription().subscriptionId, resourceGroupStorage), keyVaultNameHPsRemainingCharacters - 2)}'
     )
 
 output appInsightsNames object = {
@@ -385,9 +400,10 @@ output functionAppNames object = {
 output globalFeedWorkspaceName string = globalFeedWorkspaceName
 output hostPoolName string = hostPoolName
 output keyVaultNames object = {
-  FSLogixStorageAccountEncryptionKeysNameConv: keyVaultNameConvStorage
-  IncreaseStorageQuota: keyVaultNameIncreaseQuota
-  SessionHostReplacement: keyVaultNameSHR
+  AppAttachEncryptionKeys: keyVaultNameAppAttach
+  FSLogixEncryptionKeys: keyVaultNameConvProfileStorage
+  IncreaseStorageQuotaEncryptionKeys: keyVaultNameIncreaseQuota
+  SessionHostReplacementEncryptionKeys: keyVaultNameSHR
   VMEncryptionKeys: keyVaultNameVMs
   VMSecrets: keyVaultNameSecrets
 }
@@ -410,9 +426,10 @@ output resourceGroupManagement string = resourceGroupManagement
 output resourceGroupStorage string = resourceGroupStorage
 output scalingPlanName string = scalingPlanName
 output storageAccountNames object = {
+  AppAttach: appAttachStorageAccountName
   FSLogix: fslogixStorageAccountNamePrefix
-  IncreaseStorageQuota: toLower(replace(replace(storageAccountNameConv, 'TOKEN-', 'saq'), '-', ''))
-  SessionHostReplacement: toLower(replace(replace(storageAccountNameConv, 'TOKEN-', 'shr'), '-', ''))
+  IncreaseStorageQuota: increaseQuotaFAStorageAccountName
+  SessionHostReplacement: sessionHostReplacerFAStorageAccountName
 }
 output userAssignedIdentityNameConv string = userAssignedIdentityNameConv
 output virtualMachineNamePrefix string = virtualMachineNamePrefix
