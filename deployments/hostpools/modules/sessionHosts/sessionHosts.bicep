@@ -58,6 +58,7 @@ param imageSku string
 param integrityMonitoring bool
 param keyManagementDisks string
 param keyVaultNames object
+param keyVaultRetentionInDays int
 param location string
 param logAnalyticsWorkspaceResourceId string
 param maxResourcesPerTemplateDeployment int
@@ -167,6 +168,7 @@ module diskEncryption 'modules/diskEncryption.bicep' =  if (keyManagementDisks !
     hostPoolResourceId: hostPoolResourceId
     keyManagementDisks: keyManagementDisks
     keyVaultNames: keyVaultNames
+    keyVaultRetentionInDays: keyVaultRetentionInDays
     azureKeyVaultPrivateDnsZoneResourceId: azureKeyVaultPrivateDnsZoneResourceId
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
     privateEndpoint: privateEndpoint

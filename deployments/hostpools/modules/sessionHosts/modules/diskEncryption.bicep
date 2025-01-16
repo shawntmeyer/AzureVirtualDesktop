@@ -7,6 +7,7 @@ param keyExpirationEpoch int = dateTimeToEpoch(dateTimeAdd(utcNow(), 'P${string(
 param hostPoolResourceId string
 param keyManagementDisks string
 param keyVaultNames object
+param keyVaultRetentionInDays int
 param azureKeyVaultPrivateDnsZoneResourceId string
 param logAnalyticsWorkspaceResourceId string
 param deploymentVirtualMachineName string
@@ -30,8 +31,11 @@ module KeyVault '../../../../sharedModules/resources/key-vault/vault/main.bicep'
   name: 'Encryption_KeyVault_${timeStamp}'
   params: {
     diagnosticWorkspaceId: logAnalyticsWorkspaceResourceId
-    enableVaultForDiskEncryption: true
+    enableVaultForDeployment: false
+    enableVaultForDiskEncryption: false
+    enableVaultForTemplateDeployment: false
     enablePurgeProtection: true
+    enableSoftDelete: true
     name: keyVaultNames.VMEncryptionKeys
     keys: confidentialVMOSDiskEncryption ? null : [
       {
@@ -95,7 +99,8 @@ module KeyVault '../../../../sharedModules/resources/key-vault/vault/main.bicep'
           }
         ]
       : null      
-    tags: union({'cm-resource-parent':hostPoolResourceId}, tags[?'Microsoft.KeyVault/vaults'] ?? {})
+    softDeleteRetentionInDays: keyVaultRetentionInDays
+      tags: union({'cm-resource-parent':hostPoolResourceId}, tags[?'Microsoft.KeyVault/vaults'] ?? {})
     vaultSku: confidentialVMOSDiskEncryption || contains(keyManagementDisks, 'HSM') ? 'premium' : 'standard'
     enableRbacAuthorization: true
   }

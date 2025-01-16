@@ -461,6 +461,9 @@ param fslogixStorageIndex int = 1
 @description('Optional. The type of key management used for the Azure Files storage account encryption.')
 param keyManagementStorageAccounts string = 'MicrosoftManaged'
 
+@description('Optional. The retention period for the Azure Key Vault.')
+param keyVaultRetentionInDays int = 90
+
 @description('Optional. The OU Path where the FSLogix Storage Accounts or NetApp Accounts will be joined in the ADDS.')
 param fslogixOUPath string = ''
 
@@ -775,6 +778,7 @@ module management 'modules/management/management.bicep' = {
     domainJoinUserPassword: domainJoinUserPassword
     domainJoinUserPrincipalName: domainJoinUserPrincipalName
     keyVaultName: resourceNames.outputs.keyVaultNames.VMSecrets
+    keyVaultRetentionInDays: keyVaultRetentionInDays
     location: locationVirtualMachines
     logAnalyticsWorkspaceName: resourceNames.outputs.logAnalyticsWorkspaceName
     logAnalyticsWorkspaceRetention: logAnalyticsWorkspaceRetention
@@ -879,6 +883,7 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (deployFSLogixStorage) {
     increaseQuotaStorageAccountName: resourceNames.outputs.storageAccountNames.IncreaseStorageQuota
     kerberosEncryptionType: fslogixStorageAccountADKerberosEncryption
     keyManagementStorageAccounts: keyManagementStorageAccounts
+    keyVaultRetentionInDays: keyVaultRetentionInDays
     location: locationVirtualMachines
     logAnalyticsWorkspaceResourceId: enableMonitoring ? management.outputs.logAnalyticsWorkspaceResourceId : ''
     netAppVolumesSubnetResourceId: netAppVolumesSubnetResourceId
@@ -971,6 +976,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     integrityMonitoring: integrityMonitoring
     keyManagementDisks: keyManagementDisks
     keyVaultNames: resourceNames.outputs.keyVaultNames
+    keyVaultRetentionInDays: keyVaultRetentionInDays
     logAnalyticsWorkspaceResourceId: enableMonitoring ? management.outputs.logAnalyticsWorkspaceResourceId : ''
     location: vmVirtualNetwork.location
     maxResourcesPerTemplateDeployment: logic.outputs.maxResourcesPerTemplateDeployment

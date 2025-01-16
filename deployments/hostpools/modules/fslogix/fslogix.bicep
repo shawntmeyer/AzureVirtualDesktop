@@ -31,6 +31,7 @@ param increaseQuotaKeyVaultName string
 param increaseQuotaStorageAccountName string
 param kerberosEncryptionType string
 param keyManagementStorageAccounts string
+param keyVaultRetentionInDays int
 param location string
 param logAnalyticsWorkspaceResourceId string
 param netAppAccountName string
@@ -67,6 +68,7 @@ module customerManagedKeys 'modules/customerManagedKeys.bicep' = if(storageSolut
     fslogixStorageAccountEncryptionKeysVaultNameConv: fslogixStorageAccountEncryptionKeysVaultNameConv
     hostPoolResourceId: hostPoolResourceId
     keyManagementStorageAccounts: keyManagementStorageAccounts
+    keyVaultRetentionInDays: keyVaultRetentionInDays
     location: location
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
     privateEndpoint: privateEndpoint
