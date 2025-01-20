@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.32.4.45862",
-      "templateHash": "13720990557997022759"
+      "templateHash": "6178961565404712064"
     }
   },
   "parameters": {
@@ -691,6 +691,13 @@
       "defaultValue": false,
       "metadata": {
         "description": "Optional. Enable backups to an Azure Recovery Services vault.  For a pooled host pool this will enable backups on the Azure file share.  For a personal host pool this will enable backups on the AVD sessions hosts."
+      }
+    },
+    "deploySecretsKeyVault": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Optional. Deploys the Secrets Key Vault."
       }
     },
     "enableMonitoring": {
@@ -3086,6 +3093,9 @@
           "domainJoinUserPrincipalName": {
             "value": "[parameters('domainJoinUserPrincipalName')]"
           },
+          "deploySecretsKeyVault": {
+            "value": "[parameters('deploySecretsKeyVault')]"
+          },
           "keyVaultName": {
             "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.keyVaultNames.value.VMSecrets]"
           },
@@ -3142,7 +3152,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.32.4.45862",
-              "templateHash": "5902007033440758814"
+              "templateHash": "11439642672288051303"
             }
           },
           "parameters": {
@@ -3160,6 +3170,9 @@
             },
             "dataCollectionRulesNameConv": {
               "type": "string"
+            },
+            "deploySecretsKeyVault": {
+              "type": "bool"
             },
             "enableMonitoring": {
               "type": "bool"
@@ -3227,7 +3240,7 @@
           },
           "resources": [
             {
-              "condition": "[not(empty(variables('secretList')))]",
+              "condition": "[and(parameters('deploySecretsKeyVault'), not(empty(variables('secretList'))))]",
               "type": "Microsoft.Resources/deployments",
               "apiVersion": "2022-09-01",
               "name": "[format('Secrets_KeyVault_{0}', parameters('timeStamp'))]",
