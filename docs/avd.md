@@ -623,7 +623,7 @@ There are several Azure resources prerequisite that are required to run this dep
 
 #### Permissions
 
-The AVD solution is a subscription level deployment and requires the person or principal executing the deployments to be an owner of the subscription.
+The AVD solution is a subscription level deployment and requires the person or principal executing the deployments to be an owner of the subscription and Key Vault Administrator roles when choosing any of the Customer Managed Keys options for either Session Host Disk Encryption or Azure Files.
 
 #### Tools
 
