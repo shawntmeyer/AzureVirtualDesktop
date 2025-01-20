@@ -475,6 +475,9 @@ param deployIncreaseQuota bool = false
 @description('Optional. Enable backups to an Azure Recovery Services vault.  For a pooled host pool this will enable backups on the Azure file share.  For a personal host pool this will enable backups on the AVD sessions hosts.')
 param recoveryServices bool = false
 
+@description('Optional. Deploys the Secrets Key Vault.')
+param deploySecretsKeyVault bool = true
+
 @description('Optional. Deploys the required monitoring resources to enable AVD and VM Insights and monitor features in the automation account.')
 param enableMonitoring bool = true
 
@@ -777,6 +780,7 @@ module management 'modules/management/management.bicep' = {
     enableQuotaManagement: deployIncreaseQuota
     domainJoinUserPassword: domainJoinUserPassword
     domainJoinUserPrincipalName: domainJoinUserPrincipalName
+    deploySecretsKeyVault: deploySecretsKeyVault
     keyVaultName: resourceNames.outputs.keyVaultNames.VMSecrets
     keyVaultRetentionInDays: keyVaultRetentionInDays
     location: locationVirtualMachines

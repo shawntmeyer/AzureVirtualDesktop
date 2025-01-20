@@ -5,6 +5,7 @@ param azureKeyVaultPrivateDnsZoneResourceId string
 param azureMonitorPrivateLinkScopeResourceId string
 param dataCollectionEndpointName string
 param dataCollectionRulesNameConv string
+param deploySecretsKeyVault bool
 param enableMonitoring bool
 param enableQuotaManagement bool
 @secure()
@@ -43,7 +44,7 @@ var secretList = union(
     : []
 )
 
-module secretsKeyVault '../../../sharedModules/resources/key-vault/vault/main.bicep' = if (!empty(secretList)) {
+module secretsKeyVault '../../../sharedModules/resources/key-vault/vault/main.bicep' = if (deploySecretsKeyVault && !empty(secretList)) {
   name: 'Secrets_KeyVault_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {

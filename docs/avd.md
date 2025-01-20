@@ -1239,6 +1239,7 @@ You might need to clear out the bicep exe which is located in the %USERPROFILE%.
 | `domainJoinUserPassword` | The password of the privileged account to domain join the AVD session hosts to your domain | string (secure) | | '' |
 | `domainJoinUserPrincipalName` | The UPN of the privileged account to domain join the AVD session hosts to your domain. This should be an account that resides within the domain you are joining. | string (secure) | | '' |
 | `ouPath` | The distinguished name of the target Organizational Unit in Domain Services where the session hosts computer accounts will be located. | string | distinguished name | '' |
+| `deploySecretsKeyVault` | Determines if the Secrets Key Vault is deployed into the environment. This key vault will be deployed into the management resource group and would be required for session host configuration update deployments. | bool | true<br/>false | true |
 | `drainMode` | Enable drain mode on new sessions hosts to prevent users from accessing them until they are validated. | bool | true<br/>false | false |
 | `enableMonitoring` | Deploys the required monitoring resources to enable AVD and VM Insights. | bool | true<br/>false | true |
 | `encryptionAtHost` | Encryption at host encrypts temporary disks and ephemeral OS disks with platform-managed keys, OS and data disk caches with the key specified in the "keyManagementDisksAndStorage" parameter, and flows encrypted to the Storage service. | bool | true<br/>false | true |

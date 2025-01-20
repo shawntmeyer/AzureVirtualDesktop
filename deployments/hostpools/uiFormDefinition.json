@@ -2900,7 +2900,6 @@
 							"name": "automation",
 							"type": "Microsoft.Common.Section",
 							"label": "Automation",
-							"visible": "[equals(steps('userProfiles').azureFiles.storageSku, 'Premium')]",
 							"elements": [
 								{
 									"name": "deployIncreaseQuota",
@@ -2908,9 +2907,15 @@
 									"visible": "[equals(steps('userProfiles').azureFiles.storageSku, 'Premium')]",
 									"label": "Enable File Share Automatic Quota Increase",
 									"toolTip": "Choose to deploy a function app that will automatically increase your Azure Premium File Share quota when the remaining space is at a critical level."
+								},
+								{
+									"name": "deploySecretsKeyVault",
+									"type": "Microsoft.Common.CheckBox",
+									"label": "Deploy VM Secrets Key Vault",
+									"toolTip": "Select to deploy a key vault and create secrets for VM Admin user and password and if applicable, the domain join username and password."
 								}
 							]
-						},
+						},						
 						{
 							"name": "backup",
 							"type": "Microsoft.Common.Section",
@@ -2925,7 +2930,8 @@
 									"showStepMarkers": false,
 									"toolTip": "The number of days Key Vaults are kept in the recycle bin. Soft delete is designed to prevent accidental deletion of your key vault and keys, secrets, and certificates stored inside key vault. When you delete a key vault or a key vault object, it remains recoverable for a user configurable retention period or a default of 90 days.",
 									"min": 7,
-									"max": 90
+									"max": 90,
+									"visible": "[or(steps('management').automation.deploySecretsKeyVault, contains(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), contains(steps('userProfiles').azureFiles.keyManagement, 'CustomerManaged'))]"
 								},								
 								{
 									"name": "recoveryServices",
@@ -3884,7 +3890,8 @@
 				"fslogixExistingRemoteStorageAccountResourceIds": "[if(and(steps('userProfiles').configureSessionHosts, contains(steps('userProfiles').fslogixContainerType, 'CloudCache'), equals(steps('userProfiles').storageService, 'AzureFiles')), steps('userProfiles').azureFiles.existingRemoteStorageAccounts, parse('[]'))]",
 				"fslogixAdminGroups": "[if(steps('userProfiles').shareManagement.configureAdminAccess, steps('userProfiles').shareManagement.groupPickerBlade.transformed.selection, parse('[]'))]",
 				"deployIncreaseQuota": "[if(equals(steps('userProfiles').azureFiles.storageSku, 'Premium'), steps('management').automation.deployIncreaseQuota, false)]",
-				"keyVaultRetentionInDays": "[steps('management').backup.keyVaultRetentionInDays]",
+				"deploySecretsKeyVault": "[steps('management').automation.deploySecretsKeyVault]",
+				"keyVaultRetentionInDays": "[if(or(steps('management').automation.deploySecretsKeyVault, contains(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), contains(steps('userProfiles').azureFiles.keyManagement, 'CustomerManaged')), steps('management').backup.keyVaultRetentionInDays, 7)]",
 				"recoveryServices": "[steps('management').backup.recoveryServices]",
 				"enableMonitoring": "[steps('management').monitoring.enableMonitoring]",
 				"logAnalyticsWorkspaceRetention": 30,
