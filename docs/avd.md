@@ -1,115 +1,5 @@
 # Azure Virtual Desktop
 
-<details><summary>Table of Contents</summmary>
-
-- [Azure Virtual Desktop](#azure-virtual-desktop)
-  - [Scope](#scope)
-    - [Solution](#solution)
-    - [Solution Outcomes](#solution-outcomes)
-      - [Option 1](#option-1)
-      - [Option 2](#option-2)
-    - [Decision areas](#decision-areas)
-      - [Azure DevOps Automation](#azure-devops-automation)
-      - [Azure Subscription and Domain Controller connectivity](#azure-subscription-and-domain-controller-connectivity)
-      - [Azure Regions](#azure-regions)
-      - [Custom Images](#custom-images)
-      - [Custom Image as Code](#custom-image-as-code)
-      - [Stateless or stateful VMs](#stateless-or-stateful-vms)
-      - [auto-scaling](#auto-scaling)
-      - [Session Hosts](#session-hosts)
-      - [User Proflies](#user-proflies)
-      - [User Proflie backup](#user-proflie-backup)
-      - [Monitoring](#monitoring)
-  - [Features](#features)
-    - [Backups](#backups)
-    - [Drain Mode](#drain-mode)
-    - [FSLogix](#fslogix)
-    - [GPU Drivers \& Settings](#gpu-drivers--settings)
-    - [High Availability](#high-availability)
-    - [Monitoring](#monitoring-1)
-    - [AutoScale Scaling Plan](#autoscale-scaling-plan)
-    - [Customer Managed Keys for Encryption](#customer-managed-keys-for-encryption)
-    - [SMB Multichannel](#smb-multichannel)
-    - [Start VM On Connect](#start-vm-on-connect)
-    - [Trusted Launch](#trusted-launch)
-    - [Confidential VMs](#confidential-vms)
-    - [IL5 Isolation](#il5-isolation)
-      - [IL5 Prerequisites](#il5-prerequisites)
-      - [Resources Deployed](#resources-deployed)
-  - [Design](#design)
-    - [Overview](#overview)
-  - [Prerequisites](#prerequisites)
-    - [Required](#required)
-    - [Optional](#optional)
-  - [Quickstart Guide](#quickstart-guide)
-    - [Overview](#overview-1)
-    - [Setup](#setup)
-      - [Permissions](#permissions)
-      - [Tools](#tools)
-        - [PowerShell Az Module Installation](#powershell-az-module-installation)
-        - [Bicep Installation](#bicep-installation)
-      - [Authentication to Azure](#authentication-to-azure)
-      - [Resource Provider Registration](#resource-provider-registration)
-      - [Template Spec Creation](#template-spec-creation)
-      - [Networking](#networking)
-      - [Confidential VM Disk Encryption with Customer Managed Keys (Optional)](#confidential-vm-disk-encryption-with-customer-managed-keys-optional)
-    - [Deployment](#deployment)
-      - [Deploy Image Management Resources](#deploy-image-management-resources)
-      - [Create a Custom Image (optional)](#create-a-custom-image-optional)
-      - [Deploy an AVD Host Pool](#deploy-an-avd-host-pool)
-    - [Validation](#validation)
-  - [Zero Trust Framework](#zero-trust-framework)
-    - [Executive Summary](#executive-summary)
-    - [Zero Trust and Azure Virtual Desktop (AVD) Project: An Overview](#zero-trust-and-azure-virtual-desktop-avd-project-an-overview)
-    - [Zero Trust Pinciples](#zero-trust-pinciples)
-      - [Verify](#verify)
-      - [Use Least Privilege Access](#use-least-privilege-access)
-      - [Assume Breach](#assume-breach)
-    - [AVD Design and Zero Trust](#avd-design-and-zero-trust)
-      - [Business Unit Identifier](#business-unit-identifier)
-      - [Host Pool Identifer](#host-pool-identifer)
-      - [Centralized AVD Monitoring](#centralized-avd-monitoring)
-    - [Zero Trust Implementation in AVD Offering](#zero-trust-implementation-in-avd-offering)
-      - [Verification of Identities and Endpoints](#verification-of-identities-and-endpoints)
-      - [Least Privilege Access](#least-privilege-access)
-      - [Breach Assumption and Segmentation](#breach-assumption-and-segmentation)
-      - [Use of Azure Services to Enforce Zero Trust](#use-of-azure-services-to-enforce-zero-trust)
-      - [Deivations and Considerations](#deivations-and-considerations)
-      - [Deviations from Standard Zero Trust Practices](#deviations-from-standard-zero-trust-practices)
-      - [Project-Specific Considerations](#project-specific-considerations)
-    - [Conclusion](#conclusion)
-    - [References](#references)
-  - [Troubleshooting](#troubleshooting)
-    - [WinError 193](#winerror-193)
-  - [AVD Host Pool Deployment Parameters](#avd-host-pool-deployment-parameters)
-    - [Required Parameters](#required-parameters)
-  - [Conditional Parameters](#conditional-parameters)
-  - [Optional Parameters](#optional-parameters)
-  - [UI Generated / Automatic Parameters](#ui-generated--automatic-parameters)
-  - [Examples](#examples)
-    - [Required Parameters Only](#required-parameters-only)
-    - [Zero Trust Compliant](#zero-trust-compliant)
-    - [Shard FSLogix Storage with Permissions](#shard-fslogix-storage-with-permissions)
-    - [Enable Scaling Plan](#enable-scaling-plan)
-    - [IL5 Isolation Requirements on IL4](#il5-isolation-requirements-on-il4)
-  - [AVD Image Build Parameters](#avd-image-build-parameters)
-    - [Required Parameters](#required-parameters-1)
-    - [Conditional Parameters](#conditional-parameters-1)
-    - [Optional Parameters](#optional-parameters-1)
-  - [Examples](#examples-1)
-    - [Required Parameters Only](#required-parameters-only-1)
-    - [Additional Customizations](#additional-customizations)
-    - [Install Updates via Windows Update](#install-updates-via-windows-update)
-    - [New Image Definition and multiple region distribution](#new-image-definition-and-multiple-region-distribution)
-  - [AVD Image Management Parameters](#avd-image-management-parameters)
-    - [Optional Parameters](#optional-parameters-2)
-  - [Examples](#examples-2)
-    - [Private Endpoints](#private-endpoints)
-    - [Service Endpoints](#service-endpoints)
-    - [Tags](#tags)
-
-</details>
-
 ## Scope
 
 ### Solution
@@ -487,8 +377,6 @@ You must have already deployed at least one dedicated host into a dedicated host
 For an example of the required parameter values, see: [IL5 Isolation Requirements on IL4](#il5-isolation-requirements-on-il4)
 
 ## Design
-
-### Overview
 
 This Azure Virtual Desktop (AVD) solution will deploy fully operational AVD hostpool(s) to an Azure subscription.
 
@@ -1058,7 +946,7 @@ Operating under the assumption that a breach can occur, the AVD project is desig
 - Analytics and threat detection mechanisms provide visibility and rapid response capabilities.
 - Automated threat detection and response are implemented to address potential security incidents swiftly.
 
-The AVD project's design reflects these principles through its use of the `businessUnitIdentifier` and `hostpoolIdentifier` to create a structured and secure resource hierarchy. The `centralizedAVDMonitoring` parameter allows for a unified security monitoring approach, enhancing the overall security posture.
+The AVD project's design reflects these principles through its use of the `identifier` and `index` to create a structured and secure resource hierarchy.
 
 Furthermore, the project’s design incorporates the Zero Trust principle of ‘least privilege access’ through its use of sharding to increase storage capacity. This approach ensures that each user assigned to the hostpool application groups only has access to one file share, thereby limiting their access and enhancing the security of the system. This means that a user can only access the data they need for their specific tasks and cannot access or modify data in other shards. This approach effectively limits each user's access, enhancing the security of the system by reducing the potential impact of a security breach. It also aligns with the Zero Trust principle of 'never trust, always verify' as each access request is treated as potentially risky and is therefore verified before access is granted.
 
@@ -1072,19 +960,9 @@ The integration of Zero Trust principles within the AVD project is not just a se
 
 The design of the Azure Virtual Desktop (AVD) project is intrinsically linked to the principles of Zero Trust, ensuring that every aspect of the virtual desktop infrastructure is secure by default. The project's architecture incorporates several key features that align with Zero Trust principles:
 
-#### Business Unit Identifier
+#### Identifier
 
-The `businessUnitIdentifier` parameter plays a crucial role in resource segregation. It allows for the differentiation of resources across multiple business units within the same Azure subscription, ensuring that each unit's resources are isolated and secure.
-
-#### Host Pool Identifer
-
-The `hostpoolIdentifier` is a fundamental aspect of the AVD design, providing a unique identity to each host pool. This specificity is vital for applying granular security policies and access controls, adhering to the Zero Trust mandate of explicit verification.
-
-#### Centralized AVD Monitoring
-
-With the `centralizedAVDMonitoring` feature, the project can maintain a robust security posture by monitoring activities across all host pools. This centralized approach is essential for detecting and responding to potential security threats in real-time.
-
-The AVD project includes several features that align with Zero Trust principles. One of these is the use of idempotent code, which means the core management resources are always updated and maintained consistently, no matter how many times the code is run. Another feature is the flexibility to deploy either personal or pooled host pools. Each type of host pool comes with its own set of security controls. These features help ensure that the project adheres to Zero Trust principles while meeting its specific needs.
+The `identifier` parameter plays a crucial role in resource segregation. It allows for the differentiation of resources across multiple resource groups within the same Azure subscription, ensuring that each unit's resources are isolated and secure.
 
 ### Zero Trust Implementation in AVD Offering
 
