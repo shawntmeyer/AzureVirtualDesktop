@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.32.4.45862",
-      "templateHash": "12108914041228054581"
+      "templateHash": "4109460679714954257"
     }
   },
   "parameters": {
@@ -7704,7 +7704,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.32.4.45862",
-              "templateHash": "3164370107870773578"
+              "templateHash": "1337456180694010144"
             }
           },
           "parameters": {
@@ -7949,7 +7949,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.32.4.45862",
-                      "templateHash": "15650686978638681657"
+                      "templateHash": "16171149769704527207"
                     }
                   },
                   "parameters": {
@@ -7968,10 +7968,6 @@
                     "keyExpirationInDays": {
                       "type": "int",
                       "defaultValue": 180
-                    },
-                    "keyExpirationEpoch": {
-                      "type": "int",
-                      "defaultValue": "[dateTimeToEpoch(dateTimeAdd(utcNow(), format('P{0}D', string(parameters('keyExpirationInDays')))))]"
                     },
                     "keyVaultRetentionInDays": {
                       "type": "int"
@@ -8052,7 +8048,6 @@
                           "keys": {
                             "value": [
                               {
-                                "attributesExp": "[parameters('keyExpirationEpoch')]",
                                 "attributesExportable": false,
                                 "name": "[variables('storageAccountEncryptionKeyName')]",
                                 "keySize": 4096,
@@ -14433,7 +14428,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.32.4.45862",
-              "templateHash": "2139017273292537589"
+              "templateHash": "12261911221485560823"
             }
           },
           "parameters": {
@@ -15356,7 +15351,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.32.4.45862",
-                      "templateHash": "9576146479230385066"
+                      "templateHash": "14210332755701142242"
                     }
                   },
                   "parameters": {
@@ -15375,10 +15370,6 @@
                     "diskEncryptionKeyExpirationInDays": {
                       "type": "int",
                       "defaultValue": 180
-                    },
-                    "keyExpirationEpoch": {
-                      "type": "int",
-                      "defaultValue": "[dateTimeToEpoch(dateTimeAdd(utcNow(), format('P{0}D', string(parameters('diskEncryptionKeyExpirationInDays')))))]"
                     },
                     "hostPoolResourceId": {
                       "type": "string"
@@ -15461,7 +15452,7 @@
                           "name": {
                             "value": "[parameters('keyVaultNames').VMEncryptionKeys]"
                           },
-                          "keys": "[if(parameters('confidentialVMOSDiskEncryption'), createObject('value', null()), createObject('value', createArray(createObject('attributesEnabled', true(), 'attributesExp', parameters('keyExpirationEpoch'), 'attributesExportable', false(), 'name', variables('vmEncryptionKeyName'), 'keySize', 4096, 'kty', if(contains(parameters('keyManagementDisks'), 'HSM'), 'RSA-HSM', 'RSA'), 'rotationPolicy', createObject('attributes', createObject('expiryTime', format('P{0}D', string(parameters('diskEncryptionKeyExpirationInDays')))), 'lifetimeActions', createArray(createObject('action', createObject('type', 'Notify'), 'trigger', createObject('timeBeforeExpiry', 'P10D')), createObject('action', createObject('type', 'Rotate'), 'trigger', createObject('timeAfterCreate', format('P{0}D', string(sub(parameters('diskEncryptionKeyExpirationInDays'), 7))))))), 'tags', union(createObject('cm-resource-parent', parameters('hostPoolResourceId')), coalesce(tryGet(parameters('tags'), 'Microsoft.KeyVault/vaults/keys'), createObject()))))))]",
+                          "keys": "[if(parameters('confidentialVMOSDiskEncryption'), createObject('value', null()), createObject('value', createArray(createObject('attributesEnabled', true(), 'attributesExportable', false(), 'name', variables('vmEncryptionKeyName'), 'keySize', 4096, 'kty', if(contains(parameters('keyManagementDisks'), 'HSM'), 'RSA-HSM', 'RSA'), 'rotationPolicy', createObject('attributes', createObject('expiryTime', format('P{0}D', string(parameters('diskEncryptionKeyExpirationInDays')))), 'lifetimeActions', createArray(createObject('action', createObject('type', 'Notify'), 'trigger', createObject('timeBeforeExpiry', 'P10D')), createObject('action', createObject('type', 'Rotate'), 'trigger', createObject('timeAfterCreate', format('P{0}D', string(sub(parameters('diskEncryptionKeyExpirationInDays'), 7))))))), 'tags', union(createObject('cm-resource-parent', parameters('hostPoolResourceId')), coalesce(tryGet(parameters('tags'), 'Microsoft.KeyVault/vaults/keys'), createObject()))))))]",
                           "networkAcls": {
                             "value": {
                               "bypass": "AzureServices",

@@ -3,7 +3,6 @@ param fslogixStorageAccountEncryptionKeysVaultNameConv string
 param hostPoolResourceId string
 param keyManagementStorageAccounts string
 param keyExpirationInDays int = 180
-param keyExpirationEpoch int = dateTimeToEpoch(dateTimeAdd(utcNow(), 'P${string(keyExpirationInDays)}D'))
 param keyVaultRetentionInDays int
 param location string
 param logAnalyticsWorkspaceResourceId string
@@ -36,7 +35,6 @@ module storageAccountKeyVaults '../../../../sharedModules/resources/key-vault/va
       enableVaultForTemplateDeployment: false
       keys: [
         {
-          attributesExp: keyExpirationEpoch
           attributesExportable: false
           name: storageAccountEncryptionKeyName
           keySize: 4096

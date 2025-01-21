@@ -3,7 +3,6 @@ param confidentialVMOrchestratorObjectId string
 param deploymentUserAssignedIdentityClientId string
 param diskEncryptionSetNames object
 param diskEncryptionKeyExpirationInDays int = 180
-param keyExpirationEpoch int = dateTimeToEpoch(dateTimeAdd(utcNow(), 'P${string(diskEncryptionKeyExpirationInDays)}D'))
 param hostPoolResourceId string
 param keyManagementDisks string
 param keyVaultNames object
@@ -40,7 +39,6 @@ module KeyVault '../../../../sharedModules/resources/key-vault/vault/main.bicep'
     keys: confidentialVMOSDiskEncryption ? null : [
       {
         attributesEnabled: true
-        attributesExp: keyExpirationEpoch
         attributesExportable: false
         name: vmEncryptionKeyName
         keySize: 4096
