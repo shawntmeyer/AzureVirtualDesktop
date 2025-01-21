@@ -2,8 +2,6 @@
 
 # Quickstart Guide
 
-------
-
 ## Overview
 
 There are two main avenues for deploying the Azure Virtual Desktop (AVD) solution:

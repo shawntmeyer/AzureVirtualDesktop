@@ -2,8 +2,6 @@
 
 # Parameters
 
-------
-
 ## AVD Host Pool Deployment Parameters
 
 ### Required Parameters

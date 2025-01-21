@@ -2,8 +2,6 @@
 
 # Features
 
-------
-
 ## Backups
 
 This optional feature enables backups to protect user profile data. When selected, if the host pool is "pooled" and the storage solution is Azure Files, the solution will protect the file share. If the host pool is "personal", the solution will protect the virtual machines.

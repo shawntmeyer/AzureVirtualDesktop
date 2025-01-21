@@ -2,8 +2,6 @@
 
 # Scope
 
-------
-
 ## Solution
 
 The Azure Virtual Desktop (AVD) solution offering will deploy fully operational AVD Hostpool(s) to an Azure Subscription.  

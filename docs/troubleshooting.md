@@ -2,8 +2,6 @@
 
 # Troubleshooting
 
-------
-
 ## Redeployment
 
 If your deployment fails for whatever reason, you should cleanup your deployment resource group including the managed identity and then run the following powershell script to remove orphaned role assignments on the subscription where you ran the deployment. This is actually a good step to run before running the deployment.

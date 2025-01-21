@@ -2,8 +2,6 @@
 
 # Zero Trust Framework
 
-------
-
 ## Executive Summary
 
 The Azure Virtual Desktop (AVD) project represents a significant stride in the application of Zero Trust security principles within a cloud-based infrastructure. This article provides an overarching review of the Zero Trust framework as it is implemented in the AVD project, detailing how the design and deployment of the AVD solution aligns with the stringent security standards that Zero Trust advocates.
