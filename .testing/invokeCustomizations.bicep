@@ -16,8 +16,6 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2022-03-01' existing 
   name: virtualMachineName
 }]
 
-
-@batchSize(1)
 resource runCommands 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = [for (virtualMachineName, i) in virtualMachineNames: {
   name: customizer.name
   location: location
