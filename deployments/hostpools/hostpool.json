@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.32.4.45862",
-      "templateHash": "6178961565404712064"
+      "templateHash": "12108914041228054581"
     }
   },
   "parameters": {
@@ -5019,7 +5019,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.32.4.45862",
-              "templateHash": "11597837555406475321"
+              "templateHash": "9610293379590676510"
             }
           },
           "parameters": {
@@ -5842,7 +5842,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.32.4.45862",
-                      "templateHash": "13732716097407465139"
+                      "templateHash": "16081730407671457558"
                     }
                   },
                   "parameters": {
@@ -5892,7 +5892,8 @@
                         "categoryGroup": "allLogs",
                         "enabled": true
                       }
-                    ]
+                    ],
+                    "desktopVirtualizationUserRoleId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', parameters('roleDefinitions').DesktopVirtualizationUser)]"
                   },
                   "resources": [
                     {
@@ -5928,9 +5929,9 @@
                       "type": "Microsoft.Authorization/roleAssignments",
                       "apiVersion": "2022-04-01",
                       "scope": "[format('Microsoft.DesktopVirtualization/applicationGroups/{0}', parameters('desktopApplicationGroupName'))]",
-                      "name": "[guid(parameters('appGroupSecurityGroups')[range(0, length(parameters('appGroupSecurityGroups')))[copyIndex()]], parameters('roleDefinitions').DesktopVirtualizationUser, parameters('desktopApplicationGroupName'))]",
+                      "name": "[guid(resourceId('Microsoft.DesktopVirtualization/applicationGroups', parameters('desktopApplicationGroupName')), parameters('appGroupSecurityGroups')[range(0, length(parameters('appGroupSecurityGroups')))[copyIndex()]], variables('desktopVirtualizationUserRoleId'))]",
                       "properties": {
-                        "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', parameters('roleDefinitions').DesktopVirtualizationUser)]",
+                        "roleDefinitionId": "[variables('desktopVirtualizationUserRoleId')]",
                         "principalId": "[parameters('appGroupSecurityGroups')[range(0, length(parameters('appGroupSecurityGroups')))[copyIndex()]]]"
                       },
                       "dependsOn": [

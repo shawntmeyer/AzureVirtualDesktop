@@ -19,6 +19,8 @@ var applicationGroupLogs = [
   }
 ]
 
+var desktopVirtualizationUserRoleId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roleDefinitions.DesktopVirtualizationUser)
+
 resource applicationGroup 'Microsoft.DesktopVirtualization/applicationGroups@2021-03-09-preview' = {
   name: desktopApplicationGroupName
   location: location
@@ -56,9 +58,9 @@ module updateDesktopFriendlyName 'updateDesktopFriendlyName.bicep' = if (!empty(
 
 resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for i in range(0, length(appGroupSecurityGroups)): {
   scope: applicationGroup
-  name: guid(appGroupSecurityGroups[i], roleDefinitions.DesktopVirtualizationUser, desktopApplicationGroupName)
+  name: guid(applicationGroup.id, appGroupSecurityGroups[i], desktopVirtualizationUserRoleId)
   properties: {
-    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', roleDefinitions.DesktopVirtualizationUser)
+    roleDefinitionId: desktopVirtualizationUserRoleId
     principalId: appGroupSecurityGroups[i]
   }
 }]
