@@ -363,7 +363,7 @@ The [deployments/Deploy-ImageManagement.ps1](../deployments/Deploy-ImageManageme
 
 1. **[Optional]** If you wish to add any custom scripts or installers beyond what is already included in the artifacts directory [.common/artifacts](../.common/artifacts), then gather your installers and create a new folder inside the artifacts directory for each customizer or application. In the folder create or place one and only one PowerShell script (.ps1) that installs the application or performs the desired customization. For an example of the installation script and supporting files, see the [.common/artifacts/VSCode](../.common/artifacts/VSCode) folder. These customizations can be applied to the custom image via the `customizations` deployment parameter.
 
-1. **[Optional]** The `SkipDownloadingNewSources` switch parameter will disable the downloading of the latest installers (or other files) from the Internet (or other network). Do not use this switch if you want to enable an "evergreen" capability that helps you keep your images and session hosts up to date. In addition, update the Urls specified in the [deployments\imageManagement\parameters`\<environment>.downloads.parameters.json](../deployments/imageManagement/parameters/public.downloads.parameters.json)[^2] file to match your network environment. You can also not depend on this automated capability and add source files directly to the appropriate location in the artifacts directory *.common/artifacts*. This directory is processed by zipping the contents of each child directory into a zip file and then all existing files in the root plus the zip files are added to the blob storage container in the Storage Account.
+1. **[Optional]** The `SkipDownloadingNewSources` switch parameter will disable the downloading of the latest installers (or other files) from the Internet (or other network). Do not use this switch if you want to enable an "evergreen" capability that helps you keep your images and session hosts up to date. In addition, update the Urls specified in the `<environment>.downloads.parameters.json`[^2] file in the [deployments/imageManagement/parameters](../deployments/imageManagement/parameters) folder to match your network environment. You can also not depend on this automated capability and add source files directly to the appropriate location in the [.common/artifacts](../.common/artifacts/) folder. This directory is processed by zipping the contents of each child directory into a zip file and then all existing files in the root plus the zip files are added to the blob storage container in the Storage Account.
 
 1. Open the PowerShell version where you installed the Az module above. If not already connected to your Azure Environment, then connect to the correct Azure Environment where `<Environment>` equals "AzureCloud", "AzureUSGovernment", "USNat", or "USSec".
 
@@ -411,7 +411,7 @@ This deployment can be done via Command Line or through a Template Spec UI in th
 
 1. Create a parameters file (imageBuild.parameters.json) by referencing the [Image Build Parameters Reference](parameters.md#avd-image-build-parameters).
 
-2. Deploy the Image Build
+1. Deploy the Image Build
 
     ``` powershell
     $Location = '<Region>'
@@ -425,15 +425,15 @@ This deployment can be done via Command Line or through a Template Spec UI in th
 
     ![Template Spec](images/templateSpecs.png)
 
-2. Choose the **Azure Virtual Desktop Custom Image** Template Spec and click "Deploy"
+1. Choose the **Azure Virtual Desktop Custom Image** Template Spec and click "Deploy"
 
     ![Deploy Template Spec](images/deployButton.png)
 
-3. Populate the form with correct values. Use the the tool tips for more detailed parameter information.
+1. Populate the form with correct values. Use the the tool tips for more detailed parameter information.
 
     ![Image Build Form](images/imageBuildForm.png)
 
-4. Once all values are populated, deploy the template. Parameter values and the template can be downloaded from the deployment view
+1. Once all values are populated, deploy the template. Parameter values and the template can be downloaded from the deployment view
 
 ### Deploy an AVD Host Pool
 
@@ -446,7 +446,7 @@ The AVD solution includes all necessary resources to deploy a usable virtual des
 
 1. Create a parameters file [`<identifier>`-`<index>`.parameters.json] based on [deployments/hostpools/parameters/solution.parameters.json](../deployments/hostpools/parameters/hostpool.parameters.json) by reviewing the documentation at [AVD Host Pool Parameters](parameters.md#avd-host-pool-deployment-parameters).
 
-2. Deploy the AVD Host Pool (and supporting resources)
+1. Deploy the AVD Host Pool (and supporting resources)
 
     ``` powershell
     $Location = '<Region>'
