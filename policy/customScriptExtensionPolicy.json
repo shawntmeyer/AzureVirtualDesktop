@@ -1,0 +1,107 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.32.4.45862",
+      "templateHash": "5108500627566200798"
+    }
+  },
+  "parameters": {
+    "policyDefinitionName": {
+      "type": "string",
+      "defaultValue": "CustomScriptExtensionPolicy"
+    },
+    "artifactsUri": {
+      "type": "string"
+    },
+    "fileUris": {
+      "type": "array"
+    },
+    "scriptToRun": {
+      "type": "string"
+    },
+    "scriptArguments": {
+      "type": "string"
+    },
+    "userAssignedIdentityClientId": {
+      "type": "string"
+    }
+  },
+  "variables": {
+    "copy": [
+      {
+        "name": "cseUris",
+        "count": "[length(parameters('fileUris'))]",
+        "input": "[if(not(contains(parameters('fileUris')[copyIndex('cseUris')], '/')), format('{0}{1}', variables('baseUri'), parameters('fileUris')[copyIndex('cseUris')]), parameters('fileUris')[copyIndex('cseUris')])]"
+      }
+    ],
+    "baseUri": "[if(equals(last(parameters('artifactsUri')), '/'), parameters('artifactsUri'), format('{0}/', parameters('artifactsUri')))]",
+    "baseCommand": "[format('powershell -ExecutionPolicy Unrestricted -Command .\\{0}', parameters('scriptToRun'))]",
+    "commandToExecute": "[if(not(empty(parameters('scriptArguments'))), format('{0} {1}', variables('baseCommand'), parameters('scriptArguments')), variables('baseCommand'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Authorization/policyDefinitions",
+      "apiVersion": "2024-05-01",
+      "name": "[parameters('policyDefinitionName')]",
+      "properties": {
+        "policyType": "Custom",
+        "mode": "Indexed",
+        "description": "This policy deploys the Custom Script Extension on all Windows Virtual Machines.",
+        "metadata": {
+          "category": "Custom Script Extension",
+          "version": "1.0.0"
+        },
+        "policyRule": {
+          "if": {
+            "allOf": [
+              {
+                "field": "type",
+                "equals": "Microsoft.Compute/virtualMachines"
+              },
+              {
+                "field": "Microsoft.Compute/virtualMachines/storageProfile.osDisk.osType",
+                "equals": "Windows"
+              }
+            ]
+          },
+          "then": {
+            "effect": "deployIfNotExists",
+            "details": {
+              "name": "AzurePolicyforWindows",
+              "roleDefinitionIds": [
+                "/providers/Microsoft.Authorization/roleDefinitions/b24988ac-6180-42a0-ab88-20f7382dd24c"
+              ],
+              "type": "Microsoft.Compute/virtualMachines/extensions",
+              "existenceCondition": {
+                "allOf": [
+                  {
+                    "field": "Microsoft.Compute/virtualMachines/extensions/publisher",
+                    "equals": "Microsoft.Compute"
+                  },
+                  {
+                    "field": "Microsoft.Compute/virtualMachines/extensions/type",
+                    "equals": "CustomScriptExtension"
+                  },
+                  {
+                    "field": "Microsoft.Compute/virtualMachines/extensions/provisioningState",
+                    "equals": "Succeeded"
+                  }
+                ]
+              },
+              "deployment": {
+                "properties": {
+                  "mode": "Incremental",
+                  "parameters":
+                  "template": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -37,15 +37,15 @@ There are several Azure resource prerequisite that are required to run this depl
 
     | Purpose | Commercial Name | USGov Name | USSec Name | USNat Name |
     | ------- | --------------- | ---------- | ---------- | ---------- |
-    | Azure Backup | privatelink.<geo>[^1].backup.windowsazure.com | privatelink.<geo>[^1].backup.windowsazure.us | privatelink.<geo>[^1].backup.microsoft.scloud | privatelink.<geo>[^1].backup.eaglex.ic.gov |
-    | AVD PrivateLink Global Feed | privatelink-global.wvd.microsoft.com | privatelink-global.wvd.usgovcloudapi.net | privatelink-global.wvd.microsoft.scloud | privatelink-global.wvd.eaglex.ic.gov |
-    | AVD PrivateLink Workspace Feed and Hostpool Connections | privatelink.wvd.microsoft.com | privatelink.wvd.usgovcloudapi.net | privatelink.wvd.microsoft.scloud | privatelink.wvd.eaglex.ic.gov |
-    | Azure Blob Storage | privatelink.blob.core.windows.net | privatelink.blob.core.usgovcloudapi.net | privatelink.blob.core.microsoft.scloud | privatelink.blob.core.eaglex.ic.gov |
-    | Azure Files | privatelink.file.core.windows.net | privatelink.file.core.usgovcloudapi.net | privatelink.file.core.microsoft.scloud | privatelink.file.core.eaglex.ic.gov |
-    | Azure Key Vault | privatelink.vaultcore.azure.net | privatelink.vaultcore.usgovcloudapi.net | privatelink.vaultcore.microsoft.scloud | privatelink.vaultcore.eaglex.ic.gov |
-    | Azure Queue Storage | privatelink.queue.core.windows.net | privatelink.queue.core.usgovcloudapi.net | privatelink.queue.core.microsoft.scloud | privatelink.queue.core.eaglex.ic.gov |
-    | Azure Table Storage | privatelink.table.core.windows.net | privatelink.table.core.usgovcloudapi.net | privatelink.table.core.microsoft.scloud | privatelink.table.core.eaglex.ic.gov |
-    | Azure Web Sites | privatelink.azurewebsites.net</br>scm.privatelink.azurewebsites.net | privatelink.azurewebsites.us</br>scm.privatelink.azurewebsites.us | privatelink.appservice.microsoft.scloud</br>scm.privatelink.appservice.microsoft.scloud | privatelink.appservice.eaglex.ic.gov</br>scm.privatelink.appservice.eaglex.ic.gov |
+    | **AVD PrivateLink Global Feed** | privatelink-global.wvd.microsoft.com | privatelink-global.wvd.usgovcloudapi.net | privatelink-global.wvd.microsoft.scloud | privatelink-global.wvd.eaglex.ic.gov |
+    | **AVD PrivateLink Workspace Feed and Hostpool Connections** | privatelink.wvd.microsoft.com | privatelink.wvd.usgovcloudapi.net | privatelink.wvd.microsoft.scloud | privatelink.wvd.eaglex.ic.gov |
+    | **Azure Backup** | privatelink.`<geo>`.backup.windowsazure.com[^1] | privatelink.`<geo>`.backup.windowsazure.us[^1] | privatelink.`<geo>`.backup.microsoft.scloud[^1] | privatelink.`<geo>`.backup.eaglex.ic.gov[^1] |
+    | **Azure Blob Storage**<br>- image management artifacts<br>- backup<br>- managed disk access | privatelink.blob.core.windows.net | privatelink.blob.core.usgovcloudapi.net | privatelink.blob.core.microsoft.scloud | privatelink.blob.core.eaglex.ic.gov |
+    | **Azure Files**<br>- FSLogix Storage | privatelink.file.core.windows.net | privatelink.file.core.usgovcloudapi.net | privatelink.file.core.microsoft.scloud | privatelink.file.core.eaglex.ic.gov |
+    | **Azure Key Vault**<br>-vm secrets<br>- customer managed keys | privatelink.vaultcore.azure.net | privatelink.vaultcore.usgovcloudapi.net | privatelink.vaultcore.microsoft.scloud | privatelink.vaultcore.eaglex.ic.gov |
+    | **Azure Queue Storage**<br>- storage quota function app | privatelink.queue.core.windows.net | privatelink.queue.core.usgovcloudapi.net | privatelink.queue.core.microsoft.scloud | privatelink.queue.core.eaglex.ic.gov |
+    | **Azure Table Storage**<br>- storage quota function app | privatelink.table.core.windows.net | privatelink.table.core.usgovcloudapi.net | privatelink.table.core.microsoft.scloud | privatelink.table.core.eaglex.ic.gov |
+    | **Azure Web Sites**<br>- storage quota function app | privatelink.azurewebsites.net</br>scm.privatelink.azurewebsites.net | privatelink.azurewebsites.us</br>scm.privatelink.azurewebsites.us | privatelink.appservice.microsoft.scloud</br>scm.privatelink.appservice.microsoft.scloud | privatelink.appservice.eaglex.ic.gov</br>scm.privatelink.appservice.eaglex.ic.gov |
 
 - **Domain Permissions**
   - For Active Directory Domain Services, create a principal to domain join the session hosts and Azure Files, using the following steps:
