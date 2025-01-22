@@ -39,6 +39,8 @@ Azure Files and Azure NetApp Files are the only two SMB storage services availab
 
 **Reference:** [FSLogix - Microsoft Docs](https://docs.microsoft.com/en-us/fslogix/overview)
 
+When deploying Azure Files and using either of the domain service identity options, you have the option to deploy more than one Azure Files storage account to shard your storage by deploying a storage account for each group defined in the `fslogixUserGroups` parameter.
+
 In addition to the optional deployment of resources, you can choose to configure the registry of session host VMs with the proper registry settings to support each of these container types whether or not the resources are deployed. In addition, if you choose one of the Cloud Cache options, you can provide storage accounts in remote regions to support an active/active Business Continuity and disaster recovery configuration as documented at https://learn.microsoft.com/en-us/fslogix/concepts-container-recovery-business-continuity#option-3-cloud-cache-active--active.
 
 **Deployed Resources:**
@@ -170,13 +172,15 @@ Azure confidential VMs offer strong security and confidentiality for tenants. Th
 
 Azure Government supports applications that use Impact Level 5 (IL5) data in all available regions. IL5 requirements are defined in the [US Department of Defense (DoD) Cloud Computing Security Requirements Guide (SRG)](https://public.cyber.mil/dccs/dccs-documents/). IL5 workloads have a higher degree of impact to the DoD and must be secured to a higher standard. When you deploy this solution to the IL4 Azure Government regions (Arizona, Texas, Virginia), you can meet the IL5 isolation requirements by configuring the parameters to deploy the Virtual Machines to dedicated hosts and using Customer Managed Keys that are maintained in Azure Key Vault and stored in FIPS 140 Level 3 validated Hardware Security Modules (HSMs).
 
-**Reference:** [Azure Government isolation guidelines for Impact Level 5 - Azure Government | Microsoft Learn](https://learn.microsoft.com/en-us/azure/azure-government/documentation-government-impact-level-5)
-
-### IL5 Prerequisites
+**Prerequisites**
 
 You must have already deployed at least one dedicated host into a dedicated host group in one of the Azure US Government regions. For more information about dedicated hosts, see (https://learn.microsoft.com/en-us/azure/virtual-machines/dedicated-hosts).
 
-#### Resources Deployed
+**Reference:**
+
+[Azure Government isolation guidelines for Impact Level 5 - Azure Government | Microsoft Learn](https://learn.microsoft.com/en-us/azure/azure-government/documentation-government-impact-level-5)
+
+**Deployed Resources**
 
 - Azure Key Vault Premium (Virtual Machine Managed Disks - 1 per host pool)
   - Customer Managed Key protected by HSM (Auto Rotate enabled)
@@ -184,4 +188,4 @@ You must have already deployed at least one dedicated host into a dedicated host
 - Azure Key Vault Premium (FSLogix Storage Accounts - 1 per storage account)
   - Customer Managed Key protected by HSM (Auto Rotate enabled)
 
-For an example of the required parameter values, see: [IL5 Isolation Requirements on IL4](#il5-isolation-requirements-on-il4)
+For an example of the required parameter values, see: [IL5 Isolation Requirements on IL4](parameters.md#il5-isolation-requirements-on-il4)

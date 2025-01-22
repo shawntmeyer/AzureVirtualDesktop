@@ -13,39 +13,38 @@ Both methods require some initial setup in order for a successful deployment
 
 ## Prerequisites
 
-There are several Azure resources prerequisite that are required to run this deployment. Use the following steps to create the basic resources required for a successful pilot deployment. See the official [Prerequisites](#prerequisites) for more information (including how to integrate this solution into an existing Azure Landing Zone). See [Microsoft Learn | Azure Virtual Desktop Prerequisites](https://learn.microsoft.com/en-us/azure/virtual-desktop/prerequisites) for the latest information.
-
-To successfully deploy this solution, you will need to ensure the following prerequisites have been completed.
+There are several Azure resource prerequisite that are required to run this deployment. Read and complete the steps in this section to create the basic resources required for a successful pilot deployment. See the official [Prerequisites](#prerequisites) for more information (including how to integrate this solution into an existing Azure Landing Zone). See [Microsoft Learn | Azure Virtual Desktop Prerequisites](https://learn.microsoft.com/en-us/azure/virtual-desktop/prerequisites) for the latest information.
 
 ### Required
 
 - **Licenses:** ensure you have the [required licensing for AVD](https://learn.microsoft.com/en-us/azure/virtual-desktop/overview#requirements).
-- **Networking:** deployment requires a minimum of 1 Azure Virtual Network with one subnet to which the deployment  virtual machine (deployment helper) and the session host(s) will be attached. For a PoC type implementation of AVD with Entra ID authentication, this Vnet can be standalone as there are no custom DNS requirements; however, for hybrid identity scenarios and zero trust implementations, the Virtual Network has DNS requirements as documented below under optional. Machines on this network need to be able to connect to the following network destinations.
-  - Resource Manager Url TCP Port 443 (Commercial - management.azure.com, US Gov - management.usgovcloudapi.net, USSec - management.microsoft.scloud, USNat - management.eaglex.ic.gov)
-  - Key Vault namespace - TCP Port 443 (Commercial - vault.azure.net, US Gov - vault.usgovcloudapi.net, USSec - vault.microsoft.scloud, USNat - vault.eaglex.ic.gov)
-See [Guidance for Developers](https://learn.microsoft.com/en-us/azure/azure-government/compare-azure-government-global-azure#guidance-for-developers) for more details.
+- **Networking:** deployment requires a minimum of 1 Azure Virtual Network with one subnet to which the deployment virtual machine (deployment helper) and the session host(s) will be attached. For a PoC type implementation of AVD with Entra ID authentication, this Vnet can be standalone as there are no custom DNS requirements; however, for hybrid identity scenarios and zero trust implementations, the Virtual Network has DNS requirements as documented below under optional. Machines on this network need to be able to connect to the following network destinations:
+  - Resource Manager Url TCP Port 443 (Commercial - management.azure.com, US Gov - management.usgovcloudapi.net, USSec - management.microsoft.scloud, USNat - management.eaglex.ic.gov). You can leverage the 'AzureResourceManager' service tag in NSGs and the Azure Firewall to configure this access.
 - **Image Management Resources:** the deployment of the custom image build option depends on many artifacts that must be hosted in Azure Blob storage to satisfy Zero Trust principals or to build the custom image on Air-Gapped clouds. This repo contains a helper script that should be used to deploy the image management resources and upload the artifacts to the created storage account. See *deployments/imageManagement/Deploy-ImageManagement.ps1*.
-- **Azure Permissions:** ensure the principal deploying the solution has "Owner" and "Key Vault Administrator" roles assigned on the target Azure subscription. This solution contains many role assignments at different scopes and deploys a key vault with keys and secrets to enhance security.
+- **Azure Permissions:** ensure the principal deploying the solution has the "Owner" or ("Contributor" and "User Access Administrator") roles assigned on the target Azure subscription. If you wish to reference the secrets in an existing Key Vault (including one deployed by this solution) via the Template Spec UI deployment, you'll need to have the "Key Vault Secrets User" role assigned to this Key Vault either through inheritance from a higher scope or directly on the resource.
 - **Security Group:** create a security group for your AVD users.
-  - Active Directory Domain Services: create the group in ADUC and ensure the group has synchronized to Azure AD.
-  - Azure AD: create the group.
-  - Azure AD DS: create the group in Azure AD and ensure the group has synchronized to Azure AD DS.
+  - Active Directory Domain Services: create the group in Active Directory and ensure the group has synchronized to Entra ID.
+  - Entra ID: create the group.
+  - Entra Domain Services: create the group in Entra ID and ensure the group has synchronized to Entra ID Domain Services.
 
 ### Optional
 
-- **Domain Services:** if you plan to domain join the session hosts, ensure Active Directory Domain Services or Entra Domain Services is available in your enviroment and that you are synchronizing the required objects. AD Sites & Services should be configured for the address space of your Azure virtual network if you are extending your on premises Active Directory infrastruture into the cloud.
+- **Domain Services:** if you plan to domain join the session hosts, ensure Active Directory Domain Services or Entra Domain Services is available in your enviroment and that you are synchronizing the required objects. AD Sites & Services should be configured for the address space of your Azure virtual network if you are extending your on-premises Active Directory infrastruture into the cloud.
 - **Disk Encryption:** the "encryption at host" feature is deployed on the virtual machines to meet Zero Trust compliance. This feature is not enabled in your Azure subscription by default and must be manually enabled. Use the following steps to enable the feature: [Enable Encryption at Host](https://learn.microsoft.com/azure/virtual-machines/disks-enable-host-based-encryption-portal).
 - **DNS:** There are several DNS requirements:
-  - If you plan to domain or hybrid join the sessions hosts, you must configure your subnets to resolve the Domain SRV records for Domain location services to function. This is normally accomplished by configuring custom DNS settings on your AVD session host Virtual Networks to point to the Domain Controllers or using a DNS resolver that can resolve the internal domain records.
-  - In order to use private links and disable public access to storage accounts, key vaults, and automation accounts (in accordance with Zero Trust Guidance), you must ensure that the following private DNS zones are also resolvable from the session host Virtual Networks:
+  - If you plan to domain join the sessions hosts, you must configure your subnets to resolve the Domain SRV records for domain location services to function. This is normally accomplished by configuring custom DNS settings on your AVD session host Virtual Networks to point to the Domain Controllers or using a DNS resolver that can resolve the internal domain records.
+  - In order to use private links and disable public access to storage accounts, key vaults, and other PaaS resources (in accordance with Zero Trust Guidance), you must ensure that the following private DNS zones are also resolvable from the session host Virtual Networks:
 
     | Purpose | Commercial Name | USGov Name | USSec Name | USNat Name |
     | ------- | --------------- | ---------- | ---------- | ---------- |
+    | Azure Backup | privatelink.<geo>[^1].backup.windowsazure.com | privatelink.<geo>[^1].backup.windowsazure.us | privatelink.<geo>[^1].backup.microsoft.scloud | privatelink.<geo>[^1].backup.eaglex.ic.gov |
     | AVD PrivateLink Global Feed | privatelink-global.wvd.microsoft.com | privatelink-global.wvd.usgovcloudapi.net | privatelink-global.wvd.microsoft.scloud | privatelink-global.wvd.eaglex.ic.gov |
     | AVD PrivateLink Workspace Feed and Hostpool Connections | privatelink.wvd.microsoft.com | privatelink.wvd.usgovcloudapi.net | privatelink.wvd.microsoft.scloud | privatelink.wvd.eaglex.ic.gov |
     | Azure Blob Storage | privatelink.blob.core.windows.net | privatelink.blob.core.usgovcloudapi.net | privatelink.blob.core.microsoft.scloud | privatelink.blob.core.eaglex.ic.gov |
     | Azure Files | privatelink.file.core.windows.net | privatelink.file.core.usgovcloudapi.net | privatelink.file.core.microsoft.scloud | privatelink.file.core.eaglex.ic.gov |
     | Azure Key Vault | privatelink.vaultcore.azure.net | privatelink.vaultcore.usgovcloudapi.net | privatelink.vaultcore.microsoft.scloud | privatelink.vaultcore.eaglex.ic.gov |
+    | Azure Queue Storage | privatelink.queue.core.windows.net | privatelink.queue.core.usgovcloudapi.net | privatelink.queue.core.microsoft.scloud | privatelink.queue.core.eaglex.ic.gov |
+    | Azure Table Storage | privatelink.table.core.windows.net | privatelink.table.core.usgovcloudapi.net | privatelink.table.core.microsoft.scloud | privatelink.table.core.eaglex.ic.gov |
     | Azure Web Sites | privatelink.azurewebsites.net</br>scm.privatelink.azurewebsites.net | privatelink.azurewebsites.us</br>scm.privatelink.azurewebsites.us | privatelink.appservice.microsoft.scloud</br>scm.privatelink.appservice.microsoft.scloud | privatelink.appservice.eaglex.ic.gov</br>scm.privatelink.appservice.eaglex.ic.gov |
 
 - **Domain Permissions**
@@ -93,15 +92,11 @@ See [Guidance for Developers](https://learn.microsoft.com/en-us/azure/azure-gove
   # Common version is 'latest'
   ```
 
-### Permissions
-
-The AVD solution is a subscription level deployment and requires the person or principal executing the deployments to be an owner of the subscription and Key Vault Administrator roles when choosing any of the Customer Managed Keys options for either Session Host Disk Encryption or Azure Files.
-
 ### Tools
 
 #### PowerShell Az Module Installation
 
-In order to run the scripts that simplify setup and complete the prerequisites you will need the Az PowerShell module.
+In order to run the scripts that simplify setup and complete the prerequisites you will need the 'Az' PowerShell module.
 
 You can install PowerShell modules for all users or for the current user. In order to install modules for all users, you must launch PowerShell as an administrator.
 
@@ -146,7 +141,7 @@ Additional Information can be found [here](https://learn.microsoft.com/en-us/azu
 
 ### Authentication to Azure
 
-1. Connect to the correct Azure Environment where "<Environment>" equals "AzureCloud", "AzureUSGovernment", "USNat", or "USSec".
+1. Connect to the correct Azure Environment where `'<Environment>`' equals "AzureCloud", "AzureUSGovernment", "USNat", or "USSec".
 
    ``` powershell
    Connect-AzAccount -Environment <Environment>
@@ -194,23 +189,23 @@ The AVD deployments created in this repo come with the custom portal forms for e
    Connect-AzAccount -Environment <Environment>
    ```
 
-2. Ensure that your context is configured with the subscription to where you want to deploy the image management resources.
+2. Ensure that your context is configured with the subscription to where you want to deploy the image management resources. Replace `<subscriptionID>` with the actual subscription ID.
 
    ``` powershell
    Set-AzContext -Subscription <subscriptionID>
    ```
 
-3. Change your directory to the [deployments] folder and execute the following command replacing the '\<location>\' placeholder with a valid region name.
+3. Change your directory to the [deployments] folder and execute the following command replacing the `<location>` placeholder with a valid region name.
 
    ``` powershell
-   .\New-TemplateSpecs.ps1 -Location '<location>'
+   .\New-TemplateSpecs.ps1 -Location <location>
    ```
 
 ### Networking
 
 In order to deploy the image management storage account with private endpoints, create a custom image, and deploy session hosts (virtual machines), you must have an existing Virtual Network with at least one subnet. Ideally, you have already created an Azure Landing Zone including a hub network and private DNS zones (as required).
 
-In order to deploy the Azure Virtual Desktop standalone or spoke network and required private DNS Zones, you can utilize the **Azure Virtual Desktop Networking** template spec with portal ui which will automate the creation of the spoke virtual network, required subnets, peering (if needed), route tables (if needed), NAT gateway (if needed), and missing private DNS zones (if needed).
+In order to deploy the Azure Virtual Desktop standalone or spoke network and required private DNS Zones, you can utilize the **Azure Virtual Desktop Networking** template spec with portal ui. This template spec deployment will automate the creation of the spoke virtual network, required subnets, peering (if needed), route tables (if needed), NAT gateway (if needed), and missing private DNS zones (if needed).
 
 1. Go to Template Specs in the Azure Portal.
 
@@ -224,7 +219,7 @@ In order to deploy the Azure Virtual Desktop standalone or spoke network and req
 
     ![Image Build Form](images/networking-virtualNetwork.png)
 
-4. Once all values are populated, deploy the template. Parameter values and the template can be downloaded from the deployment view
+4. Once all values are populated, deploy the template. Parameter values and the template can be downloaded from the deployment view.
 
 If you do not wish to utilize the template spec to deploy the required networking, you can follow the instructions below to create the required networking components via PowerShell. These instructions assume a standalone network for deploying a Proof of Concept (be sure to updated the variable values).
 
@@ -297,13 +292,13 @@ If you do not wish to utilize the template spec to deploy the required networkin
    2. imageBuild = 'privateEndpointSubnetResourceId'
    3. hostpools = 'managementAndStoragePrivateEndpointSubnetResourceId'
 
-While utilizing a private endpoints is optional, it must be deployed in order to follow Zero Trust principles. Both the image management and AVD deployments can use private endpoints for the following:
+While utilizing private endpoints is optional, it must be deployed in order to follow Zero Trust principles. Both the image management and AVD deployments can use private endpoints for the following:
 
 - Image Management - Blob Storage Account
 - Image Build - Blob Storage Account for logging customizations
 - AVD Deployment - Azure Files for FSLogix profiles, Azure Key Vault for storing secrets and Customer Managed Keys, AVD Private Link, Azure Recovery Services, and the Function App deployed to increase premium storage account quotas.
 
-Prior to running the Deploy-ImageManagement script, the Azure Blob private DNS zone should be created either in the portal, via the Azure Virtual Desktop Networking template spec, or through Powershell. See [DNS Prerequisites](#prerequisites) for the correct values per environment.:
+Prior to running the Deploy-ImageManagement script, if the Azure Blob private DNS zone does not exist, you will want to create the Azure Blob private DNS zone via the portal, the Azure Virtual Desktop Networking template spec, or through Powershell. See [DNS Prerequisites](#prerequisites) for the correct values per environment.:
 
 ``` powershell
 $ResGroupName = '<Resource Group Name>'
@@ -351,7 +346,7 @@ Use the following steps to complete this prerequisite.
    New-MgServicePrincipal -AppId bf7b6499-ff71-4aa2-97a4-f372087be7f0 -DisplayName "Confidential VM Orchestrator"
    ```
 
-You will then need to specify the objectId property of this new service principal in the 'confidentialVMOrchestratorObjectId' parameter for the AVD Host Pool Deployment. The parameters for this deployment are documented at [AVD Host Pool Parameters](#avd-host-pool-deployment-parameters).
+You will then need to specify the objectId property of this new service principal in the 'confidentialVMOrchestratorObjectId' parameter for the AVD Host Pool Deployment. The parameters for this deployment are documented at [AVD Host Pool Parameters](parameters.md#avd-host-pool-deployment-parameters).
 
 ## Deployment
 
@@ -359,18 +354,18 @@ You will then need to specify the objectId property of this new service principa
 
 If you plan to build custom images or to add custom software or run scripts during the deployment of your session hosts, you should deploy the image management resources to support Zero Trust. You can also chose not to deploy these resources, but the image build VM will need access to the Internet to download the source files required for installation/configuration.
 
-The **deployments/Deploy-ImageManagement.ps1** script is the easiest way to ensure all necessary image management resources (scripts and installers and Compute Gallery for custom image option.) are present for the AVD deployment.
+The [deployments/Deploy-ImageManagement.ps1](../deployments/Deploy-ImageManagement.ps1) script is the easiest way to ensure all necessary image management resources (scripts and installers and Compute Gallery for custom image option.) are present for the AVD deployment.
 
 > [!Important]
-> For Zero Trust deployments and other details, see [image management parameters](#avd-image-management-parameters) for an explanation of all the available parameters.
+> For Zero Trust deployments and other details, see [image management parameters](parameters.md#avd-image-management-parameters) for an explanation of all the available parameters.
 
-1. Set required parameters and make any optional updates desired in **deployments/imageManagement/parameters/imageManagement.parameters.json** file.
+1. Set required parameters and make any optional updates desired in [deployments/imageManagement/parameters/imageManagement.parameters.json](../deployments/imageManagement/parameters/imageManagement.parameters.json) file.
 
-1. **[Optional]** If you wish to add any custom scripts or installers beyond what is already included in the artifacts directory [../.common/artifacts], then gather your installers and create a new folder inside the artifacts directory for each customizer or application. In the folder create or place one and only one PowerShell script (.ps1) that installs the application or performs the desired customization. For an example of the installation script and supporting files, see the *.common/artifacts/VSCode* folder. These customizations can be applied to the custom image via the [customizations] parameter.
+1. **[Optional]** If you wish to add any custom scripts or installers beyond what is already included in the artifacts directory [.common/artifacts](../.common/artifacts), then gather your installers and create a new folder inside the artifacts directory for each customizer or application. In the folder create or place one and only one PowerShell script (.ps1) that installs the application or performs the desired customization. For an example of the installation script and supporting files, see the [.common/artifacts/VSCode](../.common/artifacts/VSCode) folder. These customizations can be applied to the custom image via the `customizations` deployment parameter.
 
-1. **[Optional]** The `SkipDownloadingNewSources` switch parameter will disable the downloading of the latest installers (or other files) from the Internet (or other network) to enable an "evergreen" capability that helps you keep your images and session hosts up to date. If you wish to use this capability, update the Urls specified in the *.common/artifacts/downloads/parameters.json* file to match your network environment. You can also not depend on this automated capability and add source files directly to the appropriate location in the artifacts directory *.common/artifacts*. This directory is processed by zipping the contents of each child directory into a zip file and then all existing files in the root plus the zip files are added to the blob storage container in the Storage Account.
+1. **[Optional]** The `SkipDownloadingNewSources` switch parameter will disable the downloading of the latest installers (or other files) from the Internet (or other network). Do not use this switch if you want to enable an "evergreen" capability that helps you keep your images and session hosts up to date. In addition, update the Urls specified in the [deployments\imageManagement\parameters\<environment>[^2].downloads.parameters.json](../deployments/imageManagement/parameters/public.downloads.parameters.json) file to match your network environment. You can also not depend on this automated capability and add source files directly to the appropriate location in the artifacts directory *.common/artifacts*. This directory is processed by zipping the contents of each child directory into a zip file and then all existing files in the root plus the zip files are added to the blob storage container in the Storage Account.
 
-1. Open the PowerShell version where you installed the Az module above. If not already connected to your Azure Environment, then connect to the correct Azure Environment where "\<Environment\>" equals "AzureCloud", "AzureUSGovernment", "USNat", or "USSec".
+1. Open the PowerShell version where you installed the Az module above. If not already connected to your Azure Environment, then connect to the correct Azure Environment where `<Environment>` equals "AzureCloud", "AzureUSGovernment", "USNat", or "USSec".
 
     ``` powershell
     Connect-AzAccount -Environment <Environment>
@@ -382,7 +377,7 @@ The **deployments/Deploy-ImageManagement.ps1** script is the easiest way to ensu
     Set-AzContext -Subscription <subscriptionID>
     ```
 
-1. Change directories to the **deployments** folder and execute the **Deploy-ImageManagement.ps1** script as follows:
+1. Change directories to the [deployments](../deployments) folder and execute the [Deploy-ImageManagement.ps1](../deployments/Deploy-ImageManagement.ps1) script as follows:
 
     ``` powershell
     .\Deploy-ImageManagement.ps1 -DeployImageManagementResources -Location <Region> [-SkipDownloadingNewSources] [-TempDir <Temp directory for artifacts>] [-DeleteExistingBlobs] [-TeamsTenantType <TeamsTenantType>]
@@ -390,7 +385,7 @@ The **deployments/Deploy-ImageManagement.ps1** script is the easiest way to ensu
 
     This script:
 
-    a. With the '-DeployImageManagementResources' switch, deploys the resources in the _deployments/imageManagement/imageManagement.bicep_ to create the following Azure resources in the Image Management resource group:
+    a. With the '-DeployImageManagementResources' switch, deploys the resources in the [deployments/imageManagement/imageManagement.bicep](../deployments/imageManagement/imageManagement.bicep) to create the following Azure resources in the Image Management resource group:
 
     - [Compute Gallery](https://learn.microsoft.com/en-us/azure/virtual-machines/azure-compute-gallery)
     - [Storage Account](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview)
@@ -400,7 +395,7 @@ The **deployments/Deploy-ImageManagement.ps1** script is the easiest way to ensu
     - [Necessary role assignments](https://learn.microsoft.com/en-US/Azure/role-based-access-control/role-assignments)
     - **[Optional]** [Private Endpoint](https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview)
 
-    b. With the '-DownloadNewSources' switch set, downloads new source files into a temporary directory, generates a text file containing file versioning information, and then copies those directories/files to the Artifacts directory overwriting any existing files.
+    b. If the '-SkipDownloadingNewSources' switch is <u>not</u> set, downloads new source files into a temporary directory, generates a text file containing file versioning information, and then copies those directories/files to the Artifacts directory overwriting any existing files.
 
     c. Compresses the contents of each subfolder in the Artifacts directory into a zip file into a second temporary directory. Copies any files in the root of the Artifacts directory into the same temporary directory.
 
@@ -410,11 +405,11 @@ The **deployments/Deploy-ImageManagement.ps1** script is the easiest way to ensu
 
 A custom image may be required or desired by customers in order to pre-populate VMs with applications and settings.
 
-This deployment can be done via Command Line or through a Template Spec UI in the Portal. The deployment is fully customizable using the parameters documented at [Image Build Parameters](#avd-image-build-parameters).
+This deployment can be done via Command Line or through a Template Spec UI in the Portal. The deployment is fully customizable using the parameters documented at [Image Build Parameters](parameters.md#avd-image-build-parameters).
 
 **Option 1: Using Command Line**
 
-1. Create a parameters file (imageBuild.parameters.json) by referencing the [Image Build Parameters Reference](#avd-image-build-parameters).
+1. Create a parameters file (imageBuild.parameters.json) by referencing the [Image Build Parameters Reference](parameters.md#avd-image-build-parameters).
 
 2. Deploy the Image Build
 
@@ -449,7 +444,7 @@ The AVD solution includes all necessary resources to deploy a usable virtual des
 
 **Option 1: Using Command Line**
 
-1. Create a parameters file (hostpoolid.parameters.json) by reviewing the documentation at [AVD Host Pool Parameters](#avd-host-pool-deployment-parameters).
+1. Create a parameters file [`<identifier>`-`<index>`.parameters.json] based on [deployments/hostpools/parameters/solution.parameters.json](../deployments/hostpools/parameters/hostpool.parameters.json) by reviewing the documentation at [AVD Host Pool Parameters](parameters.md#avd-host-pool-deployment-parameters).
 
 2. Deploy the AVD Host Pool (and supporting resources)
 
@@ -465,15 +460,15 @@ The AVD solution includes all necessary resources to deploy a usable virtual des
 
     ![templateSpec](images/templateSpecs.png)
 
-2. Choose the **Azure Virtual Desktop HostPool** Template Spec click "Deploy"
+1. Choose the **Azure Virtual Desktop HostPool** Template Spec click "Deploy"
 
     ![Deploy Template Spec](images/deployButton.png)
 
-3. Populate the form with correct values. Use the table above or the tool tips for more detailed parameter information 
+1. Populate the form with correct values. Use the table above or the tool tips for more detailed parameter information 
 
     ![AVD Form](images/hostPoolForm.png)
 
-4. Once all values are populated, deploy the template. Parameter values and the template can be downloaded from the deployment view
+1. Once all values are populated, deploy the template. Parameter values and the template can be downloaded from the deployment view
 
 ## Validation
 
@@ -482,3 +477,7 @@ Once all resources have been deployed, the Virtual Machine should be accessible 
 The VM should appear and allow you to log in. Authentication depends on the identity solution supplied in the AVD Deployment step.
 
 ![AVD Client](images/remoteDesktop.png)
+
+[^1]: To determine the value of `<geo>`, see the [locations](../.common/data/locations.json) file in this repo. The recoveryServicesGeo property of each location from each cloud is listed.
+
+[^2]: The value of `<environment>` is 'public' for the Azure Cloud and Azure US Government environments. The value of `<environment>` is 'ussec' for the USSEC air-gapped cloud and 'usnat' for the USNAT air-gapped cloud.

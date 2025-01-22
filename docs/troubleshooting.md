@@ -2,9 +2,37 @@
 
 # Troubleshooting
 
-## Redeployment
+## Use Key Vault Secrets
 
-If your deployment fails for whatever reason, you should cleanup your deployment resource group including the managed identity and then run the following powershell script to remove orphaned role assignments on the subscription where you ran the deployment. This is actually a good step to run before running the deployment.
+If you are utilizing the Template Spec UI to deploy the Azure Virtual Desktop hostpool and are trying to reference existing Key Vault secrets, you may not be able to list the existing secrets in the UI. There can be two reasons:
+
+1. The key vault network firewall blocks public network access and you are not running the template spec or blue-button deployment from a machine that is able to access the Virtual Network where the key vault private endpoint is attached. Fix this by running the deployment from a jump host inside your azure environment.
+2. The user account logged into the Azure Portal when running the template spec or blue-button deployment does not have the rights granted by the [Key Vault Secrets User role](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/security#key-vault-secrets-user). Fix this issue by granting the user this role on the key vault.
+
+## Role Assignment Failure
+
+### Symptom
+
+You receive an error similar to the following:
+
+```json
+{
+    "status": "Failed",
+    "error": {
+        "code": "RoleAssignmentUpdateNotPermitted",
+        "message": "Tenant ID, application ID, principal ID, and scope are not allowed to be updated."
+    }
+}
+```
+
+### Problem
+
+You may have orphaned role assignments.
+
+### Solution
+
+Fix this issue by running the following PowerShell commands from the Cloud Shell.
+
 
 ```powershell
 $orphanedRoleAssignments = Get-AzRoleAssignment | Where-object -Property Displayname -eq $null
@@ -23,15 +51,23 @@ foreach ($assignment in $orphanedRoleAssignments) {
 }
 ```
 
+## Redeployment
+
 If you need to redeploy this solution due to an error or to add resources, be sure the virtual machines (aka session hosts) are turned on.  For "pooled" host pools, you must disable scaling as well.  If the virtual machines are shutdown, the deployment will fail since virtual machine extensions cannot be updated when virtual machines are in a shutdown state.
+
+If you existing deployment resource groups, you should delete the virtual machine in this resource group in order to ensure a fresh virtual machine is used to run the deployment scripts leveraged by this solution.
 
 ## WinError 193
 
+### Symptom
+
 [WinError 193] %1 is not a valid Win32 application
 ... missing tolower
-Problem:
+
+### Problem
+
 Corrupt Bizep Install
-Solution:
-az bicep uninstall
-az bicep install
-You might need to clear out the bicep exe which is located in the %USERPROFILE%.azure\bin\bicep.exe file.
+
+### Solution
+
+Reinstall Bicep by following the steps at [Bicep Installation](quickStart.md#bicep-installation)
