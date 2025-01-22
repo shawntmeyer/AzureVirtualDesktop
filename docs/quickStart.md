@@ -405,21 +405,16 @@ The [deployments/Deploy-ImageManagement.ps1](../deployments/Deploy-ImageManageme
 
 A custom image may be required or desired by customers in order to pre-populate VMs with applications and settings.
 
-This deployment can be done via Command Line or through a Template Spec UI in the Portal. The deployment is fully customizable using the parameters documented at [Image Build Parameters](parameters.md#avd-image-build-parameters).
+This deployment can be done via Command Line, Blue Button, or through a Template Spec UI in the Portal.
 
-**Option 1: Using Command Line**
+#### Option 1: Blue-Button Deployment via the Azure Portal
 
-1. Create a parameters file (imageBuild.parameters.json) by referencing the [Image Build Parameters Reference](parameters.md#avd-image-build-parameters).
+This option opens the deployment UI for the solution in the Azure Portal. Be sure to select the button for the correct cloud. If your desired cloud is not listed, please use the template spec detailed in the Quick Start guide.
 
-1. Deploy the Image Build
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#blade/Microsoft_Azure_CreateUIDef/CustomDeploymentBlade/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fshawntmeyer%2Fazurevirtualdesktop%2Fmaster%2F%2Fdeployments%2FimageManagement%2FimageBuild%2FimageBuild.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2Fshawntmeyer%2Fazurevirtualdesktop%2Fmaster%2F%2Fdeployments%2FimageManagement%2FimageBuild%2FuiFormDefinition.json)
+[![Deploy to Azure Gov](https://aka.ms/deploytoazuregovbutton)](https://portal.azure.us/#blade/Microsoft_Azure_CreateUIDef/CustomDeploymentBlade/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fshawntmeyer%2Fazurevirtualdesktop%2Fmaster%2F%2Fdeployments%2FimageManagement%2FimageBuild%2FimageBuild.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2Fshawntmeyer%2Fazurevirtualdesktop%2Fmaster%2F%2Fdeployments%2FimageManagement%2FimageBuild%2FuiFormDefinition.json)
 
-    ``` powershell
-    $Location = '<Region>'
-    $DeploymentName = '<valid deployment name>'
-    New-AzDeployment -Location $Location -Name $DeploymentName -TemplateFile '.\deployments\imageManagement\imageBuild\imageBuild.bicep' -TemplateParameterFile '.\deployments\imageManagement\imageBuild\parameters\imageBuild.parameters.json' -Verbose
-    ```
-
-**Option 2: Using a Template Spec and Portal Form**
+#### Option 2: Using a Template Spec and Portal Form
 
 1. Go to Template Specs in the Azure Portal.
 
@@ -435,6 +430,18 @@ This deployment can be done via Command Line or through a Template Spec UI in th
 
 1. Once all values are populated, deploy the template. Parameter values and the template can be downloaded from the deployment view
 
+#### Option 3: Using Command Line
+
+1. Create a parameters file (imageBuild.parameters.json) by referencing the [Image Build Parameters Reference](parameters.md#avd-image-build-parameters).
+
+1. Deploy the Image Build
+
+    ``` powershell
+    $Location = '<Region>'
+    $DeploymentName = '<valid deployment name>'
+    New-AzDeployment -Location $Location -Name $DeploymentName -TemplateFile '.\deployments\imageManagement\imageBuild\imageBuild.bicep' -TemplateParameterFile '.\deployments\imageManagement\imageBuild\parameters\imageBuild.parameters.json' -Verbose
+    ```
+
 ### Deploy an AVD Host Pool
 
 The AVD solution includes all necessary resources to deploy a usable virtual desktop experience within Azure. This includes a host pool, application group, virtual machine(s) as well as other auxilary resources such as monitoring and profile management.
@@ -442,19 +449,14 @@ The AVD solution includes all necessary resources to deploy a usable virtual des
 > [!Important]
 > When choosing the settings for the source image, make sure that all settings are compatible or the build may fail. For example, choose a VM size that is compatible with the storage type (ie. Premium_LRS)
 
-**Option 1: Using Command Line**
+#### Option 1: Blue-Button Deployment**
 
-1. Create a parameters file [`<identifier>`-`<index>`.parameters.json] based on [deployments/hostpools/parameters/solution.parameters.json](../deployments/hostpools/parameters/hostpool.parameters.json) by reviewing the documentation at [AVD Host Pool Parameters](parameters.md#avd-host-pool-deployment-parameters).
+This option opens the deployment UI for the solution in the Azure Portal. Be sure to select the button for the correct cloud. If your desired cloud is not listed, please use the template spec detailed in the Quick Start guide.
 
-1. Deploy the AVD Host Pool (and supporting resources)
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#blade/Microsoft_Azure_CreateUIDef/CustomDeploymentBlade/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fshawntmeyer%2Fazurevirtualdesktop%2Fmaster%2F%2Fdeployments%2Fhostpools%2Fhostpool.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2Fshawntmeyer%2Fazurevirtualdesktop%2Fmaster%2F%2Fdeployments%2Fhostpools%2FuiFormDefinition.json)
+[![Deploy to Azure Gov](https://aka.ms/deploytoazuregovbutton)](https://portal.azure.us/#blade/Microsoft_Azure_CreateUIDef/CustomDeploymentBlade/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fshawntmeyer%2Fazurevirtualdesktop%2Fmaster%2F%2Fdeployments%2Fhostpools%2Fhostpool.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2Fshawntmeyer%2Fazurevirtualdesktop%2Fmaster%2F%2Fdeployments%2Fhostpools%2FuiFormDefinition.json)
 
-    ``` powershell
-    $Location = '<Region>'
-    $DeploymentName = '<valid deployment name>'
-    New-AzDeployment -Location $Location -Name $DeploymentName -TemplateFile '.\deployments\hostpools\hostpool.bicep' -TemplateParameterFile '.\deployments\hostpools\parameters\hostpoolid.parameters.json' -Verbose
-    ```
-
-**Option 2: Using a Template Spec and Portal Form**
+#### Option 2: Using a Template Spec and Portal Form**
 
 1. Go to Template Specs in the Azure Portal
 
@@ -469,6 +471,18 @@ The AVD solution includes all necessary resources to deploy a usable virtual des
     ![AVD Form](images/hostPoolForm.png)
 
 1. Once all values are populated, deploy the template. Parameter values and the template can be downloaded from the deployment view
+
+#### Option 3: Using Command Line**
+
+1. Create a parameters file [`<identifier>`-`<index>`.parameters.json] based on [deployments/hostpools/parameters/solution.parameters.json](../deployments/hostpools/parameters/hostpool.parameters.json) by reviewing the documentation at [AVD Host Pool Parameters](parameters.md#avd-host-pool-deployment-parameters).
+
+1. Deploy the AVD Host Pool (and supporting resources)
+
+    ``` powershell
+    $Location = '<Region>'
+    $DeploymentName = '<valid deployment name>'
+    New-AzDeployment -Location $Location -Name $DeploymentName -TemplateFile '.\deployments\hostpools\hostpool.bicep' -TemplateParameterFile '.\deployments\hostpools\parameters\hostpoolid.parameters.json' -Verbose
+    ```
 
 ## Validation
 
