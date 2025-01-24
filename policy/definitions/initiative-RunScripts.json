@@ -1,0 +1,99 @@
+{
+    "properties": {
+      "displayName": "[Custom] Run PowerShell script(s) on Windows Virtual Machine using Custom Script Extension",
+      "policyType": "Custom",
+      "metadata": {
+        "category": "WindowsConfiguration",
+        "createdBy": "b6443783-08b0-4e14-87f1-991706482e05",
+        "createdOn": "2025-01-23T13:43:44.478834Z",
+        "updatedBy": null,
+        "updatedOn": null
+      },
+      "version": "1.0.0",
+      "parameters": {
+        "UserAssignedIdentity": {
+          "type": "string",
+          "metadata": {
+            "displayName": "User-Assigned Identity",
+            "strongType": "Microsoft.ManagedIdentity/userAssignedIdentities",
+            "portalReview": true
+          }
+        },
+        "BlobContainerUri": {
+          "type": "string",
+          "metadata": {
+            "displayName": "Blob Container Uri",
+            "description": "This will be the Azure Storage Blob Container Url (e.g. 'https://storageaccount.blob.core.windows.net/containername')"
+          }
+        },
+        "BlobNamesOrUris": {
+          "type": "array",
+          "metadata": {
+            "displayName": "Blob Names or File Uris",
+            "description": "An array list of Blobs or full Uris to each file you wish to download via the Custom Script Extension in the order of download.",
+            "portalReview": true
+          },
+          "defaultValue": []
+        },
+        "ScriptToExecute": {
+          "type": "string",
+          "metadata": {
+            "displayName": "Script To Execute",
+            "description": "The name of the PowerShell script to execute via the Custom Script Extension. This script must be in the list of Blob Names or File Uris",
+            "portalReview": true
+          }
+        },
+        "ScriptArguments": {
+          "type": "string",
+          "metadata": {
+            "displayName": "Script Arguments",
+            "description": "PowerShell Script Arguments",
+            "portalReview": true
+          },
+          "defaultValue": "\"\""
+        }
+      },
+      "policyDefinitions": [
+        {
+          "policyDefinitionReferenceId": "[Custom] Run scripts on a Windows Virtual Machine via the Custom Script Extension_1",
+          "policyDefinitionId": "/providers/Microsoft.Management/managementGroups/2d4efe71-b11f-4dfd-9af8-7f5d9ec42de9/providers/Microsoft.Authorization/policyDefinitions/77cb2e7f-c788-4709-82da-e1c1615cc136",
+          "definitionVersion": "1.*.*",
+          "effectiveDefinitionVersion": "1.0.0",
+          "parameters": {
+            "artifactsUri": {
+              "value": "[parameters('BlobContainerUri')]"
+            },
+            "fileUris": {
+              "value": "[parameters('BlobNamesOrUris')]"
+            },
+            "scriptToRun": {
+              "value": "[parameters('ScriptToExecute')]"
+            },
+            "scriptArguments": {
+              "value": "[parameters('ScriptArguments')]"
+            },
+            "userAssignedIdentityResourceId": {
+              "value": "[parameters('UserAssignedIdentity')]"
+            }
+          },
+          "groupNames": []
+        },
+        {
+          "policyDefinitionReferenceId": "[Custom] Assign a User-Assigned Identity to Windows Virtual Machines_1",
+          "policyDefinitionId": "/providers/Microsoft.Management/managementGroups/2d4efe71-b11f-4dfd-9af8-7f5d9ec42de9/providers/Microsoft.Authorization/policyDefinitions/75bcc2e3-427c-4bce-a8ba-29cc7f9c963e",
+          "definitionVersion": "1.*.*",
+          "effectiveDefinitionVersion": "1.0.0",
+          "parameters": {
+            "userAssignedIdentityResourceId": {
+              "value": "[parameters('UserAssignedIdentity')]"
+            }
+          },
+          "groupNames": []
+        }
+      ],
+      "policyDefinitionGroups": [],
+      "versions": [
+        "1.0.0"
+      ]
+    }
+  }

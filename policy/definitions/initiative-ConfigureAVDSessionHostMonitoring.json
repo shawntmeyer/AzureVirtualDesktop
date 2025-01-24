@@ -1,0 +1,103 @@
+{
+    "properties": {
+      "displayName": "[Custom] Configure AVD Session Host Monitoring",
+      "policyType": "Custom",
+      "description": "Automatically deploys the Azure Monitor Agent with System-Assigned Identity, associates the AVD Insights and VM Insights Data Collection Rules and a data collection Endpoint. Requires that you have all these items deployed to complete the associations.",
+      "metadata": {
+        "category": "Monitoring",
+        "createdBy": "78b1c548-cca3-4238-ab69-6373ceb5a0ca",
+        "createdOn": "2025-01-23T13:25:58.1309294Z",
+        "updatedBy": null,
+        "updatedOn": null
+      },
+      "version": "1.0.0",
+      "parameters": {
+        "AVDInsightsDCRId": {
+          "type": "string",
+          "metadata": {
+            "displayName": "AVD Insights Data Collection Rule",
+            "description": "The AVD Insights Data Collection Rule which will always begin with 'microsoft-avdi-'",
+            "strongType": "Microsoft.Insights/dataCollectionRules",
+            "portalReview": true
+          }
+        },
+        "VMInsightsDCRId": {
+          "type": "string",
+          "metadata": {
+            "displayName": "VM Insights Data Collection Rule",
+            "description": "The VM Insights Data Collection Rule which will always begin with 'MSVMI-'",
+            "strongType": "Microsoft.Insights/dataCollectionRules",
+            "portalReview": true
+          }
+        },
+        "DataCollectionEndpointId": {
+          "type": "string",
+          "metadata": {
+            "displayName": "DataCollectionEndpointId",
+            "description": "The Azure Monitor Data Collection Endpoint for your region. ",
+            "strongType": "Microsoft.Insights/dataCollectionEndPoints",
+            "portalReview": true
+          }
+        }
+      },
+      "policyDefinitions": [
+        {
+          "policyDefinitionReferenceId": "Configure Windows virtual machines to run Azure Monitor Agent using system-assigned managed identity_1",
+          "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/ca817e41-e85a-4783-bc7f-dc532d36235e",
+          "definitionVersion": "4.*.*",
+          "effectiveDefinitionVersion": "4.4.0",
+          "parameters": {},
+          "groupNames": []
+        },
+        {
+          "policyDefinitionReferenceId": "Configure Windows Machines to be associated with a Data Collection Rule or a Data Collection Endpoin_1",
+          "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/eab1f514-22e3-42e3-9a1f-e1dc9199355c",
+          "definitionVersion": "4.*.*",
+          "effectiveDefinitionVersion": "4.5.1",
+          "parameters": {
+            "dcrResourceId": {
+              "value": "[parameters('AVDInsightsDCRId')]"
+            },
+            "resourceType": {
+              "value": "Microsoft.Insights/dataCollectionRules"
+            }
+          },
+          "groupNames": []
+        },
+        {
+          "policyDefinitionReferenceId": "Configure Windows Machines to be associated with a Data Collection Rule or a Data Collection Endpoin_2",
+          "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/eab1f514-22e3-42e3-9a1f-e1dc9199355c",
+          "definitionVersion": "4.*.*",
+          "effectiveDefinitionVersion": "4.5.1",
+          "parameters": {
+            "dcrResourceId": {
+              "value": "[parameters('VMInsightsDCRId')]"
+            },
+            "resourceType": {
+              "value": "Microsoft.Insights/dataCollectionRules"
+            }
+          },
+          "groupNames": []
+        },
+        {
+          "policyDefinitionReferenceId": "Configure Windows Virtual Machines to be associated with a Data Collection Rule or a Data Collection_1",
+          "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/244efd75-0d92-453c-b9a3-7d73ca36ed52",
+          "definitionVersion": "3.*.*",
+          "effectiveDefinitionVersion": "3.3.1",
+          "parameters": {
+            "dcrResourceId": {
+              "value": "[parameters('DataCollectionEndpointId')]"
+            },
+            "resourceType": {
+              "value": "Microsoft.Insights/dataCollectionEndpoints"
+            }
+          },
+          "groupNames": []
+        }
+      ],
+      "policyDefinitionGroups": [],
+      "versions": [
+        "1.0.0"
+      ]
+    }    
+  }

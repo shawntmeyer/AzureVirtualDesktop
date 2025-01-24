@@ -1,24 +1,20 @@
-param artifactsUri string
 param fileUris array
 param location string
 param scriptToRun string
 param scriptArguments string
-param userAssignedIdentityClientId string
-param vmname string
-param timeStamp string = utcNow('yyyyMMddhhmmss')
+param userAssignedIdentityResourceId string
+param vmName string
 
-var baseUri = last(artifactsUri) == '/' ? artifactsUri : '${artifactsUri}/'
-var cseUris = [for uri in fileUris: !contains(uri, '/') ? '${baseUri}${uri}' : uri]
 var baseCommand = 'powershell -ExecutionPolicy Unrestricted -Command .\\${scriptToRun}'
 var commandToExecute = !empty(scriptArguments) ? '${baseCommand} ${scriptArguments}' : baseCommand
 
-resource vm 'Microsoft.Compute/virtualMachines@2023-07-01' existing = {
-  name: vmname
+resource userAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' existing = if(!empty(userAssignedIdentityResourceId)) {
+  name: last(split(userAssignedIdentityResourceId, '/'))
+  scope: resourceGroup(split(userAssignedIdentityResourceId, '/')[2], split(userAssignedIdentityResourceId, '/')[4])
 }
 
 resource CustomScriptExtension 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = {
-  parent: vm
-  name: 'CustomScriptExtension'
+  name: '${vmName}/AzurePolicyforWindows'
   location: location
   tags: {}
   properties: {
@@ -26,17 +22,15 @@ resource CustomScriptExtension 'Microsoft.Compute/virtualMachines/extensions@202
     type: 'CustomScriptExtension'
     typeHandlerVersion: '1.10'
     autoUpgradeMinorVersion: true
-    settings: {
-      timeStamp: timeStamp
-    }
     protectedSettings: {
       commandToExecute: commandToExecute
-      fileUris: cseUris
-      managedIdentity: !empty(userAssignedIdentityClientId)
+      fileUris: fileUris
+      managedIdentity: !empty(userAssignedIdentityResourceId)
         ? {
-            clientId: userAssignedIdentityClientId
+            clientId: userAssignedIdentity.properties.clientId
           }
         : {}
     }
+    settings: {}
   }
 }

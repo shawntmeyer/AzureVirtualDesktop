@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "../.."
+		},
+		{
+			"name": "AzureVirtualDesktop.wiki",
+			"path": "../../../AzureVirtualDesktop.wiki"
+		}
+	],
+	"settings": {}
+}

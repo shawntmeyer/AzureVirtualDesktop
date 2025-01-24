@@ -1,6 +1,5 @@
 metadata name = 'Policy Definitions (All scopes)'
 metadata description = 'This module deploys a Policy Definition at a Management Group or Subscription scope.'
-metadata owner = 'Azure/module-maintainers'
 
 targetScope = 'managementGroup'
 
