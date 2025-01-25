@@ -904,51 +904,39 @@
 									"confidentialVMSizes": "value[?resourceType=='virtualMachines'&&ends_with(name, `v5`)&&(starts_with(name, `Standard_DC`)||starts_with(name, `Standard_EC`)||starts_with(name, `Standard_NCC`))]|[*].{label:name, value:name}"
 								}
 							}
-						},						
-						{
-							"name": "useAgentDownloadEndpoint",
-							"type": "Microsoft.Common.CheckBox",
-							"label": "Download latest Agent",
-							"defaultValue": true,
-							"toolTip": "Automatically downloads the latest agent software during installation rather than waiting for an upgrade."
 						},
 						{
-							"name": "drainMode",
-							"type": "Microsoft.Common.CheckBox",
-							"label": "Drain Mode",
-							"toolTip": "Enables drain mode on the AVD session hosts so the virtual machines cannot be accessed until they have been validated."
-						},
-						{
-							"name": "namingTextBlock1",
-							"type": "Microsoft.Common.TextBlock",
-							"options": {
-								"text": "<b>Naming</b>"
-							}
-						},
-						{
-							"name": "virtualMachineNamePrefix",
-							"type": "Microsoft.Common.TextBox",
-							"label": "Virtual Machine Name Prefix",
-							"toolTip": "Provide a Virtual Machine name prefix consisting of alphanumeric and dashes up to 12 characters long. A three character numeric suffix will be appended to the name padded with zeros (0).",
-							"constraints": {
-								"required": true,
-								"regex": "^(?:[a-zA-Z0-9][a-zA-Z0-9-]{0,11})?$",
-								"validationMessage": "The prefix must begin with an alphanumeric character and then contain only alphanumeric characters and dashes. The value must also be less than 12 characters long."
-							},
-							"visible": true
-						},
-						{
-							"name": "index",
-							"type": "Microsoft.Common.Slider",
-							"label": "Starting number (index)",
-							"defaultValue": 1,
-							"toolTip": "Select the start number of the virtual machine suffix.",
-							"min": 1,
-							"max": 4998,
-							"showStepMarkers": true,
-							"constraints": {
-								"required": true
-							},
+							"name": "naming",
+							"type": "Microsoft.Common.Section",
+							"label": "Naming",
+							"elements": [
+								{
+									"name": "virtualMachineNamePrefix",
+									"type": "Microsoft.Common.TextBox",
+									"label": "Virtual Machine Name Prefix",
+									"toolTip": "Provide a Virtual Machine name prefix consisting of alphanumeric and dashes up to 12 characters long. A three character numeric suffix will be appended to the name padded with zeros (0).",
+									"constraints": {
+										"required": true,
+										"regex": "^(?:[a-zA-Z0-9][a-zA-Z0-9-]{0,11})?$",
+										"validationMessage": "The prefix must begin with an alphanumeric character and then contain only alphanumeric characters and dashes. The value must also be less than 12 characters long."
+									},
+									"visible": true
+								},
+								{
+									"name": "index",
+									"type": "Microsoft.Common.Slider",
+									"label": "Starting number (index)",
+									"defaultValue": 1,
+									"toolTip": "Select the start number of the virtual machine suffix.",
+									"min": 1,
+									"max": 4998,
+									"showStepMarkers": true,
+									"constraints": {
+										"required": true
+									},
+									"visible": true
+								}
+							],
 							"visible": true
 						},
 						{
@@ -1396,7 +1384,7 @@
 										"required": true
 									},
 									"visible": "[equals(steps('hosts').security.securityType, 'ConfidentialVM')]"
-								},								
+								},
 								{
 									"name": "hibernationEnabled",
 									"type": "Microsoft.Common.CheckBox",
@@ -1819,6 +1807,34 @@
 									"link": "Select a secret"
 								}
 							]
+						},
+						{
+							"name": "registration",
+							"type": "Microsoft.Common.Section",
+							"label": "Session Host Registration",
+							"elements": [
+								{
+									"name": "avdAgentsDSCPackage",
+									"type": "Microsoft.Common.TextBox",
+									"label": "AVD Agent DSC Package",
+									"placeholder": "",
+									"defaultValue": "Configuration_1.0.02790.438.zip",
+									"toolTip": "Provide the full URL (or just the file name to use the default storage account for the environment) to the DSC Configuration Package containing the AVD Agents and code to register the virtual machines as session hosts in the environment.",
+									"constraints": {
+										"required": true,
+										"regex": "^(https:\\/\\/[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}\\/?(.*\\/)?\\)?Configuration(_\\d+\\.\\d+\\.\\d+\\.\\d+)?\\.zip$",
+										"validationMessage": "The package name must start with 'Configuration', optionally be followed by an underscore and a version number, and end with '.zip'."
+									},
+									"visible": true
+								},
+								{
+									"name": "useAgentDownloadEndpoint",
+									"type": "Microsoft.Common.CheckBox",
+									"label": "Download latest Agent",
+									"toolTip": "Automatically downloads the latest agent software during installation rather than waiting for an upgrade."
+								}
+							],
+							"visible": true
 						},
 						{
 							"name": "customScripts",
@@ -2902,6 +2918,12 @@
 							"label": "Automation",
 							"elements": [
 								{
+									"name": "drainMode",
+									"type": "Microsoft.Common.CheckBox",
+									"label": "Drain Mode",
+									"toolTip": "Enables drain mode on the AVD session hosts so the virtual machines cannot be accessed until they have been validated."
+								},
+								{
 									"name": "deployIncreaseQuota",
 									"type": "Microsoft.Common.CheckBox",
 									"visible": "[equals(steps('userProfiles').azureFiles.storageSku, 'Premium')]",
@@ -2915,7 +2937,7 @@
 									"toolTip": "Select to deploy a key vault and create secrets for VM Admin user and password and if applicable, the domain join username and password."
 								}
 							]
-						},						
+						},
 						{
 							"name": "backup",
 							"type": "Microsoft.Common.Section",
@@ -2932,7 +2954,7 @@
 									"min": 7,
 									"max": 90,
 									"visible": "[or(steps('management').automation.deploySecretsKeyVault, contains(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), contains(steps('userProfiles').azureFiles.keyManagement, 'CustomerManaged'))]"
-								},								
+								},
 								{
 									"name": "recoveryServices",
 									"type": "Microsoft.Common.CheckBox",
@@ -3168,7 +3190,7 @@
 											"uri": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview#dns-configuration"
 										}
 									}
-								},								
+								},
 								{
 									"name": "enablePrivateDNSIntegration",
 									"type": "Microsoft.Common.CheckBox",
@@ -3176,7 +3198,6 @@
 									"toolTip": "To connect privately with your private endpoint, you need a DNS record. Check this box to select the appropriate private DNS zones so that the deployment automatically integrates each private endpoint with Azure private DNS.",
 									"defaultValue": true,
 									"visible": "[steps('zeroTrust').privateEndpoints.deployPrivateEndpoints]"
-									
 								},
 								{
 									"name": "privateDNSZonesSubscription",
@@ -3420,7 +3441,7 @@
 										"style": "Warning",
 										"text": "Because you have chosen to update an existing AVD workspace on the <b>Control Plane</b> blade, use caution when updating the AVD Private Link configuration for the <u>Workspace Feed</u>.\n\nYou can only have one private endpoint per workspace; therefore, if your workspace is already configured with a private endpoint to support private routes for the workspace feed, it is best to select \"Only remote session connections use private routes\" as the <b><i>AVD Private Link Configuration</i></b>. The \"Feed download and remote session connections use private routes\" option is primarily provided to allow an existing workspace to be updated with this option."
 									}
-								},													
+								},
 								{
 									"name": "hostpoolHeader",
 									"type": "Microsoft.Common.TextBlock",
@@ -3428,7 +3449,7 @@
 									"options": {
 										"text": "<u>Remote Session Connections</u>"
 									}
-								},								
+								},
 								{
 									"name": "hostpoolTextBlock2",
 									"type": "Microsoft.Common.TextBlock",
@@ -3619,7 +3640,7 @@
 										"required": false
 									},
 									"visible": "[and(steps('zeroTrust').avdPrivateLink.enablePrivateLink, not(equals(steps('zeroTrust').avdPrivateLink.avdPrivateLinkConfig, 'Hostpool')))]"
-								},								
+								},
 								{
 									"name": "globalFeedTextBlock0",
 									"type": "Microsoft.Common.TextBlock",
@@ -3690,7 +3711,7 @@
 										"required": true
 									},
 									"visible": "[and(steps('zeroTrust').avdPrivateLink.enablePrivateLink, equals(steps('zeroTrust').avdPrivateLink.avdPrivateLinkConfig, 'All'))]"
-								},								
+								},
 								{
 									"name": "privateDNSZonesHeader",
 									"type": "Microsoft.Common.TextBlock",
@@ -3710,7 +3731,7 @@
 											"uri": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview#dns-configuration"
 										}
 									}
-								},								
+								},
 								{
 									"name": "enablePrivateDNSIntegration",
 									"type": "Microsoft.Common.CheckBox",
@@ -3718,8 +3739,7 @@
 									"toolTip": "To connect privately with your private endpoint, you need a DNS record. Check this box to select the appropriate private DNS zones so that the deployment automatically integrates each private endpoint with Azure private DNS.",
 									"defaultValue": true,
 									"visible": "[steps('zeroTrust').avdPrivateLink.enablePrivateLink]"
-									
-								},								
+								},
 								{
 									"name": "privateDNSZonesSubscription",
 									"type": "Microsoft.Common.DropDown",
@@ -3753,7 +3773,7 @@
 										"allowedValues": "[map(filter(steps('zeroTrust').avdPrivateLink.privateDNSZonesApi.value, (zone) => contains(zone.name, 'privatelink.wvd.')), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"<b>Resource group:</b> ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
 										"required": true
 									}
-								},								
+								},
 								{
 									"name": "globalFeedPrivateDnsZone",
 									"type": "Microsoft.Common.DropDown",
@@ -3831,11 +3851,9 @@
 				"scalingPlanOffPeakSchedule": "[if(steps('controlPlane').scalingPlan.deployScalingPlan, first(steps('controlPlane').scalingPlan.weekdayOffPeakSchedule), parse('{}'))]",
 				"scalingPlanForceLogoff": "[if(steps('controlPlane').scalingPlan.deployScalingPlan, steps('controlPlane').scalingPlan.forceLogoff, false)]",
 				"scalingPlanMinsBeforeLogoff": "[if(and(steps('controlPlane').scalingPlan.deployScalingPlan, steps('controlPlane').scalingPlan.forceLogoff), steps('controlPlane').scalingPlan.minsToLogoff, 0)]",
-				"drainMode": "[steps('hosts').drainMode]",
-				"useAgentDownloadEndpoint": "[steps('hosts').useAgentDownloadEndpoint]", 
-				"virtualMachineNamePrefix": "[steps('hosts').virtualMachineNamePrefix]",
+				"virtualMachineNamePrefix": "[steps('hosts').naming.virtualMachineNamePrefix]",
+				"sessionHostIndex": "[steps('hosts').naming.index]",
 				"sessionHostCount": "[steps('hosts').specs.count]",
-				"sessionHostIndex": "[steps('hosts').index]",
 				"virtualMachineSubnetResourceId": "[steps('hosts').network.hostsSubnet]",
 				"securityType": "[steps('hosts').security.securityType]",
 				"secureBootEnabled": "[if(equals(steps('hosts').security.securityType, 'Standard'), false, steps('hosts').security.secureBootEnabled)]",
@@ -3868,6 +3886,8 @@
 				"virtualMachineAdminPasswordKvSecret": "[if(equals(steps('hosts').localAdminCredentials.source, 'manual'), parse('{}'), parse(concat('{\"id\":\"', steps('hosts').localAdminCredentials.passwordSecretPickerBlade.vaultResourceId, '\",\"secretName\":\"', last(split(steps('hosts').localAdminCredentials.passwordSecretPickerBlade.secretId,'/')), '\"}')))]",
 				"virtualMachineAdminUserName": "[if(equals(steps('hosts').localAdminCredentials.source, 'manual'), steps('hosts').localAdminCredentials.username, '')]",
 				"virtualMachineAdminUserNameKvSecret": "[if(equals(steps('hosts').localAdminCredentials.source, 'manual'), parse('{}'), parse(concat('{\"id\":\"', steps('hosts').localAdminCredentials.usernameSecretPickerBlade.vaultResourceId, '\",\"secretName\":\"', last(split(steps('hosts').localAdminCredentials.usernameSecretPickerBlade.secretId,'/')), '\"}')))]",
+				"avdAgentsDSCPackage": "[steps('hosts').registration.avdAgentsDSCPackage]",
+				"useAgentDownloadEndpoint": "[steps('hosts').registration.useAgentDownloadEndpoint]",
 				"artifactsContainerUri": "[if(steps('hosts').customScripts.addCustomScripts, if(and(not(empty(steps('hosts').customScripts.storageAccount)), not(empty(steps('hosts').customScripts.container))), concat(steps('hosts').customScripts.storageAccount.blobEndpoint, steps('hosts').customScripts.container), ''), '')]",
 				"artifactsUserAssignedIdentityResourceId": "[if(steps('hosts').customScripts.addCustomScripts, if(not(empty(steps('hosts').customScripts.managedIdentity)), steps('hosts').customScripts.managedIdentity.id, ''), '')]",
 				"sessionHostCustomizations": "[if(steps('hosts').customScripts.addCustomScripts, steps('hosts').customScripts.customizations, parse('[]'))]",
@@ -3889,6 +3909,7 @@
 				"fslogixExistingLocalStorageAccountResourceIds": "[if(and(steps('userProfiles').configureSessionHosts, equals(steps('userProfiles').deployStorage, false), equals(steps('userProfiles').storageService, 'AzureFiles')), steps('userProfiles').azureFiles.existingLocalStorageAccounts, parse('[]'))]",
 				"fslogixExistingRemoteStorageAccountResourceIds": "[if(and(steps('userProfiles').configureSessionHosts, contains(steps('userProfiles').fslogixContainerType, 'CloudCache'), equals(steps('userProfiles').storageService, 'AzureFiles')), steps('userProfiles').azureFiles.existingRemoteStorageAccounts, parse('[]'))]",
 				"fslogixAdminGroups": "[if(steps('userProfiles').shareManagement.configureAdminAccess, steps('userProfiles').shareManagement.groupPickerBlade.transformed.selection, parse('[]'))]",
+				"drainMode": "[steps('management').automation.drainMode]",
 				"deployIncreaseQuota": "[if(equals(steps('userProfiles').azureFiles.storageSku, 'Premium'), steps('management').automation.deployIncreaseQuota, false)]",
 				"deploySecretsKeyVault": "[steps('management').automation.deploySecretsKeyVault]",
 				"keyVaultRetentionInDays": "[if(or(steps('management').automation.deploySecretsKeyVault, contains(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), contains(steps('userProfiles').azureFiles.keyManagement, 'CustomerManaged')), steps('management').backup.keyVaultRetentionInDays, 7)]",

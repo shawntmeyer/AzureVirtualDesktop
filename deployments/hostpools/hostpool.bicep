@@ -5,7 +5,7 @@ targetScope = 'subscription'
 @description('The Object ID for the Windows Virtual Desktop Enterprise Application in Azure AD.  The Object ID can found by selecting Microsoft Applications using the Application type filter in the Enterprise Applications blade of Azure AD.')
 param avdObjectId string
 
-@description('Optional. The DSC package name used by the PowerShell DSC extension to install the AVD Agent and register the virtual machine as a Session Host.')
+@description('Optional. The DSC package name or full Url used by the PowerShell DSC extension to install the AVD Agent and register the virtual machine as a Session Host.')
 param avdAgentsDSCPackage string = 'Configuration_1.0.02790.438.zip'
 
 @description('Optional. Instruct the AVD Agent Installation script to automatically download the latest agent version during installation.zip.')
@@ -607,7 +607,7 @@ param tags object = {}
 param timeStamp string = utcNow('yyyyMMddhhmmss')
 
 var sessionHostRegistrationDSCStorageAccount = environment().name == 'USNAT' ? 'wvdexportalcontainer' : 'wvdportalstorageblob'
-var sessionHostRegistrationDSCUrl = 'https://${sessionHostRegistrationDSCStorageAccount}.blob.${environment().suffixes.storage}/galleryartifacts/${avdAgentsDSCPackage}'
+var sessionHostRegistrationDSCUrl = startsWith(avdAgentsDSCPackage, 'https://') ? avdAgentsDSCPackage : 'https://${sessionHostRegistrationDSCStorageAccount}.blob.${environment().suffixes.storage}/galleryartifacts/${avdAgentsDSCPackage}'
 
 var deployDiskAccessResource = contains(hostPoolType, 'Personal') && recoveryServices && deployPrivateEndpoints ? true : false
 
