@@ -2,18 +2,16 @@
 
 # Azure Virtual Desktop Solution
 
-This solution will deploy a fully operational Azure Virtual Desktop hostpool, image management capability, and image build automation solution adhering to the [Zero Trust principles](https://learn.microsoft.com/security/zero-trust/azure-infrastructure-avd). Many of the [common features](docs/features.md) used with AVD have been automated in this solution for your convenience.
+With this solution, you can deploy:
+
+1. A fully operational Azure Virtual Desktop hostpool.
+2. Image management capability.
+3. Custom Image build automation solution.
+
+The code and automation capabilities of this repo can be used to deploy these capabilities in Azure Commercial, Azure US Government, USSec, and USNat Azure environments. The code is designed to allow you to deploy in compliance with Microsoft's [Zero Trust principles](https://learn.microsoft.com/security/zero-trust/azure-infrastructure-avd) and [IL5 Isolation Guidance](https://learn.microsoft.com/en-us/azure/azure-government/documentation-government-impact-level-5).
+
+Many of the [common features](docs/features.md) used with AVD have been automated in this solution for your convenience.
 
 ## Quick Start
 
 For detailed step by step instructions to deploy the solution components including the prerequisites, see the [Quick Start Guide](docs/quickStart.md).
-
-## Blue Buttons
-
-This option opens the deployment UI for the solution in the Azure Portal. Be sure to select the button for the correct cloud. If your desired cloud is not listed, please use the template spec detailed in the Quick Start guide.
-
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#blade/Microsoft_Azure_CreateUIDef/CustomDeploymentBlade/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fshawntmeyer%2Fazurevirtualdesktop%2Fmaster%2F%2Fdeployments%2Fhostpools%2Fhostpool.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2Fshawntmeyer%2Fazurevirtualdesktop%2Fmaster%2F%2Fdeployments%2Fhostpools%2FuiFormDefinition.json)
-[![Deploy to Azure Gov](https://aka.ms/deploytoazuregovbutton)](https://portal.azure.us/#blade/Microsoft_Azure_CreateUIDef/CustomDeploymentBlade/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fshawntmeyer%2Fazurevirtualdesktop%2Fmaster%2F%2Fdeployments%2Fhostpools%2Fhostpool.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2Fshawntmeyer%2Fazurevirtualdesktop%2Fmaster%2F%2Fdeployments%2Fhostpools%2FuiFormDefinition.json)
-
-> [!WARNING]
-> Failure to read and complete the [prerequisites](docs/quickStart.md#prerequisites) will result in an unsuccessful deployment.
