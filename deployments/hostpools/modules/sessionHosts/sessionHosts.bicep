@@ -8,7 +8,6 @@ param availabilitySetNamePrefix string
 param availabilitySetsCount int
 param availabilitySetsIndex int
 param availabilityZones array
-param avdAgentsModuleUrl string
 param avdInsightsDataCollectionRulesResourceId string
 param azureBackupPrivateDnsZoneResourceId string
 param azureBlobPrivateDnsZoneResourceId string
@@ -80,6 +79,7 @@ param securityDataCollectionRulesResourceId string
 param securityType string
 param sessionHostBatchCount int
 param sessionHostCustomizations array
+param sessionHostRegistrationDSCUrl string
 param sessionHostIndex int
 param storageSuffix string
 param subnetResourceId string
@@ -239,7 +239,6 @@ module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sess
     availability: availability
     availabilityZones: availabilityZones
     availabilitySetNamePrefix: availabilitySetNamePrefix
-    avdAgentsModuleUrl: avdAgentsModuleUrl
     batchCount: i
     confidentialVMOSDiskEncryptionType: confidentialVMOSDiskEncryptionType
     customImageResourceId: customImageResourceId
@@ -289,6 +288,7 @@ module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sess
     securityType: securityType
     sessionHostCount: i == sessionHostBatchCount && divisionRemainderValue > 0 ? divisionRemainderValue : maxResourcesPerTemplateDeployment
     sessionHostIndex: i == 1 ? sessionHostIndex : ((i - 1) * maxResourcesPerTemplateDeployment) + sessionHostIndex
+    sessionHostRegistrationDSCUrl: sessionHostRegistrationDSCUrl
     storageSuffix: storageSuffix
     subnetResourceId: subnetResourceId
     tags: tags

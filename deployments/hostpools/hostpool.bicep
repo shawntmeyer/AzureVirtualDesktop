@@ -5,8 +5,8 @@ targetScope = 'subscription'
 @description('The Object ID for the Windows Virtual Desktop Enterprise Application in Azure AD.  The Object ID can found by selecting Microsoft Applications using the Application type filter in the Enterprise Applications blade of Azure AD.')
 param avdObjectId string
 
-@description('Optional. The URL of the AVD Agent and Session Host DSC Configuration.zip.')
-param avdAgentsModuleUrl string = 'https://wvdportalstorageblob.blob.${environment().suffixes.storage}/galleryartifacts/Configuration_1.0.02790.438.zip'
+@description('Optional. The DSC package name used by the PowerShell DSC extension to install the AVD Agent and register the virtual machine as a Session Host.')
+param avdAgentsDSCPackage string = 'Configuration_1.0.02790.438.zip'
 
 @description('Optional. Instruct the AVD Agent Installation script to automatically download the latest agent version during installation.zip.')
 param useAgentDownloadEndpoint bool = false
@@ -606,6 +606,9 @@ param tags object = {}
 @description('DO NOT MODIFY THIS VALUE! The timeStamp is needed to differentiate deployments for certain Azure resources and must be set using a parameter.')
 param timeStamp string = utcNow('yyyyMMddhhmmss')
 
+var sessionHostRegistrationDSCStorageAccount = environment().name == 'USNAT' ? 'wvdexportalcontainer' : 'wvdportalstorageblob'
+var sessionHostRegistrationDSCUrl = 'https://${sessionHostRegistrationDSCStorageAccount}.blob.${environment().suffixes.storage}/galleryartifacts/${avdAgentsDSCPackage}'
+
 var deployDiskAccessResource = contains(hostPoolType, 'Personal') && recoveryServices && deployPrivateEndpoints ? true : false
 
 var locationVirtualMachines = vmVirtualNetwork.location
@@ -927,7 +930,6 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     artifactsContainerUri: artifactsContainerUri
     artifactsUserAssignedIdentityResourceId: artifactsUserAssignedIdentityResourceId
     avdInsightsDataCollectionRulesResourceId: enableMonitoring ? management.outputs.avdInsightsDataCollectionRulesResourceId : ''
-    avdAgentsModuleUrl: avdAgentsModuleUrl
     availability: availability
     availabilitySetNamePrefix: resourceNames.outputs.availabilitySetNamePrefix
     availabilitySetsCount: logic.outputs.availabilitySetsCount
@@ -1002,6 +1004,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     sessionHostBatchCount: logic.outputs.sessionHostBatchCount
     sessionHostCustomizations: sessionHostCustomizations
     sessionHostIndex: sessionHostIndex
+    sessionHostRegistrationDSCUrl: sessionHostRegistrationDSCUrl
     storageSuffix: logic.outputs.storageSuffix
     subnetResourceId: virtualMachineSubnetResourceId
     tags: deployScalingPlan ? logic.outputs.tags : tags

@@ -1,17 +1,18 @@
-param identitySolution string
 param artifactsContainerUri string
 param artifactsUserAssignedIdentityClientId string
 param artifactsUserAssignedIdentityResourceId string
 param availability string
 param availabilitySetNamePrefix string
 param availabilityZones array
-param avdAgentsModuleUrl string
+param avdInsightsDataCollectionRulesResourceId string
 param batchCount int
 param confidentialVMOSDiskEncryptionType string
+param customImageResourceId string
 param dataCollectionEndpointResourceId string
 param dedicatedHostGroupResourceId string
 param dedicatedHostGroupZones array
 param dedicatedHostResourceId string
+param deploymentVirtualMachineName string
 param diskAccessId string
 param diskEncryptionSetResourceId string
 param diskNamePrefix string
@@ -25,38 +26,35 @@ param domainName string
 param drainMode bool
 param drainModeUserAssignedIdentityClientId string
 param enableAcceleratedNetworking bool
+param enableMonitoring bool
 param encryptionAtHost bool
 param fslogixConfigureSessionHosts bool
 param fslogixContainerType string
 param fslogixFileShareNames array
 param fslogixLocalNetAppServerFqdns array
 param fslogixLocalStorageAccountResourceIds array
+param fslogixOSSGroups array
 param fslogixRemoteNetAppServerFqdns array
 param fslogixRemoteStorageAccountResourceIds array
-param fslogixOSSGroups array
 param fslogixStorageService string
 param hibernationEnabled bool
 param hostPoolResourceId string
+param identitySolution string
 param imageOffer string
 param imagePublisher string
 param imageSku string
 param integrityMonitoring bool
-param customImageResourceId string
 param location string
-param deploymentVirtualMachineName string
-param enableMonitoring bool
 param networkInterfaceNamePrefix string
 param ouPath string
-param sessionHostCustomizations array
-param avdInsightsDataCollectionRulesResourceId string
-param vmInsightsDataCollectionRulesResourceId string
 param resourceGroupDeployment string
+param sessionHostCustomizations array
+param sessionHostCount int
+param sessionHostIndex int
+param sessionHostRegistrationDSCUrl string
 param securityDataCollectionRulesResourceId string
 param securityType string
 param secureBootEnabled bool
-param vTpmEnabled bool
-param sessionHostCount int
-param sessionHostIndex int
 param storageSuffix string
 param subnetResourceId string
 param tags object
@@ -68,6 +66,8 @@ param virtualMachineAdminPassword string
 param virtualMachineAdminUserName string
 param virtualMachineNamePrefix string
 param virtualMachineSize string
+param vmInsightsDataCollectionRulesResourceId string
+param vTpmEnabled bool
 
 var amdVmSize = contains(virtualMachineSize, 'Standard_NV') && (endsWith(virtualMachineSize, 'as_v4') || endsWith(virtualMachineSize, '_V710_v5'))
 var nvidiaVmSize = contains(virtualMachineSize, 'Standard_NV') && (endsWith(virtualMachineSize, '_v3') || endsWith(virtualMachineSize, '_A10_v5'))
@@ -607,7 +607,7 @@ resource extension_DSC_installAvdAgents 'Microsoft.Compute/virtualMachines/exten
       typeHandlerVersion: '2.73'
       autoUpgradeMinorVersion: true
       settings: {
-        modulesUrl: avdAgentsModuleUrl
+        modulesUrl: sessionHostRegistrationDSCUrl
         configurationFunction: 'Configuration.ps1\\AddSessionHost'
         properties: {
           hostPoolName: last(split(hostPoolResourceId, '/'))
