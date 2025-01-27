@@ -1822,7 +1822,6 @@
 									"toolTip": "Provide the full URL (or just the file name to use the default storage account for the environment) to the DSC Configuration Package containing the AVD Agents and code to register the virtual machines as session hosts in the environment.",
 									"constraints": {
 										"required": true,
-										"regex": "^(https:\\/\\/[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}\\/?(.*\\/)?\\)?Configuration(_\\d+\\.\\d+\\.\\d+\\.\\d+)?\\.zip$",
 										"validationMessage": "The package name must start with 'Configuration', optionally be followed by an underscore and a version number, and end with '.zip'."
 									},
 									"visible": true
