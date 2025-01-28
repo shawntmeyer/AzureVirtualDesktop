@@ -557,7 +557,7 @@ Write-Log -Message "Getting List of Applicable GPO folders."
 $GPOFolders = Get-ChildItem -Path $Script:TempDir -Directory
 [array]$ApplicableFolders = $GPOFolders | Where-Object {$_.Name -like "DoD*Windows $osVersion*" -or $_.Name -like 'DoD*Edge*' -or $_.Name -like 'DoD*Firewall*' -or $_.Name -like 'DoD*Internet Explorer*' -or $_.Name -like 'DoD*Defender Antivirus*'} 
 If(Get-InstalledApplication -Name 'Office', 'Teams') {
-	$ApplicableFolders += $GPOFolders | Where-Object 'M365'
+	$ApplicableFolders += $GPOFolders | Where-Object {$_.Name -match 'M365'} 
 }
 $InstalledAppsToSTIG = (Get-InstalledApplication -Name $AppsToSTIG).SearchString
 ForEach($SearchString in $InstalledAppsToSTIG) {
