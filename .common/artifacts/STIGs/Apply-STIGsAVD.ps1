@@ -16,7 +16,7 @@
 [CmdletBinding()]
 param (
     [Parameter()]
-    [string]$ApplicationsToSTIG = '["Adobe Acrobat Pro", "Adobe Acrobat Reader", "Google Chrome", "Mozilla Firefox"]'
+    [string]$ApplicationsToSTIG = '["M365 Apps", "Adobe Acrobat Pro", "Adobe Acrobat Reader", "Google Chrome", "Mozilla Firefox"]'
 )
 #region Initialization
 $Script:FullName = $MyInvocation.MyCommand.Path
