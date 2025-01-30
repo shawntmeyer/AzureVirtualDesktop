@@ -606,7 +606,7 @@ param tags object = {}
 @description('DO NOT MODIFY THIS VALUE! The timeStamp is needed to differentiate deployments for certain Azure resources and must be set using a parameter.')
 param timeStamp string = utcNow('yyyyMMddhhmmss')
 
-var sessionHostRegistrationDSCStorageAccount = environment().name == 'USNAT' ? 'wvdexportalcontainer' : 'wvdportalstorageblob'
+var sessionHostRegistrationDSCStorageAccount = environment().name =~ 'USNAT' ? 'wvdexportalcontainer' : 'wvdportalstorageblob'
 var sessionHostRegistrationDSCUrl = startsWith(avdAgentsDSCPackage, 'https://') ? avdAgentsDSCPackage : 'https://${sessionHostRegistrationDSCStorageAccount}.blob.${environment().suffixes.storage}/galleryartifacts/${avdAgentsDSCPackage}'
 
 var deployDiskAccessResource = contains(hostPoolType, 'Personal') && recoveryServices && deployPrivateEndpoints ? true : false
