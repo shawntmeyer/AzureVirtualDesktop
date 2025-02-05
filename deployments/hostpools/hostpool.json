@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.13.18514",
-      "templateHash": "3734741495122210369"
+      "templateHash": "16477725435519072928"
     }
   },
   "parameters": {
@@ -19,7 +19,7 @@
       "type": "string",
       "defaultValue": "Configuration_1.0.02790.438.zip",
       "metadata": {
-        "description": "Optional. The DSC package name used by the PowerShell DSC extension to install the AVD Agent and register the virtual machine as a Session Host."
+        "description": "Optional. The DSC package name or full Url used by the PowerShell DSC extension to install the AVD Agent and register the virtual machine as a Session Host."
       }
     },
     "useAgentDownloadEndpoint": {
@@ -938,8 +938,8 @@
     }
   },
   "variables": {
-    "sessionHostRegistrationDSCStorageAccount": "[if(equals(environment().name, 'USNAT'), 'wvdexportalcontainer', 'wvdportalstorageblob')]",
-    "sessionHostRegistrationDSCUrl": "[format('https://{0}.blob.{1}/galleryartifacts/{2}', variables('sessionHostRegistrationDSCStorageAccount'), environment().suffixes.storage, parameters('avdAgentsDSCPackage'))]",
+    "sessionHostRegistrationDSCStorageAccount": "[if(equals(toLower(environment().name), toLower('USNat')), 'wvdexportalcontainer', 'wvdportalstorageblob')]",
+    "sessionHostRegistrationDSCUrl": "[if(startsWith(parameters('avdAgentsDSCPackage'), 'https://'), parameters('avdAgentsDSCPackage'), format('https://{0}.blob.{1}/galleryartifacts/{2}', variables('sessionHostRegistrationDSCStorageAccount'), environment().suffixes.storage, parameters('avdAgentsDSCPackage')))]",
     "deployDiskAccessResource": "[if(and(and(contains(parameters('hostPoolType'), 'Personal'), parameters('recoveryServices')), parameters('deployPrivateEndpoints')), true(), false())]",
     "resourceGroupsCount": "[add(add(add(3, if(empty(parameters('existingFeedWorkspaceResourceId')), 1, 0)), if(parameters('deployFSLogixStorage'), 1, 0)), if(and(equals(parameters('avdPrivateLinkPrivateRoutes'), 'All'), not(empty(parameters('globalFeedPrivateEndpointSubnetResourceId')))), 1, 0))]"
   },

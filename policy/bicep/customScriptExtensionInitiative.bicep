@@ -19,67 +19,8 @@ module policyDefinition_AUAI '../../deployments/sharedModules/resources/authoriz
     displayName: policyDefinitionDisplayNameAUAI
     description: policyDefinitionDescriptionAUAI
     subscriptionId: subscriptionId
-    parameters: {
-      userAssignedIdentityResourceId: {
-        type: 'String'
-        defaultValue: ''
-        metadata: {
-          displayName: 'User Assigned Identity Resource ID'
-          description: 'The Resource ID of the user assigned identity that has access to the artifactsUri.'
-          strongType: 'Microsoft.ManagedIdentity/userAssignedIdentities'
-          portalReview: true
-        }
-      }
-    }
-    policyRule: {
-      if: {
-        allOf: [
-          {
-            field: 'type'
-            equals: 'Microsoft.Compute/virtualMachines'
-          }
-          {
-            field: 'Microsoft.Compute/virtualMachines/storageProfile.osDisk.osType'
-            equals: 'Windows'
-          }
-        ]
-      }
-      then: {
-        effect: 'DeployIfNotExists'
-        details: {
-          type: 'Microsoft.Compute/virtualMachines'
-          name: '[field(\'name\')]'
-          existenceCondition: {
-            allOf: [
-              {
-                field: 'identity.type'
-                contains: 'UserAssigned'
-              }
-              {
-                field: 'identity.userAssignedIdentities'
-                containsKey: '[parameters(\'userAssignedIdentityResourceId\')]'
-              }
-            ]
-          }
-          roleDefinitionIds: [
-            '/providers/microsoft.authorization/roleDefinitions/9980e02c-c2be-4d73-94e8-173b1dc7cf3c'
-          ]
-        }
-        deployment: {
-          properties: {
-            mode: 'Incremental'
-            parameters: {
-              location: '[field(\'location\')]'
-              userAssignedIdentityResourceId: {
-                value: '[parameters(\'userAssignedIdentityResourceId\')]'
-              }
-              vmname: '[field(\'name\')]'
-            }
-          }
-          template: loadJsonContent('../templates/AssignUAI/deploy.json')
-        }
-      }
-    }
+    parameters: loadJsonContent('../definitions/policy-AssignUser-AssignedIdentity.json', 'parameters')
+    policyRule: loadJsonContent('../definitions/policy-AssignUser-AssignedIdentity.json', 'policyRule')
   }
 }
 
@@ -91,105 +32,8 @@ module policyDefinition_CSE '../../deployments/sharedModules/resources/authoriza
     displayName: policyDefinitionDisplayNameCSE
     description: policyDefinitionDescriptionCSE
     subscriptionId: subscriptionId
-    parameters: {
-      fileUris: {
-        type: 'Array'
-        metadata: {
-          displayName: 'File Uris'
-          description: 'An array of file URIs to download. The format can be either files must be accessible and not require authentication.'
-          strongType: 'uri'
-          portalReview: true
-        }
-      }
-      scriptToRun: {
-        type: 'String'
-        metadata: {
-          displayName: 'Script To Run'
-          description: 'The script file name to execute after downloading. This file must be in the list of fileUris.'
-          portalReview: true
-        }
-      }
-      scriptArguments: {
-        type: 'String'
-        metadata: {
-          displayName: 'Script Arguments'
-          description: 'The arguments to pass to the script. If no arguments are needed, leave blank.'
-          portalReview: true
-        }
-      }
-      userAssignedIdentityResourceId: {
-        type: 'String'
-        defaultValue: ''
-        metadata: {
-          displayName: 'User Assigned Identity Resource ID'
-          description: 'The Resource ID of the user assigned identity that has access to the artifactsUri.'
-          strongType: 'Microsoft.ManagedIdentity/userAssignedIdentities'
-          portalReview: true
-        }
-      }
-    }
-    policyRule: {
-      if: {
-        allOf: [
-          {
-            field: 'type'
-            equals: 'Microsoft.Compute/virtualMachines'
-          }
-          {
-            field: 'Microsoft.Compute/virtualMachines/storageProfile.osDisk.osType'
-            equals: 'Windows'
-          }
-        ]
-      }
-      then: {
-        effect: 'DeployIfNotExists'
-        details: {
-          type: 'Microsoft.Compute/virtualMachines/extensions'
-          name: 'AzurePolicyforWindows'
-          existenceCondition: {
-            allOf: [
-              {
-                field: 'Microsoft.Compute/virtualMachines/extensions/publisher'
-                equals: 'Microsoft.Compute'
-              }
-              {
-                field: 'Microsoft.Compute/virtualMachines/extensions/type'
-                equals: 'CustomScriptExtension'
-              }
-              {
-                field: 'Microsoft.Compute/virtualMachines/extensions/provisioningState'
-                equals: 'Succeeded'
-              }
-            ]
-          }
-          roleDefinitionIds: [
-            '/providers/microsoft.authorization/roleDefinitions/9980e02c-c2be-4d73-94e8-173b1dc7cf3c'
-          ]
-        }
-        deployment: {
-          properties: {
-            mode: 'Incremental'
-            parameters: {
-              fileUris: {
-                value: '[parameters(\'fileUris\')]'
-              }
-              location: '[field(\'location\')]'
-              scriptToRun: {
-                value: '[parameters(\'scriptToRun\')]'
-              }
-              scriptArguments: {
-                value: '[parameters(\'scriptArguments\')]'
-              }
-              userAssignedIdentityResourceId: {
-                value: '[parameters(\'userAssignedIdentityResourceId\')]'
-              }
-              vmname: '[field(\'name\')]'
-            }         
-          template: loadJsonContent('../templates/CSE/deploy.json')
-        }
-        }
-      }
-    }
+    parameters: loadJsonContent('../definitions/policy-CustomScriptExtension.json', 'parameters')
+    policyRule: loadJsonContent('../definitions/policy-CustomScriptExtension.json', 'policyRule')
   }
 }
 
@@ -253,7 +97,7 @@ module policySetDefinition '../../deployments/sharedModules/resources/authorizat
           userAssignedIdentityResourceId: {
             value: '[parameters(\'UserAssignedIdentity\')]'
           }
-        }
+        }        
         groupNames: []
       }
       {
