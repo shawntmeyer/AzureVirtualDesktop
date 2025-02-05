@@ -476,7 +476,7 @@ param deployIncreaseQuota bool = false
 param recoveryServices bool = false
 
 @description('Optional. Deploys the Secrets Key Vault.')
-param deploySecretsKeyVault bool = true
+param deploySecretsKeyVault bool = false
 
 @description('Optional. Deploys the required monitoring resources to enable AVD and VM Insights and monitor features in the automation account.')
 param enableMonitoring bool = true

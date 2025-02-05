@@ -30,7 +30,7 @@ There are several Azure resource prerequisite that are required to run this depl
 ### Optional
 
 - **Domain Services:** if you plan to domain join the session hosts, ensure Active Directory Domain Services or Entra Domain Services is available in your enviroment and that you are synchronizing the required objects. AD Sites & Services should be configured for the address space of your Azure virtual network if you are extending your on-premises Active Directory infrastruture into the cloud.
-- **Disk Encryption:** the "encryption at host" feature is deployed on the virtual machines to meet Zero Trust compliance. This feature is not enabled in your Azure subscription by default and must be manually enabled. Use the following steps to enable the feature: [Enable Encryption at Host](https://learn.microsoft.com/azure/virtual-machines/disks-enable-host-based-encryption-portal).
+- **Disk Encryption:** the "encryption at host" feature should be deployed on the virtual machines to meet Zero Trust compliance. This feature is not enabled in your Azure subscription by default and must be manually enabled. Use the following steps to enable the feature: [Enable Encryption at Host](https://learn.microsoft.com/azure/virtual-machines/disks-enable-host-based-encryption-portal).
 - **DNS:** There are several DNS requirements:
   - If you plan to domain join the sessions hosts, you must configure your subnets to resolve the Domain SRV records for domain location services to function. This is normally accomplished by configuring custom DNS settings on your AVD session host Virtual Networks to point to the Domain Controllers or using a DNS resolver that can resolve the internal domain records.
   - In order to use private links and disable public access to storage accounts, key vaults, and other PaaS resources (in accordance with Zero Trust Guidance), you must ensure that the following private DNS zones are also resolvable from the session host Virtual Networks:
@@ -70,7 +70,7 @@ There are several Azure resource prerequisite that are required to run this depl
   - [Register the resource provider](https://learn.microsoft.com/azure/azure-netapp-files/azure-netapp-files-register)
   - [Enable the shared AD feature](https://learn.microsoft.com/azure/azure-netapp-files/create-active-directory-connections#shared_ad) - this feature is required if you plan to deploy more than one domain joined NetApp account in the same Azure subscription and region.
 - **Enable AVD Private Link** this feature is not enabled on subscriptions by default. Use the following link to enable AVD Private Link on your subscription: [Enable the Feature](https://learn.microsoft.com/azure/virtual-desktop/private-link-setup?tabs=portal%2Cportal-2#enable-the-feature)
-- **Marketplace Image:** If you plan to deploy this solution using PowerShell or AzureCLI and use a marketplace image for the virtual machines, use the code below to find the appropriate image:
+- **Marketplace Image:** If you plan to deploy this solution using PowerShell or AzureCLI and use a marketplace image for the virtual machines, use the code below to find the appropriate image (the Template Spec and Blue Button deployment UIs also automatically populate the available options.):
 
   ```powershell
   # Determine the Publisher; input the location for your AVD deployment
@@ -183,7 +183,7 @@ For more information see [Template-Specs | Microsoft Learn](https://learn.micros
 
 The AVD deployments created in this repo come with the custom portal forms for each template. The easiest way to create the Template Specs from the templates in this repo is to utilize the **New-TemplateSpecs.ps1** file located in the **deployments** folder. Follow these instructions to execute this script.
 
-1. Connect to the correct Azure Environment where '\<Environment\>' equals 'AzureCloud', 'AzureUSGovernment', 'USNat', or 'USSec'.
+1. Connect to the correct Azure Environment where `<Environment>` equals 'AzureCloud', 'AzureUSGovernment', 'USNat', or 'USSec'.
 
    ``` powershell
    Connect-AzAccount -Environment <Environment>
@@ -288,9 +288,9 @@ If you do not wish to utilize the template spec to deploy the required networkin
 
    Save the resource id of the subnet for use in the parameters files below as follows:
 
-   1. imageManagement - 'privateEndpointSubnetResourceId'
-   2. imageBuild = 'privateEndpointSubnetResourceId'
-   3. hostpools = 'managementAndStoragePrivateEndpointSubnetResourceId'
+   1. imageManagement - `privateEndpointSubnetResourceId`
+   2. imageBuild = `privateEndpointSubnetResourceId`
+   3. hostpools = `managementAndStoragePrivateEndpointSubnetResourceId`
 
 While utilizing private endpoints is optional, it must be deployed in order to follow Zero Trust principles. Both the image management and AVD deployments can use private endpoints for the following:
 
