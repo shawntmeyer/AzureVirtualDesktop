@@ -33,6 +33,7 @@ If ($Null -eq $BuildDir -or $BuildDir -ne '') {
 New-Item -Path $TempDir -ItemType Directory -Force | Out-Null
 $WebClient = New-Object System.Net.WebClient
 If ($Uri -match $BlobStorageSuffix -and $UserAssignedIdentityClientId -ne '') {
+  Write-OutputWithTimeStamp "Getting access token for '$Uri' using User Assigned Identity."
   $StorageEndpoint = ($Uri -split "://")[0] + "://" + ($Uri -split "/")[2] + "/"
   $TokenUri = "http://169.254.169.254/metadata/identity/oauth2/token?api-version=$APIVersion&resource=$StorageEndpoint&client_id=$UserAssignedIdentityClientId"
   $AccessToken = ((Invoke-WebRequest -Headers @{Metadata = $true } -Uri $TokenUri -UseBasicParsing).Content | ConvertFrom-Json).access_token
