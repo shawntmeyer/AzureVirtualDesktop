@@ -4,7 +4,6 @@ param appServicePlanName string
 param azureKeyVaultPrivateDnsZoneResourceId string
 param azureMonitorPrivateLinkScopeResourceId string
 param dataCollectionEndpointName string
-param dataCollectionRulesNameConv string
 param deploySecretsKeyVault bool
 param enableMonitoring bool
 param enableQuotaManagement bool
@@ -111,7 +110,6 @@ module avdInsightsDataCollectionRules 'modules/avdInsightsDataCollectionRules.bi
     dataCollectionEndpointId: dataCollectionEndpoint.outputs.resourceId
     logAWorkspaceResourceId: enableMonitoring ? logAnalyticsWorkspace.outputs.resourceId : ''
     location: location
-    nameConv: dataCollectionRulesNameConv
     tags: tags[?'Microsoft.Insights/dataCollectionRules'] ?? {}
   }
 }
@@ -124,7 +122,6 @@ module vmInsightsDataCollectionRules 'modules/vmInsightsDataCollectionRules.bice
     dataCollectionEndpointId: dataCollectionEndpoint.outputs.resourceId
     logAWorkspaceResourceId: enableMonitoring ? logAnalyticsWorkspace.outputs.resourceId : ''
     location: location
-    nameConv: dataCollectionRulesNameConv
     tags: tags[?'Microsoft.Insights/dataCollectionRules'] ?? {}
   }
 }

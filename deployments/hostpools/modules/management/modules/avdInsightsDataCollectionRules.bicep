@@ -1,11 +1,10 @@
 param dataCollectionEndpointId string
-param nameConv string
 param location string
 param logAWorkspaceResourceId string
 param tags object
 
 resource dcr 'Microsoft.Insights/dataCollectionRules@2022-06-01' = {
-  name: 'microsoft-avdi-${nameConv}'
+  name: 'microsoft-avdi-${location}'
   location: location
   tags: tags
   kind: 'Windows'

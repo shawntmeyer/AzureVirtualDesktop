@@ -104,16 +104,7 @@ var dataCollectionEndpointName = replace(
   'TOKEN-',
   ''
 )
-// the AVD Insights data collection rule must start with 'microsoft-avdi-'
-var dataCollectionRulesNameConv = replace(
-  replace(
-    replace(nameConv_Shared_Resources, 'RESOURCETYPE', resourceAbbreviations.dataCollectionRules),
-    'LOCATION',
-    locations[locationVirtualMachines].abbreviation
-  ),
-  'TOKEN-',
-  ''
-)
+
 var logAnalyticsWorkspaceName = replace(
   replace(
     replace(nameConv_Shared_Resources, 'RESOURCETYPE', resourceAbbreviations.logAnalyticsWorkspaces),
@@ -380,7 +371,6 @@ output appInsightsNames object = {
 output appServicePlanName string = appServicePlanName
 output availabilitySetNamePrefix string = availabilitySetNamePrefix
 output dataCollectionEndpointName string = dataCollectionEndpointName
-output dataCollectionRulesNameConv string = dataCollectionRulesNameConv
 output depVirtualMachineName string = depVirtualMachineName
 output depVirtualMachineNicName string = depVirtualMachineNicName
 output depVirtualMachineDiskName string = depVirtualMachineDiskName

@@ -778,7 +778,6 @@ module management 'modules/management/management.bicep' = {
     azureKeyVaultPrivateDnsZoneResourceId: azureKeyVaultPrivateDnsZoneResourceId
     azureMonitorPrivateLinkScopeResourceId: azureMonitorPrivateLinkScopeResourceId
     dataCollectionEndpointName: resourceNames.outputs.dataCollectionEndpointName
-    dataCollectionRulesNameConv: resourceNames.outputs.dataCollectionRulesNameConv
     enableMonitoring: enableMonitoring
     enableQuotaManagement: deployIncreaseQuota
     domainJoinUserPassword: domainJoinUserPassword

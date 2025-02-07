@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "5847548277490777603"
+      "templateHash": "5346853863196442133"
     }
   },
   "parameters": {
@@ -991,7 +991,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "18036958420098216825"
+              "templateHash": "9219248258508430346"
             }
           },
           "parameters": {
@@ -1464,7 +1464,6 @@
             "keyVaultSharedResourcesNameConvRemainingCharacters": "[add(sub(24, length(variables('keyVaultSharedResourcesNameConv'))), 1)]",
             "keyVaultNameSecrets": "[replace(variables('keyVaultSharedResourcesNameConv'), 'TOKEN', format('sec-{0}', take(uniqueString(subscription().subscriptionId, variables('resourceGroupManagement')), variables('keyVaultSharedResourcesNameConvRemainingCharacters'))))]",
             "dataCollectionEndpointName": "[replace(replace(replace(variables('nameConv_Shared_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').dataCollectionEndpoints), 'LOCATION', variables('locations')[parameters('locationVirtualMachines')].abbreviation), 'TOKEN-', '')]",
-            "dataCollectionRulesNameConv": "[replace(replace(replace(variables('nameConv_Shared_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').dataCollectionRules), 'LOCATION', variables('locations')[parameters('locationVirtualMachines')].abbreviation), 'TOKEN-', '')]",
             "logAnalyticsWorkspaceName": "[replace(replace(replace(variables('nameConv_Shared_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').logAnalyticsWorkspaces), 'LOCATION', variables('locations')[parameters('locationVirtualMachines')].abbreviation), 'TOKEN-', '')]",
             "globalFeedResourceGroupName": "[if(not(empty(parameters('locationGlobalFeed'))), replace(replace(if(parameters('nameConvResTypeAtEnd'), format('avd-global-feed-{0}', variables('nameConvSuffix')), format('RESOURCETYPE-avd-global-feed-{0}', variables('nameConvSuffix'))), 'LOCATION', format('{0}', variables('locations')[parameters('locationGlobalFeed')].abbreviation)), 'RESOURCETYPE', format('{0}', variables('resourceAbbreviations').resourceGroups)), '')]",
             "globalFeedWorkspaceName": "[replace(if(parameters('nameConvResTypeAtEnd'), 'avd-global-feed-RESOURCETYPE', 'RESOURCETYPE-avd-global-feed'), 'RESOURCETYPE', variables('resourceAbbreviations').workspaces)]",
@@ -1539,10 +1538,6 @@
             "dataCollectionEndpointName": {
               "type": "string",
               "value": "[variables('dataCollectionEndpointName')]"
-            },
-            "dataCollectionRulesNameConv": {
-              "type": "string",
-              "value": "[variables('dataCollectionRulesNameConv')]"
             },
             "depVirtualMachineName": {
               "type": "string",
@@ -3080,9 +3075,6 @@
           "dataCollectionEndpointName": {
             "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.dataCollectionEndpointName.value]"
           },
-          "dataCollectionRulesNameConv": {
-            "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.dataCollectionRulesNameConv.value]"
-          },
           "enableMonitoring": {
             "value": "[parameters('enableMonitoring')]"
           },
@@ -3154,7 +3146,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "13105331528702117970"
+              "templateHash": "2713636128078516233"
             }
           },
           "parameters": {
@@ -3168,9 +3160,6 @@
               "type": "string"
             },
             "dataCollectionEndpointName": {
-              "type": "string"
-            },
-            "dataCollectionRulesNameConv": {
               "type": "string"
             },
             "deploySecretsKeyVault": {
@@ -4282,9 +4271,6 @@
                   "location": {
                     "value": "[parameters('location')]"
                   },
-                  "nameConv": {
-                    "value": "[parameters('dataCollectionRulesNameConv')]"
-                  },
                   "tags": {
                     "value": "[coalesce(tryGet(parameters('tags'), 'Microsoft.Insights/dataCollectionRules'), createObject())]"
                   }
@@ -4296,14 +4282,11 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "906304972519036000"
+                      "templateHash": "6110529813019526075"
                     }
                   },
                   "parameters": {
                     "dataCollectionEndpointId": {
-                      "type": "string"
-                    },
-                    "nameConv": {
                       "type": "string"
                     },
                     "location": {
@@ -4320,7 +4303,7 @@
                     {
                       "type": "Microsoft.Insights/dataCollectionRules",
                       "apiVersion": "2022-06-01",
-                      "name": "[format('microsoft-avdi-{0}', parameters('nameConv'))]",
+                      "name": "[format('microsoft-avdi-{0}', parameters('location'))]",
                       "location": "[parameters('location')]",
                       "tags": "[parameters('tags')]",
                       "kind": "Windows",
@@ -4404,7 +4387,7 @@
                   "outputs": {
                     "dataCollectionRulesId": {
                       "type": "string",
-                      "value": "[resourceId('Microsoft.Insights/dataCollectionRules', format('microsoft-avdi-{0}', parameters('nameConv')))]"
+                      "value": "[resourceId('Microsoft.Insights/dataCollectionRules', format('microsoft-avdi-{0}', parameters('location')))]"
                     }
                   }
                 }
@@ -4433,9 +4416,6 @@
                   "location": {
                     "value": "[parameters('location')]"
                   },
-                  "nameConv": {
-                    "value": "[parameters('dataCollectionRulesNameConv')]"
-                  },
                   "tags": {
                     "value": "[coalesce(tryGet(parameters('tags'), 'Microsoft.Insights/dataCollectionRules'), createObject())]"
                   }
@@ -4447,14 +4427,11 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "13995485301368692792"
+                      "templateHash": "10654045496828272110"
                     }
                   },
                   "parameters": {
                     "dataCollectionEndpointId": {
-                      "type": "string"
-                    },
-                    "nameConv": {
                       "type": "string"
                     },
                     "location": {
@@ -4471,7 +4448,7 @@
                     {
                       "type": "Microsoft.Insights/dataCollectionRules",
                       "apiVersion": "2022-06-01",
-                      "name": "[format('MSVMI-{0}', parameters('nameConv'))]",
+                      "name": "[format('MSVMI-{0}', parameters('location'))]",
                       "location": "[parameters('location')]",
                       "tags": "[parameters('tags')]",
                       "properties": {
@@ -4533,7 +4510,7 @@
                   "outputs": {
                     "dataCollectionRulesId": {
                       "type": "string",
-                      "value": "[resourceId('Microsoft.Insights/dataCollectionRules', format('MSVMI-{0}', parameters('nameConv')))]"
+                      "value": "[resourceId('Microsoft.Insights/dataCollectionRules', format('MSVMI-{0}', parameters('location')))]"
                     }
                   }
                 }
