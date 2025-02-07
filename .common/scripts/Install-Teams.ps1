@@ -30,15 +30,15 @@ Function Get-InternetUrl {
         $Links = $HTML.Links
         $ahref = $null
         $ahref=@()
-        $ahref = ($Links | Where-Object {$_.href -match $searchstring})
+        $ahref = ($Links | Where-Object {$_.href -like "*$searchstring*"})
         If ($ahref.count -eq 0 -or $null -eq $ahref) {
-            $ahref = ($Links | Where-Object {$_.OuterHTML -match $searchstring})
+            $ahref = ($Links | Where-Object {$_.OuterHTML -like "*$searchstring*"})
         }
         If ($ahref.Count -gt 0) {
             Return $ahref[0].href
         }
         Else {
-            $Pattern = '"url":\s*"(https:\/\/[^"]*?' + $SearchString.Replace('*', '.*') + '[^"]*)'
+            $Pattern = '"url":\s*"(https://[^"]*?' + $SearchString.Replace('.', '\.').Replace('*', '.*').Replace('+', '\+') + ')"' 
             If ($HTML.Content -match $Pattern) {
                 If ($matches[1].Contains('"')) {
                     Return $matches[1].Substring(0, $matches[1].IndexOf('"'))

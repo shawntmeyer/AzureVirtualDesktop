@@ -230,7 +230,7 @@ Function Get-InternetUrl {
 
         [Parameter(
             Mandatory,
-            HelpMessage = "Specifies the search string."    
+            HelpMessage = "Specifies the search string. Wildcard '*' can be used."    
         )]
         [string]$SearchString
     )
@@ -244,18 +244,22 @@ Function Get-InternetUrl {
         If ($ahref.count -eq 0 -or $null -eq $ahref) {
             $ahref = ($Links | Where-Object {$_.OuterHTML -like "*$searchstring*"})
         }
-        
         If ($ahref.Count -gt 0) {
             Return $ahref[0].href
         }
         Else {
-            $pattern = "https://.*?/$searchString.*?\.exe"
-            if ($HTML -match $pattern) {
-                $ahref = $matches[0]
-                Return $ahref
+            $Pattern = '"url":\s*"(https://[^"]*?' + $SearchString.Replace('.', '\.').Replace('*', '.*').Replace('+', '\+') + ')"' 
+            If ($HTML.Content -match $Pattern) {
+                If ($matches[1].Contains('"')) {
+                    Return $matches[1].Substring(0, $matches[1].IndexOf('"'))
+                } Else {
+                    Return $matches[1]
+                }
+
+            } else {
+                Write-Warning "No download URL found using search term."
+                Return $null
             }
-            Write-Warning "No download URL found using search term."
-            Return $null
         }
     }
     Catch {
