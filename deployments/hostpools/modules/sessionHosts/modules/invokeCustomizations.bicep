@@ -8,7 +8,7 @@ var apiVersion = environment().name == 'USNat' ? '2017-08-01' : '2018-02-01'
 
 var customizers = [for customization in customizations: {
   name: replace(customization.name, ' ', '-')
-  uri: contains(customization.blobNameOrUri, '//:') ? customization.blobNameOrUri : '${artifactsContainerUri}/${customization.blobNameOrUri}' 
+  uri: startsWith(customization.blobNameOrUri, 'https://') || startsWith(customization.blobNameorUri, 'http://') ? customization.blobNameOrUri : '${artifactsContainerUri}/${customization.blobNameOrUri}' 
   arguments: customization.?arguments ?? ''
 }]
 
@@ -50,7 +50,7 @@ resource runCommands 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' 
       }
     ]
     source: {
-      script: loadTextContent('../../../../../.common/scripts/Invoke-Customizations.ps1')
+      script: loadTextContent('../../../../../.common/scripts/Invoke-Customization.ps1')
     }
     treatFailureAsDeploymentFailure: true
   }

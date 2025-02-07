@@ -18,18 +18,17 @@ function Write-OutputWithTimeStamp {
   Write-Output $Entry
 }
 
-If (!(Test-Path -Path "$env:SystemRoot\Logs\ImageBuild")) { New-Item -Path "$env:SystemRoot\Logs\ImageBuild" -ItemType Directory -Force | Out-Null }
-Start-Transcript -Path "$env:SystemRoot\Logs\ImageBuild\$Name.log" -Force
+If (!(Test-Path -Path "$env:SystemRoot\Logs\Configuration")) { New-Item -Path "$env:SystemRoot\Logs\Configuration" -ItemType Directory -Force | Out-Null }
+Start-Transcript -Path "$env:SystemRoot\Logs\Configuration\$Name.log" -Force
 
 Write-OutputWithTimeStamp "Starting '$Name' script with the following parameters."
 Write-Output ( $PSBoundParameters | Format-Table -AutoSize )
 If ($Arguments -eq '') { $Arguments = $null }
-If ($Null -eq $BuildDir -or $BuildDir -ne '') {
+If ($null -ne $BuildDir -and $BuildDir -ne '') {
   $TempDir = Join-Path $BuildDir -ChildPath $Name
 } Else {
   $TempDir = Join-Path $Env:TEMP -ChildPath $Name
 }
-
 New-Item -Path $TempDir -ItemType Directory -Force | Out-Null
 $WebClient = New-Object System.Net.WebClient
 If ($Uri -match $BlobStorageSuffix -and $UserAssignedIdentityClientId -ne '') {

@@ -8,7 +8,6 @@ resource dcr 'Microsoft.Insights/dataCollectionRules@2022-06-01' = {
   name: 'MSVMI-${nameConv}'
   location: location
   tags: tags
-  kind: 'Windows'
   properties: {
     dataCollectionEndpointId: !empty(dataCollectionEndpointId) ? dataCollectionEndpointId : null
     description: 'Data collection rule for VM Insights.'
