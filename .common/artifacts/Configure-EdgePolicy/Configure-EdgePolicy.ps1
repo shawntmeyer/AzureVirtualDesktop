@@ -21,6 +21,134 @@ param (
 
 #region Functions
 
+Function Get-InternetFile {
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory = $true, Position = 0)]
+        [uri]$Url,
+        [Parameter(Mandatory = $true, Position = 1)]
+        [string]$OutputDirectory,
+        [Parameter(Mandatory = $false, Position = 2)]
+        [string]$OutputFileName
+    )
+
+    Begin {
+        $ProgressPreference = 'SilentlyContinue'
+        ## Get the name of this function and write header
+        [string]${CmdletName} = $PSCmdlet.MyInvocation.MyCommand.Name
+        Write-Log -Message "Starting ${CmdletName} with the following parameters: $PSBoundParameters"
+    }
+    Process {
+
+        $start_time = Get-Date
+
+        If (!$OutputFileName) {
+            Write-Log -Message "${CmdletName}: No OutputFileName specified. Trying to get file name from URL."
+            If ((split-path -path $Url -leaf).Contains('.')) {
+                $OutputFileName = split-path -path $url -leaf
+                Write-Log -Message "${CmdletName}: Url contains file name - '$OutputFileName'."
+            }
+            Else {
+                Write-Log -Message "${CmdletName}: Url does not contain file name. Trying 'Location' Response Header."
+                $request = [System.Net.WebRequest]::Create($url)
+                $request.AllowAutoRedirect=$false
+                $response=$request.GetResponse()
+                $Location = $response.GetResponseHeader("Location")
+                If ($Location) {
+                    $OutputFileName = [System.IO.Path]::GetFileName($Location)
+                    Write-Log -Message "${CmdletName}: File Name from 'Location' Response Header is '$OutputFileName'."
+                }
+                Else {
+                    Write-Log -Message "${CmdletName}: No 'Location' Response Header returned. Trying 'Content-Disposition' Response Header."
+                    $result = Invoke-WebRequest -Method GET -Uri $Url -UseBasicParsing
+                    $contentDisposition = $result.Headers.'Content-Disposition'
+                    If ($contentDisposition) {
+                        $OutputFileName = $contentDisposition.Split("=")[1].Replace("`"","")
+                        Write-Log -Message "${CmdletName}: File Name from 'Content-Disposition' Response Header is '$OutputFileName'."
+                    }
+                }
+            }
+        }
+
+        If ($OutputFileName) { 
+            $wc = New-Object System.Net.WebClient
+            $OutputFile = Join-Path $OutputDirectory $OutputFileName
+            Write-Log -Message "${CmdletName}: Downloading file at '$url' to '$OutputFile'."
+            Try {
+                $wc.DownloadFile($url, $OutputFile)
+                $time = (Get-Date).Subtract($start_time).Seconds
+                
+                Write-Log -Message "${CmdletName}: Time taken: '$time' seconds."
+                if (Test-Path -Path $outputfile) {
+                    $totalSize = (Get-Item $outputfile).Length / 1MB
+                    Write-Log -Message "${CmdletName}: Download was successful. Final file size: '$totalsize' mb"
+                    Return $OutputFile
+                }
+            }
+            Catch {
+                Write-Error -Category Error -Message "${CmdletName}: Error downloading file. Please check url."
+                Return $Null
+            }
+        }
+        Else {
+            Write-Log -Category Error -Message "${CmdletName}: No OutputFileName specified. Unable to download file."
+            Return $Null
+        }
+    }
+    End {
+        Write-Log -Message "Ending ${CmdletName}"
+    }
+}
+
+Function Get-InternetUrl {
+    [CmdletBinding()]
+    Param (
+        [Parameter(
+            Mandatory,
+            HelpMessage = "Specifies the website that contains a link to the desired download."
+        )]
+        [uri]$WebSiteUrl,
+
+        [Parameter(
+            Mandatory,
+            HelpMessage = "Specifies the search string. Wildcard '*' can be used."    
+        )]
+        [string]$SearchString
+    )
+
+    Try {
+        $HTML = Invoke-WebRequest -Uri $WebSiteUrl -UseBasicParsing
+        $Links = $HTML.Links
+        $ahref = $null
+        $ahref=@()
+        $ahref = ($Links | Where-Object {$_.href -like "*$searchstring*"})
+        If ($ahref.count -eq 0 -or $null -eq $ahref) {
+            $ahref = ($Links | Where-Object {$_.OuterHTML -like "*$searchstring*"})
+        }
+        If ($ahref.Count -gt 0) {
+            Return $ahref[0].href
+        }
+        Else {
+            $Pattern = '"url":\s*"(https://[^"]*?' + $SearchString.Replace('.', '\.').Replace('*', '.*').Replace('+', '\+') + ')"' 
+            If ($HTML.Content -match $Pattern) {
+                If ($matches[1].Contains('"')) {
+                    Return $matches[1].Substring(0, $matches[1].IndexOf('"'))
+                } Else {
+                    Return $matches[1]
+                }
+
+            } else {
+                Write-Warning "No download URL found using search term."
+                Return $null
+            }
+        }
+    }
+    Catch {
+        Write-Error "Error Downloading HTML and determining link for download."
+        Return
+    }
+}
+
 Function Update-LocalGPOTextFile {
     [CmdletBinding(DefaultParameterSetName = 'Set')]
     Param (
@@ -210,11 +338,26 @@ $Script:Name = [System.IO.Path]::GetFileNameWithoutExtension($PSCommandPath)
 New-Log "C:\Windows\Logs\Configuration"
 $ErrorActionPreference = 'Stop'
 Write-Log -category Info -message "Starting '$PSCommandPath'."
+$APIUrl = "https://edgeupdates.microsoft.com/api/products?view=enterprise"
 #endregion
 
 Write-Log -category Info -message "Running Script to Configure Microsoft Edge Policies."
-
 $EdgeTemplatesCab = (Get-ChildItem -Path $PSScriptRoot -Filter '*.cab').FullName
+If ($EdgeTemplatesCab.Count -eq 0) {
+    $EdgeUpdatesJSON = Invoke-WebRequest -Uri $APIUrl -UseBasicParsing
+    $content = $EdgeUpdatesJSON.content | ConvertFrom-Json      
+    $Edgereleases = ($content | Where-Object {$_.Product -eq 'Stable'}).releases
+    $latestrelease = $Edgereleases | Where-Object {$_.Platform -eq 'Windows' -and $_.Architecture -eq 'x64'} | Sort-Object ProductVersion | Select-Object -last 1
+    $EdgeLatestStableVersion = $latestrelease.ProductVersion
+    $policyfiles = ($content | Where-Object {$_.Product -eq 'Policy'}).releases
+    $latestPolicyFile = $policyfiles | Where-Object {$_.ProductVersion -eq $EdgeLatestStableVersion}
+    If (-not($latestPolicyFile)) {   
+        $latestpolicyfile = $policyfiles | Sort-Object ProductVersion | Select-Object -last 1
+    }  
+    $EdgeTemplatesUrl = $latestpolicyfile.artifacts.Location   
+    Write-Log -category Info -message "Getting download Urls for latest Edge browser and policy templates from '$APIUrl'."
+    $EdgeTemplatesCab = Get-InternetFile -Url $EdgeTemplatesUrl -OutputDirectory $TempDir -Verbose
+}
 $TemplatesDir = Join-Path -Path $TempDir -ChildPath 'Templates'
 New-Item -Path $TemplatesDir -ItemType Directory -Force | out-null
 Write-Log -category Info -message "Expanding `"$EdgeTemplatesCab`" into `"$TemplatesDir`"."
@@ -230,14 +373,26 @@ $null = Get-ChildItem -Path "$TemplatesDir" -Directory -Recurse | Where-Object {
 Write-Log -message "Checking for lgpo.exe in '$env:SystemRoot\system32'."
 
 If (-not(Test-Path -Path "$env:SystemRoot\System32\Lgpo.exe")) {
-    $LGPOZipFile = Join-Path -Path $PSScriptRoot -ChildPath 'LGPO.zip'
-    Write-Log -category Info -message "Expanding '$LGPOZipFile' to '$DirTemp'."
-    expand-archive -path "$LGPOZipFile" -DestinationPath "$DirTemp" -force
-    $LGPOExe = Get-ChildItem -Path "$DirTemp" -filter 'lgpo.exe' -recurse
-    If ($LGPOExe.count -gt 0) {
-        [string]$LGPOExe = $LGPOExe[0].FullName
-        Write-Log -category Info -message "Copying '$LGPOExe' to '$env:SystemRoot\system32'."
-        Copy-Item -Path $LGPOExe -Destination "$env:SystemRoot\System32" -force        
+    $LGPOZip = Join-Path -Path $PSScriptRoot -ChildPath 'LGPO.zip'
+    If (Test-Path -Path $LGPOZip) {
+        Write-Log -Message "Expanding '$LGPOZip' to '$Script:TempDir'."
+        Expand-Archive -path $LGPOZip -DestinationPath $Script:TempDir -force
+        $algpoexe = Get-ChildItem -Path $Script:TempDir -filter 'lgpo.exe' -recurse
+        If ($algpoexe.count -gt 0) {
+            $fileLGPO = $algpoexe[0].FullName
+            Write-Log -Message "Copying '$fileLGPO' to '$env:SystemRoot\system32'."
+            Copy-Item -Path $fileLGPO -Destination "$env:SystemRoot\System32" -force        
+        }
+    } Else {
+        $urlLGPO = 'https://download.microsoft.com/download/8/5/C/85C25433-A1B0-4FFA-9429-7E023E7DA8D8/LGPO.zip'
+        $LGPOZip = Get-InternetFile -Url $urlLGPO -OutputDirectory $Script:TempDir -Verbose
+        $outputDir = Join-Path $Script:TempDir -ChildPath 'LGPO'
+        Expand-Archive -Path $LGPOZip -DestinationPath $outputDir
+        Remove-Item $LGPOZip -Force
+        $fileLGPO = (Get-ChildItem -Path $outputDir -file -Filter 'lgpo.exe' -Recurse)[0].FullName
+        Write-Log -Message "Copying `"$fileLGPO`" to System32"
+        Copy-Item -Path $fileLGPO -Destination "$env:SystemRoot\System32" -Force
+        Remove-Item -Path $outputDir -Recurse -Force
     }
 }
 

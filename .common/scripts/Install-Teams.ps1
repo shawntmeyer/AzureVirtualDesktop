@@ -12,7 +12,16 @@ $ErrorActionPreference = 'Stop'
 Function Get-InternetUrl {
     [CmdletBinding()]
     Param (
+        [Parameter(
+            Mandatory,
+            HelpMessage = "Specifies the website that contains a link to the desired download."
+        )]
         [uri]$WebSiteUrl,
+
+        [Parameter(
+            Mandatory,
+            HelpMessage = "Specifies the search string. Wildcard '*' can be used."    
+        )]
         [string]$SearchString
     )
 
@@ -21,17 +30,26 @@ Function Get-InternetUrl {
         $Links = $HTML.Links
         $ahref = $null
         $ahref=@()
-        $ahref = ($Links | Where-Object {$_.href -like "*$searchstring*"})
+        $ahref = ($Links | Where-Object {$_.href -match $searchstring})
         If ($ahref.count -eq 0 -or $null -eq $ahref) {
-            $ahref = ($Links | Where-Object {$_.OuterHTML -like "*$searchstring*"})
+            $ahref = ($Links | Where-Object {$_.OuterHTML -match $searchstring})
         }
-        
         If ($ahref.Count -gt 0) {
             Return $ahref[0].href
         }
         Else {
-            Write-Warning "No download URL found using search term."
-            Return $null
+            $Pattern = '"url":\s*"(https:\/\/[^"]*?' + $SearchString.Replace('*', '.*') + '[^"]*)'
+            If ($HTML.Content -match $Pattern) {
+                If ($matches[1].Contains('"')) {
+                    Return $matches[1].Substring(0, $matches[1].IndexOf('"'))
+                } Else {
+                    Return $matches[1]
+                }
+
+            } else {
+                Write-Warning "No download URL found using search term."
+                Return $null
+            }
         }
     }
     Catch {

@@ -222,44 +222,45 @@ Function Get-InternetFile {
 Function Get-InternetUrl {
     [CmdletBinding()]
     Param (
-        [Parameter(Mandatory = $true, Position = 0)]
-        [uri]$Url,
-        [Parameter(Mandatory = $true, Position = 1)]
-        [string]$searchstring
+        [Parameter(
+            Mandatory,
+            HelpMessage = "Specifies the website that contains a link to the desired download."
+        )]
+        [uri]$WebSiteUrl,
+
+        [Parameter(
+            Mandatory,
+            HelpMessage = "Specifies the search string."    
+        )]
+        [string]$SearchString
     )
-    Begin {
-        ## Get the name of this function and write header
-        [string]${CmdletName} = $PSCmdlet.MyInvocation.MyCommand.Name
-        Write-Log -Message "${CmdletName}: Starting ${CmdletName} with the following parameters: $PSBoundParameters"
-    }
-    Process {
 
-        Try {
-            Write-Log -Message "${CmdletName}: Now extracting download URL from '$Url'."
-            $HTML = Invoke-WebRequest -Uri $Url -UseBasicParsing
-            $Links = $HTML.Links
-            $ahref = $null
-            $ahref=@()
-            $ahref = ($Links | Where-Object {$_.href -like "*$searchstring*"}).href
-            If ($ahref.count -eq 0 -or $null -eq $ahref) {
-                $ahref = ($Links | Where-Object {$_.OuterHTML -like "*$searchstring*"}).href
-            }
-            If ($ahref.Count -eq 1) {
-                Write-Log -Message  "${CmdletName}: Download URL = '$ahref'"
-                $ahref
-
-            }
-            Elseif ($ahref.Count -gt 1) {
-                Write-Log -Message  "${CmdletName}: Download URL = '$($ahref[0])'"
-                $ahref[0]
-            }
+    Try {
+        $HTML = Invoke-WebRequest -Uri $WebSiteUrl -UseBasicParsing
+        $Links = $HTML.Links
+        $ahref = $null
+        $ahref=@()
+        $ahref = ($Links | Where-Object {$_.href -like "*$searchstring*"})
+        If ($ahref.count -eq 0 -or $null -eq $ahref) {
+            $ahref = ($Links | Where-Object {$_.OuterHTML -like "*$searchstring*"})
         }
-        Catch {
-            Write-Log -Category Error -Message "${CmdletName}: Error Downloading HTML and determining link for download."
+        
+        If ($ahref.Count -gt 0) {
+            Return $ahref[0].href
+        }
+        Else {
+            $pattern = "https://.*?/$searchString.*?\.exe"
+            if ($HTML -match $pattern) {
+                $ahref = $matches[0]
+                Return $ahref
+            }
+            Write-Warning "No download URL found using search term."
+            Return $null
         }
     }
-    End {
-        Write-Log -Message  "${CmdletName}: Ending ${CmdletName}"
+    Catch {
+        Write-Error "Error Downloading HTML and determining link for download."
+        Return
     }
 }
 

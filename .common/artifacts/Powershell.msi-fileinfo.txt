@@ -1,5 +1,5 @@
-DownloadUrl = https://github.com/PowerShell/PowerShell/releases/download/v7.4.6/PowerShell-7.4.6-win-x64.msi
-Download File = PowerShell-7.4.6-win-x64.msi
+DownloadUrl = https://github.com/PowerShell/PowerShell/releases/download/v7.5.0/PowerShell-7.5.0-win-x64.msi
+Download File = PowerShell-7.5.0-win-x64.msi
 
 File                                 : {Powershell.msi}
 UpgradeCode                          : {31AB5147-9A97-4452-8443-D9709F0516E1}
@@ -14,9 +14,9 @@ WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT : Open PowerShell
 WixShellExecTarget                   : [VersionFolder]pwsh.exe
 REINSTALLMODE                        : dmus
 Manufacturer                         : Microsoft Corporation
-ProductCode                          : {AA89DEED-9030-494E-9F28-53A4D9B55D12}
+ProductCode                          : {D012DCD1-67EA-4627-938F-19FD677FC03A}
 ProductLanguage                      : 1033
-ProductVersion                       : 7.4.6.0
+ProductVersion                       : 7.5.0.0
 DefaultUIFont                        : WixUI_Font_Normal
 WixUI_Mode                           : InstallDir
 ErrorDialog                          : ErrorDlg

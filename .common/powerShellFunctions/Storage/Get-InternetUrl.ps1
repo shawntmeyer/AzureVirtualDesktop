@@ -9,7 +9,7 @@ Extract the download URL from a website based on a search string. Uses a matchin
 Specifies the URI to search for a link.
 
 .PARAMETER SearchString
-Specifies the search string that is used to find a matching hyperlink.
+Specifies the search string that is used to find a matching hyperlink. You can include a '*' for a wildcard in the search string.
 
 .EXAMPLE
 Get-InternetUrl -WebSiteUrl "http://www.microsoft.com/software/wvd" -SearchString "FSLogix"
@@ -42,13 +42,22 @@ Function Get-InternetUrl {
         If ($ahref.count -eq 0 -or $null -eq $ahref) {
             $ahref = ($Links | Where-Object {$_.OuterHTML -like "*$searchstring*"})
         }
-        
         If ($ahref.Count -gt 0) {
             Return $ahref[0].href
         }
         Else {
-            Write-Warning "No download URL found using search term."
-            Return $null
+            $Pattern = '"url":\s*"(https://[^"]*?' + $SearchString.Replace('.', '\.').Replace('*', '.*').Replace('+', '\+') + ')"' 
+            If ($HTML.Content -match $Pattern) {
+                If ($matches[1].Contains('"')) {
+                    Return $matches[1].Substring(0, $matches[1].IndexOf('"'))
+                } Else {
+                    Return $matches[1]
+                }
+
+            } else {
+                Write-Warning "No download URL found using search term."
+                Return $null
+            }
         }
     }
     Catch {

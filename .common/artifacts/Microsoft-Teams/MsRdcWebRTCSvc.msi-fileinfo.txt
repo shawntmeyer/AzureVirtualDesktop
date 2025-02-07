@@ -1,5 +1,5 @@
 DownloadUrl = https://aka.ms/msrdcwebrtcsvc/msi
-Download File = RW1o9wm
+Download File = MsRdcWebRTCSvc_HostSetup_1.54.2408.19001_x64.msi
 
 File                   : {MsRdcWebRTCSvc.msi}
 UpgradeCode            : {66722E7E-5DF5-4C1D-841C-1BD9C36830CC}
