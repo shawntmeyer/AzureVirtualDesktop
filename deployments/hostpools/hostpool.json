@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "2622051785965417240"
+      "templateHash": "17340262292689989726"
     }
   },
   "parameters": {
@@ -3146,7 +3146,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "4123951686872062363"
+              "templateHash": "11447833939536628882"
             }
           },
           "parameters": {
@@ -3284,7 +3284,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "13365454993850825185"
+                      "templateHash": "18085457853586529367"
                     }
                   },
                   "parameters": {
@@ -3500,7 +3500,9 @@
                       }
                     ],
                     "diagnosticsLogs": "[if(contains(parameters('diagnosticLogCategoriesToEnable'), 'allLogs'), createArray(createObject('categoryGroup', 'allLogs', 'enabled', true())), if(contains(parameters('diagnosticLogCategoriesToEnable'), ''), createArray(), variables('diagnosticsLogsSpecified')))]",
-                    "secretList": "[if(not(empty(parameters('secrets'))), parameters('secrets').secureList, createArray())]"
+                    "secretList": "[if(not(empty(parameters('secrets'))), parameters('secrets').secureList, createArray())]",
+                    "varPublicNetworkAccess": "[if(not(empty(parameters('publicNetworkAccess'))), parameters('publicNetworkAccess'), if(and(not(empty(parameters('privateEndpoints'))), empty(parameters('networkAcls'))), 'Disabled', null()))]",
+                    "bypass": "[if(or(or(or(parameters('enableVaultForDeployment'), parameters('enableVaultForTemplateDeployment')), parameters('enableVaultForDiskEncryption')), equals(variables('varPublicNetworkAccess'), 'Disabled')), 'AzureServices', 'None')]"
                   },
                   "resources": [
                     {
@@ -3523,8 +3525,8 @@
                           "name": "[parameters('vaultSku')]",
                           "family": "A"
                         },
-                        "networkAcls": "[if(not(empty(parameters('networkAcls'))), createObject('bypass', coalesce(tryGet(parameters('networkAcls'), 'bypass'), null()), 'defaultAction', coalesce(tryGet(parameters('networkAcls'), 'defaultAction'), null()), 'virtualNetworkRules', coalesce(tryGet(parameters('networkAcls'), 'virtualNetworkRules'), createArray()), 'ipRules', coalesce(tryGet(parameters('networkAcls'), 'ipRules'), createArray())), createObject('bypass', if(or(or(parameters('enableVaultForDeployment'), parameters('enableVaultForTemplateDeployment')), parameters('enableVaultForDiskEncryption')), 'AzureServices', 'None'), 'defaultAction', 'Deny'))]",
-                        "publicNetworkAccess": "[if(not(empty(parameters('publicNetworkAccess'))), parameters('publicNetworkAccess'), if(and(not(empty(parameters('privateEndpoints'))), empty(parameters('networkAcls'))), 'Disabled', null()))]"
+                        "networkAcls": "[if(not(empty(parameters('networkAcls'))), createObject('bypass', coalesce(tryGet(parameters('networkAcls'), 'bypass'), null()), 'defaultAction', coalesce(tryGet(parameters('networkAcls'), 'defaultAction'), null()), 'virtualNetworkRules', coalesce(tryGet(parameters('networkAcls'), 'virtualNetworkRules'), createArray()), 'ipRules', coalesce(tryGet(parameters('networkAcls'), 'ipRules'), createArray())), createObject('bypass', variables('bypass'), 'defaultAction', 'Deny'))]",
+                        "publicNetworkAccess": "[variables('varPublicNetworkAccess')]"
                       }
                     },
                     {
@@ -7679,7 +7681,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "4464536882953050190"
+              "templateHash": "11977777803951255549"
             }
           },
           "parameters": {
@@ -7924,7 +7926,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "12684199522855604102"
+                      "templateHash": "6189856656759641981"
                     }
                   },
                   "parameters": {
@@ -8073,7 +8075,7 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.33.93.31351",
-                              "templateHash": "13365454993850825185"
+                              "templateHash": "18085457853586529367"
                             }
                           },
                           "parameters": {
@@ -8289,7 +8291,9 @@
                               }
                             ],
                             "diagnosticsLogs": "[if(contains(parameters('diagnosticLogCategoriesToEnable'), 'allLogs'), createArray(createObject('categoryGroup', 'allLogs', 'enabled', true())), if(contains(parameters('diagnosticLogCategoriesToEnable'), ''), createArray(), variables('diagnosticsLogsSpecified')))]",
-                            "secretList": "[if(not(empty(parameters('secrets'))), parameters('secrets').secureList, createArray())]"
+                            "secretList": "[if(not(empty(parameters('secrets'))), parameters('secrets').secureList, createArray())]",
+                            "varPublicNetworkAccess": "[if(not(empty(parameters('publicNetworkAccess'))), parameters('publicNetworkAccess'), if(and(not(empty(parameters('privateEndpoints'))), empty(parameters('networkAcls'))), 'Disabled', null()))]",
+                            "bypass": "[if(or(or(or(parameters('enableVaultForDeployment'), parameters('enableVaultForTemplateDeployment')), parameters('enableVaultForDiskEncryption')), equals(variables('varPublicNetworkAccess'), 'Disabled')), 'AzureServices', 'None')]"
                           },
                           "resources": [
                             {
@@ -8312,8 +8316,8 @@
                                   "name": "[parameters('vaultSku')]",
                                   "family": "A"
                                 },
-                                "networkAcls": "[if(not(empty(parameters('networkAcls'))), createObject('bypass', coalesce(tryGet(parameters('networkAcls'), 'bypass'), null()), 'defaultAction', coalesce(tryGet(parameters('networkAcls'), 'defaultAction'), null()), 'virtualNetworkRules', coalesce(tryGet(parameters('networkAcls'), 'virtualNetworkRules'), createArray()), 'ipRules', coalesce(tryGet(parameters('networkAcls'), 'ipRules'), createArray())), createObject('bypass', if(or(or(parameters('enableVaultForDeployment'), parameters('enableVaultForTemplateDeployment')), parameters('enableVaultForDiskEncryption')), 'AzureServices', 'None'), 'defaultAction', 'Deny'))]",
-                                "publicNetworkAccess": "[if(not(empty(parameters('publicNetworkAccess'))), parameters('publicNetworkAccess'), if(and(not(empty(parameters('privateEndpoints'))), empty(parameters('networkAcls'))), 'Disabled', null()))]"
+                                "networkAcls": "[if(not(empty(parameters('networkAcls'))), createObject('bypass', coalesce(tryGet(parameters('networkAcls'), 'bypass'), null()), 'defaultAction', coalesce(tryGet(parameters('networkAcls'), 'defaultAction'), null()), 'virtualNetworkRules', coalesce(tryGet(parameters('networkAcls'), 'virtualNetworkRules'), createArray()), 'ipRules', coalesce(tryGet(parameters('networkAcls'), 'ipRules'), createArray())), createObject('bypass', variables('bypass'), 'defaultAction', 'Deny'))]",
+                                "publicNetworkAccess": "[variables('varPublicNetworkAccess')]"
                               }
                             },
                             {
@@ -14397,7 +14401,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "372698389610776983"
+              "templateHash": "14510320122254451885"
             }
           },
           "parameters": {
@@ -15320,7 +15324,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "3319790789652916641"
+                      "templateHash": "13856560977122227021"
                     }
                   },
                   "parameters": {
@@ -15441,7 +15445,7 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.33.93.31351",
-                              "templateHash": "13365454993850825185"
+                              "templateHash": "18085457853586529367"
                             }
                           },
                           "parameters": {
@@ -15657,7 +15661,9 @@
                               }
                             ],
                             "diagnosticsLogs": "[if(contains(parameters('diagnosticLogCategoriesToEnable'), 'allLogs'), createArray(createObject('categoryGroup', 'allLogs', 'enabled', true())), if(contains(parameters('diagnosticLogCategoriesToEnable'), ''), createArray(), variables('diagnosticsLogsSpecified')))]",
-                            "secretList": "[if(not(empty(parameters('secrets'))), parameters('secrets').secureList, createArray())]"
+                            "secretList": "[if(not(empty(parameters('secrets'))), parameters('secrets').secureList, createArray())]",
+                            "varPublicNetworkAccess": "[if(not(empty(parameters('publicNetworkAccess'))), parameters('publicNetworkAccess'), if(and(not(empty(parameters('privateEndpoints'))), empty(parameters('networkAcls'))), 'Disabled', null()))]",
+                            "bypass": "[if(or(or(or(parameters('enableVaultForDeployment'), parameters('enableVaultForTemplateDeployment')), parameters('enableVaultForDiskEncryption')), equals(variables('varPublicNetworkAccess'), 'Disabled')), 'AzureServices', 'None')]"
                           },
                           "resources": [
                             {
@@ -15680,8 +15686,8 @@
                                   "name": "[parameters('vaultSku')]",
                                   "family": "A"
                                 },
-                                "networkAcls": "[if(not(empty(parameters('networkAcls'))), createObject('bypass', coalesce(tryGet(parameters('networkAcls'), 'bypass'), null()), 'defaultAction', coalesce(tryGet(parameters('networkAcls'), 'defaultAction'), null()), 'virtualNetworkRules', coalesce(tryGet(parameters('networkAcls'), 'virtualNetworkRules'), createArray()), 'ipRules', coalesce(tryGet(parameters('networkAcls'), 'ipRules'), createArray())), createObject('bypass', if(or(or(parameters('enableVaultForDeployment'), parameters('enableVaultForTemplateDeployment')), parameters('enableVaultForDiskEncryption')), 'AzureServices', 'None'), 'defaultAction', 'Deny'))]",
-                                "publicNetworkAccess": "[if(not(empty(parameters('publicNetworkAccess'))), parameters('publicNetworkAccess'), if(and(not(empty(parameters('privateEndpoints'))), empty(parameters('networkAcls'))), 'Disabled', null()))]"
+                                "networkAcls": "[if(not(empty(parameters('networkAcls'))), createObject('bypass', coalesce(tryGet(parameters('networkAcls'), 'bypass'), null()), 'defaultAction', coalesce(tryGet(parameters('networkAcls'), 'defaultAction'), null()), 'virtualNetworkRules', coalesce(tryGet(parameters('networkAcls'), 'virtualNetworkRules'), createArray()), 'ipRules', coalesce(tryGet(parameters('networkAcls'), 'ipRules'), createArray())), createObject('bypass', variables('bypass'), 'defaultAction', 'Deny'))]",
+                                "publicNetworkAccess": "[variables('varPublicNetworkAccess')]"
                               }
                             },
                             {

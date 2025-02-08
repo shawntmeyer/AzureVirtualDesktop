@@ -114,6 +114,11 @@ var diagnosticsMetrics = [for metric in diagnosticMetricsToEnable: {
 
 var secretList = !empty(secrets) ? secrets.secureList : []
 
+// Determine bypass value based on the publicNetworkAccess, privateEndpoints, and networkAcls parameters
+var varPublicNetworkAccess = !empty(publicNetworkAccess) ? any(publicNetworkAccess) : ( !empty(privateEndpoints) && empty(networkAcls) ? 'Disabled' : null )
+// If networkAcls are not set, then bypass must be set. If vault is enabled for deployment, template deployment, or vm disk encryption, or publicNetworkAccess is disabled then Bypass must = AzureServices
+var bypass = enableVaultForDeployment || enableVaultForTemplateDeployment || enableVaultForDiskEncryption || varPublicNetworkAccess == 'Disabled' ? 'AzureServices' : 'None'
+
 resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' = {
   name: name
   location: location
@@ -138,10 +143,10 @@ resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' = {
       virtualNetworkRules: networkAcls.?virtualNetworkRules ?? []
       ipRules: networkAcls.?ipRules ?? []
     } : {
-      bypass: enableVaultForDeployment || enableVaultForTemplateDeployment || enableVaultForDiskEncryption ? 'AzureServices' : 'None'
+      bypass: bypass
       defaultAction: 'Deny'
     }
-    publicNetworkAccess: !empty(publicNetworkAccess) ? any(publicNetworkAccess) : (!empty(privateEndpoints) && empty(networkAcls) ? 'Disabled' : null)
+    publicNetworkAccess: varPublicNetworkAccess
   }
 }
 
