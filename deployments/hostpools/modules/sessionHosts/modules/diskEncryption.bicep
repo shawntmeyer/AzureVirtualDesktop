@@ -69,10 +69,6 @@ module KeyVault '../../../../sharedModules/resources/key-vault/vault/main.bicep'
         tags: union({'cm-resource-parent': hostPoolResourceId}, tags[?'Microsoft.KeyVault/vaults/keys'] ?? {})
       }
     ]
-    networkAcls: {
-      bypass: 'AzureServices'
-      defaultAction: privateEndpoint ? 'Deny' : 'Allow'
-    }
     privateEndpoints: privateEndpoint && !empty(privateEndpointSubnetResourceId)
       ? [
           {
@@ -98,7 +94,7 @@ module KeyVault '../../../../sharedModules/resources/key-vault/vault/main.bicep'
         ]
       : null      
     softDeleteRetentionInDays: keyVaultRetentionInDays
-      tags: union({'cm-resource-parent':hostPoolResourceId}, tags[?'Microsoft.KeyVault/vaults'] ?? {})
+    tags: union({'cm-resource-parent':hostPoolResourceId}, tags[?'Microsoft.KeyVault/vaults'] ?? {})
     vaultSku: confidentialVMOSDiskEncryption || contains(keyManagementDisks, 'HSM') ? 'premium' : 'standard'
     enableRbacAuthorization: true
   }

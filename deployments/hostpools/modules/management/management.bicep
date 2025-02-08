@@ -50,13 +50,10 @@ module secretsKeyVault '../../../sharedModules/resources/key-vault/vault/main.bi
     name: keyVaultName
     diagnosticWorkspaceId: enableMonitoring ? logAnalyticsWorkspace.outputs.resourceId : ''
     enablePurgeProtection: false
+    enableSoftDelete: true
     enableVaultForDeployment: false
     enableVaultForDiskEncryption: false
     enableVaultForTemplateDeployment: true
-    networkAcls: {
-      bypass: 'AzureServices'
-      defaultAction: privateEndpoint ? 'Deny' : 'Allow'
-    }
     privateEndpoints: privateEndpoint && !empty(privateEndpointSubnetResourceId)
       ? [
           {
@@ -84,9 +81,9 @@ module secretsKeyVault '../../../sharedModules/resources/key-vault/vault/main.bi
     secrets: {
       secureList: secretList
     }
-    enableSoftDelete: true
     softDeleteRetentionInDays: keyVaultRetentionInDays
     tags: tags[?'Microsoft.KeyVault/vaults'] ?? {}
+    vaultSku: 'standard'
   }
 }
 

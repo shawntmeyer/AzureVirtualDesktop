@@ -66,10 +66,6 @@ module storageAccountKeyVaults '../../../../sharedModules/resources/key-vault/va
         }
       ]
       diagnosticWorkspaceId: logAnalyticsWorkspaceResourceId
-      networkAcls: {
-        bypass: 'AzureServices'
-        defaultAction: privateEndpoint ? 'Deny' : 'Allow'
-      }
       privateEndpoints: privateEndpoint && !empty(privateEndpointSubnetResourceId) && !empty(azureKeyVaultPrivateDnsZoneResourceId)
         ? [
             {
