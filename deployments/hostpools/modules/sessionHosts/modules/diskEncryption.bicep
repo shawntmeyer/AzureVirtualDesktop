@@ -31,9 +31,10 @@ module KeyVault '../../../../sharedModules/resources/key-vault/vault/main.bicep'
   params: {
     diagnosticWorkspaceId: logAnalyticsWorkspaceResourceId
     enableVaultForDeployment: false
-    enableVaultForDiskEncryption: false
+    enableVaultForDiskEncryption: true
     enableVaultForTemplateDeployment: false
     enablePurgeProtection: true
+    enableRbacAuthorization: true
     enableSoftDelete: true
     name: keyVaultNames.VMEncryptionKeys
     keys: confidentialVMOSDiskEncryption ? null : [
@@ -96,7 +97,6 @@ module KeyVault '../../../../sharedModules/resources/key-vault/vault/main.bicep'
     softDeleteRetentionInDays: keyVaultRetentionInDays
     tags: union({'cm-resource-parent':hostPoolResourceId}, tags[?'Microsoft.KeyVault/vaults'] ?? {})
     vaultSku: confidentialVMOSDiskEncryption || contains(keyManagementDisks, 'HSM') ? 'premium' : 'standard'
-    enableRbacAuthorization: true
   }
 }
 
@@ -160,14 +160,12 @@ module diskEncryptionSet '../../../../sharedModules/resources/compute/disk-encry
   }
 }
 
-module roleAssignment_DiskEncryptionSet_EncryptUser 'keyVault_RBAC.bicep' = {
+module roleAssignment_DiskEncryptionSet_EncryptUser '../../../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = {
   name: 'RoleAssignment_DiskEncryptionSet_EncryptUser_${timeStamp}'
   params: {
     principalId: diskEncryptionSet.outputs.principalId
     principalType: 'ServicePrincipal'
     roleDefinitionId: 'e147488a-f6f5-4113-8e2d-b22465e65bf6' // Key Vault Crypto Service Encryption User
-    keyName: confidentialVMOSDiskEncryption ? confidentialVMEncryptionKeyName : vmEncryptionKeyName
-    keyVaultName: KeyVault.outputs.name
   }
 }
 

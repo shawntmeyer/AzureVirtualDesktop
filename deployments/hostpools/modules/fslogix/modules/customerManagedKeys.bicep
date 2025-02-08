@@ -22,13 +22,9 @@ module storageAccountKeyVaults '../../../../sharedModules/resources/key-vault/va
   for i in range(0, storageCount): {
     name: '${replace(fslogixStorageAccountEncryptionKeysVaultNameConv, '##-', '${string(padLeft(i + storageIndex, 2, '0'))}-')}_${timeStamp}'
     params: {
-      location: location
-      name: replace(
-        fslogixStorageAccountEncryptionKeysVaultNameConv,
-        '##-',
-        '${string(padLeft(i + storageIndex, 2, '0'))}-'
-      )
+      diagnosticWorkspaceId: logAnalyticsWorkspaceResourceId      
       enablePurgeProtection: true
+      enableRbacAuthorization: true
       enableSoftDelete: true
       enableVaultForDeployment: false
       enableVaultForDiskEncryption: false
@@ -65,7 +61,12 @@ module storageAccountKeyVaults '../../../../sharedModules/resources/key-vault/va
           tags: union({ 'cm-resource-parent': hostPoolResourceId }, tags[?'Microsoft.KeyVault/vaults/keys'] ?? {})
         }
       ]
-      diagnosticWorkspaceId: logAnalyticsWorkspaceResourceId
+      location: location
+      name: replace(
+        fslogixStorageAccountEncryptionKeysVaultNameConv,
+        '##-',
+        '${string(padLeft(i + storageIndex, 2, '0'))}-'
+      )
       privateEndpoints: privateEndpoint && !empty(privateEndpointSubnetResourceId) && !empty(azureKeyVaultPrivateDnsZoneResourceId)
         ? [
             {
