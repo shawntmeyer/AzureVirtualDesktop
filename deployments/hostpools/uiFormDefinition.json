@@ -1409,7 +1409,23 @@
 										"required": true,
 										"allowedValues": "[if(empty(first(map(first(map(filter(steps('hosts').resourceSkusApi.value, (sku) => contains(sku.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (sku) => sku.locationInfo)), (sku) => sku.zones))), parse('[{\"label\":\"No infrastructure redundancy required\",\"value\":\"None\"},{\"label\":\"Availability Sets\",\"value\":\"AvailabilitySets\"}]'), parse('[{\"label\":\"Availability Zones\",\"value\":\"AvailabilityZones\"},{\"label\":\"Availability Sets\",\"value\":\"AvailabilitySets\"},{\"label\":\"No infrastructure redundancy required\",\"value\":\"None\"}]'))]"
 									}
+								},
+								{
+									"name": "availabilityZones",
+									"type": "Microsoft.Common.DropDown",
+									"label": "Select Availability Zones",
+									"defaultValue": ["Zone 1","Zone 2", "Zone 3"],
+									"multiselect": true,
+  									"selectAll": true,
+									"toolTip": "Select the desired Availability Zones",
+									"constraints": {
+										"allowedValues": "[map(first(map(first(map(filter(steps('hosts').resourceSkusApi.value, (sku) => contains(sku.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (sku) => sku.locationInfo)), (sku) => sku.zones)), (zone) => parse(concat('{\"label\":\"Zone ', zone, '\",\"value\":\"', zone, '\"}')))]",
+										"required": true
+									},
+									"visible": "[equals(steps('hosts').availability.availability, 'AvailabilityZones')]"
 								}
+								
+
 							],
 							"visible": "[equals(steps('hosts').dedicatedHosts.deployToDedicatedHosts, false)]"
 						},
@@ -3867,7 +3883,7 @@
 				"diskSku": "[steps('hosts').specs.diskSku]",
 				"diskSizeGB": "[steps('hosts').specs.diskSizeGB]",
 				"virtualMachineSize": "[if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric)]",
-				"availabilityZones": "[first(map(first(map(filter(steps('hosts').resourceSkusApi.value, (sku) => contains(sku.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (sku) => sku.locationInfo)), (sku) => sku.zones))]",
+				"availabilityZones": "[if(and(equals(steps('hosts').dedicatedHosts.deployToDedicatedHosts, false), equals(steps('hosts').availability.availability, 'AvailabilityZones')), steps('hosts').availability.availabilityZones, parse('[]'))]",
 				"enableAcceleratedNetworking": "[bool(first(map(filter(first(map(filter(steps('hosts').resourceSkusApi.value, (sku) => contains(sku.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (sku) => sku.capabilities)), (sku) => equals(sku.name, 'AcceleratedNetworkingEnabled')), (sku) => sku.value)))]",
 				"hibernationEnabled": "[if(bool(first(map(filter(first(map(filter(steps('hosts').resourceSkusApi.value, (sku) => contains(sku.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (sku) => sku.capabilities)), (sku) => equals(sku.name, 'HibernationSupported')), (sku) => sku.value))), steps('hosts').specs.hibernationEnabled, false)]",
 				"imageOffer": "[if(equals(steps('hosts').image.source, 'marketplace'), steps('hosts').image.offer, '')]",
