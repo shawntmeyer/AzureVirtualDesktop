@@ -73,6 +73,7 @@ var resourceGroupManagement = replace(
   'RESOURCETYPE',
   resourceAbbreviations.resourceGroups
 )
+var uniqueStringManagement = uniqueString(subscription().subscriptionId, resourceGroupManagement) 
 var appServicePlanName = replace(
   replace(
     replace(nameConv_Shared_Resources, 'RESOURCETYPE', resourceAbbreviations.appServicePlans),
@@ -84,7 +85,7 @@ var appServicePlanName = replace(
 )
 
 // key vaults must be named with a length of 3 - 24 characters and must be globally unique.
-var keyVaultNameSecrets = nameConvResTypeAtEnd ? 'vmsec-${uniqueString(subscription().subscriptionId, resourceGroupManagement)}-${locations[locationVirtualMachines].abbreviation}-${resourceAbbreviations.keyVaults}' : '${resourceAbbreviations.keyVaults}-vmsec-${uniqueString(subscription().subscriptionId, resourceGroupManagement)}-${locations[locationVirtualMachines].abbreviation}'
+var keyVaultNameSecrets = nameConvResTypeAtEnd ? 'sec-${take(uniqueStringManagement, 12)}-${locations[locationVirtualMachines].abbreviation}-${resourceAbbreviations.keyVaults}' : '${resourceAbbreviations.keyVaults}-sec-${take(uniqueStringManagement,12)}-${locations[locationVirtualMachines].abbreviation}'
 
 var dataCollectionEndpointName = replace(
   replace(
@@ -167,6 +168,7 @@ var scalingPlanName = replace(
 )
 
 // Common HostPool Specific Resource Naming Conventions
+var uniqueStringHosts = uniqueString(subscription().subscriptionId, resourceGroupHosts)
 var appInsightsNameConv = replace(
   replace(nameConv_HP_Resources, 'RESOURCETYPE', resourceAbbreviations.applicationInsights),
   'LOCATION',
@@ -177,11 +179,7 @@ var functionAppNameConv = replace(
   'LOCATION',
   locations[locationVirtualMachines].abbreviation
 )
-var keyVaultHPNameConv = replace(
-  replace(nameConv_HP_Resources, 'RESOURCETYPE', resourceAbbreviations.keyVaults),
-  'LOCATION',
-  locations[locationVirtualMachines].abbreviation
-)
+
 var privateEndpointNameConv = replace(
   nameConvResTypeAtEnd ? 'RESOURCE-SUBRESOURCE-VNETID-RESOURCETYPE' : 'RESOURCETYPE-RESOURCE-SUBRESOURCE-VNETID',
   'RESOURCETYPE',
@@ -245,8 +243,8 @@ var diskEncryptionSetNameConv = replace(
   locations[locationVirtualMachines].abbreviation
 )
 // Key Vault Names must be unique across the entire Azure Cloud
-var keyVaultNameVMs = nameConvResTypeAtEnd ? 'vme-${uniqueString(subscription().subscriptionId, resourceGroupHosts)}-${locations[locationVirtualMachines].abbreviation}-${resourceAbbreviations.keyVaults}' : '${resourceAbbreviations.keyVaults}-vme-${uniqueString(subscription().subscriptionId, resourceGroupHosts)}-${locations[locationVirtualMachines].abbreviation}'
-var keyVaultNameSHR = nameConvResTypeAtEnd ? 'shr-${uniqueString(subscription().subscriptionId, resourceGroupHosts)}-${locations[locationVirtualMachines].abbreviation}-${resourceAbbreviations.keyVaults}' : '${resourceAbbreviations.keyVaults}-shr-${uniqueString(subscription().subscriptionId, resourceGroupHosts)}-${locations[locationVirtualMachines].abbreviation}'
+var keyVaultNameVMs = nameConvResTypeAtEnd ? 'vme-${take(uniqueStringHosts,12)}-${locations[locationVirtualMachines].abbreviation}-${resourceAbbreviations.keyVaults}' : '${resourceAbbreviations.keyVaults}-vme-${take(uniqueStringHosts, 12)}-${locations[locationVirtualMachines].abbreviation}'
+var keyVaultNameSHR = nameConvResTypeAtEnd ? 'shr-${take(uniqueStringHosts, 12)}-${locations[locationVirtualMachines].abbreviation}-${resourceAbbreviations.keyVaults}' : '${resourceAbbreviations.keyVaults}-shr-${take(uniqueStringHosts, 12)}-${locations[locationVirtualMachines].abbreviation}'
 
 // Storage Resources
 var resourceGroupStorage = replace(
@@ -279,38 +277,14 @@ var netAppCapacityPoolName = replace(
 )
 
 // App Attach and FSLogix Storage Account Naming Convention (max 15 characters for domain join)
-var appAttachStorageAccountName = contains(identitySolution, 'DomainServices')
-  ? 'aa${uniqueString(subscription().subscriptionId, resourceGroupManagement)}'
-  : take(
-      '${replace(replace(replace(replace(nameConv_Shared_Resources, 'RESOURCETYPE', resourceAbbreviations.storageAccounts), 'LOCATION', locations[locationVirtualMachines].abbreviation), 'TOKEN-', 'aa'), '-', '')}${uniqueString(subscription().subscriptionId, resourceGroupManagement)}',
-      24
-    )
-var keyVaultNameAppAttach = nameConvResTypeAtEnd ? 'aa-${uniqueString(subscription().subscriptionId, resourceGroupManagement)}-${locations[locationVirtualMachines].abbreviation}-${resourceAbbreviations.keyVaults}' : '${resourceAbbreviations.keyVaults}-aa-${uniqueString(subscription().subscriptionId, resourceGroupManagement)}-${locations[locationVirtualMachines].abbreviation}'
+var appAttachStorageAccountName = 'aa${uniqueStringManagement}'
+var keyVaultNameAppAttach = nameConvResTypeAtEnd ? '${appAttachStorageAccountName}-${locations[locationVirtualMachines].abbreviation}-${resourceAbbreviations.keyVaults}' : '${resourceAbbreviations.keyVaults}-${appAttachStorageAccountName}-${locations[locationVirtualMachines].abbreviation}'
 
-// Non-Domain Joined Hostpool Specific Storage Account Naming Convention
-var hpStorageAccountNameConv = replace(
-  replace(nameConv_HP_Resources, 'RESOURCETYPE', resourceAbbreviations.storageAccounts),
-  'LOCATION',
-  locations[locationVirtualMachines].abbreviation
-)
+var uniqueStringStorage = uniqueString(subscription().subscriptionId, resourceGroupStorage)
+var fslogixStorageAccountNamePrefix = empty(fslogixStorageCustomPrefix) ? take('fsl${uniqueStringStorage}', 13) : toLower(fslogixStorageCustomPrefix)
 
-var fslogixStorageAccountNamePrefix = empty(fslogixStorageCustomPrefix)
-  ? contains(identitySolution, 'DomainServices')
-      ? take('fsl${uniqueString(subscription().subscriptionId, resourceGroupStorage)}', 13)
-      : take(
-          '${toLower(replace(replace(hpStorageAccountNameConv, 'TOKEN-', 'fsl'), '-', ''))}${uniqueString(subscription().subscriptionId, resourceGroupStorage)}',
-          22
-        )
-  : toLower(fslogixStorageCustomPrefix)
-
-var increaseQuotaFAStorageAccountName = take(
-  '${toLower(replace(replace(hpStorageAccountNameConv, 'TOKEN-', 'saq'), '-', ''))}${uniqueString(subscription().subscriptionId, resourceGroupStorage)}',
-  24
-)
-var sessionHostReplacerFAStorageAccountName = take(
-  '${toLower(replace(replace(hpStorageAccountNameConv, 'TOKEN-', 'shr'), '-', ''))}${uniqueString(subscription().subscriptionId, resourceGroupHosts)}',
-  24
-)
+var increaseQuotaFAStorageAccountName = 'saq${uniqueStringStorage}'
+var sessionHostReplacerFAStorageAccountName = 'shr${uniqueStringHosts}'
 
 var fslogixfileShareNames = {
   CloudCacheProfileContainer: [
@@ -329,9 +303,8 @@ var fslogixfileShareNames = {
   ]
 }
 
-var keyVaultNameIncreaseQuota = nameConvResTypeAtEnd ? 'saq-${uniqueString(subscription().subscriptionId, resourceGroupStorage)}-${locations[locationVirtualMachines].abbreviation}-${resourceAbbreviations.keyVaults}' : '${resourceAbbreviations.keyVaults}-saq-${uniqueString(subscription().subscriptionId, resourceGroupHosts)}-${locations[locationVirtualMachines].abbreviation}'
-
-var keyVaultNameConvProfileStorage = nameConvResTypeAtEnd ? 'fsl##-${uniqueString(subscription().subscriptionId, resourceGroupStorage)}-${locations[locationVirtualMachines].abbreviation}-${resourceAbbreviations.keyVaults}' : '${resourceAbbreviations.keyVaults}-fsl##-${uniqueString(subscription().subscriptionId, resourceGroupStorage)}-${locations[locationVirtualMachines].abbreviation}'
+var keyVaultNameIncreaseQuota = nameConvResTypeAtEnd ? '${increaseQuotaFAStorageAccountName}-${locations[locationVirtualMachines].abbreviation}-${resourceAbbreviations.keyVaults}' : '${resourceAbbreviations.keyVaults}-${increaseQuotaFAStorageAccountName}-${locations[locationVirtualMachines].abbreviation}'
+var keyVaultNameConvProfileStorage = nameConvResTypeAtEnd ? '${fslogixStorageAccountNamePrefix}##-${locations[locationVirtualMachines].abbreviation}-${resourceAbbreviations.keyVaults}' : '${resourceAbbreviations.keyVaults}-${fslogixStorageAccountNamePrefix}##-${locations[locationVirtualMachines].abbreviation}'
 
 output appInsightsNames object = {
   IncreaseStorageQuota: replace(appInsightsNameConv, 'TOKEN-', 'saq-')
