@@ -10,6 +10,7 @@ param privateEndpoint bool
 param privateEndpointNameConv string
 param privateEndpointNICNameConv string
 param privateEndpointSubnetResourceId string
+param storageAccountNamePrefix string
 param storageCount int
 param storageIndex int
 param tags object
@@ -58,7 +59,7 @@ module storageAccountKeyVaults '../../../../sharedModules/resources/key-vault/va
               }
             ]
           }
-          tags: union({ 'cm-resource-parent': hostPoolResourceId }, tags[?'Microsoft.KeyVault/vaults/keys'] ?? {})
+          tags: union({ storageAccountName : '${storageAccountNamePrefix}${string(padLeft(i + storageIndex, 2, '0'))}'}, { 'cm-resource-parent': hostPoolResourceId }, tags[?'Microsoft.KeyVault/vaults/keys'] ?? {})
         }
       ]
       location: location
@@ -113,7 +114,7 @@ module storageAccountKeyVaults '../../../../sharedModules/resources/key-vault/va
           ]
         : null
       softDeleteRetentionInDays: keyVaultRetentionInDays
-      tags: union({ 'cm-resource-parent': hostPoolResourceId }, tags[?'Microsoft.KeyVault/vaults'] ?? {})
+      tags: union({ storageAccountName : '${storageAccountNamePrefix}${string(padLeft(i + storageIndex, 2, '0'))}'}, { 'cm-resource-parent': hostPoolResourceId }, tags[?'Microsoft.KeyVault/vaults'] ?? {})
       vaultSku: contains(keyManagementStorageAccounts, 'HSM') ? 'premium' : 'standard'
     }
   }

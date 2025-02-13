@@ -8,12 +8,12 @@ param (
     [string]$RemoteNetAppServers,
     [string]$RemoteStorageAccountNames,
     [string]$RemoteStorageAccountKeys,
+    [string]$RunCommandName = 'Set-FSLogixSessionHostConfiguration',
     [string]$Shares,
     [string]$StorageAccountDNSSuffix,
     [string]$StorageService
 )
 [string]$Script:LogDir = "C:\Windows\Logs\Configuration"
-[string]$Script:Name = 'Set-FSLogixConfiguration'
 
 #region Functions
 
@@ -40,7 +40,7 @@ function New-Log {
 
     $date = Get-Date -UFormat "%Y-%m-%d %H-%M-%S"
     Set-Variable logFile -Scope Script
-    $script:logFile = "$Script:Name-$date.log"
+    $script:logFile = "$RunCommandName-$date.log"
 
     if ((Test-Path $path ) -eq $false) {
         $null = New-Item -Path $path -type directory

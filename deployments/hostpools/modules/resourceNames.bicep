@@ -82,18 +82,9 @@ var appServicePlanName = replace(
   'TOKEN-',
   ''
 )
-var keyVaultSharedResourcesNameConv = replace(
-  replace(nameConv_Shared_Resources, 'RESOURCETYPE', resourceAbbreviations.keyVaults),
-  'LOCATION',
-  locations[locationVirtualMachines].abbreviation
-)
+
 // key vaults must be named with a length of 3 - 24 characters and must be globally unique.
-var keyVaultSharedResourcesNameConvRemainingCharacters = 24 - length(keyVaultSharedResourcesNameConv) + 1
-var keyVaultNameSecrets = replace(
-  keyVaultSharedResourcesNameConv,
-  'TOKEN',
-  'sec-${take(uniqueString(subscription().subscriptionId, resourceGroupManagement), keyVaultSharedResourcesNameConvRemainingCharacters)}'
-)
+var keyVaultNameSecrets = nameConvResTypeAtEnd ? 'vmsec-${uniqueString(subscription().subscriptionId, resourceGroupManagement)}-${locations[locationVirtualMachines].abbreviation}-${resourceAbbreviations.keyVaults}' : '${resourceAbbreviations.keyVaults}-vmsec-${uniqueString(subscription().subscriptionId, resourceGroupManagement)}-${locations[locationVirtualMachines].abbreviation}'
 
 var dataCollectionEndpointName = replace(
   replace(
@@ -253,18 +244,9 @@ var diskEncryptionSetNameConv = replace(
   'LOCATION',
   locations[locationVirtualMachines].abbreviation
 )
-
-var keyVaultNameHPsRemainingCharacters = 24 - length(keyVaultHPNameConv) + 1 // replace TOKEN with 4 characters and uniqueString. Need to get max length of uniqueString
-var keyVaultNameVMs = replace(
-  keyVaultHPNameConv,
-  'TOKEN',
-  'vme-${take(uniqueString(subscription().subscriptionId, resourceGroupHosts), keyVaultNameHPsRemainingCharacters)}'
-)
-var keyVaultNameSHR = replace(
-  keyVaultHPNameConv,
-  'TOKEN',
-  'shr-${take(uniqueString(subscription().subscriptionId, resourceGroupHosts), keyVaultNameHPsRemainingCharacters)}'
-)
+// Key Vault Names must be unique across the entire Azure Cloud
+var keyVaultNameVMs = nameConvResTypeAtEnd ? 'vme-${uniqueString(subscription().subscriptionId, resourceGroupHosts)}-${locations[locationVirtualMachines].abbreviation}-${resourceAbbreviations.keyVaults}' : '${resourceAbbreviations.keyVaults}-vme-${uniqueString(subscription().subscriptionId, resourceGroupHosts)}-${locations[locationVirtualMachines].abbreviation}'
+var keyVaultNameSHR = nameConvResTypeAtEnd ? 'shr-${uniqueString(subscription().subscriptionId, resourceGroupHosts)}-${locations[locationVirtualMachines].abbreviation}-${resourceAbbreviations.keyVaults}' : '${resourceAbbreviations.keyVaults}-shr-${uniqueString(subscription().subscriptionId, resourceGroupHosts)}-${locations[locationVirtualMachines].abbreviation}'
 
 // Storage Resources
 var resourceGroupStorage = replace(
@@ -300,13 +282,10 @@ var netAppCapacityPoolName = replace(
 var appAttachStorageAccountName = contains(identitySolution, 'DomainServices')
   ? 'aa${uniqueString(subscription().subscriptionId, resourceGroupManagement)}'
   : take(
-      '${replace(replace(replace(replace(nameConv_Shared_Resources, 'RESOURCETYPE', resourceAbbreviations.storageAccounts), 'LOCATION', locations[locationControlPlane].abbreviation), 'TOKEN-', 'aa'), '-', '')}${uniqueString(subscription().subscriptionId, resourceGroupManagement)}',
+      '${replace(replace(replace(replace(nameConv_Shared_Resources, 'RESOURCETYPE', resourceAbbreviations.storageAccounts), 'LOCATION', locations[locationVirtualMachines].abbreviation), 'TOKEN-', 'aa'), '-', '')}${uniqueString(subscription().subscriptionId, resourceGroupManagement)}',
       24
     )
-
-var keyVaultNameAppAttach = length(replace(keyVaultSharedResourcesNameConv, 'TOKEN', appAttachStorageAccountName)) < 25
-  ? replace(keyVaultSharedResourcesNameConv, 'TOKEN', appAttachStorageAccountName)
-  : replace(keyVaultSharedResourcesNameConv, 'TOKEN', 'app-${take(uniqueString(subscription().subscriptionId, resourceGroupManagement), keyVaultSharedResourcesNameConvRemainingCharacters)}')
+var keyVaultNameAppAttach = nameConvResTypeAtEnd ? 'aa-${uniqueString(subscription().subscriptionId, resourceGroupManagement)}-${locations[locationVirtualMachines].abbreviation}-${resourceAbbreviations.keyVaults}' : '${resourceAbbreviations.keyVaults}-aa-${uniqueString(subscription().subscriptionId, resourceGroupManagement)}-${locations[locationVirtualMachines].abbreviation}'
 
 // Non-Domain Joined Hostpool Specific Storage Account Naming Convention
 var hpStorageAccountNameConv = replace(
@@ -350,19 +329,9 @@ var fslogixfileShareNames = {
   ]
 }
 
-var keyVaultNameIncreaseQuota = replace(
-  keyVaultHPNameConv,
-  'TOKEN',
-  'saq-${take(uniqueString(subscription().subscriptionId, resourceGroupStorage), keyVaultNameHPsRemainingCharacters)}'
-)
+var keyVaultNameIncreaseQuota = nameConvResTypeAtEnd ? 'saq-${uniqueString(subscription().subscriptionId, resourceGroupStorage)}-${locations[locationVirtualMachines].abbreviation}-${resourceAbbreviations.keyVaults}' : '${resourceAbbreviations.keyVaults}-saq-${uniqueString(subscription().subscriptionId, resourceGroupHosts)}-${locations[locationVirtualMachines].abbreviation}'
 
-var keyVaultNameConvProfileStorage = length(replace(keyVaultHPNameConv, 'TOKEN', '${fslogixStorageAccountNamePrefix}##')) < 25
-  ? replace(keyVaultHPNameConv, 'TOKEN', '${fslogixStorageAccountNamePrefix}##')
-  : replace(
-      keyVaultHPNameConv,
-      'TOKEN',
-      'fsl##-${take(uniqueString(subscription().subscriptionId, resourceGroupStorage), keyVaultNameHPsRemainingCharacters - 2)}'
-    )
+var keyVaultNameConvProfileStorage = nameConvResTypeAtEnd ? 'fsl##-${uniqueString(subscription().subscriptionId, resourceGroupStorage)}-${locations[locationVirtualMachines].abbreviation}-${resourceAbbreviations.keyVaults}' : '${resourceAbbreviations.keyVaults}-fsl##-${uniqueString(subscription().subscriptionId, resourceGroupStorage)}-${locations[locationVirtualMachines].abbreviation}'
 
 output appInsightsNames object = {
   IncreaseStorageQuota: replace(appInsightsNameConv, 'TOKEN-', 'saq-')

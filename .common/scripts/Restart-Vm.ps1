@@ -1,11 +1,6 @@
 param(
-    [Parameter(Mandatory=$true)]
     [string]$ResourceManagerUri,
-
-    [Parameter(Mandatory=$true)]
     [string]$UserAssignedIdentityClientId,
-
-    [Parameter(Mandatory=$true)]
     [string]$VmResourceId
 )
 

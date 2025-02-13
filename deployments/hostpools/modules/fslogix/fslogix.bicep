@@ -75,6 +75,7 @@ module customerManagedKeys 'modules/customerManagedKeys.bicep' = if(storageSolut
     privateEndpointNICNameConv: privateEndpointNICNameConv
     privateEndpointNameConv: privateEndpointNameConv
     privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
+    storageAccountNamePrefix: storageAccountNamePrefix
     storageCount: storageCount
     storageIndex: storageIndex
     tags: tags

@@ -54,4 +54,4 @@ output name string = policyDefinition.name
 output resourceId string = policyDefinition.id
 
 @sys.description('Policy Definition Role Definition IDs.')
-output roleDefinitionIds array = (contains(policyDefinition.properties.policyRule.then, 'details') ? ((contains(policyDefinition.properties.policyRule.then.details, 'roleDefinitionIds') ? policyDefinition.properties.policyRule.then.details.roleDefinitionIds : [])) : [])
+output roleDefinitionIds array = (contains(policyDefinition.properties.policyRule.then, 'details') ? ((policyDefinition.properties.policyRule.then.details.?roleDefinitionIds ?? [])) : [])

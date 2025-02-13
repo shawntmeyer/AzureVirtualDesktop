@@ -53,7 +53,7 @@ var storageEncryptionKeyName = 'storageEncryptionKey'
 resource vault 'Microsoft.KeyVault/vaults@2022-07-01' = if (keyManagementStorageAccounts != 'MicrosoftManaged') {
   name: keyVaultName
   location: location
-  tags: tags[?'Microsoft.KeyVault/vaults'] ?? {}
+  tags: union({ 'cm-resource-parent': hostPoolResourceId }, {storageAccountName: storageAccountName}, tags[?'Microsoft.KeyVault/vaults'] ?? {})
   properties: {
     enabledForDeployment: false
     enabledForDiskEncryption: false
@@ -84,7 +84,6 @@ resource privateEndpoint_vault 'Microsoft.Network/privateEndpoints@2023-04-01' =
     privateEndpointVnetName
   )
   location: location
-  tags: tags[?'Microsoft.Network/privateEndpoints'] ?? {}
   properties: {
     customNetworkInterfaceName: replace(
       replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'vault'), 'RESOURCE', keyVaultName),
@@ -110,6 +109,7 @@ resource privateEndpoint_vault 'Microsoft.Network/privateEndpoints@2023-04-01' =
       id: privateEndpointSubnetResourceId
     }
   }
+  tags: union({ 'cm-resource-parent': hostPoolResourceId }, tags[?'Microsoft.Network/privateEndpoints'] ?? {})
 }
 
 resource privateDnsZoneGroup_vault 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2021-08-01' = if (keyManagementStorageAccounts != 'MicrosoftManaged' && privateEndpoint && !empty(azureKeyVaultPrivateDnsZoneResourceId)) {
@@ -161,6 +161,7 @@ resource key_storageAccount 'Microsoft.KeyVault/vaults/keys@2022-07-01' = if (ke
       ]
     }
   }
+  tags: union({ 'cm-resource-parent': hostPoolResourceId }, { storageAccountName : storageAccountName }, tags[?'Microsoft.Storage/storageAccounts'] ?? {})
 }
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
@@ -257,7 +258,6 @@ resource privateEndpoints_storage 'Microsoft.Network/privateEndpoints@2023-04-01
       privateEndpointVnetName
     )
     location: location
-    tags: union({ 'cm-resource-parent': hostPoolResourceId }, tags[?'Microsoft.Network/privateEndpoints'] ?? {})
     properties: {
       customNetworkInterfaceName: replace(
         replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', subResource), 'RESOURCE', storageAccountName),
@@ -283,6 +283,7 @@ resource privateEndpoints_storage 'Microsoft.Network/privateEndpoints@2023-04-01
         id: privateEndpointSubnetResourceId
       }
     }
+    tags: union({ 'cm-resource-parent': hostPoolResourceId }, tags[?'Microsoft.Network/privateEndpoints'] ?? {})
   }
 ]
 
@@ -479,6 +480,7 @@ resource privateEndpoint_functionApp 'Microsoft.Network/privateEndpoints@2023-04
       id: privateEndpointSubnetResourceId
     }
   }
+  tags: union({ 'cm-resource-parent': hostPoolResourceId }, tags[?'Microsoft.Network/privateEndpoints'] ?? {})
 }
 
 resource privateDnsZoneGroup_functionApp 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2021-08-01' = if (privateEndpoint && !empty(azureFunctionAppPrivateDnsZoneResourceId)) {

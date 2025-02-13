@@ -155,7 +155,7 @@ resource storageAccounts 'Microsoft.Storage/storageAccounts@2022-09-01' = [
     sku: {
       name: '${storageSku}${storageRedundancy}'
     }
-    tags: union({ 'cm-resource-parent': hostPoolResourceId }, tags[?'Microsoft.Storage/storageAccounts'] ?? {})
+    tags: union({ 'cm-resource-parent' : hostPoolResourceId }, tags[?'Microsoft.Storage/storageAccounts'] ?? {})
   }
 ]
 
