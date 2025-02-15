@@ -385,6 +385,7 @@ module roleAssignmentContributorBuildRg '../../sharedModules/resources/authoriza
       ? userAssignedIdentity.outputs.principalId
       : existingUserAssignedIdentity.properties.principalId
     roleDefinitionId: '9980e02c-c2be-4d73-94e8-173b1dc7cf3c' // Virtual Machine Contributor
+    principalType: 'ServicePrincipal'
   }
   dependsOn: [
     imageBuildRg
@@ -467,6 +468,7 @@ module roleAssignmentBlobDataContributorBuilderRg '../../sharedModules/resources
       ? userAssignedIdentity.outputs.principalId
       : existingUserAssignedIdentity.properties.principalId
     roleDefinitionId: 'ba92f5b4-2d11-453d-a403-e96b0029c9fe' // Storage Blob Data Contributor
+    principalType: 'ServicePrincipal'
   }
   dependsOn: [
     logsStorageAccount
@@ -746,7 +748,4 @@ module removeImageBuildResources '../../sharedModules/resources/compute/virtual-
     treatFailureAsDeploymentFailure: false
     virtualMachineName: orchestrationVm.outputs.name
   }
-  dependsOn: [
-    captureImage
-  ]
 }
