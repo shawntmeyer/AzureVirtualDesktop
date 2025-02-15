@@ -148,10 +148,10 @@ param collectCustomizationLogs bool = false
 @description('Optional. Log Storage Account Network Access Configuration.')
 @allowed([
   'PrivateEndpoint'
-  'PublicAccess'
+  'PublicEndpoint'
   'ServiceEndpoint'
 ])
-param logStorageAccountNetworkAccess string = 'PublicAccess'
+param logStorageAccountNetworkAccess string = 'PublicEndpoint'
 
 @description('Optional. Determines if the latest updates from the specified update service will be installed.')
 param installUpdates bool = true

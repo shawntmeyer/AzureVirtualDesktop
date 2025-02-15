@@ -96,6 +96,7 @@
 | `imagePublisher` | Publisher for the virtual machine image. Required if `customImageResourceId` is not specified. | string | valid marketplace publisher | 'MicrosoftWindowsDesktop' |
 | `imageSku` | SKU for the virtual machine image. Required if `customImageResourceId` is not specified. | string | valid marketplace sku | 'win11-23h2-avd-m365' |
 | `integrityMonitoring` | Integrity monitoring enables cryptographic attestation and verification of VM boot integrity along with monitoring alerts if the VM didn't boot because attestation failed with the defined baseline. | bool | true<br/>false | true |
+| `keyExpirationInDays` | The number of days that key in the key vault will remain valid. | Int | 30-180 | 180 |
 | `keyManagementDisks` | The type of encryption key management used for the OS disk. | string | 'PlatformManaged'<br/>'CustomerManaged'<br/>'<br/>'CustomerManagedHSM'<br/>'PlatformManagedAndCustomerManaged'<br/>'PlatformManagedAndCustomerManagedHSM' | 'PlatformManaged' |
 | `keyManagementStorageAccounts` | The type of encryption key management used for the FSLogix storage accounts | string | 'MicrosoftManaged'<br/>'CustomerManaged'<br/>'CustomerManagedHSM' | 'MicrosoftManaged' |
 | `managementPrivateEndpoints` | Determines if private endpoints are created for all management resources (i.e., Automation Accounts, Key Vaults) | bool | true<br/>false | false |
@@ -613,6 +614,7 @@ This template deploys a Storage Account with a blob container (optionally with a
 | `artifactsContainerName` | The name of the storage blob container which contains the artifacts (scripts, installers, etc) used during the image build. | string | lowercase string | 'artifacts' |
 | `blobPrivateDnsZoneResourceId` | The resource id of the existing Azure storage account blob service private dns zone. This zone must be linked to or resolvable from the vnet referenced in the `privateEndpointSubnetResourceId` parameter. | string | resource id | '' |
 | `collectCustomizationLogs` | Collect image customization logs. | bool | true<br/>false | false |
+| `logStorageAccountNetworkAccess` | The network access configuration for the log storage account. | String | PrivateEndpoint<br/>ServiceEndpoint<br/>PublicEndpoint | PublicEndpoint |
 | `customBuildResourceGroupName` | The custom name of the resource group where the image build and management vms will be created. Leave blank to create a new resource group based on Cloud Adoption Framework naming principals. | string | valid resource group name | '' |
 | `customSourceImageResourceId` | The resource Id of the source image to use for the image build. If not provided, the latest image from the specified publisher, offer, and sku will be used. | string | resource id | '' |
 | `customizations` | This parameter is array of objects that define additional installations and customizations that will be applied to your image. Each object must contain a 'name' property and 'blobNameOrUri' property. In addition, you can specify any script or installer arguments in the 'arguments' property on each object. **Important**, the "blobNameOrUri" property value is case sensitive. | array (of objects) | | [] |

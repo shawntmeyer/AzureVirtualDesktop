@@ -1262,9 +1262,9 @@
 									"name": "networkAccess",
 									"type": "Microsoft.Common.OptionsGroup",
 									"defaultValue": "Private Endpoint",
-									"label": "Storage Account Networking Configuration",
+									"label": "Storage Account Networking Endpoint",
 									"constraints": {
-										"allowedValues": "[if(empty(filter(filter(steps('prereqs').network.subnetsApi.value, (snet) => equals(snet.name, last(split(steps('prereqs').network.subnet, '/')))), (snet) => equals(first(map(snet.properties.serviceEndpoints, (se) => se.service)), 'Microsoft.Storage'))), parse('[{\"label\":\"Private Endpoint\",\"value\":\"PrivateEndpoint\"},{\"label\":\"Public Access\",\"value\":\"PublicAccess\"}]'), parse('[{\"label\":\"Private Endpoint\",\"value\":\"PrivateEndpoint\"},{\"label\":\"Service Endpoint\",\"value\":\"ServiceEndpoint\"},{\"label\":\"Public Access\",\"value\":\"PublicAccess\"}]'))]",
+										"allowedValues": "[if(empty(filter(filter(steps('prereqs').network.subnetsApi.value, (snet) => equals(snet.name, last(split(steps('prereqs').network.subnet, '/')))), (snet) => equals(first(map(snet.properties.serviceEndpoints, (se) => se.service)), 'Microsoft.Storage'))), parse('[{\"label\":\"Private Endpoint\",\"value\":\"PrivateEndpoint\"},{\"label\":\"Public Endpoint\",\"value\":\"PublicEndpoint\"}]'), parse('[{\"label\":\"Private Endpoint\",\"value\":\"PrivateEndpoint\"},{\"label\":\"Service Endpoint\",\"value\":\"ServiceEndpoint\"},{\"label\":\"Public Endpoint\",\"value\":\"PublicEndpoint\"}]'))]",
 										"required": true
 									},
 									"toolTip": "Select the storage account network access configuration below.</br></br>If you select 'Private Endpoint', then you must specify the subnet where it will be attached and select the blob storage private DNS zone where it's record will be created.</br></br>If you select 'Service Endpoint', then the subnet to which the image virtual machine is attached will be configured with a service endpoint for 'Microsoft.Storage' and the storage account will be configured to only allow access from this network.</br></br>If you select 'Public Access', then the storage account will allow access through the public endpoint.",
