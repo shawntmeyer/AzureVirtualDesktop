@@ -30,7 +30,7 @@ If ($null -ne $BuildDir -and $BuildDir -ne '') {
 Else {
     $TempDir = Join-Path $Env:TEMP -ChildPath $Name
 }
-New-Item -Path $TempDir-ItemType Directory -Force | Out-Null
+New-Item -Path $TempDir -ItemType Directory -Force | Out-Null
 $WebClient = New-Object System.Net.WebClient
 If ($Uri -match $BlobStorageSuffix -and $UserAssignedIdentityClientId -ne '') {
     $StorageEndpoint = ($Uri -split "://")[0] + "://" + ($Uri -split "/")[2] + "/"
