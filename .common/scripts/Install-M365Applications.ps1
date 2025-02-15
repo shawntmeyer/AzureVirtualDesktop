@@ -54,7 +54,7 @@ Function Get-InternetUrl {
     }
     Catch {
         Write-Error "Error Downloading HTML and determining link for download."
-        Return
+        Return $null
     }
 }
 
@@ -84,8 +84,7 @@ If ($Uri -eq '' -or $null -eq $Uri) {
     $WebsiteUri = 'https://go.microsoft.com/fwlink/p/?LinkID=626065'
     $Uri = Get-InternetUrl -WebSiteUrl $WebsiteUri -SearchString 'OfficeDeploymentTool'
     If ($Uri -eq '' -or $null -eq $Uri) {
-        Write-Error "Failed to find download link for Office Deployment Tool."
-        Exit 1
+        $Uri = 'https://download.microsoft.com/download/2/7/A/27AF1BE6-DD20-4CB4-B154-EBAB8A7D4A7E/officedeploymenttool_18324-20194.exe'
     }
 }
 
