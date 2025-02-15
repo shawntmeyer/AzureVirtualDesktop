@@ -145,6 +145,14 @@ param vdiCustomizations array = []
 @description('Optional. Collect image customization logs.')
 param collectCustomizationLogs bool = false
 
+@description('Optional. Log Storage Account Network Access Configuration.')
+@allowed([
+  'PrivateEndpoint'
+  'PublicAccess'
+  'ServiceEndpoint'
+])
+param logStorageAccountNetworkAccess string = 'PublicAccess'
+
 @description('Optional. Determines if the latest updates from the specified update service will be installed.')
 param installUpdates bool = true
 
@@ -169,10 +177,6 @@ param blobPrivateDnsZoneResourceId string = ''
 
 @description('Optional. The resource id of the private endpoint subnet. Used for the Customization Logs Storage Account.')
 param privateEndpointSubnetResourceId string = ''
-
-@description('''Optional. Deploy a Service Endpoint to the image build subnet for the Storage service.
-This is used to secure the Storage Account used for the Customization Logs when private endpoint is not used.''')
-param deployServiceEndpoint bool = false
 
 @description('Optional. The resource id of an existing Image Definition in the Compute gallery.')
 param imageDefinitionResourceId string = ''
@@ -415,22 +419,6 @@ module roleAssignmentBlobDataContributorBuilderRg '../../sharedModules/resources
 
 // * Logging * //
 
-resource snet 'Microsoft.Network/virtualNetworks/subnets@2023-05-01' existing = if (collectCustomizationLogs && empty(privateEndpointSubnetResourceId) && deployServiceEndpoint) {
-  name: last(split(subnetResourceId, '/'))
-  scope: resourceGroup(split(subnetResourceId, '/')[2], split(subnetResourceId, '/')[4])
-}
-
-module serviceEndpointStorage '../../sharedModules/resources/network/virtual-network/subnet/main.bicep' = if (collectCustomizationLogs && empty(privateEndpointSubnetResourceId) && deployServiceEndpoint) {
-  name: 'ServiceEndpointStorage-${timeStamp}'
-  scope: resourceGroup(split(subnetResourceId, '/')[2], split(subnetResourceId, '/')[4])
-  params: {
-    addressPrefix: snet.properties.addressPrefix
-    name: snet.name
-    virtualNetworkName: vnet.name
-    serviceEndpoints: union(snet.properties.serviceEndpoints, ['Microsoft.Storage'])
-  }
-}
-
 module logsStorageAccount '../../sharedModules/resources/storage/storage-account/main.bicep' = if (collectCustomizationLogs) {
   name: '${depPrefix}Logs-StorageAccount-${timeStamp}'
   scope: resourceGroup(imageBuildResourceGroupName)
@@ -472,7 +460,7 @@ module logsStorageAccount '../../sharedModules/resources/storage/storage-account
         }
       }
     ]
-    privateEndpoints: !empty(privateEndpointSubnetResourceId)
+    privateEndpoints: logStorageAccountNetworkAccess == 'PrivateEndpoint' && !empty(privateEndpointSubnetResourceId)
       ? [
           {
             name: '${resourceAbbreviations.privateEndpoints}-${logStorageAccountName}-blob-${locations[computeLocation].abbreviation}'
@@ -487,25 +475,28 @@ module logsStorageAccount '../../sharedModules/resources/storage/storage-account
           }
         ]
       : null
-    publicNetworkAccess: !empty(privateEndpointSubnetResourceId) && !empty(blobPrivateDnsZoneResourceId)
-      ? 'Disabled'
-      : 'Enabled'
-    networkAcls: empty(privateEndpointSubnetResourceId) ? deployServiceEndpoint ? {
-      bypass: 'AzureServices'
-      defaultAction: 'Deny'
-      ipRules: []
-      virtualNetworkRules: [
-        {
-          id: snet.id
-          action: 'Allow'
+    publicNetworkAccess: logStorageAccountNetworkAccess == 'PrivateEndpoint' ? 'Disabled' : 'Enabled'
+    networkAcls: logStorageAccountNetworkAccess == 'PrivateEndpoint'
+      ? {
+          bypass: 'None'
+          defaultAction: 'Deny'
         }
-      ]
-    } : {
-      bypass: 'AzureServices'
-      defaultAction: 'Allow'
-      ipRules: []
-      virtualNetworkRules: []
-    } : null
+      : logStorageAccountNetworkAccess == 'ServiceEndpoint'
+          ? {
+              bypass: 'None'
+              defaultAction: 'Deny'
+              ipRules: []
+              virtualNetworkRules: [
+                {
+                  id: subnetResourceId
+                  action: 'Allow'
+                }
+              ]
+            }
+          : {
+              bypass: 'None'
+              defaultAction: 'Allow'
+            }
     sasExpirationPeriod: '180.00:00:00'
     skuName: 'Standard_LRS'
     tags: tags

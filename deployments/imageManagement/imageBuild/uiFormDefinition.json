@@ -1264,20 +1264,7 @@
 									"defaultValue": "Private Endpoint",
 									"label": "Storage Account Networking Configuration",
 									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Private Endpoint",
-												"value": "privateEndpoint"
-											},
-											{
-												"label": "Service Endpoint",
-												"value": "serviceEndpoint"
-											},
-											{
-												"label": "Public Access",
-												"value": "publicAccess"
-											}
-										],
+										"allowedValues": "[if(empty(filter(filter(steps('prereqs').network.subnetsApi.value, (snet) => equals(snet.name, last(split(steps('prereqs').network.subnet, '/')))), (snet) => equals(first(map(snet.properties.ServiceEndpoints, (se) => se.service)), 'Microsoft.Storage'))), parse('[{\"label\":\"Private Endpoint\",\"value\":\"PrivateEndpoint\"},{\"label\":\"Public Access\",\"value\":\"PublicAccess\"}]'), parse('[{\"label\":\"Private Endpoint\",\"value\":\"PrivateEndpoint\"},{\"label\":\"Service Endpoint\",\"value\":\"ServiceEndpoint\"},{\"label\":\"Public Access\",\"value\":\"PublicAccess\"}]'))]",
 										"required": true
 									},
 									"toolTip": "Select the storage account network access configuration below.</br></br>If you select 'Private Endpoint', then you must specify the subnet where it will be attached and select the blob storage private DNS zone where it's record will be created.</br></br>If you select 'Service Endpoint', then the subnet to which the image virtual machine is attached will be configured with a service endpoint for 'Microsoft.Storage' and the storage account will be configured to only allow access from this network.</br></br>If you select 'Public Access', then the storage account will allow access through the public endpoint.",
@@ -1286,7 +1273,7 @@
 								{
 									"name": "virtualNetwork",
 									"type": "Microsoft.Common.DropDown",
-									"visible": "[and(steps('imageCustomizations').logging.collectLogs, equals(steps('imageCustomizations').logging.networkAccess, 'privateEndpoint'))]",
+									"visible": "[and(steps('imageCustomizations').logging.collectLogs, equals(steps('imageCustomizations').logging.networkAccess, 'PrivateEndpoint'))]",
 									"label": "Virtual Network",
 									"defaultValue": "[steps('prereqs').network.virtualNetwork.name]",
 									"toolTip": "Select an existing virtual network for the storage account blob private endpoint. If the desired network isn't available be sure to change the region in the Deployment Details section above.",
@@ -1307,7 +1294,7 @@
 								{
 									"name": "subnet",
 									"type": "Microsoft.Common.DropDown",
-									"visible": "[and(steps('imageCustomizations').logging.collectLogs, equals(steps('imageCustomizations').logging.networkAccess, 'privateEndpoint'))]",
+									"visible": "[and(steps('imageCustomizations').logging.collectLogs, equals(steps('imageCustomizations').logging.networkAccess, 'PrivateEndpoint'))]",
 									"label": "Subnet",
 									"defaultValue": "",
 									"toolTip": "Select an existing subnet for the storage account private endpoint.",
@@ -1319,7 +1306,7 @@
 								{
 									"name": "privateDNSZoneIntegrationTextBlock",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(steps('imageCustomizations').logging.collectLogs, equals(steps('imageCustomizations').logging.networkAccess, 'privateEndpoint'))]",
+									"visible": "[and(steps('imageCustomizations').logging.collectLogs, equals(steps('imageCustomizations').logging.networkAccess, 'PrivateEndpoint'))]",
 									"options": {
 										"text": "To connect privately with your private endpoint, you need a DNS record. We recommend that you integrate your private endpoint with a private DNS zone. If you select the checkbox below, you'll be asked to select the appropriate Private DNS Zone for each resource type deployed by this solution and the deployment will automatically create the Private DNS integration when creating the private endpoints. Alternatively, you can assign policies to private endpoints to automatically register the endpoints with the appropriate private DNS zones. Uncheck the box below if that is the method you are using.",
 										"link": {
@@ -1334,7 +1321,7 @@
 									"label": "Enable Private DNS Zone Integration",
 									"toolTip": "To connect privately with your private endpoint, you need a DNS record. Check this box to select the appropriate private DNS zones so that the deployment automatically integrates each private endpoint with Azure private DNS.",
 									"defaultValue": true,
-									"visible": "[and(steps('imageCustomizations').logging.collectLogs, equals(steps('imageCustomizations').logging.networkAccess, 'privateEndpoint'))]"
+									"visible": "[and(steps('imageCustomizations').logging.collectLogs, equals(steps('imageCustomizations').logging.networkAccess, 'PrivateEndpoint'))]"
 								},
 								{
 									"name": "privateDNSZonesSubscription",
@@ -1347,7 +1334,7 @@
 										"allowedValues": "[map(steps('basics').subscriptionsApi.value, (sub) => parse(concat('{\"label\":\"', sub.displayName, '\",\"value\":{\"id\":\"', sub.id, '\",\"displayName\":\"', sub.displayName, '\"}}')))]",
 										"required": true
 									},
-									"visible": "[and(steps('imageCustomizations').logging.collectLogs, equals(steps('imageCustomizations').logging.networkAccess, 'privateEndpoint'), steps('imageCustomizations').logging.enablePrivateDNSIntegration)]"
+									"visible": "[and(steps('imageCustomizations').logging.collectLogs, equals(steps('imageCustomizations').logging.networkAccess, 'PrivateEndpoint'), steps('imageCustomizations').logging.enablePrivateDNSIntegration)]"
 								},
 								{
 									"name": "privateDNSZonesApi",
@@ -1361,7 +1348,7 @@
 								{
 									"name": "blobPrivateDnsZone",
 									"type": "Microsoft.Common.DropDown",
-									"visible": "[and(steps('imageCustomizations').logging.collectLogs, equals(steps('imageCustomizations').logging.networkAccess, 'privateEndpoint'), steps('imageCustomizations').logging.enablePrivateDNSIntegration)]",
+									"visible": "[and(steps('imageCustomizations').logging.collectLogs, equals(steps('imageCustomizations').logging.networkAccess, 'PrivateEndpoint'), steps('imageCustomizations').logging.enablePrivateDNSIntegration)]",
 									"label": "Blob Storage Private DNS Zone",
 									"defaultValue": "",
 									"multiLine": true,
@@ -1917,9 +1904,9 @@
 				"updateService": "[steps('imageCustomizations').updates.updateService]",
 				"wsusServer": "[if(equals(steps('imageCustomizations').updates.updateService, 'WSUS'), steps('imageCustomizations').updates.wsusServer, '')]",
 				"collectCustomizationLogs": "[steps('imageCustomizations').logging.collectLogs]",
-				"privateEndpointSubnetResourceId": "[if(and(steps('imageCustomizations').logging.collectLogs, equals(steps('imageCustomizations').logging.networkAccess, 'privateEndpoint')), steps('imageCustomizations').logging.subnet, '')]",
-				"blobPrivateDnsZoneResourceId": "[if(and(steps('imageCustomizations').logging.collectLogs, equals(steps('imageCustomizations').logging.networkAccess, 'privateEndpoint'), steps('imageCustomizations').logging.enablePrivateDNSIntegration), steps('imageCustomizations').logging.blobPrivateDnsZone, '')]",
-				"deployServiceEndpoint": "[if(and(steps('imageCustomizations').logging.collectLogs, equals(steps('imageCustomizations').logging.networkAccess, 'serviceEndpoint')), true, false)]",
+				"logStorageAccountNetworkAccess": "[if(steps('imageCustomizations').logging.collectLogs, steps('imageCustomizations').logging.networkAccess, 'Public')]",
+				"PrivateEndpointSubnetResourceId": "[if(and(steps('imageCustomizations').logging.collectLogs, equals(steps('imageCustomizations').logging.networkAccess, 'PrivateEndpoint')), steps('imageCustomizations').logging.subnet, '')]",
+				"blobPrivateDnsZoneResourceId": "[if(and(steps('imageCustomizations').logging.collectLogs, equals(steps('imageCustomizations').logging.networkAccess, 'PrivateEndpoint'), steps('imageCustomizations').logging.enablePrivateDNSIntegration), steps('imageCustomizations').logging.blobPrivateDnsZone, '')]",
 				"imageDefinitionResourceId": "[if(equals(steps('imageDest').imageDefinition.useExImageDef, true), concat(steps('prereqs').gallery.gallery.id, '/images/', steps('imageDest').imageDefinition.imageDefinition), '')]",
 				"customImageDefinitionName": "[if(equals(steps('imageDest').imageDefinition.useExImageDef, false), steps('imageDest').imageDefinition.customImageDefinitionName, '')]",
 				"imageDefinitionPublisher": "[if(equals(steps('imageDest').imageDefinition.useExImageDef, false), steps('imageDest').imageDefinition.imageDefinitionPublisher, '')]",

@@ -1,21 +1,22 @@
-{
-    "name": "vnet-name",
-    "resourceGroup": "rg-func-nodns-test-va",
-    "addressPrefixes": [
-        "10.0.0.0/16"
-    ],
-    "addressPrefix": "10.0.0.0/16",
-    "newOrExisting": "existing",
-    "subnets": {
-        "subnet1": {
-            "name": "sn-hosts",
-            "addressPrefix": "10.0.3.0/24",
-            "startAddress": "10.0.3.4"
-        },
-        "subnet2": {
-            "name": "snet-private-endpoints",
-            "addressPrefix": "10.0.4.0/24",
-            "startAddress": "10.0.4.4"
-        }
-    }
-}
+if(
+	empty(
+        filter(
+			filter(
+                steps('prereqs').network.subnetsApi.value,
+				(snet) => equals(snet.name, last(split(steps('prereqs').network.snet, '/')))
+			),
+			(snet) => equals(
+							first(map(
+								snet.properties.serviceEndpoints,
+								(se) = se.service
+							)),
+							'Microsoft.Storage'
+					  )
+		)
+    ),
+	parse('[{\"label\":\"Private Endpoint\",\"value\":\"privateEndpoint\"},{\"label\":\"Public Access\",\"value\":\"publicAccess\"}]'),
+	parse('[{\"label\":\"Private Endpoint\",\"value\":\"privateEndpoint\"},{\"label\":\"Service Endpoint\",\"value\":\"serviceEndpoint\"},{\"label\":\"Public Access\",\"value\":\"publicAccess\"}]')
+)
+
+
+if(empty(filter(filter(steps('prereqs').network.subnetsApi.value, (snet) => equals(snet.name, last(split(steps('prereqs').network.snet, '/')))), (snet) => equals(first(map(snet.properties.serviceEndpoints, (se) = se.service)), 'Microsoft.Storage'))), parse('[{\"label\":\"Private Endpoint\",\"value\":\"privateEndpoint\"},{\"label\":\"Public Access\",\"value\":\"publicAccess\"}]'), parse('[{\"label\":\"Private Endpoint\",\"value\":\"privateEndpoint\"},{\"label\":\"Service Endpoint\",\"value\":\"serviceEndpoint\"},{\"label\":\"Public Access\",\"value\":\"publicAccess\"}]'))
