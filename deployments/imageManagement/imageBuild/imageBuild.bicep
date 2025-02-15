@@ -324,15 +324,20 @@ var securityType = galleryImageDefinitionSecurityType == 'TrustedLaunch'
 
 // * Prerequisite Resources * //
 
-resource existingUserAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = if (!empty(userAssignedIdentityResourceId)) {
-  scope: resourceGroup(split(userAssignedIdentityResourceId, '/')[2], split(userAssignedIdentityResourceId, '/')[4])
-  name: last(split(userAssignedIdentityResourceId, '/'))
-}
-
 resource vnet 'Microsoft.Network/virtualNetworks@2023-05-01' existing = {
   name: split(subnetResourceId, '/')[8]
   scope: resourceGroup(split(subnetResourceId, '/')[2], split(subnetResourceId, '/')[4])
 }
+
+// * Resource Group * //
+
+resource imageBuildRg 'Microsoft.Resources/resourceGroups@2023-07-01' = if (empty(imageBuildResourceGroupId)) {
+  name: imageBuildResourceGroupName
+  location: location
+  tags: tags[?'Microsoft.Resources/resourceGroups'] ?? {}
+}
+
+// * Managed Identity * //
 
 module userAssignedIdentity '../../sharedModules/resources/managed-identity/user-assigned-identity/main.bicep' = if (empty(userAssignedIdentityResourceId)) {
   name: '${depPrefix}ManagedIdentity-${timeStamp}'
@@ -342,6 +347,11 @@ module userAssignedIdentity '../../sharedModules/resources/managed-identity/user
     name: '${resourceAbbreviations.userAssignedIdentities}-image-builder-${locations[location].abbreviation}'
     tags: tags[?'Microsoft.ManagedIdentity/userAssignedIdentities'] ?? {}
   }
+}
+
+resource existingUserAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = if (!empty(userAssignedIdentityResourceId)) {
+  scope: resourceGroup(split(userAssignedIdentityResourceId, '/')[2], split(userAssignedIdentityResourceId, '/')[4])
+  name: last(split(userAssignedIdentityResourceId, '/'))
 }
 
 // * Image Definition * //
@@ -367,14 +377,6 @@ module imageDefinition '../../sharedModules/resources/compute/gallery/image/main
   }
 }
 
-// * Resource Group * //
-
-resource imageBuildRg 'Microsoft.Resources/resourceGroups@2023-07-01' = if (empty(imageBuildResourceGroupId)) {
-  name: imageBuildResourceGroupName
-  location: location
-  tags: tags[?'Microsoft.Resources/resourceGroups'] ?? {}
-}
-
 // * Role Assignments * //
 
 module roleAssignmentContributorBuildRg '../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = {
@@ -390,6 +392,18 @@ module roleAssignmentContributorBuildRg '../../sharedModules/resources/authoriza
   dependsOn: [
     imageBuildRg
   ]
+}
+
+module roleAssignmentBlobDataContributorBuilderRg '../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = if (collectCustomizationLogs) {
+  name: '${depPrefix}RoleAssign-MI-StorageBlobDataContr-BuildRG-${timeStamp}'
+  scope: resourceGroup(imageBuildResourceGroupName)
+  params: {
+    principalId: empty(userAssignedIdentityResourceId)
+      ? userAssignedIdentity.outputs.principalId
+      : existingUserAssignedIdentity.properties.principalId
+    roleDefinitionId: 'ba92f5b4-2d11-453d-a403-e96b0029c9fe' // Storage Blob Data Contributor
+    principalType: 'ServicePrincipal'
+  }
 }
 
 // * Logging * //
@@ -460,22 +474,8 @@ module logsStorageAccount '../../sharedModules/resources/storage/storage-account
   ]
 }
 
-module roleAssignmentBlobDataContributorBuilderRg '../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = if (collectCustomizationLogs) {
-  name: '${depPrefix}RoleAssign-MI-StorageBlobDataContr-BuildRG-${timeStamp}'
-  scope: resourceGroup(imageBuildResourceGroupName)
-  params: {
-    principalId: empty(userAssignedIdentityResourceId)
-      ? userAssignedIdentity.outputs.principalId
-      : existingUserAssignedIdentity.properties.principalId
-    roleDefinitionId: 'ba92f5b4-2d11-453d-a403-e96b0029c9fe' // Storage Blob Data Contributor
-    principalType: 'ServicePrincipal'
-  }
-  dependsOn: [
-    logsStorageAccount
-  ]
-}
 
-// * Management VM * //
+// * Orchestration VM * //
 
 module orchestrationVm '../../sharedModules/resources/compute/virtual-machine/main.bicep' = {
   name: '${depPrefix}Orchestration-VM-${timeStamp}'
