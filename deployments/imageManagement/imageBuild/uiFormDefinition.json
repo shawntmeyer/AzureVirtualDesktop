@@ -204,7 +204,7 @@
 									"type": "Microsoft.Common.InfoBox",
 									"visible": true,
 									"options": {
-										"icon": "Info",
+										"style": "Info",
 										"text": "The repo containing this solution, includes an automated script and supporting artifacts to configure the storage account, blob container, managed identity, and upload the required artifacts to the storage account.",
 										"uri": "https://github.com/shawntmeyer/AzureVirtualDesktop/blob/master/docs/avd.md#deploy-image-management-resources"
 									}
@@ -387,7 +387,7 @@
 									"type": "Microsoft.Common.InfoBox",
 									"visible": "[steps('imageVm').vmProps.encryptionAtHost]",
 									"options": {
-										"icon": "Warning",
+										"style": "Warning",
 										"text": "In order to deploy a virtual machine with Encryption at Host enabled, the feature must be enabled in your subscription.",
 										"uri": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-enable-host-based-encryption-portal?tabs=azure-powershell"
 									}
@@ -526,7 +526,7 @@
 								"style": "Warning",
 								"text": "This page of the wizard allows you to add predefined and custom defined image customizations. The built-in customizations (i.e., FSLogix, Office, OneDrive, Teams, Virtual Desktop Optimization Tool) require Internet access in order to be able to download the installers from Microsoft. If this is not available, then you must enable the Zero Trust option after completing the prerequisite deployment of Image Management Resources."
 							}
-						},						
+						},
 						{
 							"name": "fslogix",
 							"type": "Microsoft.Common.Section",
@@ -1025,7 +1025,7 @@
 									"type": "Microsoft.Common.InfoBox",
 									"visible": "[steps('imageCustomizations').customSoftware.addCustomSoftware]",
 									"options": {
-										"icon": "Warning",
+										"style": "Warning",
 										"text": "The list of customizations and software in this section must be installed silently without user interaction. In addition they must be able to survive restarts, sysprep, and not generate system specific identifier as the image will be used on multiple session host virtual machines. Use the VDI Customizations section below to install software that can be installed in a way not to generate a system specific identifier until after a system restart."
 									}
 								},
@@ -1034,7 +1034,7 @@
 									"type": "Microsoft.Common.TextBlock",
 									"visible": "[steps('imageCustomizations').customSoftware.addCustomSoftware]",
 									"options": {
-										"text": "Enter customizations for your image below. The first column is a free-form text field that can only contain alphanumerics and no spaces. The second column is the blob name and is case-sensitive. The third column is for any arguments."
+										"text": "Enter customizations for your image below. The first column is a free-form text field that can only contain alphanumerics and no spaces. The second column is the blob name or full URI and is case-sensitive. The third column is for any arguments."
 									}
 								},
 								{
@@ -1106,7 +1106,7 @@
 									"type": "Microsoft.Common.InfoBox",
 									"visible": "[steps('imageCustomizations').customSoftware.addVDICustomSoftware]",
 									"options": {
-										"icon": "Warning",
+										"style": "Warning",
 										"text": "The list of customizations and software in this section must be installed silently without user interaction. In addition, they must be able to survive sysprep. Installing software using this parameter allows the installation of agents and other software items that can be configured to generate a unique system identifier after a restart."
 									}
 								},
@@ -1115,7 +1115,7 @@
 									"type": "Microsoft.Common.TextBlock",
 									"visible": "[steps('imageCustomizations').customSoftware.addVDICustomSoftware]",
 									"options": {
-										"text": "Enter customizations for your image below. The first column is a free-form text field that can only contain alphanumerics and no spaces. The second column is the blob name and is case-sensitive. The third column is for any arguments."
+										"text": "Enter customizations for your image below. The first column is a free-form text field that can only contain alphanumerics and no spaces. The second column is the blob name or full URI and is case-sensitive. The third column is for any arguments."
 									}
 								},
 								{
@@ -1150,7 +1150,7 @@
 											},
 											{
 												"id": "blobNameOrUri",
-												"header": "Blob Name (or URI)",
+												"header": "Blob Name (or URI)')",
 												"width": "10fr",
 												"element": {
 													"type": "Microsoft.Common.TextBox",
@@ -1257,17 +1257,36 @@
 									"name": "collectLogs",
 									"type": "Microsoft.Common.CheckBox",
 									"label": "Collect customization logs in a storage container"
-								},
+								},								
 								{
-									"name": "privateEndpoint",
-									"type": "Microsoft.Common.CheckBox",
-									"label": "Deploy Private Endpoint for Storage Account",
+									"name": "networkAccess",
+									"type": "Microsoft.Common.OptionsGroup",
+									"defaultValue": "Private Endpoint",
+									"label": "Storage Account Networking Configuration",
+									"constraints": {
+										"allowedValues": [
+											{
+												"label": "Private Endpoint",
+												"value": "privateEndpoint"
+											},
+											{
+												"label": "Service Endpoint",
+												"value": "serviceEndpoint"
+											},
+											{
+												"label": "Public Access",
+												"value": "publicAccess"
+											}
+										],
+										"required": true
+									},
+									"toolTip": "Select the storage account network access configuration below.</br></br>If you select 'Private Endpoint', then you must specify the subnet where it will be attached and select the blob storage private DNS zone where it's record will be created.</br></br>If you select 'Service Endpoint', then the subnet to which the image virtual machine is attached will be configured with a service endpoint for 'Microsoft.Storage' and the storage account will be configured to only allow access from this network.</br></br>If you select 'Public Access', then the storage account will allow access through the public endpoint.",
 									"visible": "[steps('imageCustomizations').logging.collectLogs]"
 								},
 								{
 									"name": "virtualNetwork",
 									"type": "Microsoft.Common.DropDown",
-									"visible": "[and(steps('imageCustomizations').logging.collectLogs, steps('imageCustomizations').logging.privateEndpoint)]",
+									"visible": "[and(steps('imageCustomizations').logging.collectLogs, equals(steps('imageCustomizations').logging.networkAccess, 'privateEndpoint'))]",
 									"label": "Virtual Network",
 									"defaultValue": "[steps('prereqs').network.virtualNetwork.name]",
 									"toolTip": "Select an existing virtual network for the storage account blob private endpoint. If the desired network isn't available be sure to change the region in the Deployment Details section above.",
@@ -1288,10 +1307,10 @@
 								{
 									"name": "subnet",
 									"type": "Microsoft.Common.DropDown",
-									"visible": "[and(steps('imageCustomizations').logging.collectLogs, steps('imageCustomizations').logging.privateEndpoint)]",
+									"visible": "[and(steps('imageCustomizations').logging.collectLogs, equals(steps('imageCustomizations').logging.networkAccess, 'privateEndpoint'))]",
 									"label": "Subnet",
 									"defaultValue": "",
-									"toolTip": "Select an existing subnet for the image capture.",
+									"toolTip": "Select an existing subnet for the storage account private endpoint.",
 									"constraints": {
 										"required": true,
 										"allowedValues": "[map(steps('imageCustomizations').logging.subnetsApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.id, '\"}')))]"
@@ -1300,7 +1319,7 @@
 								{
 									"name": "privateDNSZoneIntegrationTextBlock",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(steps('imageCustomizations').logging.collectLogs, steps('imageCustomizations').logging.privateEndpoint)]",
+									"visible": "[and(steps('imageCustomizations').logging.collectLogs, equals(steps('imageCustomizations').logging.networkAccess, 'privateEndpoint'))]",
 									"options": {
 										"text": "To connect privately with your private endpoint, you need a DNS record. We recommend that you integrate your private endpoint with a private DNS zone. If you select the checkbox below, you'll be asked to select the appropriate Private DNS Zone for each resource type deployed by this solution and the deployment will automatically create the Private DNS integration when creating the private endpoints. Alternatively, you can assign policies to private endpoints to automatically register the endpoints with the appropriate private DNS zones. Uncheck the box below if that is the method you are using.",
 										"link": {
@@ -1308,15 +1327,14 @@
 											"uri": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview#dns-configuration"
 										}
 									}
-								},								
+								},
 								{
 									"name": "enablePrivateDNSIntegration",
 									"type": "Microsoft.Common.CheckBox",
 									"label": "Enable Private DNS Zone Integration",
 									"toolTip": "To connect privately with your private endpoint, you need a DNS record. Check this box to select the appropriate private DNS zones so that the deployment automatically integrates each private endpoint with Azure private DNS.",
 									"defaultValue": true,
-									"visible": "[and(steps('imageCustomizations').logging.collectLogs, steps('imageCustomizations').logging.privateEndpoint)]"
-									
+									"visible": "[and(steps('imageCustomizations').logging.collectLogs, equals(steps('imageCustomizations').logging.networkAccess, 'privateEndpoint'))]"
 								},
 								{
 									"name": "privateDNSZonesSubscription",
@@ -1329,7 +1347,7 @@
 										"allowedValues": "[map(steps('basics').subscriptionsApi.value, (sub) => parse(concat('{\"label\":\"', sub.displayName, '\",\"value\":{\"id\":\"', sub.id, '\",\"displayName\":\"', sub.displayName, '\"}}')))]",
 										"required": true
 									},
-									"visible": "[and(steps('imageCustomizations').logging.collectLogs, steps('imageCustomizations').logging.privateEndpoint, steps('imageCustomizations').logging.enablePrivateDNSIntegration)]"
+									"visible": "[and(steps('imageCustomizations').logging.collectLogs, equals(steps('imageCustomizations').logging.networkAccess, 'privateEndpoint'), steps('imageCustomizations').logging.enablePrivateDNSIntegration)]"
 								},
 								{
 									"name": "privateDNSZonesApi",
@@ -1343,7 +1361,7 @@
 								{
 									"name": "blobPrivateDnsZone",
 									"type": "Microsoft.Common.DropDown",
-									"visible": "[and(steps('imageCustomizations').logging.collectLogs, steps('imageCustomizations').logging.privateEndpoint, steps('imageCustomizations').logging.enablePrivateDNSIntegration)]",
+									"visible": "[and(steps('imageCustomizations').logging.collectLogs, equals(steps('imageCustomizations').logging.networkAccess, 'privateEndpoint'), steps('imageCustomizations').logging.enablePrivateDNSIntegration)]",
 									"label": "Blob Storage Private DNS Zone",
 									"defaultValue": "",
 									"multiLine": true,
@@ -1899,8 +1917,9 @@
 				"updateService": "[steps('imageCustomizations').updates.updateService]",
 				"wsusServer": "[if(equals(steps('imageCustomizations').updates.updateService, 'WSUS'), steps('imageCustomizations').updates.wsusServer, '')]",
 				"collectCustomizationLogs": "[steps('imageCustomizations').logging.collectLogs]",
-				"privateEndpointSubnetResourceId": "[if(and(steps('imageCustomizations').logging.collectLogs, steps('imageCustomizations').logging.privateEndpoint), steps('imageCustomizations').logging.subnet, '')]",
-				"blobPrivateDnsZoneResourceId": "[if(and(steps('imageCustomizations').logging.collectLogs, steps('imageCustomizations').logging.privateEndpoint, steps('imageCustomizations').logging.enablePrivateDNSIntegration), steps('imageCustomizations').logging.blobPrivateDnsZone, '')]",
+				"privateEndpointSubnetResourceId": "[if(and(steps('imageCustomizations').logging.collectLogs, equals(steps('imageCustomizations').logging.networkAccess, 'privateEndpoint')), steps('imageCustomizations').logging.subnet, '')]",
+				"blobPrivateDnsZoneResourceId": "[if(and(steps('imageCustomizations').logging.collectLogs, equals(steps('imageCustomizations').logging.networkAccess, 'privateEndpoint'), steps('imageCustomizations').logging.enablePrivateDNSIntegration), steps('imageCustomizations').logging.blobPrivateDnsZone, '')]",
+				"deployServiceEndpoint": "[if(and(steps('imageCustomizations').logging.collectLogs, equals(steps('imageCustomizations').logging.networkAccess, 'serviceEndpoint')), true, false)]",
 				"imageDefinitionResourceId": "[if(equals(steps('imageDest').imageDefinition.useExImageDef, true), concat(steps('prereqs').gallery.gallery.id, '/images/', steps('imageDest').imageDefinition.imageDefinition), '')]",
 				"customImageDefinitionName": "[if(equals(steps('imageDest').imageDefinition.useExImageDef, false), steps('imageDest').imageDefinition.customImageDefinitionName, '')]",
 				"imageDefinitionPublisher": "[if(equals(steps('imageDest').imageDefinition.useExImageDef, false), steps('imageDest').imageDefinition.imageDefinitionPublisher, '')]",

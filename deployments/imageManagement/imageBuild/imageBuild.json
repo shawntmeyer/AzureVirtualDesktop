@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "17557592500104418502"
+      "templateHash": "9914394309345940869"
     },
     "name": "Zero Trust Architecture Custom Windows Image Builder",
     "description": "This solution allows you to create a custom image much like Azure VM Image Builder, but utilizes zero trust architecture and does not require that service.",
@@ -260,14 +260,21 @@
       "type": "string",
       "defaultValue": "",
       "metadata": {
-        "description": "Conditional. The resource id of the existing Azure storage account blob service private dns zone.\nMust be provided if [collectCustomizationLogs] is set to \"true\".\nThis zone must be linked to or resolvable from the vnet referenced in the [privateEndpointSubnetResourceId] parameter."
+        "description": "Optional. The resource id of the existing Azure storage account blob service private dns zone.\nUsed for the Customization Logs Storage Account.\nThis zone must be linked to or resolvable from the vnet referenced in the [privateEndpointSubnetResourceId] parameter."
       }
     },
     "privateEndpointSubnetResourceId": {
       "type": "string",
       "defaultValue": "",
       "metadata": {
-        "description": "Conditional. The resource id of the private endpoint subnet. Must be provided if [collectCustomizationLogs] is set to \"true\"."
+        "description": "Optional. The resource id of the private endpoint subnet. Used for the Customization Logs Storage Account."
+      }
+    },
+    "deployServiceEndpoint": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Optional. Deploy a Service Endpoint to the image build subnet for the Storage service.\nThis is used to secure the Storage Account used for the Customization Logs when private endpoint is not used."
       }
     },
     "imageDefinitionResourceId": {
@@ -1558,6 +1565,213 @@
       ]
     },
     {
+      "condition": "[and(and(parameters('collectCustomizationLogs'), empty(parameters('privateEndpointSubnetResourceId'))), parameters('deployServiceEndpoint'))]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "[format('ServiceEndpointStorage-{0}', parameters('timeStamp'))]",
+      "subscriptionId": "[split(parameters('subnetResourceId'), '/')[2]]",
+      "resourceGroup": "[split(parameters('subnetResourceId'), '/')[4]]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "addressPrefix": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('subnetResourceId'), '/')[2], split(parameters('subnetResourceId'), '/')[4]), 'Microsoft.Network/virtualNetworks/subnets', split(last(split(parameters('subnetResourceId'), '/')), '/')[0], split(last(split(parameters('subnetResourceId'), '/')), '/')[1]), '2023-05-01').addressPrefix]"
+          },
+          "name": {
+            "value": "[last(split(parameters('subnetResourceId'), '/'))]"
+          },
+          "virtualNetworkName": {
+            "value": "[split(parameters('subnetResourceId'), '/')[8]]"
+          },
+          "serviceEndpoints": {
+            "value": "[union(reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('subnetResourceId'), '/')[2], split(parameters('subnetResourceId'), '/')[4]), 'Microsoft.Network/virtualNetworks/subnets', split(last(split(parameters('subnetResourceId'), '/')), '/')[0], split(last(split(parameters('subnetResourceId'), '/')), '/')[1]), '2023-05-01').serviceEndpoints, createArray('Microsoft.Storage'))]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.33.93.31351",
+              "templateHash": "3025709616951836979"
+            },
+            "name": "Virtual Network Subnets",
+            "description": "This module deploys a Virtual Network Subnet.",
+            "owner": "Azure/module-maintainers"
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Optional. The Name of the subnet resource."
+              }
+            },
+            "virtualNetworkName": {
+              "type": "string",
+              "metadata": {
+                "description": "Conditional. The name of the parent virtual network. Required if the template is used in a standalone deployment."
+              }
+            },
+            "addressPrefix": {
+              "type": "string",
+              "metadata": {
+                "description": "Required. The address prefix for the subnet."
+              }
+            },
+            "networkSecurityGroupId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. The resource ID of the network security group to assign to the subnet."
+              }
+            },
+            "routeTableId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. The resource ID of the route table to assign to the subnet."
+              }
+            },
+            "serviceEndpoints": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Optional. The service endpoints to enable on the subnet."
+              }
+            },
+            "delegations": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Optional. The delegations to enable on the subnet."
+              }
+            },
+            "natGatewayId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. The resource ID of the NAT Gateway to use for the subnet."
+              }
+            },
+            "privateEndpointNetworkPolicies": {
+              "type": "string",
+              "defaultValue": "",
+              "allowedValues": [
+                "Disabled",
+                "Enabled",
+                ""
+              ],
+              "metadata": {
+                "description": "Optional. enable or disable apply network policies on private endpoint in the subnet."
+              }
+            },
+            "privateLinkServiceNetworkPolicies": {
+              "type": "string",
+              "defaultValue": "",
+              "allowedValues": [
+                "Disabled",
+                "Enabled",
+                ""
+              ],
+              "metadata": {
+                "description": "Optional. enable or disable apply network policies on private link service in the subnet."
+              }
+            },
+            "addressPrefixes": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Optional. List of address prefixes for the subnet."
+              }
+            },
+            "applicationGatewayIPConfigurations": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Optional. Application gateway IP configurations of virtual network resource."
+              }
+            },
+            "ipAllocations": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Optional. Array of IpAllocation which reference this subnet."
+              }
+            },
+            "serviceEndpointPolicies": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Optional. An array of service endpoint policies."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/virtualNetworks/subnets",
+              "apiVersion": "2023-04-01",
+              "name": "[format('{0}/{1}', parameters('virtualNetworkName'), parameters('name'))]",
+              "properties": {
+                "addressPrefix": "[parameters('addressPrefix')]",
+                "networkSecurityGroup": "[if(not(empty(parameters('networkSecurityGroupId'))), createObject('id', parameters('networkSecurityGroupId')), null())]",
+                "routeTable": "[if(not(empty(parameters('routeTableId'))), createObject('id', parameters('routeTableId')), null())]",
+                "natGateway": "[if(not(empty(parameters('natGatewayId'))), createObject('id', parameters('natGatewayId')), null())]",
+                "serviceEndpoints": "[parameters('serviceEndpoints')]",
+                "delegations": "[parameters('delegations')]",
+                "privateEndpointNetworkPolicies": "[if(not(empty(parameters('privateEndpointNetworkPolicies'))), parameters('privateEndpointNetworkPolicies'), null())]",
+                "privateLinkServiceNetworkPolicies": "[if(not(empty(parameters('privateLinkServiceNetworkPolicies'))), parameters('privateLinkServiceNetworkPolicies'), null())]",
+                "addressPrefixes": "[parameters('addressPrefixes')]",
+                "applicationGatewayIPConfigurations": "[parameters('applicationGatewayIPConfigurations')]",
+                "ipAllocations": "[parameters('ipAllocations')]",
+                "serviceEndpointPolicies": "[parameters('serviceEndpointPolicies')]"
+              }
+            }
+          ],
+          "outputs": {
+            "resourceGroupName": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource group the virtual network peering was deployed into."
+              },
+              "value": "[resourceGroup().name]"
+            },
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the virtual network peering."
+              },
+              "value": "[parameters('name')]"
+            },
+            "resourceId": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource ID of the virtual network peering."
+              },
+              "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworkName'), parameters('name'))]"
+            },
+            "subnetAddressPrefix": {
+              "type": "string",
+              "metadata": {
+                "description": "The address prefix for the subnet."
+              },
+              "value": "[reference(resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworkName'), parameters('name')), '2023-04-01').addressPrefix]"
+            },
+            "subnetAddressPrefixes": {
+              "type": "array",
+              "metadata": {
+                "description": "List of address prefixes for the subnet."
+              },
+              "value": "[if(not(empty(parameters('addressPrefixes'))), reference(resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworkName'), parameters('name')), '2023-04-01').addressPrefixes, createArray())]"
+            }
+          }
+        }
+      }
+    },
+    {
       "condition": "[parameters('collectCustomizationLogs')]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2022-09-01",
@@ -1623,6 +1837,7 @@
           },
           "privateEndpoints": "[if(not(empty(parameters('privateEndpointSubnetResourceId'))), createObject('value', createArray(createObject('name', format('{0}-{1}-blob-{2}', variables('resourceAbbreviations').privateEndpoints, variables('logStorageAccountName'), variables('locations')[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('subnetResourceId'), '/')[2], split(parameters('subnetResourceId'), '/')[4]), 'Microsoft.Network/virtualNetworks', split(parameters('subnetResourceId'), '/')[8]), '2023-05-01', 'full').location].abbreviation), 'privateDnsZoneGroup', if(empty(parameters('blobPrivateDnsZoneResourceId')), null(), createObject('privateDNSResourceIds', createArray(format('{0}', parameters('blobPrivateDnsZoneResourceId'))))), 'service', 'blob', 'subnetResourceId', parameters('privateEndpointSubnetResourceId'), 'tags', coalesce(tryGet(parameters('tags'), 'Microsoft.Storage/storageAccounts'), createObject())))), createObject('value', null()))]",
           "publicNetworkAccess": "[if(and(not(empty(parameters('privateEndpointSubnetResourceId'))), not(empty(parameters('blobPrivateDnsZoneResourceId')))), createObject('value', 'Disabled'), createObject('value', 'Enabled'))]",
+          "networkAcls": "[if(empty(parameters('privateEndpointSubnetResourceId')), if(parameters('deployServiceEndpoint'), createObject('value', createObject('bypass', 'AzureServices', 'defaultAction', 'Deny', 'ipRules', createArray(), 'virtualNetworkRules', createArray(createObject('id', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('subnetResourceId'), '/')[2], split(parameters('subnetResourceId'), '/')[4]), 'Microsoft.Network/virtualNetworks/subnets', split(last(split(parameters('subnetResourceId'), '/')), '/')[0], split(last(split(parameters('subnetResourceId'), '/')), '/')[1]), 'action', 'Allow')))), createObject('value', createObject('bypass', 'AzureServices', 'defaultAction', 'Allow', 'ipRules', createArray(), 'virtualNetworkRules', createArray()))), createObject('value', null()))]",
           "sasExpirationPeriod": {
             "value": "180.00:00:00"
           },

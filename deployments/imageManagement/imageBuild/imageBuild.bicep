@@ -162,13 +162,17 @@ param updateService string = 'MU'
 @description('Conditional. The WSUS Server Url if WSUS is specified. (i.e., https://wsus.corp.contoso.com:8531)')
 param wsusServer string = ''
 
-@description('''Conditional. The resource id of the existing Azure storage account blob service private dns zone.
-Must be provided if [collectCustomizationLogs] is set to "true".
+@description('''Optional. The resource id of the existing Azure storage account blob service private dns zone.
+Used for the Customization Logs Storage Account.
 This zone must be linked to or resolvable from the vnet referenced in the [privateEndpointSubnetResourceId] parameter.''')
 param blobPrivateDnsZoneResourceId string = ''
 
-@description('Conditional. The resource id of the private endpoint subnet. Must be provided if [collectCustomizationLogs] is set to "true".')
+@description('Optional. The resource id of the private endpoint subnet. Used for the Customization Logs Storage Account.')
 param privateEndpointSubnetResourceId string = ''
+
+@description('''Optional. Deploy a Service Endpoint to the image build subnet for the Storage service.
+This is used to secure the Storage Account used for the Customization Logs when private endpoint is not used.''')
+param deployServiceEndpoint bool = false
 
 @description('Optional. The resource id of an existing Image Definition in the Compute gallery.')
 param imageDefinitionResourceId string = ''
@@ -411,6 +415,22 @@ module roleAssignmentBlobDataContributorBuilderRg '../../sharedModules/resources
 
 // * Logging * //
 
+resource snet 'Microsoft.Network/virtualNetworks/subnets@2023-05-01' existing = if (collectCustomizationLogs && empty(privateEndpointSubnetResourceId) && deployServiceEndpoint) {
+  name: last(split(subnetResourceId, '/'))
+  scope: resourceGroup(split(subnetResourceId, '/')[2], split(subnetResourceId, '/')[4])
+}
+
+module serviceEndpointStorage '../../sharedModules/resources/network/virtual-network/subnet/main.bicep' = if (collectCustomizationLogs && empty(privateEndpointSubnetResourceId) && deployServiceEndpoint) {
+  name: 'ServiceEndpointStorage-${timeStamp}'
+  scope: resourceGroup(split(subnetResourceId, '/')[2], split(subnetResourceId, '/')[4])
+  params: {
+    addressPrefix: snet.properties.addressPrefix
+    name: snet.name
+    virtualNetworkName: vnet.name
+    serviceEndpoints: union(snet.properties.serviceEndpoints, ['Microsoft.Storage'])
+  }
+}
+
 module logsStorageAccount '../../sharedModules/resources/storage/storage-account/main.bicep' = if (collectCustomizationLogs) {
   name: '${depPrefix}Logs-StorageAccount-${timeStamp}'
   scope: resourceGroup(imageBuildResourceGroupName)
@@ -456,9 +476,11 @@ module logsStorageAccount '../../sharedModules/resources/storage/storage-account
       ? [
           {
             name: '${resourceAbbreviations.privateEndpoints}-${logStorageAccountName}-blob-${locations[computeLocation].abbreviation}'
-            privateDnsZoneGroup: empty(blobPrivateDnsZoneResourceId) ? null : {
-              privateDNSResourceIds: ['${blobPrivateDnsZoneResourceId}']
-            }
+            privateDnsZoneGroup: empty(blobPrivateDnsZoneResourceId)
+              ? null
+              : {
+                  privateDNSResourceIds: ['${blobPrivateDnsZoneResourceId}']
+                }
             service: 'blob'
             subnetResourceId: privateEndpointSubnetResourceId
             tags: tags[?'Microsoft.Storage/storageAccounts'] ?? {}
@@ -468,6 +490,22 @@ module logsStorageAccount '../../sharedModules/resources/storage/storage-account
     publicNetworkAccess: !empty(privateEndpointSubnetResourceId) && !empty(blobPrivateDnsZoneResourceId)
       ? 'Disabled'
       : 'Enabled'
+    networkAcls: empty(privateEndpointSubnetResourceId) ? deployServiceEndpoint ? {
+      bypass: 'AzureServices'
+      defaultAction: 'Deny'
+      ipRules: []
+      virtualNetworkRules: [
+        {
+          id: snet.id
+          action: 'Allow'
+        }
+      ]
+    } : {
+      bypass: 'AzureServices'
+      defaultAction: 'Allow'
+      ipRules: []
+      virtualNetworkRules: []
+    } : null
     sasExpirationPeriod: '180.00:00:00'
     skuName: 'Standard_LRS'
     tags: tags
@@ -476,7 +514,6 @@ module logsStorageAccount '../../sharedModules/resources/storage/storage-account
     imageBuildRg
   ]
 }
-
 
 // * Orchestration VM * //
 
@@ -584,12 +621,12 @@ module imageVm '../../sharedModules/resources/compute/virtual-machine/main.bicep
     vTpmEnabled: securityType == 'TrustedLaunch' ? true : false
     tags: tags[?'Microsoft.Compute/virtualMachines'] ?? {}
     userAssignedIdentities: empty(userAssignedIdentityResourceId)
-    ? {
-        '${userAssignedIdentity.outputs.resourceId}': {}
-      }
-    : {
-        '${userAssignedIdentityResourceId}': {}
-      }
+      ? {
+          '${userAssignedIdentity.outputs.resourceId}': {}
+        }
+      : {
+          '${userAssignedIdentityResourceId}': {}
+        }
     vmSize: vmSize
   }
   dependsOn: [
