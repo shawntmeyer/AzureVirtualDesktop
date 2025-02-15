@@ -84,8 +84,8 @@ resource orchestrationVm 'Microsoft.Compute/virtualMachines@2022-03-01' existing
   name: orchestrationVmName
 }
 
-resource createBuildDirs 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
-  name: 'create-BuildDir-and-LogDir'
+resource createBuildDir 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
+  name: 'create-BuildDir'
   location: location
   parent: imageVm
   properties: {
@@ -101,8 +101,7 @@ resource createBuildDirs 'Microsoft.Compute/virtualMachines/runCommands@2023-03-
           [string]$BuildDir
         )
         New-Item -Path $BuildDir -ItemType Directory -Force | Out-Null
-        New-Item -Path (Join-Path -Path "$env:SystemRoot\Logs" -ChildPath ImageBuild) -ItemType Directory -Force | Out-Null
-      '''
+  '''
     }
     treatFailureAsDeploymentFailure: true
   }
@@ -169,7 +168,7 @@ resource applications 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01'
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
-    createBuildDirs
+    createBuildDir
     removeAppxPackages
   ]
 }]
@@ -204,7 +203,7 @@ resource fslogix 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = if
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
-    createBuildDirs
+    createBuildDir
     removeAppxPackages
     applications
   ]
@@ -248,7 +247,7 @@ resource office 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if(
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
-    createBuildDirs
+    createBuildDir
     removeAppxPackages
     applications
     fslogix
@@ -285,7 +284,7 @@ resource onedrive 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = i
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
-    createBuildDirs
+    createBuildDir
     removeAppxPackages
     applications
     fslogix
@@ -327,7 +326,7 @@ resource teams 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
-    createBuildDirs
+    createBuildDir
     removeAppxPackages
     applications
     fslogix
@@ -349,7 +348,7 @@ resource firstImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
-    createBuildDirs
+    createBuildDir
     removeAppxPackages
     applications
     fslogix

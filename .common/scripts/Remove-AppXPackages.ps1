@@ -14,12 +14,7 @@ function Write-OutputWithTimeStamp {
     Write-Output $Entry
 }
 
-$LogDir = "$env:SystemRoot\Logs\ImageBuild"
-If (-not (Test-Path $LogDir)) {
-    $null = New-Item -Path "$LogDir" -ItemType Directory -Force
-}
-
-Start-Transcript -Path "$LogDir\Remove-Apps.log" -Force
+Start-Transcript -Path "$env:SystemRoot\Logs\Remove-Apps.log" -Force
 Write-Output "*********************************"
 Write-Output "Removing Built-In Windows Apps"
 Write-Output "*********************************"

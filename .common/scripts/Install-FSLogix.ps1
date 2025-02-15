@@ -17,7 +17,7 @@ function Write-OutputWithTimeStamp {
 
 $ErrorActionPreference = "Stop"
 $Name = 'FSLogix'
-Start-Transcript -Path "$env:SystemRoot\Logs\$Name.log" -Force
+Start-Transcript -Path "$env:SystemRoot\Logs\Install-$Name.log" -Force
 Write-OutputWithTimeStamp "Starting '$SoftwareName' install script with following Parameters:"
 Write-Output ( $PSBoundParameters | Format-Table -AutoSize )
 

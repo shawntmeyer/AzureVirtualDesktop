@@ -18,8 +18,7 @@ function Write-OutputWithTimeStamp {
   Write-Output $Entry
 }
 
-If (!(Test-Path -Path "$env:SystemRoot\Logs\Configuration")) { New-Item -Path "$env:SystemRoot\Logs\Configuration" -ItemType Directory -Force | Out-Null }
-Start-Transcript -Path "$env:SystemRoot\Logs\Configuration\$Name.log" -Force
+Start-Transcript -Path "$env:SystemRoot\Logs\$Name.log" -Force
 
 Write-OutputWithTimeStamp "Starting '$Name' script with the following parameters."
 Write-Output ( $PSBoundParameters | Format-Table -AutoSize )

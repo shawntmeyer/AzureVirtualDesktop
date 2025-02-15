@@ -81,7 +81,7 @@ Else {
 }
 
 If ($Uri -eq '' -or $null -eq $Uri) {
-    $WebsiteUri = 'https://www.microsoft.com/en-us/download/details.aspx?id=49117'
+    $WebsiteUri = 'https://go.microsoft.com/fwlink/p/?LinkID=626065'
     $Uri = Get-InternetUrl -WebSiteUrl $WebsiteUri -SearchString 'OfficeDeploymentTool'
     If ($Uri -eq '' -or $null -eq $Uri) {
         Write-Error "Failed to find download link for Office Deployment Tool."

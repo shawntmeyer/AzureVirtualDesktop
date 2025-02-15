@@ -42,7 +42,7 @@ function Write-OutputWithTimeStamp {
     Write-Output $Entry
 }
 
-Start-Transcript -Path "$env:SystemRoot\Logs\ImageBuild\Install-Updates.log"
+Start-Transcript -Path "$env:SystemRoot\Logs\Install-Updates.log"
 
 Write-OutputWithTimeStamp -Message "Starting Windows Update Script with the following parameters:"
 Write-Output ( $PSBoundParameters | Format-Table -AutoSize )

@@ -33,7 +33,7 @@
         {
             "Name": "Office 365 Deployment Tool",
             "DownloadUrl": "",
-            "WebSiteUrl": "https://www.microsoft.com/en-us/download/details.aspx?id=49117",
+            "WebSiteUrl": "https://go.microsoft.com/fwlink/p/?LinkID=626065",
             "SearchString": "OfficeDeploymentTool",
             "APIUrl": "",
             "GitHubRepo": "",
