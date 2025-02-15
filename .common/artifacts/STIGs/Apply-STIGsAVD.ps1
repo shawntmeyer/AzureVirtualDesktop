@@ -544,7 +544,7 @@ $stigZip = Join-Path -Path $PSScriptRoot -ChildPath 'STIGs.zip'
 If (-not (Test-Path -Path $stigZip)) {
     #Download the STIG GPOs
     $uriSTIGs = 'https://public.cyber.mil/stigs/gpo'
-    $uriGPODownload = Get-InternetUrl -Url $uriSTIGs -searchstring 'GPOs'
+    $uriGPODownload = Get-InternetUrl -WebSiteUrl $uriSTIGs -searchstring 'GPOs'
     Write-Log -Message "Downloading STIG GPOs from `"$uriGPODownload`"."
     If ($uriGPODownload) {
         $stigZip = Get-InternetFile -url $uriGPODownload -OutputDirectory $Script:TempDir -Verbose
