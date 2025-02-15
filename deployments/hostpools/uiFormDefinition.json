@@ -2946,12 +2946,6 @@
 									"visible": "[equals(steps('userProfiles').azureFiles.storageSku, 'Premium')]",
 									"label": "Enable File Share Automatic Quota Increase",
 									"toolTip": "Choose to deploy a function app that will automatically increase your Azure Premium File Share quota when the remaining space is at a critical level."
-								},
-								{
-									"name": "deploySecretsKeyVault",
-									"type": "Microsoft.Common.CheckBox",
-									"label": "Deploy VM Secrets Key Vault",
-									"toolTip": "Select to deploy a key vault and create secrets for VM Admin user and password and if applicable, the domain join username and password."
 								}
 							]
 						},
@@ -2962,9 +2956,29 @@
 							"visible": true,
 							"elements": [
 								{
+									"name": "recoveryServices",
+									"type": "Microsoft.Common.CheckBox",
+									"visible": true,
+									"label": "Enable Recovery Services",
+									"toolTip": "Choose to deploy backups for your solution. For a personal host pool, this will enable backups on the virtual machines. For a pooled host pool, this will enable backups on the FSLogix file share when using Azure Files."
+								}
+							]
+						},
+						{
+							"name": "keyVaults",
+							"type": "Microsoft.Common.Section",
+							"label": "Key Vaults",
+							"elements": [
+								{
+									"name": "deploySecretsKeyVault",
+									"type": "Microsoft.Common.CheckBox",
+									"label": "Deploy VM Secrets Key Vault",
+									"toolTip": "Select to deploy a key vault and create secrets for VM Admin user and password and if applicable, the domain join username and password."
+								},
+								{
 									"name": "keyVaultRetentionInDays",
 									"type": "Microsoft.Common.Slider",
-									"label": "Key Vault Soft Delete Retention (in Days)",
+									"label": "Key Vault Retention (in Days)",
 									"defaultValue": 90,
 									"showStepMarkers": false,
 									"toolTip": "The number of days Key Vaults are kept in the recycle bin. Soft delete is designed to prevent accidental deletion of your key vault and keys, secrets, and certificates stored inside key vault. When you delete a key vault or a key vault object, it remains recoverable for a user configurable retention period or a default of 90 days.",
@@ -2973,12 +2987,16 @@
 									"visible": "[or(steps('management').automation.deploySecretsKeyVault, contains(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), contains(steps('userProfiles').azureFiles.keyManagement, 'CustomerManaged'))]"
 								},
 								{
-									"name": "recoveryServices",
-									"type": "Microsoft.Common.CheckBox",
-									"visible": true,
-									"label": "Enable Recovery Services",
-									"toolTip": "Choose to deploy backups for your solution. For a personal host pool, this will enable backups on the virtual machines. For a pooled host pool, this will enable backups on the FSLogix file share when using Azure Files."
-								}
+									"name": "keyExpirationInDays",
+									"type": "Microsoft.Common.Slider",
+									"label": "Encryption Key Rotation (in Days)",
+									"defaultValue": 180,
+									"showStepMarkers": false,
+									"toolTip": "The number of days before a new key version is automatically generated in the Azure Key Vault.",
+									"min": 30,
+									"max": 180,
+									"visible": "[or(contains(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), contains(steps('userProfiles').azureFiles.keyManagement, 'CustomerManaged'))]"
+								}								
 							]
 						},
 						{
@@ -3805,25 +3823,7 @@
 									}
 								}
 							]
-						},
-						{
-							"name": "customerManagedKeys",
-							"type": "Microsoft.Common.Section",
-							"label": "AVD Private Link",
-							"elements": [
-								{
-									"name": "keyExpirationInDays",
-									"type": "Microsoft.Common.Slider",
-									"label": "Key Rotation (in Days)",
-									"defaultValue": 180,
-									"showStepMarkers": false,
-									"toolTip": "The number of days before a new key version is automatically generated in the Azure Key Vault.",
-									"min": 30,
-									"max": 180,
-									"visible": "[or(contains(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), contains(steps('userProfiles').azureFiles.keyManagement, 'CustomerManaged'))]"
-								}
-							]
-						}
+						}						
 					]
 				},
 				{
@@ -3946,9 +3946,10 @@
 				"fslogixAdminGroups": "[if(steps('userProfiles').shareManagement.configureAdminAccess, steps('userProfiles').shareManagement.groupPickerBlade.transformed.selection, parse('[]'))]",
 				"drainMode": "[steps('management').automation.drainMode]",
 				"deployIncreaseQuota": "[if(equals(steps('userProfiles').azureFiles.storageSku, 'Premium'), steps('management').automation.deployIncreaseQuota, false)]",
-				"deploySecretsKeyVault": "[steps('management').automation.deploySecretsKeyVault]",
-				"keyVaultRetentionInDays": "[if(or(steps('management').automation.deploySecretsKeyVault, contains(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), contains(steps('userProfiles').azureFiles.keyManagement, 'CustomerManaged')), steps('management').backup.keyVaultRetentionInDays, 7)]",
 				"recoveryServices": "[steps('management').backup.recoveryServices]",
+				"deploySecretsKeyVault": "[steps('management').keyVaults.deploySecretsKeyVault]",
+				"keyVaultRetentionInDays": "[if(or(steps('management').keyVaults.deploySecretsKeyVault, contains(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), contains(steps('userProfiles').azureFiles.keyManagement, 'CustomerManaged')), steps('management').keyVaults.keyVaultRetentionInDays, 7)]",
+				"keyExpirationInDays": "[if(or(contains(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), contains(steps('userProfiles').azureFiles.keyManagement, 'CustomerManaged')), steps('management').keyVaults.keyExpirationInDays, 180)]",
 				"enableMonitoring": "[steps('management').monitoring.enableMonitoring]",
 				"logAnalyticsWorkspaceRetention": 30,
 				"logAnalyticsWorkspaceSku": "PerGB2018",
@@ -3976,7 +3977,6 @@
 				"existingGlobalFeedResourceId": "[first(map(filter(steps('controlPlane').workspacesApi.value, (ws) => contains(ws.name, 'global-feed')), (ws) => ws.id))]",
 				"globalFeedPrivateEndpointSubnetResourceId": "[if(and(steps('zeroTrust').avdPrivateLink.enablePrivateLink, steps('zeroTrust').avdPrivateLink.enablePrivateDNSIntegration, equals(steps('zeroTrust').avdPrivateLink.avdPrivateLinkConfig, 'All')), steps('zeroTrust').avdPrivateLink.globalFeedSubnet, '')]",
 				"globalFeedPrivateDnsZoneResourceId": "[if(and(steps('zeroTrust').avdPrivateLink.enablePrivateLink, steps('zeroTrust').avdPrivateLink.enablePrivateDNSIntegration, equals(steps('zeroTrust').avdPrivateLink.avdPrivateLinkConfig, 'All')), steps('zeroTrust').avdPrivateLink.globalFeedPrivateDnsZone, '')]",
-				"keyExpirationInDays": "[if(or(contains(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), contains(steps('userProfiles').azureFiles.keyManagement, 'CustomerManaged')), steps('zeroTrust').customerManagedKeys.keyExpirationInDays, 180)]",
 				"tags": "[steps('tags').tags]"
 			},
 			"kind": "Subscription",
