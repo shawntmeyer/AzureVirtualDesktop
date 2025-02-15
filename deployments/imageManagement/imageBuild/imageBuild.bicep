@@ -347,6 +347,9 @@ module userAssignedIdentity '../../sharedModules/resources/managed-identity/user
     name: '${resourceAbbreviations.userAssignedIdentities}-image-builder-${locations[location].abbreviation}'
     tags: tags[?'Microsoft.ManagedIdentity/userAssignedIdentities'] ?? {}
   }
+  dependsOn: [
+    imageBuildRg
+  ]
 }
 
 resource existingUserAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = if (!empty(userAssignedIdentityResourceId)) {
