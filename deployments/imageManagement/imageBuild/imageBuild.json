@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "13553874668231024037"
+      "templateHash": "363512076391895402"
     },
     "name": "Zero Trust Architecture Custom Windows Image Builder",
     "description": "This solution allows you to create a custom image much like Azure VM Image Builder, but utilizes zero trust architecture and does not require that service.",
@@ -11313,7 +11313,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "14660435294349376665"
+              "templateHash": "4590941123861263328"
             }
           },
           "parameters": {
@@ -11716,7 +11716,7 @@
                 "source": {
                   "script": "[variables('$fxv#9')]"
                 },
-                "timeoutInSeconds": 640,
+                "timeoutInSeconds": 600,
                 "treatFailureAsDeploymentFailure": true
               },
               "dependsOn": [

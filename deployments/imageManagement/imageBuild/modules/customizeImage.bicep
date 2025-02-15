@@ -441,7 +441,7 @@ resource vdot 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (i
     source: {
       script: loadTextContent('../../../../.common/scripts/Invoke-VDOT.ps1')
     }
-    timeoutInSeconds: 640
+    timeoutInSeconds: 600
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
