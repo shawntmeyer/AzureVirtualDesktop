@@ -181,6 +181,9 @@ Choose Platform Managed and Customer Managed if you need double encryption. This
 ''')
 param keyManagementDisks string = 'PlatformManaged'
 
+@description('Optional. The rotation period for the customer-managed keys in the Azure Key Vault.')
+param keyExpirationInDays int = 180
+
 @description('Optional. Confidential disk encryption is an additional layer of encryption which binds the disk encryption keys to the virtual machine TPM and makes the disk content accessible only to the VM.')
 param confidentialVMOSDiskEncryption bool = false
 
@@ -656,7 +659,6 @@ module resourceNames 'modules/resourceNames.bicep' = {
   params: {
     fslogixStorageCustomPrefix: fslogixStorageCustomPrefix
     identifier: identifier
-    identitySolution: identitySolution
     index: index
     locationControlPlane: locationControlPlane
     locationGlobalFeed: locationGlobalFeed
@@ -888,6 +890,7 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (deployFSLogixStorage) {
     increaseQuotaKeyVaultName: resourceNames.outputs.keyVaultNames.IncreaseStorageQuotaEncryptionKeys
     increaseQuotaStorageAccountName: resourceNames.outputs.storageAccountNames.IncreaseStorageQuota
     kerberosEncryptionType: fslogixStorageAccountADKerberosEncryption
+    keyExpirationInDays: keyExpirationInDays
     keyManagementStorageAccounts: keyManagementStorageAccounts
     keyVaultRetentionInDays: keyVaultRetentionInDays
     location: locationVirtualMachines
@@ -979,6 +982,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     imagePublisher: imagePublisher
     imageSku: imageSku
     integrityMonitoring: integrityMonitoring
+    keyExpirationInDays: keyExpirationInDays
     keyManagementDisks: keyManagementDisks
     keyVaultNames: resourceNames.outputs.keyVaultNames
     keyVaultRetentionInDays: keyVaultRetentionInDays

@@ -8,12 +8,6 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$SoftwareName = 'OneDrive'
-
-If ($null -eq $Uri -or $Uri -eq '') {
-    $Uri = 'https://go.microsoft.com/fwlink/p/?linkid=2121808'
-}
-
 function Write-OutputWithTimeStamp {
     param(
         [parameter(ValueFromPipeline=$True, Mandatory=$True, Position=0)]
@@ -23,8 +17,25 @@ function Write-OutputWithTimeStamp {
     $Entry = '[' + $Timestamp + '] ' + $Message
     Write-Output $Entry
 }
-If (!(Test-Path -Path "$env:SystemRoot\Logs\ImageBuild")) { New-Item -Path "$env:SystemRoot\Logs\ImageBuild" -ItemType Directory -Force | Out-Null }
-Start-Transcript -Path "$env:SystemRoot\Logs\ImageBuild\$SoftwareName.log" -Force
+
+$SoftwareName = 'OneDrive'
+
+Start-Transcript -Path "$env:SystemRoot\Logs\Install-$SoftwareName.log" -Force
+Write-OutputWithTimeStamp "Starting Script to install '$SoftwareName' with the following parameters:"
+Write-Output ( $PSBoundParameters | Format-Table -AutoSize )
+
+If ($null -eq $Uri -or $Uri -eq '') {
+    $Uri = 'https://go.microsoft.com/fwlink/p/?linkid=2121808'
+}
+
+If ($null -ne $BuildDir -and $BuildDir -ne '') {
+    $TempDir = Join-Path $BuildDir -ChildPath $SoftwareName
+}
+Else {
+    $TempDir = Join-Path $Env:TEMP -ChildPath $SoftwareName
+}
+New-Item -Path $TempDir -ItemType Directory -Force | Out-Null 
+
 $RegPath = 'HKLM:\SOFTWARE\Microsoft\OneDrive'
 If (Test-Path -Path $RegPath) {
     If (Get-ItemProperty -Path $RegPath -Name AllUsersInstall -ErrorAction SilentlyContinue) {
@@ -45,9 +56,7 @@ Else {
         $WebClient.Headers.Add('x-ms-version', '2017-11-09')
         $webClient.Headers.Add("Authorization", "Bearer $AccessToken")
     }
-    $appDir = Join-Path -Path $BuildDir -ChildPath $SoftwareName
-    New-Item -Path $appDir -ItemType Directory -Force | Out-Null
-    $DestFile = Join-Path -Path $appDir -ChildPath 'OneDriveSetup.exe'
+    $DestFile = Join-Path -Path $TempDir -ChildPath 'OneDriveSetup.exe'
     Write-OutputWithTimeStamp "Downloading 'OneDriveSetup.exe' from '$Uri' to '$DestFile'."
     $webClient.DownloadFile("$Uri", "$DestFile")
     Start-Sleep -Seconds 5
@@ -86,5 +95,6 @@ Else {
     Write-OutputWithTimeStamp "Configuring OneDrive to startup for each user upon logon."
     New-ItemProperty -Path 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Run' -Name OneDrive -PropertyType String -Value 'C:\Program Files\Microsoft OneDrive\OneDrive.exe /background' -Force | Out-Null
     Write-OutputWithTimeStamp "Installed OneDrive Per-Machine"
+    If ((Split-Path $TempDir -Parent) -eq $Env:Temp) { Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue }
 }
 Stop-Transcript

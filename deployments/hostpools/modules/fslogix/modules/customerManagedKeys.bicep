@@ -2,7 +2,7 @@ param azureKeyVaultPrivateDnsZoneResourceId string
 param fslogixStorageAccountEncryptionKeysVaultNameConv string
 param hostPoolResourceId string
 param keyManagementStorageAccounts string
-param keyExpirationInDays int = 180
+param keyExpirationInDays int
 param keyVaultRetentionInDays int
 param location string
 param logAnalyticsWorkspaceResourceId string

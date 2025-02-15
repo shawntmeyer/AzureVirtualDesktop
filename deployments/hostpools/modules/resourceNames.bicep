@@ -1,7 +1,6 @@
 targetScope = 'subscription'
 
 param identifier string
-param identitySolution string
 param index string
 param existingFeedWorkspaceResourceId string
 param fslogixStorageCustomPrefix string

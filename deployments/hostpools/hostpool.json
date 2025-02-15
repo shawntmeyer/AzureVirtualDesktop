@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "1344785259568188082"
+      "templateHash": "2429296573480810660"
     }
   },
   "parameters": {
@@ -283,6 +283,13 @@
       ],
       "metadata": {
         "description": "Optional. The type of encryption key management used for the storage. (Default: \"PlatformManaged\")\n- Platform-managed keys (PMKs) are key encryption keys that are generated, stored, and managed entirely by Azure. Choose Platform Managed for the best balance of security and ease of use.\n- Customer-managed keys (CMKs) are key encryption keys that are generated, stored, and managed by you, the customer, in your Azure Key Vault. Choose Customer Managed if you need to meet specific compliance requirements.\n- Customer-managed keys (CMKs) storage in a premium KeyVault backed by a Hardware Security Module (HSM). The Hardware Security Module is FIPS 140 Level 3 validated.\n- Double encryption is 2 layers of encryption: an infrastructure encryption layer with platform managed keys and a disk encryption layer with customer managed keys defined by disk encryption sets.\nChoose Platform Managed and Customer Managed if you need double encryption. This option does not apply to confidential VMs.\n- Choose Platform Managed and Customer Managed with HSM if you must incorporate double encryption and protect the customer managed key with the Hardware Security Module. This option does not apply to confidential VMs.\n"
+      }
+    },
+    "keyExpirationInDays": {
+      "type": "int",
+      "defaultValue": 180,
+      "metadata": {
+        "description": "Optional. The rotation period for the customer-managed keys in the Azure Key Vault."
       }
     },
     "confidentialVMOSDiskEncryption": {
@@ -961,9 +968,6 @@
           "identifier": {
             "value": "[parameters('identifier')]"
           },
-          "identitySolution": {
-            "value": "[parameters('identitySolution')]"
-          },
           "index": {
             "value": "[parameters('index')]"
           },
@@ -991,14 +995,11 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "12590150944527069205"
+              "templateHash": "16877229097327330813"
             }
           },
           "parameters": {
             "identifier": {
-              "type": "string"
-            },
-            "identitySolution": {
               "type": "string"
             },
             "index": {
@@ -7580,6 +7581,9 @@
           "kerberosEncryptionType": {
             "value": "[parameters('fslogixStorageAccountADKerberosEncryption')]"
           },
+          "keyExpirationInDays": {
+            "value": "[parameters('keyExpirationInDays')]"
+          },
           "keyManagementStorageAccounts": {
             "value": "[parameters('keyManagementStorageAccounts')]"
           },
@@ -7679,7 +7683,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "173244977858844899"
+              "templateHash": "9226489490624389619"
             }
           },
           "parameters": {
@@ -7766,6 +7770,9 @@
             },
             "kerberosEncryptionType": {
               "type": "string"
+            },
+            "keyExpirationInDays": {
+              "type": "int"
             },
             "keyManagementStorageAccounts": {
               "type": "string"
@@ -7877,6 +7884,9 @@
                   "hostPoolResourceId": {
                     "value": "[parameters('hostPoolResourceId')]"
                   },
+                  "keyExpirationInDays": {
+                    "value": "[parameters('keyExpirationInDays')]"
+                  },
                   "keyManagementStorageAccounts": {
                     "value": "[parameters('keyManagementStorageAccounts')]"
                   },
@@ -7927,7 +7937,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "1830754142767151311"
+                      "templateHash": "8532876707063178265"
                     }
                   },
                   "parameters": {
@@ -7944,8 +7954,7 @@
                       "type": "string"
                     },
                     "keyExpirationInDays": {
-                      "type": "int",
-                      "defaultValue": 180
+                      "type": "int"
                     },
                     "keyVaultRetentionInDays": {
                       "type": "int"
@@ -14303,6 +14312,9 @@
           "integrityMonitoring": {
             "value": "[parameters('integrityMonitoring')]"
           },
+          "keyExpirationInDays": {
+            "value": "[parameters('keyExpirationInDays')]"
+          },
           "keyManagementDisks": {
             "value": "[parameters('keyManagementDisks')]"
           },
@@ -14410,7 +14422,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "16358976678421432595"
+              "templateHash": "4377377395002915869"
             }
           },
           "parameters": {
@@ -14572,6 +14584,9 @@
             },
             "integrityMonitoring": {
               "type": "bool"
+            },
+            "keyExpirationInDays": {
+              "type": "int"
             },
             "keyManagementDisks": {
               "type": "string"
@@ -15289,6 +15304,9 @@
                   "hostPoolResourceId": {
                     "value": "[parameters('hostPoolResourceId')]"
                   },
+                  "keyExpirationInDays": {
+                    "value": "[parameters('keyExpirationInDays')]"
+                  },
                   "keyManagementDisks": {
                     "value": "[parameters('keyManagementDisks')]"
                   },
@@ -15333,7 +15351,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "17612848537968840702"
+                      "templateHash": "702632414381634570"
                     }
                   },
                   "parameters": {
@@ -15349,12 +15367,12 @@
                     "diskEncryptionSetNames": {
                       "type": "object"
                     },
-                    "diskEncryptionKeyExpirationInDays": {
-                      "type": "int",
-                      "defaultValue": 180
-                    },
                     "hostPoolResourceId": {
                       "type": "string"
+                    },
+                    "keyExpirationInDays": {
+                      "type": "int",
+                      "defaultValue": 180
                     },
                     "keyManagementDisks": {
                       "type": "string"
@@ -15437,7 +15455,7 @@
                           "name": {
                             "value": "[parameters('keyVaultNames').VMEncryptionKeys]"
                           },
-                          "keys": "[if(parameters('confidentialVMOSDiskEncryption'), createObject('value', null()), createObject('value', createArray(createObject('attributesEnabled', true(), 'attributesExportable', false(), 'name', variables('vmEncryptionKeyName'), 'keySize', 4096, 'kty', if(contains(parameters('keyManagementDisks'), 'HSM'), 'RSA-HSM', 'RSA'), 'rotationPolicy', createObject('attributes', createObject('expiryTime', format('P{0}D', string(parameters('diskEncryptionKeyExpirationInDays')))), 'lifetimeActions', createArray(createObject('action', createObject('type', 'Notify'), 'trigger', createObject('timeBeforeExpiry', 'P10D')), createObject('action', createObject('type', 'Rotate'), 'trigger', createObject('timeAfterCreate', format('P{0}D', string(sub(parameters('diskEncryptionKeyExpirationInDays'), 7))))))), 'tags', union(createObject('cm-resource-parent', parameters('hostPoolResourceId')), coalesce(tryGet(parameters('tags'), 'Microsoft.KeyVault/vaults/keys'), createObject()))))))]",
+                          "keys": "[if(parameters('confidentialVMOSDiskEncryption'), createObject('value', null()), createObject('value', createArray(createObject('attributesEnabled', true(), 'attributesExportable', false(), 'name', variables('vmEncryptionKeyName'), 'keySize', 4096, 'kty', if(contains(parameters('keyManagementDisks'), 'HSM'), 'RSA-HSM', 'RSA'), 'rotationPolicy', createObject('attributes', createObject('expiryTime', format('P{0}D', string(parameters('keyExpirationInDays')))), 'lifetimeActions', createArray(createObject('action', createObject('type', 'Notify'), 'trigger', createObject('timeBeforeExpiry', 'P10D')), createObject('action', createObject('type', 'Rotate'), 'trigger', createObject('timeAfterCreate', format('P{0}D', string(sub(parameters('keyExpirationInDays'), 7))))))), 'tags', union(createObject('cm-resource-parent', parameters('hostPoolResourceId')), coalesce(tryGet(parameters('tags'), 'Microsoft.KeyVault/vaults/keys'), createObject()))))))]",
                           "privateEndpoints": "[if(and(parameters('privateEndpoint'), not(empty(parameters('privateEndpointSubnetResourceId')))), createObject('value', createArray(createObject('customNetworkInterfaceName', replace(replace(replace(parameters('privateEndpointNICNameConv'), 'SUBRESOURCE', 'vault'), 'RESOURCE', parameters('keyVaultNames').VMEncryptionKeys), 'VNETID', format('{0}', split(parameters('privateEndpointSubnetResourceId'), '/')[8])), 'name', replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', 'vault'), 'RESOURCE', parameters('keyVaultNames').VMEncryptionKeys), 'VNETID', format('{0}', split(parameters('privateEndpointSubnetResourceId'), '/')[8])), 'privateDnsZoneGroup', if(empty(parameters('azureKeyVaultPrivateDnsZoneResourceId')), null(), createObject('privateDNSResourceIds', createArray(parameters('azureKeyVaultPrivateDnsZoneResourceId')))), 'service', 'vault', 'subnetResourceId', parameters('privateEndpointSubnetResourceId'), 'tags', coalesce(tryGet(parameters('tags'), 'Microsoft.Network/privateEndpoints'), createObject())))), createObject('value', null()))]",
                           "softDeleteRetentionInDays": {
                             "value": "[parameters('keyVaultRetentionInDays')]"
@@ -17853,7 +17871,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "2720309640098708418"
+                      "templateHash": "15656942982224802528"
                     }
                   },
                   "parameters": {
@@ -18705,7 +18723,7 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.33.93.31351",
-                              "templateHash": "8320272116510032050"
+                              "templateHash": "2861669373655155337"
                             }
                           },
                           "parameters": {
@@ -18738,7 +18756,7 @@
                                 }
                               }
                             ],
-                            "$fxv#0": "param(\r\n  [string]$APIVersion,\r\n  [string]$Arguments,\r\n  [string]$BlobStorageSuffix,\r\n  [string]$BuildDir,\r\n  [string]$Name,\r\n  [string]$Uri,\r\n  [string]$UserAssignedIdentityClientId\r\n)\r\n\r\nfunction Write-OutputWithTimeStamp {\r\n  param(\r\n      [parameter(ValueFromPipeline=$True, Mandatory=$True, Position=0)]\r\n      [string]$Message\r\n  )    \r\n  $Timestamp = Get-Date -Format 'MM/dd/yyyy HH:mm:ss.ff'\r\n  $Entry = '[' + $Timestamp + '] ' + $Message\r\n  Write-Output $Entry\r\n}\r\n\r\nIf (!(Test-Path -Path \"$env:SystemRoot\\Logs\\Configuration\")) { New-Item -Path \"$env:SystemRoot\\Logs\\Configuration\" -ItemType Directory -Force | Out-Null }\r\nStart-Transcript -Path \"$env:SystemRoot\\Logs\\Configuration\\$Name.log\" -Force\r\n\r\nWrite-OutputWithTimeStamp \"Starting '$Name' script with the following parameters.\"\r\nWrite-Output ( $PSBoundParameters | Format-Table -AutoSize )\r\nIf ($Arguments -eq '') { $Arguments = $null }\r\nIf ($null -ne $BuildDir -and $BuildDir -ne '') {\r\n  $TempDir = Join-Path $BuildDir -ChildPath $Name\r\n} Else {\r\n  $TempDir = Join-Path $Env:TEMP -ChildPath $Name\r\n}\r\nNew-Item -Path $TempDir -ItemType Directory -Force | Out-Null\r\n$WebClient = New-Object System.Net.WebClient\r\nIf ($Uri -match $BlobStorageSuffix -and $UserAssignedIdentityClientId -ne '') {\r\n  Write-OutputWithTimeStamp \"Getting access token for '$Uri' using User Assigned Identity.\"\r\n  $StorageEndpoint = ($Uri -split \"://\")[0] + \"://\" + ($Uri -split \"/\")[2] + \"/\"\r\n  $TokenUri = \"http://169.254.169.254/metadata/identity/oauth2/token?api-version=$APIVersion&resource=$StorageEndpoint&client_id=$UserAssignedIdentityClientId\"\r\n  $AccessToken = ((Invoke-WebRequest -Headers @{Metadata = $true } -Uri $TokenUri -UseBasicParsing).Content | ConvertFrom-Json).access_token\r\n  $WebClient.Headers.Add('x-ms-version', '2017-11-09')\r\n  $webClient.Headers.Add(\"Authorization\", \"Bearer $AccessToken\")\r\n}\r\n$SourceFileName = ($Uri -Split \"/\")[-1]\r\nWrite-OutputWithTimeStamp \"Downloading '$Uri' to '$TempDir'.\"\r\n$DestFile = Join-Path -Path $TempDir -ChildPath $SourceFileName\r\n$webClient.DownloadFile(\"$Uri\", \"$DestFile\")\r\nStart-Sleep -Seconds 10\r\nIf (!(Test-Path -Path $DestFile)) { Write-Error \"Failed to download $SourceFileName\"; Exit 1 }\r\nWrite-OutputWithTimeStamp 'Finished downloading'\r\nSet-Location -Path $TempDir\r\n$Ext = [System.IO.Path]::GetExtension($DestFile).ToLower().Replace('.','')\r\nswitch ($Ext) {\r\n  'exe' {\r\n      If ($Arguments) {\r\n        Write-OutputWithTimeStamp \"Executing '`\"$DestFile`\" $Arguments'\"\r\n        $Install = Start-Process -FilePath \"$DestFile\" -ArgumentList $Arguments -NoNewWindow -Wait -PassThru\r\n        Write-OutputWithTimeStamp \"Installation ended with exit code $($Install.ExitCode).\"\r\n      }\r\n      Else {\r\n        Write-OutputWithTimeStamp \"Executing `\"$DestFile`\"\"\r\n        $Install = Start-Process -FilePath \"$DestFile\" -NoNewWindow -Wait -PassThru\r\n        Write-OutputWithTimeStamp \"Installation ended with exit code $($Install.ExitCode).\"\r\n      }      \r\n    }\r\n  'msi' {\r\n    If ($Arguments) {\r\n      If ($Arguments -notcontains $SourceFileName) {\r\n        $Arguments = \"/i $DestFile $Arguments\"\r\n      }\r\n      Write-OutputWithTimeStamp \"Executing 'msiexec.exe $Arguments'\"\r\n      $MsiExec = Start-Process -FilePath msiexec.exe -ArgumentList $Arguments -Wait -PassThru\r\n      Write-OutputWithTimeStamp \"Installation ended with exit code $($MsiExec.ExitCode).\"\r\n\r\n    }\r\n    Else {\r\n      Write-OutputWithTimeStamp \"Executing 'msiexec.exe /i $DestFile /qn'\"\r\n      $MsiExec = Start-Process -FilePath msiexec.exe -ArgumentList \"/i $DestFile /qn\" -Wait -PassThru\r\n      Write-OutputWithTimeStamp \"Installation ended with exit code $($MsiExec.ExitCode).\"\r\n    }    \r\n  }\r\n  'bat' {\r\n    If ($Arguments) {\r\n      Write-OutputWithTimeStamp \"Executing 'cmd.exe `\"$DestFile`\" $Arguments'\"\r\n      Start-Process -FilePath cmd.exe -ArgumentList \"`\"$DestFile`\" $Arguments\" -Wait\r\n    }\r\n    Else {\r\n      Write-OutputWithTimeStamp \"Executing 'cmd.exe `\"$DestFile`\"'\"\r\n      Start-Process -FilePath cmd.exe -ArgumentList \"`\"$DestFile`\"\" -Wait\r\n    }\r\n  }\r\n  'ps1' {\r\n    If ($Arguments) {\r\n      Write-OutputWithTimeStamp \"Calling PowerShell Script '$DestFile' with arguments '$Arguments'\"\r\n      & $DestFile $Arguments\r\n    }\r\n    Else {\r\n      Write-OutputWithTimeStamp \"Calling PowerShell Script '$DestFile'\"\r\n      & $DestFile\r\n    }\r\n  }\r\n  'zip' {\r\n    $DestinationPath = Join-Path -Path \"$TempDir\" -ChildPath $([System.IO.Path]::GetFileNameWithoutExtension($SourceFileName))\r\n    Write-OutputWithTimeStamp \"Extracting '$DestFile' to '$DestinationPath'.\"\r\n    Expand-Archive -Path $DestFile -DestinationPath $DestinationPath -Force\r\n    Write-OutputWithTimeStamp \"Finding PowerShell script in root of '$DestinationPath'.\"\r\n    $PSScript = (Get-ChildItem -Path $DestinationPath -filter '*.ps1').FullName\r\n    If ($PSScript.count -gt 1) { $PSScript = $PSScript[0] }\r\n    If ($Arguments) {\r\n      Write-OutputWithTimeStamp \"Calling PowerShell Script '$PSScript' with arguments '$Arguments'\"\r\n      & $PSScript $Arguments\r\n    }\r\n    Else {\r\n      Write-OutputWithTimeStamp \"Calling PowerShell Script '$PSScript'\"         \r\n      & $PSScript\r\n    }\r\n  }\r\n}\r\nIf ((Split-Path $BuildDir -Parent) -eq $Env:Temp) {Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue}\r\nStop-Transcript",
+                            "$fxv#0": "param(\r\n  [string]$APIVersion,\r\n  [string]$Arguments,\r\n  [string]$BlobStorageSuffix,\r\n  [string]$BuildDir,\r\n  [string]$Name,\r\n  [string]$Uri,\r\n  [string]$UserAssignedIdentityClientId\r\n)\r\n\r\nfunction Write-OutputWithTimeStamp {\r\n  param(\r\n      [parameter(ValueFromPipeline=$True, Mandatory=$True, Position=0)]\r\n      [string]$Message\r\n  )    \r\n  $Timestamp = Get-Date -Format 'MM/dd/yyyy HH:mm:ss.ff'\r\n  $Entry = '[' + $Timestamp + '] ' + $Message\r\n  Write-Output $Entry\r\n}\r\n\r\nIf (!(Test-Path -Path \"$env:SystemRoot\\Logs\\Configuration\")) { New-Item -Path \"$env:SystemRoot\\Logs\\Configuration\" -ItemType Directory -Force | Out-Null }\r\nStart-Transcript -Path \"$env:SystemRoot\\Logs\\Configuration\\$Name.log\" -Force\r\n\r\nWrite-OutputWithTimeStamp \"Starting '$Name' script with the following parameters.\"\r\nWrite-Output ( $PSBoundParameters | Format-Table -AutoSize )\r\nIf ($Arguments -eq '') { $Arguments = $null }\r\nIf ($null -ne $BuildDir -and $BuildDir -ne '') {\r\n  $TempDir = Join-Path $BuildDir -ChildPath $Name\r\n} Else {\r\n  $TempDir = Join-Path $Env:TEMP -ChildPath $Name\r\n}\r\nNew-Item -Path $TempDir -ItemType Directory -Force | Out-Null\r\n$WebClient = New-Object System.Net.WebClient\r\nIf ($Uri -match $BlobStorageSuffix -and $UserAssignedIdentityClientId -ne '') {\r\n  Write-OutputWithTimeStamp \"Getting access token for '$Uri' using User Assigned Identity.\"\r\n  $StorageEndpoint = ($Uri -split \"://\")[0] + \"://\" + ($Uri -split \"/\")[2] + \"/\"\r\n  $TokenUri = \"http://169.254.169.254/metadata/identity/oauth2/token?api-version=$APIVersion&resource=$StorageEndpoint&client_id=$UserAssignedIdentityClientId\"\r\n  $AccessToken = ((Invoke-WebRequest -Headers @{Metadata = $true } -Uri $TokenUri -UseBasicParsing).Content | ConvertFrom-Json).access_token\r\n  $WebClient.Headers.Add('x-ms-version', '2017-11-09')\r\n  $webClient.Headers.Add(\"Authorization\", \"Bearer $AccessToken\")\r\n}\r\n$SourceFileName = ($Uri -Split \"/\")[-1]\r\nWrite-OutputWithTimeStamp \"Downloading '$Uri' to '$TempDir'.\"\r\n$DestFile = Join-Path -Path $TempDir -ChildPath $SourceFileName\r\n$webClient.DownloadFile(\"$Uri\", \"$DestFile\")\r\nStart-Sleep -Seconds 10\r\nIf (!(Test-Path -Path $DestFile)) { Write-Error \"Failed to download $SourceFileName\"; Exit 1 }\r\nWrite-OutputWithTimeStamp 'Finished downloading'\r\nSet-Location -Path $TempDir\r\n$Ext = [System.IO.Path]::GetExtension($DestFile).ToLower().Replace('.','')\r\nswitch ($Ext) {\r\n  'exe' {\r\n      If ($Arguments) {\r\n        Write-OutputWithTimeStamp \"Executing '`\"$DestFile`\" $Arguments'\"\r\n        $Install = Start-Process -FilePath \"$DestFile\" -ArgumentList $Arguments -NoNewWindow -Wait -PassThru\r\n        Write-OutputWithTimeStamp \"Installation ended with exit code $($Install.ExitCode).\"\r\n      }\r\n      Else {\r\n        Write-OutputWithTimeStamp \"Executing `\"$DestFile`\"\"\r\n        $Install = Start-Process -FilePath \"$DestFile\" -NoNewWindow -Wait -PassThru\r\n        Write-OutputWithTimeStamp \"Installation ended with exit code $($Install.ExitCode).\"\r\n      }      \r\n    }\r\n  'msi' {\r\n    If ($Arguments) {\r\n      If ($Arguments -notcontains $SourceFileName) {\r\n        $Arguments = \"/i $DestFile $Arguments\"\r\n      }\r\n      Write-OutputWithTimeStamp \"Executing 'msiexec.exe $Arguments'\"\r\n      $MsiExec = Start-Process -FilePath msiexec.exe -ArgumentList $Arguments -Wait -PassThru\r\n      Write-OutputWithTimeStamp \"Installation ended with exit code $($MsiExec.ExitCode).\"\r\n\r\n    }\r\n    Else {\r\n      Write-OutputWithTimeStamp \"Executing 'msiexec.exe /i $DestFile /qn'\"\r\n      $MsiExec = Start-Process -FilePath msiexec.exe -ArgumentList \"/i $DestFile /qn\" -Wait -PassThru\r\n      Write-OutputWithTimeStamp \"Installation ended with exit code $($MsiExec.ExitCode).\"\r\n    }    \r\n  }\r\n  'bat' {\r\n    If ($Arguments) {\r\n      Write-OutputWithTimeStamp \"Executing 'cmd.exe `\"$DestFile`\" $Arguments'\"\r\n      Start-Process -FilePath cmd.exe -ArgumentList \"`\"$DestFile`\" $Arguments\" -Wait\r\n    }\r\n    Else {\r\n      Write-OutputWithTimeStamp \"Executing 'cmd.exe `\"$DestFile`\"'\"\r\n      Start-Process -FilePath cmd.exe -ArgumentList \"`\"$DestFile`\"\" -Wait\r\n    }\r\n  }\r\n  'ps1' {\r\n    If ($Arguments) {\r\n      Write-OutputWithTimeStamp \"Calling PowerShell Script '$DestFile' with arguments '$Arguments'\"\r\n      & $DestFile $Arguments\r\n    }\r\n    Else {\r\n      Write-OutputWithTimeStamp \"Calling PowerShell Script '$DestFile'\"\r\n      & $DestFile\r\n    }\r\n  }\r\n  'zip' {\r\n    $DestinationPath = Join-Path -Path \"$TempDir\" -ChildPath $([System.IO.Path]::GetFileNameWithoutExtension($SourceFileName))\r\n    Write-OutputWithTimeStamp \"Extracting '$DestFile' to '$DestinationPath'.\"\r\n    Expand-Archive -Path $DestFile -DestinationPath $DestinationPath -Force\r\n    Write-OutputWithTimeStamp \"Finding PowerShell script in root of '$DestinationPath'.\"\r\n    $PSScript = (Get-ChildItem -Path $DestinationPath -filter '*.ps1').FullName\r\n    If ($PSScript.count -gt 1) { $PSScript = $PSScript[0] }\r\n    If ($Arguments) {\r\n      Write-OutputWithTimeStamp \"Calling PowerShell Script '$PSScript' with arguments '$Arguments'\"\r\n      & $PSScript $Arguments\r\n    }\r\n    Else {\r\n      Write-OutputWithTimeStamp \"Calling PowerShell Script '$PSScript'\"         \r\n      & $PSScript\r\n    }\r\n  }\r\n}\r\nIf ((Split-Path $TempDir -Parent) -eq $Env:Temp) {Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue}\r\nStop-Transcript",
                             "apiVersion": "[if(equals(environment().name, 'USNat'), '2017-08-01', '2018-02-01')]"
                           },
                           "resources": [

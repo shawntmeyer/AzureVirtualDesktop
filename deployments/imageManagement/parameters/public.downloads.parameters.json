@@ -98,9 +98,9 @@
         },        
         {
             "Name": "Remote Desktop WebRTC Redirector Service",
-            "DownloadUrl": "",
-            "WebsiteUrl": "https://docs.microsoft.com/en-us/azure/virtual-desktop/teams-on-wvd",
-            "SearchString": "Remote Desktop WebRTC",
+            "DownloadUrl": "https://aka.ms/msrdcwebrtcsvc/msi",
+            "WebsiteUrl": "",
+            "SearchString": "",
             "APIUrl": "",
             "GitHubRepo": "",
             "GitHubFileNamePattern": "",

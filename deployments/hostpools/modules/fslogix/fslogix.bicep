@@ -30,6 +30,7 @@ param increaseQuotaFunctionAppName string
 param increaseQuotaKeyVaultName string
 param increaseQuotaStorageAccountName string
 param kerberosEncryptionType string
+param keyExpirationInDays int
 param keyManagementStorageAccounts string
 param keyVaultRetentionInDays int
 param location string
@@ -67,6 +68,7 @@ module customerManagedKeys 'modules/customerManagedKeys.bicep' = if(storageSolut
     azureKeyVaultPrivateDnsZoneResourceId: azureKeyVaultPrivateDnsZoneResourceId
     fslogixStorageAccountEncryptionKeysVaultNameConv: fslogixStorageAccountEncryptionKeysVaultNameConv
     hostPoolResourceId: hostPoolResourceId
+    keyExpirationInDays: keyExpirationInDays
     keyManagementStorageAccounts: keyManagementStorageAccounts
     keyVaultRetentionInDays: keyVaultRetentionInDays
     location: location

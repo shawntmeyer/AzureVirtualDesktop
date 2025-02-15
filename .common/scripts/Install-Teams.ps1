@@ -9,55 +9,6 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-Function Get-InternetUrl {
-    [CmdletBinding()]
-    Param (
-        [Parameter(
-            Mandatory,
-            HelpMessage = "Specifies the website that contains a link to the desired download."
-        )]
-        [uri]$WebSiteUrl,
-
-        [Parameter(
-            Mandatory,
-            HelpMessage = "Specifies the search string. Wildcard '*' can be used."    
-        )]
-        [string]$SearchString
-    )
-
-    Try {
-        $HTML = Invoke-WebRequest -Uri $WebSiteUrl -UseBasicParsing
-        $Links = $HTML.Links
-        $ahref = $null
-        $ahref=@()
-        $ahref = ($Links | Where-Object {$_.href -like "*$searchstring*"})
-        If ($ahref.count -eq 0 -or $null -eq $ahref) {
-            $ahref = ($Links | Where-Object {$_.OuterHTML -like "*$searchstring*"})
-        }
-        If ($ahref.Count -gt 0) {
-            Return $ahref[0].href
-        }
-        Else {
-            $Pattern = '"url":\s*"(https://[^"]*?' + $SearchString.Replace('.', '\.').Replace('*', '.*').Replace('+', '\+') + ')"' 
-            If ($HTML.Content -match $Pattern) {
-                If ($matches[1].Contains('"')) {
-                    Return $matches[1].Substring(0, $matches[1].IndexOf('"'))
-                } Else {
-                    Return $matches[1]
-                }
-
-            } else {
-                Write-Warning "No download URL found using search term."
-                Return $null
-            }
-        }
-    }
-    Catch {
-        Write-Error "Error Downloading HTML and determining link for download."
-        Return
-    }
-}
-
 function Write-OutputWithTimeStamp {
     param(
         [parameter(ValueFromPipeline=$True, Mandatory=$True, Position=0)]
@@ -67,14 +18,19 @@ function Write-OutputWithTimeStamp {
     $Entry = '[' + $Timestamp + '] ' + $Message
     Write-Output $Entry
 }
-If (!(Test-Path -Path "$env:SystemRoot\Logs\ImageBuild")) { New-Item -Path "$env:SystemRoot\Logs\ImageBuild" -ItemType Directory -Force | Out-Null }
 
 $SoftwareName = 'Teams'
-Start-Transcript -Path "$env:SystemRoot\Logs\ImageBuild\$SoftwareName.log" -Force
+Start-Transcript -Path "$env:SystemRoot\Logs\Install-$SoftwareName.log" -Force
 Write-OutputWithTimeStamp "Starting script to install $SoftwareName with the following parameters:"
 Write-Output ( $PSBoundParameters | Format-Table -AutoSize )
-$appDir = Join-Path -Path $BuildDir -ChildPath $SoftwareName
-New-Item -Path $appDir -ItemType Directory -Force | Out-Null
+If ($null -ne $BuildDir -and $BuildDir -ne '') {
+    $TempDir = Join-Path $BuildDir -ChildPath $SoftwareName
+}
+Else {
+    $TempDir = Join-Path $Env:TEMP -ChildPath $SoftwareName
+}
+New-Item -Path $TempDir -ItemType Directory -Force | Out-Null  
+
 $WebClient = New-Object System.Net.WebClient
 If ($Null -ne $Uri -and $Uri -ne '' -and $Uri -match $BlobStorageSuffix -and $UserAssignedIdentityClientId -ne '') {
     $StorageEndpoint = ($Uri -split "://")[0] + "://" + ($Uri -split "/")[2] + "/"
@@ -83,35 +39,34 @@ If ($Null -ne $Uri -and $Uri -ne '' -and $Uri -match $BlobStorageSuffix -and $Us
     $WebClient.Headers.Add('x-ms-version', '2017-11-09')
     $webClient.Headers.Add("Authorization", "Bearer $AccessToken")
     $SourceFileName = ($Uri -Split "/")[-1]
-    $DestFile = Join-Path -Path $appDir -ChildPath $SourceFileName
+    $DestFile = Join-Path -Path $TempDir -ChildPath $SourceFileName
     Write-OutputWithTimeStamp "Downloading '$Uri' to '$DestFile'."
     $webClient.DownloadFile("$Uri", "$DestFile")
     Start-Sleep -Seconds 5
     If (!(Test-Path -Path $DestFile)) { Write-Error "Failed to download $SourceFileName"; Exit 1 }
-    Expand-Archive -Path $destFile -DestinationPath $appDir -Force
-    $WebView2File = (Get-ChildItem -Path $appDir -filter 'webview*.exe' -Recurse).FullName
-    $vcRedistFile = (Get-ChildItem -Path $appDir -filter 'vc*.exe' -Recurse).FullName
-    $webRTCFile = (Get-ChildItem -Path $appDir -filter 'MsRdcWebRTCSvc.msi' -Recurse).FullName
-    $BootStrapperFile = (Get-ChildItem -Path $appDir -filter '*bootstrapper.exe' -Recurse).FullName
-    $MSIXFile = (Get-ChildItem -Path $appDir -filter '*.msix' -Recurse).FullName
+    Expand-Archive -Path $destFile -DestinationPath $TempDir -Force
+    $WebView2File = (Get-ChildItem -Path $TempDir -filter 'webview*.exe' -Recurse).FullName
+    $vcRedistFile = (Get-ChildItem -Path $TempDir -filter 'vc*.exe' -Recurse).FullName
+    $webRTCFile = (Get-ChildItem -Path $TempDir -filter 'MsRdcWebRTCSvc.msi' -Recurse).FullName
+    $BootStrapperFile = (Get-ChildItem -Path $TempDir -filter '*bootstrapper.exe' -Recurse).FullName
+    $MSIXFile = (Get-ChildItem -Path $TempDir -filter '*.msix' -Recurse).FullName
 }
 Else {
     Write-OutputWithTimeStamp "No valid Uri provided. Downloading required installers from the internet."
-    $WebView2File = Join-Path -Path $AppDir -ChildPath 'webview2RuntimeInstaller.exe'
+    $WebView2File = Join-Path -Path $TempDir -ChildPath 'webview2RuntimeInstaller.exe'
     Write-OutputWithTimeStamp "Downloading WebView2 Runtime Installer"
     $WebClient.DownloadFile('https://go.microsoft.com/fwlink/?linkid=2124703', $WebView2File)
     Write-OutputWithTimeStamp "Downloading Visual C++ Redistributables"
-    $vcRedistFile = Join-Path -Path $AppDir -ChildPath 'vc_redist.x64.exe'
+    $vcRedistFile = Join-Path -Path $TempDir -ChildPath 'vc_redist.x64.exe'
     $WebClient.DownloadFile('https://aka.ms/vs/16/release/vc_redist.x64.exe', $vcRedistFile)
     Write-OutputWithTimeStamp "Downloading Remote Desktop WebRTC Redirector Service"
-    $webRTCFile = Join-Path -Path $AppDir -ChildPath 'MsRdcWebRTCSvc.msi'
-    $DownloadUri = Get-InternetUrl -WebSiteUrl 'https://docs.microsoft.com/en-us/azure/virtual-desktop/teams-on-wvd' -SearchString 'Remote Desktop WebRTC'
-    $WebClient.DownloadFile($DownloadUri, $webRTCFile)
+    $webRTCFile = Join-Path -Path $TempDir -ChildPath 'MsRdcWebRTCSvc.msi'
+    $WebClient.DownloadFile('https://aka.ms/msrdcwebrtcsvc/msi', $webRTCFile)
     Write-OutputWithTimeStamp "Downloading Teams Bootstrapper"
-    $BootStrapperFile = Join-Path -Path $AppDir -ChildPath 'Teams_bootstrapper.exe'
+    $BootStrapperFile = Join-Path -Path $TempDir -ChildPath 'Teams_bootstrapper.exe'
     $WebClient.DownloadFile('https://go.microsoft.com/fwlink/?linkid=2243204&clcid=0x409', $BootStrapperFile)
     Write-OutputWithTimeStamp "Downloading Teams MSIX"
-    $MSIXFile = Join-Path -Path $AppDir -ChildPath 'Teams_windows_x64.msix'
+    $MSIXFile = Join-Path -Path $TempDir -ChildPath 'Teams_windows_x64.msix'
     $WebClient.DownloadFile('https://go.microsoft.com/fwlink/?linkid=2196106', $MSIXFile)    
 }
 Write-OutputWithTimeStamp "Enabling media optimizations for Teams"
@@ -176,5 +131,6 @@ If ($CloudType) {
     [System.GC]::Collect()
     $null = Start-Process -FilePath reg.exe -ArgumentList "UNLOAD HKLM\Default" -Wait -PassThru
 }
+If ((Split-Path $TempDir -Parent) -eq $Env:Temp) { Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue }
 Write-OutputWithTimeStamp "Completed Installation of all components."
 Stop-Transcript

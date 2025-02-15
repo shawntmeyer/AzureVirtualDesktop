@@ -114,5 +114,5 @@ switch ($Ext) {
     }
   }
 }
-If ((Split-Path $BuildDir -Parent) -eq $Env:Temp) {Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue}
+If ((Split-Path $TempDir -Parent) -eq $Env:Temp) {Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue}
 Stop-Transcript

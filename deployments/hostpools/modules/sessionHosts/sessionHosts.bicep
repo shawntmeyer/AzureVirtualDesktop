@@ -55,6 +55,7 @@ param imageOffer string
 param imagePublisher string
 param imageSku string
 param integrityMonitoring bool
+param keyExpirationInDays int
 param keyManagementDisks string
 param keyVaultNames object
 param keyVaultRetentionInDays int
@@ -166,6 +167,7 @@ module diskEncryption 'modules/diskEncryption.bicep' =  if (keyManagementDisks !
     deploymentVirtualMachineName: deploymentVirtualMachineName
     diskEncryptionSetNames: diskEncryptionSetNames
     hostPoolResourceId: hostPoolResourceId
+    keyExpirationInDays: keyExpirationInDays
     keyManagementDisks: keyManagementDisks
     keyVaultNames: keyVaultNames
     keyVaultRetentionInDays: keyVaultRetentionInDays

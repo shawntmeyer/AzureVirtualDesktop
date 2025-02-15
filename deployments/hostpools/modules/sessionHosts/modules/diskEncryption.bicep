@@ -2,8 +2,8 @@ param confidentialVMOSDiskEncryption bool
 param confidentialVMOrchestratorObjectId string
 param deploymentUserAssignedIdentityClientId string
 param diskEncryptionSetNames object
-param diskEncryptionKeyExpirationInDays int = 180
 param hostPoolResourceId string
+param keyExpirationInDays int = 180
 param keyManagementDisks string
 param keyVaultNames object
 param keyVaultRetentionInDays int
@@ -46,7 +46,7 @@ module KeyVault '../../../../sharedModules/resources/key-vault/vault/main.bicep'
         kty: contains(keyManagementDisks, 'HSM') ? 'RSA-HSM' : 'RSA'
         rotationPolicy: {
           attributes: {
-            expiryTime: 'P${string(diskEncryptionKeyExpirationInDays)}D'
+            expiryTime: 'P${string(keyExpirationInDays)}D'
           }
           lifetimeActions: [
             {
@@ -62,7 +62,7 @@ module KeyVault '../../../../sharedModules/resources/key-vault/vault/main.bicep'
                 type: 'Rotate'
               }
               trigger: {
-                timeAfterCreate: 'P${string(diskEncryptionKeyExpirationInDays - 7)}D'
+                timeAfterCreate: 'P${string(keyExpirationInDays - 7)}D'
               }
             }
           ]

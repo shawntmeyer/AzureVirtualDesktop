@@ -1414,9 +1414,13 @@
 									"name": "availabilityZones",
 									"type": "Microsoft.Common.DropDown",
 									"label": "Select Availability Zones",
-									"defaultValue": ["Zone 1","Zone 2", "Zone 3"],
+									"defaultValue": [
+										"Zone 1",
+										"Zone 2",
+										"Zone 3"
+									],
 									"multiselect": true,
-  									"selectAll": true,
+									"selectAll": true,
 									"toolTip": "Select the desired Availability Zones",
 									"constraints": {
 										"allowedValues": "[map(first(map(first(map(filter(steps('hosts').resourceSkusApi.value, (sku) => contains(sku.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (sku) => sku.locationInfo)), (sku) => sku.zones)), (zone) => parse(concat('{\"label\":\"Zone ', zone, '\",\"value\":\"', zone, '\"}')))]",
@@ -1424,8 +1428,6 @@
 									},
 									"visible": "[equals(steps('hosts').availability.availability, 'AvailabilityZones')]"
 								}
-								
-
 							],
 							"visible": "[equals(steps('hosts').dedicatedHosts.deployToDedicatedHosts, false)]"
 						},
@@ -3803,6 +3805,24 @@
 									}
 								}
 							]
+						},
+						{
+							"name": "customerManagedKeys",
+							"type": "Microsoft.Common.Section",
+							"label": "AVD Private Link",
+							"elements": [
+								{
+									"name": "keyExpirationInDays",
+									"type": "Microsoft.Common.Slider",
+									"label": "Key Rotation (in Days)",
+									"defaultValue": 180,
+									"showStepMarkers": false,
+									"toolTip": "The number of days before a new key version is automatically generated in the Azure Key Vault.",
+									"min": 30,
+									"max": 180,
+									"visible": "[or(contains(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), contains(steps('userProfiles').azureFiles.keyManagement, 'CustomerManaged'))]"
+								}
+							]
 						}
 					]
 				},
@@ -3956,6 +3976,7 @@
 				"existingGlobalFeedResourceId": "[first(map(filter(steps('controlPlane').workspacesApi.value, (ws) => contains(ws.name, 'global-feed')), (ws) => ws.id))]",
 				"globalFeedPrivateEndpointSubnetResourceId": "[if(and(steps('zeroTrust').avdPrivateLink.enablePrivateLink, steps('zeroTrust').avdPrivateLink.enablePrivateDNSIntegration, equals(steps('zeroTrust').avdPrivateLink.avdPrivateLinkConfig, 'All')), steps('zeroTrust').avdPrivateLink.globalFeedSubnet, '')]",
 				"globalFeedPrivateDnsZoneResourceId": "[if(and(steps('zeroTrust').avdPrivateLink.enablePrivateLink, steps('zeroTrust').avdPrivateLink.enablePrivateDNSIntegration, equals(steps('zeroTrust').avdPrivateLink.avdPrivateLinkConfig, 'All')), steps('zeroTrust').avdPrivateLink.globalFeedPrivateDnsZone, '')]",
+				"keyExpirationInDays": "[if(or(contains(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), contains(steps('userProfiles').azureFiles.keyManagement, 'CustomerManaged')), steps('zeroTrust').customerManagedKeys.keyExpirationInDays, 180)]",
 				"tags": "[steps('tags').tags]"
 			},
 			"kind": "Subscription",

@@ -9,14 +9,58 @@ param(
 )
 $ErrorActionPreference = "Stop"
 
-If ($Uri -eq '' -or $null -eq $Uri) {
-    $WebsiteUri = 'https://www.microsoft.com/en-us/download/confirmation.aspx?id=49117'
-    $Uri = ((Invoke-WebRequest -Uri $WebsiteUri -UseBasicParsing).Links | Where-Object { $_.href -like '*exe' } | Select-Object -ExpandProperty href)[0]
+Function Get-InternetUrl {
+    [CmdletBinding()]
+    Param (
+        [Parameter(
+            Mandatory,
+            HelpMessage = "Specifies the website that contains a link to the desired download."
+        )]
+        [uri]$WebSiteUrl,
+
+        [Parameter(
+            Mandatory,
+            HelpMessage = "Specifies the search string. Wildcard '*' can be used."    
+        )]
+        [string]$SearchString
+    )
+
+    Try {
+        $HTML = Invoke-WebRequest -Uri $WebSiteUrl -UseBasicParsing
+        $Links = $HTML.Links
+        $ahref = $null
+        $ahref=@()
+        $ahref = ($Links | Where-Object {$_.href -like "*$searchstring*"})
+        If ($ahref.count -eq 0 -or $null -eq $ahref) {
+            $ahref = ($Links | Where-Object {$_.OuterHTML -like "*$searchstring*"})
+        }
+        If ($ahref.Count -gt 0) {
+            Return $ahref[0].href
+        }
+        Else {
+            $Pattern = '"url":\s*"(https://[^"]*?' + $SearchString.Replace('.', '\.').Replace('*', '.*').Replace('+', '\+') + ')"' 
+            If ($HTML.Content -match $Pattern) {
+                If ($matches[1].Contains('"')) {
+                    Return $matches[1].Substring(0, $matches[1].IndexOf('"'))
+                } Else {
+                    Return $matches[1]
+                }
+
+            } else {
+                Write-Warning "No download URL found using search term."
+                Return $null
+            }
+        }
+    }
+    Catch {
+        Write-Error "Error Downloading HTML and determining link for download."
+        Return
+    }
 }
 
 function Write-OutputWithTimeStamp {
     param(
-        [parameter(ValueFromPipeline=$True, Mandatory=$True, Position=0)]
+        [parameter(ValueFromPipeline = $True, Mandatory = $True, Position = 0)]
         [string]$Message
     )    
     $Timestamp = Get-Date -Format 'MM/dd/yyyy HH:mm:ss.ff'
@@ -24,13 +68,34 @@ function Write-OutputWithTimeStamp {
     Write-Output $Entry
 }
 
-[array]$AppsToInstall = $AppsToInstall.Replace('\"', '"') | ConvertFrom-Json
-
-If (!(Test-Path -Path "$env:SystemRoot\Logs\ImageBuild")) { New-Item -Path "$env:SystemRoot\Logs\ImageBuild" -ItemType Directory -Force | Out-Null }
 $SoftwareName = 'Microsoft-365-Applications'
-Start-Transcript -Path "$env:SystemRoot\Logs\ImageBuild\$SoftwareName.log" -Force
+Start-Transcript -Path "$env:SystemRoot\Logs\Install-$SoftwareName.log" -Force
 Write-OutputWithTimeStamp "Starting Script to install '$SoftwareName' with the following parameters:"
 Write-Output ( $PSBoundParameters | Format-Table -AutoSize )
+
+If ($AppsToInstall -ne '' -and $null -ne $AppsToInstall) {
+    [array]$AppsToInstall = $AppsToInstall.Replace('\"', '"') | ConvertFrom-Json
+}
+Else {
+    [array]$AppsToInstall = @("Access", "Excel", "OneNote", "Outlook", "PowerPoint", "Word")
+}
+
+If ($Uri -eq '' -or $null -eq $Uri) {
+    $WebsiteUri = 'https://www.microsoft.com/en-us/download/details.aspx?id=49117'
+    $Uri = Get-InternetUrl -WebSiteUrl $WebsiteUri -SearchString 'OfficeDeploymentTool'
+    If ($Uri -eq '' -or $null -eq $Uri) {
+        Write-Error "Failed to find download link for Office Deployment Tool."
+        Exit 1
+    }
+}
+
+If ($null -ne $BuildDir -and $BuildDir -ne '') {
+    $TempDir = Join-Path $BuildDir -ChildPath $SoftwareName
+}
+Else {
+    $TempDir = Join-Path $Env:TEMP -ChildPath $SoftwareName
+}
+New-Item -Path $TempDir -ItemType Directory -Force | Out-Null  
 $WebClient = New-Object System.Net.WebClient
 If ($Uri -match $BlobStorageSuffix -and $UserAssignedIdentityClientId -ne '') {
     $StorageEndpoint = ($Uri -split "://")[0] + "://" + ($Uri -split "/")[2] + "/"
@@ -39,21 +104,19 @@ If ($Uri -match $BlobStorageSuffix -and $UserAssignedIdentityClientId -ne '') {
     $WebClient.Headers.Add('x-ms-version', '2017-11-09')
     $webClient.Headers.Add("Authorization", "Bearer $AccessToken")
 }
-$appDir = Join-Path -Path $BuildDir -ChildPath $SoftwareName
-New-Item -Path $appDir -ItemType Directory -Force | Out-Null  
 $SourceFileName = ($Uri -Split "/")[-1]
-$DestFile = Join-Path -Path $appDir -ChildPath $SourceFileName
+$DestFile = Join-Path -Path $TempDir -ChildPath $SourceFileName
 Write-OutputWithTimeStamp "Downloading '$Uri' to '$DestFile'."
 $webClient.DownloadFile("$Uri", "$DestFile")
 Start-Sleep -Seconds 5
 If (!(Test-Path -Path $DestFile)) { Write-Error "Failed to download $SourceFileName"; Exit 1 }
 Write-OutputWithTimeStamp "Finished downloading"
 Write-OutputWithTimeStamp "Extracting the Office 365 Deployment Toolkit."
-Start-Process -FilePath $destFile -ArgumentList "/extract:`"$appDir\ODT`" /quiet /passive /norestart" -Wait -PassThru | Out-Null
-$Setup = (Get-ChildItem -Path "$appDir\ODT" -Filter '*setup*.exe').FullName
+Start-Process -FilePath $destFile -ArgumentList "/extract:`"$TempDir\ODT`" /quiet /passive /norestart" -Wait -PassThru | Out-Null
+$Setup = (Get-ChildItem -Path "$TempDir\ODT" -Filter '*setup*.exe').FullName
 Write-OutputWithTimeStamp "Found Office Deployment Tool Setup Executable - '$Setup'."
 Write-OutputWithTimeStamp "Dynamically creating $SoftwareName configuration file for setup."
-$ConfigFile = Join-Path -Path $appDir -ChildPath 'office365x64.xml'
+$ConfigFile = Join-Path -Path $TempDir -ChildPath 'office365x64.xml'
 
 [array]$Content = @()
 
@@ -83,7 +146,7 @@ if ($AppsToInstall -notcontains 'SkypeForBusiness') {
     $ExcludedApps += '      <ExcludeApp ID="Lync" />'
 }
 if ($AppsToInstall -notcontains 'Word') {
-   $ExcludedApps += '      <ExcludeApp ID="Word" />'
+    $ExcludedApps += '      <ExcludeApp ID="Word" />'
 }
 
 $Content += '<Configuration>'
@@ -138,4 +201,5 @@ If ($($Install.ExitCode) -eq 0) {
 Else {
     Write-Error "'$SoftwareName' install exit code is $($Install.ExitCode)"
 }
+If ((Split-Path $TempDir -Parent) -eq $Env:Temp) { Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue }
 Stop-Transcript

@@ -7,10 +7,6 @@ param(
 )
 $ErrorActionPreference = "Stop"
 
-If ($null -eq $Uri -or $Uri -eq '') {
-    $Uri = 'https://github.com/The-Virtual-Desktop-Team/Virtual-Desktop-Optimization-Tool/archive/refs/heads/main.zip'
-}
-
 function Write-OutputWithTimeStamp {
     param(
         [parameter(ValueFromPipeline=$True, Mandatory=$True, Position=0)]
@@ -22,8 +18,18 @@ function Write-OutputWithTimeStamp {
 }
 
 $SoftwareName = 'VDOT'
-If (!(Test-Path -Path "$env:SystemRoot\Logs\ImageBuild")) { New-Item -Path "$env:SystemRoot\Logs\ImageBuild" -ItemType Directory -Force | Out-Null }
-Start-Transcript -Path "$env:SystemRoot\Logs\ImageBuild\$SoftwareName.log" -Force
+If ($null -eq $Uri -or $Uri -eq '') {
+    $Uri = 'https://github.com/The-Virtual-Desktop-Team/Virtual-Desktop-Optimization-Tool/archive/refs/heads/main.zip'
+}
+If ($null -ne $BuildDir -and $BuildDir -ne '') {
+    $TempDir = Join-Path $BuildDir -ChildPath $SoftwareName
+}
+Else {
+    $TempDir = Join-Path $Env:TEMP -ChildPath $SoftwareName
+}
+New-Item -Path $TempDir -ItemType Directory -Force | Out-Null  
+
+Start-Transcript -Path "$env:SystemRoot\Logs\$SoftwareName.log" -Force
 Write-OutputWithTimeStamp "Starting '$SoftwareName' script with the following parameters:"
 Write-Output ( $PSBoundParameters | Format-Table -AutoSize )
 
@@ -36,13 +42,13 @@ If ($Uri -match $BlobStorageSuffix -and $UserAssignedIdentityClientId -ne '') {
     $webClient.Headers.Add("Authorization", "Bearer $AccessToken")
 }
 $SourceFileName = ($Uri -Split "/")[-1]
-$DestFile = Join-Path -Path $BuildDir -ChildPath $SourceFileName
+$DestFile = Join-Path -Path $TempDir -ChildPath $SourceFileName
 Write-OutputWithTimeStamp "Downloading '$Uri' to '$DestFile'."
 $webClient.DownloadFile("$Uri", "$DestFile")
 Start-Sleep -seconds 5
 If (!(Test-Path -Path $DestFile)) { Write-Error "Failed to download $Uri"; Exit 1 }
 Unblock-File -Path $DestFile
-$VDOTDir = Join-Path -Path $BuildDir -ChildPath $SoftwareName
+$VDOTDir = Join-Path -Path $TempDir -ChildPath $SoftwareName
 Expand-Archive -LiteralPath $DestFile -DestinationPath $VDOTDir -Force
 $ScriptPath = (Get-ChildItem -Path $VDOTDir -Recurse | Where-Object { $_.Name -eq "Windows_VDOT.ps1" }).FullName
 $ScriptContents = Get-Content -Path $ScriptPath
@@ -50,4 +56,5 @@ $ScriptUpdate = $ScriptContents.Replace("Set-NetAdapterAdvancedProperty", "#Set-
 $ScriptUpdate | Set-Content -Path $ScriptPath
 & $ScriptPath -Optimizations @("Autologgers", "DefaultUserSettings", "LocalPolicy", "NetworkOptimizations", "ScheduledTasks", "Services", "WindowsMediaPlayer") -AdvancedOptimizations @("Edge", "RemoveLegacyIE") -AcceptEULA
 Write-OutputWithTimeStamp "Optimized the operating system using the Virtual Desktop Optimization Tool"
+If ((Split-Path $TempDir -Parent) -eq $Env:Temp) { Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue }
 Stop-Transcript
