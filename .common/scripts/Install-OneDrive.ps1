@@ -1,19 +1,18 @@
 param(
     [string]$APIVersion,
     [string]$BlobStorageSuffix,
-    [string]$BuildDir,
+    [string]$BuildDir='',
     [string]$UserAssignedIdentityClientId,
-    [string]$Uri
+    [string]$Uri=''
 )
 
 $ErrorActionPreference = "Stop"
 
 function Write-OutputWithTimeStamp {
     param(
-        [parameter(ValueFromPipeline=$True, Mandatory=$True, Position=0)]
         [string]$Message
     )    
-    $Timestamp = Get-Date -Format 'MM/dd/yyyy HH:mm:ss.ff'
+    $Timestamp = Get-Date -Format 'MM/dd/yyyy HH:mm:ss'
     $Entry = '[' + $Timestamp + '] ' + $Message
     Write-Output $Entry
 }
@@ -24,11 +23,11 @@ Start-Transcript -Path "$env:SystemRoot\Logs\Install-$SoftwareName.log" -Force
 Write-OutputWithTimeStamp "Starting Script to install '$SoftwareName' with the following parameters:"
 Write-Output ( $PSBoundParameters | Format-Table -AutoSize )
 
-If ($null -eq $Uri -or $Uri -eq '') {
+If ($Uri -eq '') {
     $Uri = 'https://go.microsoft.com/fwlink/p/?linkid=2121808'
 }
 
-If ($null -ne $BuildDir -and $BuildDir -ne '') {
+If ($BuildDir -ne '') {
     $TempDir = Join-Path $BuildDir -ChildPath $SoftwareName
 }
 Else {

@@ -2,9 +2,9 @@ param(
     [string]$APIVersion,
     [string]$AppsToInstall,
     [string]$BlobStorageSuffix,
-    [string]$BuildDir,
+    [string]$BuildDir='',
     [string]$Environment,
-    [string]$Uri,
+    [string]$Uri='',
     [string]$UserAssignedIdentityClientId
 )
 $ErrorActionPreference = "Stop"
@@ -29,27 +29,17 @@ Function Get-InternetUrl {
         $HTML = Invoke-WebRequest -Uri $WebSiteUrl -UseBasicParsing
         $Links = $HTML.Links
         $ahref = $null
-        $ahref=@()
-        $ahref = ($Links | Where-Object {$_.href -like "*$searchstring*"})
+        $ahref = @()
+        $ahref = ($Links | Where-Object { $_.href -like "*$searchstring*" })
         If ($ahref.count -eq 0 -or $null -eq $ahref) {
-            $ahref = ($Links | Where-Object {$_.OuterHTML -like "*$searchstring*"})
+            $ahref = ($Links | Where-Object { $_.OuterHTML -like "*$searchstring*" })
         }
         If ($ahref.Count -gt 0) {
             Return $ahref[0].href
         }
-        Else {
-            $Pattern = '"url":\s*"(https://[^"]*?' + $SearchString.Replace('.', '\.').Replace('*', '.*').Replace('+', '\+') + ')"' 
-            If ($HTML.Content -match $Pattern) {
-                If ($matches[1].Contains('"')) {
-                    Return $matches[1].Substring(0, $matches[1].IndexOf('"'))
-                } Else {
-                    Return $matches[1]
-                }
-
-            } else {
-                Write-Warning "No download URL found using search term."
-                Return $null
-            }
+        else {
+            Write-Warning "No download URL found using search term."
+            Return $null
         }
     }
     Catch {
@@ -60,10 +50,9 @@ Function Get-InternetUrl {
 
 function Write-OutputWithTimeStamp {
     param(
-        [parameter(ValueFromPipeline = $True, Mandatory = $True, Position = 0)]
         [string]$Message
     )    
-    $Timestamp = Get-Date -Format 'MM/dd/yyyy HH:mm:ss.ff'
+    $Timestamp = Get-Date -Format 'MM/dd/yyyy HH:mm:ss'
     $Entry = '[' + $Timestamp + '] ' + $Message
     Write-Output $Entry
 }
@@ -80,7 +69,7 @@ Else {
     [array]$AppsToInstall = @("Access", "Excel", "OneNote", "Outlook", "PowerPoint", "Word")
 }
 
-If ($Uri -eq '' -or $null -eq $Uri) {
+If ($Uri -eq '') {
     $WebsiteUri = 'https://go.microsoft.com/fwlink/p/?LinkID=626065'
     $Uri = Get-InternetUrl -WebSiteUrl $WebsiteUri -SearchString 'OfficeDeploymentTool'
     If ($Uri -eq '' -or $null -eq $Uri) {
@@ -88,7 +77,7 @@ If ($Uri -eq '' -or $null -eq $Uri) {
     }
 }
 
-If ($null -ne $BuildDir -and $BuildDir -ne '') {
+If ($BuildDir -ne '') {
     $TempDir = Join-Path $BuildDir -ChildPath $SoftwareName
 }
 Else {
@@ -116,9 +105,7 @@ $Setup = (Get-ChildItem -Path "$TempDir\ODT" -Filter '*setup*.exe').FullName
 Write-OutputWithTimeStamp "Found Office Deployment Tool Setup Executable - '$Setup'."
 Write-OutputWithTimeStamp "Dynamically creating $SoftwareName configuration file for setup."
 $ConfigFile = Join-Path -Path $TempDir -ChildPath 'office365x64.xml'
-
 [array]$Content = @()
-
 [array]$ExcludedApps = @()
 $ExcludedApps += '      <ExcludeApp ID="Groove" />'
 $ExcludedApps += '      <ExcludeApp ID="OneDrive" />'

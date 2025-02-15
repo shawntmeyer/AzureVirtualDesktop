@@ -1,7 +1,7 @@
 param(
     [string]$APIVersion,
     [string]$BlobStorageSuffix,
-    [string]$BuildDir,
+    [string]$BuildDir='',
     [string]$Uri,
     [string]$UserAssignedIdentityClientId
 )
@@ -9,10 +9,9 @@ $ErrorActionPreference = "Stop"
 
 function Write-OutputWithTimeStamp {
     param(
-        [parameter(ValueFromPipeline=$True, Mandatory=$True, Position=0)]
         [string]$Message
     )    
-    $Timestamp = Get-Date -Format 'MM/dd/yyyy HH:mm:ss.ff'
+    $Timestamp = Get-Date -Format 'MM/dd/yyyy HH:mm:ss'
     $Entry = '[' + $Timestamp + '] ' + $Message
     Write-Output $Entry
 }
@@ -21,7 +20,7 @@ $SoftwareName = 'VDOT'
 If ($null -eq $Uri -or $Uri -eq '') {
     $Uri = 'https://github.com/The-Virtual-Desktop-Team/Virtual-Desktop-Optimization-Tool/archive/refs/heads/main.zip'
 }
-If ($null -ne $BuildDir -and $BuildDir -ne '') {
+If ($BuildDir -ne '') {
     $TempDir = Join-Path $BuildDir -ChildPath $SoftwareName
 }
 Else {
@@ -48,9 +47,9 @@ $webClient.DownloadFile("$Uri", "$DestFile")
 Start-Sleep -seconds 5
 If (!(Test-Path -Path $DestFile)) { Write-Error "Failed to download $Uri"; Exit 1 }
 Unblock-File -Path $DestFile
-$VDOTDir = Join-Path -Path $TempDir -ChildPath $SoftwareName
-Expand-Archive -LiteralPath $DestFile -DestinationPath $VDOTDir -Force
-$ScriptPath = (Get-ChildItem -Path $VDOTDir -Recurse | Where-Object { $_.Name -eq "Windows_VDOT.ps1" }).FullName
+Expand-Archive -LiteralPath $DestFile -DestinationPath $TempDir -Force
+$ScriptPath = (Get-ChildItem -Path $TempDir -Recurse | Where-Object { $_.Name -eq "Windows_VDOT.ps1" }).FullName
+If ($null -eq $ScriptPath) { Write-Error "Failed to find the script in the downloaded archive"; Exit 1 }
 $ScriptContents = Get-Content -Path $ScriptPath
 $ScriptUpdate = $ScriptContents.Replace("Set-NetAdapterAdvancedProperty", "#Set-NetAdapterAdvancedProperty")
 $ScriptUpdate | Set-Content -Path $ScriptPath

@@ -1,16 +1,15 @@
 param(
     [string]$APIVersion,
     [string]$BlobStorageSuffix,
-    [string]$BuildDir,
+    [string]$BuildDir='',
     [string]$UserAssignedIdentityClientId,
-    [string]$Uri
+    [string]$Uri=''
 )
 function Write-OutputWithTimeStamp {
     param(
-        [parameter(ValueFromPipeline = $True, Mandatory = $True, Position = 0)]
         [string]$Message
     )    
-    $Timestamp = Get-Date -Format 'MM/dd/yyyy HH:mm:ss.ff'
+    $Timestamp = Get-Date -Format 'MM/dd/yyyy HH:mm:ss'
     $Entry = '[' + $Timestamp + '] ' + $Message
     Write-Output $Entry
 }
@@ -21,10 +20,10 @@ Start-Transcript -Path "$env:SystemRoot\Logs\Install-$Name.log" -Force
 Write-OutputWithTimeStamp "Starting '$SoftwareName' install script with following Parameters:"
 Write-Output ( $PSBoundParameters | Format-Table -AutoSize )
 
-If ($Uri -eq '' -or $null -eq $Uri) {
+If ($Uri -eq '') {
     $Uri = 'https://aka.ms/fslogix_download'
 }
-If ($null -ne $BuildDir -and $BuildDir -ne '') {
+If ($BuildDir -ne '') {
     $TempDir = Join-Path $BuildDir -ChildPath $Name
 }
 Else {

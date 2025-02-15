@@ -1,8 +1,8 @@
 param(
   [string]$APIVersion,
-  [string]$Arguments,
+  [string]$Arguments='',
   [string]$BlobStorageSuffix,
-  [string]$BuildDir,
+  [string]$BuildDir='',
   [string]$Name,
   [string]$Uri,
   [string]$UserAssignedIdentityClientId
@@ -10,20 +10,18 @@ param(
 
 function Write-OutputWithTimeStamp {
   param(
-      [parameter(ValueFromPipeline=$True, Mandatory=$True, Position=0)]
       [string]$Message
   )    
-  $Timestamp = Get-Date -Format 'MM/dd/yyyy HH:mm:ss.ff'
+  $Timestamp = Get-Date -Format 'MM/dd/yyyy HH:mm:ss'
   $Entry = '[' + $Timestamp + '] ' + $Message
   Write-Output $Entry
 }
 
 Start-Transcript -Path "$env:SystemRoot\Logs\$Name.log" -Force
-
 Write-OutputWithTimeStamp "Starting '$Name' script with the following parameters."
 Write-Output ( $PSBoundParameters | Format-Table -AutoSize )
 If ($Arguments -eq '') { $Arguments = $null }
-If ($null -ne $BuildDir -and $BuildDir -ne '') {
+If ($BuildDir -ne '') {
   $TempDir = Join-Path $BuildDir -ChildPath $Name
 } Else {
   $TempDir = Join-Path $Env:TEMP -ChildPath $Name

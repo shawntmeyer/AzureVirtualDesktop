@@ -34,16 +34,14 @@ Function ConvertFrom-InstallationResult {
 
 function Write-OutputWithTimeStamp {
     param(
-        [parameter(ValueFromPipeline=$True, Mandatory=$True, Position=0)]
         [string]$Message
     )    
-    $Timestamp = Get-Date -Format 'MM/dd/yyyy HH:mm:ss.ff'
+    $Timestamp = Get-Date -Format 'MM/dd/yyyy HH:mm:ss'
     $Entry = '[' + $Timestamp + '] ' + $Message
     Write-Output $Entry
 }
 
 Start-Transcript -Path "$env:SystemRoot\Logs\Install-Updates.log"
-
 Write-OutputWithTimeStamp -Message "Starting Windows Update Script with the following parameters:"
 Write-Output ( $PSBoundParameters | Format-Table -AutoSize )
 

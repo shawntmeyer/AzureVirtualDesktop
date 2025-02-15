@@ -1,20 +1,19 @@
 param(
     [string]$APIVersion,
     [string]$BlobStorageSuffix,
-    [string]$BuildDir,
+    [string]$BuildDir='',
     [string]$UserAssignedIdentityClientId,
     [string]$TeamsCloudType,
-    [string]$Uri
+    [string]$Uri=''
 )
 
 $ErrorActionPreference = 'Stop'
 
 function Write-OutputWithTimeStamp {
     param(
-        [parameter(ValueFromPipeline=$True, Mandatory=$True, Position=0)]
         [string]$Message
     )    
-    $Timestamp = Get-Date -Format 'MM/dd/yyyy HH:mm:ss.ff'
+    $Timestamp = Get-Date -Format 'MM/dd/yyyy HH:mm:ss'
     $Entry = '[' + $Timestamp + '] ' + $Message
     Write-Output $Entry
 }
