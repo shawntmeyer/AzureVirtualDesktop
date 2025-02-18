@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "363512076391895402"
+      "templateHash": "10897208003326080586"
     },
     "name": "Zero Trust Architecture Custom Windows Image Builder",
     "description": "This solution allows you to create a custom image much like Azure VM Image Builder, but utilizes zero trust architecture and does not require that service.",
@@ -15,7 +15,7 @@
   "parameters": {
     "timeStamp": {
       "type": "string",
-      "defaultValue": "[utcNow('yyMMddHHmm')]",
+      "defaultValue": "[utcNow('yyMMddHHmmss')]",
       "metadata": {
         "description": "Value appended to the deployment names."
       }
@@ -409,13 +409,6 @@
         "description": "Optional. Specifies the storage account type to be used to store the image. This property is not updatable."
       }
     },
-    "imageVersionDefaultRegion": {
-      "type": "string",
-      "defaultValue": "",
-      "metadata": {
-        "description": "Conditional. Specifies the default replication region when imageVersionTargetRegions is not supplied."
-      }
-    },
     "imageVersionExcludeFromLatest": {
       "type": "bool",
       "defaultValue": false,
@@ -428,6 +421,39 @@
       "defaultValue": [],
       "metadata": {
         "description": "Optional. The regions to which the image version will be replicated. (Default: deployment location with Standard_LRS storage and 1 replica.)"
+      }
+    },
+    "remoteComputeGalleryResourceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional. The resource Id of the remote compute gallery."
+      }
+    },
+    "remoteImageVersionExcludeFromLatest": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Optional. Exclude this image version from the latest in the remote region."
+      }
+    },
+    "remoteImageVersionDefaultReplicaCount": {
+      "type": "int",
+      "defaultValue": 1,
+      "metadata": {
+        "description": "Optional. The default image version replica count in the remote region."
+      }
+    },
+    "remoteImageVersionStorageAccountType": {
+      "type": "string",
+      "defaultValue": "Standard_LRS",
+      "allowedValues": [
+        "Premium_LRS",
+        "Standard_LRS",
+        "Standard_ZRS"
+      ],
+      "metadata": {
+        "description": "Optional. Specifies the storage account type to be used to store the image in the remote region. This property is not updatable."
       }
     },
     "tags": {
@@ -876,7 +902,7 @@
     "galleryImageDefinitionSku": "[if(not(empty(parameters('imageDefinitionSku'))), replace(parameters('imageDefinitionSku'), ' ', ''), parameters('sku'))]",
     "autoImageVersionName": "[format('{0}.{1}.{2}', substring(parameters('timeStamp'), 0, 2), substring(parameters('timeStamp'), 2, 4), substring(parameters('timeStamp'), 6, 4))]",
     "imageVersionName": "[if(and(and(not(equals(parameters('imageMajorVersion'), -1)), not(equals(parameters('imageMajorVersion'), -1))), not(equals(parameters('imagePatch'), -1))), format('{0}.{1}.{2}', parameters('imageMajorVersion'), parameters('imageMinorVersion'), parameters('imagePatch')), variables('autoImageVersionName'))]",
-    "imageVersionReplicationRegions": "[if(not(empty(parameters('imageVersionTargetRegions'))), parameters('imageVersionTargetRegions'), createArray(createObject('excludeFromLatest', parameters('imageVersionExcludeFromLatest'), 'name', if(not(empty(parameters('imageVersionDefaultRegion'))), parameters('imageVersionDefaultRegion'), parameters('location')), 'regionalReplicaCount', parameters('imageVersionDefaultReplicaCount'), 'storageAccountType', parameters('imageVersionDefaultStorageAccountType'))))]",
+    "imageVersionEndOfLifeDate": "[if(greater(parameters('imageVersionEOLinDays'), 0), dateTimeAdd(parameters('timeStamp'), format('P{0}D', parameters('imageVersionEOLinDays'))), '')]",
     "imageVmName": "[take(format('{0}vmimg-{1}', variables('depPrefix'), uniqueString(parameters('timeStamp'))), 15)]",
     "orchestrationVmName": "[take(format('{0}vmorch-{1}', variables('depPrefix'), uniqueString(parameters('timeStamp'))), 14)]"
   },
@@ -1049,7 +1075,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "3601898217796418255"
+              "templateHash": "13078416586510542741"
             },
             "name": "Compute Galleries Image Definitions",
             "description": "This module deploys an Azure Compute Gallery Image Definition.",
@@ -1168,14 +1194,13 @@
             },
             "hyperVGeneration": {
               "type": "string",
-              "defaultValue": "",
+              "defaultValue": "V2",
               "allowedValues": [
-                "",
                 "V1",
                 "V2"
               ],
               "metadata": {
-                "description": "Optional. The hypervisor generation of the Virtual Machine.</p>- If this value is not specified, then it is determined by the securityType parameter.</p>- If the securityType parameter is specified, then the value of hyperVGeneration will be V2, else V1."
+                "description": "Optional. The hypervisor generation of the Virtual Machine."
               }
             },
             "securityType": {
@@ -1289,7 +1314,7 @@
             "hibernateSupported": "[if(parameters('isHibernateSupported'), 'true', 'false')]",
             "acceleratedNetworkSupported": "[if(parameters('isAcceleratedNetworkSupported'), 'true', 'false')]",
             "diskControllerTypes": "[if(parameters('isHigherStoragePerformanceSupported'), createArray(createObject('name', 'DiskControllerTypes', 'value', 'SCSI, NVMe')), createArray())]",
-            "gaFeatures": "[if(and(not(empty(parameters('securityType'))), not(equals(parameters('securityType'), 'Standard'))), createArray(createObject('name', 'SecurityType', 'value', parameters('securityType')), createObject('name', 'IsAcceleratedNetworkSupported', 'value', variables('acceleratedNetworkSupported')), createObject('name', 'IsHibernateSupported', 'value', variables('hibernateSupported'))), createArray(createObject('name', 'IsAcceleratedNetworkSupported', 'value', variables('acceleratedNetworkSupported')), createObject('name', 'IsHibernateSupported', 'value', variables('hibernateSupported'))))]",
+            "gaFeatures": "[if(not(equals(parameters('securityType'), 'Standard')), createArray(createObject('name', 'SecurityType', 'value', parameters('securityType')), createObject('name', 'IsAcceleratedNetworkSupported', 'value', variables('acceleratedNetworkSupported')), createObject('name', 'IsHibernateSupported', 'value', variables('hibernateSupported'))), createArray(createObject('name', 'IsAcceleratedNetworkSupported', 'value', variables('acceleratedNetworkSupported')), createObject('name', 'IsHibernateSupported', 'value', variables('hibernateSupported'))))]",
             "features": "[if(not(empty(variables('diskControllerTypes'))), union(variables('gaFeatures'), variables('diskControllerTypes')), variables('gaFeatures'))]"
           },
           "resources": [
@@ -1317,7 +1342,369 @@
                     "max": "[parameters('maxRecommendedMemory')]"
                   }
                 },
-                "hyperVGeneration": "[if(not(empty(parameters('hyperVGeneration'))), parameters('hyperVGeneration'), if(not(empty(parameters('securityType'))), 'V2', 'V1'))]",
+                "hyperVGeneration": "[parameters('hyperVGeneration')]",
+                "features": "[variables('features')]",
+                "description": "[parameters('description')]",
+                "eula": "[if(not(empty(parameters('eula'))), parameters('eula'), null())]",
+                "privacyStatementUri": "[parameters('privacyStatementUri')]",
+                "releaseNoteUri": "[parameters('releaseNoteUri')]",
+                "purchasePlan": {
+                  "product": "[if(not(empty(parameters('productName'))), parameters('productName'), null())]",
+                  "name": "[if(not(empty(parameters('planName'))), parameters('planName'), null())]",
+                  "publisher": "[if(not(empty(parameters('planPublisherName'))), parameters('planPublisherName'), null())]"
+                },
+                "endOfLifeDate": "[parameters('endOfLife')]",
+                "disallowed": {
+                  "diskTypes": "[parameters('excludedDiskTypes')]"
+                }
+              },
+              "tags": "[parameters('tags')]"
+            }
+          ],
+          "outputs": {
+            "resourceGroupName": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource group the image was deployed into."
+              },
+              "value": "[resourceGroup().name]"
+            },
+            "resourceId": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource ID of the image."
+              },
+              "value": "[resourceId('Microsoft.Compute/galleries/images', parameters('galleryName'), parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the image."
+              },
+              "value": "[parameters('name')]"
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "The location the resource was deployed into."
+              },
+              "value": "[reference(resourceId('Microsoft.Compute/galleries/images', parameters('galleryName'), parameters('name')), '2022-03-03', 'full').location]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "condition": "[not(empty(parameters('remoteComputeGalleryResourceId')))]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "[format('{0}Remote-Gallery-Image-Definition-{1}', variables('depPrefix'), parameters('timeStamp'))]",
+      "subscriptionId": "[split(parameters('remoteComputeGalleryResourceId'), '/')[2]]",
+      "resourceGroup": "[split(parameters('remoteComputeGalleryResourceId'), '/')[4]]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "galleryName": {
+            "value": "[last(split(parameters('remoteComputeGalleryResourceId'), '/'))]"
+          },
+          "location": "[if(not(empty(parameters('remoteComputeGalleryResourceId'))), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('remoteComputeGalleryResourceId'), '/')[2], split(parameters('remoteComputeGalleryResourceId'), '/')[4]), 'Microsoft.Compute/galleries', last(split(parameters('remoteComputeGalleryResourceId'), '/'))), '2024-03-03', 'full').location), createObject('value', ''))]",
+          "name": "[if(empty(parameters('imageDefinitionResourceId')), createObject('value', variables('galleryImageDefinitionName')), createObject('value', last(split(parameters('imageDefinitionResourceId'), '/'))))]",
+          "hyperVGeneration": "[if(empty(parameters('imageDefinitionResourceId')), createObject('value', variables('galleryImageDefinitionHyperVGeneration')), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[0], split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[1]), '2024-03-03').hyperVGeneration))]",
+          "isHibernateSupported": "[if(empty(parameters('imageDefinitionResourceId')), createObject('value', parameters('imageDefinitionIsHibernateSupported')), if(not(empty(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[0], split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'IsHibernateSupported'))))), createObject('value', bool(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[0], split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'IsHibernateSupported')))[0].value)), createObject('value', false())))]",
+          "isAcceleratedNetworkSupported": "[if(empty(parameters('imageDefinitionResourceId')), createObject('value', parameters('imageDefinitionIsAcceleratedNetworkSupported')), if(not(empty(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[0], split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'IsAcceleratedNetworkSupported'))))), createObject('value', bool(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[0], split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'IsAcceleratedNetworkSupported')))[0].value)), createObject('value', false())))]",
+          "isHigherStoragePerformanceSupported": "[if(empty(parameters('imageDefinitionResourceId')), createObject('value', parameters('imageDefinitionIsHigherStoragePerformanceSupported')), if(not(empty(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[0], split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'DiskControllerTypes'))))), createObject('value', bool(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[0], split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'DiskControllerTypes')))[0].value)), createObject('value', false())))]",
+          "securityType": "[if(empty(parameters('imageDefinitionResourceId')), createObject('value', parameters('imageDefinitionSecurityType')), if(not(empty(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[0], split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType'))))), createObject('value', filter(if(empty(parameters('imageDefinitionResourceId')), createArray(), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[0], split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value), createObject('value', 'Standard')))]",
+          "osType": {
+            "value": "Windows"
+          },
+          "osState": {
+            "value": "Generalized"
+          },
+          "publisher": "[if(empty(parameters('imageDefinitionResourceId')), createObject('value', variables('galleryImageDefinitionPublisher')), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[0], split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[1]), '2024-03-03').identifier.publisher))]",
+          "offer": "[if(empty(parameters('imageDefinitionResourceId')), createObject('value', variables('galleryImageDefinitionOffer')), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[0], split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[1]), '2024-03-03').identifier.offer))]",
+          "sku": "[if(empty(parameters('imageDefinitionResourceId')), createObject('value', variables('galleryImageDefinitionSku')), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[0], split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[1]), '2024-03-03').identifier.sku))]",
+          "tags": {
+            "value": "[coalesce(tryGet(parameters('tags'), 'Microsoft.Compute/galleries/images'), null())]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.33.93.31351",
+              "templateHash": "13078416586510542741"
+            },
+            "name": "Compute Galleries Image Definitions",
+            "description": "This module deploys an Azure Compute Gallery Image Definition.",
+            "owner": "Azure/module-maintainers"
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Required. Name of the image definition."
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Optional. Location for all resources."
+              }
+            },
+            "galleryName": {
+              "type": "string",
+              "minLength": 1,
+              "metadata": {
+                "description": "Conditional. The name of the parent Azure Shared Image Gallery. Required if the template is used in a standalone deployment."
+              }
+            },
+            "architecture": {
+              "type": "string",
+              "defaultValue": "x64",
+              "allowedValues": [
+                "x64",
+                "Arm64"
+              ],
+              "metadata": {
+                "description": "Optional. The OS architecture of the image to be created. V1 images do not support Arm64."
+              }
+            },
+            "osType": {
+              "type": "string",
+              "defaultValue": "Windows",
+              "allowedValues": [
+                "Windows",
+                "Linux"
+              ],
+              "metadata": {
+                "description": "Optional. OS type of the image to be created."
+              }
+            },
+            "osState": {
+              "type": "string",
+              "defaultValue": "Generalized",
+              "allowedValues": [
+                "Generalized",
+                "Specialized"
+              ],
+              "metadata": {
+                "description": "Optional. This property allows the user to specify whether the virtual machines created under this image are 'Generalized' or 'Specialized'."
+              }
+            },
+            "publisher": {
+              "type": "string",
+              "defaultValue": "MicrosoftWindowsServer",
+              "metadata": {
+                "description": "Optional. The name of the gallery Image Definition publisher."
+              }
+            },
+            "offer": {
+              "type": "string",
+              "defaultValue": "WindowsServer",
+              "metadata": {
+                "description": "Optional. The name of the gallery Image Definition offer."
+              }
+            },
+            "sku": {
+              "type": "string",
+              "defaultValue": "2019-Datacenter",
+              "metadata": {
+                "description": "Optional. The name of the gallery Image Definition SKU."
+              }
+            },
+            "minRecommendedvCPUs": {
+              "type": "int",
+              "defaultValue": 1,
+              "minValue": 1,
+              "maxValue": 128,
+              "metadata": {
+                "description": "Optional. The minimum number of the CPU cores recommended for this image."
+              }
+            },
+            "maxRecommendedvCPUs": {
+              "type": "int",
+              "defaultValue": 4,
+              "minValue": 1,
+              "maxValue": 128,
+              "metadata": {
+                "description": "Optional. The maximum number of the CPU cores recommended for this image."
+              }
+            },
+            "minRecommendedMemory": {
+              "type": "int",
+              "defaultValue": 4,
+              "minValue": 1,
+              "maxValue": 4000,
+              "metadata": {
+                "description": "Optional. The minimum amount of RAM in GB recommended for this image."
+              }
+            },
+            "maxRecommendedMemory": {
+              "type": "int",
+              "defaultValue": 16,
+              "minValue": 1,
+              "maxValue": 4000,
+              "metadata": {
+                "description": "Optional. The maximum amount of RAM in GB recommended for this image."
+              }
+            },
+            "hyperVGeneration": {
+              "type": "string",
+              "defaultValue": "V2",
+              "allowedValues": [
+                "V1",
+                "V2"
+              ],
+              "metadata": {
+                "description": "Optional. The hypervisor generation of the Virtual Machine."
+              }
+            },
+            "securityType": {
+              "type": "string",
+              "defaultValue": "Standard",
+              "allowedValues": [
+                "Standard",
+                "TrustedLaunch",
+                "TrustedLaunchSupported",
+                "ConfidentialVM",
+                "ConfidentialVMSupported",
+                "TrustedLaunchAndConfidentialVMSupported"
+              ],
+              "metadata": {
+                "description": "Optional. The security type of the image. Requires a hyperVGeneration V2."
+              }
+            },
+            "isHibernateSupported": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Optional. The image will support hibernation."
+              }
+            },
+            "isAcceleratedNetworkSupported": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Optional. The image supports accelerated networking.</p>Accelerated networking enables single root I/O virtualization (SR-IOV) to a VM, greatly improving its networking performance.</p>This high-performance path bypasses the host from the data path, which reduces latency, jitter, and CPU utilization for the most demanding network workloads on supported VM types."
+              }
+            },
+            "isHigherStoragePerformanceSupported": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Optional. The image supports Higher Storage Performance with NVMe."
+              }
+            },
+            "description": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. The description of this gallery Image Definition resource. This property is updatable."
+              }
+            },
+            "eula": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. The Eula agreement for the gallery Image Definition. Has to be a valid URL."
+              }
+            },
+            "privacyStatementUri": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. The privacy statement uri. Has to be a valid URL."
+              }
+            },
+            "releaseNoteUri": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. The release note uri. Has to be a valid URL."
+              }
+            },
+            "productName": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. The product ID."
+              }
+            },
+            "planName": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. The plan ID."
+              }
+            },
+            "planPublisherName": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. The publisher ID."
+              }
+            },
+            "endOfLife": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. The end of life date of the gallery Image Definition. This property can be used for decommissioning purposes. This property is updatable. Allowed format: 2020-01-10T23:00:00.000Z."
+              }
+            },
+            "excludedDiskTypes": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Optional. List of the excluded disk types. E.g. Standard_LRS."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Optional. Tags for all resources."
+              }
+            }
+          },
+          "variables": {
+            "hibernateSupported": "[if(parameters('isHibernateSupported'), 'true', 'false')]",
+            "acceleratedNetworkSupported": "[if(parameters('isAcceleratedNetworkSupported'), 'true', 'false')]",
+            "diskControllerTypes": "[if(parameters('isHigherStoragePerformanceSupported'), createArray(createObject('name', 'DiskControllerTypes', 'value', 'SCSI, NVMe')), createArray())]",
+            "gaFeatures": "[if(not(equals(parameters('securityType'), 'Standard')), createArray(createObject('name', 'SecurityType', 'value', parameters('securityType')), createObject('name', 'IsAcceleratedNetworkSupported', 'value', variables('acceleratedNetworkSupported')), createObject('name', 'IsHibernateSupported', 'value', variables('hibernateSupported'))), createArray(createObject('name', 'IsAcceleratedNetworkSupported', 'value', variables('acceleratedNetworkSupported')), createObject('name', 'IsHibernateSupported', 'value', variables('hibernateSupported'))))]",
+            "features": "[if(not(empty(variables('diskControllerTypes'))), union(variables('gaFeatures'), variables('diskControllerTypes')), variables('gaFeatures'))]"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Compute/galleries/images",
+              "apiVersion": "2022-03-03",
+              "name": "[format('{0}/{1}', parameters('galleryName'), parameters('name'))]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "architecture": "[if(and(equals(parameters('architecture'), 'x64'), equals(parameters('hyperVGeneration'), 'V2')), parameters('architecture'), null())]",
+                "osType": "[parameters('osType')]",
+                "osState": "[parameters('osState')]",
+                "identifier": {
+                  "publisher": "[parameters('publisher')]",
+                  "offer": "[parameters('offer')]",
+                  "sku": "[parameters('sku')]"
+                },
+                "recommended": {
+                  "vCPUs": {
+                    "min": "[parameters('minRecommendedvCPUs')]",
+                    "max": "[parameters('maxRecommendedvCPUs')]"
+                  },
+                  "memory": {
+                    "min": "[parameters('minRecommendedMemory')]",
+                    "max": "[parameters('maxRecommendedMemory')]"
+                  }
+                },
+                "hyperVGeneration": "[parameters('hyperVGeneration')]",
                 "features": "[variables('features')]",
                 "description": "[parameters('description')]",
                 "eula": "[if(not(empty(parameters('eula'))), parameters('eula'), null())]",
@@ -7860,9 +8247,9 @@
           "osType": {
             "value": "Windows"
           },
-          "securityType": "[if(equals(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), filter(reference(parameters('imageDefinitionResourceId'), '2023-07-03').features, lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value), 'TrustedLaunch'), createObject('value', 'TrustedLaunch'), if(equals(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), filter(reference(parameters('imageDefinitionResourceId'), '2023-07-03').features, lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value), 'ConfidentialVM'), createObject('value', 'ConfidentialVM'), createObject('value', 'Standard')))]",
-          "secureBootEnabled": "[if(equals(if(equals(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), filter(reference(parameters('imageDefinitionResourceId'), '2023-07-03').features, lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value), 'TrustedLaunch'), 'TrustedLaunch', if(equals(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), filter(reference(parameters('imageDefinitionResourceId'), '2023-07-03').features, lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value), 'ConfidentialVM'), 'ConfidentialVM', 'Standard')), 'TrustedLaunch'), createObject('value', true()), createObject('value', false()))]",
-          "vTpmEnabled": "[if(equals(if(equals(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), filter(reference(parameters('imageDefinitionResourceId'), '2023-07-03').features, lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value), 'TrustedLaunch'), 'TrustedLaunch', if(equals(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), filter(reference(parameters('imageDefinitionResourceId'), '2023-07-03').features, lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value), 'ConfidentialVM'), 'ConfidentialVM', 'Standard')), 'TrustedLaunch'), createObject('value', true()), createObject('value', false()))]",
+          "securityType": "[if(equals(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), if(not(empty(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[0], split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType'))))), filter(if(empty(parameters('imageDefinitionResourceId')), createArray(), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[0], split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value, 'Standard')), 'TrustedLaunch'), createObject('value', 'TrustedLaunch'), if(equals(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), if(not(empty(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[0], split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType'))))), filter(if(empty(parameters('imageDefinitionResourceId')), createArray(), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[0], split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value, 'Standard')), 'ConfidentialVM'), createObject('value', 'ConfidentialVM'), createObject('value', 'Standard')))]",
+          "secureBootEnabled": "[if(equals(if(equals(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), if(not(empty(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[0], split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType'))))), filter(if(empty(parameters('imageDefinitionResourceId')), createArray(), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[0], split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value, 'Standard')), 'TrustedLaunch'), 'TrustedLaunch', if(equals(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), if(not(empty(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[0], split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType'))))), filter(if(empty(parameters('imageDefinitionResourceId')), createArray(), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[0], split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value, 'Standard')), 'ConfidentialVM'), 'ConfidentialVM', 'Standard')), 'TrustedLaunch'), createObject('value', true()), createObject('value', false()))]",
+          "vTpmEnabled": "[if(equals(if(equals(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), if(not(empty(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[0], split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType'))))), filter(if(empty(parameters('imageDefinitionResourceId')), createArray(), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[0], split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value, 'Standard')), 'TrustedLaunch'), 'TrustedLaunch', if(equals(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), if(not(empty(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[0], split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType'))))), filter(if(empty(parameters('imageDefinitionResourceId')), createArray(), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[0], split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value, 'Standard')), 'ConfidentialVM'), 'ConfidentialVM', 'Standard')), 'TrustedLaunch'), createObject('value', true()), createObject('value', false()))]",
           "tags": {
             "value": "[coalesce(tryGet(parameters('tags'), 'Microsoft.Compute/virtualMachines'), createObject())]"
           },
@@ -12086,7 +12473,7 @@
           "imageBuildResourceGroupName": {
             "value": "[variables('imageBuildResourceGroupName')]"
           },
-          "imageDefinitionSecurityType": "[if(empty(parameters('imageDefinitionResourceId')), createObject('value', parameters('imageDefinitionSecurityType')), createObject('value', filter(reference(parameters('imageDefinitionResourceId'), '2023-07-03').features, lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value))]",
+          "imageDefinitionSecurityType": "[if(empty(parameters('imageDefinitionResourceId')), createObject('value', parameters('imageDefinitionSecurityType')), if(not(empty(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[0], split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType'))))), createObject('value', filter(if(empty(parameters('imageDefinitionResourceId')), createArray(), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[0], split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value), createObject('value', 'Standard')))]",
           "imageName": "[if(not(empty(parameters('imageDefinitionResourceId'))), createObject('value', last(split(parameters('imageDefinitionResourceId'), '/'))), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('computeGalleryResourceId'), '/')[2], split(parameters('computeGalleryResourceId'), '/')[4]), 'Microsoft.Resources/deployments', format('{0}Gallery-Image-Definition-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.name.value))]",
           "imageVersionDefaultReplicaCount": {
             "value": "[parameters('imageVersionDefaultReplicaCount')]"
@@ -12094,17 +12481,15 @@
           "imageVersionDefaultStorageAccountType": {
             "value": "[parameters('imageVersionDefaultStorageAccountType')]"
           },
-          "imageVersionEOLinDays": {
-            "value": "[parameters('imageVersionEOLinDays')]"
-          },
           "imageVersionExcludeFromLatest": {
             "value": "[parameters('imageVersionExcludeFromLatest')]"
           },
           "imageVersionName": {
             "value": "[variables('imageVersionName')]"
           },
-          "imageVersionReplicationRegions": {
-            "value": "[variables('imageVersionReplicationRegions')]"
+          "imageVersionReplicationRegions": "[if(empty(parameters('remoteComputeGalleryResourceId')), if(not(empty(parameters('imageVersionTargetRegions'))), if(empty(filter(parameters('imageVersionTargetRegions'), lambda('region', equals(lambdaVariables('region').name, reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('subnetResourceId'), '/')[2], split(parameters('subnetResourceId'), '/')[4]), 'Microsoft.Network/virtualNetworks', split(parameters('subnetResourceId'), '/')[8]), '2023-05-01', 'full').location)))), createObject('value', union(createArray(createObject('excludeFromLatest', parameters('imageVersionExcludeFromLatest'), 'name', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('subnetResourceId'), '/')[2], split(parameters('subnetResourceId'), '/')[4]), 'Microsoft.Network/virtualNetworks', split(parameters('subnetResourceId'), '/')[8]), '2023-05-01', 'full').location, 'regionalReplicaCount', parameters('imageVersionDefaultReplicaCount'), 'storageAccountType', parameters('imageVersionDefaultStorageAccountType'))), parameters('imageVersionTargetRegions'))), createObject('value', parameters('imageVersionTargetRegions'))), createObject('value', createArray(createObject('excludeFromLatest', parameters('imageVersionExcludeFromLatest'), 'name', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('subnetResourceId'), '/')[2], split(parameters('subnetResourceId'), '/')[4]), 'Microsoft.Network/virtualNetworks', split(parameters('subnetResourceId'), '/')[8]), '2023-05-01', 'full').location, 'regionalReplicaCount', parameters('imageVersionDefaultReplicaCount'), 'storageAccountType', parameters('imageVersionDefaultStorageAccountType'))))), if(empty(filter(if(not(empty(parameters('imageVersionTargetRegions'))), if(empty(filter(parameters('imageVersionTargetRegions'), lambda('region', equals(lambdaVariables('region').name, reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('subnetResourceId'), '/')[2], split(parameters('subnetResourceId'), '/')[4]), 'Microsoft.Network/virtualNetworks', split(parameters('subnetResourceId'), '/')[8]), '2023-05-01', 'full').location)))), union(createArray(createObject('excludeFromLatest', parameters('imageVersionExcludeFromLatest'), 'name', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('subnetResourceId'), '/')[2], split(parameters('subnetResourceId'), '/')[4]), 'Microsoft.Network/virtualNetworks', split(parameters('subnetResourceId'), '/')[8]), '2023-05-01', 'full').location, 'regionalReplicaCount', parameters('imageVersionDefaultReplicaCount'), 'storageAccountType', parameters('imageVersionDefaultStorageAccountType'))), parameters('imageVersionTargetRegions')), parameters('imageVersionTargetRegions')), createArray(createObject('excludeFromLatest', parameters('imageVersionExcludeFromLatest'), 'name', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('subnetResourceId'), '/')[2], split(parameters('subnetResourceId'), '/')[4]), 'Microsoft.Network/virtualNetworks', split(parameters('subnetResourceId'), '/')[8]), '2023-05-01', 'full').location, 'regionalReplicaCount', parameters('imageVersionDefaultReplicaCount'), 'storageAccountType', parameters('imageVersionDefaultStorageAccountType')))), lambda('region', equals(lambdaVariables('region').name, if(not(empty(parameters('remoteComputeGalleryResourceId'))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('remoteComputeGalleryResourceId'), '/')[2], split(parameters('remoteComputeGalleryResourceId'), '/')[4]), 'Microsoft.Compute/galleries', last(split(parameters('remoteComputeGalleryResourceId'), '/'))), '2024-03-03', 'full').location, ''))))), createObject('value', union(if(not(empty(parameters('imageVersionTargetRegions'))), if(empty(filter(parameters('imageVersionTargetRegions'), lambda('region', equals(lambdaVariables('region').name, reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('subnetResourceId'), '/')[2], split(parameters('subnetResourceId'), '/')[4]), 'Microsoft.Network/virtualNetworks', split(parameters('subnetResourceId'), '/')[8]), '2023-05-01', 'full').location)))), union(createArray(createObject('excludeFromLatest', parameters('imageVersionExcludeFromLatest'), 'name', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('subnetResourceId'), '/')[2], split(parameters('subnetResourceId'), '/')[4]), 'Microsoft.Network/virtualNetworks', split(parameters('subnetResourceId'), '/')[8]), '2023-05-01', 'full').location, 'regionalReplicaCount', parameters('imageVersionDefaultReplicaCount'), 'storageAccountType', parameters('imageVersionDefaultStorageAccountType'))), parameters('imageVersionTargetRegions')), parameters('imageVersionTargetRegions')), createArray(createObject('excludeFromLatest', parameters('imageVersionExcludeFromLatest'), 'name', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('subnetResourceId'), '/')[2], split(parameters('subnetResourceId'), '/')[4]), 'Microsoft.Network/virtualNetworks', split(parameters('subnetResourceId'), '/')[8]), '2023-05-01', 'full').location, 'regionalReplicaCount', parameters('imageVersionDefaultReplicaCount'), 'storageAccountType', parameters('imageVersionDefaultStorageAccountType')))), createArray(createObject('excludeFromLatest', parameters('remoteImageVersionExcludeFromLatest'), 'name', if(not(empty(parameters('remoteComputeGalleryResourceId'))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('remoteComputeGalleryResourceId'), '/')[2], split(parameters('remoteComputeGalleryResourceId'), '/')[4]), 'Microsoft.Compute/galleries', last(split(parameters('remoteComputeGalleryResourceId'), '/'))), '2024-03-03', 'full').location, ''), 'regionalReplicaCount', parameters('remoteImageVersionDefaultReplicaCount'), 'storageAccountType', 'Standard_LRS')))), if(not(empty(parameters('imageVersionTargetRegions'))), if(empty(filter(parameters('imageVersionTargetRegions'), lambda('region', equals(lambdaVariables('region').name, reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('subnetResourceId'), '/')[2], split(parameters('subnetResourceId'), '/')[4]), 'Microsoft.Network/virtualNetworks', split(parameters('subnetResourceId'), '/')[8]), '2023-05-01', 'full').location)))), createObject('value', union(createArray(createObject('excludeFromLatest', parameters('imageVersionExcludeFromLatest'), 'name', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('subnetResourceId'), '/')[2], split(parameters('subnetResourceId'), '/')[4]), 'Microsoft.Network/virtualNetworks', split(parameters('subnetResourceId'), '/')[8]), '2023-05-01', 'full').location, 'regionalReplicaCount', parameters('imageVersionDefaultReplicaCount'), 'storageAccountType', parameters('imageVersionDefaultStorageAccountType'))), parameters('imageVersionTargetRegions'))), createObject('value', parameters('imageVersionTargetRegions'))), createObject('value', createArray(createObject('excludeFromLatest', parameters('imageVersionExcludeFromLatest'), 'name', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('subnetResourceId'), '/')[2], split(parameters('subnetResourceId'), '/')[4]), 'Microsoft.Network/virtualNetworks', split(parameters('subnetResourceId'), '/')[8]), '2023-05-01', 'full').location, 'regionalReplicaCount', parameters('imageVersionDefaultReplicaCount'), 'storageAccountType', parameters('imageVersionDefaultStorageAccountType')))))))]",
+          "imageVersionEndOfLifeDate": {
+            "value": "[variables('imageVersionEndOfLifeDate')]"
           },
           "location": {
             "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('subnetResourceId'), '/')[2], split(parameters('subnetResourceId'), '/')[4]), 'Microsoft.Network/virtualNetworks', split(parameters('subnetResourceId'), '/')[8]), '2023-05-01', 'full').location]"
@@ -12126,7 +12511,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "5261673285380223556"
+              "templateHash": "5635453727167331555"
             }
           },
           "parameters": {
@@ -12157,12 +12542,8 @@
             "imageVersionDefaultStorageAccountType": {
               "type": "string"
             },
-            "imageVersionEOLinDays": {
-              "type": "int"
-            },
-            "imageVersionCreationTime": {
-              "type": "string",
-              "defaultValue": "[utcNow()]"
+            "imageVersionEndOfLifeDate": {
+              "type": "string"
             },
             "imageVersionExcludeFromLatest": {
               "type": "bool"
@@ -12182,9 +12563,6 @@
             "virtualMachineResourceId": {
               "type": "string"
             }
-          },
-          "variables": {
-            "imageVersionEndOfLifeDate": "[if(greater(parameters('imageVersionEOLinDays'), 0), dateTimeAdd(parameters('imageVersionCreationTime'), format('P{0}D', parameters('imageVersionEOLinDays'))), '')]"
           },
           "resources": [
             {
@@ -12429,7 +12807,7 @@
                     "value": "[parameters('imageName')]"
                   },
                   "endOfLifeDate": {
-                    "value": "[variables('imageVersionEndOfLifeDate')]"
+                    "value": "[parameters('imageVersionEndOfLifeDate')]"
                   },
                   "excludeFromLatest": {
                     "value": "[parameters('imageVersionExcludeFromLatest')]"
@@ -12752,7 +13130,7 @@
               },
               {
                 "name": "ImageResourceId",
-                "value": "[if(contains(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), filter(reference(parameters('imageDefinitionResourceId'), '2023-07-03').features, lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value), 'Supported'), reference(subscriptionResourceId('Microsoft.Resources/deployments', format('{0}Capture-Image-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.managedImageId.value, '')]"
+                "value": "[if(contains(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), if(not(empty(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[0], split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType'))))), filter(if(empty(parameters('imageDefinitionResourceId')), createArray(), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[0], split(last(split(parameters('imageDefinitionResourceId'), '/')), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value, 'Standard')), 'Supported'), reference(subscriptionResourceId('Microsoft.Resources/deployments', format('{0}Capture-Image-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.managedImageId.value, '')]"
               },
               {
                 "name": "ImageVmResourceId",
@@ -12968,6 +13346,299 @@
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}Logs-StorageAccount-{1}', variables('depPrefix'), parameters('timeStamp')))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}Orchestration-VM-{1}', variables('depPrefix'), parameters('timeStamp')))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}ManagedIdentity-{1}', variables('depPrefix'), parameters('timeStamp')))]"
+      ]
+    },
+    {
+      "condition": "[not(empty(parameters('remoteComputeGalleryResourceId')))]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "[format('{0}Remote-ImageVersion-{1}', variables('depPrefix'), parameters('timeStamp'))]",
+      "subscriptionId": "[split(parameters('remoteComputeGalleryResourceId'), '/')[2]]",
+      "resourceGroup": "[split(parameters('remoteComputeGalleryResourceId'), '/')[4]]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "name": {
+            "value": "[variables('imageVersionName')]"
+          },
+          "galleryName": {
+            "value": "[last(split(parameters('computeGalleryResourceId'), '/'))]"
+          },
+          "imageName": {
+            "value": "[variables('imageVersionName')]"
+          },
+          "endOfLifeDate": {
+            "value": "[variables('imageVersionEndOfLifeDate')]"
+          },
+          "excludeFromLatest": {
+            "value": "[parameters('remoteImageVersionExcludeFromLatest')]"
+          },
+          "replicaCount": {
+            "value": "[parameters('remoteImageVersionDefaultReplicaCount')]"
+          },
+          "storageAccountType": {
+            "value": "[parameters('remoteImageVersionStorageAccountType')]"
+          },
+          "sourceId": {
+            "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('{0}Capture-Image-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.imageVersionId.value]"
+          },
+          "tags": {
+            "value": "[coalesce(tryGet(parameters('tags'), 'Microsoft.Compute/galleries/images/versions'), null())]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.33.93.31351",
+              "templateHash": "12658885593511687007"
+            },
+            "name": "Compute Galleries Image Version",
+            "description": "This module deploys an Azure Compute Gallery Image Definition Version",
+            "author": "shawn.meyer@microsoft.com"
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Required. Name of the image version."
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Optional. Location for all resources."
+              }
+            },
+            "imageName": {
+              "type": "string",
+              "minLength": 1,
+              "metadata": {
+                "description": "Conditional. The name of the parent Azure Shared Image Gallery Image Definition. Required if the template is used in a standalone deployment."
+              }
+            },
+            "galleryName": {
+              "type": "string",
+              "minLength": 1,
+              "metadata": {
+                "description": "Conditional. The name of the Azure Compute gallery that contains the Image Definition for which this version will be created."
+              }
+            },
+            "endOfLifeDate": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. The end of life date as a string."
+              }
+            },
+            "excludeFromLatest": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Optional. If set to true, Virtual Machines deployed from the latest version of the Image Definition will not use this Image Version."
+              }
+            },
+            "replicaCount": {
+              "type": "int",
+              "metadata": {
+                "description": "Optional. The number of replicas of the Image Version to be created per region.\nThis property would take effect for a region when regionalReplicaCount is not specified. This property is updatable."
+              }
+            },
+            "replicationMode": {
+              "type": "string",
+              "defaultValue": "",
+              "allowedValues": [
+                "",
+                "Full",
+                "Shallow"
+              ],
+              "metadata": {
+                "description": "Optional. Optional parameter which specifies the mode to be used for replication. This property is not updatable."
+              }
+            },
+            "storageAccountType": {
+              "type": "string",
+              "defaultValue": "Standard_LRS",
+              "allowedValues": [
+                "Premium_LRS",
+                "Standard_LRS",
+                "Standard_ZRS"
+              ],
+              "metadata": {
+                "description": "Optional. Specifies the storage account type to be used to store the image. This property is not updatable."
+              }
+            },
+            "targetRegions": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Optional. The target regions where the Image Version is going to be replicated to.\nIf this object is not specified, then the deployment location will be used."
+              }
+            },
+            "diskEncryptionSetId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. A relative URI containing the resource ID of the disk encryption set."
+              }
+            },
+            "confidentialVMEncryptionType": {
+              "type": "string",
+              "defaultValue": "",
+              "allowedValues": [
+                "",
+                "EncryptedVMGuestStateOnlyWithPmk",
+                "EncryptedWithCmk",
+                "EncryptedWithPmk"
+              ],
+              "metadata": {
+                "description": "Optional. Confidential VM encryption types"
+              }
+            },
+            "secureVMDiskEncryptionSetId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. Secure VM disk encryption set id."
+              }
+            },
+            "allowDeletionOfReplicatedLocations": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Optional. Indicates whether or not removing this Gallery Image Version from replicated regions is allowed."
+              }
+            },
+            "hostCaching": {
+              "type": "string",
+              "defaultValue": "None",
+              "allowedValues": [
+                "None",
+                "ReadOnly",
+                "ReadWrite"
+              ],
+              "metadata": {
+                "description": "Optional. The host caching of the disk."
+              }
+            },
+            "osDiskImageSourceId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. The id of the gallery artifact version source. Can specify a disk uri, snapshot uri, user image or storage account resource."
+              }
+            },
+            "osDiskImageSourceUri": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. The uri of the gallery artifact version source. Currently used to specify vhd/blob source."
+              }
+            },
+            "sourceId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. The id of the gallery artifact version source. Can specify a disk uri, snapshot uri, user image or storage account resource."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Optional. Tags for all resources."
+              }
+            }
+          },
+          "variables": {
+            "copy": [
+              {
+                "name": "regionMatchArray",
+                "count": "[length(parameters('targetRegions'))]",
+                "input": "[if(equals(parameters('targetRegions')[copyIndex('regionMatchArray')].name, parameters('location')), true(), false())]"
+              }
+            ],
+            "sourceStorageProfile": "[if(not(empty(parameters('sourceId'))), createObject('id', parameters('sourceId')), createObject())]",
+            "osDiskImageStorageProfile": "[if(or(not(empty(parameters('osDiskImageSourceId'))), not(empty(parameters('osDiskImageSourceUri')))), createObject('hostCaching', parameters('hostCaching'), 'source', createObject('id', if(not(empty(parameters('osDiskImageSourceId'))), parameters('osDiskImageSourceId'), null()), 'uri', if(not(empty(parameters('osDiskImageSourceUri'))), parameters('osDiskImageSourceUri'), null()))), createObject())]",
+            "targetRegionDefault": [
+              {
+                "encryption": "[if(not(empty(parameters('diskEncryptionSetId'))), createObject('osDiskImage', createObject('diskEncryptionSetId', parameters('diskEncryptionSetId'), 'securityProfile', createObject('confidentialVMEncryptionType', if(not(empty(parameters('confidentialVMEncryptionType'))), parameters('confidentialVMEncryptionType'), null()), 'secureVMDiskEncryptionSetId', if(not(empty(parameters('secureVMDiskEncryptionSetId'))), parameters('secureVMDiskEncryptionSetId'), null())))), null())]",
+                "name": "[parameters('location')]",
+                "storageAccountType": "[parameters('storageAccountType')]"
+              }
+            ],
+            "targetRegionsContainsLocation": "[if(contains(variables('regionMatchArray'), true()), true(), false())]",
+            "targetRegionsVar": "[if(not(empty(parameters('targetRegions'))), if(variables('targetRegionsContainsLocation'), parameters('targetRegions'), union(parameters('targetRegions'), variables('targetRegionDefault'))), variables('targetRegionDefault'))]"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Compute/galleries/images/versions",
+              "apiVersion": "2022-03-03",
+              "name": "[format('{0}/{1}/{2}', parameters('galleryName'), parameters('imageName'), parameters('name'))]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "publishingProfile": {
+                  "endOfLifeDate": "[if(not(empty(parameters('endOfLifeDate'))), parameters('endOfLifeDate'), null())]",
+                  "excludeFromLatest": "[parameters('excludeFromLatest')]",
+                  "replicaCount": "[parameters('replicaCount')]",
+                  "replicationMode": "[if(not(empty(parameters('replicationMode'))), parameters('replicationMode'), null())]",
+                  "storageAccountType": "[parameters('storageAccountType')]",
+                  "targetRegions": "[variables('targetRegionsVar')]"
+                },
+                "safetyProfile": {
+                  "allowDeletionOfReplicatedLocations": "[parameters('allowDeletionOfReplicatedLocations')]"
+                },
+                "storageProfile": {
+                  "osDiskImage": "[variables('osDiskImageStorageProfile')]",
+                  "source": "[variables('sourceStorageProfile')]"
+                }
+              },
+              "tags": "[parameters('tags')]"
+            }
+          ],
+          "outputs": {
+            "resourceGroupName": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource group the image was deployed into."
+              },
+              "value": "[resourceGroup().name]"
+            },
+            "resourceId": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource ID of the image version."
+              },
+              "value": "[resourceId('Microsoft.Compute/galleries/images/versions', parameters('galleryName'), parameters('imageName'), parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the image version."
+              },
+              "value": "[parameters('name')]"
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "The location the resource was deployed into."
+              },
+              "value": "[reference(resourceId('Microsoft.Compute/galleries/images/versions', parameters('galleryName'), parameters('imageName'), parameters('name')), '2022-03-03', 'full').location]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/deployments', format('{0}Capture-Image-{1}', variables('depPrefix'), parameters('timeStamp')))]"
       ]
     }
   ]
