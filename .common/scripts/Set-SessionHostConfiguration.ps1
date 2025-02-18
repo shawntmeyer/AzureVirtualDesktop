@@ -117,8 +117,9 @@ Function Set-RegistryValue {
 }
 
 #endregion
-[string]$Script:LogDir = "C:\Windows\Logs"
+[string]$Script:LogDir = Join-Path -Path $Env:SystemRoot -ChildPath 'Logs'
 [string]$Script:Name = 'Set-SessionHostConfiguration'
+New-Log -Path $Script:LogDir
 write-log -message "*** Parameter Values ***"
 Write-Log -message "AmdVmSize: $AmdVmSize"
 Write-Log -message "NvidiaVmSize: $NvidiaVmSize"

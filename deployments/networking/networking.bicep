@@ -257,7 +257,6 @@ module privateDNSZones 'modules/privateDnsZones.bicep' = if(createPrivateDNSZone
     vnetId: !empty(privateDnsZonesVnetId) ? privateDnsZonesVnetId : ( linkPrivateDnsZonesToNewVnet ? network.outputs.vnetResourceId : '' )
   }
   dependsOn: [
-    network
     privateDNSZonesResourceGroup
   ]
 }
