@@ -8,36 +8,44 @@ param(
 $ErrorActionPreference = 'Stop'
 $WarningPreference = 'SilentlyContinue'
 
-# Wait for role assignment propagation
-Start-Sleep -Seconds 30
+function Update-AvdWorkspaceAppReferences {
+        # Get an access token for Azure resources
+    $AzureManagementAccessToken = (Invoke-RestMethod `
+            -Headers @{Metadata = "true" } `
+            -Uri $('http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=' + $ResourceManagerUriFixed + '&client_id=' + $UserAssignedIdentityClientId)).access_token
 
-# Fix the resource manager URI since only AzureCloud contains a trailing slash
-$ResourceManagerUriFixed = if($ResourceManagerUri[-1] -eq '/'){$ResourceManagerUri.Substring(0,$ResourceManagerUri.Length - 1)} else {$ResourceManagerUri}
+    # Set header for Azure Management API
+    $AzureManagementHeader = @{
+        'Content-Type'  = 'application/json'
+        'Authorization' = 'Bearer ' + $AzureManagementAccessToken
+    }
 
-# Get an access token for Azure resources
-$AzureManagementAccessToken = (Invoke-RestMethod `
-    -Headers @{Metadata="true"} `
-    -Uri $('http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=' + $ResourceManagerUriFixed + '&client_id=' + $UserAssignedIdentityClientId)).access_token
+    # Use the access token to get the app group references on the workspace
+    $ExistingApplicationGroupReferences = (Invoke-RestMethod `
+            -Headers $AzureManagementHeader `
+            -Method 'GET' `
+            -Uri $($ResourceManagerUriFixed + $WorkspaceResourceId + '?api-version=2023-09-05')).properties.applicationGroupReferences
 
-# Set header for Azure Management API
-$AzureManagementHeader = @{
-    'Content-Type'='application/json'
-    'Authorization'='Bearer ' + $AzureManagementAccessToken
+    [array]$NewApplicationGroupReference = $ApplicationGroupResourceId.Split(',')
+    [array]$ApplicationGroupReferences = @()
+    [array]$ApplicationGroupReferences = $ExistingApplicationGroupReferences + $NewApplicationGroupReference | ForEach-Object { $_.toLower() } | Select-Object -Unique
+
+    # Use the access token to update the app group references on the workspace
+    Invoke-RestMethod `
+        -Body (@{properties = @{applicationGroupReferences = $ApplicationGroupReferences } } | ConvertTo-Json) `
+        -Headers $AzureManagementHeader `
+        -Method 'PATCH' `
+        -Uri $($ResourceManagerUriFixed + $WorkspaceResourceId + '?api-version=2023-09-05') | Out-Null
 }
 
-# Use the access token to get the app group references on the workspace
-$ExistingApplicationGroupReferences = (Invoke-RestMethod `
-    -Headers $AzureManagementHeader `
-    -Method 'GET' `
-    -Uri $($ResourceManagerUriFixed + $WorkspaceResourceId + '?api-version=2023-09-05')).properties.applicationGroupReferences
+# Fix the resource manager URI since only AzureCloud contains a trailing slash
+$ResourceManagerUriFixed = if ($ResourceManagerUri[-1] -eq '/') { $ResourceManagerUri.Substring(0, $ResourceManagerUri.Length - 1) } else { $ResourceManagerUri }
 
-[array]$NewApplicationGroupReference = $ApplicationGroupResourceId.Split(',')
-  
-[array]$ApplicationGroupReferences = $ExistingApplicationGroupReferences + $NewApplicationGroupReference | ForEach-Object {$_.toLower()} | Select-Object -Unique
-
-# Use the access token to update the app group references on the workspace
-Invoke-RestMethod `
-    -Body (@{properties = @{applicationGroupReferences = $ApplicationGroupReferences}} | ConvertTo-Json) `
-    -Headers $AzureManagementHeader `
-    -Method 'PATCH' `
-    -Uri $($ResourceManagerUriFixed + $WorkspaceResourceId + '?api-version=2023-09-05') | Out-Null
+try {
+    Update-AvdWorkspaceAppReferences
+}
+catch {
+    # Wait for role assignment propagation
+    Start-Sleep -Seconds 30
+    Update-AvdWorkspaceAppReferences
+}
