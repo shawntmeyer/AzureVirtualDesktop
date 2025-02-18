@@ -13,21 +13,33 @@ param (
 $ErrorActionPreference = 'Stop'
 
 $InstallPath = Join-Path -Path $env:USERPROFILE -ChildPath '.bicep'
+$Bicep = Join-Path -Path $InstallPath -ChildPath 'bicep.exe'
 
 If ($UpdateBicep) {
+    Write-Output 'Updating Bicep CLI'
     # Create the install folder
     $installDir = New-Item -ItemType Directory -Path $installPath -Force
     $installDir.Attributes += 'Hidden'
     # Fetch the latest Bicep CLI binary
-    (New-Object Net.WebClient).DownloadFile("https://github.com/Azure/bicep/releases/latest/download/bicep-win-x64.exe", "$installPath\bicep.exe")
+    Write-Output "Downloading Bicep CLI to '$Bicep'."
+    (New-Object Net.WebClient).DownloadFile("https://github.com/Azure/bicep/releases/latest/download/bicep-win-x64.exe", $Bicep)
     # Add bicep to your PATH
     $currentPath = (Get-Item -path "HKCU:\Environment" ).GetValue('Path', '', 'DoNotExpandEnvironmentNames')
     if (-not $currentPath.Contains("%USERPROFILE%\.bicep")) { setx PATH ($currentPath + ";%USERPROFILE%\.bicep") }
     if (-not $env:path.Contains($installPath)) { $env:path += ";$installPath" }
+    $Version = (Get-Item $Bicep).VersionInfo.FileVersion
+    Write-Output "Bicep CLI updated to Version: $Version"
+    $BicepInstalled = $true
+} Else {
+    $BicepInstalled = Test-Path -Path $Bicep
+    if ($BicepInstalled) {
+        $Version = (Get-Item $Bicep).VersionInfo.FileVersion
+        Write-Output "Bicep CLI found. Version: $Version"
+    }
+    else {
+        Write-Output 'Bicep CLI not found. Please set $UpdateBicep to $true to download the latest version'
+    }
 }
-
-$Bicep = Join-Path -Path $installPath -ChildPath 'bicep.exe'
-$BicepInstalled = Test-Path -Path $Bicep
 
 $Context = Get-AzContext
 If ($null -eq $Context) {

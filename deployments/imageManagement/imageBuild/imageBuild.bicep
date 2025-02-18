@@ -6,7 +6,7 @@ metadata author = 'shawn.meyer@microsoft.com'
 metadata version = '1.0.0'
 
 @description('Value appended to the deployment names.')
-param timeStamp string = utcNow('yyMMddHHmmss')
+param timeStamp string = utcNow()
 
 @description('Deployment location. Note that the compute resources will be deployed to the region where the subnet is located.')
 param location string = deployment().location
@@ -305,9 +305,28 @@ var logContainerName = 'image-customization-logs'
 var logContainerUri = collectCustomizationLogs
   ? '${logsStorageAccount.outputs.primaryBlobEndpoint}${logContainerName}/'
   : ''
-var existingImageDefinitionFeatures = empty(imageDefinitionResourceId)
-  ? []
+
+var imageDefinitionFeatures = empty(imageDefinitionResourceId)
+  ? [
+      {
+        name: 'IsHibernateSupported'
+        value: imageDefinitionIsHibernateSupported
+      }
+      {
+        name: 'IsAcceleratedNetworkSupported'
+        value: imageDefinitionIsAcceleratedNetworkSupported
+      }
+      {
+        name: 'DiskControllerTypes'
+        value: imageDefinitionIsHigherStoragePerformanceSupported
+      }
+      {
+        name: 'SecurityType'
+        value: imageDefinitionSecurityType
+      }
+    ]
   : existingImageDefinition.properties.features
+
 var galleryImageDefinitionHyperVGeneration = endsWith(sku, 'g2') || startsWith(sku, 'win11') ? 'V2' : 'V1'
 var galleryImageDefinitionName = empty(imageDefinitionResourceId)
   ? (empty(customImageDefinitionName)
@@ -321,12 +340,12 @@ var galleryImageDefinitionPublisher = !empty(imageDefinitionPublisher)
 
 var galleryImageDefinitionSecurityType = empty(imageDefinitionResourceId)
   ? imageDefinitionSecurityType
-  : !empty(filter(existingImageDefinitionFeatures, feature => feature.name == 'SecurityType'))
-      ? filter(existingImageDefinitionFeatures, feature => feature.name == 'SecurityType')[0].value
+  : !empty(filter(imageDefinitionFeatures, feature => feature.name == 'SecurityType'))
+      ? filter(imageDefinitionFeatures, feature => feature.name == 'SecurityType')[0].value
       : 'Standard'
 var galleryImageDefinitionSku = !empty(imageDefinitionSku) ? replace(imageDefinitionSku, ' ', '') : sku
-
-var autoImageVersionName = '${substring(timeStamp, 0, 2)}.${substring(timeStamp, 2, 4)}.${substring(timeStamp, 6, 4)}'
+// build an image version from the ISO 8601 timestamp
+var autoImageVersionName = '${substring(timeStamp, 2, 2)}.${substring(timeStamp, 4, 4)}.${substring(timeStamp, 9, 4)}'
 var imageVersionName = imageMajorVersion != -1 && imageMajorVersion != -1 && imagePatch != -1
   ? '${imageMajorVersion}.${imageMinorVersion}.${imagePatch}'
   : autoImageVersionName
@@ -364,7 +383,7 @@ var imageVersionReplicationRegions = empty(remoteComputeGalleryResourceId)
 var imageVersionEndOfLifeDate = imageVersionEOLinDays > 0 ? dateTimeAdd(timeStamp, 'P${imageVersionEOLinDays}D') : ''
 
 var imageVmName = take('${depPrefix}vmimg-${uniqueString(timeStamp)}', 15)
-var orchestrationVmName = take('${depPrefix}vmorch-${uniqueString(timeStamp)}', 14)
+var orchestrationVmName = take('${depPrefix}vmorc-${uniqueString(timeStamp)}', 15)
 
 var securityType = galleryImageDefinitionSecurityType == 'TrustedLaunch'
   ? 'TrustedLaunch'
@@ -410,13 +429,13 @@ resource existingUserAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIde
 // * Image Definition * //
 
 resource existingImageDefinition 'Microsoft.Compute/galleries/images@2024-03-03' existing = if (!empty(imageDefinitionResourceId)) {
-  name: last(split(imageDefinitionResourceId, '/'))
+  name: '${split(imageDefinitionResourceId, '/')[8]}/${last(split(imageDefinitionResourceId, '/'))}'
   scope: resourceGroup(split(imageDefinitionResourceId, '/')[2], split(imageDefinitionResourceId, '/')[4])
 }
 
 module imageDefinition '../../sharedModules/resources/compute/gallery/image/main.bicep' = if (empty(imageDefinitionResourceId)) {
   name: '${depPrefix}Gallery-Image-Definition-${timeStamp}'
-  scope: resourceGroup(split(computeGalleryResourceId, '/')[2], split(computeGalleryResourceId, '/')[4])
+  scope: resourceGroup(split(computeGalleryResourceId, '/')[4])
   params: {
     location: location
     galleryName: last(split(computeGalleryResourceId, '/'))
@@ -450,26 +469,24 @@ module remoteImageDefinition '../../sharedModules/resources/compute/gallery/imag
     hyperVGeneration: empty(imageDefinitionResourceId)
       ? galleryImageDefinitionHyperVGeneration
       : any(existingImageDefinition.properties.hyperVGeneration)
-    isHibernateSupported: empty(imageDefinitionResourceId)
-      ? imageDefinitionIsHibernateSupported
-      : !empty(filter(existingImageDefinitionFeatures, feature => feature.name == 'IsHibernateSupported'))
-          ? bool(filter(existingImageDefinitionFeatures, feature => feature.name == 'IsHibernateSupported')[0].value)
-          : false
-    isAcceleratedNetworkSupported: empty(imageDefinitionResourceId)
-      ? imageDefinitionIsAcceleratedNetworkSupported
-      : !empty(filter(existingImageDefinitionFeatures, feature => feature.name == 'IsAcceleratedNetworkSupported'))
-          ? bool(filter(existingImageDefinitionFeatures, feature => feature.name == 'IsAcceleratedNetworkSupported')[0].value)
-          : false
-    isHigherStoragePerformanceSupported: empty(imageDefinitionResourceId)
-      ? imageDefinitionIsHigherStoragePerformanceSupported
-      : !empty(filter(existingImageDefinitionFeatures, feature => feature.name == 'DiskControllerTypes'))
-          ? bool(filter(existingImageDefinitionFeatures, feature => feature.name == 'DiskControllerTypes')[0].value)
-          : false
-    securityType: empty(imageDefinitionResourceId)
-      ? imageDefinitionSecurityType
-      : !empty(filter(existingImageDefinitionFeatures, feature => feature.name == 'SecurityType'))
-          ? any(filter(existingImageDefinitionFeatures, feature => feature.name == 'SecurityType')[0].value)
-          : 'Standard'
+    isHibernateSupported: !empty(filter(imageDefinitionFeatures, feature => feature.name == 'IsHibernateSupported'))
+      ? bool(filter(imageDefinitionFeatures, feature => feature.name == 'IsHibernateSupported')[0].value)
+      : false
+    isAcceleratedNetworkSupported: !empty(filter(
+        imageDefinitionFeatures,
+        feature => feature.name == 'IsAcceleratedNetworkSupported'
+      ))
+      ? bool(filter(imageDefinitionFeatures, feature => feature.name == 'IsAcceleratedNetworkSupported')[0].value)
+      : false
+    isHigherStoragePerformanceSupported: !empty(filter(
+        imageDefinitionFeatures,
+        feature => feature.name == 'DiskControllerTypes'
+      ))
+      ? bool(filter(imageDefinitionFeatures, feature => feature.name == 'DiskControllerTypes')[0].value)
+      : false
+    securityType: !empty(filter(imageDefinitionFeatures, feature => feature.name == 'SecurityType'))
+      ? any(filter(imageDefinitionFeatures, feature => feature.name == 'SecurityType')[0].value)
+      : 'Standard'
     osType: 'Windows'
     osState: 'Generalized'
     publisher: empty(imageDefinitionResourceId)
@@ -481,7 +498,7 @@ module remoteImageDefinition '../../sharedModules/resources/compute/gallery/imag
     sku: empty(imageDefinitionResourceId)
       ? galleryImageDefinitionSku
       : existingImageDefinition.properties.identifier.sku
-    tags: tags[?'Microsoft.Compute/galleries/images'] ?? null
+    tags: tags[?'Microsoft.Compute/galleries/images'] ?? {}
   }
 }
 
@@ -884,13 +901,13 @@ module remoteImageVersion '../../sharedModules/resources/compute/gallery/image/v
   params: {
     location: location
     name: imageVersionName
-    galleryName: last(split(computeGalleryResourceId, '/'))
-    imageName: imageVersionName
+    galleryName: last(split(remoteComputeGalleryResourceId, '/'))
+    imageName: remoteImageDefinition.outputs.name
     endOfLifeDate: imageVersionEndOfLifeDate
     excludeFromLatest: remoteImageVersionExcludeFromLatest
     replicaCount: remoteImageVersionDefaultReplicaCount
     storageAccountType: remoteImageVersionStorageAccountType
     sourceId: captureImage.outputs.imageVersionId
-    tags: tags[?'Microsoft.Compute/galleries/images/versions'] ?? null
+    tags: tags[?'Microsoft.Compute/galleries/images/versions'] ?? {}
   }
 }

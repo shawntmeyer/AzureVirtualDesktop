@@ -101,7 +101,7 @@ var storageKind = 'StorageV2'
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   name: resourceGroupName
   location: location
-  tags: tags.?resourceGroups ?? null
+  tags: tags.?resourceGroups ?? {}
 }
 
 module resources 'resources.bicep' = {
@@ -135,7 +135,7 @@ module resources 'resources.bicep' = {
 resource remoteResourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   name: remoteResourceGroupName
   location: remoteLocation
-  tags: tags.?resourceGroups ?? null
+  tags: tags.?resourceGroups ?? {}
 }
 
 module remoteImageGallery '../sharedModules/resources/compute/gallery/main.bicep' = {
@@ -144,7 +144,7 @@ module remoteImageGallery '../sharedModules/resources/compute/gallery/main.bicep
   params: {
     location: location
     name: remoteGalleryName
-    tags: tags.?computeGalleries ?? null
+    tags: tags.?computeGalleries ?? {}
   }
   dependsOn: [
     remoteResourceGroup
