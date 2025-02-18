@@ -5,12 +5,11 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "16297980829464878159"
+      "templateHash": "15861273880153880293"
     },
     "name": "Zero Trust Architecture Custom Windows Image Builder",
     "description": "This solution allows you to create a custom image much like Azure VM Image Builder, but utilizes zero trust architecture and does not require that service.",
-    "author": "shawn.meyer@microsoft.com",
-    "version": "1.0.0"
+    "author": "shawn.meyer@microsoft.com"
   },
   "parameters": {
     "timeStamp": {
@@ -890,9 +889,9 @@
     "locations": "[variables('$fxv#0')[environment().name]]",
     "resourceAbbreviations": "[variables('$fxv#1')]",
     "depPrefix": "[if(not(empty(parameters('deploymentPrefix'))), format('{0}-', parameters('deploymentPrefix')), '')]",
-    "logStorageAccountName": "[toLower(format('sa{0}log{1}', variables('depPrefix'), uniqueString(subscription().id, variables('imageBuildResourceGroupName'))))]",
+    "logStorageAccountName": "[take(replace(toLower(format('sa{0}log{1}', variables('depPrefix'), uniqueString(subscription().id, variables('imageBuildResourceGroupName')))), '-', ''), 24)]",
     "imageBuildResourceGroupName": "[if(empty(parameters('imageBuildResourceGroupId')), if(empty(parameters('customBuildResourceGroupName')), format('{0}-image-builder-{1}', variables('resourceAbbreviations').resourceGroups, variables('locations')[parameters('location')].abbreviation), parameters('customBuildResourceGroupName')), last(split(parameters('imageBuildResourceGroupId'), '/')))]",
-    "adminPw": "[format('1qaz@WSX{0}', uniqueString(subscription().id, parameters('timeStamp')))]",
+    "adminPw": "[format('1qaz@WSX{0}', uniqueString(subscription().id, variables('imageBuildResourceGroupName')))]",
     "adminUserName": "vmadmin",
     "logContainerName": "image-customization-logs",
     "galleryImageDefinitionHyperVGeneration": "[if(or(endsWith(parameters('sku'), 'g2'), startsWith(parameters('sku'), 'win11')), 'V2', 'V1')]",

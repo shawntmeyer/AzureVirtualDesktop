@@ -3,7 +3,6 @@ targetScope = 'subscription'
 metadata name = 'Zero Trust Architecture Custom Windows Image Builder'
 metadata description = 'This solution allows you to create a custom image much like Azure VM Image Builder, but utilizes zero trust architecture and does not require that service.'
 metadata author = 'shawn.meyer@microsoft.com'
-metadata version = '1.0.0'
 
 @description('Value appended to the deployment names.')
 param timeStamp string = utcNow()
@@ -290,7 +289,7 @@ var resourceAbbreviations = loadJsonContent('../../../.common/data/resourceAbbre
 
 var computeLocation = vnet.location
 var depPrefix = !empty(deploymentPrefix) ? '${deploymentPrefix}-' : ''
-var logStorageAccountName = toLower('sa${depPrefix}log${uniqueString(subscription().id,imageBuildResourceGroupName)}')
+var logStorageAccountName = take(replace(toLower('sa${depPrefix}log${uniqueString(subscription().id,imageBuildResourceGroupName)}'), '-', ''),24)
 
 var imageBuildResourceGroupName = empty(imageBuildResourceGroupId)
   ? (empty(customBuildResourceGroupName)
@@ -298,7 +297,7 @@ var imageBuildResourceGroupName = empty(imageBuildResourceGroupId)
       : customBuildResourceGroupName)
   : last(split(imageBuildResourceGroupId, '/'))
 
-var adminPw = '1qaz@WSX${uniqueString(subscription().id, timeStamp)}'
+var adminPw = '1qaz@WSX${uniqueString(subscription().id, imageBuildResourceGroupName)}'
 var adminUserName = 'vmadmin'
 
 var logContainerName = 'image-customization-logs'
