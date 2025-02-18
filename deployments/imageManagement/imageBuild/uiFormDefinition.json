@@ -30,7 +30,7 @@
 							"type": "Microsoft.Common.ResourceScope",
 							"instanceDetailsLabel": "Image Build Location",
 							"location": {
-								"label": "Region (for Image Build resources)",
+								"label": "Default Image Version Region",
 								"resourceTypes": [
 									"Microsoft.Compute/virtualmachines"
 								]
@@ -165,8 +165,8 @@
 							"type": "Microsoft.Common.InfoBox",
 							"options": {
 								"style": "Warning",
-								"text": "Prior to deployment, make sure you meet the prerequisites outlined in the resource pre-reqs section in Zero Trust Image solution documentation.",
-								"uri": "https://www.github.com/shawntmeyer/AzureVirtualDesktop#prequisites"
+								"text": "Prior to deployment, make sure you meet the required prerequisites outlined in the required prerequisites section of the Getting Started documentation.",
+								"uri": "https://github.com/shawntmeyer/AzureVirtualDesktop/blob/master/docs/quickStart.md#prerequisites"
 							}
 						},
 						{
@@ -1257,7 +1257,7 @@
 									"name": "collectLogs",
 									"type": "Microsoft.Common.CheckBox",
 									"label": "Collect customization logs in a storage container"
-								},								
+								},
 								{
 									"name": "networkAccess",
 									"type": "Microsoft.Common.OptionsGroup",
@@ -1687,18 +1687,9 @@
 									"type": "Microsoft.Common.DropDown",
 									"label": "Storage Account Type",
 									"defaultValue": "Standard LRS",
-									"toolTip": "Select the storage account type for this image version for every region. If you select 'Standard_ZRS' then all regions will not be available.",
+									"toolTip": "Select the storage account type for this image version for the region where it is being captured.",
 									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Standard LRS",
-												"value": "Standard_LRS"
-											},
-											{
-												"label": "Standard ZRS",
-												"value": "Standard_ZRS"
-											}
-										],
+										"allowedValues": "[if(empty(filter(first(map(filter(steps('basics').storageApi.value, (resTypes) => equals(resTypes.resourceType, 'storageAccounts')), (sa) => sa.zoneMappings)), (zm) => equals(zm.location, steps('basics').scope.location.displayName))), parse('[{\"label\":\"Standard LRS\",\"value\":\"Standard_LRS\"}]'), parse('[{\"label\":\"Standard LRS\",\"value\":\"Standard_LRS\"},{\"label\":\"Standard ZRS\",\"value\":\"Standard_ZRS\"}]'))]",
 										"required": false
 									},
 									"visible": true
@@ -1759,19 +1750,6 @@
 									}
 								},
 								{
-									"name": "defaultReplicationRegion",
-									"type": "Microsoft.Common.DropDown",
-									"label": "Default Image Location",
-									"placeholder": "",
-									"defaultValue": "[steps('basics').scope.location.displayName]",
-									"toolTip": "",
-									"constraints": {
-										"allowedValues": "[if(equals(steps('imageDest').imageVersion.storageAccountType, 'Standard_LRS'), map(first(map(filter(steps('basics').computeApi.value, (resourceTypes) => equals(resourceTypes.resourceType, 'galleries/images/versions')), (item) => item.locations)), (item) => parse(concat('{\"label\":\"', item, '\",\"value\":\"', toLower(replace(item, ' ', '')), '\"}'))), map(filter(first(map(filter(steps('basics').storageApi.value, (resourceTypes) => equals(resourceTypes.resourceType, 'storageAccounts')), (item) => item.zoneMappings)), (item) => equals(length(item.zones), 3)), (item) => parse(concat('{\"label\":\"', item.location, '\",\"value\":\"', toLower(replace(item.location, ' ', '')), '\"}'))))]",
-										"required": true
-									},
-									"visible": "[if(equals(steps('imageDest').imageVersion.specifyReplicationRegions, true), false, true)]"
-								},
-								{
 									"name": "repRegionsText",
 									"type": "Microsoft.Common.TextBlock",
 									"visible": "[if(equals(steps('imageDest').imageVersion.specifyReplicationRegions, true), true, false)]",
@@ -1795,6 +1773,18 @@
 										},
 										"columns": [
 											{
+												"id": "name",
+												"header": "Region",
+												"width": "2fr",
+												"element": {
+													"type": "Microsoft.Common.DropDown",
+													"constraints": {
+														"allowedValues": "[map(first(map(filter(steps('basics').computeApi.value, (resourceTypes) => equals(resourceTypes.resourceType, 'galleries/images/versions')), (item) => item.locations)), (item) => parse(concat('{\"label\":\"', item, '\",\"value\":\"', toLower(replace(item, ' ', '')), '\"}')))]",
+														"required": true
+													}
+												}
+											},
+											{
 												"id": "storageAccountType",
 												"header": "Storage account type",
 												"width": "2fr",
@@ -1802,28 +1792,7 @@
 													"type": "Microsoft.Common.DropDown",
 													"constraints": {
 														"required": false,
-														"allowedValues": [
-															{
-																"label": "Standard LRS",
-																"value": "Standard_LRS"
-															},
-															{
-																"label": "Standard ZRS",
-																"value": "Standard_ZRS"
-															}
-														]
-													}
-												}
-											},
-											{
-												"id": "name",
-												"header": "Region",
-												"width": "2fr",
-												"element": {
-													"type": "Microsoft.Common.DropDown",
-													"constraints": {
-														"allowedValues": "[if(equals(steps('imageDest').imageVersion.storageAccountType, 'Standard_LRS'), map(first(map(filter(steps('basics').computeApi.value, (resourceTypes) => equals(resourceTypes.resourceType, 'galleries/images/versions')), (item) => item.locations)), (item) => parse(concat('{\"label\":\"', item, '\",\"value\":\"', toLower(replace(item, ' ', '')), '\"}'))), map(filter(first(map(filter(steps('basics').storageApi.value, (resourceTypes) => equals(resourceTypes.resourceType, 'storageAccounts')), (item) => item.zoneMappings)), (item) => equals(length(item.zones), 3)), (item) => parse(concat('{\"label\":\"', item.location, '\",\"value\":\"', toLower(replace(item.location, ' ', '')), '\"}'))))]",
-														"required": true
+														"allowedValues": "[if(empty(filter(first(map(filter(steps('basics').storageApi.value, (resTypes) => equals(resTypes.resourceType, 'storageAccounts')), (sa) => sa.zoneMappings)), (zm) => equals(toLower(replace(zm.location, ' ', '')), last(take(steps('imageDest').imageVersion.replicationRegions, $rowIndex)).name))), parse('[{\"label\":\"Standard LRS\",\"value\":\"Standard_LRS\"}]'), parse('[{\"label\":\"Standard LRS\",\"value\":\"Standard_LRS\"},{\"label\":\"Standard ZRS\",\"value\":\"Standard_ZRS\"}]'))]"
 													}
 												}
 											},
@@ -1847,6 +1816,110 @@
 											}
 										]
 									}
+								}
+							]
+						},
+						{
+							"name": "disasterRecovery",
+							"type": "Microsoft.Common.Section",
+							"label": "Disaster Recovery",
+							"elements": [
+								{
+									"name": "infoDisasterRecovery",
+									"type": "Microsoft.Common.InfoBox",
+									"options": {
+										"style": "Info",
+										"text": "To recover from a regional outage, it is recommended to maintain an Azure Compute Gallery in a secondary region, as the Azure Compute Gallery is not a global resource. By selecting 'Yes' below, you will be able to choose an Azure Compute Gallery in a secondary region, and a matching image definition and image version will automatically be created in that region.",
+										"uri": "https://learn.microsoft.com/en-us/azure/architecture/example-scenario/azure-virtual-desktop/azure-virtual-desktop-multi-region-bcdr#compute"
+									}
+								},
+								{
+									"name": "specifyRemoteGallery",
+									"type": "Microsoft.Common.OptionsGroup",
+									"label": "Specify a remote Azure Compute Gallery for regional disaster recovery purposes.",
+									"defaultValue": "No",
+									"constraints": {
+										"allowedValues": [
+											{
+												"label": "Yes",
+												"value": true
+											},
+											{
+												"label": "No",
+												"value": false
+											}
+										],
+										"required": false
+									}
+								},
+								{
+									"name": "computeGalleryApi",
+									"type": "Microsoft.Solutions.ArmApiControl",
+									"condition": "[steps('imageDest').disasterRecovery.specifyRemoteGallery]",
+									"request": {
+										"method": "GET",
+										"path": "[concat(steps('basics').scope.subscription.id,'/providers/Microsoft.Compute/galleries?api-version=2024-03-03')]"
+									}
+								},
+								{
+									"name": "remoteComputeGallery",
+									"type": "Microsoft.Common.DropDown",
+									"label": "Remote Compute Gallery",
+									"multiLine": true,
+									"toolTip": "Select a Azure Compute Gallery that is not in the same region as the gallery chosen on the 'prereqs' screen.",
+									"constraints": {
+										"allowedValues": "[map(filter(steps('imageDest').disasterRecovery.computeGalleryApi.value, (cg) => not(equals(cg.location, steps('prereqs').gallery.gallery.location))), (cg) => parse(concat('{\"label\":\"', cg.name, '\",\"description\":\"Location: ', cg.location, '\",\"value\":{\"id\":\"', cg.id, '\",\"location\":\"', cg.location, '\"}}')))]",
+										"required": true
+									},
+									"visible": "[steps('imageDest').disasterRecovery.specifyRemoteGallery]"
+								},
+								{
+									"name": "storageAccountType",
+									"type": "Microsoft.Common.DropDown",
+									"label": "Storage Account Type",
+									"defaultValue": "Standard LRS",
+									"toolTip": "Select the storage account type for this image version for the region where it is being captured.",
+									"constraints": {
+										"allowedValues": "[if(empty(filter(first(map(filter(steps('basics').storageApi.value, (resTypes) => equals(resTypes.resourceType, 'storageAccounts')), (sa) => sa.zoneMappings)), (zm) => equals(toLower(replace(zm.location, ' ', '')), steps('imageDest').disasterRecovery.remoteComputeGallery.location))), parse('[{\"label\":\"Standard LRS\",\"value\":\"Standard_LRS\"}]'), parse('[{\"label\":\"Standard LRS\",\"value\":\"Standard_LRS\"},{\"label\":\"Standard ZRS\",\"value\":\"Standard_ZRS\"}]'))]",
+										"required": false
+									},
+									"visible": "[steps('imageDest').disasterRecovery.specifyRemoteGallery]"
+								},
+								{
+									"name": "replicaCount",
+									"type": "Microsoft.Common.Slider",
+									"label": "Replica Count",
+									"subLabel": "",
+									"defaultValue": 1,
+									"min": 1,
+									"max": 100,
+									"showStepMarkers": false,
+									"toolTip": "Specify the default replica count per region for this image version. If you don't specify additional replication regions, then this value will be used with the deployment location.",
+									"constraints": {
+										"required": false
+									},
+									"visible": "[steps('imageDest').disasterRecovery.specifyRemoteGallery]"
+								},
+								{
+									"name": "excludeFromLatest",
+									"type": "Microsoft.Common.DropDown",
+									"label": "Exclude from Latest",
+									"defaultValue": "No",
+									"toolTip": "Select the value for Exclude from Latest which determines whether this image version will be used when a image resource id uses 'latest' for the version. If you don't specify additional replication regions, then this value will be used with the deployment location.",
+									"constraints": {
+										"allowedValues": [
+											{
+												"label": "No",
+												"value": false
+											},
+											{
+												"label": "Yes",
+												"value": true
+											}
+										],
+										"required": false
+									},
+									"visible": "[steps('imageDest').disasterRecovery.specifyRemoteGallery]"
 								}
 							]
 						}
@@ -1923,8 +1996,11 @@
 				"imageVersionExcludeFromLatest": "[steps('imageDest').imageVersion.excludeFromLatest]",
 				"imageVersionDefaultReplicaCount": "[steps('imageDest').imageVersion.replicaCount]",
 				"imageVersionDefaultStorageAccountType": "[steps('imageDest').imageVersion.storageAccountType]",
-				"imageVersionDefaultRegion": "[if(equals(steps('imageDest').imageVersion.specifyReplicationRegions, false), steps('imageDest').imageVersion.defaultReplicationRegion, '')]",
 				"imageVersionTargetRegions": "[if(equals(steps('imageDest').imageVersion.specifyReplicationRegions, true), steps('imageDest').imageVersion.replicationRegions, parse('[]'))]",
+				"remoteComputeGalleryResourceId": "[if(steps('imageDest').disasterRecovery.specifyRemoteGallery, steps('imageDest').disasterRecovery.remoteComputeGallery.id, '')]",
+				"remoteImageVersionStorageAccountType": "[if(steps('imageDest').disasterRecovery.specifyRemoteGallery, steps('imageDest').disasterRecovery.storageAccountType , 'Standard_LRS')]",
+				"remoteImageVersionDefaultReplicaCount": "[if(steps('imageDest').disasterRecovery.specifyRemoteGallery, steps('imageDest').disasterRecovery.replicaCount, 1)]",
+				"remoteImageVersionExcludeFromLatest": "[if(steps('imageDest').disasterRecovery.specifyRemoteGallery, steps('imageDest').disasterRecovery.excludeFromLatest, false)]",
 				"tags": "[steps('tags').tags]"
 			}
 		}

@@ -62,13 +62,12 @@ param minRecommendedMemory int = 4
 @maxValue(4000)
 param maxRecommendedMemory int = 16
 
-@sys.description('Optional. The hypervisor generation of the Virtual Machine.</p>- If this value is not specified, then it is determined by the securityType parameter.</p>- If the securityType parameter is specified, then the value of hyperVGeneration will be V2, else V1.')
+@sys.description('Optional. The hypervisor generation of the Virtual Machine.')
 @allowed([
-  ''
   'V1'
   'V2'
 ])
-param hyperVGeneration string = ''
+param hyperVGeneration string = 'V2'
 
 @sys.description('Optional. The security type of the image. Requires a hyperVGeneration V2.')
 @allowed([
@@ -130,7 +129,7 @@ var diskControllerTypes = isHigherStoragePerformanceSupported ? [
   }
  ] : []
 
-var gaFeatures = !empty(securityType) && securityType != 'Standard' ? [
+var gaFeatures = securityType != 'Standard' ? [
   {
     name: 'SecurityType'
     value: securityType
@@ -183,7 +182,7 @@ resource image 'Microsoft.Compute/galleries/images@2022-03-03' = {
         max: maxRecommendedMemory
       }
     }
-    hyperVGeneration: !empty(hyperVGeneration) ? hyperVGeneration : (!empty(securityType) ? 'V2' : 'V1')
+    hyperVGeneration: hyperVGeneration
     features: features
     description: description
     eula: !empty(eula) ? eula : null

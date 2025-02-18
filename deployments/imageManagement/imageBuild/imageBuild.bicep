@@ -6,7 +6,7 @@ metadata author = 'shawn.meyer@microsoft.com'
 metadata version = '1.0.0'
 
 @description('Value appended to the deployment names.')
-param timeStamp string = utcNow('yyMMddHHmm')
+param timeStamp string = utcNow('yyMMddHHmmss')
 
 @description('Deployment location. Note that the compute resources will be deployed to the region where the subnet is located.')
 param location string = deployment().location
@@ -252,14 +252,28 @@ param imageVersionDefaultReplicaCount int = 1
 ])
 param imageVersionDefaultStorageAccountType string = 'Standard_LRS'
 
-@description('Conditional. Specifies the default replication region when imageVersionTargetRegions is not supplied.')
-param imageVersionDefaultRegion string = ''
-
 @description('Optional. Exclude this image version from the latest. This property can be overwritten by the regional value.')
 param imageVersionExcludeFromLatest bool = false
 
 @description('Optional. The regions to which the image version will be replicated. (Default: deployment location with Standard_LRS storage and 1 replica.)')
 param imageVersionTargetRegions array = []
+
+@description('Optional. The resource Id of the remote compute gallery.')
+param remoteComputeGalleryResourceId string = ''
+
+@description('Optional. Exclude this image version from the latest in the remote region.')
+param remoteImageVersionExcludeFromLatest bool = false
+
+@description('Optional. The default image version replica count in the remote region.')
+param remoteImageVersionDefaultReplicaCount int = 1
+
+@description('Optional. Specifies the storage account type to be used to store the image in the remote region. This property is not updatable.')
+@allowed([
+  'Premium_LRS'
+  'Standard_LRS'
+  'Standard_ZRS'
+])
+param remoteImageVersionStorageAccountType string = 'Standard_LRS'
 
 @description('Optional. The tags to apply to all resources deployed by this template.')
 param tags object = {}
@@ -291,7 +305,9 @@ var logContainerName = 'image-customization-logs'
 var logContainerUri = collectCustomizationLogs
   ? '${logsStorageAccount.outputs.primaryBlobEndpoint}${logContainerName}/'
   : ''
-
+var existingImageDefinitionFeatures = empty(imageDefinitionResourceId)
+  ? []
+  : existingImageDefinition.properties.features
 var galleryImageDefinitionHyperVGeneration = endsWith(sku, 'g2') || startsWith(sku, 'win11') ? 'V2' : 'V1'
 var galleryImageDefinitionName = empty(imageDefinitionResourceId)
   ? (empty(customImageDefinitionName)
@@ -305,23 +321,47 @@ var galleryImageDefinitionPublisher = !empty(imageDefinitionPublisher)
 
 var galleryImageDefinitionSecurityType = empty(imageDefinitionResourceId)
   ? imageDefinitionSecurityType
-  : filter(reference(imageDefinitionResourceId, '2023-07-03').features, feature => feature.name == 'SecurityType')[0].value
+  : !empty(filter(existingImageDefinitionFeatures, feature => feature.name == 'SecurityType'))
+      ? filter(existingImageDefinitionFeatures, feature => feature.name == 'SecurityType')[0].value
+      : 'Standard'
 var galleryImageDefinitionSku = !empty(imageDefinitionSku) ? replace(imageDefinitionSku, ' ', '') : sku
 
 var autoImageVersionName = '${substring(timeStamp, 0, 2)}.${substring(timeStamp, 2, 4)}.${substring(timeStamp, 6, 4)}'
 var imageVersionName = imageMajorVersion != -1 && imageMajorVersion != -1 && imagePatch != -1
   ? '${imageMajorVersion}.${imageMinorVersion}.${imagePatch}'
   : autoImageVersionName
-var imageVersionReplicationRegions = !empty(imageVersionTargetRegions)
-  ? imageVersionTargetRegions
-  : [
-      {
-        excludeFromLatest: imageVersionExcludeFromLatest
-        name: !empty(imageVersionDefaultRegion) ? imageVersionDefaultRegion : location
-        regionalReplicaCount: imageVersionDefaultReplicaCount
-        storageAccountType: imageVersionDefaultStorageAccountType
-      }
-    ]
+
+var defaultLocalImageVersionTargetRegions = [
+  {
+    excludeFromLatest: imageVersionExcludeFromLatest
+    name: computeLocation
+    regionalReplicaCount: imageVersionDefaultReplicaCount
+    storageAccountType: imageVersionDefaultStorageAccountType
+  }
+]
+
+var defaultRemoteImageVersionTargetRegions = [
+  {
+    excludeFromLatest: remoteImageVersionExcludeFromLatest
+    name: remoteLocation
+    regionalReplicaCount: remoteImageVersionDefaultReplicaCount
+    storageAccountType: 'Standard_LRS'
+  }
+]
+
+var localImageVersionTargetRegions = !empty(imageVersionTargetRegions)
+  ? empty(filter(imageVersionTargetRegions, region => region.name == computeLocation))
+      ? union(defaultLocalImageVersionTargetRegions, imageVersionTargetRegions)
+      : imageVersionTargetRegions
+  : defaultLocalImageVersionTargetRegions
+
+var imageVersionReplicationRegions = empty(remoteComputeGalleryResourceId)
+  ? localImageVersionTargetRegions
+  : empty(filter(localImageVersionTargetRegions, region => region.name == remoteLocation))
+      ? union(localImageVersionTargetRegions, defaultRemoteImageVersionTargetRegions)
+      : localImageVersionTargetRegions
+
+var imageVersionEndOfLifeDate = imageVersionEOLinDays > 0 ? dateTimeAdd(timeStamp, 'P${imageVersionEOLinDays}D') : ''
 
 var imageVmName = take('${depPrefix}vmimg-${uniqueString(timeStamp)}', 15)
 var orchestrationVmName = take('${depPrefix}vmorch-${uniqueString(timeStamp)}', 14)
@@ -329,6 +369,8 @@ var orchestrationVmName = take('${depPrefix}vmorch-${uniqueString(timeStamp)}', 
 var securityType = galleryImageDefinitionSecurityType == 'TrustedLaunch'
   ? 'TrustedLaunch'
   : galleryImageDefinitionSecurityType == 'ConfidentialVM' ? 'ConfidentialVM' : 'Standard'
+
+var remoteLocation = !empty(remoteComputeGalleryResourceId) ? remoteComputeGallery.location : ''
 
 // * Prerequisite Resources * //
 
@@ -367,6 +409,11 @@ resource existingUserAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIde
 
 // * Image Definition * //
 
+resource existingImageDefinition 'Microsoft.Compute/galleries/images@2024-03-03' existing = if (!empty(imageDefinitionResourceId)) {
+  name: last(split(imageDefinitionResourceId, '/'))
+  scope: resourceGroup(split(imageDefinitionResourceId, '/')[2], split(imageDefinitionResourceId, '/')[4])
+}
+
 module imageDefinition '../../sharedModules/resources/compute/gallery/image/main.bicep' = if (empty(imageDefinitionResourceId)) {
   name: '${depPrefix}Gallery-Image-Definition-${timeStamp}'
   scope: resourceGroup(split(computeGalleryResourceId, '/')[2], split(computeGalleryResourceId, '/')[4])
@@ -385,6 +432,56 @@ module imageDefinition '../../sharedModules/resources/compute/gallery/image/main
     offer: galleryImageDefinitionOffer
     sku: galleryImageDefinitionSku
     tags: tags[?'Microsoft.Compute/galleries/images'] ?? {}
+  }
+}
+
+resource remoteComputeGallery 'Microsoft.Compute/galleries@2024-03-03' existing = if (!empty(remoteComputeGalleryResourceId)) {
+  name: last(split(remoteComputeGalleryResourceId, '/'))
+  scope: resourceGroup(split(remoteComputeGalleryResourceId, '/')[2], split(remoteComputeGalleryResourceId, '/')[4])
+}
+
+module remoteImageDefinition '../../sharedModules/resources/compute/gallery/image/main.bicep' = if (!empty(remoteComputeGalleryResourceId)) {
+  name: '${depPrefix}Remote-Gallery-Image-Definition-${timeStamp}'
+  scope: resourceGroup(split(remoteComputeGalleryResourceId, '/')[2], split(remoteComputeGalleryResourceId, '/')[4])
+  params: {
+    galleryName: last(split(remoteComputeGalleryResourceId, '/'))
+    location: remoteLocation
+    name: empty(imageDefinitionResourceId) ? galleryImageDefinitionName : last(split(imageDefinitionResourceId, '/'))
+    hyperVGeneration: empty(imageDefinitionResourceId)
+      ? galleryImageDefinitionHyperVGeneration
+      : any(existingImageDefinition.properties.hyperVGeneration)
+    isHibernateSupported: empty(imageDefinitionResourceId)
+      ? imageDefinitionIsHibernateSupported
+      : !empty(filter(existingImageDefinitionFeatures, feature => feature.name == 'IsHibernateSupported'))
+          ? bool(filter(existingImageDefinitionFeatures, feature => feature.name == 'IsHibernateSupported')[0].value)
+          : false
+    isAcceleratedNetworkSupported: empty(imageDefinitionResourceId)
+      ? imageDefinitionIsAcceleratedNetworkSupported
+      : !empty(filter(existingImageDefinitionFeatures, feature => feature.name == 'IsAcceleratedNetworkSupported'))
+          ? bool(filter(existingImageDefinitionFeatures, feature => feature.name == 'IsAcceleratedNetworkSupported')[0].value)
+          : false
+    isHigherStoragePerformanceSupported: empty(imageDefinitionResourceId)
+      ? imageDefinitionIsHigherStoragePerformanceSupported
+      : !empty(filter(existingImageDefinitionFeatures, feature => feature.name == 'DiskControllerTypes'))
+          ? bool(filter(existingImageDefinitionFeatures, feature => feature.name == 'DiskControllerTypes')[0].value)
+          : false
+    securityType: empty(imageDefinitionResourceId)
+      ? imageDefinitionSecurityType
+      : !empty(filter(existingImageDefinitionFeatures, feature => feature.name == 'SecurityType'))
+          ? any(filter(existingImageDefinitionFeatures, feature => feature.name == 'SecurityType')[0].value)
+          : 'Standard'
+    osType: 'Windows'
+    osState: 'Generalized'
+    publisher: empty(imageDefinitionResourceId)
+      ? galleryImageDefinitionPublisher
+      : existingImageDefinition.properties.identifier.publisher
+    offer: empty(imageDefinitionResourceId)
+      ? galleryImageDefinitionOffer
+      : existingImageDefinition.properties.identifier.offer
+    sku: empty(imageDefinitionResourceId)
+      ? galleryImageDefinitionSku
+      : existingImageDefinition.properties.identifier.sku
+    tags: tags[?'Microsoft.Compute/galleries/images'] ?? null
   }
 }
 
@@ -708,10 +805,10 @@ module captureImage 'modules/captureImage.bicep' = {
       : imageDefinition.outputs.name
     imageVersionDefaultReplicaCount: imageVersionDefaultReplicaCount
     imageVersionDefaultStorageAccountType: imageVersionDefaultStorageAccountType
-    imageVersionEOLinDays: imageVersionEOLinDays
     imageVersionExcludeFromLatest: imageVersionExcludeFromLatest
     imageVersionName: imageVersionName
     imageVersionReplicationRegions: imageVersionReplicationRegions
+    imageVersionEndOfLifeDate: imageVersionEndOfLifeDate
     location: computeLocation
     tags: tags
     timeStamp: timeStamp
@@ -778,5 +875,22 @@ module removeImageBuildResources '../../sharedModules/resources/compute/virtual-
     script: loadTextContent('../../../.common/scripts/Remove-ImageBuildResources.ps1')
     treatFailureAsDeploymentFailure: false
     virtualMachineName: orchestrationVm.outputs.name
+  }
+}
+
+module remoteImageVersion '../../sharedModules/resources/compute/gallery/image/version/main.bicep' = if (!empty(remoteComputeGalleryResourceId)) {
+  name: '${depPrefix}Remote-ImageVersion-${timeStamp}'
+  scope: resourceGroup(split(remoteComputeGalleryResourceId, '/')[2], split(remoteComputeGalleryResourceId, '/')[4])
+  params: {
+    location: location
+    name: imageVersionName
+    galleryName: last(split(computeGalleryResourceId, '/'))
+    imageName: imageVersionName
+    endOfLifeDate: imageVersionEndOfLifeDate
+    excludeFromLatest: remoteImageVersionExcludeFromLatest
+    replicaCount: remoteImageVersionDefaultReplicaCount
+    storageAccountType: remoteImageVersionStorageAccountType
+    sourceId: captureImage.outputs.imageVersionId
+    tags: tags[?'Microsoft.Compute/galleries/images/versions'] ?? null
   }
 }

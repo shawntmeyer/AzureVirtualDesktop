@@ -1,37 +1,20 @@
 targetScope = 'subscription'
 
-param location string = deployment().location
-
-@description('Optional. Reverse the normal Cloud Adoption Framework naming convention by putting the resource type abbreviation at the end of the resource name.')
-param nameConvResTypeAtEnd bool = false
-
-@description('Optional. The custom name of the Image Gallery to Deploy.')
-@minLength(3)
-@maxLength(128)
-param customComputeGalleryName string = 'none'
-
-@minLength(3)
-@maxLength(128)
-@description('Optional. The name of the User Assigned Managed Identity that will be created and granted Storage Blob Data Reader Rights to the storage account for the Packer/Image Builder VMs.')
-param customManagedIdentityName string = 'none'
-
-@minLength(3)
-@maxLength(63)
-@description('Optional. The resource group name where the Storage Account will be created. It will be created if it does not exist.')
-param customResourceGroupName string = 'none'
-
-@minLength(3)
-@maxLength(24)
-@description('Optional. The name of the storage account to deploy. Must be at least 3 characters long. Should follow CAF naming conventions.')
-param customArtifactsStorageAccountName string = 'none'
-
 @minLength(3)
 @maxLength(63)
 @description('Optional. Blob Container Name. Must start with a letter. Can only contain lower case letters, numbers, and -.')
 param artifactsContainerName string = 'artifacts'
 
+param location string = deployment().location
+
+@description('Optional. Reverse the normal Cloud Adoption Framework naming convention by putting the resource type abbreviation at the end of the resource name.')
+param nameConvResTypeAtEnd bool = false
+
 @description('Optional. Resource Id of an existing Log Analytics Workspace to which diagnostic logs will be sent.')
 param logAnalyticsWorkspaceResourceId string = ''
+
+@description('Optional. Remote Location to which an Image Gallery will be deployed to support regional disaster recovery.')
+param remoteLocation string = ''
 
 @allowed([
   'Standard_LRS'
@@ -103,21 +86,22 @@ var nameConv_Suffix_withoutResType = 'LOCATION'
 var nameConvSuffix = nameConvResTypeAtEnd ? '${nameConv_Suffix_withoutResType}-RESOURCETYPE' : nameConv_Suffix_withoutResType
 var nameConv_ImageManagement_ResGroup = nameConvResTypeAtEnd ? 'avd-image-management-${nameConvSuffix}' : 'RESOURCETYPE-avd-image-management-${nameConvSuffix}'
 var nameConv_ImageManagement_Resources = nameConvResTypeAtEnd ? 'avd-image-management-${nameConvSuffix}' : 'RESOURCETYPE-avd-image-management-${nameConvSuffix}'
-var resourceGroupName = customResourceGroupName != 'none' ? customResourceGroupName : replace(replace(nameConv_ImageManagement_ResGroup, 'LOCATION', locations[location].abbreviation), 'RESOURCETYPE', resourceAbbreviations.resourceGroups)
+var resourceGroupName = replace(replace(nameConv_ImageManagement_ResGroup, 'LOCATION', locations[location].abbreviation), 'RESOURCETYPE', resourceAbbreviations.resourceGroups)
+var remoteResourceGroupName = replace(replace(nameConv_ImageManagement_ResGroup, 'LOCATION', locations[remoteLocation].abbreviation), 'RESOURCETYPE', resourceAbbreviations.resourceGroups)
 var blobContainerName = replace(replace(toLower(artifactsContainerName), '_', '-'), ' ', '-')
-var galleryName = customComputeGalleryName != 'none' ? customComputeGalleryName : replace(replace(nameConv_ImageManagement_Resources, 'RESOURCETYPE', resourceAbbreviations.computeGalleries), 'LOCATION', locations[location].abbreviation)
-var computeGalleryName = replace(galleryName, '-', '_')
-var identityName = customManagedIdentityName != 'none' ? customManagedIdentityName : replace(replace(nameConv_ImageManagement_Resources, 'RESOURCETYPE', resourceAbbreviations.userAssignedIdentities), 'LOCATION', locations[location].abbreviation)
+var galleryName = replace(replace(replace(nameConv_ImageManagement_Resources, 'RESOURCETYPE', resourceAbbreviations.computeGalleries), 'LOCATION', locations[location].abbreviation), '-', '_')
+var remoteGalleryName = replace(replace(replace(nameConv_ImageManagement_Resources, 'RESOURCETYPE', resourceAbbreviations.computeGalleries), 'LOCATION', locations[remoteLocation].abbreviation), '-', '_')
+var identityName = replace(replace(nameConv_ImageManagement_Resources, 'RESOURCETYPE', resourceAbbreviations.userAssignedIdentities), 'LOCATION', locations[location].abbreviation)
 var vnetName = !empty(privateEndpointSubnetResourceId) ? split(privateEndpointSubnetResourceId, '/')[8] : ''
 var privateEndpointNameConv = replace('${nameConvResTypeAtEnd ? 'RESOURCE-SUBRESOURCE-${vnetName}-RESOURCETYPE' : 'RESOURCETYPE-RESOURCE-SUBRESOURCE-${vnetName}'}', 'RESOURCETYPE', resourceAbbreviations.privateEndpoints)
 var privateEndpointName = replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'blob'), 'RESOURCE', storageName)
-var storageName = customArtifactsStorageAccountName != 'none' ? customArtifactsStorageAccountName : take('${resourceAbbreviations.storageAccounts}imageassets${locations[location].abbreviation}${uniqueString(subscription().subscriptionId, resourceGroupName)}', 24)
+var storageName = take('${resourceAbbreviations.storageAccounts}imageassets${locations[location].abbreviation}${uniqueString(subscription().subscriptionId, resourceGroupName)}', 24)
 var storageKind = 'StorageV2'
 
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   name: resourceGroupName
   location: location
-  tags: tags.?resourceGroups ?? {}
+  tags: tags.?resourceGroups ?? null
 }
 
 module resources 'resources.bicep' = {
@@ -127,7 +111,7 @@ module resources 'resources.bicep' = {
     azureBlobPrivateDnsZoneResourceId: azureBlobPrivateDnsZoneResourceId
     location: location
     logAnalyticsWorkspaceId: logAnalyticsWorkspaceResourceId
-    computeGalleryName: computeGalleryName
+    computeGalleryName: galleryName
     storageAccountName: storageName
     blobContainerName: blobContainerName
     managedIdentityName: identityName
@@ -141,10 +125,29 @@ module resources 'resources.bicep' = {
     storageServiceEndpointSubnetResourceIds: storageServiceEndpointSubnetResourceIds
     storageAllowPublicNetworkAccess: storagePublicNetworkAccess
     storageAllowSharedKeyAccess: storageAllowSharedKeyAccess
-    tags: tags
+    tags: tags != {} ? tags : null
   }
   dependsOn: [
     resourceGroup
+  ]
+}
+
+resource remoteResourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
+  name: remoteResourceGroupName
+  location: remoteLocation
+  tags: tags.?resourceGroups ?? null
+}
+
+module remoteImageGallery '../sharedModules/resources/compute/gallery/main.bicep' = {
+  name: 'Remote-Image-Gallery-${timeStamp}'
+  scope: az.resourceGroup(remoteResourceGroupName)
+  params: {
+    location: location
+    name: remoteGalleryName
+    tags: tags.?computeGalleries ?? null
+  }
+  dependsOn: [
+    remoteResourceGroup
   ]
 }
 

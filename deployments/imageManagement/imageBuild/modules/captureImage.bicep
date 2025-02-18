@@ -9,8 +9,7 @@ param imageName string
 param imageVersionName string
 param imageVersionDefaultReplicaCount int
 param imageVersionDefaultStorageAccountType string
-param imageVersionEOLinDays int
-param imageVersionCreationTime string = utcNow()
+param imageVersionEndOfLifeDate string
 param imageVersionExcludeFromLatest bool
 param imageVersionReplicationRegions array
 param location string
@@ -19,7 +18,7 @@ param timeStamp string
 param virtualMachineResourceId string
 
 
-var imageVersionEndOfLifeDate = imageVersionEOLinDays > 0 ? dateTimeAdd(imageVersionCreationTime, 'P${imageVersionEOLinDays}D') : ''
+
 
 // Image Definitions with Security Type = 'TrustedLaunchSupported', 'ConfidentialVMSupported', or TrustedLaunchConfidentialVMSupported' do not
 // support capture directly from a VM. Must create a legacy managed image first.
