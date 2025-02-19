@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "12892160329159078026"
+      "templateHash": "15929352002120715224"
     }
   },
   "parameters": {
@@ -7668,7 +7668,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "9226489490624389619"
+              "templateHash": "17448352056710323758"
             }
           },
           "parameters": {
@@ -7922,7 +7922,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "8532876707063178265"
+                      "templateHash": "4940262834411564736"
                     }
                   },
                   "parameters": {
@@ -8049,8 +8049,7 @@
                                       }
                                     }
                                   ]
-                                },
-                                "tags": "[union(createObject('storageAccountName', format('{0}{1}', parameters('storageAccountNamePrefix'), string(padLeft(add(range(0, parameters('storageCount'))[copyIndex()], parameters('storageIndex')), 2, '0')))), createObject('cm-resource-parent', parameters('hostPoolResourceId')), coalesce(tryGet(parameters('tags'), 'Microsoft.KeyVault/vaults/keys'), createObject()))]"
+                                }
                               }
                             ]
                           },
@@ -14407,7 +14406,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "11262811509758105141"
+              "templateHash": "12185534745435110063"
             }
           },
           "parameters": {
@@ -15336,7 +15335,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "702632414381634570"
+                      "templateHash": "6188901730293295698"
                     }
                   },
                   "parameters": {
@@ -15440,7 +15439,7 @@
                           "name": {
                             "value": "[parameters('keyVaultNames').VMEncryptionKeys]"
                           },
-                          "keys": "[if(parameters('confidentialVMOSDiskEncryption'), createObject('value', null()), createObject('value', createArray(createObject('attributesEnabled', true(), 'attributesExportable', false(), 'name', variables('vmEncryptionKeyName'), 'keySize', 4096, 'kty', if(contains(parameters('keyManagementDisks'), 'HSM'), 'RSA-HSM', 'RSA'), 'rotationPolicy', createObject('attributes', createObject('expiryTime', format('P{0}D', string(parameters('keyExpirationInDays')))), 'lifetimeActions', createArray(createObject('action', createObject('type', 'Notify'), 'trigger', createObject('timeBeforeExpiry', 'P10D')), createObject('action', createObject('type', 'Rotate'), 'trigger', createObject('timeAfterCreate', format('P{0}D', string(sub(parameters('keyExpirationInDays'), 7))))))), 'tags', union(createObject('cm-resource-parent', parameters('hostPoolResourceId')), coalesce(tryGet(parameters('tags'), 'Microsoft.KeyVault/vaults/keys'), createObject()))))))]",
+                          "keys": "[if(parameters('confidentialVMOSDiskEncryption'), createObject('value', null()), createObject('value', createArray(createObject('attributesEnabled', true(), 'attributesExportable', false(), 'name', variables('vmEncryptionKeyName'), 'keySize', 4096, 'kty', if(contains(parameters('keyManagementDisks'), 'HSM'), 'RSA-HSM', 'RSA'), 'rotationPolicy', createObject('attributes', createObject('expiryTime', format('P{0}D', string(parameters('keyExpirationInDays')))), 'lifetimeActions', createArray(createObject('action', createObject('type', 'Notify'), 'trigger', createObject('timeBeforeExpiry', 'P10D')), createObject('action', createObject('type', 'Rotate'), 'trigger', createObject('timeAfterCreate', format('P{0}D', string(sub(parameters('keyExpirationInDays'), 7)))))))))))]",
                           "privateEndpoints": "[if(and(parameters('privateEndpoint'), not(empty(parameters('privateEndpointSubnetResourceId')))), createObject('value', createArray(createObject('customNetworkInterfaceName', replace(replace(replace(parameters('privateEndpointNICNameConv'), 'SUBRESOURCE', 'vault'), 'RESOURCE', parameters('keyVaultNames').VMEncryptionKeys), 'VNETID', format('{0}', split(parameters('privateEndpointSubnetResourceId'), '/')[8])), 'name', replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', 'vault'), 'RESOURCE', parameters('keyVaultNames').VMEncryptionKeys), 'VNETID', format('{0}', split(parameters('privateEndpointSubnetResourceId'), '/')[8])), 'privateDnsZoneGroup', if(empty(parameters('azureKeyVaultPrivateDnsZoneResourceId')), null(), createObject('privateDNSResourceIds', createArray(parameters('azureKeyVaultPrivateDnsZoneResourceId')))), 'service', 'vault', 'subnetResourceId', parameters('privateEndpointSubnetResourceId'), 'tags', coalesce(tryGet(parameters('tags'), 'Microsoft.Network/privateEndpoints'), createObject())))), createObject('value', null()))]",
                           "softDeleteRetentionInDays": {
                             "value": "[parameters('keyVaultRetentionInDays')]"

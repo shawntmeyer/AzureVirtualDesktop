@@ -59,7 +59,6 @@ module storageAccountKeyVaults '../../../../sharedModules/resources/key-vault/va
               }
             ]
           }
-          tags: union({ storageAccountName : '${storageAccountNamePrefix}${string(padLeft(i + storageIndex, 2, '0'))}'}, { 'cm-resource-parent': hostPoolResourceId }, tags[?'Microsoft.KeyVault/vaults/keys'] ?? {})
         }
       ]
       location: location

@@ -67,7 +67,6 @@ module KeyVault '../../../../sharedModules/resources/key-vault/vault/main.bicep'
             }
           ]
         }
-        tags: union({'cm-resource-parent': hostPoolResourceId}, tags[?'Microsoft.KeyVault/vaults/keys'] ?? {})
       }
     ]
     privateEndpoints: privateEndpoint && !empty(privateEndpointSubnetResourceId)
