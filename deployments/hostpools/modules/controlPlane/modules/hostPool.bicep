@@ -33,7 +33,7 @@ resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' = {
       registrationTokenOperation: 'Update'
     }
     preferredAppGroupType: 'Desktop'
-    customRdpProperty: hostPoolRDPProperties
+    customRdpProperty: !empty(hostPoolRDPProperties) ? hostPoolRDPProperties : null
     personalDesktopAssignmentType: contains(hostPoolType, 'Personal') ? split(hostPoolType, ' ')[1] : null
     publicNetworkAccess: hostPoolPublicNetworkAccess
     startVMOnConnect: true

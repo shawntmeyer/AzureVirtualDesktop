@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "16389068678661582781"
+      "templateHash": "1685422818397917675"
     }
   },
   "parameters": {
@@ -4995,7 +4995,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "7572352400878885256"
+              "templateHash": "8231357593827008141"
             }
           },
           "parameters": {
@@ -5333,7 +5333,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "4203464164666345439"
+                      "templateHash": "10163703824557120431"
                     }
                   },
                   "parameters": {
@@ -5416,7 +5416,7 @@
                           "registrationTokenOperation": "Update"
                         },
                         "preferredAppGroupType": "Desktop",
-                        "customRdpProperty": "[parameters('hostPoolRDPProperties')]",
+                        "customRdpProperty": "[if(not(empty(parameters('hostPoolRDPProperties'))), parameters('hostPoolRDPProperties'), null())]",
                         "personalDesktopAssignmentType": "[if(contains(parameters('hostPoolType'), 'Personal'), split(parameters('hostPoolType'), ' ')[1], null())]",
                         "publicNetworkAccess": "[parameters('hostPoolPublicNetworkAccess')]",
                         "startVMOnConnect": true,
