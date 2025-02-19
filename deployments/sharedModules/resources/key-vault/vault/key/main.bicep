@@ -18,7 +18,7 @@ resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' existing = {
 resource key 'Microsoft.KeyVault/vaults/keys@2022-07-01' = {
   name: name
   parent: keyVault
-  tags: tags
+  tags: empty(tags) ? null : tags
   properties: {
     attributes: {
       enabled: attributesEnabled

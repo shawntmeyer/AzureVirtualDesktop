@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "15929352002120715224"
+      "templateHash": "12864640406671567152"
     }
   },
   "parameters": {
@@ -3145,7 +3145,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "11447833939536628882"
+              "templateHash": "16356932742609858760"
             }
           },
           "parameters": {
@@ -3283,7 +3283,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "18085457853586529367"
+                      "templateHash": "1554697480441578434"
                     }
                   },
                   "parameters": {
@@ -3717,7 +3717,7 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.33.93.31351",
-                              "templateHash": "15857341258349663373"
+                              "templateHash": "13338573025201028517"
                             }
                           },
                           "parameters": {
@@ -3773,7 +3773,7 @@
                               "type": "Microsoft.KeyVault/vaults/keys",
                               "apiVersion": "2022-07-01",
                               "name": "[format('{0}/{1}', parameters('keyVaultName'), parameters('name'))]",
-                              "tags": "[parameters('tags')]",
+                              "tags": "[if(empty(parameters('tags')), null(), parameters('tags'))]",
                               "properties": {
                                 "attributes": {
                                   "enabled": "[parameters('attributesEnabled')]",
@@ -7668,7 +7668,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "17448352056710323758"
+              "templateHash": "5854776097065936286"
             }
           },
           "parameters": {
@@ -7922,7 +7922,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "4940262834411564736"
+                      "templateHash": "6971278900629601154"
                     }
                   },
                   "parameters": {
@@ -8075,7 +8075,7 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.33.93.31351",
-                              "templateHash": "18085457853586529367"
+                              "templateHash": "1554697480441578434"
                             }
                           },
                           "parameters": {
@@ -8509,7 +8509,7 @@
                                     "_generator": {
                                       "name": "bicep",
                                       "version": "0.33.93.31351",
-                                      "templateHash": "15857341258349663373"
+                                      "templateHash": "13338573025201028517"
                                     }
                                   },
                                   "parameters": {
@@ -8565,7 +8565,7 @@
                                       "type": "Microsoft.KeyVault/vaults/keys",
                                       "apiVersion": "2022-07-01",
                                       "name": "[format('{0}/{1}', parameters('keyVaultName'), parameters('name'))]",
-                                      "tags": "[parameters('tags')]",
+                                      "tags": "[if(empty(parameters('tags')), null(), parameters('tags'))]",
                                       "properties": {
                                         "attributes": {
                                           "enabled": "[parameters('attributesEnabled')]",
@@ -14406,7 +14406,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "12185534745435110063"
+              "templateHash": "582044184379315435"
             }
           },
           "parameters": {
@@ -15335,7 +15335,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "6188901730293295698"
+                      "templateHash": "15110225985369095037"
                     }
                   },
                   "parameters": {
@@ -15456,7 +15456,7 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.33.93.31351",
-                              "templateHash": "18085457853586529367"
+                              "templateHash": "1554697480441578434"
                             }
                           },
                           "parameters": {
@@ -15890,7 +15890,7 @@
                                     "_generator": {
                                       "name": "bicep",
                                       "version": "0.33.93.31351",
-                                      "templateHash": "15857341258349663373"
+                                      "templateHash": "13338573025201028517"
                                     }
                                   },
                                   "parameters": {
@@ -15946,7 +15946,7 @@
                                       "type": "Microsoft.KeyVault/vaults/keys",
                                       "apiVersion": "2022-07-01",
                                       "name": "[format('{0}/{1}', parameters('keyVaultName'), parameters('name'))]",
-                                      "tags": "[parameters('tags')]",
+                                      "tags": "[if(empty(parameters('tags')), null(), parameters('tags'))]",
                                       "properties": {
                                         "attributes": {
                                           "enabled": "[parameters('attributesEnabled')]",
