@@ -1,6 +1,5 @@
 targetScope = 'subscription'
 
-param identitySolution string
 param avdPrivateDnsZoneResourceId string
 param avdPrivateLinkPrivateRoutes string
 param hostPoolRDPProperties string
@@ -75,8 +74,7 @@ module globalFeedPrivateEndpointVnet '../common/vnetLocation.bicep' = if (avdPri
 module hostPool 'modules/hostPool.bicep' = {
   name: 'HostPool_${timeStamp}'
   scope: resourceGroup(resourceGroupControlPlane)
-  params: {
-    identitySolution: identitySolution    
+  params: {    
     hostPoolRDPProperties: hostPoolRDPProperties
     hostPoolName: hostPoolName
     hostPoolPrivateDnsZoneResourceId: avdPrivateDnsZoneResourceId

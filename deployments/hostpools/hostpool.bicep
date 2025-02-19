@@ -67,7 +67,7 @@ param hostPoolMaxSessionLimit int = 4
 @description('''Optional. Input RDP properties to add or remove RDP functionality on the AVD host pool.
 Settings reference: https://learn.microsoft.com/windows-server/remote/remote-desktop-services/clients/rdp-files
 ''')
-param hostPoolRDPProperties string = 'audiocapturemode:i:1;camerastoredirect:s:*;enablerdsaadauth:i:1'
+param hostPoolRDPProperties string = ''
 
 @description('Optional. The value determines whether the hostPool should receive early AVD updates for testing.')
 param hostPoolValidationEnvironment bool = false
@@ -831,7 +831,6 @@ module controlPlane 'modules/controlPlane/controlPlane.bicep' = {
     hostPoolRDPProperties: hostPoolRDPProperties
     hostPoolType: hostPoolType
     hostPoolValidationEnvironment: hostPoolValidationEnvironment
-    identitySolution: identitySolution
     locationControlPlane: locationControlPlane
     locationGlobalFeed: locationGlobalFeed
     locationVirtualMachines: locationVirtualMachines

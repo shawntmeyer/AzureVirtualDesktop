@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "4435404832855990257"
+      "templateHash": "12892160329159078026"
     }
   },
   "parameters": {
@@ -101,7 +101,7 @@
     },
     "hostPoolRDPProperties": {
       "type": "string",
-      "defaultValue": "audiocapturemode:i:1;camerastoredirect:s:*;enablerdsaadauth:i:1",
+      "defaultValue": "",
       "metadata": {
         "description": "Optional. Input RDP properties to add or remove RDP functionality on the AVD host pool.\nSettings reference: https://learn.microsoft.com/windows-server/remote/remote-desktop-services/clients/rdp-files\n"
       }
@@ -4919,9 +4919,6 @@
           "hostPoolValidationEnvironment": {
             "value": "[parameters('hostPoolValidationEnvironment')]"
           },
-          "identitySolution": {
-            "value": "[parameters('identitySolution')]"
-          },
           "locationControlPlane": {
             "value": "[parameters('locationControlPlane')]"
           },
@@ -4995,13 +4992,10 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "17322456175522890963"
+              "templateHash": "1488231692773915970"
             }
           },
           "parameters": {
-            "identitySolution": {
-              "type": "string"
-            },
             "avdPrivateDnsZoneResourceId": {
               "type": "string"
             },
@@ -5272,9 +5266,6 @@
                 },
                 "mode": "Incremental",
                 "parameters": {
-                  "identitySolution": {
-                    "value": "[parameters('identitySolution')]"
-                  },
                   "hostPoolRDPProperties": {
                     "value": "[parameters('hostPoolRDPProperties')]"
                   },
@@ -5333,13 +5324,10 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "11500695887715693184"
+                      "templateHash": "14426816374116685004"
                     }
                   },
                   "parameters": {
-                    "identitySolution": {
-                      "type": "string"
-                    },
                     "privateEndpoint": {
                       "type": "bool"
                     },
@@ -5399,9 +5387,6 @@
                       "type": "string"
                     }
                   },
-                  "variables": {
-                    "customRdpProperty": "[if(and(not(contains(parameters('identitySolution'), 'DomainServices')), not(contains(parameters('hostPoolRDPProperties'), 'targetisaadjoined:i:1'))), format('{0};targetisaadjoined:i:1', parameters('hostPoolRDPProperties')), parameters('hostPoolRDPProperties'))]"
-                  },
                   "resources": [
                     {
                       "type": "Microsoft.DesktopVirtualization/hostPools",
@@ -5419,7 +5404,7 @@
                           "registrationTokenOperation": "Update"
                         },
                         "preferredAppGroupType": "Desktop",
-                        "customRdpProperty": "[variables('customRdpProperty')]",
+                        "customRdpProperty": "[parameters('hostPoolRDPProperties')]",
                         "personalDesktopAssignmentType": "[if(contains(parameters('hostPoolType'), 'Personal'), split(parameters('hostPoolType'), ' ')[1], null())]",
                         "publicNetworkAccess": "[parameters('hostPoolPublicNetworkAccess')]",
                         "startVMOnConnect": true,

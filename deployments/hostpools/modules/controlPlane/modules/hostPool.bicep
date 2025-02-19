@@ -1,4 +1,3 @@
-param identitySolution string
 param privateEndpoint bool
 param hostPoolPrivateDnsZoneResourceId string
 param hostPoolRDPProperties string
@@ -19,8 +18,6 @@ param time string = utcNow('u')
 param hostPoolValidationEnvironment bool
 param virtualMachineTemplate string
 
-var customRdpProperty = !contains(identitySolution, 'DomainServices') && !contains(hostPoolRDPProperties, 'targetisaadjoined:i:1') ? '${hostPoolRDPProperties};targetisaadjoined:i:1' : hostPoolRDPProperties
-
 resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' = {
   name: hostPoolName
   location: location
@@ -35,7 +32,7 @@ resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' = {
       registrationTokenOperation: 'Update'
     }
     preferredAppGroupType: 'Desktop'
-    customRdpProperty: customRdpProperty
+    customRdpProperty: hostPoolRDPProperties
     personalDesktopAssignmentType: contains(hostPoolType, 'Personal') ? split(hostPoolType, ' ')[1] : null
     publicNetworkAccess: hostPoolPublicNetworkAccess
     startVMOnConnect: true
