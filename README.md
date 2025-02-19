@@ -1,3 +1,5 @@
+# This REPO is no longer being maintained. Please see [Microsoft Federal Azure Virtual Desktop Solution](https://www.github.com/azure/federalavd).
+
 [**Design**](docs/design.md) | [**Features**](docs/features.md) | [**Get Started**](docs/quickStart.md) | [**Troubleshooting**](docs/troubleshooting.md) | [**Parameters**](docs/parameters.md) | [**Scope**](docs/scope.md) | [**Zero Trust Framework**](docs/zeroTrustFramework.md)
 
 # Azure Virtual Desktop Solution
