@@ -1,0 +1,1730 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.33.93.31351",
+      "templateHash": "2837134848263146823"
+    }
+  },
+  "parameters": {
+    "artifactsContainerName": {
+      "type": "string",
+      "defaultValue": "artifacts",
+      "minLength": 3,
+      "maxLength": 63,
+      "metadata": {
+        "description": "Optional. Blob Container Name. Must start with a letter. Can only contain lower case letters, numbers, and -."
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[deployment().location]"
+    },
+    "nameConvResTypeAtEnd": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Optional. Reverse the normal Cloud Adoption Framework naming convention by putting the resource type abbreviation at the end of the resource name."
+      }
+    },
+    "logAnalyticsWorkspaceResourceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional. Resource Id of an existing Log Analytics Workspace to which diagnostic logs will be sent."
+      }
+    },
+    "remoteLocation": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional. Remote Location to which an Image Gallery will be deployed to support regional disaster recovery."
+      }
+    },
+    "storageSkuName": {
+      "type": "string",
+      "defaultValue": "Standard_LRS",
+      "allowedValues": [
+        "Standard_LRS",
+        "Standard_GRS",
+        "Standard_RAGRS",
+        "Standard_ZRS",
+        "Premium_LRS",
+        "Premium_ZRS",
+        "Standard_GZRS",
+        "Standard_RAGZRS"
+      ],
+      "metadata": {
+        "description": "Optional. Storage Account Sku Name."
+      }
+    },
+    "storageAccessTier": {
+      "type": "string",
+      "defaultValue": "Hot",
+      "allowedValues": [
+        "Premium",
+        "Hot",
+        "Cool"
+      ],
+      "metadata": {
+        "description": "Conditional. Required if the Storage Account kind is set to BlobStorage. The access tier is used for billing. The \"Premium\" access tier is the default value for premium block blobs storage account type and it cannot be changed for the premium block blobs storage account type."
+      }
+    },
+    "storageAllowSharedKeyAccess": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Optional. Indicates whether the storage account permits requests to be authorized with the account access key via Shared Key. If false, then all requests, including shared access signatures, must be authorized with Azure Active Directory (Azure AD). The default value is null, which is equivalent to true."
+      }
+    },
+    "storageSASExpirationPeriod": {
+      "type": "string",
+      "defaultValue": "180.00:00:00",
+      "metadata": {
+        "description": "Optional. The SAS expiration period. DD.HH:MM:SS."
+      }
+    },
+    "azureBlobPrivateDnsZoneResourceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional. The Resource Id of the Private DNS Zone where the Private Endpoint (if configured) A record will be registered."
+      }
+    },
+    "storagePublicNetworkAccess": {
+      "type": "string",
+      "defaultValue": "Enabled",
+      "allowedValues": [
+        "Enabled",
+        "Disabled"
+      ],
+      "metadata": {
+        "description": "Optional. Whether or not public network access is allowed for this resource. To limit public network access, use the \"PermittedIPs\" and/or the \"ServiceEndpointSubnetResourceIds\" parameters."
+      }
+    },
+    "privateEndpointSubnetResourceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional. The ResourceId of the private endpoint subnet."
+      }
+    },
+    "storagePermittedIPs": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "Optional. Array of permitted IPs or IP CIDR blocks that can access the storage account using the Public Endpoint."
+      }
+    },
+    "storageServiceEndpointSubnetResourceIds": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "Optional. An array of subnet resource IDs where Service Endpoints will be created to allow access to the storage account through the public endpoint."
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Optional. The tags by resource type to apply to the resources created by this template."
+      }
+    },
+    "timeStamp": {
+      "type": "string",
+      "defaultValue": "[utcNow('yyyyMMddhhmm')]",
+      "metadata": {
+        "description": "DO NOT MODIFY THIS VALUE! The timestamp is needed to differentiate deployments for certain Azure resources and must be set using a parameter."
+      }
+    }
+  },
+  "variables": {
+    "$fxv#0": {
+      "AzureChina": {
+        "chinaeast": {
+          "abbreviation": "cne",
+          "recoveryServicesGeo": "sha",
+          "timeDifference": "+8:00",
+          "timeZone": "China Standard Time"
+        },
+        "chinaeast2": {
+          "abbreviation": "cne2",
+          "recoveryServicesGeo": "sha2",
+          "timeDifference": "+8:00",
+          "timeZone": "China Standard Time"
+        },
+        "chinanorth": {
+          "abbreviation": "cnn",
+          "recoveryServicesGeo": "bjb",
+          "timeDifference": "+8:00",
+          "timeZone": "China Standard Time"
+        },
+        "chinanorth2": {
+          "abbreviation": "cnn2",
+          "recoveryServicesGeo": "bjb2",
+          "timeDifference": "+8:00",
+          "timeZone": "China Standard Time"
+        }
+      },
+      "AzureCloud": {
+        "australiacentral": {
+          "abbreviation": "auc",
+          "recoveryServicesGeo": "acl",
+          "timeDifference": "+10:00",
+          "timeZone": "AUS Eastern Standard Time"
+        },
+        "australiacentral2": {
+          "abbreviation": "auc2",
+          "recoveryServicesGeo": "acl2",
+          "timeDifference": "+10:00",
+          "timeZone": "AUS Eastern Standard Time"
+        },
+        "australiaeast": {
+          "abbreviation": "aue",
+          "recoveryServicesGeo": "ae",
+          "timeDifference": "+10:00",
+          "timeZone": "AUS Eastern Standard Time"
+        },
+        "australiasoutheast": {
+          "abbreviation": "ause",
+          "recoveryServicesGeo": "ase",
+          "timeDifference": "+10:00",
+          "timeZone": "AUS Eastern Standard Time"
+        },
+        "brazilsouth": {
+          "abbreviation": "brs",
+          "recoveryServicesGeo": "brs",
+          "timeDifference": "-3:00",
+          "timeZone": "E. South America Standard Time"
+        },
+        "brazilsoutheast": {
+          "abbreviation": "brse",
+          "recoveryServicesGeo": "bse",
+          "timeDifference": "-3:00",
+          "timeZone": "E. South America Standard Time"
+        },
+        "canadacentral": {
+          "abbreviation": "cac",
+          "recoveryServicesGeo": "cnc",
+          "timeDifference": "-5:00",
+          "timeZone": "Eastern Standard Time"
+        },
+        "canadaeast": {
+          "abbreviation": "cae",
+          "recoveryServicesGeo": "cne",
+          "timeDifference": "-5:00",
+          "timeZone": "Eastern Standard Time"
+        },
+        "centralindia": {
+          "abbreviation": "inc",
+          "recoveryServicesGeo": "inc",
+          "timeDifference": "+5:30",
+          "timeZone": "India Standard Time"
+        },
+        "centralus": {
+          "abbreviation": "usc",
+          "recoveryServicesGeo": "cus",
+          "timeDifference": "-6:00",
+          "timeZone": "Central Standard Time"
+        },
+        "eastasia": {
+          "abbreviation": "ase",
+          "recoveryServicesGeo": "ea",
+          "timeDifference": "+8:00",
+          "timeZone": "China Standard Time"
+        },
+        "eastus": {
+          "abbreviation": "use",
+          "recoveryServicesGeo": "eus",
+          "timeDifference": "-5:00",
+          "timeZone": "Eastern Standard Time"
+        },
+        "eastus2": {
+          "abbreviation": "use2",
+          "recoveryServicesGeo": "eus2",
+          "timeDifference": "-5:00",
+          "timeZone": "Eastern Standard Time"
+        },
+        "francecentral": {
+          "abbreviation": "frc",
+          "recoveryServicesGeo": "frc",
+          "timeDifference": "+1:00",
+          "timeZone": "Central Europe Standard Time"
+        },
+        "francesouth": {
+          "abbreviation": "frs",
+          "recoveryServicesGeo": "frs",
+          "timeDifference": "+1:00",
+          "timeZone": "Central Europe Standard Time"
+        },
+        "germanynorth": {
+          "abbreviation": "den",
+          "recoveryServicesGeo": "gn",
+          "timeDifference": "+1:00",
+          "timeZone": "Central Europe Standard Time"
+        },
+        "germanywestcentral": {
+          "abbreviation": "dewc",
+          "recoveryServicesGeo": "gwc",
+          "timeDifference": "+1:00",
+          "timeZone": "Central Europe Standard Time"
+        },
+        "israelcentral": {
+          "abbreviation": "ilc",
+          "recoveryServicesGeo": "ilc",
+          "timeDifference": "+2:00",
+          "timeZone": "Israel Standard Time"
+        },
+        "italynorth": {
+          "abbreviation": "itn",
+          "recoveryServicesGeo": "itn",
+          "timeDifference": "+1:00",
+          "timeZone": "Central Europe Standard Time"
+        },
+        "japaneast": {
+          "abbreviation": "jpe",
+          "recoveryServicesGeo": "jpe",
+          "timeDifference": "+9:00",
+          "timeZone": "Tokyo Standard Time"
+        },
+        "japanwest": {
+          "abbreviation": "jpw",
+          "recoveryServicesGeo": "jpw",
+          "timeDifference": "+9:00",
+          "timeZone": "Tokyo Standard Time"
+        },
+        "jioindiacentral": {
+          "abbreviation": "injc",
+          "recoveryServicesGeo": "jic",
+          "timeDifference": "+5:30",
+          "timeZone": "India Standard Time"
+        },
+        "jioindiawest": {
+          "abbreviation": "injw",
+          "recoveryServicesGeo": "jiw",
+          "timeDifference": "+5:30",
+          "timeZone": "India Standard Time"
+        },
+        "koreacentral": {
+          "abbreviation": "krc",
+          "recoveryServicesGeo": "krc",
+          "timeDifference": "+9:00",
+          "timeZone": "Korea Standard Time"
+        },
+        "koreasouth": {
+          "abbreviation": "krs",
+          "recoveryServicesGeo": "krs",
+          "timeDifference": "+9:00",
+          "timeZone": "Korea Standard Time"
+        },
+        "northcentralus": {
+          "abbreviation": "usnc",
+          "recoveryServicesGeo": "ncus",
+          "timeDifference": "-6:00",
+          "timeZone": "Central Standard Time"
+        },
+        "northeurope": {
+          "abbreviation": "eun",
+          "recoveryServicesGeo": "ne",
+          "timeDifference": "0:00",
+          "timeZone": "GMT Standard Time"
+        },
+        "norwayeast": {
+          "abbreviation": "noe",
+          "recoveryServicesGeo": "nwe",
+          "timeDifference": "+1:00",
+          "timeZone": "Central Europe Standard Time"
+        },
+        "norwaywest": {
+          "abbreviation": "now",
+          "recoveryServicesGeo": "nww",
+          "timeDifference": "+1:00",
+          "timeZone": "Central Europe Standard Time"
+        },
+        "polandcentral": {
+          "abbreviation": "plc",
+          "recoveryServicesGeo": "plc",
+          "timeDifference": "+1:00",
+          "timeZone": "Central Europe Standard Time"
+        },
+        "qatarcentral": {
+          "abbreviation": "qac",
+          "recoveryServicesGeo": "qac",
+          "timeDifference": "+3:00",
+          "timeZone": "Arabian Standard Time"
+        },
+        "southafricanorth": {
+          "abbreviation": "zan",
+          "recoveryServicesGeo": "san",
+          "timeDifference": "+2:00",
+          "timeZone": "South Africa Standard Time"
+        },
+        "southafricawest": {
+          "abbreviation": "zaw",
+          "recoveryServicesGeo": "saw",
+          "timeDifference": "+2:00",
+          "timeZone": "South Africa Standard Time"
+        },
+        "southcentralus": {
+          "abbreviation": "ussc",
+          "recoveryServicesGeo": "scus",
+          "timeDifference": "-6:00",
+          "timeZone": "Central Standard Time"
+        },
+        "southeastasia": {
+          "abbreviation": "asse",
+          "recoveryServicesGeo": "sea",
+          "timeDifference": "+8:00",
+          "timeZone": "Singapore Standard Time"
+        },
+        "southindia": {
+          "abbreviation": "ins",
+          "recoveryServicesGeo": "ins",
+          "timeDifference": "+5:30",
+          "timeZone": "India Standard Time"
+        },
+        "swedencentral": {
+          "abbreviation": "sec",
+          "recoveryServicesGeo": "sdc",
+          "timeDifference": "+1:00",
+          "timeZone": "Central Europe Standard Time"
+        },
+        "switzerlandnorth": {
+          "abbreviation": "chn",
+          "recoveryServicesGeo": "szn",
+          "timeDifference": "+1:00",
+          "timeZone": "Central Europe Standard Time"
+        },
+        "switzerlandwest": {
+          "abbreviation": "chw",
+          "recoveryServicesGeo": "szw",
+          "timeDifference": "+1:00",
+          "timeZone": "Central Europe Standard Time"
+        },
+        "uaecentral": {
+          "abbreviation": "aec",
+          "recoveryServicesGeo": "uac",
+          "timeDifference": "+3:00",
+          "timeZone": "Arabian Standard Time"
+        },
+        "uaenorth": {
+          "abbreviation": "aen",
+          "recoveryServicesGeo": "uan",
+          "timeDifference": "+3:00",
+          "timeZone": "Arabian Standard Time"
+        },
+        "uksouth": {
+          "abbreviation": "uks",
+          "recoveryServicesGeo": "uks",
+          "timeDifference": "0:00",
+          "timeZone": "GMT Standard Time"
+        },
+        "ukwest": {
+          "abbreviation": "ukw",
+          "recoveryServicesGeo": "ukw",
+          "timeDifference": "0:00",
+          "timeZone": "GMT Standard Time"
+        },
+        "westcentralus": {
+          "abbreviation": "uswc",
+          "recoveryServicesGeo": "wcus",
+          "timeDifference": "-7:00",
+          "timeZone": "Mountain Standard Time"
+        },
+        "westeurope": {
+          "abbreviation": "euw",
+          "recoveryServicesGeo": "we",
+          "timeDifference": "+1:00",
+          "timeZone": "Central Europe Standard Time"
+        },
+        "westindia": {
+          "abbreviation": "inw",
+          "recoveryServicesGeo": "inw",
+          "timeDifference": "+5:30",
+          "timeZone": "India Standard Time"
+        },
+        "westus": {
+          "abbreviation": "usw",
+          "recoveryServicesGeo": "wus",
+          "timeDifference": "-8:00",
+          "timeZone": "Pacific Standard Time"
+        },
+        "westus2": {
+          "abbreviation": "usw2",
+          "recoveryServicesGeo": "wus2",
+          "timeDifference": "-8:00",
+          "timeZone": "Pacific Standard Time"
+        },
+        "westus3": {
+          "abbreviation": "usw3",
+          "recoveryServicesGeo": "wus3",
+          "timeDifference": "-7:00",
+          "timeZone": "Mountain Standard Time"
+        }
+      },
+      "AzureUSGovernment": {
+        "usdodcentral": {
+          "abbreviation": "dodc",
+          "recoveryServicesGeo": "udc",
+          "timeDifference": "-6:00",
+          "timeZone": "Central Standard Time"
+        },
+        "usdodeast": {
+          "abbreviation": "dode",
+          "recoveryServicesGeo": "ude",
+          "timeDifference": "-5:00",
+          "timeZone": "Eastern Standard Time"
+        },
+        "usgovarizona": {
+          "abbreviation": "az",
+          "recoveryServicesGeo": "uga",
+          "timeDifference": "-7:00",
+          "timeZone": "Mountain Standard Time"
+        },
+        "usgovtexas": {
+          "abbreviation": "tx",
+          "recoveryServicesGeo": "ugt",
+          "timeDifference": "-6:00",
+          "timeZone": "Central Standard Time"
+        },
+        "usgovvirginia": {
+          "abbreviation": "va",
+          "recoveryServicesGeo": "ugv",
+          "timeDifference": "-5:00",
+          "timeZone": "Eastern Standard Time"
+        }
+      },
+      "USNat": {
+        "usnateast": {
+          "abbreviation": "east",
+          "recoveryServicesGeo": "exe",
+          "timeDifference": "-5:00",
+          "timeZone": "Eastern Standard Time"
+        },
+        "usnatwest": {
+          "abbreviation": "west",
+          "recoveryServicesGeo": "exw",
+          "timeDifference": "-8:00",
+          "timeZone": "Pacific Standard Time"
+        }
+      },
+      "USSec": {
+        "usseceast": {
+          "abbreviation": "east",
+          "recoveryServicesGeo": "rxe",
+          "timeDifference": "-5:00",
+          "timeZone": "Eastern Standard Time"
+        },
+        "ussecwest": {
+          "abbreviation": "west",
+          "recoveryServicesGeo": "rxw",
+          "timeDifference": "-8:00",
+          "timeZone": "Pacific Standard Time"
+        }
+      }
+    },
+    "$fxv#1": {
+      "applicationInsights": "appi",
+      "appServicePlans": "asp",
+      "availabilitySets": "as",
+      "computeGalleries": "gal",
+      "dataCollectionEndpoints": "dce",
+      "dataCollectionRules": "dcr",
+      "desktopApplicationGroups": "vddag",
+      "diskAccesses": "da",
+      "remoteApplicationGroups": "vdrag",
+      "disks": "disk",
+      "diskEncryptionSets": "des",
+      "functionApps": "fa",
+      "hostPools": "vdpool",
+      "keyVaults": "kv",
+      "logAnalyticsWorkspaces": "law",
+      "natGateways": "ng",
+      "netAppAccounts": "naa",
+      "netAppCapacityPools": "nacp",
+      "networkInterfaces": "nic",
+      "privateEndpoints": "pe",
+      "privateLinkScopes": "pls",
+      "publicIPAddresses": "pip",
+      "recoveryServicesVaults": "rsv",
+      "resourceGroups": "rg",
+      "routeTables": "rt",
+      "scalingPlans": "vdscaling",
+      "storageAccounts": "sa",
+      "userAssignedIdentities": "uai",
+      "virtualMachines": "vm",
+      "workspaces": "vdws",
+      "imageDefinitions": "vmid"
+    },
+    "locations": "[variables('$fxv#0')[environment().name]]",
+    "resourceAbbreviations": "[variables('$fxv#1')]",
+    "nameConv_Suffix_withoutResType": "LOCATION",
+    "nameConvSuffix": "[if(parameters('nameConvResTypeAtEnd'), format('{0}-RESOURCETYPE', variables('nameConv_Suffix_withoutResType')), variables('nameConv_Suffix_withoutResType'))]",
+    "nameConv_ImageManagement_ResGroup": "[if(parameters('nameConvResTypeAtEnd'), format('avd-image-management-{0}', variables('nameConvSuffix')), format('RESOURCETYPE-avd-image-management-{0}', variables('nameConvSuffix')))]",
+    "nameConv_ImageManagement_Resources": "[if(parameters('nameConvResTypeAtEnd'), format('avd-image-management-{0}', variables('nameConvSuffix')), format('RESOURCETYPE-avd-image-management-{0}', variables('nameConvSuffix')))]",
+    "resourceGroupName": "[replace(replace(variables('nameConv_ImageManagement_ResGroup'), 'LOCATION', variables('locations')[parameters('location')].abbreviation), 'RESOURCETYPE', variables('resourceAbbreviations').resourceGroups)]",
+    "remoteResourceGroupName": "[replace(replace(variables('nameConv_ImageManagement_ResGroup'), 'LOCATION', variables('locations')[parameters('remoteLocation')].abbreviation), 'RESOURCETYPE', variables('resourceAbbreviations').resourceGroups)]",
+    "blobContainerName": "[replace(replace(toLower(parameters('artifactsContainerName')), '_', '-'), ' ', '-')]",
+    "galleryName": "[replace(replace(replace(variables('nameConv_ImageManagement_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').computeGalleries), 'LOCATION', variables('locations')[parameters('location')].abbreviation), '-', '_')]",
+    "remoteGalleryName": "[replace(replace(replace(variables('nameConv_ImageManagement_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').computeGalleries), 'LOCATION', variables('locations')[parameters('remoteLocation')].abbreviation), '-', '_')]",
+    "identityName": "[replace(replace(variables('nameConv_ImageManagement_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').userAssignedIdentities), 'LOCATION', variables('locations')[parameters('location')].abbreviation)]",
+    "vnetName": "[if(not(empty(parameters('privateEndpointSubnetResourceId'))), split(parameters('privateEndpointSubnetResourceId'), '/')[8], '')]",
+    "privateEndpointNameConv": "[replace(format('{0}', if(parameters('nameConvResTypeAtEnd'), format('RESOURCE-SUBRESOURCE-{0}-RESOURCETYPE', variables('vnetName')), format('RESOURCETYPE-RESOURCE-SUBRESOURCE-{0}', variables('vnetName')))), 'RESOURCETYPE', variables('resourceAbbreviations').privateEndpoints)]",
+    "privateEndpointName": "[replace(replace(variables('privateEndpointNameConv'), 'SUBRESOURCE', 'blob'), 'RESOURCE', variables('storageName'))]",
+    "storageName": "[take(format('{0}imageassets{1}{2}', variables('resourceAbbreviations').storageAccounts, variables('locations')[parameters('location')].abbreviation, uniqueString(subscription().subscriptionId, variables('resourceGroupName'))), 24)]",
+    "storageKind": "StorageV2"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/resourceGroups",
+      "apiVersion": "2021-04-01",
+      "name": "[variables('resourceGroupName')]",
+      "location": "[parameters('location')]",
+      "tags": "[coalesce(tryGet(parameters('tags'), 'resourceGroups'), null())]"
+    },
+    {
+      "type": "Microsoft.Resources/resourceGroups",
+      "apiVersion": "2021-04-01",
+      "name": "[variables('remoteResourceGroupName')]",
+      "location": "[parameters('remoteLocation')]",
+      "tags": "[coalesce(tryGet(parameters('tags'), 'resourceGroups'), null())]"
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "[format('Image-Management-Resources-{0}', parameters('timeStamp'))]",
+      "resourceGroup": "[variables('resourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "azureBlobPrivateDnsZoneResourceId": {
+            "value": "[parameters('azureBlobPrivateDnsZoneResourceId')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "logAnalyticsWorkspaceId": {
+            "value": "[parameters('logAnalyticsWorkspaceResourceId')]"
+          },
+          "computeGalleryName": {
+            "value": "[variables('galleryName')]"
+          },
+          "storageAccountName": {
+            "value": "[variables('storageName')]"
+          },
+          "blobContainerName": {
+            "value": "[variables('blobContainerName')]"
+          },
+          "managedIdentityName": {
+            "value": "[variables('identityName')]"
+          },
+          "privateEndpointName": {
+            "value": "[variables('privateEndpointName')]"
+          },
+          "privateEndpointSubnetResourceId": {
+            "value": "[parameters('privateEndpointSubnetResourceId')]"
+          },
+          "storageAccessTier": {
+            "value": "[parameters('storageAccessTier')]"
+          },
+          "storageSASExpirationPeriod": {
+            "value": "[parameters('storageSASExpirationPeriod')]"
+          },
+          "storageKind": {
+            "value": "[variables('storageKind')]"
+          },
+          "storageSkuName": {
+            "value": "[parameters('storageSkuName')]"
+          },
+          "storagePermittedIPs": {
+            "value": "[parameters('storagePermittedIPs')]"
+          },
+          "storageServiceEndpointSubnetResourceIds": {
+            "value": "[parameters('storageServiceEndpointSubnetResourceIds')]"
+          },
+          "storageAllowPublicNetworkAccess": {
+            "value": "[parameters('storagePublicNetworkAccess')]"
+          },
+          "storageAllowSharedKeyAccess": {
+            "value": "[parameters('storageAllowSharedKeyAccess')]"
+          },
+          "tags": "[if(not(equals(parameters('tags'), createObject())), createObject('value', parameters('tags')), createObject('value', null()))]"
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.33.93.31351",
+              "templateHash": "2942783496077332732"
+            }
+          },
+          "parameters": {
+            "azureBlobPrivateDnsZoneResourceId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. The Resource Id of the Private DNS Zone where the Private Endpoint (if configured) A record will be registered."
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]"
+            },
+            "computeGalleryName": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. The name of the compute gallery to create."
+              }
+            },
+            "storageAccountName": {
+              "type": "string",
+              "maxLength": 24,
+              "metadata": {
+                "description": "Required. Name of the Storage Account."
+              }
+            },
+            "blobContainerName": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 63,
+              "metadata": {
+                "description": "Required. Blob Container Name"
+              }
+            },
+            "managedIdentityName": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 128
+            },
+            "storageKind": {
+              "type": "string",
+              "allowedValues": [
+                "Storage",
+                "StorageV2",
+                "BlobStorage",
+                "FileStorage",
+                "BlockBlobStorage"
+              ],
+              "metadata": {
+                "description": "Required. Type of Storage Account to create."
+              }
+            },
+            "storageSkuName": {
+              "type": "string",
+              "allowedValues": [
+                "Standard_LRS",
+                "Standard_GRS",
+                "Standard_RAGRS",
+                "Standard_ZRS",
+                "Premium_LRS",
+                "Premium_ZRS",
+                "Standard_GZRS",
+                "Standard_RAGZRS"
+              ],
+              "metadata": {
+                "description": "Required. Storage Account Sku Name."
+              }
+            },
+            "storageAccessTier": {
+              "type": "string",
+              "defaultValue": "Hot",
+              "allowedValues": [
+                "Premium",
+                "Hot",
+                "Cool"
+              ],
+              "metadata": {
+                "description": "Conditional. Required if the Storage Account kind is set to BlobStorage. The access tier is used for billing. The \"Premium\" access tier is the default value for premium block blobs storage account type and it cannot be changed for the premium block blobs storage account type."
+              }
+            },
+            "privateEndpointSubnetResourceId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. The ResourceId of the subnet where the Private Endpoint will be created."
+              }
+            },
+            "privateEndpointName": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. The Private Endpoint name to create for Blob Storage."
+              }
+            },
+            "storageAllowSharedKeyAccess": {
+              "type": "bool",
+              "metadata": {
+                "description": "Required. Indicates whether the storage account permits requests to be authorized with the account access key via Shared Key. If false, then all requests, including shared access signatures, must be authorized with Azure Active Directory (Azure AD). The default value is null, which is equivalent to true."
+              }
+            },
+            "storageAllowPublicNetworkAccess": {
+              "type": "string",
+              "allowedValues": [
+                "Enabled",
+                "Disabled"
+              ],
+              "metadata": {
+                "description": "Required. Whether or not public network access is allowed for this resource.\nFor security reasons it should be disabled; therefore, if you do not specify \"storagePermittedIPs\" or \"storageServiceEndpointSubnetResourceIds\" and you set \"createPrivateEndpoint\" to true,\nthen Public Network Access is automatically disabled."
+              }
+            },
+            "storagePermittedIPs": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Optional. List of IPs and IP prefixes that are to be allowed through the Storage Account Firewall."
+              }
+            },
+            "storageServiceEndpointSubnetResourceIds": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Optional. Array of subnet resource Ids where service endpoints are created for the storage account and permitted through the Storage Account Firewall."
+              }
+            },
+            "storageSASExpirationPeriod": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. The SAS expiration period. DD.HH:MM:SS."
+              }
+            },
+            "logAnalyticsWorkspaceId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. The log analytics workspace Id to where storage account diagnostics logs are sent."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Optional. The tags to apply to the resources created by this template."
+              }
+            }
+          },
+          "variables": {
+            "copy": [
+              {
+                "name": "ipRules",
+                "count": "[length(parameters('storagePermittedIPs'))]",
+                "input": {
+                  "value": "[parameters('storagePermittedIPs')[copyIndex('ipRules')]]",
+                  "action": "Allow"
+                }
+              },
+              {
+                "name": "virtualNetworkRules",
+                "count": "[length(parameters('storageServiceEndpointSubnetResourceIds'))]",
+                "input": {
+                  "id": "[parameters('storageServiceEndpointSubnetResourceIds')[copyIndex('virtualNetworkRules')]]",
+                  "action": "Allow"
+                }
+              }
+            ],
+            "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1')]"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Compute/galleries",
+              "apiVersion": "2022-08-03",
+              "name": "[parameters('computeGalleryName')]",
+              "location": "[parameters('location')]",
+              "tags": "[coalesce(tryGet(parameters('tags'), 'Microsoft.Compute/galleries'), createObject())]"
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts",
+              "apiVersion": "2022-09-01",
+              "name": "[parameters('storageAccountName')]",
+              "location": "[parameters('location')]",
+              "tags": "[coalesce(tryGet(parameters('tags'), 'Microsoft.Storage/storageAccounts'), createObject())]",
+              "sku": {
+                "name": "[parameters('storageSkuName')]"
+              },
+              "kind": "[parameters('storageKind')]",
+              "properties": {
+                "accessTier": "[parameters('storageAccessTier')]",
+                "allowBlobPublicAccess": false,
+                "allowSharedKeyAccess": "[parameters('storageAllowSharedKeyAccess')]",
+                "minimumTlsVersion": "TLS1_2",
+                "networkAcls": "[if(or(not(empty(variables('ipRules'))), not(empty(parameters('storageServiceEndpointSubnetResourceIds')))), createObject('bypass', 'AzureServices', 'virtualNetworkRules', variables('virtualNetworkRules'), 'ipRules', variables('ipRules'), 'defaultAction', 'Deny'), null())]",
+                "publicNetworkAccess": "[parameters('storageAllowPublicNetworkAccess')]",
+                "supportsHttpsTrafficOnly": true,
+                "encryption": {
+                  "services": {
+                    "blob": {
+                      "enabled": true
+                    }
+                  },
+                  "requireInfrastructureEncryption": true,
+                  "keySource": "Microsoft.Storage"
+                },
+                "sasPolicy": "[if(not(empty(parameters('storageSASExpirationPeriod'))), createObject('expirationAction', 'Log', 'sasExpirationPeriod', parameters('storageSASExpirationPeriod')), null())]"
+              }
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/blobServices",
+              "apiVersion": "2023-01-01",
+              "name": "[format('{0}/{1}', parameters('storageAccountName'), 'default')]",
+              "properties": {
+                "changeFeed": {
+                  "enabled": true,
+                  "retentionInDays": 7
+                },
+                "containerDeleteRetentionPolicy": {
+                  "enabled": true,
+                  "days": 7,
+                  "allowPermanentDelete": true
+                },
+                "defaultServiceVersion": null,
+                "deleteRetentionPolicy": {
+                  "enabled": true,
+                  "days": 7,
+                  "allowPermanentDelete": true
+                },
+                "isVersioningEnabled": true,
+                "lastAccessTimeTrackingPolicy": {
+                  "enable": true,
+                  "name": "AccessTimeTracking",
+                  "trackingGranularityInDays": 1
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+              "apiVersion": "2023-01-01",
+              "name": "[format('{0}/{1}/{2}', parameters('storageAccountName'), 'default', parameters('blobContainerName'))]",
+              "properties": {
+                "publicAccess": "None"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccountName'), 'default')]"
+              ]
+            },
+            {
+              "condition": "[not(empty(parameters('privateEndpointSubnetResourceId')))]",
+              "type": "Microsoft.Network/privateEndpoints",
+              "apiVersion": "2020-05-01",
+              "name": "[parameters('privateEndpointName')]",
+              "location": "[parameters('location')]",
+              "tags": "[coalesce(tryGet(parameters('tags'), 'Microsoft.Network/privateEndpoints'), createObject())]",
+              "properties": {
+                "subnet": {
+                  "id": "[parameters('privateEndpointSubnetResourceId')]"
+                },
+                "privateLinkServiceConnections": [
+                  {
+                    "name": "[format('{0}-blob', parameters('storageAccountName'))]",
+                    "properties": {
+                      "privateLinkServiceId": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]",
+                      "groupIds": [
+                        "blob"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+              ]
+            },
+            {
+              "condition": "[not(empty(parameters('azureBlobPrivateDnsZoneResourceId')))]",
+              "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+              "apiVersion": "2021-08-01",
+              "name": "[format('{0}/{1}', parameters('privateEndpointName'), parameters('storageAccountName'))]",
+              "properties": {
+                "privateDnsZoneConfigs": [
+                  {
+                    "name": "ipconfig1",
+                    "properties": {
+                      "privateDnsZoneId": "[parameters('azureBlobPrivateDnsZoneResourceId')]"
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/privateEndpoints', parameters('privateEndpointName'))]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+              ]
+            },
+            {
+              "condition": "[not(empty(parameters('logAnalyticsWorkspaceId')))]",
+              "type": "Microsoft.Insights/diagnosticSettings",
+              "apiVersion": "2021-05-01-preview",
+              "scope": "[format('Microsoft.Storage/storageAccounts/{0}', parameters('storageAccountName'))]",
+              "name": "[format('{0}-diagnosticSettings', parameters('storageAccountName'))]",
+              "properties": {
+                "metrics": [
+                  {
+                    "category": "Transaction",
+                    "enabled": true
+                  }
+                ],
+                "workspaceId": "[parameters('logAnalyticsWorkspaceId')]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+              "apiVersion": "2023-01-31",
+              "name": "[parameters('managedIdentityName')]",
+              "location": "[parameters('location')]",
+              "tags": "[coalesce(tryGet(parameters('tags'), 'Microsoft.ManagedIdentity/userAssignedIdentities'), createObject())]"
+            },
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.Storage/storageAccounts/{0}', parameters('storageAccountName'))]",
+              "name": "[guid(parameters('managedIdentityName'), parameters('storageAccountName'), variables('roleDefinitionId'))]",
+              "properties": {
+                "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('managedIdentityName')), '2023-01-31').principalId]",
+                "principalType": "ServicePrincipal",
+                "roleDefinitionId": "[variables('roleDefinitionId')]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('managedIdentityName'))]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "storageAccountResourceId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+            },
+            "blobContainerName": {
+              "type": "string",
+              "value": "[parameters('blobContainerName')]"
+            },
+            "managedIdentityClientId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('managedIdentityName')), '2023-01-31').clientId]"
+            },
+            "managedIdentityResourceId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('managedIdentityName'))]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "[format('Remote-Image-Gallery-{0}', parameters('timeStamp'))]",
+      "resourceGroup": "[variables('remoteResourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "name": {
+            "value": "[variables('remoteGalleryName')]"
+          },
+          "tags": {
+            "value": "[coalesce(tryGet(parameters('tags'), 'computeGalleries'), null())]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.33.93.31351",
+              "templateHash": "10935292721587312457"
+            },
+            "name": "Azure Compute Galleries",
+            "description": "This module deploys an Azure Compute Gallery (formerly known as Shared Image Gallery).",
+            "owner": "Azure/module-maintainers"
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "metadata": {
+                "description": "Required. Name of the Azure Compute Gallery."
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Optional. Location for all resources."
+              }
+            },
+            "description": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. Description of the Azure Shared Image Gallery."
+              }
+            },
+            "applications": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Optional. Applications to create."
+              }
+            },
+            "images": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Optional. Images to create."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Optional. Tags for all resources."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Compute/galleries",
+              "apiVersion": "2022-03-03",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "description": "[parameters('description')]",
+                "identifier": {}
+              }
+            },
+            {
+              "copy": {
+                "name": "galleries_applications",
+                "count": "[length(parameters('applications'))]"
+              },
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2022-09-01",
+              "name": "[format('{0}-Gallery-Application-{1}', uniqueString(deployment().name, parameters('location')), copyIndex())]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "location": {
+                    "value": "[parameters('location')]"
+                  },
+                  "name": {
+                    "value": "[parameters('applications')[copyIndex()].name]"
+                  },
+                  "galleryName": {
+                    "value": "[parameters('name')]"
+                  },
+                  "supportedOSType": "[if(contains(parameters('applications')[copyIndex()], 'supportOSType'), createObject('value', parameters('applications')[copyIndex()].supportedOSType), createObject('value', 'Windows'))]",
+                  "description": "[if(contains(parameters('applications')[copyIndex()], 'description'), createObject('value', parameters('applications')[copyIndex()].description), createObject('value', ''))]",
+                  "eula": "[if(contains(parameters('applications')[copyIndex()], 'eula'), createObject('value', parameters('applications')[copyIndex()].eula), createObject('value', ''))]",
+                  "privacyStatementUri": "[if(contains(parameters('applications')[copyIndex()], 'privacyStatementUri'), createObject('value', parameters('applications')[copyIndex()].privacyStatementUri), createObject('value', ''))]",
+                  "releaseNoteUri": "[if(contains(parameters('applications')[copyIndex()], 'releaseNoteUri'), createObject('value', parameters('applications')[copyIndex()].releaseNoteUri), createObject('value', ''))]",
+                  "endOfLifeDate": "[if(contains(parameters('applications')[copyIndex()], 'endOfLifeDate'), createObject('value', parameters('applications')[copyIndex()].endOfLifeDate), createObject('value', ''))]",
+                  "customActions": "[if(contains(parameters('applications')[copyIndex()], 'customActions'), createObject('value', parameters('applications')[copyIndex()].customActions), createObject('value', createArray()))]",
+                  "tags": "[if(contains(parameters('applications')[copyIndex()], 'tags'), createObject('value', parameters('applications')[copyIndex()].tags), createObject('value', createObject()))]"
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.33.93.31351",
+                      "templateHash": "6733369195613077379"
+                    },
+                    "name": "Compute Galleries Applications",
+                    "description": "This module deploys an Azure Compute Gallery Application.",
+                    "owner": "Azure/module-maintainers"
+                  },
+                  "parameters": {
+                    "name": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Required. Name of the application definition."
+                      }
+                    },
+                    "location": {
+                      "type": "string",
+                      "defaultValue": "[resourceGroup().location]",
+                      "metadata": {
+                        "description": "Optional. Location for all resources."
+                      }
+                    },
+                    "galleryName": {
+                      "type": "string",
+                      "minLength": 1,
+                      "metadata": {
+                        "description": "Conditional. The name of the parent Azure Compute Gallery. Required if the template is used in a standalone deployment."
+                      }
+                    },
+                    "description": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Optional. The description of this gallery Application Definition resource. This property is updatable."
+                      }
+                    },
+                    "eula": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Optional. The Eula agreement for the gallery Application Definition. Has to be a valid URL."
+                      }
+                    },
+                    "privacyStatementUri": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Optional. The privacy statement uri. Has to be a valid URL."
+                      }
+                    },
+                    "releaseNoteUri": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Optional. The release note uri. Has to be a valid URL."
+                      }
+                    },
+                    "supportedOSType": {
+                      "type": "string",
+                      "defaultValue": "Windows",
+                      "allowedValues": [
+                        "Windows",
+                        "Linux"
+                      ],
+                      "metadata": {
+                        "description": "Optional. This property allows you to specify the supported type of the OS that application is built for."
+                      }
+                    },
+                    "endOfLifeDate": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Optional. The end of life date of the gallery Image Definition. This property can be used for decommissioning purposes. This property is updatable. Allowed format: 2020-01-10T23:00:00.000Z."
+                      }
+                    },
+                    "tags": {
+                      "type": "object",
+                      "defaultValue": {},
+                      "metadata": {
+                        "description": "Optional. Tags for all resources."
+                      }
+                    },
+                    "customActions": {
+                      "type": "array",
+                      "defaultValue": [],
+                      "metadata": {
+                        "description": "Optional. A list of custom actions that can be performed with all of the Gallery Application Versions within this Gallery Application."
+                      }
+                    }
+                  },
+                  "resources": [
+                    {
+                      "type": "Microsoft.Compute/galleries/applications",
+                      "apiVersion": "2022-03-03",
+                      "name": "[format('{0}/{1}', parameters('galleryName'), parameters('name'))]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tags')]",
+                      "properties": {
+                        "customActions": "[if(not(empty(parameters('customActions'))), parameters('customActions'), null())]",
+                        "description": "[parameters('description')]",
+                        "endOfLifeDate": "[parameters('endOfLifeDate')]",
+                        "eula": "[parameters('eula')]",
+                        "privacyStatementUri": "[parameters('privacyStatementUri')]",
+                        "releaseNoteUri": "[parameters('releaseNoteUri')]",
+                        "supportedOSType": "[parameters('supportedOSType')]"
+                      }
+                    }
+                  ],
+                  "outputs": {
+                    "resourceGroupName": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "The resource group the image was deployed into."
+                      },
+                      "value": "[resourceGroup().name]"
+                    },
+                    "resourceId": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "The resource ID of the image."
+                      },
+                      "value": "[resourceId('Microsoft.Compute/galleries/applications', parameters('galleryName'), parameters('name'))]"
+                    },
+                    "name": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "The name of the image."
+                      },
+                      "value": "[parameters('name')]"
+                    },
+                    "location": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "The location the resource was deployed into."
+                      },
+                      "value": "[reference(resourceId('Microsoft.Compute/galleries/applications', parameters('galleryName'), parameters('name')), '2022-03-03', 'full').location]"
+                    }
+                  }
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Compute/galleries', parameters('name'))]"
+              ]
+            },
+            {
+              "copy": {
+                "name": "galleries_images",
+                "count": "[length(parameters('images'))]"
+              },
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2022-09-01",
+              "name": "[format('{0}-Gallery-Image-{1}', uniqueString(deployment().name, parameters('location')), copyIndex())]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "location": {
+                    "value": "[parameters('location')]"
+                  },
+                  "name": {
+                    "value": "[parameters('images')[copyIndex()].name]"
+                  },
+                  "galleryName": {
+                    "value": "[parameters('name')]"
+                  },
+                  "osType": "[if(contains(parameters('images')[copyIndex()], 'osType'), createObject('value', parameters('images')[copyIndex()].osType), createObject('value', 'Windows'))]",
+                  "osState": "[if(contains(parameters('images')[copyIndex()], 'osState'), createObject('value', parameters('images')[copyIndex()].osState), createObject('value', 'Generalized'))]",
+                  "publisher": "[if(contains(parameters('images')[copyIndex()], 'publisher'), createObject('value', parameters('images')[copyIndex()].publisher), createObject('value', 'MicrosoftWindowsServer'))]",
+                  "offer": "[if(contains(parameters('images')[copyIndex()], 'offer'), createObject('value', parameters('images')[copyIndex()].offer), createObject('value', 'WindowsServer'))]",
+                  "sku": "[if(contains(parameters('images')[copyIndex()], 'sku'), createObject('value', parameters('images')[copyIndex()].sku), createObject('value', '2019-Datacenter'))]",
+                  "minRecommendedvCPUs": "[if(contains(parameters('images')[copyIndex()], 'minRecommendedvCPUs'), createObject('value', parameters('images')[copyIndex()].minRecommendedvCPUs), createObject('value', 1))]",
+                  "maxRecommendedvCPUs": "[if(contains(parameters('images')[copyIndex()], 'maxRecommendedvCPUs'), createObject('value', parameters('images')[copyIndex()].maxRecommendedvCPUs), createObject('value', 4))]",
+                  "minRecommendedMemory": "[if(contains(parameters('images')[copyIndex()], 'minRecommendedMemory'), createObject('value', parameters('images')[copyIndex()].minRecommendedMemory), createObject('value', 4))]",
+                  "maxRecommendedMemory": "[if(contains(parameters('images')[copyIndex()], 'maxRecommendedMemory'), createObject('value', parameters('images')[copyIndex()].maxRecommendedMemory), createObject('value', 16))]",
+                  "hyperVGeneration": "[if(contains(parameters('images')[copyIndex()], 'hyperVGeneration'), createObject('value', parameters('images')[copyIndex()].hyperVGeneration), createObject('value', 'V1'))]",
+                  "securityType": "[if(contains(parameters('images')[copyIndex()], 'securityType'), createObject('value', parameters('images')[copyIndex()].securityType), createObject('value', 'Standard'))]",
+                  "description": "[if(contains(parameters('images')[copyIndex()], 'description'), createObject('value', parameters('images')[copyIndex()].description), createObject('value', ''))]",
+                  "eula": "[if(contains(parameters('images')[copyIndex()], 'eula'), createObject('value', parameters('images')[copyIndex()].eula), createObject('value', ''))]",
+                  "privacyStatementUri": "[if(contains(parameters('images')[copyIndex()], 'privacyStatementUri'), createObject('value', parameters('images')[copyIndex()].privacyStatementUri), createObject('value', ''))]",
+                  "releaseNoteUri": "[if(contains(parameters('images')[copyIndex()], 'releaseNoteUri'), createObject('value', parameters('images')[copyIndex()].releaseNoteUri), createObject('value', ''))]",
+                  "productName": "[if(contains(parameters('images')[copyIndex()], 'productName'), createObject('value', parameters('images')[copyIndex()].productName), createObject('value', ''))]",
+                  "planName": "[if(contains(parameters('images')[copyIndex()], 'planName'), createObject('value', parameters('images')[copyIndex()].planName), createObject('value', ''))]",
+                  "planPublisherName": "[if(contains(parameters('images')[copyIndex()], 'planPublisherName'), createObject('value', parameters('images')[copyIndex()].planPublisherName), createObject('value', ''))]",
+                  "endOfLife": "[if(contains(parameters('images')[copyIndex()], 'endOfLife'), createObject('value', parameters('images')[copyIndex()].endOfLife), createObject('value', ''))]",
+                  "excludedDiskTypes": "[if(contains(parameters('images')[copyIndex()], 'excludedDiskTypes'), createObject('value', parameters('images')[copyIndex()].excludedDiskTypes), createObject('value', createArray()))]",
+                  "tags": "[if(contains(parameters('images')[copyIndex()], 'tags'), createObject('value', parameters('images')[copyIndex()].tags), createObject('value', createObject()))]"
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.33.93.31351",
+                      "templateHash": "3601898217796418255"
+                    },
+                    "name": "Compute Galleries Image Definitions",
+                    "description": "This module deploys an Azure Compute Gallery Image Definition.",
+                    "owner": "Azure/module-maintainers"
+                  },
+                  "parameters": {
+                    "name": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Required. Name of the image definition."
+                      }
+                    },
+                    "location": {
+                      "type": "string",
+                      "defaultValue": "[resourceGroup().location]",
+                      "metadata": {
+                        "description": "Optional. Location for all resources."
+                      }
+                    },
+                    "galleryName": {
+                      "type": "string",
+                      "minLength": 1,
+                      "metadata": {
+                        "description": "Conditional. The name of the parent Azure Shared Image Gallery. Required if the template is used in a standalone deployment."
+                      }
+                    },
+                    "architecture": {
+                      "type": "string",
+                      "defaultValue": "x64",
+                      "allowedValues": [
+                        "x64",
+                        "Arm64"
+                      ],
+                      "metadata": {
+                        "description": "Optional. The OS architecture of the image to be created. V1 images do not support Arm64."
+                      }
+                    },
+                    "osType": {
+                      "type": "string",
+                      "defaultValue": "Windows",
+                      "allowedValues": [
+                        "Windows",
+                        "Linux"
+                      ],
+                      "metadata": {
+                        "description": "Optional. OS type of the image to be created."
+                      }
+                    },
+                    "osState": {
+                      "type": "string",
+                      "defaultValue": "Generalized",
+                      "allowedValues": [
+                        "Generalized",
+                        "Specialized"
+                      ],
+                      "metadata": {
+                        "description": "Optional. This property allows the user to specify whether the virtual machines created under this image are 'Generalized' or 'Specialized'."
+                      }
+                    },
+                    "publisher": {
+                      "type": "string",
+                      "defaultValue": "MicrosoftWindowsServer",
+                      "metadata": {
+                        "description": "Optional. The name of the gallery Image Definition publisher."
+                      }
+                    },
+                    "offer": {
+                      "type": "string",
+                      "defaultValue": "WindowsServer",
+                      "metadata": {
+                        "description": "Optional. The name of the gallery Image Definition offer."
+                      }
+                    },
+                    "sku": {
+                      "type": "string",
+                      "defaultValue": "2019-Datacenter",
+                      "metadata": {
+                        "description": "Optional. The name of the gallery Image Definition SKU."
+                      }
+                    },
+                    "minRecommendedvCPUs": {
+                      "type": "int",
+                      "defaultValue": 1,
+                      "minValue": 1,
+                      "maxValue": 128,
+                      "metadata": {
+                        "description": "Optional. The minimum number of the CPU cores recommended for this image."
+                      }
+                    },
+                    "maxRecommendedvCPUs": {
+                      "type": "int",
+                      "defaultValue": 4,
+                      "minValue": 1,
+                      "maxValue": 128,
+                      "metadata": {
+                        "description": "Optional. The maximum number of the CPU cores recommended for this image."
+                      }
+                    },
+                    "minRecommendedMemory": {
+                      "type": "int",
+                      "defaultValue": 4,
+                      "minValue": 1,
+                      "maxValue": 4000,
+                      "metadata": {
+                        "description": "Optional. The minimum amount of RAM in GB recommended for this image."
+                      }
+                    },
+                    "maxRecommendedMemory": {
+                      "type": "int",
+                      "defaultValue": 16,
+                      "minValue": 1,
+                      "maxValue": 4000,
+                      "metadata": {
+                        "description": "Optional. The maximum amount of RAM in GB recommended for this image."
+                      }
+                    },
+                    "hyperVGeneration": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "allowedValues": [
+                        "",
+                        "V1",
+                        "V2"
+                      ],
+                      "metadata": {
+                        "description": "Optional. The hypervisor generation of the Virtual Machine.</p>- If this value is not specified, then it is determined by the securityType parameter.</p>- If the securityType parameter is specified, then the value of hyperVGeneration will be V2, else V1."
+                      }
+                    },
+                    "securityType": {
+                      "type": "string",
+                      "defaultValue": "Standard",
+                      "allowedValues": [
+                        "Standard",
+                        "TrustedLaunch",
+                        "TrustedLaunchSupported",
+                        "ConfidentialVM",
+                        "ConfidentialVMSupported",
+                        "TrustedLaunchAndConfidentialVMSupported"
+                      ],
+                      "metadata": {
+                        "description": "Optional. The security type of the image. Requires a hyperVGeneration V2."
+                      }
+                    },
+                    "isHibernateSupported": {
+                      "type": "bool",
+                      "defaultValue": false,
+                      "metadata": {
+                        "description": "Optional. The image will support hibernation."
+                      }
+                    },
+                    "isAcceleratedNetworkSupported": {
+                      "type": "bool",
+                      "defaultValue": false,
+                      "metadata": {
+                        "description": "Optional. The image supports accelerated networking.</p>Accelerated networking enables single root I/O virtualization (SR-IOV) to a VM, greatly improving its networking performance.</p>This high-performance path bypasses the host from the data path, which reduces latency, jitter, and CPU utilization for the most demanding network workloads on supported VM types."
+                      }
+                    },
+                    "isHigherStoragePerformanceSupported": {
+                      "type": "bool",
+                      "defaultValue": false,
+                      "metadata": {
+                        "description": "Optional. The image supports Higher Storage Performance with NVMe."
+                      }
+                    },
+                    "description": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Optional. The description of this gallery Image Definition resource. This property is updatable."
+                      }
+                    },
+                    "eula": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Optional. The Eula agreement for the gallery Image Definition. Has to be a valid URL."
+                      }
+                    },
+                    "privacyStatementUri": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Optional. The privacy statement uri. Has to be a valid URL."
+                      }
+                    },
+                    "releaseNoteUri": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Optional. The release note uri. Has to be a valid URL."
+                      }
+                    },
+                    "productName": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Optional. The product ID."
+                      }
+                    },
+                    "planName": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Optional. The plan ID."
+                      }
+                    },
+                    "planPublisherName": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Optional. The publisher ID."
+                      }
+                    },
+                    "endOfLife": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Optional. The end of life date of the gallery Image Definition. This property can be used for decommissioning purposes. This property is updatable. Allowed format: 2020-01-10T23:00:00.000Z."
+                      }
+                    },
+                    "excludedDiskTypes": {
+                      "type": "array",
+                      "defaultValue": [],
+                      "metadata": {
+                        "description": "Optional. List of the excluded disk types. E.g. Standard_LRS."
+                      }
+                    },
+                    "tags": {
+                      "type": "object",
+                      "defaultValue": {},
+                      "metadata": {
+                        "description": "Optional. Tags for all resources."
+                      }
+                    }
+                  },
+                  "variables": {
+                    "hibernateSupported": "[if(parameters('isHibernateSupported'), 'true', 'false')]",
+                    "acceleratedNetworkSupported": "[if(parameters('isAcceleratedNetworkSupported'), 'true', 'false')]",
+                    "diskControllerTypes": "[if(parameters('isHigherStoragePerformanceSupported'), createArray(createObject('name', 'DiskControllerTypes', 'value', 'SCSI, NVMe')), createArray())]",
+                    "gaFeatures": "[if(and(not(empty(parameters('securityType'))), not(equals(parameters('securityType'), 'Standard'))), createArray(createObject('name', 'SecurityType', 'value', parameters('securityType')), createObject('name', 'IsAcceleratedNetworkSupported', 'value', variables('acceleratedNetworkSupported')), createObject('name', 'IsHibernateSupported', 'value', variables('hibernateSupported'))), createArray(createObject('name', 'IsAcceleratedNetworkSupported', 'value', variables('acceleratedNetworkSupported')), createObject('name', 'IsHibernateSupported', 'value', variables('hibernateSupported'))))]",
+                    "features": "[if(not(empty(variables('diskControllerTypes'))), union(variables('gaFeatures'), variables('diskControllerTypes')), variables('gaFeatures'))]"
+                  },
+                  "resources": [
+                    {
+                      "type": "Microsoft.Compute/galleries/images",
+                      "apiVersion": "2022-03-03",
+                      "name": "[format('{0}/{1}', parameters('galleryName'), parameters('name'))]",
+                      "location": "[parameters('location')]",
+                      "properties": {
+                        "architecture": "[if(and(equals(parameters('architecture'), 'x64'), equals(parameters('hyperVGeneration'), 'V2')), parameters('architecture'), null())]",
+                        "osType": "[parameters('osType')]",
+                        "osState": "[parameters('osState')]",
+                        "identifier": {
+                          "publisher": "[parameters('publisher')]",
+                          "offer": "[parameters('offer')]",
+                          "sku": "[parameters('sku')]"
+                        },
+                        "recommended": {
+                          "vCPUs": {
+                            "min": "[parameters('minRecommendedvCPUs')]",
+                            "max": "[parameters('maxRecommendedvCPUs')]"
+                          },
+                          "memory": {
+                            "min": "[parameters('minRecommendedMemory')]",
+                            "max": "[parameters('maxRecommendedMemory')]"
+                          }
+                        },
+                        "hyperVGeneration": "[if(not(empty(parameters('hyperVGeneration'))), parameters('hyperVGeneration'), if(not(empty(parameters('securityType'))), 'V2', 'V1'))]",
+                        "features": "[variables('features')]",
+                        "description": "[parameters('description')]",
+                        "eula": "[if(not(empty(parameters('eula'))), parameters('eula'), null())]",
+                        "privacyStatementUri": "[parameters('privacyStatementUri')]",
+                        "releaseNoteUri": "[parameters('releaseNoteUri')]",
+                        "purchasePlan": {
+                          "product": "[if(not(empty(parameters('productName'))), parameters('productName'), null())]",
+                          "name": "[if(not(empty(parameters('planName'))), parameters('planName'), null())]",
+                          "publisher": "[if(not(empty(parameters('planPublisherName'))), parameters('planPublisherName'), null())]"
+                        },
+                        "endOfLifeDate": "[parameters('endOfLife')]",
+                        "disallowed": {
+                          "diskTypes": "[parameters('excludedDiskTypes')]"
+                        }
+                      },
+                      "tags": "[parameters('tags')]"
+                    }
+                  ],
+                  "outputs": {
+                    "resourceGroupName": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "The resource group the image was deployed into."
+                      },
+                      "value": "[resourceGroup().name]"
+                    },
+                    "resourceId": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "The resource ID of the image."
+                      },
+                      "value": "[resourceId('Microsoft.Compute/galleries/images', parameters('galleryName'), parameters('name'))]"
+                    },
+                    "name": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "The name of the image."
+                      },
+                      "value": "[parameters('name')]"
+                    },
+                    "location": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "The location the resource was deployed into."
+                      },
+                      "value": "[reference(resourceId('Microsoft.Compute/galleries/images', parameters('galleryName'), parameters('name')), '2022-03-03', 'full').location]"
+                    }
+                  }
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Compute/galleries', parameters('name'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "resourceId": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource ID of the deployed image gallery."
+              },
+              "value": "[resourceId('Microsoft.Compute/galleries', parameters('name'))]"
+            },
+            "resourceGroupName": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource group of the deployed image gallery."
+              },
+              "value": "[resourceGroup().name]"
+            },
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the deployed image gallery."
+              },
+              "value": "[parameters('name')]"
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "The location the resource was deployed into."
+              },
+              "value": "[reference(resourceId('Microsoft.Compute/galleries', parameters('name')), '2022-03-03', 'full').location]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('remoteResourceGroupName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "storageAccountResourceId": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('Image-Management-Resources-{0}', parameters('timeStamp'))), '2022-09-01').outputs.storageAccountResourceId.value]"
+    },
+    "blobContainerName": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('Image-Management-Resources-{0}', parameters('timeStamp'))), '2022-09-01').outputs.blobContainerName.value]"
+    },
+    "managedIdentityClientId": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('Image-Management-Resources-{0}', parameters('timeStamp'))), '2022-09-01').outputs.managedIdentityClientId.value]"
+    },
+    "managedIdentityResourceId": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('Image-Management-Resources-{0}', parameters('timeStamp'))), '2022-09-01').outputs.managedIdentityResourceId.value]"
+    }
+  }
+}
