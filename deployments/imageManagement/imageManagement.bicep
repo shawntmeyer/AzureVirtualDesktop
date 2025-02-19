@@ -87,10 +87,10 @@ var nameConvSuffix = nameConvResTypeAtEnd ? '${nameConv_Suffix_withoutResType}-R
 var nameConv_ImageManagement_ResGroup = nameConvResTypeAtEnd ? 'avd-image-management-${nameConvSuffix}' : 'RESOURCETYPE-avd-image-management-${nameConvSuffix}'
 var nameConv_ImageManagement_Resources = nameConvResTypeAtEnd ? 'avd-image-management-${nameConvSuffix}' : 'RESOURCETYPE-avd-image-management-${nameConvSuffix}'
 var resourceGroupName = replace(replace(nameConv_ImageManagement_ResGroup, 'LOCATION', locations[location].abbreviation), 'RESOURCETYPE', resourceAbbreviations.resourceGroups)
-var remoteResourceGroupName = replace(replace(nameConv_ImageManagement_ResGroup, 'LOCATION', locations[remoteLocation].abbreviation), 'RESOURCETYPE', resourceAbbreviations.resourceGroups)
+var remoteResourceGroupName = !empty(remoteLocation) ? replace(replace(nameConv_ImageManagement_ResGroup, 'LOCATION', locations[remoteLocation].abbreviation), 'RESOURCETYPE', resourceAbbreviations.resourceGroups) : ''
 var blobContainerName = replace(replace(toLower(artifactsContainerName), '_', '-'), ' ', '-')
 var galleryName = replace(replace(replace(nameConv_ImageManagement_Resources, 'RESOURCETYPE', resourceAbbreviations.computeGalleries), 'LOCATION', locations[location].abbreviation), '-', '_')
-var remoteGalleryName = replace(replace(replace(nameConv_ImageManagement_Resources, 'RESOURCETYPE', resourceAbbreviations.computeGalleries), 'LOCATION', locations[remoteLocation].abbreviation), '-', '_')
+var remoteGalleryName = !empty(remoteLocation) ? replace(replace(replace(nameConv_ImageManagement_Resources, 'RESOURCETYPE', resourceAbbreviations.computeGalleries), 'LOCATION', locations[remoteLocation].abbreviation), '-', '_') : ''
 var identityName = replace(replace(nameConv_ImageManagement_Resources, 'RESOURCETYPE', resourceAbbreviations.userAssignedIdentities), 'LOCATION', locations[location].abbreviation)
 var vnetName = !empty(privateEndpointSubnetResourceId) ? split(privateEndpointSubnetResourceId, '/')[8] : ''
 var privateEndpointNameConv = replace('${nameConvResTypeAtEnd ? 'RESOURCE-SUBRESOURCE-${vnetName}-RESOURCETYPE' : 'RESOURCETYPE-RESOURCE-SUBRESOURCE-${vnetName}'}', 'RESOURCETYPE', resourceAbbreviations.privateEndpoints)
@@ -132,13 +132,13 @@ module resources 'resources.bicep' = {
   ]
 }
 
-resource remoteResourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
+resource remoteResourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = if(!empty(remoteLocation)) {
   name: remoteResourceGroupName
   location: remoteLocation
   tags: tags.?resourceGroups ?? {}
 }
 
-module remoteImageGallery '../sharedModules/resources/compute/gallery/main.bicep' = {
+module remoteImageGallery '../sharedModules/resources/compute/gallery/main.bicep' = if(!empty(remoteLocation)) {
   name: 'Remote-Image-Gallery-${timeStamp}'
   scope: az.resourceGroup(remoteResourceGroupName)
   params: {

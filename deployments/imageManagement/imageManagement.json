@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "2837134848263146823"
+      "templateHash": "4630929051221856394"
     }
   },
   "parameters": {
@@ -565,10 +565,10 @@
     "nameConv_ImageManagement_ResGroup": "[if(parameters('nameConvResTypeAtEnd'), format('avd-image-management-{0}', variables('nameConvSuffix')), format('RESOURCETYPE-avd-image-management-{0}', variables('nameConvSuffix')))]",
     "nameConv_ImageManagement_Resources": "[if(parameters('nameConvResTypeAtEnd'), format('avd-image-management-{0}', variables('nameConvSuffix')), format('RESOURCETYPE-avd-image-management-{0}', variables('nameConvSuffix')))]",
     "resourceGroupName": "[replace(replace(variables('nameConv_ImageManagement_ResGroup'), 'LOCATION', variables('locations')[parameters('location')].abbreviation), 'RESOURCETYPE', variables('resourceAbbreviations').resourceGroups)]",
-    "remoteResourceGroupName": "[replace(replace(variables('nameConv_ImageManagement_ResGroup'), 'LOCATION', variables('locations')[parameters('remoteLocation')].abbreviation), 'RESOURCETYPE', variables('resourceAbbreviations').resourceGroups)]",
+    "remoteResourceGroupName": "[if(not(empty(parameters('remoteLocation'))), replace(replace(variables('nameConv_ImageManagement_ResGroup'), 'LOCATION', variables('locations')[parameters('remoteLocation')].abbreviation), 'RESOURCETYPE', variables('resourceAbbreviations').resourceGroups), '')]",
     "blobContainerName": "[replace(replace(toLower(parameters('artifactsContainerName')), '_', '-'), ' ', '-')]",
     "galleryName": "[replace(replace(replace(variables('nameConv_ImageManagement_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').computeGalleries), 'LOCATION', variables('locations')[parameters('location')].abbreviation), '-', '_')]",
-    "remoteGalleryName": "[replace(replace(replace(variables('nameConv_ImageManagement_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').computeGalleries), 'LOCATION', variables('locations')[parameters('remoteLocation')].abbreviation), '-', '_')]",
+    "remoteGalleryName": "[if(not(empty(parameters('remoteLocation'))), replace(replace(replace(variables('nameConv_ImageManagement_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').computeGalleries), 'LOCATION', variables('locations')[parameters('remoteLocation')].abbreviation), '-', '_'), '')]",
     "identityName": "[replace(replace(variables('nameConv_ImageManagement_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').userAssignedIdentities), 'LOCATION', variables('locations')[parameters('location')].abbreviation)]",
     "vnetName": "[if(not(empty(parameters('privateEndpointSubnetResourceId'))), split(parameters('privateEndpointSubnetResourceId'), '/')[8], '')]",
     "privateEndpointNameConv": "[replace(format('{0}', if(parameters('nameConvResTypeAtEnd'), format('RESOURCE-SUBRESOURCE-{0}-RESOURCETYPE', variables('vnetName')), format('RESOURCETYPE-RESOURCE-SUBRESOURCE-{0}', variables('vnetName')))), 'RESOURCETYPE', variables('resourceAbbreviations').privateEndpoints)]",
@@ -582,14 +582,15 @@
       "apiVersion": "2021-04-01",
       "name": "[variables('resourceGroupName')]",
       "location": "[parameters('location')]",
-      "tags": "[coalesce(tryGet(parameters('tags'), 'resourceGroups'), null())]"
+      "tags": "[coalesce(tryGet(parameters('tags'), 'resourceGroups'), createObject())]"
     },
     {
+      "condition": "[not(empty(parameters('remoteLocation')))]",
       "type": "Microsoft.Resources/resourceGroups",
       "apiVersion": "2021-04-01",
       "name": "[variables('remoteResourceGroupName')]",
       "location": "[parameters('remoteLocation')]",
-      "tags": "[coalesce(tryGet(parameters('tags'), 'resourceGroups'), null())]"
+      "tags": "[coalesce(tryGet(parameters('tags'), 'resourceGroups'), createObject())]"
     },
     {
       "type": "Microsoft.Resources/deployments",
@@ -1026,6 +1027,7 @@
       ]
     },
     {
+      "condition": "[not(empty(parameters('remoteLocation')))]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2022-09-01",
       "name": "[format('Remote-Image-Gallery-{0}', parameters('timeStamp'))]",
@@ -1043,7 +1045,7 @@
             "value": "[variables('remoteGalleryName')]"
           },
           "tags": {
-            "value": "[coalesce(tryGet(parameters('tags'), 'computeGalleries'), null())]"
+            "value": "[coalesce(tryGet(parameters('tags'), 'computeGalleries'), createObject())]"
           }
         },
         "template": {
@@ -1053,7 +1055,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "10935292721587312457"
+              "templateHash": "2039503176102821969"
             },
             "name": "Azure Compute Galleries",
             "description": "This module deploys an Azure Compute Gallery (formerly known as Shared Image Gallery).",
@@ -1348,7 +1350,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "3601898217796418255"
+                      "templateHash": "13078416586510542741"
                     },
                     "name": "Compute Galleries Image Definitions",
                     "description": "This module deploys an Azure Compute Gallery Image Definition.",
@@ -1467,14 +1469,13 @@
                     },
                     "hyperVGeneration": {
                       "type": "string",
-                      "defaultValue": "",
+                      "defaultValue": "V2",
                       "allowedValues": [
-                        "",
                         "V1",
                         "V2"
                       ],
                       "metadata": {
-                        "description": "Optional. The hypervisor generation of the Virtual Machine.</p>- If this value is not specified, then it is determined by the securityType parameter.</p>- If the securityType parameter is specified, then the value of hyperVGeneration will be V2, else V1."
+                        "description": "Optional. The hypervisor generation of the Virtual Machine."
                       }
                     },
                     "securityType": {
@@ -1588,7 +1589,7 @@
                     "hibernateSupported": "[if(parameters('isHibernateSupported'), 'true', 'false')]",
                     "acceleratedNetworkSupported": "[if(parameters('isAcceleratedNetworkSupported'), 'true', 'false')]",
                     "diskControllerTypes": "[if(parameters('isHigherStoragePerformanceSupported'), createArray(createObject('name', 'DiskControllerTypes', 'value', 'SCSI, NVMe')), createArray())]",
-                    "gaFeatures": "[if(and(not(empty(parameters('securityType'))), not(equals(parameters('securityType'), 'Standard'))), createArray(createObject('name', 'SecurityType', 'value', parameters('securityType')), createObject('name', 'IsAcceleratedNetworkSupported', 'value', variables('acceleratedNetworkSupported')), createObject('name', 'IsHibernateSupported', 'value', variables('hibernateSupported'))), createArray(createObject('name', 'IsAcceleratedNetworkSupported', 'value', variables('acceleratedNetworkSupported')), createObject('name', 'IsHibernateSupported', 'value', variables('hibernateSupported'))))]",
+                    "gaFeatures": "[if(not(equals(parameters('securityType'), 'Standard')), createArray(createObject('name', 'SecurityType', 'value', parameters('securityType')), createObject('name', 'IsAcceleratedNetworkSupported', 'value', variables('acceleratedNetworkSupported')), createObject('name', 'IsHibernateSupported', 'value', variables('hibernateSupported'))), createArray(createObject('name', 'IsAcceleratedNetworkSupported', 'value', variables('acceleratedNetworkSupported')), createObject('name', 'IsHibernateSupported', 'value', variables('hibernateSupported'))))]",
                     "features": "[if(not(empty(variables('diskControllerTypes'))), union(variables('gaFeatures'), variables('diskControllerTypes')), variables('gaFeatures'))]"
                   },
                   "resources": [
@@ -1616,7 +1617,7 @@
                             "max": "[parameters('maxRecommendedMemory')]"
                           }
                         },
-                        "hyperVGeneration": "[if(not(empty(parameters('hyperVGeneration'))), parameters('hyperVGeneration'), if(not(empty(parameters('securityType'))), 'V2', 'V1'))]",
+                        "hyperVGeneration": "[parameters('hyperVGeneration')]",
                         "features": "[variables('features')]",
                         "description": "[parameters('description')]",
                         "eula": "[if(not(empty(parameters('eula'))), parameters('eula'), null())]",

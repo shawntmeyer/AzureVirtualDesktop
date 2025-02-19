@@ -4,19 +4,7 @@
   "parameters": {
     "nameConvResTypeAtEnd": {
       "value": false
-    },
-    "customComputeGalleryName": {
-      "value": "none"
-    },
-    "customManagedIdentityName": {
-      "value": "none"
-    },
-    "customResourceGroupName": {
-      "value": "none"
-    },
-    "customArtifactsStorageAccountName": {
-      "value": "none"
-    },
+    },    
     "logAnalyticsWorkspaceResourceId": {
       "value": ""
     },
