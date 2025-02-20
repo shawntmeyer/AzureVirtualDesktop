@@ -167,18 +167,6 @@ module roleAssignment_DiskEncryptionSet_EncryptUser '../../../../sharedModules/r
     roleDefinitionId: 'e147488a-f6f5-4113-8e2d-b22465e65bf6' // Key Vault Crypto Service Encryption User
   }
 }
-/*
-module roleAssignment_DiskEncryptionSet_EncryptUser1 'keyVault_RBAC.bicep' = {
-  name: 'RoleAssignment_DiskEncryptionSet_EncryptUser_${timeStamp}'
-  params: {
-    principalId: diskEncryptionSet.outputs.principalId
-    principalType: 'ServicePrincipal'
-    roleDefinitionId: 'e147488a-f6f5-4113-8e2d-b22465e65bf6' // Key Vault Crypto Service Encryption User
-    keyName: confidentialVMOSDiskEncryption ? confidentialVMEncryptionKeyName : vmEncryptionKeyName
-    keyVaultName: KeyVault.outputs.name
-  }
-}
-*/
 
 output diskEncryptionSetResourceId string = diskEncryptionSet.outputs.resourceId
 output diskEncryptionSetRoleAssignmentId string = roleAssignment_DiskEncryptionSet_EncryptUser.outputs.resourceId
