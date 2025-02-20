@@ -159,7 +159,16 @@ module diskEncryptionSet '../../../../sharedModules/resources/compute/disk-encry
   }
 }
 
-module roleAssignment_DiskEncryptionSet_EncryptUser 'keyVault_RBAC.bicep' = {
+module roleAssignment_DiskEncryptionSet_EncryptUser '../../../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = {
+  name: 'RoleAssignment_DiskEncryptionSet_EncryptUser_${timeStamp}'
+  params: {
+    principalId: diskEncryptionSet.outputs.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: 'e147488a-f6f5-4113-8e2d-b22465e65bf6' // Key Vault Crypto Service Encryption User
+  }
+}
+/*
+module roleAssignment_DiskEncryptionSet_EncryptUser1 'keyVault_RBAC.bicep' = {
   name: 'RoleAssignment_DiskEncryptionSet_EncryptUser_${timeStamp}'
   params: {
     principalId: diskEncryptionSet.outputs.principalId
@@ -169,5 +178,7 @@ module roleAssignment_DiskEncryptionSet_EncryptUser 'keyVault_RBAC.bicep' = {
     keyVaultName: KeyVault.outputs.name
   }
 }
+*/
 
 output diskEncryptionSetResourceId string = diskEncryptionSet.outputs.resourceId
+output diskEncryptionSetRoleAssignmentId string = roleAssignment_DiskEncryptionSet_EncryptUser.outputs.resourceId
