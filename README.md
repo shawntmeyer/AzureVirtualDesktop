@@ -4,13 +4,13 @@
 
 With this solution, you can deploy:
 
-1. A fully operational Azure Virtual Desktop hostpool.
+1. One (1) or more fully operational Azure Virtual Desktop hostpools - either pooled or personal.
 2. Image management capability.
 3. Custom Image build automation solution.
 
 The code and automation capabilities of this repo can be used to deploy these capabilities in Azure Commercial, Azure US Government, **USSec**, and **USNat** Azure environments. The code is designed to allow you to deploy in compliance with Microsoft's [Zero Trust principles](https://learn.microsoft.com/security/zero-trust/azure-infrastructure-avd) and [IL5 Isolation Guidance](https://learn.microsoft.com/en-us/azure/azure-government/documentation-government-impact-level-5).
 
-Many of the [common features](docs/features.md) used with AVD have been automated in this solution for your convenience.
+The code is idempotent to allow all resources deployed via this solution to be redeployed without conflicts when the same parameters are used. BMany of the [common features](docs/features.md) used with AVD have been automated in this solution for your convenience. The [resource organization](docs/design.md) follows CAF guidance and by changing the `identifier` parameter and/or the deployment location of the host pool deployment, you can deploy multiple host pools while sharing many resources to create an enterprise ready AVD solution including regional disaster recovery capabilities.
 
 ## Quick Start
 
