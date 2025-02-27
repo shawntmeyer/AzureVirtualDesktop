@@ -357,21 +357,26 @@ If ($EdgeTemplatesCab.Count -eq 0) {
     If (-not($latestPolicyFile)) {   
         $latestpolicyfile = $policyfiles | Sort-Object ProductVersion | Select-Object -last 1
     }  
-    $EdgeTemplatesUrl = $latestpolicyfile.artifacts.Location   
-    Write-Log -category Info -message "Getting download Urls for latest Edge browser and policy templates from '$APIUrl'."
-    $EdgeTemplatesCab = Get-InternetFile -Url $EdgeTemplatesUrl -OutputDirectory $TempDir -Verbose
+    $EdgeTemplatesUrl = $latestpolicyfile.artifacts.Location
+    If ($null -eq $EdgeTemplatesUrl) {
+        Write-Log -category Warning -message "Unable to get download Url for Edge Policy Templates."
+    } Else {
+        Write-Log -category Info -message "Getting download Urls for latest Edge browser and policy templates from '$APIUrl'."
+        $EdgeTemplatesCab = Get-InternetFile -Url $EdgeTemplatesUrl -OutputDirectory $TempDir -Verbose
+    }
 }
-$TemplatesDir = Join-Path -Path $TempDir -ChildPath 'Templates'
-New-Item -Path $TemplatesDir -ItemType Directory -Force | out-null
-Write-Log -category Info -message "Expanding `"$EdgeTemplatesCab`" into `"$TemplatesDir`"."
-& cmd /c extrac32 /Y /E $EdgeTemplatesCab /L "$TemplatesDir"
-$EdgeTemplatesZip = Get-ChildItem -Path "$TemplatesDir" -Filter '*.zip' -File -Recurse
-$EdgeTemplatesZip = $EdgeTemplatesZip[0].FullName
-Expand-Archive -Path $EdgeTemplatesZip -DestinationPath "$TemplatesDir" -force
-Write-Log -category Info -message "Copy ADMX and ADML files to PolicyDefinition Folders."
-
-$null = Get-ChildItem -Path "$TemplatesDir" -File -Recurse -Filter '*.admx' | ForEach-Object { Copy-Item -Path $_.FullName -Destination "$env:WINDIR\PolicyDefinitions\" -Force }
-$null = Get-ChildItem -Path "$TemplatesDir" -Directory -Recurse | Where-Object { $_.Name -eq 'en-us' } | Get-ChildItem -File -recurse -filter '*.adml' | ForEach-Object { Copy-Item -Path $_.FullName -Destination "$env:WINDIR\PolicyDefinitions\en-us\" -Force }
+If ($null -ne $EdgeTemplatesCab) {
+    $TemplatesDir = Join-Path -Path $TempDir -ChildPath 'Templates'
+    New-Item -Path $TemplatesDir -ItemType Directory -Force | out-null
+    Write-Log -category Info -message "Expanding `"$EdgeTemplatesCab`" into `"$TemplatesDir`"."
+    & cmd /c extrac32 /Y /E $EdgeTemplatesCab /L "$TemplatesDir"
+    $EdgeTemplatesZip = Get-ChildItem -Path "$TemplatesDir" -Filter '*.zip' -File -Recurse
+    $EdgeTemplatesZip = $EdgeTemplatesZip[0].FullName
+    Expand-Archive -Path $EdgeTemplatesZip -DestinationPath "$TemplatesDir" -force
+    Write-Log -category Info -message "Copy ADMX and ADML files to PolicyDefinition Folders."
+    $null = Get-ChildItem -Path "$TemplatesDir" -File -Recurse -Filter '*.admx' | ForEach-Object { Copy-Item -Path $_.FullName -Destination "$env:WINDIR\PolicyDefinitions\" -Force }
+    $null = Get-ChildItem -Path "$TemplatesDir" -Directory -Recurse | Where-Object { $_.Name -eq 'en-us' } | Get-ChildItem -File -recurse -filter '*.adml' | ForEach-Object { Copy-Item -Path $_.FullName -Destination "$env:WINDIR\PolicyDefinitions\en-us\" -Force }
+}
 
 Write-Log -message "Checking for lgpo.exe in '$env:SystemRoot\system32'."
 
@@ -415,8 +420,8 @@ If (Test-Path -Path "$env:SystemRoot\System32\Lgpo.exe") {
         Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Edge\SmartScreenAllowListDomains' -RegistryValue '*' -DeleteAllValues -outfileprefix $appName -Verbose
         $i = 1
         ForEach ($domain in $SmartScreenAllowListDomains) {
-            Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Edge\SmartScreenAllowListDomains' -RegistryValue $i -RegistryType 'STRING' -RegistryData $domain -outfileprefix $appName -Verbose        $i++
-       
+            Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Edge\SmartScreenAllowListDomains' -RegistryValue $i -RegistryType 'STRING' -RegistryData $domain -outfileprefix $appName -Verbose
+            $i++       
         }
     }
     if ($null -ne $PopupsAllowedForUrls -and $PopupsAllowedForUrls.Count -gt 0) {
@@ -428,6 +433,7 @@ If (Test-Path -Path "$env:SystemRoot\System32\Lgpo.exe") {
         }
     }
     Invoke-LGPO -Verbose
+    Write-Log -category Info -message "Edge Group Policy Configuration Complete."
 }
 Else {
     Write-Log -category Error -message "Unable to configure local policy with lgpo tool because it was not found."
