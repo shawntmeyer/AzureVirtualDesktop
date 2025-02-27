@@ -277,7 +277,7 @@ function New-Log {
 
 #region Initialization
 $Script:Name = [System.IO.Path]::GetFileNameWithoutExtension($PSCommandPath)
-New-Log "C:\Windows\Logs\Configuration"
+New-Log "C:\Windows\Logs"
 $ErrorActionPreference = 'Stop'
 Write-Log -category Info -message "Starting '$PSCommandPath'."
 #endregion

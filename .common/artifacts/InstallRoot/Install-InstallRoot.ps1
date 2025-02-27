@@ -169,7 +169,7 @@ Function Get-InternetFile {
 
 #region Initialization
 $Script:Name = [System.IO.Path]::GetFileNameWithoutExtension($PSCommandPath)
-New-Log "C:\Windows\Logs\Software"
+New-Log "C:\Windows\Logs"
 $ErrorActionPreference = 'Stop'
 Write-Log -category Info -message "Starting '$PSCommandPath'."
 $PathMSI = (Get-ChildItem -Path $PSScriptRoot -Filter '*.msi').FullName
