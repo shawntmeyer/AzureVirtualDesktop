@@ -35,8 +35,8 @@ function Write-Log {
     Write-Verbose "$Script:Name $content" -verbose
 
     if (! $script:Log) {
-        $File = Join-Path $env:TEMP "log.log"
-        Write-Error "Log file not found, create new $File"
+        $File = Join-Path $env:TEMP "$Script:Name.log"
+        Write-Warning "Log file not found, create new $File"
         $script:Log = $File
     }
     else {
