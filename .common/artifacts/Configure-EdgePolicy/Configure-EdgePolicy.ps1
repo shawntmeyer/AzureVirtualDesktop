@@ -72,7 +72,7 @@ Function Get-InternetFile {
 
         If ($OutputFileName) { 
             $wc = New-Object System.Net.WebClient
-            $OutputFile = Join-Path $OutputDirectory $OutputFileName
+            $OutputFile = Join-Path $OutputDirectory -ChildPath $OutputFileName
             Write-Log -Message "${CmdletName}: Downloading file at '$url' to '$OutputFile'."
             Try {
                 $wc.DownloadFile($url, $OutputFile)
@@ -86,7 +86,7 @@ Function Get-InternetFile {
                 }
             }
             Catch {
-                Write-Error -Category Error -Message "${CmdletName}: Error downloading file. Please check url."
+                Write-Log -category Error -Message "${CmdletName}: Error downloading file. Please check url."
                 Return $Null
             }
         }
@@ -335,7 +335,7 @@ function New-Log {
 
 #region Initialization
 $Script:Name = [System.IO.Path]::GetFileNameWithoutExtension($PSCommandPath)
-New-Log "C:\Windows\Logs\Configuration"
+New-Log "C:\Windows\Logs"
 $ErrorActionPreference = 'Stop'
 Write-Log -category Info -message "Starting '$PSCommandPath'."
 $APIUrl = "https://edgeupdates.microsoft.com/api/products?view=enterprise"
