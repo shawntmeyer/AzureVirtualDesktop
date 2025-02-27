@@ -88,7 +88,7 @@ Function Get-InternetFile {
                 }
             }
             Catch {
-                Write-Error -Category Error -Message "${CmdletName}: Error downloading file. Please check url."
+                Write-Log -Category Error -Message "${CmdletName}: Error downloading file. Please check url."
                 Return $Null
             }
         }
@@ -140,13 +140,13 @@ Function Get-InternetUrl {
                 }
 
             } else {
-                Write-Warning "No download URL found using search term."
+                Write-Log -category Error -message "No download URL found using search term."
                 Return $null
             }
         }
     }
     Catch {
-        Write-Error "Error Downloading HTML and determining link for download."
+        Write-Log -Category Error -message "Error Downloading HTML and determining link for download."
         Return
     }
 }
@@ -289,8 +289,8 @@ function Write-Log {
     Write-Verbose "$Script:Name $content" -verbose
 
     if (! $script:Log) {
-        $File = Join-Path $env:TEMP "log.log"
-        Write-Error "Log file not found, create new $File"
+        $File = Join-Path $env:TEMP -ChildPath "$Script:Name.log"
+        Write-Warning "Log file not found, create new $File"
         $script:Log = $File
     }
     else {

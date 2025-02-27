@@ -138,13 +138,13 @@ Function Get-InternetUrl {
                 }
 
             } else {
-                Write-Warning "No download URL found using search term."
+                Write-Log -Category Warning -Message "No download URL found using search term."
                 Return $null
             }
         }
     }
     Catch {
-        Write-Error "Error Downloading HTML and determining link for download."
+        Write-Log -Category Error -Message "Error Downloading HTML and determining link for download."
         Return
     }
 }

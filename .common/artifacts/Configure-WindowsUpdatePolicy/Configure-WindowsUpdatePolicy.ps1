@@ -76,7 +76,7 @@ Function Get-InternetFile {
                 }
             }
             Catch {
-                Write-Error -Category Error -Message "${CmdletName}: Error downloading file. Please check url."
+                Write-Log -Category Error -Message "${CmdletName}: Error downloading file. Please check url."
                 Return $Null
             }
         }
