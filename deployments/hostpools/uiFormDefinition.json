@@ -84,11 +84,15 @@
 									}
 								},
 								{
-									"name": "servicePrincipalApi",
+									"name": "avdServicePrincipalsApi",
 									"type": "Microsoft.Solutions.GraphApiControl",
 									"request": {
 										"method": "GET",
-										"path": "/v1.0/serviceprincipals?$filter=appId eq '9cdead84-a844-4324-93f2-b2e6bb768d07'"
+										"path": "/v1.0/servicePrincipals?$filter=startsWith(displayName, 'Azure Virtual Desktop')&$select=displayName,id",
+										"transforms": {
+											"avd": "[value[?displayName=='Azure Virtual Desktop'] | [0].id]",
+											"avdARMProvider": "[value[?displayName=='Azure Virtual Desktop ARM Provider'] | [0].id]"
+										}
 									}
 								},
 								{
@@ -103,7 +107,7 @@
 										"regex": "^(?!\\d+$)\\w{8}-\\w{4}-\\w{4}-\\w{4}-\\w{12}$",
 										"validationMessage": "A proper GUID must be provided."
 									},
-									"visible": "[empty(steps('basics').prereqs.servicePrincipalApi)]"
+									"visible": "[empty(first(steps('basics').prereqs.avdServicePrincipalsApi.value))]"
 								}
 							],
 							"visible": true
@@ -393,7 +397,7 @@
 									"name": "rdpProperties",
 									"type": "Microsoft.Common.TextBox",
 									"visible": true,
-									"label": "Custom RDP properties",								
+									"label": "Custom RDP properties",
 									"toolTip": "Specify the configuration for the RDP properties on the AVD host pool.",
 									"constraints": {
 										"required": false
@@ -1138,7 +1142,7 @@
 								{
 									"name": "confOSDiskEncryptionWarning",
 									"type": "Microsoft.Common.InfoBox",
-									"visible": "[and( steps('hosts').diskEncryption.confidentialVMOSDiskEncryption, equals(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged') )]",
+									"visible": "[and(steps('hosts').diskEncryption.confidentialVMOSDiskEncryption, equals(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged') )]",
 									"options": {
 										"style": "Warning",
 										"text": "You must have completed the prerequistes to support Confidential VM Disk Encryption.",
@@ -1150,20 +1154,23 @@
 									"type": "Microsoft.Solutions.GraphApiControl",
 									"request": {
 										"method": "GET",
-										"path": "/v1.0/serviceprincipals?$filter=appId eq 'bf7b6499-ff71-4aa2-97a4-f372087be7f0'"
+										"path": "/v1.0/servicePrincipals?$filter=startsWith(displayName, 'Confidential VM Orchestrator')&$select=displayName,id",
+										"transforms": {
+											"objectId": "[value[?displayName=='Confidential VM Orchestrator'] | [0].id]"
+										}
 									}
-								},
+								},								
 								{
 									"name": "confDiskEncryptionPrincipal",
 									"type": "Microsoft.Common.TextBox",
 									"label": "Confidential VM Orchestrator (Object Id)",
-									"toolTip": "Enter the Object Id of the Confidential VM Orchestrator Service Principal with AppId 'bf7b6499-ff71-4aa2-97a4-f372087be7f0'",
+									"toolTip": "Enter the Object Id of the 'Confidential VM Orchestrator' Service Principal",
 									"constraints": {
 										"required": true,
 										"regex": "^(?!\\d+$)\\w{8}-\\w{4}-\\w{4}-\\w{4}-\\w{12}$",
 										"validationMessage": "A proper GUID must be provided."
 									},
-									"visible": "[and(steps('hosts').diskEncryption.confidentialVMOSDiskEncryption, equals(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), empty(steps('hosts').diskEncryption.confDiskEncryptionPrincipalApi))]"
+									"visible": "[and(steps('hosts').diskEncryption.confidentialVMOSDiskEncryption, equals(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), empty(first(steps('hosts').diskEncryption.confDiskEncryptionPrincipalApi.value)))]"
 								}
 							]
 						},
@@ -2999,7 +3006,7 @@
 									"min": 30,
 									"max": 180,
 									"visible": "[or(contains(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), contains(steps('userProfiles').azureFiles.keyManagement, 'CustomerManaged'))]"
-								}								
+								}
 							]
 						},
 						{
@@ -3826,7 +3833,7 @@
 									}
 								}
 							]
-						}						
+						}
 					]
 				},
 				{
@@ -3849,7 +3856,7 @@
 								"Microsoft.DesktopVirtualization/workspaces",
 								"Microsoft.Insights/dataCollectionEndpoints",
 								"Microsoft.Insights/dataCollectionRules",
-								"Microsoft.KeyVault/vaults",								
+								"Microsoft.KeyVault/vaults",
 								"Microsoft.ManagedIdentity/userAssignedIdentities",
 								"Microsoft.NetApp/netAppAccounts",
 								"Microsoft.Network/networkInterfaces",
@@ -3866,7 +3873,7 @@
 		},
 		"outputs": {
 			"parameters": {
-				"avdObjectId": "[if(empty(steps('basics').prereqs.servicePrincipalApi), steps('basics').prereqs.avdObjectId, first(map(steps('basics').prereqs.servicePrincipalApi.value, (sp) => sp.id)))]",
+				"avdObjectId": "[if(empty(steps('basics').prereqs.avdServicePrincipalsApi), steps('basics').prereqs.avdObjectId, first(steps('basics').prereqs.avdServicePrincipalsApi.transformed.avd))]",
 				"identifier": "[steps('basics').naming.identifier]",
 				"index": "[steps('basics').naming.index]",
 				"nameConvResTypeAtEnd": "[steps('basics').naming.nameConvResTypeAtEnd]",
@@ -3897,7 +3904,7 @@
 				"encryptionAtHost": "[steps('hosts').diskEncryption.encryptionAtHost]",
 				"keyManagementDisks": "[steps('hosts').diskEncryption.keyManagement]",
 				"confidentialVMOSDiskEncryption": "[steps('hosts').diskEncryption.confidentialVMOSDiskEncryption]",
-				"confidentialVMOrchestratorObjectId": "[if(empty(steps('hosts').diskEncryption.confDiskEncryptionPrincipalApi), steps('hosts').diskEncryption.confDiskEncryptionPrincipal, first(map(steps('hosts').diskEncryption.confDiskEncryptionPrincipalApi.value, (sp) => sp.id)))]",
+				"confidentialVMOrchestratorObjectId": "[if(and(steps('hosts').diskEncryption.confidentialVMOSDiskEncryption, equals(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged')), if(empty(first(steps('hosts').diskEncryption.confDiskEncryptionPrincipalApi.value)), steps('hosts').diskEncryption.confDiskEncryptionPrincipal, first(steps('hosts').diskEncryption.confDiskEncryptionPrincipalApi.transformed.objectId)), '')]",
 				"dedicatedHostGroupResourceId": "[if(steps('hosts').dedicatedHosts.deployToDedicatedHosts, steps('hosts').dedicatedHosts.dedicatedHostGroup, '')]",
 				"dedicatedHostResourceId": "[if(steps('hosts').dedicatedHosts.deployToDedicatedHosts, steps('hosts').dedicatedHosts.dedicatedHost, '')]",
 				"availability": "[if(equals(steps('hosts').dedicatedHosts.deployToDedicatedHosts, false), steps('hosts').availability.availability, 'none')]",
