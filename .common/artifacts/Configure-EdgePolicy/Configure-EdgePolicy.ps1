@@ -15,6 +15,9 @@ param (
 [string]$ScriptName = "Configure-EdgePolicy"
 [string]$Log = Join-Path -Path $LogDir -ChildPath "$ScriptName.log"
 [string]$TempDir = Join-Path -Path $env:Temp -ChildPath $ScriptName
+If (-not(Test-Path -Path $TempDir)) {
+    New-Item -Path $TempDir -ItemType Directory -Force
+}
 
 [array]$SmartScreenAllowListDomains = $SmartScreenAllowListDomains.Replace('\"', '"').Replace('\[', '[').Replace('\]', ']') | ConvertFrom-Json
 [array]$PopupsAllowedForUrls = $PopupsAllowedForUrls.Replace('\"', '"').Replace('\[', '[').Replace('\]', ']') | ConvertFrom-Json
