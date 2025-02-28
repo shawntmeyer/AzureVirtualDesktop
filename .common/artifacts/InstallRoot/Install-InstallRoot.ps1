@@ -1,13 +1,7 @@
 #region Initialization
 $SoftwareName = 'DoD InstallRoot'
-
 $DownloadUrl = "https://dl.dod.cyber.mil/wp-content/uploads/pki-pke/msi/InstallRoot_5.6x64.msi"
-
-[String]$Script:LogDir = "$($env:SystemRoot)\Logs\Software"
-If (-not(Test-Path -Path $Script:LogDir)) {
-    New-Item -Path $Script:LogDir -ItemType Dir -Force
-}
-
+$Script:Name = 'Install-InstallRoot'
 #endregion
 
 #region Supporting Functions
@@ -168,14 +162,14 @@ Function Get-InternetFile {
 ## MAIN
 
 #region Initialization
-$Script:Name = [System.IO.Path]::GetFileNameWithoutExtension($PSCommandPath)
-New-Log "C:\Windows\Logs"
+
+New-Log (Join-Path -Path $Env:SystemRoot -ChildPath 'Logs')
 $ErrorActionPreference = 'Stop'
 Write-Log -category Info -message "Starting '$PSCommandPath'."
 $PathMSI = (Get-ChildItem -Path $PSScriptRoot -Filter '*.msi').FullName
 $TempDir = Join-Path -Path $env:Temp -ChildPath 'InstallRoot'
 If (!$PathMSI) {
-    If (-not(Test-Path -Path $TempDir)){ New-Item -Path $TempDir -ItemType Directory -Force }
+    $null = New-Item -Path $TempDir -ItemType Directory -Force
     Write-Log -Category Info -message "Msi not found, must download from the internet."
     $PathMSI = Get-InternetFile -Url $DownloadUrl -OutputDirectory $TempDir -OutputFileName 'InstallRoot.msi'
 } Else {

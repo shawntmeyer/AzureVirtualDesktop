@@ -1,9 +1,3 @@
-Param
-(
-    [Parameter(Mandatory = $false)]
-    [Hashtable]$DynParameters
-)
-
 #region functions
 function Write-Log {
 
@@ -81,8 +75,8 @@ function New-Log {
 #endregion Functions
 
 #region Initialization
-$Script:Name = [System.IO.Path]::GetFileNameWithoutExtension($PSCommandPath)
-New-Log "C:\Windows\Logs"
+$Script:Name = 'Install-VisualC++Redistributables'
+New-Log (Join-Path -Path $Env:SystemRoot -ChildPath 'Logs')
 $ErrorActionPreference = 'Stop'
 Write-Log -category Info -message "Starting '$PSCommandPath'."
 #endregion

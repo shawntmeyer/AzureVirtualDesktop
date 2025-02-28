@@ -4,11 +4,7 @@ param (
     [string]$TenantId
 )
 
-[string]$AppName = 'OneDrive'
-[string]$LogDir = "$env:SystemRoot\Logs\Configuration"
-[string]$ScriptName = "Configure-OneDrivePolicy"
-[string]$Log = Join-Path -Path $LogDir -ChildPath "$ScriptName.log"
-[string]$TempDir = Join-Path -Path $env:Temp -ChildPath $ScriptName
+
 #region Functions
 
 Function Get-InternetFile {
@@ -274,8 +270,11 @@ function New-Log {
 #endregion Functions
 
 #region Initialization
-$Script:Name = [System.IO.Path]::GetFileNameWithoutExtension($PSCommandPath)
-New-Log "C:\Windows\Logs"
+[string]$AppName = 'OneDrive'
+[string]$Script:Name = "Configure-OneDrivePolicy"
+[string]$TempDir = Join-Path -Path $env:Temp -ChildPath $ScriptName
+$null = New-Item -Path $TempDir -ItemType Directory -Force
+New-Log (Join-Path -Path $Env:SystemRoot -ChildPath 'Logs')
 $ErrorActionPreference = 'Stop'
 Write-Log -category Info -message "Starting '$PSCommandPath'."
 #endregion
@@ -336,6 +335,7 @@ If (Test-Path -Path "$env:SystemRoot\System32\Lgpo.exe") {
         Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath "SOFTWARE\Policies\Microsoft\OneDrive" -RegistryValue 'KFMBlockOptOut' -RegistryType DWORD -RegistryData 1
     }
     Invoke-LGPO -Verbose
+    Write-Log -message "OneDrive Group Policy Configuration Complete."
 }
 Else {
     Write-Log -category Error -message "Unable to configure local policy with lgpo tool because it was not found."

@@ -10,17 +10,7 @@ param (
     [Parameter(Mandatory = $false)]
     [string]$PopupsAllowedForUrls = '["[*.]mil","[*.]gov","[*.]portal.azure.us","[*.]usgovcloudapi.net","[*.]azure.com","[*.]azure.net"]'
 )
-[String]$AppName = 'Edge'
-[string]$LogDir = "$env:SystemRoot\Logs\Configuration"
-[string]$ScriptName = "Configure-EdgePolicy"
-[string]$Log = Join-Path -Path $LogDir -ChildPath "$ScriptName.log"
-[string]$TempDir = Join-Path -Path $env:Temp -ChildPath $ScriptName
-If (-not(Test-Path -Path $TempDir)) {
-    New-Item -Path $TempDir -ItemType Directory -Force
-}
 
-[array]$SmartScreenAllowListDomains = $SmartScreenAllowListDomains.Replace('\"', '"').Replace('\[', '[').Replace('\]', ']') | ConvertFrom-Json
-[array]$PopupsAllowedForUrls = $PopupsAllowedForUrls.Replace('\"', '"').Replace('\[', '[').Replace('\]', ']') | ConvertFrom-Json
 
 #region Functions
 
@@ -337,11 +327,16 @@ function New-Log {
 #endregion Functions
 
 #region Initialization
-$Script:Name = [System.IO.Path]::GetFileNameWithoutExtension($PSCommandPath)
-New-Log "C:\Windows\Logs"
+[String]$AppName = 'Edge'
+[string]$Script:Name = "Configure-EdgePolicy"
+[string]$TempDir = Join-Path -Path $env:Temp -ChildPath $ScriptName
+$null = New-Item -Path $TempDir -ItemType Directory -Force
+[array]$SmartScreenAllowListDomains = $SmartScreenAllowListDomains.Replace('\"', '"').Replace('\[', '[').Replace('\]', ']') | ConvertFrom-Json
+[array]$PopupsAllowedForUrls = $PopupsAllowedForUrls.Replace('\"', '"').Replace('\[', '[').Replace('\]', ']') | ConvertFrom-Json
+New-Log (Join-Path -Path $env:SystemRoot -ChildPath 'Logs')
 $ErrorActionPreference = 'Stop'
-Write-Log -category Info -message "Starting '$PSCommandPath'."
 $APIUrl = "https://edgeupdates.microsoft.com/api/products?view=enterprise"
+Write-Log -category Info -message "Starting '$PSCommandPath'."
 #endregion
 
 Write-Log -category Info -message "Running Script to Configure Microsoft Edge Policies."

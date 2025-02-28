@@ -1,10 +1,83 @@
-[CmdletBinding()]
-param (
-    [Parameter()]
-    [Hashtable]$DynParameters
-)
-
 #region Functions
+
+Function Get-InternetFile {
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory = $true, Position = 0)]
+        [uri]$Url,
+        [Parameter(Mandatory = $true, Position = 1)]
+        [string]$OutputDirectory,
+        [Parameter(Mandatory = $false, Position = 2)]
+        [string]$OutputFileName
+    )
+
+    Begin {
+        $ProgressPreference = 'SilentlyContinue'
+        ## Get the name of this function and write header
+        [string]${CmdletName} = $PSCmdlet.MyInvocation.MyCommand.Name
+        Write-Log -Message "Starting ${CmdletName} with the following parameters: $PSBoundParameters"
+    }
+    Process {
+
+        $start_time = Get-Date
+
+        If (!$OutputFileName) {
+            Write-Log -Message "${CmdletName}: No OutputFileName specified. Trying to get file name from URL."
+            If ((split-path -path $Url -leaf).Contains('.')) {
+                $OutputFileName = split-path -path $url -leaf
+                Write-Log -Message "${CmdletName}: Url contains file name - '$OutputFileName'."
+            }
+            Else {
+                Write-Log -Message "${CmdletName}: Url does not contain file name. Trying 'Location' Response Header."
+                $request = [System.Net.WebRequest]::Create($url)
+                $request.AllowAutoRedirect=$false
+                $response=$request.GetResponse()
+                $Location = $response.GetResponseHeader("Location")
+                If ($Location) {
+                    $OutputFileName = [System.IO.Path]::GetFileName($Location)
+                    Write-Log -Message "${CmdletName}: File Name from 'Location' Response Header is '$OutputFileName'."
+                }
+                Else {
+                    Write-Log -Message "${CmdletName}: No 'Location' Response Header returned. Trying 'Content-Disposition' Response Header."
+                    $result = Invoke-WebRequest -Method GET -Uri $Url -UseBasicParsing
+                    $contentDisposition = $result.Headers.'Content-Disposition'
+                    If ($contentDisposition) {
+                        $OutputFileName = $contentDisposition.Split("=")[1].Replace("`"","")
+                        Write-Log -Message "${CmdletName}: File Name from 'Content-Disposition' Response Header is '$OutputFileName'."
+                    }
+                }
+            }
+        }
+
+        If ($OutputFileName) { 
+            $wc = New-Object System.Net.WebClient
+            $OutputFile = Join-Path $OutputDirectory $OutputFileName
+            Write-Log -Message "${CmdletName}: Downloading file at '$url' to '$OutputFile'."
+            Try {
+                $wc.DownloadFile($url, $OutputFile)
+                $time = (Get-Date).Subtract($start_time).Seconds
+                
+                Write-Log -Message "${CmdletName}: Time taken: '$time' seconds."
+                if (Test-Path -Path $outputfile) {
+                    $totalSize = (Get-Item $outputfile).Length / 1MB
+                    Write-Log -Message "${CmdletName}: Download was successful. Final file size: '$totalsize' mb"
+                    Return $OutputFile
+                }
+            }
+            Catch {
+                Write-Log -Category Error -Message "${CmdletName}: Error downloading file. Please check url."
+                Return $Null
+            }
+        }
+        Else {
+            Write-Log -Category Error -Message "${CmdletName}: No OutputFileName specified. Unable to download file."
+            Return $Null
+        }
+    }
+    End {
+        Write-Log -Message "Ending ${CmdletName}"
+    }
+}
 function Write-Log {
 
     <#
@@ -81,31 +154,36 @@ function New-Log {
 #endregion Functions
 
 #region Initialization
-$Script:Name = [System.IO.Path]::GetFileNameWithoutExtension($PSCommandPath)
-$LogDir = "$env:SystemRoot\Logs\Configuration"
-New-Log $LogDir
+$Script:Name = 'Install-LGPO'
+$Script:TempDir = Join-Path -Path $env:Temp -ChildPath $Script:Name
+$null = New-Item -Path $TempDir -ItemType Directory -Force
+New-Log (Join-Path -Path $env:SystemRoot -ChildPath $Script:Name)
 $ErrorActionPreference = 'Stop'
 Write-Log -category Info -message "Starting '$PSCommandPath'."
 #endregion Initialization
 
 #region main
-$softwareName = 'LGPO'
-$DestFile = "$env:SystemRoot\System32\lgpo.exe"
-$azipfiles = Get-ChildItem -Path $PSScriptRoot -filter '*.zip' -recurse
-$lgpozip = $azipfiles[0].FullName
-Write-Log -category Info -message "Expanding '$lgpozip' to '$PSScriptRoot\temp'."
-expand-archive -path "$lgpozip" -DestinationPath "$PSScriptRoot\temp" -force
-$algpoexe = Get-ChildItem -Path "$PSScriptRoot\temp" -filter 'lgpo.exe' -recurse
-If ($algpoexe.count -gt 0) {
-    $lgpoexe=$algpoexe[0].FullName
-    Write-Log -category Info -message "Copying '$lgpoexe' to '$env:SystemRoot\system32'."
-    Copy-Item -Path $lgpoexe -Destination "$env:SystemRoot\System32" -force
-    If (Test-Path $DestFile) {
-        Write-Log -category Info -message "'$SoftwareName' installed successfully."
+$LGPOZip = Join-Path -Path $PSScriptRoot -ChildPath 'LGPO.zip'
+If (Test-Path -Path $LGPOZip) {
+    Write-Log -Message "Expanding '$LGPOZip' to '$Script:TempDir'."
+    Expand-Archive -path $LGPOZip -DestinationPath $Script:TempDir -force
+    $algpoexe = Get-ChildItem -Path $Script:TempDir -filter 'lgpo.exe' -recurse
+    If ($algpoexe.count -gt 0) {
+        $fileLGPO = $algpoexe[0].FullName
+        Write-Log -Message "Copying '$fileLGPO' to '$env:SystemRoot\system32'."
+        Copy-Item -Path $fileLGPO -Destination "$env:SystemRoot\System32" -force        
     }
+} Else {
+    $urlLGPO = 'https://download.microsoft.com/download/8/5/C/85C25433-A1B0-4FFA-9429-7E023E7DA8D8/LGPO.zip'
+    $LGPOZip = Get-InternetFile -Url $urlLGPO -OutputDirectory $Script:TempDir -Verbose
+    $outputDir = Join-Path $Script:TempDir -ChildPath 'LGPO'
+    Expand-Archive -Path $LGPOZip -DestinationPath $outputDir
+    Remove-Item $LGPOZip -Force
+    $fileLGPO = (Get-ChildItem -Path $outputDir -file -Filter 'lgpo.exe' -Recurse)[0].FullName
+    Write-Log -Message "Copying `"$fileLGPO`" to System32"
+    Copy-Item -Path $fileLGPO -Destination "$env:SystemRoot\System32" -Force
+    Remove-Item -Path $outputDir -Recurse -Force
 }
-Else {
-    Write-Log -category Error -Message "'lgpo.exe' not found in downloaded zip."
-}
+Remove-Item -Path $Script:TempDir -Recurse -Force
 #endregion Main
 Write-Log -category Info -message "Ending '$PSCommandPath'."

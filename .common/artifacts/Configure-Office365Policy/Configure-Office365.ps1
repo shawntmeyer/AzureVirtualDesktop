@@ -16,11 +16,7 @@ param (
     [string]$CalendarSyncMonths = "1"
 )
 
-[string]$AppName = 'Office365'
-[string]$LogDir = "$env:SystemRoot\Logs\Configuration"
-[string]$ScriptName = "Configure-Office365Policy"
-[string]$Log = Join-Path -Path $LogDir -ChildPath "$ScriptName.log"
-[string]$TempDir = Join-Path -Path $env:Temp -ChildPath $ScriptName
+
 #region Functions
 
 Function Get-InternetFile {
@@ -335,8 +331,11 @@ function New-Log {
 #endregion Functions
 
 #region Initialization
-$Script:Name = [System.IO.Path]::GetFileNameWithoutExtension($PSCommandPath)
-New-Log "C:\Windows\Logs"
+[string]$AppName = 'Office365'
+[string]$Script:Name = "Configure-Office365Policy"
+[string]$TempDir = Join-Path -Path $env:Temp -ChildPath $Script:Name
+$null = New-Item -Path $TempDir -ItemType Directory -Force
+New-Log (Join-Path -Path $env:SystemRoot -ChildPath 'Logs')
 $ErrorActionPreference = 'Stop'
 Write-Log -category Info -message "Starting '$PSCommandPath'."
 #endregion
@@ -351,15 +350,14 @@ If (-not $O365TemplatesExe) {
     $O365TemplatesDownloadUrl = Get-InternetUrl -WebSiteUrl $WebsiteUrl -SearchString $SearchString
     $O365TemplatesExe = Get-InternetFile -Url $O365TemplatesDownloadUrl -OutputDirectory $TempDir
 }
-
-$DirTemplates = Join-Path -Path $TempDir -ChildPath 'Office365Templates'
-If (-not (Test-Path -Path $DirTemplates)) {
+If ($null -ne $O365TemplatesExe) {
+    $DirTemplates = Join-Path -Path $TempDir -ChildPath 'Office365Templates'
     $null = New-Item -Path $DirTemplates -ItemType Directory
+    $null = Start-Process -FilePath $O365TemplatesExe -ArgumentList "/extract:$DirTemplates /quiet" -Wait -PassThru
+    Write-Log -message "Copying ADMX and ADML files to PolicyDefinitions folder."
+    $null = Get-ChildItem -Path $DirTemplates -File -Recurse -Filter '*.admx' | ForEach-Object { Copy-Item -Path $_.FullName -Destination "$env:WINDIR\PolicyDefinitions\" -Force }
+    $null = Get-ChildItem -Path $DirTemplates -Directory -Recurse | Where-Object { $_.Name -eq 'en-us' } | Get-ChildItem -File -recurse -filter '*.adml' | ForEach-Object { Copy-Item -Path $_.FullName -Destination "$env:WINDIR\PolicyDefinitions\en-us\" -Force }
 }
-$null = Start-Process -FilePath $O365TemplatesExe -ArgumentList "/extract:$DirTemplates /quiet" -Wait -PassThru
-Write-Log -message "Copying ADMX and ADML files to PolicyDefinitions folder."
-$null = Get-ChildItem -Path $DirTemplates -File -Recurse -Filter '*.admx' | ForEach-Object { Copy-Item -Path $_.FullName -Destination "$env:WINDIR\PolicyDefinitions\" -Force }
-$null = Get-ChildItem -Path $DirTemplates -Directory -Recurse | Where-Object { $_.Name -eq 'en-us' } | Get-ChildItem -File -recurse -filter '*.adml' | ForEach-Object { Copy-Item -Path $_.FullName -Destination "$env:WINDIR\PolicyDefinitions\en-us\" -Force }
 
 Write-Log -message "Checking for lgpo.exe in '$env:SystemRoot\system32'."
 
@@ -465,8 +463,8 @@ If (Test-Path -Path "$env:SystemRoot\System32\Lgpo.exe") {
         # Disable Updates            
         Update-LocalGPOTextFile -Scope Computer -RegistryKeyPath $RegistryKeyPath -RegistryValue 'EnableAutomaticUpdates' -RegistryType DWord -RegistryData 0
     }
-
     Invoke-LGPO -Verbose
+    Write-Log -category Info -message "Completed Configuring Office 365 Group Policy."
 }
 Else {
     Write-Log -category Error -message "Unable to configure local policy with lgpo tool because it was not found."

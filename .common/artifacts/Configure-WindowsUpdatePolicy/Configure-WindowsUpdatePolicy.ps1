@@ -2,13 +2,7 @@
 param (
     [string]$DeferQualityUpdatesPeriodInDays = '4'
 )
-[int]$DeferQualityUpdatesPeriodInDays = $DeferQualityUpdatesPeriodInDays
 
-[string]$AppName = 'WindowsUpdatePolicy'
-[string]$LogDir = "$env:SystemRoot\Logs\Configuration"
-[string]$ScriptName = "Configure-WindowsUpdatePolicy"
-[string]$Log = Join-Path -Path $LogDir -ChildPath "$ScriptName.log"
-[string]$TempDir = Join-Path -Path $env:Temp -ChildPath $ScriptName
 #region Functions
 
 Function Get-InternetFile {
@@ -274,8 +268,12 @@ function New-Log {
 #endregion Functions
 
 #region Initialization
-$Script:Name = [System.IO.Path]::GetFileNameWithoutExtension($PSCommandPath)
-New-Log "C:\Windows\Logs"
+[int]$DeferQualityUpdatesPeriodInDays = $DeferQualityUpdatesPeriodInDays
+[string]$AppName = 'WindowsUpdatePolicy'
+[string]$Script:Name = "Configure-WindowsUpdatePolicy"
+[string]$TempDir = Join-Path -Path $env:Temp -ChildPath $ScriptName
+$null = New-Item -Path $TempDir -ItemType Directory -Force
+New-Log (Join-Path -Path $TempDir -ChildPath 'Logs')
 $ErrorActionPreference = 'Stop'
 Write-Log -category Info -message "Starting '$PSCommandPath'."
 #endregion
@@ -337,6 +335,8 @@ If (Test-Path -Path "$env:SystemRoot\System32\Lgpo.exe") {
     Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'IncludeRecommendedUpdates' -Delete -outfileprefix $appName -Verbose
 
     Invoke-LGPO -Verbose
+    Write-Log -category Info -message "Completed configuring Windows Update Settings."
+
 }
 Else {
     Write-Log -category Error -message "Unable to configure local policy with lgpo tool because it was not found."

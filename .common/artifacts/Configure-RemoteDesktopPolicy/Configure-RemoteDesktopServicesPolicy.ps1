@@ -3,14 +3,7 @@ param (
     [string]$MaxIdleTime = '21600000',
     [string]$MaxDisconnectionTime = '21600000'
 )
-[int]$MaxIdleTime = $MaxIdleTime
-[int]$MaxDisconnectTime = $MaxDisconnectTime
 
-[string]$AppName = 'RDServicesPolicy'
-[string]$LogDir = "$env:SystemRoot\Logs\Configuration"
-[string]$ScriptName = "Configure-RemoteDesktopServicesPolicy"
-[string]$Log = Join-Path -Path $LogDir -ChildPath "$ScriptName.log"
-[string]$TempDir = Join-Path -Path $env:Temp -ChildPath $ScriptName
 #region Functions
 
 Function Get-InternetFile {
@@ -276,8 +269,13 @@ function New-Log {
 #endregion Functions
 
 #region Initialization
-$Script:Name = [System.IO.Path]::GetFileNameWithoutExtension($PSCommandPath)
-New-Log "C:\Windows\Logs"
+[int]$MaxIdleTime = $MaxIdleTime
+[int]$MaxDisconnectTime = $MaxDisconnectTime
+[string]$AppName = 'RDServicesPolicy'
+[string]$Script:Name = "Configure-RemoteDesktopServicesPolicy"
+[string]$TempDir = Join-Path -Path $env:Temp -ChildPath $ScriptName
+$Null = New-Item $TempDir -ItemType Directory -Force
+New-Log (Join-Path -Path $env:SystemRoot -ChildPath 'Logs')
 $ErrorActionPreference = 'Stop'
 Write-Log -category Info -message "Starting '$PSCommandPath'."
 #endregion
@@ -315,6 +313,7 @@ If (Test-Path -Path "$env:SystemRoot\System32\Lgpo.exe") {
     Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Windows NT\Terminal Services' -RegistryValue 'fResetBroken' -RegistryType 'DWORD' -RegistryData 1 -outfileprefix $appName -Verbose
     Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Windows NT\Terminal Services' -RegistryValue 'fEnableTimeZoneRedirection' -RegistryType 'DWORD' -RegistryData 1 -outfileprefix $appName -Verbose
     Invoke-LGPO -Verbose
+    Write-Log -category Info -message "Remote Desktop Services Timeout Settings Configured."
 }
 Else {
     Write-Log -category Error -message "Unable to configure local policy with lgpo tool because it was not found."
