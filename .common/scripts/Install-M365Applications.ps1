@@ -8,7 +8,6 @@ param(
     [string]$UserAssignedIdentityClientId
 )
 $ErrorActionPreference = "Stop"
-
 Function Get-InternetUrl {
     [CmdletBinding()]
     Param (
@@ -25,27 +24,19 @@ Function Get-InternetUrl {
         [string]$SearchString
     )
 
-    Try {
-        $HTML = Invoke-WebRequest -Uri $WebSiteUrl -UseBasicParsing
-        $Links = $HTML.Links
-        $ahref = $null
-        $ahref = @()
-        $ahref = ($Links | Where-Object { $_.href -like "*$searchstring*" })
-        If ($ahref.count -eq 0 -or $null -eq $ahref) {
-            $ahref = ($Links | Where-Object { $_.OuterHTML -like "*$searchstring*" })
-        }
-        If ($ahref.Count -gt 0) {
-            Return $ahref[0].href
-        }
-        else {
-            Write-Warning "No download URL found using search term."
-            Return $null
-        }
+    $HTML = Invoke-WebRequest -Uri $WebSiteUrl -UseBasicParsing
+    $Links = $HTML.Links
+    #First try to find search string in actual link href
+    $LinkHref = $HTML.Links.Href | Get-Unique | Where-Object { $_ -like "*$SearchString*" }
+    If ($LinkHref) {
+        Return $LinkHref
     }
-    Catch {
-        Write-Error "Error Downloading HTML and determining link for download."
-        Return $null
+    #If not found, try to find search string in the outer html
+    $LinkHrefs = $Links | Where-Object { $_.OuterHTML -like "*$SearchString*" }
+    If ($LinkHrefs) {
+        Return $LinkHrefs.href
     }
+    Return $null
 }
 
 function Write-OutputWithTimeStamp {

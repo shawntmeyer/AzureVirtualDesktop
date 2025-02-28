@@ -19,17 +19,11 @@ param (
     [string]$ApplicationsToSTIG = '["Adobe Acrobat Pro", "Adobe Acrobat Reader", "Google Chrome", "Mozilla Firefox"]'
 )
 #region Initialization
-$Script:FullName = $MyInvocation.MyCommand.Path
-$Script:File = $MyInvocation.MyCommand.Name
-$Script:Name=[System.IO.Path]::GetFileNameWithoutExtension($Script:File)
+$Script:Name = 'Apply-STIGs'
 $osCaption = (Get-WmiObject -Class Win32_OperatingSystem).caption
 If ($osCaption -match 'Windows 11') { $osVersion = 11 } Else { $osVersion = 10 }
-[String]$Script:LogDir = "$($env:SystemRoot)\Logs\Configuration"
-If (-not(Test-Path -Path $Script:LogDir)) {
-    New-Item -Path $Script:LogDir -ItemType Directory -Force | Out-Null
-}
 $Script:TempDir = Join-Path -Path $env:Temp -ChildPath $Script:Name
-If (Test-Path -Path $Script:TempDir) {Remove-Item -Path $Script:TempDir -Recurse -ErrorAction SilentlyContinue}
+If (Test-Path -Path $Script:TempDir) { Remove-Item -Path $Script:TempDir -Recurse -ErrorAction SilentlyContinue }
 New-Item -Path $Script:TempDir -ItemType Directory -Force | Out-Null
 #endregion
 
@@ -45,12 +39,14 @@ Function ConvertFrom-JsonString {
     If ($JsonString -ne '[]' -and $JsonString -ne $null) {
         [array]$Array = $JsonString.replace('\', '') | ConvertFrom-Json
         If ($Array.Length -gt 0) {
-            If ($SensitiveValues) {Write-Log -message "Array '$Name' has $($Array.Length) members"} Else {Write-Log -message "$($Name): '$($Array -join "', '")'"}
+            If ($SensitiveValues) { Write-Log -message "Array '$Name' has $($Array.Length) members" } Else { Write-Log -message "$($Name): '$($Array -join "', '")'" }
             Return $Array
-        } Else {
+        }
+        Else {
             Return $null
         }            
-    } Else {
+    }
+    Else {
         Return $null
     }    
 }
@@ -170,8 +166,8 @@ Function Get-InternetFile {
             Else {
                 Write-Log -Message "${CmdletName}: Url does not contain file name. Trying 'Location' Response Header."
                 $request = [System.Net.WebRequest]::Create($url)
-                $request.AllowAutoRedirect=$false
-                $response=$request.GetResponse()
+                $request.AllowAutoRedirect = $false
+                $response = $request.GetResponse()
                 $Location = $response.GetResponseHeader("Location")
                 If ($Location) {
                     $OutputFileName = [System.IO.Path]::GetFileName($Location)
@@ -182,7 +178,7 @@ Function Get-InternetFile {
                     $result = Invoke-WebRequest -Method GET -Uri $Url -UseBasicParsing
                     $contentDisposition = $result.Headers.'Content-Disposition'
                     If ($contentDisposition) {
-                        $OutputFileName = $contentDisposition.Split("=")[1].Replace("`"","")
+                        $OutputFileName = $contentDisposition.Split("=")[1].Replace("`"", "")
                         Write-Log -Message "${CmdletName}: File Name from 'Content-Disposition' Response Header is '$OutputFileName'."
                     }
                 }
@@ -235,37 +231,35 @@ Function Get-InternetUrl {
         [string]$SearchString
     )
 
-    Try {
-        $HTML = Invoke-WebRequest -Uri $WebSiteUrl -UseBasicParsing
-        $Links = $HTML.Links
-        $ahref = $null
-        $ahref=@()
-        $ahref = ($Links | Where-Object {$_.href -like "*$searchstring*"})
-        If ($ahref.count -eq 0 -or $null -eq $ahref) {
-            $ahref = ($Links | Where-Object {$_.OuterHTML -like "*$searchstring*"})
-        }
-        If ($ahref.Count -gt 0) {
-            Return $ahref[0].href
-        }
-        Else {
-            $Pattern = '"url":\s*"(https://[^"]*?' + $SearchString.Replace('.', '\.').Replace('*', '.*').Replace('+', '\+') + ')"' 
-            If ($HTML.Content -match $Pattern) {
-                If ($matches[1].Contains('"')) {
-                    Return $matches[1].Substring(0, $matches[1].IndexOf('"'))
-                } Else {
-                    Return $matches[1]
-                }
-
-            } else {
-                Write-Log -Category Warning -Message "No download URL found using search term."
-                Return $null
+    $HTML = Invoke-WebRequest -Uri $WebSiteUrl -UseBasicParsing
+    $Links = $HTML.Links
+    #First try to find search string in actual link href
+    $LinkHref = $HTML.Links.Href | Get-Unique | Where-Object { $_ -like "*$SearchString*" }
+    If ($LinkHref) {
+        Return $LinkHref
+    }
+    #If not found, try to find search string in the outer html
+    $LinkHrefs = $Links | Where-Object { $_.OuterHTML -like "*$SearchString*" }
+    If ($LinkHrefs) {
+        Return $LinkHrefs.href
+    }
+    Else {
+        $Pattern = '"url":\s*"(https://[^"]*?' + $SearchString.Replace('.', '\.').Replace('*', '.*').Replace('+', '\+') + ')"' 
+        If ($HTML.Content -match $Pattern) {
+            If ($matches[1].Contains('"')) {
+                Return $matches[1].Substring(0, $matches[1].IndexOf('"'))
             }
+            Else {
+                Return $matches[1]
+            }
+
+        }
+        else {
+            Write-Log -Category Error -Message "No download URL found using search term."
+            Return $null
         }
     }
-    Catch {
-        Write-Log -Category Error -Message "Error Downloading HTML and determining link for download."
-        Return
-    }
+
 }
 
 Function Invoke-LGPO {
@@ -322,7 +316,7 @@ function New-Log {
     #>
 
     Param (
-        [Parameter(Mandatory = $true, Position=0)]
+        [Parameter(Mandatory = $true, Position = 0)]
         [string] $Path
     )
 
@@ -342,27 +336,11 @@ function New-Log {
 }
 
 function Write-Log {
-
-    <#
-    .SYNOPSIS
-    Creates a log file and stores logs based on categories with tab seperation
-
-    .PARAMETER category
-    Category to put into the trace
-
-    .PARAMETER message
-    Message to be loged
-
-    .EXAMPLE
-    Log 'Info' 'Message'
-
-    #>
-
     Param (
-        [Parameter(Mandatory=$false, Position=0)]
-        [ValidateSet("Info","Warning","Error")]
+        [Parameter(Mandatory = $false, Position = 0)]
+        [ValidateSet("Info", "Warning", "Error")]
         $Category = 'Info',
-        [Parameter(Mandatory=$true, Position=1)]
+        [Parameter(Mandatory = $true, Position = 1)]
         $Message
     )
 
@@ -371,11 +349,12 @@ function Write-Log {
     Add-Content $Script:Log $content -ErrorAction Stop
     If ($Verbose) {
         Write-Verbose $Content
-    } Else {
+    }
+    Else {
         Switch ($Category) {
-            'Info' {Write-Host $content}
-            'Error' {Write-Log -Category Error -Message $Content}
-            'Warning' {Write-Warning $Content}
+            'Info' { Write-Host $content }
+            'Error' { Write-Error $Content }
+            'Warning' { Write-Warning $Content }
         }
     }
 }
@@ -412,7 +391,8 @@ Function Set-RegistryValue {
             If ($Value -ne $CurrentValue) {
                 Write-Log -message "[Set-RegistryValue]: Setting Value of $($Path)\$($Name) : $Value"
                 Set-ItemProperty -Path $Path -Name $Name -Value $Value -Force | Out-Null
-            } Else {
+            }
+            Else {
                 Write-Log -message "[Set-RegistryValue]: Value of $($Path)\$($Name) is already set to $Value"
             }           
         }
@@ -512,7 +492,7 @@ Function Update-LocalGPOTextFile {
 
 #region Main
 
-New-Log -Path $Script:LogDir
+New-Log -Path (Join-Path -Path $env:SystemRoot -ChildPath 'Logs')
 Write-Log -Message "Starting '$PSCommandPath'."
 [array]$AppsToSTIG = ConvertFrom-JsonString -JsonString $ApplicationsToSTIG -Name 'AppsToSTIG'
 
@@ -527,7 +507,8 @@ If (-not(Test-Path -Path "$env:SystemRoot\System32\Lgpo.exe")) {
             Write-Log -Message "Copying '$fileLGPO' to '$env:SystemRoot\system32'."
             Copy-Item -Path $fileLGPO -Destination "$env:SystemRoot\System32" -force        
         }
-    } Else {
+    }
+    Else {
         $urlLGPO = 'https://download.microsoft.com/download/8/5/C/85C25433-A1B0-4FFA-9429-7E023E7DA8D8/LGPO.zip'
         $LGPOZip = Get-InternetFile -Url $urlLGPO -OutputDirectory $Script:TempDir -Verbose
         $outputDir = Join-Path $Script:TempDir -ChildPath 'LGPO'
@@ -542,31 +523,34 @@ If (-not(Test-Path -Path "$env:SystemRoot\System32\Lgpo.exe")) {
 
 $stigZip = Join-Path -Path $PSScriptRoot -ChildPath 'STIGs.zip'
 If (-not (Test-Path -Path $stigZip)) {
+    $stigZip = $null
     #Download the STIG GPOs
     $uriSTIGs = 'https://public.cyber.mil/stigs/gpo'
     $uriGPODownload = Get-InternetUrl -WebSiteUrl $uriSTIGs -searchstring 'GPOs'
-    Write-Log -Message "Downloading STIG GPOs from `"$uriGPODownload`"."
+    If ($null -eq $uriGPODownload) { Write-Log -Category Error -Message "Unable to find download link for STIG GPOs. Exiting script."; Exit 1 }
+    Write-Log -Message "Downloading STIG GPOs from '$uriGPODownload'."
     If ($uriGPODownload) {
         $stigZip = Get-InternetFile -url $uriGPODownload -OutputDirectory $Script:TempDir -Verbose
     }
+    If ($null -eq $stigZip) { Write-Log -Category Error -Message "Unable to download STIG GPOs. Exiting script."; Exit 1 }
 } 
 
 Expand-Archive -Path $stigZip -DestinationPath $Script:TempDir -Force
 Write-Log -Message "Copying ADMX and ADML files to local system."
 
 $null = Get-ChildItem -Path $Script:TempDir -File -Recurse -Filter '*.admx' | ForEach-Object { Copy-Item -Path $_.FullName -Destination "$env:WINDIR\PolicyDefinitions\" -Force }
-$null = Get-ChildItem -Path $Script:TempDir -Directory -Recurse | Where-Object {$_.Name -eq 'en-us'} | Get-ChildItem -File -recurse -filter '*.adml' | ForEach-Object { Copy-Item -Path $_.FullName -Destination "$env:WINDIR\PolicyDefinitions\en-us\" -Force }
+$null = Get-ChildItem -Path $Script:TempDir -Directory -Recurse | Where-Object { $_.Name -eq 'en-us' } | Get-ChildItem -File -recurse -filter '*.adml' | ForEach-Object { Copy-Item -Path $_.FullName -Destination "$env:WINDIR\PolicyDefinitions\en-us\" -Force }
 
 Write-Log -Message "Getting List of Applicable GPO folders."
 
 $GPOFolders = Get-ChildItem -Path $Script:TempDir -Directory
-[array]$ApplicableFolders = $GPOFolders | Where-Object {$_.Name -like "DoD*Windows $osVersion*" -or $_.Name -like 'DoD*Edge*' -or $_.Name -like 'DoD*Firewall*' -or $_.Name -like 'DoD*Internet Explorer*' -or $_.Name -like 'DoD*Defender Antivirus*'} 
-If(Get-InstalledApplication -Name 'Microsoft 365', 'Office', 'Teams') {
-	$ApplicableFolders += $GPOFolders | Where-Object {$_.Name -match 'M365'} 
+[array]$ApplicableFolders = $GPOFolders | Where-Object { $_.Name -like "DoD*Windows $osVersion*" -or $_.Name -like 'DoD*Edge*' -or $_.Name -like 'DoD*Firewall*' -or $_.Name -like 'DoD*Internet Explorer*' -or $_.Name -like 'DoD*Defender Antivirus*' } 
+If (Get-InstalledApplication -Name 'Microsoft 365', 'Office', 'Teams') {
+    $ApplicableFolders += $GPOFolders | Where-Object { $_.Name -match 'M365' } 
 }
 $InstalledAppsToSTIG = (Get-InstalledApplication -Name $AppsToSTIG).SearchString
-ForEach($SearchString in $InstalledAppsToSTIG) {
-   $ApplicableFolders += $GPOFolders | Where-Object {$_.Name -match "$SearchString"}
+ForEach ($SearchString in $InstalledAppsToSTIG) {
+    $ApplicableFolders += $GPOFolders | Where-Object { $_.Name -match "$SearchString" }
 }
 [array]$GPOFolders = @()
 ForEach ($folder in $ApplicableFolders.FullName) {
@@ -615,7 +599,7 @@ Invoke-LGPO -SearchTerm $OutputFilePrefix
 #WN10-00-000175
 Write-Log -Message "WN10-00-000175/V-220732: Disabling the Secondary Logon Service."
 $Service = 'SecLogon'
-$Serviceobject = Get-Service | Where-Object {$_.Name -eq $Service}
+$Serviceobject = Get-Service | Where-Object { $_.Name -eq $Service }
 If ($Serviceobject) {
     $StartType = $ServiceObject.StartType
     If ($StartType -ne 'Disabled') {

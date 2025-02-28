@@ -193,59 +193,30 @@ Function Invoke-LGPO {
 }
 
 function Write-Log {
-
-    <#
-    .SYNOPSIS
-    Creates a log file and stores logs based on categories with tab seperation
-
-    .PARAMETER category
-    Category to put into the trace
-
-    .PARAMETER message
-    Message to be logged
-
-    .EXAMPLE
-    Log 'Info' 'Message'
-
-    #>
-
     Param (
         [Parameter(Mandatory = $false, Position = 0)]
         [ValidateSet("Info", "Warning", "Error")]
-        $category = 'Info',
+        $Category = 'Info',
         [Parameter(Mandatory = $true, Position = 1)]
-        $message
+        $Message
     )
 
-    $date = get-date
-    $content = "[$date]`t$category`t`t$message`n"
-    Write-Verbose "$Script:Name $content" -verbose
-
-    if (! $script:Log) {
-        $File = Join-Path $env:TEMP "$Script:Name.log"
-        Write-Warning "Log file not found, create new $File"
-        $script:Log = $File
+    $Date = get-date
+    $Content = "[$Date]`t$Category`t`t$Message`n" 
+    Add-Content $Script:Log $content -ErrorAction Stop
+    If ($Verbose) {
+        Write-Verbose $Content
     }
-    else {
-        $File = $script:Log
+    Else {
+        Switch ($Category) {
+            'Info' { Write-Host $content }
+            'Error' { Write-Error $Content }
+            'Warning' { Write-Warning $Content }
+        }
     }
-    Add-Content $File $content -ErrorAction Stop
 }
 
 function New-Log {
-    <#
-    .SYNOPSIS
-    Sets default log file and stores in a script accessible variable $script:Log
-    Log File name "packageExecution_$date.log"
-
-    .PARAMETER Path
-    Path to the log file
-
-    .EXAMPLE
-    New-Log c:\Windows\Logs
-    Create a new log file in c:\Windows\Logs
-    #>
-
     Param (
         [Parameter(Mandatory = $true, Position = 0)]
         [string] $Path

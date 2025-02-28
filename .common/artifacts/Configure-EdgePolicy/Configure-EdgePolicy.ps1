@@ -109,37 +109,35 @@ Function Get-InternetUrl {
         [string]$SearchString
     )
 
-    Try {
-        $HTML = Invoke-WebRequest -Uri $WebSiteUrl -UseBasicParsing
-        $Links = $HTML.Links
-        $ahref = $null
-        $ahref=@()
-        $ahref = ($Links | Where-Object {$_.href -like "*$searchstring*"})
-        If ($ahref.count -eq 0 -or $null -eq $ahref) {
-            $ahref = ($Links | Where-Object {$_.OuterHTML -like "*$searchstring*"})
-        }
-        If ($ahref.Count -gt 0) {
-            Return $ahref[0].href
-        }
-        Else {
-            $Pattern = '"url":\s*"(https://[^"]*?' + $SearchString.Replace('.', '\.').Replace('*', '.*').Replace('+', '\+') + ')"' 
-            If ($HTML.Content -match $Pattern) {
-                If ($matches[1].Contains('"')) {
-                    Return $matches[1].Substring(0, $matches[1].IndexOf('"'))
-                } Else {
-                    Return $matches[1]
-                }
-
-            } else {
-                Write-Log -Category Warning -Message "No download URL found using search term."
-                Return $null
+    $HTML = Invoke-WebRequest -Uri $WebSiteUrl -UseBasicParsing
+    $Links = $HTML.Links
+    #First try to find search string in actual link href
+    $LinkHref = $HTML.Links.Href | Get-Unique | Where-Object { $_ -like "*$SearchString*" }
+    If ($LinkHref) {
+        Return $LinkHref
+    }
+    #If not found, try to find search string in the outer html
+    $LinkHrefs = $Links | Where-Object { $_.OuterHTML -like "*$SearchString*" }
+    If ($LinkHrefs) {
+        Return $LinkHrefs.href
+    }
+    Else {
+        $Pattern = '"url":\s*"(https://[^"]*?' + $SearchString.Replace('.', '\.').Replace('*', '.*').Replace('+', '\+') + ')"' 
+        If ($HTML.Content -match $Pattern) {
+            If ($matches[1].Contains('"')) {
+                Return $matches[1].Substring(0, $matches[1].IndexOf('"'))
             }
+            Else {
+                Return $matches[1]
+            }
+
+        }
+        else {
+            Write-Log -Category Error -Message "No download URL found using search term."
+            Return $null
         }
     }
-    Catch {
-        Write-Log -Category Error -Message "Error Downloading HTML and determining link for download."
-        Return
-    }
+
 }
 
 Function Update-LocalGPOTextFile {
@@ -250,46 +248,6 @@ Function Invoke-LGPO {
     }
 }
 
-function Write-Log {
-
-    <#
-    .SYNOPSIS
-    Creates a log file and stores logs based on categories with tab seperation
-
-    .PARAMETER category
-    Category to put into the trace
-
-    .PARAMETER message
-    Message to be logged
-
-    .EXAMPLE
-    Log 'Info' 'Message'
-
-    #>
-
-    Param (
-        [Parameter(Mandatory = $false, Position = 0)]
-        [ValidateSet("Info", "Warning", "Error")]
-        $category = 'Info',
-        [Parameter(Mandatory = $true, Position = 1)]
-        $message
-    )
-
-    $date = get-date
-    $content = "[$date]`t$category`t`t$message`n"
-    Write-Verbose "$Script:Name $content" -verbose
-
-    if (! $script:Log) {
-        $File = Join-Path $env:TEMP "$Script:Name.log"
-        Write-Warning "Log file not found, create new $File"
-        $script:Log = $File
-    }
-    else {
-        $File = $script:Log
-    }
-    Add-Content $File $content -ErrorAction Stop
-}
-
 function New-Log {
     <#
     .SYNOPSIS
@@ -305,7 +263,7 @@ function New-Log {
     #>
 
     Param (
-        [Parameter(Mandatory = $true, Position = 0)]
+        [Parameter(Mandatory = $true, Position=0)]
         [string] $Path
     )
 
@@ -323,6 +281,30 @@ function New-Log {
 
     Add-Content $script:Log "Date`t`t`tCategory`t`tDetails"
 }
+
+function Write-Log {
+    Param (
+        [Parameter(Mandatory=$false, Position=0)]
+        [ValidateSet("Info","Warning","Error")]
+        $Category = 'Info',
+        [Parameter(Mandatory=$true, Position=1)]
+        $Message
+    )
+
+    $Date = get-date
+    $Content = "[$Date]`t$Category`t`t$Message`n" 
+    Add-Content $Script:Log $content -ErrorAction Stop
+    If ($Verbose) {
+        Write-Verbose $Content
+    } Else {
+        Switch ($Category) {
+            'Info' {Write-Host $content}
+            'Error' {Write-Error $Content}
+            'Warning' {Write-Warning $Content}
+        }
+    }
+}
+
 
 #endregion Functions
 
