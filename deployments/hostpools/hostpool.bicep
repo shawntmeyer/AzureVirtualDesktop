@@ -267,52 +267,19 @@ param identitySolution string
 param virtualMachineAdminPassword string
 
 @secure()
-@description('''Optional. The Key Vault reference for the virtualMachineAdminPassword. This is used only with the Custom UI template Spec deployment.
-Object that contains the following properties:
-id: The resource Id of the Key Vault Secret.
-secretName: The name of the secret in the Key Vault.
-If specified, the virtualMachineAdminPassword parameter is not used.
-''')
-param virtualMachineAdminPwdKvReference object = {}
-
-@secure()
 @description('Required. The Local Administrator Username for the Session Hosts')
 param virtualMachineAdminUserName string
-
-@secure()
-@description('''Optional. The Key Vault reference for the virtualMachineAdminUserName. This is used only with the Custom UI template Spec deployment.
-Object that contains the following properties:
-id: The resource Id of the Key Vault Secret.
-secretName: The name of the secret in the Key Vault.
-If specified, the virtualMachineAdminUserName parameter is not used.
-''')
-param virtualMachineAdminUserNameKvReference object = {}
 
 @secure()
 @description('Optional. The password of the privileged account to domain join the AVD session hosts to your domain. Required when "identitySolution" contains "DomainServices".')
 param domainJoinUserPassword string = ''
 
 @secure()
-@description('''Optional. The Key Vault reference for the domainJoinUserPassword. This is used only with the Custom UI template Spec deployment.
-Object that contains the following properties:
-id: The resource Id of the Key Vault Secret.
-secretName: The name of the secret in the Key Vault.
-If specified, the domainJoinUserPassword parameter must be an empty string.
-''')
-param domainJoinUserPwdKvReference object = {}
-
-@secure()
 @description('Conditional. The UPN of the privileged account to domain join the AVD session hosts to your domain. This should be an account the resides within the domain you are joining. Required when "identitySolution" contains "DomainServices".')
 param domainJoinUserPrincipalName string = ''
 
-@secure()
-@description('''Optional. The Key Vault reference for the domainJoinUserPrincipalName. This is used only with the Custom UI template Spec deployment.
-Object that contains the following properties:
-id: The resource Id of the Key Vault Secret.
-secretName: The name of the secret in the Key Vault.
-If specified, the domainJoinUserPrincipalName parameter must be an empty string.
-''')
-param domainJoinUserPrincipalNameKvReference object = {}
+@description('Optional. The Resource Id of the Key Vault containing the credential secrets.')
+param credentialsKeyVaultResourceId string = ''
 
 @description('Optional. The name of the domain that provides ADDS to the AVD session hosts and is synchronized with Azure AD')
 param domainName string = ''
@@ -633,24 +600,9 @@ resource avdPrivateLinkGlobalFeedNetwork 'Microsoft.Network/virtualNetworks@2023
 
 // Existing Key Vaults for Secrets (only used for UI deployments since you can specify references in Parameter files.)
 
-resource kvDomainJoinUserPassword 'Microsoft.KeyVault/vaults@2023-07-01' existing = if (!empty(domainJoinUserPwdKvReference)) {
-  name: last(split(domainJoinUserPwdKvReference.id, '/'))
-  scope: resourceGroup(split(domainJoinUserPwdKvReference.id, '/')[2], split(domainJoinUserPwdKvReference.id, '/')[4])
-}
-
-resource kvDomainJoinUserPrincipalName 'Microsoft.KeyVault/vaults@2023-07-01' existing = if (!empty(domainJoinUserPrincipalNameKvReference)) {
-  name: last(split(domainJoinUserPrincipalNameKvReference.id, '/'))
-  scope: resourceGroup(split(domainJoinUserPrincipalNameKvReference.id, '/')[2], split(domainJoinUserPrincipalNameKvReference.id, '/')[4])
-}
-
-resource kvVirtualMachineAdminPassword 'Microsoft.KeyVault/vaults@2023-07-01' existing = if (!empty(virtualMachineAdminPwdKvReference)) {
-  name: last(split(virtualMachineAdminPwdKvReference.id, '/'))
-  scope: resourceGroup(split(virtualMachineAdminPwdKvReference.id, '/')[2], split(virtualMachineAdminPwdKvReference.id, '/')[4])
-}
-
-resource kvVirtualMachineAdminUserName 'Microsoft.KeyVault/vaults@2023-07-01' existing = if (!empty(virtualMachineAdminUserNameKvReference)) {
-  name: last(split(virtualMachineAdminUserNameKvReference.id, '/'))
-  scope: resourceGroup(split(virtualMachineAdminUserNameKvReference.id, '/')[2], split(virtualMachineAdminUserNameKvReference.id, '/')[4])
+resource kvCredentials 'Microsoft.KeyVault/vaults@2023-07-01' existing = if (!empty(credentialsKeyVaultResourceId)) {
+  name: last(split(credentialsKeyVaultResourceId, '/'))
+  scope: resourceGroup(split(credentialsKeyVaultResourceId, '/')[2], split(credentialsKeyVaultResourceId, '/')[4])
 }
 
 // Resource Names
@@ -742,8 +694,8 @@ module deploymentPrereqs 'modules/deployment/deployment.bicep' = {
     deployScalingPlan: deployScalingPlan
     deploymentVmSize: deploymentVmSize
     diskSku: diskSku
-    domainJoinUserPassword: identitySolution != 'EntraId' ? !empty(domainJoinUserPwdKvReference) ? kvDomainJoinUserPassword.getSecret(domainJoinUserPwdKvReference.secretName) : domainJoinUserPassword : ''
-    domainJoinUserPrincipalName: identitySolution != 'EntraId' ? !empty(domainJoinUserPrincipalNameKvReference) ? kvDomainJoinUserPrincipalName.getSecret(domainJoinUserPrincipalNameKvReference.secretName) : domainJoinUserPrincipalName : ''
+    domainJoinUserPassword: identitySolution != 'EntraId' ? !empty(domainJoinUserPassword) ? domainJoinUserPassword : !empty(credentialsKeyVaultResourceId) ? kvCredentials.getSecret('DomainJoinUserPassword') : '' : ''
+    domainJoinUserPrincipalName: identitySolution != 'EntraId' ? !empty(domainJoinUserPrincipalName) ? domainJoinUserPrincipalName : !empty(credentialsKeyVaultResourceId) ? kvCredentials.getSecret('DomainJoinUserPrincipalName') : '' : ''
     domainName: domainName
     encryptionAtHost: encryptionAtHost
     fslogix: deployFSLogixStorage
@@ -760,8 +712,8 @@ module deploymentPrereqs 'modules/deployment/deployment.bicep' = {
     tags: tags
     timeStamp: timeStamp
     userAssignedIdentityNameConv: resourceNames.outputs.userAssignedIdentityNameConv 
-    virtualMachineAdminPassword: !empty(virtualMachineAdminPwdKvReference) ? kvVirtualMachineAdminPassword.getSecret(virtualMachineAdminPwdKvReference.secretName) : virtualMachineAdminPassword
-    virtualMachineAdminUserName: !empty(virtualMachineAdminUserNameKvReference) ? kvVirtualMachineAdminUserName.getSecret(virtualMachineAdminUserNameKvReference.secretName) : virtualMachineAdminUserName
+    virtualMachineAdminPassword: !empty(virtualMachineAdminPassword) ? virtualMachineAdminPassword : kvCredentials.getSecret('VirtualMachineAdminPassword')
+    virtualMachineAdminUserName: !empty(virtualMachineAdminUserName) ? virtualMachineAdminUserName : kvCredentials.getSecret('VirtualMachineAdminUserName')
     virtualMachineName: resourceNames.outputs.depVirtualMachineName
     virtualMachineNICName: resourceNames.outputs.depVirtualMachineNicName
     virtualMachineDiskName: resourceNames.outputs.depVirtualMachineDiskName
@@ -875,8 +827,8 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (deployFSLogixStorage) {
     azureTablePrivateDnsZoneResourceId: azureTablePrivateDnsZoneResourceId
     deploymentUserAssignedIdentityClientId: deploymentPrereqs.outputs.deploymentUserAssignedIdentityClientId
     deploymentVirtualMachineName: deploymentPrereqs.outputs.virtualMachineName
-    domainJoinUserPassword: !empty(domainJoinUserPwdKvReference) ? kvDomainJoinUserPassword.getSecret(domainJoinUserPwdKvReference.secretName) : domainJoinUserPassword
-    domainJoinUserPrincipalName: !empty(domainJoinUserPrincipalNameKvReference) ? kvDomainJoinUserPrincipalName.getSecret(domainJoinUserPrincipalNameKvReference.secretName) : domainJoinUserPrincipalName
+    domainJoinUserPassword: identitySolution != 'EntraId' ? !empty(domainJoinUserPassword) ? domainJoinUserPassword : !empty(credentialsKeyVaultResourceId) ? kvCredentials.getSecret('DomainJoinUserPassword') : '' : ''
+    domainJoinUserPrincipalName: identitySolution != 'EntraId' ? !empty(domainJoinUserPrincipalName) ? domainJoinUserPrincipalName : !empty(credentialsKeyVaultResourceId) ? kvCredentials.getSecret('DomainJoinUserPrincipalName') : '' : ''
     domainName: domainName
     fslogixAdminGroups: fslogixAdminGroups
     fslogixFileShares: logic.outputs.fslogixFileShareNames
@@ -957,8 +909,8 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     diskSizeGB: diskSizeGB
     diskSku: diskSku
     divisionRemainderValue: logic.outputs.divisionRemainderValue
-    domainJoinUserPassword: !empty(domainJoinUserPwdKvReference) ? kvDomainJoinUserPassword.getSecret(domainJoinUserPwdKvReference.secretName) : domainJoinUserPassword
-    domainJoinUserPrincipalName: !empty(domainJoinUserPrincipalNameKvReference) ? kvDomainJoinUserPrincipalName.getSecret(domainJoinUserPrincipalNameKvReference.secretName) : domainJoinUserPrincipalName
+    domainJoinUserPassword: identitySolution != 'EntraId' ? !empty(domainJoinUserPassword) ? domainJoinUserPassword : !empty(credentialsKeyVaultResourceId) ? kvCredentials.getSecret('DomainJoinUserPassword') : '' : ''
+    domainJoinUserPrincipalName: identitySolution != 'EntraId' ? !empty(domainJoinUserPrincipalName) ? domainJoinUserPrincipalName : !empty(credentialsKeyVaultResourceId) ? kvCredentials.getSecret('DomainJoinUserPrincipalName') : '' : ''
     domainName: domainName
     drainMode: drainMode
     drainModeUserAssignedIdentityClientId: deploymentPrereqs.outputs.deploymentUserAssignedIdentityClientId
@@ -1013,8 +965,8 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     timeStamp: timeStamp
     timeZone: logic.outputs.timeZone
     useAgentDownloadEndpoint: useAgentDownloadEndpoint
-    virtualMachineAdminPassword: !empty(virtualMachineAdminPwdKvReference) ? kvVirtualMachineAdminPassword.getSecret(virtualMachineAdminPwdKvReference.secretName) : virtualMachineAdminPassword
-    virtualMachineAdminUserName: !empty(virtualMachineAdminUserNameKvReference) ? kvVirtualMachineAdminUserName.getSecret(virtualMachineAdminUserNameKvReference.secretName) : virtualMachineAdminUserName
+    virtualMachineAdminPassword: !empty(virtualMachineAdminPassword) ? virtualMachineAdminPassword : kvCredentials.getSecret('VirtualMachineAdminPassword')
+    virtualMachineAdminUserName: !empty(virtualMachineAdminUserName) ? virtualMachineAdminUserName : kvCredentials.getSecret('VirtualMachineAdminUserName')
     virtualMachineNamePrefix: resourceNames.outputs.virtualMachineNamePrefix
     virtualMachineSize: virtualMachineSize
     vmInsightsDataCollectionRulesResourceId: enableMonitoring ? management.outputs.vmInsightsDataCollectionRulesResourceId : ''

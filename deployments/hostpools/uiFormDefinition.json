@@ -94,19 +94,48 @@
 											"avdARMProvider": "[value[?displayName=='Azure Virtual Desktop ARM Provider'] | [0].id]"
 										}
 									}
+								},								
+								{
+									"name": "servicePrincipalPickerBlade",
+									"type": "Microsoft.Solutions.BladeInvokeControl",
+									"openBladeStatus": "[steps('basics').prereqs.servicePrincipalSelector.changing]",
+									"bladeReference": {
+										"name": "ObjectPickerBlade",
+										"extension": "Microsoft_AAD_IAM",
+										"parameters": {
+											"queries": 4,
+											"bladeSubtitle": "Pick the Service Principal",
+											"additionalQueriesOnSearch": 0,
+											"advancedQueryOptions": {},
+											"selectionMaximum": 1,
+											"selectionMinimum": 1,
+											"bladeTitle": "Select the Service Principal",
+											"informationHeader": {
+												"informationText": "Select the 'Azure Virtual Desktop' service principal."
+											},
+											"searchBoxLabel": "Search for the 'Azure Virtual Desktop' service principal",
+											"searchBoxPlaceHolderText": "Enter 'Azure Virtual Desktop'",
+											"searchGridNoRowsMessage": "No Service Principals found",
+											"selectButtonText": "Select Service Principal",
+											"selectedGridLabel": "Selected Service Principal",
+											"selectedGridNoRowsMessage": "You must select the 'Azure Virtual Desktop' service principal"
+										}
+									},
+									"transforms": {
+										"selection": "selectedObjects|[*].{displayName:displayName,id:id}"
+									}
 								},
 								{
-									"name": "avdObjectId",
-									"type": "Microsoft.Common.TextBox",
-									"label": "AVD Object Id",
-									"placeholder": "",
-									"defaultValue": "",
-									"toolTip": "Search your Entra ID tenant for the Azure Virtual Desktop or Windows Virtual Desktop enterprise Application with Applicaton ID (9cdead84-a844-4324-93f2-b2e6bb768d07) and enter the Object Id here.",
+									"name": "servicePrincipalSelector",
+									"type": "Microsoft.Common.Selector",
+									"label": "Select the <b>Azure Virtual Desktop</b> Service Principal",
+									"keyPath": "displayName",
+									"value": "[steps('basics').prereqs.servicePrincipalPickerBlade.transformed.selection]",
+									"barColor": "[if(empty(steps('basics').prereqs.servicePrincipalPickerBlade), '#FF0000', '#7fba00')]",
 									"constraints": {
-										"required": true,
-										"regex": "^(?!\\d+$)\\w{8}-\\w{4}-\\w{4}-\\w{4}-\\w{12}$",
-										"validationMessage": "A proper GUID must be provided."
+										"required": true
 									},
+									"link": "[if(empty(steps('basics').prereqs.servicePrincipalPickerBlade), 'Select Service Principal', first(map(steps('basics').prereqs.servicePrincipalPickerBlade.transformed.selection, (sp) => sp.displayName)))]",
 									"visible": "[empty(first(steps('basics').prereqs.avdServicePrincipalsApi.value))]"
 								}
 							],
@@ -295,7 +324,7 @@
 									"toolTip": "Select the existing AVD Workspace to update with the Desktop Application Group deployed via this solution.",
 									"constraints": {
 										"required": true,
-										"allowedValues": "[map(filter(steps('controlPlane').workspacesApi.value, (ws) => equals(ws.location, steps('controlPlane').location.name)), (vdws) => parse(concat('{\"label\":\"', vdws.name, '\",\"description\":\"<b>Friendly Name:</b> ', vdws.properties.friendlyName, ', <b>Resource Group:</b> ', first(skip(split(vdws.id, '/'), 4)), '\",\"value\":\"', vdws.id, '\"}')))]"
+										"allowedValues": "[map(filter(steps('controlPlane').workspacesApi.value, (ws) => equals(ws.location, steps('controlPlane').location.name)), (vdws) => parse(concat('{\"label\":\"', vdws.name, '\",\"description\":\"Friendly Name: ', vdws.properties.friendlyName, ', Resource Group: ', first(skip(split(vdws.id, '/'), 4)), '\",\"value\":\"', vdws.id, '\"}')))]"
 									},
 									"visible": "[equals(steps('controlPlane').workspace.createOption, 'update')]"
 								}
@@ -965,7 +994,7 @@
 									"multiLine": true,
 									"toolTip": "Select the virtual network to which the session hosts will be attached.",
 									"constraints": {
-										"allowedValues": "[map(filter(steps('hosts').network.hostsVirtualNetworksApi.value, (vnet) => equals(vnet.location, steps('basics').scope.location.name)), (vnet) => parse(concat('{\"label\":\"', vnet.name, '\",\"description\":\"<b>Location:</b> ', vnet.location, ' <b>Resource Group:</b> ', first(skip(split(vnet.id, '/'), 4)), '\",\"value\":\"', vnet.id, '\"}')))]",
+										"allowedValues": "[map(filter(steps('hosts').network.hostsVirtualNetworksApi.value, (vnet) => equals(vnet.location, steps('basics').scope.location.name)), (vnet) => parse(concat('{\"label\":\"', vnet.name, '\",\"description\":\"Location: ', vnet.location, ' Resource Group: ', first(skip(split(vnet.id, '/'), 4)), '\",\"value\":\"', vnet.id, '\"}')))]",
 										"required": true
 									}
 								},
@@ -1601,19 +1630,19 @@
 									}
 								}
 							]
-						},
+						},						
 						{
-							"name": "domainJoinCredentials",
+							"name": "credentials",
 							"type": "Microsoft.Common.Section",
-							"label": "Domain Join Credentials",
-							"visible": "[not(equals(steps('hosts').identity.solution, 'EntraId'))]",
+							"visible": true,
+							"label": "Credentials",
 							"elements": [
 								{
 									"name": "source",
 									"type": "Microsoft.Common.OptionsGroup",
-									"label": "Domain Join User and Password Source",
+									"label": "[if(equals(steps('hosts').identity.solution, 'EntraId'), 'VM Admin Credentials source', 'Domain Join and VM Admin Credentials source')]",
 									"defaultValue": "Manual Entry",
-									"toolTip": "Select 'Manual Entry' to specify the Domain Join User and Password or 'Key Vault' to select secrets from a key vault.",
+									"toolTip": "Select 'Manual Entry' to specify the secrets manually or 'Key Vault' to reference secrets from a Key Vault.",
 									"constraints": {
 										"allowedValues": [
 											{
@@ -1629,10 +1658,10 @@
 									},
 									"visible": true
 								},
-								{
-									"name": "userPrincipalName",
+{
+									"name": "domainJoinUserPrincipalName",
 									"type": "Microsoft.Common.TextBox",
-									"label": "User Principal Name",
+									"label": "Domain Join Account UserPrincipalName",
 									"toolTip": "Enter the user principal name with domain join privileges.",
 									"placeholder": "domainjoin@contoso.com",
 									"constraints": {
@@ -1640,13 +1669,13 @@
 										"regex": "^[a-z0-9A-Z_.-]+@(?:[a-z0-9]+\\.)+[a-z]+$",
 										"validationMessage": "The value must be a valid user principal name."
 									},
-									"visible": "[equals(steps('hosts').domainJoinCredentials.source, 'manual')]"
+									"visible": "[and(not(equals(steps('hosts').identity.solution, 'EntraId')), equals(steps('hosts').credentials.source, 'manual'))]"
 								},
 								{
-									"name": "password",
+									"name": "domainJoinUserPassword",
 									"type": "Microsoft.Common.PasswordBox",
 									"label": {
-										"password": "Password",
+										"password": "Domain Join Account Password",
 										"confirmPassword": "Confirm Password"
 									},
 									"toolTip": "Enter a password that is alphanumeric, contains at least 12 characters, 1 letter, 1 number and 1 special character.",
@@ -1656,99 +1685,12 @@
 									"options": {
 										"hideConfirmation": false
 									},
-									"visible": "[equals(steps('hosts').domainJoinCredentials.source, 'manual')]"
+									"visible": "[and(not(equals(steps('hosts').identity.solution, 'EntraId')), equals(steps('hosts').credentials.source, 'manual'))]"
 								},
 								{
-									"name": "upnSecretPickerBlade",
-									"type": "Microsoft.Solutions.BladeInvokeControl",
-									"openBladeStatus": "[steps('hosts').domainJoinCredentials.upnSecretSelector.changing]",
-									"bladeReference": {
-										"name": "SecretPickerV2ViewModel",
-										"extension": "Microsoft_Azure_KeyVault",
-										"parameters": {
-											"subscriptionId": "[steps('basics').scope.subscription.subscriptionId]",
-											"showSubscriptionDropdown": true,
-											"showCreateNew": false,
-											"showVersionPicker": false
-										},
-										"inFullScreen": false
-									}
-								},
-								{
-									"name": "upnSecretSelector",
-									"type": "Microsoft.Common.Selector",
-									"label": "User Principal Name",
-									"keyPath": "secretId",
-									"value": "[steps('hosts').domainJoinCredentials.upnSecretPickerBlade]",
-									"visible": "[equals(steps('hosts').domainJoinCredentials.source, 'keyVault')]",
-									"barColor": "[if(empty(steps('hosts').domainJoinCredentials.upnSecretPickerBlade), '#FF0000', '#7fba00')]",
-									"constraints": {
-										"required": true
-									},
-									"link": "Select a secret"
-								},
-								{
-									"name": "passwordSecretPickerBlade",
-									"type": "Microsoft.Solutions.BladeInvokeControl",
-									"openBladeStatus": "[steps('hosts').domainJoinCredentials.passwordSecretSelector.changing]",
-									"bladeReference": {
-										"name": "SecretPickerV2ViewModel",
-										"extension": "Microsoft_Azure_KeyVault",
-										"parameters": {
-											"subscriptionId": "[steps('basics').scope.subscription.subscriptionId]",
-											"showSubscriptionDropdown": true,
-											"showCreateNew": false,
-											"showVersionPicker": false
-										},
-										"inFullScreen": false
-									}
-								},
-								{
-									"name": "passwordSecretSelector",
-									"type": "Microsoft.Common.Selector",
-									"label": "Password",
-									"keyPath": "secretId",
-									"value": "[steps('hosts').domainJoinCredentials.passwordSecretPickerBlade]",
-									"visible": "[equals(steps('hosts').domainJoinCredentials.source, 'keyVault')]",
-									"barColor": "[if(empty(steps('hosts').domainJoinCredentials.passwordSecretPickerBlade), '#FF0000', '#7fba00')]",
-									"constraints": {
-										"required": true
-									},
-									"link": "Select a secret"
-								}
-							]
-						},
-						{
-							"name": "localAdminCredentials",
-							"type": "Microsoft.Common.Section",
-							"visible": true,
-							"label": "Local Administrator Credential",
-							"elements": [
-								{
-									"name": "source",
-									"type": "Microsoft.Common.OptionsGroup",
-									"label": "Local Admin Account and Password Source",
-									"defaultValue": "Manual Entry",
-									"toolTip": "Select 'Manual Entry' to specify the VM Admin UserName and Password or 'Key Vault' to reference the 'virtualMachineAdminUserName' and 'virtualMachineAdminPassword' secrets stored in the management key vault.",
-									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Key Vault",
-												"value": "keyVault"
-											},
-											{
-												"label": "Manual Entry",
-												"value": "manual"
-											}
-										],
-										"required": true
-									},
-									"visible": true
-								},
-								{
-									"name": "username",
+									"name": "localAdminUsername",
 									"type": "Microsoft.Common.TextBox",
-									"label": "Username",
+									"label": "Local Admin Username",
 									"defaultValue": "",
 									"toolTip": "Input the username for the local administrator account.",
 									"constraints": {
@@ -1756,13 +1698,13 @@
 										"regex": "",
 										"validationMessage": ""
 									},
-									"visible": "[equals(steps('hosts').localAdminCredentials.source, 'manual')]"
+									"visible": "[equals(steps('hosts').credentials.source, 'manual')]"
 								},
 								{
-									"name": "password",
+									"name": "localAdminPassword",
 									"type": "Microsoft.Common.PasswordBox",
 									"label": {
-										"password": "Password",
+										"password": "Local Admin Password",
 										"confirmPassword": "Confirm Password"
 									},
 									"toolTip": "Input the password for the local administrator account.",
@@ -1774,66 +1716,37 @@
 									"options": {
 										"hideConfirmation": false
 									},
-									"visible": "[equals(steps('hosts').localAdminCredentials.source, 'manual')]"
+									"visible": "[equals(steps('hosts').credentials.source, 'manual')]"
 								},
 								{
-									"name": "usernameSecretPickerBlade",
-									"type": "Microsoft.Solutions.BladeInvokeControl",
-									"openBladeStatus": "[steps('hosts').localAdminCredentials.usernameSecretSelector.changing]",
-									"bladeReference": {
-										"name": "SecretPickerV2ViewModel",
-										"extension": "Microsoft_Azure_KeyVault",
-										"parameters": {
-											"subscriptionId": "[steps('basics').scope.subscription.subscriptionId]",
-											"showSubscriptionDropdown": true,
-											"showCreateNew": false,
-											"showVersionPicker": false
-										},
-										"inFullScreen": false
-									}
-								},
+                                    "name": "secretsInfoBox1",
+                                    "type": "Microsoft.Common.InfoBox",
+                                    "visible": "[and(equals(steps('hosts').identity.solution, 'EntraId'), equals(steps('hosts').credentials.source, 'keyVault'))]",
+                                    "options": {
+                                        "text": "This add-on requires that the following secret names and values are stored in a key vault that you will select below:</br><ul><li><b>VirtualMachineAdminUserName</b>: The virtual machine administrator username.</li><li><b>VirtualMachineAdminPassword</b>: The virtual machine administrator password.",
+                                        "style": "Info"
+                                    }
+                                },
 								{
-									"name": "usernameSecretSelector",
-									"type": "Microsoft.Common.Selector",
-									"label": "Username",
-									"keyPath": "secretId",
-									"value": "[steps('hosts').localAdminCredentials.usernameSecretPickerBlade]",
-									"visible": "[equals(steps('hosts').localAdminCredentials.source, 'keyVault')]",
-									"barColor": "[if(empty(steps('hosts').localAdminCredentials.usernameSecretPickerBlade), '#FF0000', '#7fba00')]",
-									"constraints": {
-										"required": true
-									},
-									"link": "Select a secret"
-								},
+                                    "name": "secretsInfoBox2",
+                                    "type": "Microsoft.Common.InfoBox",
+                                    "visible": "[and(not(equals(steps('hosts').identity.solution, 'EntraId')), equals(steps('hosts').credentials.source, 'keyVault'))]",
+                                    "options": {
+                                        "text": "This add-on requires that the following secret names and values are stored in a key vault that you will select below:</br><ul><li><b>DomainJoinUserPrincipalName</b>: The domain join account UserPrincipalName (i.e., domjoin@contoso.local).</li><li><b>DomainJoinUserPassword</b>: The password associated with the domain join user account.</li><li><b>VirtualMachineAdminUserName</b>: The virtual machine administrator username.</li><li><b>VirtualMachineAdminPassword</b>: The virtual machine administrator password.",
+                                        "style": "Info"
+                                    }
+                                },
 								{
-									"name": "passwordSecretPickerBlade",
-									"type": "Microsoft.Solutions.BladeInvokeControl",
-									"openBladeStatus": "[steps('hosts').localAdminCredentials.passwordSecretSelector.changing]",
-									"bladeReference": {
-										"name": "SecretPickerV2ViewModel",
-										"extension": "Microsoft_Azure_KeyVault",
-										"parameters": {
-											"subscriptionId": "[steps('basics').scope.subscription.subscriptionId]",
-											"showSubscriptionDropdown": true,
-											"showCreateNew": false,
-											"showVersionPicker": false
-										},
-										"inFullScreen": false
-									}
-								},
-								{
-									"name": "passwordSecretSelector",
-									"type": "Microsoft.Common.Selector",
-									"label": "Password",
-									"keyPath": "secretId",
-									"value": "[steps('hosts').localAdminCredentials.passwordSecretPickerBlade]",
-									"visible": "[equals(steps('hosts').localAdminCredentials.source, 'keyVault')]",
-									"barColor": "[if(empty(steps('hosts').localAdminCredentials.passwordSecretPickerBlade), '#FF0000', '#7fba00')]",
-									"constraints": {
-										"required": true
-									},
-									"link": "Select a secret"
-								}
+                                    "name": "keyVault",
+                                    "type": "Microsoft.Solutions.ResourceSelector",
+                                    "label": "Select Keyvault containing workload secrets",
+                                    "resourceType": "Microsoft.KeyVault/vaults",
+                                    "toolTip": "Select Keyvault which contains the domain join secrets",
+                                    "constraints": {
+                                        "required": true
+                                    },
+									"visible": "[equals(steps('hosts').credentials.source, 'keyVault')]"
+                                }
 							]
 						},
 						{
@@ -1935,7 +1848,7 @@
 									"multiLine": true,
 									"toolTip": "Select the storage account containing the image customization artifacts (i.e., installers, scripts).",
 									"constraints": {
-										"allowedValues": "[map(steps('hosts').customScripts.storageAccountsApi.value, (sa) => parse(concat('{\"label\":\"', sa.name, '\",\"description\":\"<b>Location</b>: ', sa.location, ' <b>Resource Group</b>: ', first(skip(split(sa.id, '/'), 4)), '\",\"value\":{\"id\":\"', sa.id, '\",\"blobEndpoint\":\"', sa.properties.primaryEndpoints.blob, '\"}}')))]",
+										"allowedValues": "[map(steps('hosts').customScripts.storageAccountsApi.value, (sa) => parse(concat('{\"label\":\"', sa.name, '\",\"description\":\"Location: ', sa.location, ' Resource Group: ', first(skip(split(sa.id, '/'), 4)), '\",\"value\":{\"id\":\"', sa.id, '\",\"blobEndpoint\":\"', sa.properties.primaryEndpoints.blob, '\"}}')))]",
 										"required": false
 									},
 									"visible": "[steps('hosts').customScripts.addCustomScripts]"
@@ -2171,7 +2084,7 @@
 									"multiLine": true,
 									"toolTip": "Select the virtual network containing the subnets to which the Azure NetApp Files instance will be attached.",
 									"constraints": {
-										"allowedValues": "[map(filter(steps('userProfiles').azureNetAppFiles.storageVirtualNetworksApi.value, (vnet) => equals(vnet.location, steps('basics').scope.location.name)), (vnet) => parse(concat('{\"label\":\"', vnet.name, '\",\"description\":\"<b>Location:</b> ', vnet.location, ' <b>Resource Group:</b> ', first(skip(split(vnet.id, '/'), 4)), '\",\"value\":\"', vnet.id, '\"}')))]",
+										"allowedValues": "[map(filter(steps('userProfiles').azureNetAppFiles.storageVirtualNetworksApi.value, (vnet) => equals(vnet.location, steps('basics').scope.location.name)), (vnet) => parse(concat('{\"label\":\"', vnet.name, '\",\"description\":\"Location: ', vnet.location, ' Resource Group: ', first(skip(split(vnet.id, '/'), 4)), '\",\"value\":\"', vnet.id, '\"}')))]",
 										"required": true
 									},
 									"visible": "[steps('userProfiles').deployStorage]"
@@ -2327,7 +2240,7 @@
 									"label": "Existing Local NetApp Account",
 									"toolTip": "Select the existing local NetApp account to use for the FSLogix profile storage.",
 									"constraints": {
-										"allowedValues": "[map(filter(steps('userProfiles').azureNetAppFiles.netAppAccountsApi.value, (account) => equals(account.location, steps('basics').scope.location.name)), (account) => parse(concat('{\"label\":\"', account.name, '\",\"description\":\"<b>ResourceGroup:</b> ', first(skip(split(account.id, '/'), 4)), '\", \"value\":\"', account.id, '\"}')))]",
+										"allowedValues": "[map(filter(steps('userProfiles').azureNetAppFiles.netAppAccountsApi.value, (account) => equals(account.location, steps('basics').scope.location.name)), (account) => parse(concat('{\"label\":\"', account.name, '\",\"description\":\"ResourceGroup: ', first(skip(split(account.id, '/'), 4)), '\", \"value\":\"', account.id, '\"}')))]",
 										"required": true
 									},
 									"visible": "[and(steps('userProfiles').configureSessionHosts, equals(steps('userProfiles').deployStorage, false))]"
@@ -2389,7 +2302,7 @@
 									"toolTip": "Select the existing local NetApp account to use for the FSLogix profile storage.",
 									"multiLine": true,
 									"constraints": {
-										"allowedValues": "[map(filter(steps('userProfiles').azureNetAppFiles.netAppAccountsApi.value, (account) => not(equals(account.location, steps('basics').scope.location.name))), (account) => parse(concat('{\"label\":\"', account.name, '\",\"description\":\"<b>Location:</b> ', account.location, ', <b>ResourceGroup:</b> ', first(skip(split(account.id, '/'), 4)), '\", \"value\":\"', account.id, '\"}')))]",
+										"allowedValues": "[map(filter(steps('userProfiles').azureNetAppFiles.netAppAccountsApi.value, (account) => not(equals(account.location, steps('basics').scope.location.name))), (account) => parse(concat('{\"label\":\"', account.name, '\",\"description\":\"Location: ', account.location, ', ResourceGroup: ', first(skip(split(account.id, '/'), 4)), '\", \"value\":\"', account.id, '\"}')))]",
 										"required": false
 									},
 									"visible": "[and(steps('userProfiles').configureSessionHosts, contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]"
@@ -3140,7 +3053,7 @@
 									"multiLine": true,
 									"toolTip": "Select the virtual network containing the subnets to which the shared management resources private endpoints will be attached.",
 									"constraints": {
-										"allowedValues": "[map(filter(steps('zeroTrust').privateEndpoints.privateEndpointVirtualNetworksApi.value, (vnet) => equals(vnet.location, steps('basics').scope.location.name)), (vnet) => parse(concat('{\"label\":\"', vnet.name, '\",\"description\":\"<b>Location:</b> ', vnet.location, ' <b>Resource Group:</b> ', first(skip(split(vnet.id, '/'), 4)), '\",\"value\":\"', vnet.id, '\"}')))]",
+										"allowedValues": "[map(filter(steps('zeroTrust').privateEndpoints.privateEndpointVirtualNetworksApi.value, (vnet) => equals(vnet.location, steps('basics').scope.location.name)), (vnet) => parse(concat('{\"label\":\"', vnet.name, '\",\"description\":\"Location: ', vnet.location, ' Resource Group: ', first(skip(split(vnet.id, '/'), 4)), '\",\"value\":\"', vnet.id, '\"}')))]",
 										"required": true
 									},
 									"visible": "[steps('zeroTrust').privateEndpoints.deployPrivateEndpoints]"
@@ -3191,7 +3104,7 @@
 									"multiLine": true,
 									"toolTip": "Select the virtual network containing the subnets to which the host pool resources private endpoints will be attached.",
 									"constraints": {
-										"allowedValues": "[map(filter(steps('zeroTrust').privateEndpoints.privateEndpointVirtualNetworksApi.value, (vnet) => equals(vnet.location, steps('basics').scope.location.name)), (vnet) => parse(concat('{\"label\":\"', vnet.name, '\",\"description\":\"<b>Location:</b> ', vnet.location, ' <b>Resource Group:</b> ', first(skip(split(vnet.id, '/'), 4)), '\",\"value\":\"', vnet.id, '\"}')))]",
+										"allowedValues": "[map(filter(steps('zeroTrust').privateEndpoints.privateEndpointVirtualNetworksApi.value, (vnet) => equals(vnet.location, steps('basics').scope.location.name)), (vnet) => parse(concat('{\"label\":\"', vnet.name, '\",\"description\":\"Location: ', vnet.location, ' Resource Group: ', first(skip(split(vnet.id, '/'), 4)), '\",\"value\":\"', vnet.id, '\"}')))]",
 										"required": true
 									},
 									"visible": "[steps('zeroTrust').privateEndpoints.deployPrivateEndpoints]"
@@ -3274,7 +3187,7 @@
 									"multiLine": true,
 									"toolTip": "Select the existing Geo Specific Private DNS Zone for Azure Backup Storage.",
 									"constraints": {
-										"allowedValues": "[map(filter(steps('zeroTrust').privateEndpoints.privateDNSZonesApi.value, (zone) => contains(zone.name, '.backup.')), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"<b>Resource group:</b> ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
+										"allowedValues": "[map(filter(steps('zeroTrust').privateEndpoints.privateDNSZonesApi.value, (zone) => contains(zone.name, '.backup.')), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"Resource Group: ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
 										"required": false
 									}
 								},
@@ -3286,7 +3199,7 @@
 									"multiLine": true,
 									"toolTip": "Select the existing Private DNS Zone for Azure Blob Storage.",
 									"constraints": {
-										"allowedValues": "[map(filter(steps('zeroTrust').privateEndpoints.privateDNSZonesApi.value, (zone) => contains(zone.name, 'privatelink.blob.')), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"<b>Resource group:</b> ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
+										"allowedValues": "[map(filter(steps('zeroTrust').privateEndpoints.privateDNSZonesApi.value, (zone) => contains(zone.name, 'privatelink.blob.')), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"Resource Group: ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
 										"required": true
 									}
 								},
@@ -3298,7 +3211,7 @@
 									"multiLine": true,
 									"toolTip": "Select the existing Private DNS Zone for Azure Files.",
 									"constraints": {
-										"allowedValues": "[map(filter(steps('zeroTrust').privateEndpoints.privateDNSZonesApi.value, (zone) => contains(zone.name, 'privatelink.file.')), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"<b>Resource group:</b> ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
+										"allowedValues": "[map(filter(steps('zeroTrust').privateEndpoints.privateDNSZonesApi.value, (zone) => contains(zone.name, 'privatelink.file.')), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"Resource Group: ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
 										"required": true
 									}
 								},
@@ -3312,7 +3225,7 @@
 										"allowedValues": "[map(filter(steps('zeroTrust').privateEndpoints.privateDNSZonesApi.value, (zone) => contains(zone.name, 'privatelink.vaultcore.')), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"Resource group: ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
 										"required": true
 									},
-									"visible": "[and(steps('zeroTrust').privateEndpoints.deployPrivateEndpoints, steps('zeroTrust').privateEndpoints.enablePrivateDNSIntegration, or(equals(steps('hosts').domainJoinCredentials.source, 'manual'), equals(steps('hosts').localAdminCredentials.source, 'manual'), steps('hosts').diskEncryption.confidentialVMOSDiskEncryption, contains(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), contains(steps('userProfiles').azureFiles.keyManagement, 'CustomerManaged')))]"
+									"visible": "[and(steps('zeroTrust').privateEndpoints.deployPrivateEndpoints, steps('zeroTrust').privateEndpoints.enablePrivateDNSIntegration, or(equals(steps('hosts').credentials.source, 'manual'), steps('hosts').diskEncryption.confidentialVMOSDiskEncryption, contains(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), contains(steps('userProfiles').azureFiles.keyManagement, 'CustomerManaged')))]"
 								},
 								{
 									"name": "azureQueuePrivateDnsZone",
@@ -3322,7 +3235,7 @@
 									"multiLine": true,
 									"toolTip": "Select the existing Private DNS Zone for Azure Queue Storage.",
 									"constraints": {
-										"allowedValues": "[map(filter(steps('zeroTrust').privateEndpoints.privateDNSZonesApi.value, (zone) => contains(zone.name, 'privatelink.queue.')), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"<b>Resource group:</b> ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
+										"allowedValues": "[map(filter(steps('zeroTrust').privateEndpoints.privateDNSZonesApi.value, (zone) => contains(zone.name, 'privatelink.queue.')), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"Resource Group: ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
 										"required": false
 									}
 								},
@@ -3334,7 +3247,7 @@
 									"multiLine": true,
 									"toolTip": "Select the existing Private DNS Zone for Azure Table Storage.",
 									"constraints": {
-										"allowedValues": "[map(filter(steps('zeroTrust').privateEndpoints.privateDNSZonesApi.value, (zone) => contains(zone.name, 'privatelink.table.')), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"<b>Resource group:</b> ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
+										"allowedValues": "[map(filter(steps('zeroTrust').privateEndpoints.privateDNSZonesApi.value, (zone) => contains(zone.name, 'privatelink.table.')), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"Resource Group: ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
 										"required": false
 									}
 								},
@@ -3346,7 +3259,7 @@
 									"multiLine": true,
 									"toolTip": "Select the existing Private DNS Zone for Azure Function Apps",
 									"constraints": {
-										"allowedValues": "[map(filter(steps('zeroTrust').privateEndpoints.privateDNSZonesApi.value, (zone) => or(startsWith(zone.name, 'privatelink.azurewebsites.'), startsWith(zone.name, 'privatelink.appservice.'))), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"<b>Resource group:</b> ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
+										"allowedValues": "[map(filter(steps('zeroTrust').privateEndpoints.privateDNSZonesApi.value, (zone) => or(startsWith(zone.name, 'privatelink.azurewebsites.'), startsWith(zone.name, 'privatelink.appservice.'))), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"Resource Group: ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
 										"required": false
 									}
 								},
@@ -3358,7 +3271,7 @@
 									"multiLine": true,
 									"toolTip": "Select the existing Private DNS Zone for Azure Function Apps",
 									"constraints": {
-										"allowedValues": "[map(filter(steps('zeroTrust').privateEndpoints.privateDNSZonesApi.value, (zone) => contains(zone.name, 'scm.privatelink.')), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"<b>Resource group:</b> ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
+										"allowedValues": "[map(filter(steps('zeroTrust').privateEndpoints.privateDNSZonesApi.value, (zone) => contains(zone.name, 'scm.privatelink.')), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"Resource Group: ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
 										"required": false
 									}
 								}
@@ -3533,7 +3446,7 @@
 									"toolTip": "Select the virtual network where the AVD Private Link Hostpool Connection private endpoints will be created. Note that only virtual networks located in the same region as the virtual machines are shown.",
 									"defaultValue": "[last(split(steps('zeroTrust').privateEndpoints.hostpoolVirtualNetwork, '/'))]",
 									"constraints": {
-										"allowedValues": "[map(filter(steps('zeroTrust').avdPrivateLink.hostpoolVirtualNetworksApi.value, (vnet) => equals(vnet.location, steps('basics').scope.location.name)), (vnet) => parse(concat('{\"label\":\"', vnet.name, '\",\"description\":\"<b>Location:</b> ', vnet.location, ' <b>Resource group:</b> ', first(skip(split(vnet.id, '/'), 4)), '\",\"value\":\"', vnet.id, '\"}')))]",
+										"allowedValues": "[map(filter(steps('zeroTrust').avdPrivateLink.hostpoolVirtualNetworksApi.value, (vnet) => equals(vnet.location, steps('basics').scope.location.name)), (vnet) => parse(concat('{\"label\":\"', vnet.name, '\",\"description\":\"Location: ', vnet.location, ' Resource Group: ', first(skip(split(vnet.id, '/'), 4)), '\",\"value\":\"', vnet.id, '\"}')))]",
 										"required": true
 									},
 									"visible": "[steps('zeroTrust').avdPrivateLink.enablePrivateLink]"
@@ -3635,7 +3548,7 @@
 									"toolTip": "Select the virtual network where the AVD Private Link Workspace feed download private endpoints will be created. Note that only virtual networks located in the same region as the control plane are shown.",
 									"defaultValue": "[last(split(steps('zeroTrust').privateEndpoints.managementVirtualNetwork, '/'))]",
 									"constraints": {
-										"allowedValues": "[map(filter(steps('zeroTrust').avdPrivateLink.feedWorkspaceVirtualNetworksApi.value, (vnet) => equals(vnet.location, steps('controlPlane').location.name)), (vnet) => parse(concat('{\"label\":\"', vnet.name, '\",\"description\":\"<b>Location:</b> ', vnet.location, ' <b>Resource group:</b> ', first(skip(split(vnet.id, '/'), 4)), '\",\"value\":\"', vnet.id, '\"}')))]",
+										"allowedValues": "[map(filter(steps('zeroTrust').avdPrivateLink.feedWorkspaceVirtualNetworksApi.value, (vnet) => equals(vnet.location, steps('controlPlane').location.name)), (vnet) => parse(concat('{\"label\":\"', vnet.name, '\",\"description\":\"Location: ', vnet.location, ' Resource Group: ', first(skip(split(vnet.id, '/'), 4)), '\",\"value\":\"', vnet.id, '\"}')))]",
 										"required": true
 									},
 									"visible": "[and(steps('zeroTrust').avdPrivateLink.enablePrivateLink, not(equals(steps('zeroTrust').avdPrivateLink.avdPrivateLinkConfig, 'Hostpool')))]"
@@ -3731,7 +3644,7 @@
 									"toolTip": "Select the virtual network where the AVD Private Link Global Workspace Private Endpoint will be created.",
 									"defaultValue": "[last(split(steps('zeroTrust').avdPrivateLink.feedWorkspaceVirtualNetwork, '/'))]",
 									"constraints": {
-										"allowedValues": "[map(steps('zeroTrust').avdPrivateLink.globalFeedVirtualNetworksApi.value, (vnet) => parse(concat('{\"label\":\"', vnet.name, '\",\"description\":\"<b>Location:</b> ', vnet.location, ' <b>Resource group:</b> ', first(skip(split(vnet.id, '/'), 4)), '\",\"value\":\"', vnet.id, '\"}')))]",
+										"allowedValues": "[map(steps('zeroTrust').avdPrivateLink.globalFeedVirtualNetworksApi.value, (vnet) => parse(concat('{\"label\":\"', vnet.name, '\",\"description\":\"Location: ', vnet.location, ' Resource Group: ', first(skip(split(vnet.id, '/'), 4)), '\",\"value\":\"', vnet.id, '\"}')))]",
 										"required": true
 									},
 									"visible": "[and(steps('zeroTrust').avdPrivateLink.enablePrivateLink, equals(steps('zeroTrust').avdPrivateLink.avdPrivateLinkConfig, 'All'))]"
@@ -3815,7 +3728,7 @@
 									"multiLine": true,
 									"toolTip": "Select the existing Private DNS Zone for the Remote Session connection and Workspace Feed (if applicable).",
 									"constraints": {
-										"allowedValues": "[map(filter(steps('zeroTrust').avdPrivateLink.privateDNSZonesApi.value, (zone) => contains(zone.name, 'privatelink.wvd.')), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"<b>Resource group:</b> ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
+										"allowedValues": "[map(filter(steps('zeroTrust').avdPrivateLink.privateDNSZonesApi.value, (zone) => contains(zone.name, 'privatelink.wvd.')), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"Resource Group: ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
 										"required": true
 									}
 								},
@@ -3873,7 +3786,7 @@
 		},
 		"outputs": {
 			"parameters": {
-				"avdObjectId": "[if(empty(steps('basics').prereqs.avdServicePrincipalsApi), steps('basics').prereqs.avdObjectId, first(steps('basics').prereqs.avdServicePrincipalsApi.transformed.avd))]",
+				"avdObjectId": "[if(empty(steps('basics').prereqs.avdServicePrincipalsApi), first(map(steps('basics').prereqs.servicePrincipalPickerBlade.transformed.selection, (sp) => sp.id)), first(steps('basics').prereqs.avdServicePrincipalsApi.transformed.avd))]",
 				"identifier": "[steps('basics').naming.identifier]",
 				"index": "[steps('basics').naming.index]",
 				"nameConvResTypeAtEnd": "[steps('basics').naming.nameConvResTypeAtEnd]",
@@ -3921,14 +3834,11 @@
 				"identitySolution": "[if(and(equals(steps('hosts').identity.solution, 'EntraId'), steps('hosts').identity.intune), 'EntraIdIntuneEnrollment', steps('hosts').identity.solution)]",
 				"domainName": "[steps('hosts').identity.domainName]",
 				"vmOUPath": "[if(equals(steps('hosts').identity.solution, 'EntraId'), '', steps('hosts').identity.ouPath)]",
-				"domainJoinUserPassword": "[if(equals(steps('hosts').domainJoinCredentials.source, 'manual'), steps('hosts').domainJoinCredentials.password, '')]",
-				"domainJoinUserPasswordKvSecret": "[if(equals(steps('hosts').domainJoinCredentials.source, 'manual'), parse('{}'), parse(concat('{\"id\":\"', steps('hosts').domainJoinCredentials.passwordSecretPickerBlade.vaultResourceId, '\",\"secretName\":\"', last(split(steps('hosts').domainJoinCredentials.passwordSecretPickerBlade.secretId,'/')), '\"}')))]",
-				"domainJoinUserPrincipalName": "[if(equals(steps('hosts').domainJoinCredentials.source, 'manual'), steps('hosts').domainJoinCredentials.userPrincipalName, '')]",
-				"domainJoinUserPrincipalNameKvSecret": "[if(equals(steps('hosts').domainJoinCredentials.source, 'manual'), parse('{}'), parse(concat('{\"id\":\"', steps('hosts').domainJoinCredentials.upnSecretPickerBlade.vaultResourceId, '\",\"secretName\":\"', last(split(steps('hosts').domainJoinCredentials.upnSecretPickerBlade.secretId,'/')), '\"}')))]",
-				"virtualMachineAdminPassword": "[if(equals(steps('hosts').localAdminCredentials.source, 'manual'), steps('hosts').localAdminCredentials.password, '')]",
-				"virtualMachineAdminPasswordKvSecret": "[if(equals(steps('hosts').localAdminCredentials.source, 'manual'), parse('{}'), parse(concat('{\"id\":\"', steps('hosts').localAdminCredentials.passwordSecretPickerBlade.vaultResourceId, '\",\"secretName\":\"', last(split(steps('hosts').localAdminCredentials.passwordSecretPickerBlade.secretId,'/')), '\"}')))]",
-				"virtualMachineAdminUserName": "[if(equals(steps('hosts').localAdminCredentials.source, 'manual'), steps('hosts').localAdminCredentials.username, '')]",
-				"virtualMachineAdminUserNameKvSecret": "[if(equals(steps('hosts').localAdminCredentials.source, 'manual'), parse('{}'), parse(concat('{\"id\":\"', steps('hosts').localAdminCredentials.usernameSecretPickerBlade.vaultResourceId, '\",\"secretName\":\"', last(split(steps('hosts').localAdminCredentials.usernameSecretPickerBlade.secretId,'/')), '\"}')))]",
+				"domainJoinUserPassword": "[if(and(not(equals(steps('hosts').identity.solution, 'EntraId')), equals(steps('hosts').credentials.source, 'manual')), steps('hosts').credentials.domainJoinUserPassword, '')]",				
+				"domainJoinUserPrincipalName": "[if(and(not(equals(steps('hosts').identity.solution, 'EntraId')), equals(steps('hosts').credentials.source, 'manual')), steps('hosts').credentials.domainJoinUserPrincipalName, '')]",				
+				"virtualMachineAdminPassword": "[if(equals(steps('hosts').credentials.source, 'manual'), steps('hosts').credentials.localAdminPassword, '')]",				
+				"virtualMachineAdminUserName": "[if(equals(steps('hosts').credentials.source, 'manual'), steps('hosts').credentials.localAdminUsername, '')]",
+				"credentialsKeyVaultResourceId": "[if(equals(steps('hosts').credentials.source, 'keyVault'), steps('hosts').credentials.keyVault.id, '')]",
 				"avdAgentsDSCPackage": "[steps('hosts').registration.avdAgentsDSCPackage]",
 				"useAgentDownloadEndpoint": "[steps('hosts').registration.useAgentDownloadEndpoint]",
 				"artifactsContainerUri": "[if(steps('hosts').customScripts.addCustomScripts, if(and(not(empty(steps('hosts').customScripts.storageAccount)), not(empty(steps('hosts').customScripts.container))), concat(steps('hosts').customScripts.storageAccount.blobEndpoint, steps('hosts').customScripts.container), ''), '')]",
@@ -3971,7 +3881,7 @@
 				"azureFunctionAppPrivateDnsZoneResourceId": "[if(and(steps('management').automation.deployIncreaseQuota, steps('zeroTrust').privateEndpoints.deployPrivateEndpoints, steps('zeroTrust').privateEndpoints.enablePrivateDNSIntegration), steps('zeroTrust').privateEndpoints.azureFunctionAppPrivateDnsZone, '')]",
 				"azureFunctionAppScmPrivateDnsZoneResourceId": "[if(and(steps('management').automation.deployIncreaseQuota, steps('zeroTrust').privateEndpoints.deployPrivateEndpoints, steps('zeroTrust').privateEndpoints.enablePrivateDNSIntegration), steps('zeroTrust').privateEndpoints.azureFunctionAppScmPrivateDnsZone, '')]",
 				"azureFilesPrivateDnsZoneResourceId": "[if(and(equals(steps('userProfiles').storageService, 'AzureFiles'), steps('zeroTrust').privateEndpoints.deployPrivateEndpoints, steps('zeroTrust').privateEndpoints.enablePrivateDNSIntegration), steps('zeroTrust').privateEndpoints.azureFilesPrivateDnsZone, '')]",
-				"azureKeyVaultPrivateDnsZoneResourceId": "[if(and(steps('zeroTrust').privateEndpoints.deployPrivateEndpoints, steps('zeroTrust').privateEndpoints.enablePrivateDNSIntegration, or(equals(steps('hosts').domainJoinCredentials.source, 'manual'), equals(steps('hosts').localAdminCredentials.source, 'manual'), steps('hosts').diskEncryption.confidentialVMOSDiskEncryption, contains(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), contains(steps('userProfiles').azureFiles.keyManagement, 'CustomerManaged'))), steps('zeroTrust').privateEndpoints.azureKeyVaultPrivateDnsZone, '')]",
+				"azureKeyVaultPrivateDnsZoneResourceId": "[if(and(steps('zeroTrust').privateEndpoints.deployPrivateEndpoints, steps('zeroTrust').privateEndpoints.enablePrivateDNSIntegration, or(equals(steps('hosts').credentials.source, 'manual'), steps('hosts').diskEncryption.confidentialVMOSDiskEncryption, contains(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), contains(steps('userProfiles').azureFiles.keyManagement, 'CustomerManaged'))), steps('zeroTrust').privateEndpoints.azureKeyVaultPrivateDnsZone, '')]",
 				"azureQueuePrivateDnsZoneResourceId": "[if(and(or(steps('management').backup.recoveryServices, steps('management').automation.deployIncreaseQuota), steps('zeroTrust').privateEndpoints.deployPrivateEndpoints, steps('zeroTrust').privateEndpoints.enablePrivateDNSIntegration), steps('zeroTrust').privateEndpoints.azureQueuePrivateDnsZone, '')]",
 				"azureTablePrivateDnsZoneResourceId": "[if(and(steps('management').automation.deployIncreaseQuota, steps('zeroTrust').privateEndpoints.deployPrivateEndpoints, steps('zeroTrust').privateEndpoints.enablePrivateDNSIntegration), steps('zeroTrust').privateEndpoints.azureTablePrivateDnsZone, '')]",
 				"azureMonitorPrivateLinkScopeResourceId": "[if(steps('zeroTrust').azureMonitor.privateLink, steps('zeroTrust').azureMonitor.azureMonitorPrivateLinkScope.id, '')]",

@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "11699771171482933147"
+      "templateHash": "12821047463603052884"
     }
   },
   "parameters": {
@@ -435,24 +435,10 @@
         "description": "Required. Local administrator password for the AVD session hosts"
       }
     },
-    "virtualMachineAdminPwdKvReference": {
-      "type": "secureObject",
-      "defaultValue": {},
-      "metadata": {
-        "description": "Optional. The Key Vault reference for the virtualMachineAdminPassword. This is used only with the Custom UI template Spec deployment.\nObject that contains the following properties:\nid: The resource Id of the Key Vault Secret.\nsecretName: The name of the secret in the Key Vault.\nIf specified, the virtualMachineAdminPassword parameter is not used.\n"
-      }
-    },
     "virtualMachineAdminUserName": {
       "type": "securestring",
       "metadata": {
         "description": "Required. The Local Administrator Username for the Session Hosts"
-      }
-    },
-    "virtualMachineAdminUserNameKvReference": {
-      "type": "secureObject",
-      "defaultValue": {},
-      "metadata": {
-        "description": "Optional. The Key Vault reference for the virtualMachineAdminUserName. This is used only with the Custom UI template Spec deployment.\nObject that contains the following properties:\nid: The resource Id of the Key Vault Secret.\nsecretName: The name of the secret in the Key Vault.\nIf specified, the virtualMachineAdminUserName parameter is not used.\n"
       }
     },
     "domainJoinUserPassword": {
@@ -462,13 +448,6 @@
         "description": "Optional. The password of the privileged account to domain join the AVD session hosts to your domain. Required when \"identitySolution\" contains \"DomainServices\"."
       }
     },
-    "domainJoinUserPwdKvReference": {
-      "type": "secureObject",
-      "defaultValue": {},
-      "metadata": {
-        "description": "Optional. The Key Vault reference for the domainJoinUserPassword. This is used only with the Custom UI template Spec deployment.\nObject that contains the following properties:\nid: The resource Id of the Key Vault Secret.\nsecretName: The name of the secret in the Key Vault.\nIf specified, the domainJoinUserPassword parameter must be an empty string.\n"
-      }
-    },
     "domainJoinUserPrincipalName": {
       "type": "securestring",
       "defaultValue": "",
@@ -476,11 +455,11 @@
         "description": "Conditional. The UPN of the privileged account to domain join the AVD session hosts to your domain. This should be an account the resides within the domain you are joining. Required when \"identitySolution\" contains \"DomainServices\"."
       }
     },
-    "domainJoinUserPrincipalNameKvReference": {
-      "type": "secureObject",
-      "defaultValue": {},
+    "credentialsKeyVaultResourceId": {
+      "type": "string",
+      "defaultValue": "",
       "metadata": {
-        "description": "Optional. The Key Vault reference for the domainJoinUserPrincipalName. This is used only with the Custom UI template Spec deployment.\nObject that contains the following properties:\nid: The resource Id of the Key Vault Secret.\nsecretName: The name of the secret in the Key Vault.\nIf specified, the domainJoinUserPrincipalName parameter must be an empty string.\n"
+        "description": "Optional. The Resource Id of the Key Vault containing the credential secrets."
       }
     },
     "domainName": {
@@ -2261,8 +2240,8 @@
           "diskSku": {
             "value": "[parameters('diskSku')]"
           },
-          "domainJoinUserPassword": "[if(not(equals(parameters('identitySolution'), 'EntraId')), if(not(empty(parameters('domainJoinUserPwdKvReference'))), createObject('reference', createObject('keyVault', createObject('id', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('domainJoinUserPwdKvReference').id, '/')[2], split(parameters('domainJoinUserPwdKvReference').id, '/')[4]), 'Microsoft.KeyVault/vaults', last(split(parameters('domainJoinUserPwdKvReference').id, '/')))), 'secretName', parameters('domainJoinUserPwdKvReference').secretName)), createObject('value', parameters('domainJoinUserPassword'))), createObject('value', ''))]",
-          "domainJoinUserPrincipalName": "[if(not(equals(parameters('identitySolution'), 'EntraId')), if(not(empty(parameters('domainJoinUserPrincipalNameKvReference'))), createObject('reference', createObject('keyVault', createObject('id', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('domainJoinUserPrincipalNameKvReference').id, '/')[2], split(parameters('domainJoinUserPrincipalNameKvReference').id, '/')[4]), 'Microsoft.KeyVault/vaults', last(split(parameters('domainJoinUserPrincipalNameKvReference').id, '/')))), 'secretName', parameters('domainJoinUserPrincipalNameKvReference').secretName)), createObject('value', parameters('domainJoinUserPrincipalName'))), createObject('value', ''))]",
+          "domainJoinUserPassword": "[if(not(equals(parameters('identitySolution'), 'EntraId')), if(not(empty(parameters('domainJoinUserPassword'))), createObject('value', parameters('domainJoinUserPassword')), if(not(empty(parameters('credentialsKeyVaultResourceId'))), createObject('reference', createObject('keyVault', createObject('id', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('credentialsKeyVaultResourceId'), '/')[2], split(parameters('credentialsKeyVaultResourceId'), '/')[4]), 'Microsoft.KeyVault/vaults', last(split(parameters('credentialsKeyVaultResourceId'), '/')))), 'secretName', 'DomainJoinUserPassword')), createObject('value', ''))), createObject('value', ''))]",
+          "domainJoinUserPrincipalName": "[if(not(equals(parameters('identitySolution'), 'EntraId')), if(not(empty(parameters('domainJoinUserPrincipalName'))), createObject('value', parameters('domainJoinUserPrincipalName')), if(not(empty(parameters('credentialsKeyVaultResourceId'))), createObject('reference', createObject('keyVault', createObject('id', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('credentialsKeyVaultResourceId'), '/')[2], split(parameters('credentialsKeyVaultResourceId'), '/')[4]), 'Microsoft.KeyVault/vaults', last(split(parameters('credentialsKeyVaultResourceId'), '/')))), 'secretName', 'DomainJoinUserPrincipalName')), createObject('value', ''))), createObject('value', ''))]",
           "domainName": {
             "value": "[parameters('domainName')]"
           },
@@ -2311,8 +2290,8 @@
           "userAssignedIdentityNameConv": {
             "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.userAssignedIdentityNameConv.value]"
           },
-          "virtualMachineAdminPassword": "[if(not(empty(parameters('virtualMachineAdminPwdKvReference'))), createObject('reference', createObject('keyVault', createObject('id', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('virtualMachineAdminPwdKvReference').id, '/')[2], split(parameters('virtualMachineAdminPwdKvReference').id, '/')[4]), 'Microsoft.KeyVault/vaults', last(split(parameters('virtualMachineAdminPwdKvReference').id, '/')))), 'secretName', parameters('virtualMachineAdminPwdKvReference').secretName)), createObject('value', parameters('virtualMachineAdminPassword')))]",
-          "virtualMachineAdminUserName": "[if(not(empty(parameters('virtualMachineAdminUserNameKvReference'))), createObject('reference', createObject('keyVault', createObject('id', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('virtualMachineAdminUserNameKvReference').id, '/')[2], split(parameters('virtualMachineAdminUserNameKvReference').id, '/')[4]), 'Microsoft.KeyVault/vaults', last(split(parameters('virtualMachineAdminUserNameKvReference').id, '/')))), 'secretName', parameters('virtualMachineAdminUserNameKvReference').secretName)), createObject('value', parameters('virtualMachineAdminUserName')))]",
+          "virtualMachineAdminPassword": "[if(not(empty(parameters('virtualMachineAdminPassword'))), createObject('value', parameters('virtualMachineAdminPassword')), createObject('reference', createObject('keyVault', createObject('id', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('credentialsKeyVaultResourceId'), '/')[2], split(parameters('credentialsKeyVaultResourceId'), '/')[4]), 'Microsoft.KeyVault/vaults', last(split(parameters('credentialsKeyVaultResourceId'), '/')))), 'secretName', 'VirtualMachineAdminPassword')))]",
+          "virtualMachineAdminUserName": "[if(not(empty(parameters('virtualMachineAdminUserName'))), createObject('value', parameters('virtualMachineAdminUserName')), createObject('reference', createObject('keyVault', createObject('id', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('credentialsKeyVaultResourceId'), '/')[2], split(parameters('credentialsKeyVaultResourceId'), '/')[4]), 'Microsoft.KeyVault/vaults', last(split(parameters('credentialsKeyVaultResourceId'), '/')))), 'secretName', 'VirtualMachineAdminUserName')))]",
           "virtualMachineName": {
             "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.depVirtualMachineName.value]"
           },
@@ -7528,8 +7507,8 @@
           "deploymentVirtualMachineName": {
             "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Deployment_Prereqs_{0}', parameters('timeStamp'))), '2022-09-01').outputs.virtualMachineName.value]"
           },
-          "domainJoinUserPassword": "[if(not(empty(parameters('domainJoinUserPwdKvReference'))), createObject('reference', createObject('keyVault', createObject('id', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('domainJoinUserPwdKvReference').id, '/')[2], split(parameters('domainJoinUserPwdKvReference').id, '/')[4]), 'Microsoft.KeyVault/vaults', last(split(parameters('domainJoinUserPwdKvReference').id, '/')))), 'secretName', parameters('domainJoinUserPwdKvReference').secretName)), createObject('value', parameters('domainJoinUserPassword')))]",
-          "domainJoinUserPrincipalName": "[if(not(empty(parameters('domainJoinUserPrincipalNameKvReference'))), createObject('reference', createObject('keyVault', createObject('id', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('domainJoinUserPrincipalNameKvReference').id, '/')[2], split(parameters('domainJoinUserPrincipalNameKvReference').id, '/')[4]), 'Microsoft.KeyVault/vaults', last(split(parameters('domainJoinUserPrincipalNameKvReference').id, '/')))), 'secretName', parameters('domainJoinUserPrincipalNameKvReference').secretName)), createObject('value', parameters('domainJoinUserPrincipalName')))]",
+          "domainJoinUserPassword": "[if(not(equals(parameters('identitySolution'), 'EntraId')), if(not(empty(parameters('domainJoinUserPassword'))), createObject('value', parameters('domainJoinUserPassword')), if(not(empty(parameters('credentialsKeyVaultResourceId'))), createObject('reference', createObject('keyVault', createObject('id', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('credentialsKeyVaultResourceId'), '/')[2], split(parameters('credentialsKeyVaultResourceId'), '/')[4]), 'Microsoft.KeyVault/vaults', last(split(parameters('credentialsKeyVaultResourceId'), '/')))), 'secretName', 'DomainJoinUserPassword')), createObject('value', ''))), createObject('value', ''))]",
+          "domainJoinUserPrincipalName": "[if(not(equals(parameters('identitySolution'), 'EntraId')), if(not(empty(parameters('domainJoinUserPrincipalName'))), createObject('value', parameters('domainJoinUserPrincipalName')), if(not(empty(parameters('credentialsKeyVaultResourceId'))), createObject('reference', createObject('keyVault', createObject('id', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('credentialsKeyVaultResourceId'), '/')[2], split(parameters('credentialsKeyVaultResourceId'), '/')[4]), 'Microsoft.KeyVault/vaults', last(split(parameters('credentialsKeyVaultResourceId'), '/')))), 'secretName', 'DomainJoinUserPrincipalName')), createObject('value', ''))), createObject('value', ''))]",
           "domainName": {
             "value": "[parameters('domainName')]"
           },
@@ -14234,8 +14213,8 @@
           "divisionRemainderValue": {
             "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Logic_{0}', parameters('timeStamp'))), '2022-09-01').outputs.divisionRemainderValue.value]"
           },
-          "domainJoinUserPassword": "[if(not(empty(parameters('domainJoinUserPwdKvReference'))), createObject('reference', createObject('keyVault', createObject('id', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('domainJoinUserPwdKvReference').id, '/')[2], split(parameters('domainJoinUserPwdKvReference').id, '/')[4]), 'Microsoft.KeyVault/vaults', last(split(parameters('domainJoinUserPwdKvReference').id, '/')))), 'secretName', parameters('domainJoinUserPwdKvReference').secretName)), createObject('value', parameters('domainJoinUserPassword')))]",
-          "domainJoinUserPrincipalName": "[if(not(empty(parameters('domainJoinUserPrincipalNameKvReference'))), createObject('reference', createObject('keyVault', createObject('id', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('domainJoinUserPrincipalNameKvReference').id, '/')[2], split(parameters('domainJoinUserPrincipalNameKvReference').id, '/')[4]), 'Microsoft.KeyVault/vaults', last(split(parameters('domainJoinUserPrincipalNameKvReference').id, '/')))), 'secretName', parameters('domainJoinUserPrincipalNameKvReference').secretName)), createObject('value', parameters('domainJoinUserPrincipalName')))]",
+          "domainJoinUserPassword": "[if(not(equals(parameters('identitySolution'), 'EntraId')), if(not(empty(parameters('domainJoinUserPassword'))), createObject('value', parameters('domainJoinUserPassword')), if(not(empty(parameters('credentialsKeyVaultResourceId'))), createObject('reference', createObject('keyVault', createObject('id', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('credentialsKeyVaultResourceId'), '/')[2], split(parameters('credentialsKeyVaultResourceId'), '/')[4]), 'Microsoft.KeyVault/vaults', last(split(parameters('credentialsKeyVaultResourceId'), '/')))), 'secretName', 'DomainJoinUserPassword')), createObject('value', ''))), createObject('value', ''))]",
+          "domainJoinUserPrincipalName": "[if(not(equals(parameters('identitySolution'), 'EntraId')), if(not(empty(parameters('domainJoinUserPrincipalName'))), createObject('value', parameters('domainJoinUserPrincipalName')), if(not(empty(parameters('credentialsKeyVaultResourceId'))), createObject('reference', createObject('keyVault', createObject('id', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('credentialsKeyVaultResourceId'), '/')[2], split(parameters('credentialsKeyVaultResourceId'), '/')[4]), 'Microsoft.KeyVault/vaults', last(split(parameters('credentialsKeyVaultResourceId'), '/')))), 'secretName', 'DomainJoinUserPrincipalName')), createObject('value', ''))), createObject('value', ''))]",
           "domainName": {
             "value": "[parameters('domainName')]"
           },
@@ -14386,8 +14365,8 @@
           "useAgentDownloadEndpoint": {
             "value": "[parameters('useAgentDownloadEndpoint')]"
           },
-          "virtualMachineAdminPassword": "[if(not(empty(parameters('virtualMachineAdminPwdKvReference'))), createObject('reference', createObject('keyVault', createObject('id', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('virtualMachineAdminPwdKvReference').id, '/')[2], split(parameters('virtualMachineAdminPwdKvReference').id, '/')[4]), 'Microsoft.KeyVault/vaults', last(split(parameters('virtualMachineAdminPwdKvReference').id, '/')))), 'secretName', parameters('virtualMachineAdminPwdKvReference').secretName)), createObject('value', parameters('virtualMachineAdminPassword')))]",
-          "virtualMachineAdminUserName": "[if(not(empty(parameters('virtualMachineAdminUserNameKvReference'))), createObject('reference', createObject('keyVault', createObject('id', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('virtualMachineAdminUserNameKvReference').id, '/')[2], split(parameters('virtualMachineAdminUserNameKvReference').id, '/')[4]), 'Microsoft.KeyVault/vaults', last(split(parameters('virtualMachineAdminUserNameKvReference').id, '/')))), 'secretName', parameters('virtualMachineAdminUserNameKvReference').secretName)), createObject('value', parameters('virtualMachineAdminUserName')))]",
+          "virtualMachineAdminPassword": "[if(not(empty(parameters('virtualMachineAdminPassword'))), createObject('value', parameters('virtualMachineAdminPassword')), createObject('reference', createObject('keyVault', createObject('id', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('credentialsKeyVaultResourceId'), '/')[2], split(parameters('credentialsKeyVaultResourceId'), '/')[4]), 'Microsoft.KeyVault/vaults', last(split(parameters('credentialsKeyVaultResourceId'), '/')))), 'secretName', 'VirtualMachineAdminPassword')))]",
+          "virtualMachineAdminUserName": "[if(not(empty(parameters('virtualMachineAdminUserName'))), createObject('value', parameters('virtualMachineAdminUserName')), createObject('reference', createObject('keyVault', createObject('id', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('credentialsKeyVaultResourceId'), '/')[2], split(parameters('credentialsKeyVaultResourceId'), '/')[4]), 'Microsoft.KeyVault/vaults', last(split(parameters('credentialsKeyVaultResourceId'), '/')))), 'secretName', 'VirtualMachineAdminUserName')))]",
           "virtualMachineNamePrefix": {
             "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.virtualMachineNamePrefix.value]"
           },

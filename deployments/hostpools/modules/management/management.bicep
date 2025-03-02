@@ -31,7 +31,9 @@ param virtualMachineAdminUserName string
 param zoneRedundant bool
 
 var secretList = union(
-  !empty(domainJoinUserPassword) ? [{ name: 'DomainJoinUserPassword', value: domainJoinUserPassword }] : [],
+  !empty(domainJoinUserPassword)
+    ? [{ name: 'DomainJoinUserPassword', value: domainJoinUserPassword }]
+    : [],
   !empty(domainJoinUserPrincipalName)
     ? [{ name: 'DomainJoinUserPrincipalName', value: domainJoinUserPrincipalName }]
     : [],
@@ -67,11 +69,13 @@ module secretsKeyVault '../../../sharedModules/resources/key-vault/vault/main.bi
               'VNETID',
               '${split(privateEndpointSubnetResourceId, '/')[8]}'
             )
-            privateDnsZoneGroup: empty(azureKeyVaultPrivateDnsZoneResourceId) ? null : {
-              privateDNSResourceIds: [
-                azureKeyVaultPrivateDnsZoneResourceId
-              ]
-            }
+            privateDnsZoneGroup: empty(azureKeyVaultPrivateDnsZoneResourceId)
+              ? null
+              : {
+                  privateDNSResourceIds: [
+                    azureKeyVaultPrivateDnsZoneResourceId
+                  ]
+                }
             service: 'vault'
             subnetResourceId: privateEndpointSubnetResourceId
             tags: tags[?'Microsoft.Network/privateEndpoints'] ?? {}
@@ -162,7 +166,11 @@ module hostingPlan 'modules/functionAppHostingPlan.bicep' = if (enableQuotaManag
 }
 
 output appServicePlanId string = enableQuotaManagement ? hostingPlan.outputs.hostingPlanId : ''
-output avdInsightsDataCollectionRulesResourceId string = enableMonitoring ? avdInsightsDataCollectionRules.outputs.dataCollectionRulesId : ''
+output avdInsightsDataCollectionRulesResourceId string = enableMonitoring
+  ? avdInsightsDataCollectionRules.outputs.dataCollectionRulesId
+  : ''
 output dataCollectionEndpointResourceId string = enableMonitoring ? dataCollectionEndpoint.outputs.resourceId : ''
 output logAnalyticsWorkspaceResourceId string = enableMonitoring ? logAnalyticsWorkspace.outputs.resourceId : ''
-output vmInsightsDataCollectionRulesResourceId string = enableMonitoring ? vmInsightsDataCollectionRules.outputs.dataCollectionRulesId : ''
+output vmInsightsDataCollectionRulesResourceId string = enableMonitoring
+  ? vmInsightsDataCollectionRules.outputs.dataCollectionRulesId
+  : ''
