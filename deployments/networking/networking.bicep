@@ -65,37 +65,67 @@ param privateDNSZonesResourceGroupName string = ''
 @description('Optional. Determines if the Azure Backup private DNS zone should be created.')
 param createAzureBackupZone bool = false
 
+@description('Optional. The Resource Id of the existing Azure Backup Private DNS Zone.')
+param azureBackupZoneId string = ''
+
 @description('Optional. Determines if the Azure Blob Storage private DNS zone should be created.')
 param createAzureBlobZone bool = false
+
+@description('Optional. The Resource Id of the existing Azure Blob Storage Private DNS Zone.')
+param azureBlobZoneId string = ''
 
 @description('Optional. Determines if the Azure Files Storage private DNS zone should be created.')
 param createAzureFilesZone bool = false
 
+@description('Optional. The Resource Id of the existing Azure Files Storage Private DNS Zone.')
+param azureFilesZoneId string = ''
+
 @description('Optional. Determines if the Azure Queue Storage private DNS zone should be created.')
 param createAzureQueueZone bool = false
+
+@description('Optional. The Resource Id of the existing Azure Queue Storage Private DNS Zone.')
+param azureQueueZoneId string = ''
 
 @description('Optional. Determines if the Azure Table Storage private DNS zone should be created.')
 param createAzureTableZone bool = false
 
+@description('Optional. The Resource Id of the existing Azure Table Storage Private DNS Zone.')
+param azureTableZoneId string = ''
+
 @description('Optional. Determines if the Azure Key Vault private DNS zone should be created.')
 param createAzureKeyVaultZone bool = false
+
+@description('Optional. The Resource Id of the existing Azure Key Vault Private DNS Zone.')
+param azureKeyVaultZoneId string = ''
 
 @description('Optional. Determines if the AVD feed private DNS zone should be created.')
 param createAvdFeedZone bool = false
 
+@description('Optional. The Resource Id of the existing AVD Feed Private DNS Zone.')
+param avdFeedZoneId string = ''
+
 @description('Optional. Determines if the AVD global feed private DNS zone should be created.')
 param createAvdGlobalFeedZone bool = false
+
+@description('Optional. The Resource Id of the existing AVD Global Feed Private DNS Zone.')
+param avdGlobalFeedZoneId string = ''
 
 @description('Optional. Determines if the Azure Web App private DNS zone should be created.')
 param createAzureWebAppZone bool = false
 
+@description('Optional. The Resource Id of the existing Azure Web App Private DNS Zone.')
+param azureWebAppZoneId string = ''
+
 @description('Optional. Determines if the Azure Web App SCM private DNS zone should be created.')
 param createAzureWebAppScmZone bool = false
+
+@description('Optional. The Resource Id of the existing Azure Web App SCM Private DNS Zone.')
+param azureWebAppScmZoneId string = ''
 
 @description('Optional. Determines if the private DNS zones should be linked to a new virtual network.')
 param linkPrivateDnsZonesToNewVnet bool = false
 
-@description('Conditional. The resource id of the virtual network to link the private DNS zones to. Required when "linkPrivateDnsZonesToNewVnet" is "false" and any of the private DNS Zones are deployed.')
+@description('Conditional. The resource id of the virtual network to link the private DNS zones to. Required when "linkPrivateDnsZonesToNewVnet" is "false" and any of the private DNS Zones are deployed or resource Ids provided.')
 param privateDnsZonesVnetId string = ''
 
 @description('Optional. The tags by resource type to apply to the resources.')
@@ -191,6 +221,21 @@ var privateDnsZonesToCreate = union(
   webAppScmPrivateDnsZone
 )
 
+var existingParamPrivateDnsZones = [
+  azureBackupZoneId
+  azureBlobZoneId
+  azureFilesZoneId
+  azureQueueZoneId
+  azureTableZoneId
+  azureKeyVaultZoneId
+  avdFeedZoneId
+  avdGlobalFeedZoneId
+  azureWebAppZoneId
+  azureWebAppScmZoneId
+]
+
+var existingPrivateDnsZoneIds = filter(existingParamPrivateDnsZones, (zone) => !empty(zone))
+
 resource vNetResourceGroup 'Microsoft.Resources/resourceGroups@2023-07-01' = if (deployVnetResourceGroup) {
   name: vnetResourceGroupName
   location: location
@@ -230,7 +275,7 @@ module privateDNSZoneNames 'modules/privateDnsZoneNames.bicep' = {
   name: 'Private-Dns-Zone-Names-${timeStamp}'
   scope: subscription()
   params: {
-    locations: locations
+    recoveryServicesGeo: locations[location].recoveryServicesGeo
   }
 }
 
@@ -254,9 +299,17 @@ module privateDNSZones 'modules/privateDnsZones.bicep' = if(createPrivateDNSZone
   params: {
     privateDnsZoneNames: privateDnsZonesToCreate
     tags: tags
-    vnetId: !empty(privateDnsZonesVnetId) ? privateDnsZonesVnetId : ( linkPrivateDnsZonesToNewVnet ? network.outputs.vnetResourceId : '' )
   }
   dependsOn: [
     privateDNSZonesResourceGroup
   ]
+}
+
+module privateDNSZonesVnetLinks 'modules/privateDnsZonesVnetLinks.bicep' = if(linkPrivateDnsZonesToNewVnet || !empty(privateDnsZonesVnetId)) {
+  name: 'Private-DNS-Zones-Vnet-Links-${timeStamp}'
+  params: {
+    privateDnsZoneResourceIds: createPrivateDNSZones ? union(privateDNSZones.outputs.resourceIds, existingPrivateDnsZoneIds) : existingPrivateDnsZoneIds
+    vnetId: !empty(privateDnsZonesVnetId) ? privateDnsZonesVnetId : ( linkPrivateDnsZonesToNewVnet ? network.outputs.vnetResourceId : '' )
+    timeStamp: timeStamp
+  }
 }

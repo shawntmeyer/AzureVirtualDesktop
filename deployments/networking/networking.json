@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "16512885199694081370"
+      "templateHash": "14012978273836784919"
     }
   },
   "parameters": {
@@ -154,11 +154,25 @@
         "description": "Optional. Determines if the Azure Backup private DNS zone should be created."
       }
     },
+    "azureBackupZoneId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional. The Resource Id of the existing Azure Backup Private DNS Zone."
+      }
+    },
     "createAzureBlobZone": {
       "type": "bool",
       "defaultValue": false,
       "metadata": {
         "description": "Optional. Determines if the Azure Blob Storage private DNS zone should be created."
+      }
+    },
+    "azureBlobZoneId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional. The Resource Id of the existing Azure Blob Storage Private DNS Zone."
       }
     },
     "createAzureFilesZone": {
@@ -168,11 +182,25 @@
         "description": "Optional. Determines if the Azure Files Storage private DNS zone should be created."
       }
     },
+    "azureFilesZoneId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional. The Resource Id of the existing Azure Files Storage Private DNS Zone."
+      }
+    },
     "createAzureQueueZone": {
       "type": "bool",
       "defaultValue": false,
       "metadata": {
         "description": "Optional. Determines if the Azure Queue Storage private DNS zone should be created."
+      }
+    },
+    "azureQueueZoneId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional. The Resource Id of the existing Azure Queue Storage Private DNS Zone."
       }
     },
     "createAzureTableZone": {
@@ -182,11 +210,25 @@
         "description": "Optional. Determines if the Azure Table Storage private DNS zone should be created."
       }
     },
+    "azureTableZoneId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional. The Resource Id of the existing Azure Table Storage Private DNS Zone."
+      }
+    },
     "createAzureKeyVaultZone": {
       "type": "bool",
       "defaultValue": false,
       "metadata": {
         "description": "Optional. Determines if the Azure Key Vault private DNS zone should be created."
+      }
+    },
+    "azureKeyVaultZoneId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional. The Resource Id of the existing Azure Key Vault Private DNS Zone."
       }
     },
     "createAvdFeedZone": {
@@ -196,11 +238,25 @@
         "description": "Optional. Determines if the AVD feed private DNS zone should be created."
       }
     },
+    "avdFeedZoneId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional. The Resource Id of the existing AVD Feed Private DNS Zone."
+      }
+    },
     "createAvdGlobalFeedZone": {
       "type": "bool",
       "defaultValue": false,
       "metadata": {
         "description": "Optional. Determines if the AVD global feed private DNS zone should be created."
+      }
+    },
+    "avdGlobalFeedZoneId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional. The Resource Id of the existing AVD Global Feed Private DNS Zone."
       }
     },
     "createAzureWebAppZone": {
@@ -210,11 +266,25 @@
         "description": "Optional. Determines if the Azure Web App private DNS zone should be created."
       }
     },
+    "azureWebAppZoneId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional. The Resource Id of the existing Azure Web App Private DNS Zone."
+      }
+    },
     "createAzureWebAppScmZone": {
       "type": "bool",
       "defaultValue": false,
       "metadata": {
         "description": "Optional. Determines if the Azure Web App SCM private DNS zone should be created."
+      }
+    },
+    "azureWebAppScmZoneId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional. The Resource Id of the existing Azure Web App SCM Private DNS Zone."
       }
     },
     "linkPrivateDnsZonesToNewVnet": {
@@ -228,7 +298,7 @@
       "type": "string",
       "defaultValue": "",
       "metadata": {
-        "description": "Conditional. The resource id of the virtual network to link the private DNS zones to. Required when \"linkPrivateDnsZonesToNewVnet\" is \"false\" and any of the private DNS Zones are deployed."
+        "description": "Conditional. The resource id of the virtual network to link the private DNS zones to. Required when \"linkPrivateDnsZonesToNewVnet\" is \"false\" and any of the private DNS Zones are deployed or resource Ids provided."
       }
     },
     "tags": {
@@ -674,7 +744,20 @@
     "routeTableName": "[replace(replace(replace(variables('nameConv_Shared_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').routeTables), 'LOCATION', variables('locations')[parameters('location')].abbreviation), 'TOKEN-', '')]",
     "hubSubscriptionId": "[if(not(empty(parameters('hubVnetResourceId'))), split(parameters('hubVnetResourceId'), '/')[2], '')]",
     "hubVnetResourceGroup": "[if(not(empty(parameters('hubVnetResourceId'))), split(parameters('hubVnetResourceId'), '/')[4], '')]",
-    "hubVnetName": "[if(not(empty(parameters('hubVnetResourceId'))), last(split(parameters('hubVnetResourceId'), '/')), '')]"
+    "hubVnetName": "[if(not(empty(parameters('hubVnetResourceId'))), last(split(parameters('hubVnetResourceId'), '/')), '')]",
+    "existingParamPrivateDnsZones": [
+      "[parameters('azureBackupZoneId')]",
+      "[parameters('azureBlobZoneId')]",
+      "[parameters('azureFilesZoneId')]",
+      "[parameters('azureQueueZoneId')]",
+      "[parameters('azureTableZoneId')]",
+      "[parameters('azureKeyVaultZoneId')]",
+      "[parameters('avdFeedZoneId')]",
+      "[parameters('avdGlobalFeedZoneId')]",
+      "[parameters('azureWebAppZoneId')]",
+      "[parameters('azureWebAppScmZoneId')]"
+    ],
+    "existingPrivateDnsZoneIds": "[filter(variables('existingParamPrivateDnsZones'), lambda('zone', not(empty(lambdaVariables('zone')))))]"
   },
   "resources": [
     {
@@ -1145,8 +1228,8 @@
         },
         "mode": "Incremental",
         "parameters": {
-          "locations": {
-            "value": "[variables('locations')]"
+          "recoveryServicesGeo": {
+            "value": "[variables('locations')[parameters('location')].recoveryServicesGeo]"
           }
         },
         "template": {
@@ -1156,24 +1239,33 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "14316386671997485550"
+              "templateHash": "13158662219195275849"
             }
           },
           "parameters": {
-            "locations": {
-              "type": "object"
+            "recoveryServicesGeo": {
+              "type": "string"
             }
           },
           "variables": {
-            "copy": [
-              {
-                "name": "privateDnsZoneNames_Backup",
-                "count": "[length(items(parameters('locations')))]",
-                "input": "[format('privatelink.{0}.backup.windowsazure.{1}', items(parameters('locations'))[copyIndex('privateDnsZoneNames_Backup')].value.recoveryServicesGeo, coalesce(variables('privateDnsZoneSuffixes_Backup')[environment().name], variables('cloudSuffix')))]"
-              }
-            ],
             "cloudSuffix": "[replace(replace(environment().resourceManager, 'https://management.', ''), '/', '')]",
-            "privateDnsZoneNames": "[union(createArray(format('privatelink.agentsvc.azure-automation.{0}', coalesce(variables('privateDnsZoneSuffixes_AzureAutomation')[environment().name], variables('cloudSuffix'))), format('privatelink.azure-automation.{0}', coalesce(variables('privateDnsZoneSuffixes_AzureAutomation')[environment().name], variables('cloudSuffix'))), format('privatelink.{0}', coalesce(variables('privateDnsZoneSuffixes_AzureWebSites')[environment().name], format('appservice.{0}', variables('cloudSuffix')))), format('scm.privatelink.{0}', coalesce(variables('privateDnsZoneSuffixes_AzureWebSites')[environment().name], format('appservice.{0}', variables('cloudSuffix')))), format('privatelink.wvd.{0}', coalesce(variables('privateDnsZoneSuffixes_AzureVirtualDesktop')[environment().name], variables('cloudSuffix'))), format('privatelink-global.wvd.{0}', coalesce(variables('privateDnsZoneSuffixes_AzureVirtualDesktop')[environment().name], variables('cloudSuffix'))), format('privatelink.file.{0}', environment().suffixes.storage), format('privatelink.queue.{0}', environment().suffixes.storage), format('privatelink.table.{0}', environment().suffixes.storage), format('privatelink.blob.{0}', environment().suffixes.storage), format('privatelink{0}', replace(environment().suffixes.keyvaultDns, 'vault', 'vaultcore')), format('privatelink.monitor.{0}', coalesce(variables('privateDnsZoneSuffixes_Monitor')[environment().name], variables('cloudSuffix'))), format('privatelink.ods.opinsights.{0}', coalesce(variables('privateDnsZoneSuffixes_Monitor')[environment().name], variables('cloudSuffix'))), format('privatelink.oms.opinsights.{0}', coalesce(variables('privateDnsZoneSuffixes_Monitor')[environment().name], variables('cloudSuffix')))), variables('privateDnsZoneNames_Backup'))]",
+            "privateDnsZoneNames": [
+              "[format('privatelink.agentsvc.azure-automation.{0}', coalesce(variables('privateDnsZoneSuffixes_AzureAutomation')[environment().name], variables('cloudSuffix')))]",
+              "[format('privatelink.azure-automation.{0}', coalesce(variables('privateDnsZoneSuffixes_AzureAutomation')[environment().name], variables('cloudSuffix')))]",
+              "[format('privatelink.{0}', coalesce(variables('privateDnsZoneSuffixes_AzureWebSites')[environment().name], format('appservice.{0}', variables('cloudSuffix'))))]",
+              "[format('scm.privatelink.{0}', coalesce(variables('privateDnsZoneSuffixes_AzureWebSites')[environment().name], format('appservice.{0}', variables('cloudSuffix'))))]",
+              "[format('privatelink.wvd.{0}', coalesce(variables('privateDnsZoneSuffixes_AzureVirtualDesktop')[environment().name], variables('cloudSuffix')))]",
+              "[format('privatelink-global.wvd.{0}', coalesce(variables('privateDnsZoneSuffixes_AzureVirtualDesktop')[environment().name], variables('cloudSuffix')))]",
+              "[format('privatelink.{0}.backup.windowsazure.{1}', parameters('recoveryServicesGeo'), coalesce(variables('privateDnsZoneSuffixes_Backup')[environment().name], variables('cloudSuffix')))]",
+              "[format('privatelink.file.{0}', environment().suffixes.storage)]",
+              "[format('privatelink.queue.{0}', environment().suffixes.storage)]",
+              "[format('privatelink.table.{0}', environment().suffixes.storage)]",
+              "[format('privatelink.blob.{0}', environment().suffixes.storage)]",
+              "[format('privatelink{0}', replace(environment().suffixes.keyvaultDns, 'vault', 'vaultcore'))]",
+              "[format('privatelink.monitor.{0}', coalesce(variables('privateDnsZoneSuffixes_Monitor')[environment().name], variables('cloudSuffix')))]",
+              "[format('privatelink.ods.opinsights.{0}', coalesce(variables('privateDnsZoneSuffixes_Monitor')[environment().name], variables('cloudSuffix')))]",
+              "[format('privatelink.oms.opinsights.{0}', coalesce(variables('privateDnsZoneSuffixes_Monitor')[environment().name], variables('cloudSuffix')))]"
+            ],
             "privateDnsZoneSuffixes_AzureAutomation": {
               "AzureCloud": "net",
               "AzureUSGovernment": "us",
@@ -1304,8 +1396,7 @@
           },
           "tags": {
             "value": "[parameters('tags')]"
-          },
-          "vnetId": "[if(not(empty(parameters('privateDnsZonesVnetId'))), createObject('value', parameters('privateDnsZonesVnetId')), if(parameters('linkPrivateDnsZonesToNewVnet'), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('vnetResourceGroupName')), 'Microsoft.Resources/deployments', format('Network-Resources-{0}', parameters('timeStamp'))), '2022-09-01').outputs.vnetResourceId.value), createObject('value', '')))]"
+          }
         },
         "template": {
           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -1314,18 +1405,16 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "2879679281105353887"
+              "templateHash": "3429618558857045121"
             }
           },
           "parameters": {
             "privateDnsZoneNames": {
               "type": "array"
             },
-            "vnetId": {
-              "type": "string"
-            },
             "tags": {
-              "type": "object"
+              "type": "object",
+              "defaultValue": {}
             }
           },
           "resources": [
@@ -1339,33 +1428,128 @@
               "name": "[parameters('privateDnsZoneNames')[copyIndex()]]",
               "location": "global",
               "tags": "[coalesce(tryGet(parameters('tags'), 'Microsoft.Network/privateDnsZones'), createObject())]"
+            }
+          ],
+          "outputs": {
+            "resourceIds": {
+              "type": "array",
+              "copy": {
+                "count": "[length(parameters('privateDnsZoneNames'))]",
+                "input": "[resourceId('Microsoft.Network/privateDnsZones', parameters('privateDnsZoneNames')[copyIndex()])]"
+              }
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/deployments', format('Private-Dns-Zone-Names-{0}', parameters('timeStamp')))]",
+        "[subscriptionResourceId(parameters('privateDNSZonesSubscriptionId'), 'Microsoft.Resources/deployments', format('Private-DNS-Zones-ResourceGroup-{0}', parameters('timeStamp')))]"
+      ]
+    },
+    {
+      "condition": "[or(parameters('linkPrivateDnsZonesToNewVnet'), not(empty(parameters('privateDnsZonesVnetId'))))]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "[format('Private-DNS-Zones-Vnet-Links-{0}', parameters('timeStamp'))]",
+      "location": "[deployment().location]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "privateDnsZoneResourceIds": "[if(variables('createPrivateDNSZones'), createObject('value', union(reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('privateDNSZonesSubscriptionId'), parameters('privateDNSZonesResourceGroupName')), 'Microsoft.Resources/deployments', format('Private-DNS-Zones-{0}', parameters('timeStamp'))), '2022-09-01').outputs.resourceIds.value, variables('existingPrivateDnsZoneIds'))), createObject('value', variables('existingPrivateDnsZoneIds')))]",
+          "vnetId": "[if(not(empty(parameters('privateDnsZonesVnetId'))), createObject('value', parameters('privateDnsZonesVnetId')), if(parameters('linkPrivateDnsZonesToNewVnet'), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('vnetResourceGroupName')), 'Microsoft.Resources/deployments', format('Network-Resources-{0}', parameters('timeStamp'))), '2022-09-01').outputs.vnetResourceId.value), createObject('value', '')))]",
+          "timeStamp": {
+            "value": "[parameters('timeStamp')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.33.93.31351",
+              "templateHash": "576714388421570687"
+            }
+          },
+          "parameters": {
+            "privateDnsZoneResourceIds": {
+              "type": "array"
             },
+            "vnetId": {
+              "type": "string"
+            },
+            "timeStamp": {
+              "type": "string"
+            }
+          },
+          "resources": [
             {
               "copy": {
-                "name": "virtualNetworkLinks",
-                "count": "[length(parameters('privateDnsZoneNames'))]"
+                "name": "privateDnsZoneVnetLinks",
+                "count": "[length(parameters('privateDnsZoneResourceIds'))]"
               },
-              "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
-              "apiVersion": "2018-09-01",
-              "name": "[format('{0}/{1}', parameters('privateDnsZoneNames')[copyIndex()], last(split(parameters('vnetId'), '/')))]",
-              "location": "global",
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2022-09-01",
+              "name": "[format('privateDnsZoneVnetLink-{0}-{1}', copyIndex(), parameters('timeStamp'))]",
+              "subscriptionId": "[split(parameters('privateDnsZoneResourceIds')[copyIndex()], '/')[2]]",
+              "resourceGroup": "[split(parameters('privateDnsZoneResourceIds')[copyIndex()], '/')[4]]",
               "properties": {
-                "registrationEnabled": false,
-                "virtualNetwork": {
-                  "id": "[parameters('vnetId')]"
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "privateDnsZoneName": {
+                    "value": "[last(split(parameters('privateDnsZoneResourceIds')[copyIndex()], '/'))]"
+                  },
+                  "vnetId": {
+                    "value": "[parameters('vnetId')]"
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.33.93.31351",
+                      "templateHash": "1543527054028189930"
+                    }
+                  },
+                  "parameters": {
+                    "privateDnsZoneName": {
+                      "type": "string"
+                    },
+                    "vnetId": {
+                      "type": "string"
+                    }
+                  },
+                  "resources": [
+                    {
+                      "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+                      "apiVersion": "2018-09-01",
+                      "name": "[format('{0}/{1}', parameters('privateDnsZoneName'), last(split(parameters('vnetId'), '/')))]",
+                      "location": "global",
+                      "properties": {
+                        "registrationEnabled": false,
+                        "virtualNetwork": {
+                          "id": "[parameters('vnetId')]"
+                        }
+                      }
+                    }
+                  ]
                 }
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.Network/privateDnsZones', parameters('privateDnsZoneNames')[copyIndex()])]"
-              ]
+              }
             }
           ]
         }
       },
       "dependsOn": [
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('vnetResourceGroupName')), 'Microsoft.Resources/deployments', format('Network-Resources-{0}', parameters('timeStamp')))]",
-        "[subscriptionResourceId('Microsoft.Resources/deployments', format('Private-Dns-Zone-Names-{0}', parameters('timeStamp')))]",
-        "[subscriptionResourceId(parameters('privateDNSZonesSubscriptionId'), 'Microsoft.Resources/deployments', format('Private-DNS-Zones-ResourceGroup-{0}', parameters('timeStamp')))]"
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('privateDNSZonesSubscriptionId'), parameters('privateDNSZonesResourceGroupName')), 'Microsoft.Resources/deployments', format('Private-DNS-Zones-{0}', parameters('timeStamp')))]"
       ]
     }
   ]

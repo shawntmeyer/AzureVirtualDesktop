@@ -36,7 +36,7 @@
 						},
 						{
 							"name": "scope",
-							"type": "Microsoft.Common.ResourceScope",							
+							"type": "Microsoft.Common.ResourceScope",
 							"location": {
 								"label": "Virtual Network Region",
 								"toolTip": "Select the region where you are deploying your session hosts.",
@@ -142,12 +142,13 @@
 							"name": "deploy",
 							"type": "Microsoft.Common.Section",
 							"label": "Deployment Details",
+							"visible": "[steps('virtualNetwork').deployVnet]",
 							"elements": [
 								{
 									"name": "vnetInfoBlock1",
 									"type": "Microsoft.Common.InfoBox",
 									"options": {
-										"text": "<b>IMPORTANT</b>\n\nFirst, select an existing or <u>Create a new</u> resource group to contain the virtual network resources.\n\nThen, review the virtual network and subnet names and IP prefixes in each selection below before continuing. Make any changes necessary with the <u>Edit Virtual Network</u> or <u>Edit Subnet</u> links."										
+										"text": "<b>IMPORTANT</b>\n\nFirst, select an existing or <u>Create a new</u> resource group to contain the virtual network resources.\n\nThen, review the virtual network and subnet names and IP prefixes in each selection below before continuing. Make any changes necessary with the <u>Edit Virtual Network</u> or <u>Edit Subnet</u> links."
 									}
 								},
 								{
@@ -158,7 +159,7 @@
 									"scope": {
 										"subscriptionId": "[steps('basics').scope.subscription.subscriptionId]"
 									}
-								},								
+								},
 								{
 									"name": "vnetMinimum",
 									"type": "Microsoft.Network.VirtualNetworkCombo",
@@ -504,7 +505,7 @@
 									"multiLine": true,
 									"toolTip": "Select the existing Geo Specific Private DNS Zone for Azure Backup Storage.",
 									"constraints": {
-										"allowedValues": "[map(filter(steps('privateDNSZones').zones.privateDNSZonesApi.value, (zone) => contains(zone.name, '.backup.')), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"<b>Resource group:</b> ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
+										"allowedValues": "[map(filter(steps('privateDNSZones').zones.privateDNSZonesApi.value, (zone) => contains(zone.name, '.backup.')), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"Resource group: ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
 										"required": false
 									}
 								},
@@ -544,7 +545,7 @@
 									"multiLine": true,
 									"toolTip": "Select the existing Private DNS Zone for Azure Blob Storage.",
 									"constraints": {
-										"allowedValues": "[map(filter(steps('privateDNSZones').zones.privateDNSZonesApi.value, (zone) => contains(zone.name, 'privatelink.blob.')), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"<b>Resource group:</b> ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
+										"allowedValues": "[map(filter(steps('privateDNSZones').zones.privateDNSZonesApi.value, (zone) => contains(zone.name, 'privatelink.blob.')), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"Resource group: ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
 										"required": false
 									}
 								},
@@ -556,7 +557,7 @@
 									"multiLine": true,
 									"toolTip": "Select the existing Private DNS Zone for Azure Files.",
 									"constraints": {
-										"allowedValues": "[map(filter(steps('privateDNSZones').zones.privateDNSZonesApi.value, (zone) => contains(zone.name, 'privatelink.file.')), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"<b>Resource group:</b> ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
+										"allowedValues": "[map(filter(steps('privateDNSZones').zones.privateDNSZonesApi.value, (zone) => contains(zone.name, 'privatelink.file.')), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"Resource group: ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
 										"required": false
 									}
 								},
@@ -568,7 +569,7 @@
 									"multiLine": true,
 									"toolTip": "Select the existing Private DNS Zone for Azure Queue Storage.",
 									"constraints": {
-										"allowedValues": "[map(filter(steps('privateDNSZones').zones.privateDNSZonesApi.value, (zone) => contains(zone.name, 'privatelink.queue.')), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"<b>Resource group:</b> ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
+										"allowedValues": "[map(filter(steps('privateDNSZones').zones.privateDNSZonesApi.value, (zone) => contains(zone.name, 'privatelink.queue.')), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"Resource group: ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
 										"required": false
 									}
 								},
@@ -580,7 +581,7 @@
 									"multiLine": true,
 									"toolTip": "Select the existing Private DNS Zone for Azure Table Storage.",
 									"constraints": {
-										"allowedValues": "[map(filter(steps('privateDNSZones').zones.privateDNSZonesApi.value, (zone) => contains(zone.name, 'privatelink.table.')), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"<b>Resource group:</b> ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
+										"allowedValues": "[map(filter(steps('privateDNSZones').zones.privateDNSZonesApi.value, (zone) => contains(zone.name, 'privatelink.table.')), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"Resource group: ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
 										"required": false
 									}
 								},
@@ -600,7 +601,7 @@
 									"multiLine": true,
 									"toolTip": "Select the existing Private DNS Zone for the Remote Session connection and Workspace Feed (if applicable).",
 									"constraints": {
-										"allowedValues": "[map(filter(steps('privateDNSZones').zones.privateDNSZonesApi.value, (zone) => contains(zone.name, 'privatelink.wvd.')), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"<b>Resource group:</b> ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
+										"allowedValues": "[map(filter(steps('privateDNSZones').zones.privateDNSZonesApi.value, (zone) => contains(zone.name, 'privatelink.wvd.')), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"Resource group: ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
 										"required": false
 									}
 								},
@@ -633,7 +634,7 @@
 									"multiLine": true,
 									"toolTip": "Select the existing Private DNS Zone for Azure Function Apps",
 									"constraints": {
-										"allowedValues": "[map(filter(steps('privateDNSZones').zones.privateDNSZonesApi.value, (zone) => or(startsWith(zone.name, 'privatelink.azurewebsites.'), startsWith(zone.name, 'privatelink.appservice.'))), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"<b>Resource group:</b> ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
+										"allowedValues": "[map(filter(steps('privateDNSZones').zones.privateDNSZonesApi.value, (zone) => or(startsWith(zone.name, 'privatelink.azurewebsites.'), startsWith(zone.name, 'privatelink.appservice.'))), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"Resource group: ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
 										"required": false
 									}
 								},
@@ -645,7 +646,7 @@
 									"multiLine": true,
 									"toolTip": "Select the existing Private DNS Zone for Azure Function Apps",
 									"constraints": {
-										"allowedValues": "[map(filter(steps('privateDNSZones').zones.privateDNSZonesApi.value, (zone) => contains(zone.name, 'scm.privatelink.')), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"<b>Resource group:</b> ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
+										"allowedValues": "[map(filter(steps('privateDNSZones').zones.privateDNSZonesApi.value, (zone) => contains(zone.name, 'scm.privatelink.')), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"Resource group: ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
 										"required": false
 									}
 								},
@@ -670,18 +671,16 @@
 									"name": "linkOptions",
 									"type": "Microsoft.Common.OptionsGroup",
 									"label": "Private DNS Zone Link Option",
-									"defaultValue": "[if(steps('virtualNetwork').deploy.peerVnetToHub, 'Link to Hub Vnet', 'Link to New Vnet')]",
+									"defaultValue": "[if(steps('virtualNetwork').deployVnet, if(steps('virtualNetwork').deploy.peerVnetToHub, 'Link to Hub Vnet', 'Link to New Vnet'), if(steps('privateDNSZones').zones.deployMissingZones, 'Select existing Vnet', 'Do not update VNet Links'))]",
 									"toolTip": "",
 									"constraints": {
-										"allowedValues": "[if(steps('virtualNetwork').deploy.peerVnetToHub, parse('[{\"label\":\"Link to Hub Vnet\",\"value\":\"hub\"},{\"label\":\"Link to New Vnet\",\"value\":\"newVnet\"},{\"label\":\"Select Existing Vnet\",\"value\":\"other\"}]'), parse('[{\"label\":\"Link to New Vnet\",\"value\":\"newVnet\"},{\"label\":\"Select Existing Vnet\",\"value\":\"other\"}]'))]"
-									},
-									"visible": "[and(steps('virtualNetwork').deployVnet, steps('privateDNSZones').zones.deployMissingZones)]"
+										"allowedValues": "[if(steps('virtualNetwork').deployVnet, if(steps('virtualNetwork').deploy.peerVnetToHub, parse('[{\"label\":\"Link to Hub Vnet\",\"value\":\"hub\"},{\"label\":\"Link to New Vnet\",\"value\":\"newVnet\"},{\"label\":\"Select Existing Vnet\",\"value\":\"other\"},{\"label\":\"Do not update VNet Links\",\"value\":\"NoLinks\"}]'), parse('[{\"label\":\"Link to New Vnet\",\"value\":\"newVnet\"},{\"label\":\"Select Existing Vnet\",\"value\":\"other\"},{\"label\":\"Do not update VNet Links\",\"value\":\"NoLinks\"}]')), parse('[{\"label\":\"Select Existing Vnet\",\"value\":\"other\"},{\"label\":\"Do not update VNet Links\",\"value\":\"NoLinks\"}]'))]"
+									}
 								},
 								{
 									"name": "privateDnsZoneLinkVnet",
 									"type": "Microsoft.Solutions.ResourceSelector",
 									"label": "Private DNS Zones Virtual Network Link",
-									"defaultValue": "[steps('virtualNetwork').deploy.hubVnet.name]",
 									"resourceType": "Microsoft.Network/virtualNetworks",
 									"toolTip": "Select the virtual network to which the private dns zones created above should be linked.",
 									"scope": {
@@ -690,7 +689,7 @@
 									"constraints": {
 										"required": true
 									},
-									"visible": "[and(equals(steps('privateDNSZones').zones.deployMissingZones, true), or(equals(steps('virtualNetwork').deployVnet, false), equals(steps('privateDNSZones').zones.linkOptions, 'other')))]"
+									"visible": "[equals(steps('privateDNSZones').zones.linkOptions, 'other')]"
 								}
 							]
 						}
@@ -721,34 +720,44 @@
 		"outputs": {
 			"parameters": {
 				"deployVnet": "[steps('virtualNetwork').deployVnet]",
-				"deployVnetResourceGroup": "[if(equals(steps('virtualNetwork').deploy.resourceGroup.mode, 'New'), true, false)]",
-				"vnetResourceGroupName": "[steps('virtualNetwork').deploy.resourceGroup.value.name]",
-				"vnetName": "[if(and(steps('basics').features.privateEndpoints, steps('basics').features.storageQuotaAutomation), steps('virtualNetwork').deploy.vnetFunctionApp.name, if(steps('basics').features.privateEndpoints, steps('virtualNetwork').deploy.vnetPrivateEndpoints.name, steps('virtualNetwork').deploy.vnetMinimum.name))]",
-				"vnetAddressPrefixes": "[if(and(steps('basics').features.privateEndpoints, steps('basics').features.storageQuotaAutomation), steps('virtualNetwork').deploy.vnetFunctionApp.addressPrefixes, if(steps('basics').features.privateEndpoints, steps('virtualNetwork').deploy.vnetPrivateEndpoints.addressPrefixes, steps('virtualNetwork').deploy.vnetMinimum.addressPrefixes))]",
-				"hostsSubnet": "[if(and(steps('basics').features.privateEndpoints, steps('basics').features.storageQuotaAutomation), steps('virtualNetwork').deploy.vnetFunctionApp.subnets.subnet1, if(steps('basics').features.privateEndpoints, steps('virtualNetwork').deploy.vnetPrivateEndpoints.subnets.subnet1, steps('virtualNetwork').deploy.vnetMinimum.subnets.subnet1))]",
+				"deployVnetResourceGroup": "[if(and(steps('virtualNetwork').deployVnet, equals(steps('virtualNetwork').deploy.resourceGroup.mode, 'New')), true, false)]",
+				"vnetResourceGroupName": "[if(steps('virtualNetwork').deployVnet, steps('virtualNetwork').deploy.resourceGroup.value.name, '')]",
+				"vnetName": "[if(steps('virtualNetwork').deployVnet, if(and(steps('basics').features.privateEndpoints, steps('basics').features.storageQuotaAutomation), steps('virtualNetwork').deploy.vnetFunctionApp.name, if(steps('basics').features.privateEndpoints, steps('virtualNetwork').deploy.vnetPrivateEndpoints.name, steps('virtualNetwork').deploy.vnetMinimum.name)), '')]",
+				"vnetAddressPrefixes": "[if(steps('virtualNetwork').deployVnet, if(and(steps('basics').features.privateEndpoints, steps('basics').features.storageQuotaAutomation), steps('virtualNetwork').deploy.vnetFunctionApp.addressPrefixes, if(steps('basics').features.privateEndpoints, steps('virtualNetwork').deploy.vnetPrivateEndpoints.addressPrefixes, steps('virtualNetwork').deploy.vnetMinimum.addressPrefixes)), '')]",
+				"hostsSubnet": "[if(steps('virtualNetwork').deployVnet, if(and(steps('basics').features.privateEndpoints, steps('basics').features.storageQuotaAutomation), steps('virtualNetwork').deploy.vnetFunctionApp.subnets.subnet1, if(steps('basics').features.privateEndpoints, steps('virtualNetwork').deploy.vnetPrivateEndpoints.subnets.subnet1, steps('virtualNetwork').deploy.vnetMinimum.subnets.subnet1)), parse('{}'))]",
 				"privateEndpointsSubnet": "[if(and(steps('basics').features.privateEndpoints, steps('basics').features.storageQuotaAutomation), steps('virtualNetwork').deploy.vnetFunctionApp.subnets.subnet2, if(steps('basics').features.privateEndpoints, steps('virtualNetwork').deploy.vnetPrivateEndpoints.subnets.subnet2, parse('{}')))]",
-				"functionAppsSubnet": "[if(steps('basics').features.storageQuotaAutomation, steps('virtualNetwork').deploy.vnetFunctionApp.subnets.subnet3, parse('{}'))]",
+				"functionAppsSubnet": "[if(steps('virtualNetwork').deployVnet, if(steps('basics').features.storageQuotaAutomation, steps('virtualNetwork').deploy.vnetFunctionApp.subnets.subnet3, parse('{}')), parse('{}'))]",
 				"defaultRouting": "[if(steps('virtualNetwork').deployVnet, steps('virtualNetwork').deploy.defaultRouteType, 'default')]",
-				"nvaIPAddress": "[if(equals(steps('virtualNetwork').deploy.defaultRouteType, 'nva'), steps('virtualNetwork').deploy.nvaIPAddress, '')]",
+				"nvaIPAddress": "[if(steps('virtualNetwork').deployVnet, if(equals(steps('virtualNetwork').deploy.defaultRouteType, 'nva'), steps('virtualNetwork').deploy.nvaIPAddress, ''), '')]",
 				"customDNSServers": "[if(steps('virtualNetwork').deployVnet, map(filter(steps('virtualNetwork').deploy.dnsServers, (item) => not(empty(item.ipAddress))), (item) => item.ipAddress), parse('[]'))]",
 				"deployDDoSNetworkProtection": "[if(steps('virtualNetwork').deployVnet, steps('virtualNetwork').deploy.deployDDoSNetworkProtection, false)]",
-				"hubVnetResourceId": "[if(steps('virtualNetwork').deploy.peerVnetToHub, steps('virtualNetwork').deploy.hubVnet.id, '')]",
-				"virtualNetworkGatewayOnHub": "[if(steps('virtualNetwork').deploy.peerVnetToHub, steps('virtualNetwork').deploy.hubVirtualNetworkGateway, '')]",
-				"privateDNSZonesSubscriptionId": "[steps('privateDNSZones').zones.subscription.subscriptionId]",
-				"deployPrivateDNSZonesResourceGroup": "[if(equals(steps('privateDNSZones').zones.resourceGroup.mode, 'New'), true, false)]",
-				"privateDNSZonesResourceGroupName": "[if(steps('privateDNSZones').zones.deployMissingZones, steps('privateDNSZones').zones.resourceGroup.value.name, '')]",
+				"hubVnetResourceId": "[if(steps('virtualNetwork').deployVnet, if(steps('virtualNetwork').deploy.peerVnetToHub, steps('virtualNetwork').deploy.hubVnet.id, ''), '')]",
+				"virtualNetworkGatewayOnHub": "[if(steps('virtualNetwork').deployVnet, if(steps('virtualNetwork').deploy.peerVnetToHub, steps('virtualNetwork').deploy.hubVirtualNetworkGateway, ''), '')]",
+				"privateDNSZonesSubscriptionId": "[if(and(steps('basics').features.privateEndpoints, steps('privateDNSZones').zones.deployMissingZones), steps('privateDNSZones').zones.subscription.subscriptionId, '')]",
+				"deployPrivateDNSZonesResourceGroup": "[if(and(steps('basics').features.privateEndpoints, steps('privateDNSZones').zones.deployMissingZones, equals(steps('privateDNSZones').zones.resourceGroup.mode, 'New')), true, false)]",
+				"privateDNSZonesResourceGroupName": "[if(and(steps('basics').features.privateEndpoints, steps('privateDNSZones').zones.deployMissingZones), steps('privateDNSZones').zones.resourceGroup.value.name, '')]",
 				"createAzureBackupZone": "[if(and(steps('basics').features.recoveryServices, steps('privateDNSZones').zones.deployMissingZones), empty(steps('privateDNSZones').zones.azureBackup), false)]",
+				"azureBackupZoneId": "[if(steps('basics').features.recoveryServices, steps('privateDNSZones').zones.azureBackup, '')]",
 				"createAzureBlobZone": "[if(and(or(steps('basics').features.customImage, steps('basics').features.recoveryServices, steps('basics').features.storageQuotaAutomation), steps('privateDNSZones').zones.deployMissingZones), empty(steps('privateDNSZones').zones.azureBlob), false)]",
+				"azureBlobZoneId": "[if(or(steps('basics').features.customImage, steps('basics').features.recoveryServices, steps('basics').features.storageQuotaAutomation), steps('privateDNSZones').zones.azureBlob, '')]",
 				"createAzureFilesZone": "[if(and(or(steps('basics').features.azureFiles, steps('basics').features.storageQuotaAutomation), steps('privateDNSZones').zones.deployMissingZones), empty(steps('privateDNSZones').zones.azureFiles), false)]",
+				"azureFilesZoneId": "[if(or(steps('basics').features.azureFiles, steps('basics').features.storageQuotaAutomation), steps('privateDNSZones').zones.azureFiles, '')]",
 				"createAzureQueueZone": "[if(and(or(steps('basics').features.recoveryServices, steps('basics').features.storageQuotaAutomation), steps('privateDNSZones').zones.deployMissingZones), empty(steps('privateDNSZones').zones.azureQueue), false)]",
+				"azureQueueZoneId": "[if(or(steps('basics').features.recoveryServices, steps('basics').features.storageQuotaAutomation), steps('privateDNSZones').zones.azureQueue, '')]",
 				"createAzureTableZone": "[if(and(steps('basics').features.storageQuotaAutomation, steps('privateDNSZones').zones.deployMissingZones), empty(steps('privateDNSZones').zones.azureTable), false)]",
+				"azureTableZoneId": "[if(steps('basics').features.storageQuotaAutomation, steps('privateDNSZones').zones.azureTable, '')]",
 				"createAzureKeyVaultZone": "[if(steps('privateDNSZones').zones.deployMissingZones, empty(steps('privateDNSZones').zones.azureKeyVault), false)]",
+				"azureKeyVaultZoneId": "[steps('privateDNSZones').zones.azureKeyVault]",
 				"createAvdFeedZone": "[if(and(steps('basics').features.avdPrivateLink, steps('privateDNSZones').zones.deployMissingZones), empty(steps('privateDNSZones').zones.avdFeedAndConnections), false)]",
+				"avdFeedZoneId": "[if(steps('basics').features.avdPrivateLink, steps('privateDNSZones').zones.avdFeedAndConnections, '')]",
 				"createAvdGlobalFeedZone": "[if(and(steps('basics').features.avdPrivateLink, steps('privateDNSZones').zones.deployMissingZones), empty(steps('privateDNSZones').zones.globalFeed), false)]",
+				"avdGlobalFeedZoneId": "[if(steps('basics').features.avdPrivateLink, steps('privateDNSZones').zones.globalFeed, '')]",
 				"createAzureWebAppZone": "[if(and(steps('basics').features.storageQuotaAutomation, steps('privateDNSZones').zones.deployMissingZones), empty(steps('privateDNSZones').zones.azureWebApp), false)]",
+				"azureWebAppZoneId": "[if(steps('basics').features.storageQuotaAutomation, steps('privateDNSZones').zones.azureWebApp, '')]",
 				"createAzureWebAppScmZone": "[if(and(steps('basics').features.storageQuotaAutomation, steps('privateDNSZones').zones.deployMissingZones), empty(steps('privateDNSZones').zones.azureWebAppScm), false)]",
-				"linkPrivateDnsZonesToNewVnet": "[if(and(steps('virtualNetwork').deployVnet, steps('privateDNSZones').zones.deployMissingZones), equals(steps('privateDNSZones').zones.linkOptions, 'newVnet'), false)]",
-				"privateDNSZonesVnetId": "[if(steps('privateDNSZones').zones.deployMissingZones, if(or(equals(steps('virtualNetwork').deployVnet, false), equals(steps('privateDNSZones').zones.linkOptions, 'other')), steps('privateDNSZones').zones.privateDnsZoneLinkVnet.id, if(equals(steps('privateDNSZones').zones.linkOptions, 'hub'), steps('virtualNetwork').deploy.hubVnet.id, '')), '')]",
+				"azureWebAppScmZoneId": "[if(steps('basics').features.storageQuotaAutomation, steps('privateDNSZones').zones.azureWebAppScm, '')]",
+				"linkPrivateDnsZonesToNewVnet": "[if(steps('virtualNetwork').deployVnet, equals(steps('privateDNSZones').zones.linkOptions, 'newVnet'), false)]",
+				"privateDNSZonesVnetId": "[if(equals(steps('privateDNSZones').zones.linkOptions, 'other'), steps('privateDNSZones').zones.privateDnsZoneLinkVnet.id, if(equals(steps('privateDNSZones').zones.linkOptions, 'hub'), steps('virtualNetwork').deploy.hubVnet.id, ''))]",
 				"tags": "[steps('tags').tags]"
 			},
 			"kind": "Subscription",
