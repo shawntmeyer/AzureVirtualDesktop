@@ -74,7 +74,7 @@ module globalFeedPrivateEndpointVnet '../common/vnetLocation.bicep' = if (avdPri
 module hostPool 'modules/hostPool.bicep' = {
   name: 'HostPool_${timeStamp}'
   scope: resourceGroup(resourceGroupControlPlane)
-  params: {    
+  params: {   
     hostPoolRDPProperties: hostPoolRDPProperties
     hostPoolName: hostPoolName
     hostPoolPrivateDnsZoneResourceId: avdPrivateDnsZoneResourceId
@@ -116,20 +116,30 @@ module applicationGroup 'modules/applicationGroup.bicep' = {
   }
 }
 
+resource getExistingFeedWorkspace 'Microsoft.DesktopVirtualization/workspaces@2023-09-05' existing = if(!empty(existingFeedWorkspaceResourceId)) {
+  name: last(split(existingFeedWorkspaceResourceId, '/'))
+  scope: resourceGroup(split(existingFeedWorkspaceResourceId, '/')[2], split(existingFeedWorkspaceResourceId, '/')[4])
+}
+
 module feedWorkspace 'modules/workspace.bicep' = {
   name: 'WorkspaceFeed_${timeStamp}'
   scope: resourceGroup(resourceGroupControlPlane)
   params: {
     applicationGroupResourceId: applicationGroup.outputs.ApplicationGroupResourceId
-    deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
     enableMonitoring: enableMonitoring
-    existingWorkspaceResourceId: existingFeedWorkspaceResourceId
+    existingWorkspaceProperties: !empty(existingFeedWorkspaceResourceId) ? {
+      applicationGroupReferences: getExistingFeedWorkspace.properties.applicationGroupReferences
+      friendlyName: getExistingFeedWorkspace.properties.friendlyName
+      location: getExistingFeedWorkspace.location
+      name: getExistingFeedWorkspace.name
+      publicNetworkAccess: getExistingFeedWorkspace.properties.publicNetworkAccess
+      resourceId: existingFeedWorkspaceResourceId
+      tags: getExistingFeedWorkspace.tags
+    } : {}
     friendlyName: workspaceFriendlyName
     groupIds: ['feed']
     location: locationControlPlane
-    locationVirtualMachines: locationVirtualMachines
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
-    deploymentVirtualMachineName: deploymentVirtualMachineName
     privateDnsZoneResourceId: avdPrivateDnsZoneResourceId
     privateEndpoint: avdPrivateLinkPrivateRoutes != 'None' || avdPrivateLinkPrivateRoutes != 'HostPool' ? true : false
     privateEndpointLocation: !empty(workspaceFeedPrivateEndpointSubnetResourceId) ? workspaceFeedPrivateEndpointVnet.outputs.location : ''
@@ -137,7 +147,6 @@ module feedWorkspace 'modules/workspace.bicep' = {
     privateEndpointNICName: feedPrivateEndpointNICName
     privateEndpointSubnetResourceId: workspaceFeedPrivateEndpointSubnetResourceId
     publicNetworkAccess: workspacePublicNetworkAccess
-    resourceGroupDeployment: resourceGroupDeployment
     tags: tags
     timeStamp: timeStamp
     workspaceName: workspaceName    
@@ -165,15 +174,12 @@ module globalWorkspace 'modules/workspace.bicep' = if(empty(existingGlobalWorksp
   scope: resourceGroup(resourceGroupGlobalFeed)
   params: {
     applicationGroupResourceId: ''
-    deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
+    existingWorkspaceProperties: {}    
     enableMonitoring: enableMonitoring
-    existingWorkspaceResourceId: existingGlobalWorkspaceResourceId
     friendlyName: ''
     groupIds: ['global']
     location: locationGlobalFeed
-    locationVirtualMachines: locationVirtualMachines
     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
-    deploymentVirtualMachineName: deploymentVirtualMachineName
     privateDnsZoneResourceId: globalFeedPrivateDnsZoneResourceId
     privateEndpoint: true
     privateEndpointLocation: !empty(globalFeedPrivateEndpointSubnetResourceId) ? globalFeedPrivateEndpointVnet.outputs.location : ''
@@ -181,7 +187,6 @@ module globalWorkspace 'modules/workspace.bicep' = if(empty(existingGlobalWorksp
     privateEndpointNICName: globalFeedPrivateEndpointNICName
     privateEndpointSubnetResourceId: globalFeedPrivateEndpointSubnetResourceId
     publicNetworkAccess: 'Enabled'  
-    resourceGroupDeployment: resourceGroupDeployment
     tags: tags
     timeStamp: timeStamp
     workspaceName: globalWorkspaceName

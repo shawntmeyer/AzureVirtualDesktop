@@ -1,4 +1,3 @@
-param privateEndpoint bool
 param hostPoolPrivateDnsZoneResourceId string
 param hostPoolRDPProperties string
 param hostPoolName string
@@ -6,6 +5,7 @@ param hostPoolPublicNetworkAccess string
 param hostPoolType string
 param location string
 param logAnalyticsWorkspaceResourceId string
+param privateEndpoint bool
 param privateEndpointLocation string
 param privateEndpointName string
 param privateEndpointNICName string

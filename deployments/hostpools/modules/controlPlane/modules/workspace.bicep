@@ -1,11 +1,8 @@
 param applicationGroupResourceId string
-param deploymentUserAssignedIdentityClientId string
-param existingWorkspaceResourceId string
+param existingWorkspaceProperties object
 param friendlyName string
 param location string
-param locationVirtualMachines string
 param logAnalyticsWorkspaceResourceId string
-param deploymentVirtualMachineName string
 param enableMonitoring bool
 param groupIds array
 param privateDnsZoneResourceId string
@@ -15,31 +12,17 @@ param privateEndpointName string
 param privateEndpointNICName string
 param publicNetworkAccess string
 param privateEndpointSubnetResourceId string
-param resourceGroupDeployment string
 param tags object
 param timeStamp string
 param workspaceName string
 
-module addApplicationGroup 'updateWorkspaceAppGroupReferences.bicep' = if (!empty(existingWorkspaceResourceId) && !empty(applicationGroupResourceId)) {
-  name: 'Add_ApplicationGroup_Reference_${timeStamp}'
-  scope: resourceGroup(resourceGroupDeployment)
-  params: {
-    applicationGroupResourceId: applicationGroupResourceId
-    existingWorkspaceResourceId: existingWorkspaceResourceId
-    userAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
-    location: locationVirtualMachines
-    timeStamp: timeStamp
-    virtualMachineName: deploymentVirtualMachineName
-  }
-}
-
-resource workspace 'Microsoft.DesktopVirtualization/workspaces@2023-09-05' = if (empty(existingWorkspaceResourceId)) {
-  name: workspaceName
-  location: location
-  tags: tags[?'Microsoft.DesktopVirtualization/Workspaces'] ?? {}
+resource workspace 'Microsoft.DesktopVirtualization/workspaces@2023-09-05' = {
+  name: empty(existingWorkspaceProperties) ? workspaceName : existingWorkspaceProperties.name
+  location: empty(existingWorkspaceProperties) ? location : existingWorkspaceProperties.location
+  tags: empty(existingWorkspaceProperties) ? tags[?'Microsoft.DesktopVirtualization/Workspaces'] ?? {} : existingWorkspaceProperties.tags
   properties: {
-    applicationGroupReferences: !empty(applicationGroupResourceId) ? [applicationGroupResourceId] : null
-    friendlyName: friendlyName
+    applicationGroupReferences: empty(existingWorkspaceProperties) ? [applicationGroupResourceId] : union(existingWorkspaceProperties.applicationGroupReferences, [applicationGroupResourceId])
+    friendlyName: empty(existingWorkspaceProperties) ? friendlyName : existingWorkspaceProperties.friendlyName
     publicNetworkAccess: publicNetworkAccess
   }
 }
@@ -56,7 +39,7 @@ module workspace_privateEndpoint '../../../../sharedModules/resources/network/pr
         privateDnsZoneResourceId
       ]
     }
-    serviceResourceId: !empty(existingWorkspaceResourceId) ? existingWorkspaceResourceId : workspace.id
+    serviceResourceId: empty(existingWorkspaceProperties) ? workspace.id : existingWorkspaceProperties.resourceId
     subnetResourceId: privateEndpointSubnetResourceId
     tags: union(
       {
@@ -67,7 +50,7 @@ module workspace_privateEndpoint '../../../../sharedModules/resources/network/pr
   }
 }
 
-resource workspace_diagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (empty(existingWorkspaceResourceId) && enableMonitoring) {
+resource workspace_diagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (empty(existingWorkspaceProperties) && enableMonitoring) {
   name: 'WVDInsights'
   scope: workspace
   properties: {
