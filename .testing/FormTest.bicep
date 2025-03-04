@@ -1,3 +1,4 @@
+targetScope = 'subscription'
 param avdSpIdTransformed string
 param avdARMSpIdTransformed string
 
