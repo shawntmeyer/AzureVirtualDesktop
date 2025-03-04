@@ -31,7 +31,16 @@
 									"avdARMProvider": "[value[?displayName=='Azure Virtual Desktop ARM Provider'] | [0].id]"
 								}
 							}
-						}						
+						},
+						{
+                            "name": "avdObjectId",
+                            "type": "Microsoft.Common.TextBox",
+                            "label": "AVD Object Id",
+                            "placeholder": "",
+                            "defaultValue": "",
+                            "toolTip": "Search your Entra ID tenant for the Azure Virtual Desktop or Windows Virtual Desktop enterprise Application with Applicaton ID (9cdead84-a844-4324-93f2-b2e6bb768d07) and enter the Object Id here.",
+                            "visible": "[empty(steps('basics').servicePrincipalsFilteredApi)]"
+                        }						
 					]
 				}
 			]
@@ -41,8 +50,7 @@
 			"subscriptionId": "[steps('basics').scope.subscription.id]",
 			"location": "[steps('basics').scope.location.name]",
 			"parameters": {
-				"avdSpIdTransformed": "[first(steps('basics').servicePrincipalsFilteredApi.transformed.avd)]",
-				"avdARMSpIdTransformed": "[first(steps('basics').servicePrincipalsFilteredApi.transformed.avdARMProvider)]"
+				"avdSpIdTransformed": "[steps('basics').avdObjectId]"
 			}
 		}
 	}
