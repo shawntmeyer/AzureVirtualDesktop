@@ -38,8 +38,8 @@
 		},
 		"outputs": {
 			"kind": "Subscription",
-			"subscriptionId": "steps('basics').scope.subscription.id",
-			"location": "steps('basics').scope.location.name",
+			"subscriptionId": "[steps('basics').scope.subscription.id]",
+			"location": "[steps('basics').scope.location.name]",
 			"parameters": {
 				"avdSpIdTransformed": "[first(steps('basics').servicePrincipalsFilteredApi.transformed.avd)]",
 				"avdARMSpIdTransformed": "[first(steps('basics').servicePrincipalsFilteredApi.transformed.avdARMProvider)]"
