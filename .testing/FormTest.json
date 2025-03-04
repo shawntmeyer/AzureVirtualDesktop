@@ -1,0 +1,30 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.33.93.31351",
+      "templateHash": "17324199188008394533"
+    }
+  },
+  "parameters": {
+    "avdSpIdTransformed": {
+      "type": "string"
+    },
+    "avdARMSpIdTransformed": {
+      "type": "string"
+    }
+  },
+  "resources": [],
+  "outputs": {
+    "avdSp": {
+      "type": "string",
+      "value": "[parameters('avdSpIdTransformed')]"
+    },
+    "avdArmSp": {
+      "type": "string",
+      "value": "[parameters('avdARMSpIdTransformed')]"
+    }
+  }
+}
