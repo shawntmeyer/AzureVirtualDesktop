@@ -1022,6 +1022,127 @@
 							]
 						},
 						{
+							"name": "image",
+							"type": "Microsoft.Common.Section",
+							"visible": true,
+							"label": "Image",
+							"elements": [
+								{
+									"name": "source",
+									"type": "Microsoft.Common.DropDown",
+									"label": "Image Source",
+									"filter": true,
+									"defaultValue": "Marketplace",
+									"toolTip": "Select the type of image to deploy on the session hosts.",
+									"constraints": {
+										"required": true,
+										"allowedValues": [
+											{
+												"label": "Marketplace",
+												"value": "marketplace"
+											},
+											{
+												"label": "Compute Gallery",
+												"value": "gallery"
+											}
+										]
+									}
+								},
+								{
+									"name": "offer",
+									"type": "Microsoft.Common.DropDown",
+									"label": "Offer",
+									"defaultValue": "Office 365",
+									"toolTip": "Select the desired marketplace image offer.",
+									"constraints": {
+										"allowedValues": [
+											{
+												"label": "Office 365",
+												"value": "office-365"
+											},
+											{
+												"label": "Windows 10",
+												"value": "Windows-10"
+											},
+											{
+												"label": "Windows 11",
+												"value": "windows-11"
+											}
+										],
+										"required": true
+									},
+									"visible": "[equals(steps('hosts').image.source, 'marketplace')]"
+								},
+								{
+									"name": "skuApi",
+									"type": "Microsoft.Solutions.ArmApiControl",
+									"condition": "[and(not(empty(steps('basics').scope.subscription)), not(empty(steps('basics').scope.location)), not(empty(steps('hosts').image.offer)), equals(steps('hosts').image.source, 'marketplace'))]",
+									"request": {
+										"method": "GET",
+										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Compute/locations/', steps('basics').scope.location.name, '/publishers/MicrosoftWindowsDesktop/artifacttypes/vmimage/offers/', steps('hosts').image.offer, '/skus?api-version=2022-08-01')]"
+									}
+								},
+								{
+									"name": "sku",
+									"type": "Microsoft.Common.DropDown",
+									"label": "SKU",
+									"defaultValue": "win11-24h2-avd-m365",
+									"toolTip": "Select the desired marketplace image SKU.",
+									"constraints": {
+										"allowedValues": "[map(steps('hosts').image.skuApi, (sku) => parse(concat('{\"label\":\"', sku.name, '\",\"value\":\"', sku.name, '\"}')))]",
+										"required": true
+									},
+									"visible": "[equals(steps('hosts').image.source, 'marketplace')]"
+								},
+								{
+									"name": "computeGallery",
+									"type": "Microsoft.Solutions.ResourceSelector",
+									"visible": "[equals(steps('hosts').image.source, 'gallery')]",
+									"label": "Compute Gallery",
+									"resourceType": "Microsoft.Compute/galleries",
+									"constraints": {
+										"required": true
+									}
+								},
+								{
+									"name": "imageDefinitionsApi",
+									"type": "Microsoft.Solutions.ArmApiControl",
+									"condition": "[and(equals(steps('hosts').image.source, 'gallery'), not(empty(steps('hosts').image.computeGallery)))]",
+									"request": {
+										"method": "GET",
+										"path": "[concat(steps('hosts').image.computeGallery.id, '/images?api-version=2024-03-03')]",
+										"transforms": {
+											"list": "value|[*].{label:name, value:id}"
+										}
+									}
+								},
+								{
+									"name": "imageDefinition",
+									"type": "Microsoft.Common.DropDown",
+									"label": "Image Definition",
+									"constraints": {
+										"allowedValues": "[steps('hosts').image.imageDefinitionsApi.transformed.list]",
+										"required": true
+									},
+									"visible": "[and(equals(steps('hosts').image.source, 'gallery'), not(empty(steps('hosts').image.computeGallery)))]"
+								},
+								{
+									"name": "imageDefinitionApi",
+									"type": "Microsoft.Solutions.ArmApiControl",
+									"condition": "[not(empty(steps('hosts').image.imageDefinition))]",
+									"request": {
+										"method": "GET",
+										"path": "[concat(steps('hosts').image.imageDefinition, '?api-version=2024-03-03')]",
+										"transforms": {
+											"IsHibernateSupported": "properties.features[?name=='IsHibernateSupported'].value | [0]",
+											"IsAcceleratedNetworkSupported": "properties.features[?name=='IsAcceleratedNetworkSupported'].value | [0]",
+											"SecurityType": "properties.features[?name=='SecurityType'].value | [0]"
+										}
+									}
+								}								
+							]
+						},
+						{
 							"name": "security",
 							"type": "Microsoft.Common.Section",
 							"label": "Security",
@@ -1034,7 +1155,7 @@
 									"defaultValue": "Trusted Launch",
 									"toolTip": "Select the appropriate Security Type configuration for the Virtual Machine. Note that 'Confidential Virtual Machines' are not available in all regions and the option may not appear.",
 									"constraints": {
-										"allowedValues": "[if(not(empty(steps('hosts').resourceSkusApi.transformed.confidentialVMSizes)), parse('[{\"label\":\"Confidential Virtual Machine\",\"value\":\"ConfidentialVM\"},{\"label\":\"Standard\",\"value\":\"Standard\"},{\"label\":\"Trusted Launch\",\"value\":\"TrustedLaunch\"}]'), parse('[{\"label\":\"Standard\",\"value\":\"Standard\"},{\"label\":\"Trusted Launch\",\"value\":\"TrustedLaunch\"}]'))]",
+										"allowedValues": "[if(and(not(empty(steps('hosts').resourceSkusApi.transformed.confidentialVMSizes)), or(equals(steps('hosts').image.source, 'marketplace'), equals(steps('hosts').image.imageDefinitionApi.transformed.SecurityType, 'TrustedLaunchAndConfidentialVmSupported'))), parse('[{\"label\":\"Confidential Virtual Machine\",\"value\":\"ConfidentialVM\"},{\"label\":\"Standard\",\"value\":\"Standard\"},{\"label\":\"Trusted Launch\",\"value\":\"TrustedLaunch\"}]'), if(and(not(empty(steps('hosts').resourceSkusApi.transformed.confidentialVMSizes)), equals(steps('hosts').image.source, 'gallery'), equals(steps('hosts').image.imageDefinitionApi.transformed.SecurityType, 'ConfidentialVM')), parse('[{\"label\":\"Confidential Virtual Machine\",\"value\":\"ConfidentialVM\"}]'), if(and(not(empty(steps('hosts').resourceSkusApi.transformed.confidentialVMSizes)), equals(steps('hosts').image.source, 'gallery'), equals(steps('hosts').image.imageDefinitionApi.transformed.SecurityType, 'ConfidentialVmSupported')), parse('[{\"label\":\"Confidential Virtual Machine\",\"value\":\"ConfidentialVM\"},{\"label\":\"Standard\",\"value\":\"Standard\"}]'), if(and(equals(steps('hosts').image.source, 'gallery'), equals(steps('hosts').image.imageDefinitionApi.transformed.SecurityType, 'TrustedLaunch')), parse('[{\"label\":\"Trusted Launch\",\"value\":\"TrustedLaunch\"}]'), if(and(equals(steps('hosts').image.source, 'gallery'), contains(steps('hosts').image.imageDefinitionApi.transformed.SecurityType, 'TrustedLaunch'), contains(steps('hosts').image.imageDefinitionApi.transformed.SecurityType, 'Supported')), parse('[{\"label\":\"Standard\",\"value\":\"Standard\"},{\"label\":\"Trusted Launch\",\"value\":\"TrustedLaunch\"}]'), if(and(equals(steps('hosts').image.source, 'gallery'), or(equals(steps('hosts').image.imageDefinitionApi.transformed.SecurityType, 'ConfidentialVmSupported'), empty(steps('hosts').image.imageDefinitionApi.transformed.SecurityType))), parse('[{\"label\":\"Standard\",\"value\":\"Standard\"}]'), parse('[]')))))))]",
 										"required": true
 									},
 									"visible": true
@@ -1425,11 +1546,19 @@
 									"visible": "[equals(steps('hosts').security.securityType, 'ConfidentialVM')]"
 								},
 								{
+									"name": "enableAcceleratedNetworking",
+									"type": "Microsoft.Common.CheckBox",
+									"label": "Enable accelerated networking",
+									"defaultValue": true,
+									"toolTip": "Enables low latency and high throughput on the network interface.",
+									"visible": "[and(bool(first(map(filter(first(map(filter(steps('hosts').resourceSkusApi.value, (sku) => contains(sku.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (sku) => sku.capabilities)), (sku) => equals(sku.name, 'AcceleratedNetworkingEnabled')), (sku) => sku.value))), or(equals(steps('hosts').image.source, 'marketplace'), bool(steps('hosts').image.imageDefinitionApi.transformed.IsAcceleratedNetworkSupported)))]"
+								},
+								{
 									"name": "hibernationEnabled",
 									"type": "Microsoft.Common.CheckBox",
 									"label": "Enable Hibernation",
 									"toolTip": "Hibernation allows you to pause VMs that aren't being used and save on compute costs where the VMs don't need to run 24/7.",
-									"visible": "[and(equals(steps('controlPlane').hostPool.type, 'Personal'), bool(first(map(filter(first(map(filter(steps('hosts').resourceSkusApi.value, (sku) => contains(sku.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (sku) => sku.capabilities)), (sku) => equals(sku.name, 'HibernationSupported')), (sku) => sku.value))))]"
+									"visible": "[and(equals(steps('controlPlane').hostPool.type, 'Personal'), bool(first(map(filter(first(map(filter(steps('hosts').resourceSkusApi.value, (sku) => contains(sku.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (sku) => sku.capabilities)), (sku) => equals(sku.name, 'HibernationSupported')), (sku) => sku.value))), or(equals(steps('hosts').image.source, 'marketplace'), bool(steps('hosts').image.imageDefinitionApi.transformed.IsHibernateSupported)))]"
 								}
 							]
 						},
@@ -1469,91 +1598,6 @@
 								}
 							],
 							"visible": "[equals(steps('hosts').dedicatedHosts.deployToDedicatedHosts, false)]"
-						},
-						{
-							"name": "image",
-							"type": "Microsoft.Common.Section",
-							"visible": true,
-							"label": "Image",
-							"elements": [
-								{
-									"name": "source",
-									"type": "Microsoft.Common.DropDown",
-									"label": "Image Source",
-									"filter": true,
-									"defaultValue": "Marketplace",
-									"toolTip": "Select the type of image to deploy on the session hosts.",
-									"constraints": {
-										"required": true,
-										"allowedValues": [
-											{
-												"label": "Marketplace",
-												"value": "marketplace"
-											},
-											{
-												"label": "Compute Gallery",
-												"value": "gallery"
-											}
-										]
-									}
-								},
-								{
-									"name": "offer",
-									"type": "Microsoft.Common.DropDown",
-									"label": "Offer",
-									"defaultValue": "Office 365",
-									"toolTip": "Select the desired marketplace image offer.",
-									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Office 365",
-												"value": "office-365"
-											},
-											{
-												"label": "Windows 10",
-												"value": "Windows-10"
-											},
-											{
-												"label": "Windows 11",
-												"value": "windows-11"
-											}
-										],
-										"required": true
-									},
-									"visible": "[equals(steps('hosts').image.source, 'marketplace')]"
-								},
-								{
-									"name": "skuApi",
-									"type": "Microsoft.Solutions.ArmApiControl",
-									"condition": "[and(not(empty(steps('basics').scope.subscription)), not(empty(steps('basics').scope.location)), not(empty(steps('hosts').image.offer)), equals(steps('hosts').image.source, 'marketplace'))]",
-									"request": {
-										"method": "GET",
-										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Compute/locations/', steps('basics').scope.location.name, '/publishers/MicrosoftWindowsDesktop/artifacttypes/vmimage/offers/', steps('hosts').image.offer, '/skus?api-version=2022-08-01')]"
-									}
-								},
-								{
-									"name": "sku",
-									"type": "Microsoft.Common.DropDown",
-									"label": "SKU",
-									"defaultValue": "win11-24h2-avd-m365",
-									"toolTip": "Select the desired marketplace image SKU.",
-									"constraints": {
-										"allowedValues": "[map(steps('hosts').image.skuApi, (sku) => parse(concat('{\"label\":\"', sku.name, '\",\"value\":\"', sku.name, '\"}')))]",
-										"required": true
-									},
-									"visible": "[equals(steps('hosts').image.source, 'marketplace')]"
-								},
-								{
-									"name": "galleryImage",
-									"type": "Microsoft.Solutions.ResourceSelector",
-									"visible": "[equals(steps('hosts').image.source, 'gallery')]",
-									"label": "Image",
-									"resourceType": "Microsoft.Compute/galleries/images",
-									"constraints": {
-										"required": true
-									}
-								}
-							]
 						},
 						{
 							"name": "identity",
@@ -3811,6 +3855,10 @@
 				"sessionHostIndex": "[steps('hosts').naming.index]",
 				"sessionHostCount": "[steps('hosts').specs.count]",
 				"virtualMachineSubnetResourceId": "[steps('hosts').network.hostsSubnet]",
+				"imageOffer": "[if(equals(steps('hosts').image.source, 'marketplace'), steps('hosts').image.offer, '')]",
+				"imagePublisher": "[if(equals(steps('hosts').image.source, 'marketplace'), 'MicrosoftWindowsDesktop', '')]",
+				"imageSku": "[if(equals(steps('hosts').image.source, 'marketplace'), steps('hosts').image.sku, '')]",
+				"customImageResourceId": "[if(equals(steps('hosts').image.source, 'gallery'), steps('hosts').image.imageDefinition, '')]",
 				"securityType": "[steps('hosts').security.securityType]",
 				"secureBootEnabled": "[if(equals(steps('hosts').security.securityType, 'Standard'), false, steps('hosts').security.secureBootEnabled)]",
 				"vTpmEnabled": "[if(equals(steps('hosts').security.securityType, 'Standard'), false, steps('hosts').security.vTpmEnabled)]",
@@ -3824,13 +3872,9 @@
 				"diskSku": "[steps('hosts').specs.diskSku]",
 				"diskSizeGB": "[steps('hosts').specs.diskSizeGB]",
 				"virtualMachineSize": "[if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric)]",
-				"availabilityZones": "[if(and(equals(steps('hosts').dedicatedHosts.deployToDedicatedHosts, false), equals(steps('hosts').availability.availability, 'AvailabilityZones')), steps('hosts').availability.availabilityZones, parse('[]'))]",
-				"enableAcceleratedNetworking": "[bool(first(map(filter(first(map(filter(steps('hosts').resourceSkusApi.value, (sku) => contains(sku.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (sku) => sku.capabilities)), (sku) => equals(sku.name, 'AcceleratedNetworkingEnabled')), (sku) => sku.value)))]",
-				"hibernationEnabled": "[if(bool(first(map(filter(first(map(filter(steps('hosts').resourceSkusApi.value, (sku) => contains(sku.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (sku) => sku.capabilities)), (sku) => equals(sku.name, 'HibernationSupported')), (sku) => sku.value))), steps('hosts').specs.hibernationEnabled, false)]",
-				"imageOffer": "[if(equals(steps('hosts').image.source, 'marketplace'), steps('hosts').image.offer, '')]",
-				"imagePublisher": "[if(equals(steps('hosts').image.source, 'marketplace'), 'MicrosoftWindowsDesktop', '')]",
-				"imageSku": "[if(equals(steps('hosts').image.source, 'marketplace'), steps('hosts').image.sku, '')]",
-				"customImageResourceId": "[if(equals(steps('hosts').image.source, 'gallery'), steps('hosts').image.galleryImage.id, '')]",
+				"availabilityZones": "[if(and(equals(steps('hosts').dedicatedHosts.deployToDedicatedHosts, false), equals(steps('hosts').availability.availability, 'AvailabilityZones')), steps('hosts').availability.availabilityZones, parse('[]'))]",				
+				"enableAcceleratedNetworking": "[if(and(bool(first(map(filter(first(map(filter(steps('hosts').resourceSkusApi.value, (sku) => contains(sku.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (sku) => sku.capabilities)), (sku) => equals(sku.name, 'AcceleratedNetworkingEnabled')), (sku) => sku.value))), or(equals(steps('hosts').image.source, 'marketplace'), bool(steps('hosts').image.imageDefinitionApi.transformed.IsAcceleratedNetworkSupported))), steps('hosts').specs.enableAcceleratedNetworking, false)]",
+				"hibernationEnabled": "[if(and(equals(steps('controlPlane').hostPool.type, 'Personal'), bool(first(map(filter(first(map(filter(steps('hosts').resourceSkusApi.value, (sku) => contains(sku.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (sku) => sku.capabilities)), (sku) => equals(sku.name, 'HibernationSupported')), (sku) => sku.value))), or(equals(steps('hosts').image.source, 'marketplace'), bool(steps('hosts').image.imageDefinitionApi.transformed.IsHibernateSupported))), steps('hosts').specs.hibernationEnabled, false)]",
 				"identitySolution": "[if(and(equals(steps('hosts').identity.solution, 'EntraId'), steps('hosts').identity.intune), 'EntraIdIntuneEnrollment', steps('hosts').identity.solution)]",
 				"domainName": "[steps('hosts').identity.domainName]",
 				"vmOUPath": "[if(equals(steps('hosts').identity.solution, 'EntraId'), '', steps('hosts').identity.ouPath)]",
