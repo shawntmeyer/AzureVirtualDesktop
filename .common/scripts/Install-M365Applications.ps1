@@ -90,10 +90,15 @@ $webClient.DownloadFile("$Uri", "$DestFile")
 Start-Sleep -Seconds 5
 If (!(Test-Path -Path $DestFile)) { Write-Error "Failed to download $SourceFileName"; Exit 1 }
 Write-OutputWithTimeStamp "Finished downloading"
-Write-OutputWithTimeStamp "Extracting the Office 365 Deployment Toolkit."
-Start-Process -FilePath $destFile -ArgumentList "/extract:`"$TempDir\ODT`" /quiet /passive /norestart" -Wait -PassThru | Out-Null
-$Setup = (Get-ChildItem -Path "$TempDir\ODT" -Filter '*setup*.exe').FullName
-Write-OutputWithTimeStamp "Found Office Deployment Tool Setup Executable - '$Setup'."
+If ($Environment -ne 'USSec' -and $Environment -ne 'USNat') {
+    Write-OutputWithTimeStamp "Extracting the Office 365 Deployment Toolkit."
+    Start-Process -FilePath $destFile -ArgumentList "/extract:`"$TempDir\ODT`" /quiet /passive /norestart" -Wait -PassThru | Out-Null
+    $Setup = (Get-ChildItem -Path "$TempDir\ODT" -Filter '*setup*.exe').FullName
+    Write-OutputWithTimeStamp "Found Office Deployment Tool Setup Executable - '$Setup'."
+}
+Else {
+    $Setup = $DestFile
+}
 Write-OutputWithTimeStamp "Dynamically creating $SoftwareName configuration file for setup."
 $ConfigFile = Join-Path -Path $TempDir -ChildPath 'office365x64.xml'
 [array]$Content = @()

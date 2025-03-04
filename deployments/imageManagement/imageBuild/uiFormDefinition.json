@@ -1355,7 +1355,7 @@
 									"toolTip": "Select the Azure Blob Storage Private Link Private DNS Zone.",
 									"constraints": {
 										"required": true,
-										"allowedValues": "[map(filter(steps('imageCustomizations').logging.privateDNSZonesApi.value, (item) => contains(item.name, 'privatelink.blob.')), (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.id, '\"}')))]"
+										"allowedValues": "[map(filter(steps('imageCustomizations').logging.privateDNSZonesApi.value, (zone) => contains(zone.name, 'privatelink.blob.')), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"Resource group: ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]"
 									}
 								}
 							]
