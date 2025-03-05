@@ -195,10 +195,33 @@ var storageSuffix = environment().suffixes.storage
 
 var timeDifference = locations[locationVirtualMachines].timeDifference
 var timeZone = locations[locationVirtualMachines].timeZone
-var virtualMachineTemplateImage = empty(customImageResourceId) ? '"galleryImageOffer":"${imageOffer}","galleryImagePublisher":"${imagePublisher}","galleryImageSKU":"${imageSku}","imageType":"Gallery","imageUri":null,"customImageId":null' : '"galleryImageOffer":null,"galleryImagePublisher":null,"galleryImageSKU":null,"imageType":"CustomImage","imageUri":null,"customImageId":"${customImageResourceId}"'
-var virtualMachineTemplateGalleryItem = empty(customImageResourceId) ? '"galleryItemId":"${imagePublisher}.${imageOffer}${imageSku}"' : '"galleryItemId":null'
-var virtualMachineSecurityConfig = securityType != 'Standard' ? '"securityType":"${securityType}","secureBoot":${secureBootEnabled},"vTPM":${vTpmEnabled}' : '"securityType":"${securityType}", "secureBoot":false, "vTPM":false'
-var virtualMachineTemplate = '{"domain":"${domainName}",${virtualMachineTemplateImage},"namePrefix":"${virtualMachineNamePrefix}","osDiskType":"${diskSku}","useManagedDisks":true,"virtualMachineSize":{"id":"${virtualMachineSize}","cores":null,"ram":null},${virtualMachineTemplateGalleryItem},"hibernate":${hibernationEnabled},"diskSizeGB":${diskSizeGB},${virtualMachineSecurityConfig},"vmInfrastructureType":"Cloud","virtualProcessorCount":null,"memoryGB":null,"maximumMemoryGB":null,"minimumMemoryGB":null,"dynamicMemoryConfig":false}'
+
+var virtualMachineTemplateImage = empty(customImageResourceId)
+  ? {
+      imageType: 'Gallery'
+      galleryImageOffer: imageOffer
+      galleryImagePublisher: imagePublisher
+      galleryImageSKU: imageSku
+      customImageId: null
+    }
+  : {
+      imageType: 'CustomImage'
+      galleryImageOffer: null
+      galleryImagePublisher: null
+      galleryImageSKU: null
+      customImageId: customImageResourceId
+    }
+
+var virtualMachineTemplate = union(virtualMachineTemplateImage, {
+  namePrefix: virtualMachineNamePrefix
+  osDiskType: diskSku
+  diskSizeGB: diskSizeGB
+  virtualMachineSize: virtualMachineSize
+  hibernate: hibernationEnabled
+  securityType: securityType
+  secureBoot: secureBootEnabled
+  vTPM: vTpmEnabled
+})
 
 output availabilitySetsCount int = availabilitySetsCount
 output beginAvSetRange int = beginAvSetRange
@@ -223,4 +246,4 @@ output storageSuffix string = storageSuffix
 output tags object = varTags
 output timeDifference string = timeDifference
 output timeZone string = timeZone
-output virtualMachineTemplate string = virtualMachineTemplate
+output virtualMachineTemplate string = string(virtualMachineTemplate)

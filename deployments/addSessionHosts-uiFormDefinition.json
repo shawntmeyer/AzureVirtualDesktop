@@ -3,28 +3,18 @@
 	"view": {
 		"kind": "Form",
 		"properties": {
-			"title": "Azure Virtual Desktop Host Pool",
+			"title": "Azure Virtual Desktop Add Session Hosts",
 			"steps": [
 				{
 					"name": "basics",
 					"label": "Deployment Basics",
 					"elements": [
 						{
-							"name": "infoBox1",
-							"type": "Microsoft.Common.InfoBox",
-							"visible": true,
-							"options": {
-								"style": "Info",
-								"text": "This solution will deploy a fully functional Azure Virtual Desktop Hostpool with associated resources. The resources deployed are dependent upon your choices within the form. All resources and resource groups are named in accordance with Cloud Adoption Framework (CAF) naming standards.",
-								"uri": "https://www.github.com/azure/federalavd"
-							}
-						},
-						{
 							"name": "scope",
 							"type": "Microsoft.Common.ResourceScope",
 							"instanceDetailsLabel": "Deployment Details",
 							"location": {
-								"label": "Region (Session Hosts, Storage, and Management Resources)",
+								"label": "Host Pool Region",
 								"resourceTypes": [
 									"Microsoft.resources/resourceGroups"
 								]
@@ -39,888 +29,39 @@
 							}
 						},
 						{
-							"name": "prereqs",
-							"type": "Microsoft.Common.Section",
-							"label": "Solution Prerequisites",
-							"elements": [
-								{
-									"name": "textBlock1",
-									"type": "Microsoft.Common.TextBlock",
-									"visible": true,
-									"options": {
-										"text": "This solution has several prerequisites documented at the link below.",
-										"link": {
-											"label": "Prerequisites for Azure Virtual Desktop",
-											"uri": "https://learn.microsoft.com/en-us/azure/virtual-desktop/prerequisites"
-										}
-									}
-								},
-								{
-									"name": "desktopVirtualizationProviderApi",
-									"type": "Microsoft.Solutions.ArmApiControl",
-									"condition": "[not(empty(steps('basics').scope.subscription))]",
-									"request": {
-										"method": "GET",
-										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.DesktopVirtualization?api-version=2021-04-01')]"
-									}
-								},
-								{
-									"name": "desktopVirtualizationResourceProviderNotRegisteredErrorBox",
-									"type": "Microsoft.Common.InfoBox",
-									"visible": "[not(equals(steps('basics').prereqs.desktopVirtualizationProviderApi.registrationState, 'Registered'))]",
-									"options": {
-										"style": "Error",
-										"text": "The Desktop Virtualization Resource Provider is not registered. Follow the instructions in the link to register the resource provider",
-										"uri": "https://learn.microsoft.com/en-us/azure/virtual-desktop/prerequisites?tabs=portal"
-									}
-								},
-								{
-									"name": "encryptionAtHostFeatureApi",
-									"type": "Microsoft.Solutions.ArmApiControl",
-									"condition": "[not(empty(steps('basics').scope.subscription))]",
-									"request": {
-										"method": "GET",
-										"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Features/providers/Microsoft.Compute/features/encryptionAtHost?api-version=2021-07-01')]"
-									}
-								},
-								{
-									"name": "avdServicePrincipalsApi",
-									"type": "Microsoft.Solutions.GraphApiControl",
-									"request": {
-										"method": "GET",
-										"path": "/v1.0/servicePrincipals?$filter=startsWith(displayName, 'Azure Virtual Desktop')&$select=displayName,id",
-										"transforms": {
-											"avd": "[value[?displayName=='Azure Virtual Desktop'] | [0].id]",
-											"avdARMProvider": "[value[?displayName=='Azure Virtual Desktop ARM Provider'] | [0].id]"
-										}
-									}
-								},								
-								{
-									"name": "servicePrincipalPickerBlade",
-									"type": "Microsoft.Solutions.BladeInvokeControl",
-									"openBladeStatus": "[steps('basics').prereqs.servicePrincipalSelector.changing]",
-									"bladeReference": {
-										"name": "ObjectPickerBlade",
-										"extension": "Microsoft_AAD_IAM",
-										"parameters": {
-											"queries": 4,
-											"bladeSubtitle": "Pick the Service Principal",
-											"additionalQueriesOnSearch": 0,
-											"advancedQueryOptions": {},
-											"selectionMaximum": 1,
-											"selectionMinimum": 1,
-											"bladeTitle": "Select the Service Principal",
-											"informationHeader": {
-												"informationText": "Select the 'Azure Virtual Desktop' service principal."
-											},
-											"searchBoxLabel": "Search for the 'Azure Virtual Desktop' service principal",
-											"searchBoxPlaceHolderText": "Enter 'Azure Virtual Desktop'",
-											"searchGridNoRowsMessage": "No Service Principals found",
-											"selectButtonText": "Select Service Principal",
-											"selectedGridLabel": "Selected Service Principal",
-											"selectedGridNoRowsMessage": "You must select the 'Azure Virtual Desktop' service principal"
-										}
-									},
-									"transforms": {
-										"selection": "selectedObjects|[*].{displayName:displayName,id:id}"
-									}
-								},
-								{
-									"name": "servicePrincipalSelector",
-									"type": "Microsoft.Common.Selector",
-									"label": "Select the <b>Azure Virtual Desktop</b> Service Principal",
-									"keyPath": "displayName",
-									"value": "[steps('basics').prereqs.servicePrincipalPickerBlade.transformed.selection]",
-									"barColor": "[if(empty(steps('basics').prereqs.servicePrincipalPickerBlade), '#FF0000', '#7fba00')]",
-									"constraints": {
-										"required": true
-									},
-									"link": "[if(empty(steps('basics').prereqs.servicePrincipalPickerBlade), 'Select Service Principal', first(map(steps('basics').prereqs.servicePrincipalPickerBlade.transformed.selection, (sp) => sp.displayName)))]",
-									"visible": "[empty(first(steps('basics').prereqs.avdServicePrincipalsApi.value))]"
-								}
-							],
-							"visible": true
-						},
-						{
-							"name": "naming",
-							"type": "Microsoft.Common.Section",
-							"label": "Naming Components",
-							"elements": [
-								{
-									"name": "namingIntroTextBlock",
-									"type": "Microsoft.Common.TextBlock",
-									"visible": true,
-									"options": {
-										"link": {
-											"label": "User Personas | Microsoft Learn",
-											"uri": "https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/scenarios/azure-virtual-desktop/migrate-assess#user-personas"
-										},
-										"text": "Please provide the naming components below.<br><br>The Persona Identifier is required and is designed to represent the persona being provided resources by the host pool. Each persona requires a specific host-pool configuration. Defining personas (and thus host pools) will come as a result of bucketing users based on the following criteria:<ul><li><b>Personal Pools:</b> Do specific groups of users require dedicated desktops, instead of pools?</li><li><b>Density:</b> Do specific groups of users require a lower-density desktop experience?</li><li><b>Performance:</b> Do specific groups of users require a higher-performance desktop experience?</li><li><b>Graphical processing (GPU):</b> Do specific groups of users have greater graphical requirements?</li><li><b>Business functions:</b> Can the specific groupings of users be bucketed by business unit, charge code, or their business function?</li><li><b>User count:</b> How many users will be in each distinct persona?</li><li><b>Max session counts:</b> Based on geography and hours of operation, how many concurrent users are expected for each persona during maximum load?</li></ul>"
-									}
-								},
-								{
-									"name": "identifier",
-									"type": "Microsoft.Common.TextBox",
-									"label": "Persona Identifier",
-									"toolTip": "Input an alphanumeric identifier for the business unit or the persona for which the hostpool will be deployed.",
-									"constraints": {
-										"required": true,
-										"validations": [
-											{
-												"regex": "^[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*$",
-												"message": "Only alphanumeric characters and dashes '-' are allowed. Dashes must only be specified between alphanumeric characters."
-											},
-											{
-												"isValid": "[not(greater(add(length(steps('basics').naming.identifier), length(steps('basics').naming.index)), 9))]",
-												"message": "The total length of the identifier and index cannot exceed 9 characters."
-											}
-										]
-									}
-								},
-								{
-									"name": "indexTextBlock",
-									"type": "Microsoft.Common.TextBlock",
-									"visible": true,
-									"options": {
-										"link": {
-											"label": "Sharding pattern - Azure Architecture Center | Microsoft Learn",
-											"uri": "https://learn.microsoft.com/en-us/azure/architecture/patterns/sharding"
-										},
-										"text": "Optionally, if you need to provide more than one host pool for the same persona, you should use the HostPool Index value below."
-									}
-								},
-								{
-									"name": "index",
-									"type": "Microsoft.Common.TextBox",
-									"label": "HostPool Index",
-									"toolTip": "Input a numeric index value for the hostpool created by this solution.",
-									"constraints": {
-										"required": false,
-										"validations": [
-											{
-												"regex": "^\\d{0,2}$",
-												"message": "Only a blank value or an integer value from 0 to 99 are allowed."
-											}
-										]
-									}
-								},
-								{
-									"name": "cafTextBlock",
-									"type": "Microsoft.Common.TextBlock",
-									"visible": true,
-									"options": {
-										"text": "The Cloud Adoption Framework (CAF) provides a recommended resource naming convention which specifies that the abbreviation for the resource type is listed first in the name. This solution automatically names resources using the CAF naming convention and suggested resource type abbreviations. Some customers have chosen to move the resource type to the end of the resource names. Select 'Yes' below to ensure that resources are named with this reverse convention or leave it set to 'No' to follow the CAF.",
-										"link": {
-											"label": "Resource Naming | Microsoft Learn",
-											"uri": "https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/ready/azure-best-practices/resource-naming"
-										}
-									}
-								},
-								{
-									"name": "nameConvResTypeAtEnd",
-									"type": "Microsoft.Common.OptionsGroup",
-									"label": "Move the Resource Type to the end of resource names",
-									"defaultValue": "No",
-									"toolTip": "",
-									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Yes",
-												"value": true
-											},
-											{
-												"label": "No",
-												"value": false
-											}
-										],
-										"required": true
-									},
-									"visible": true
-								}
-							]
-						}
-					]
-				},
-				{
-					"name": "controlPlane",
-					"label": "Control Plane",
-					"elements": [
-						{
-							"name": "workspacesApi",
+							"name": "encryptionAtHostFeatureApi",
 							"type": "Microsoft.Solutions.ArmApiControl",
 							"condition": "[not(empty(steps('basics').scope.subscription))]",
 							"request": {
 								"method": "GET",
-								"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.DesktopVirtualization/workspaces?api-version=2022-02-10-preview')]"
+								"path": "[concat(steps('basics').scope.subscription.id, '/providers/Microsoft.Features/providers/Microsoft.Compute/features/encryptionAtHost?api-version=2021-07-01')]"
 							}
-						},
-						{
-							"type": "Microsoft.Common.LocationSelector",
-							"name": "location",
-							"label": "Region (Control Plane)",
-							"resourceTypes": [
-								"Microsoft.DesktopVirtualization/Workspaces",
-								"Microsoft.DesktopVirtualization/Hostpools"
-							],
-							"scope": {
-								"subscriptionId": "[steps('basics').scope.subscription.subscriptionId]"
-							}
-						},
-						{
-							"name": "workspace",
-							"type": "Microsoft.Common.Section",
-							"label": "Workspace",
-							"visible": "[not(empty(filter(steps('controlPlane').workspacesApi.value, (ws) => equals(ws.location, steps('controlPlane').location.name))))]",
-							"elements": [
-								{
-									"name": "textBlock1",
-									"type": "Microsoft.Common.TextBlock",
-									"options": {
-										"text": "There is an existing AVD workspace that matches the naming convention and is in the control plane region you selected. This solution allows you to update the application group references of an existing AVD Workspace or create a new Workspace. Select the appropriate option below."
-									}
-								},
-								{
-									"name": "createOption",
-									"type": "Microsoft.Common.OptionsGroup",
-									"label": "Workspace Creation Option",
-									"defaultValue": "Update an existing Workspace",
-									"toolTip": "",
-									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Create a new Workspace",
-												"value": "new"
-											},
-											{
-												"label": "Update an existing Workspace",
-												"value": "update"
-											}
-										],
-										"required": true
-									}
-								},
-								{
-									"name": "warningBox1",
-									"type": "Microsoft.Common.InfoBox",
-									"visible": "[equals(steps('controlPlane').workspace.createOption, 'new')]",
-									"options": {
-										"style": "Warning",
-										"text": "When you choose create to create a new workspace this solution will overwrite any existing application group references <u>if the workspace already exists</u>. This could cause an outage if existing hostpools and application groups are already registered with this workspace."
-									}
-								},
-								{
-									"name": "textBlock2",
-									"type": "Microsoft.Common.TextBlock",
-									"visible": "[equals(steps('controlPlane').workspace.createOption, 'update')]",
-									"options": {
-										"text": "Select an existing AVD Workspace below to which the Desktop Application Group will be registered."
-									}
-								},
-								{
-									"name": "existingWorkspace",
-									"type": "Microsoft.Common.DropDown",
-									"label": "Existing AVD Workspace",
-									"multiLine": true,
-									"toolTip": "Select the existing AVD Workspace to update with the Desktop Application Group deployed via this solution.",
-									"constraints": {
-										"required": true,
-										"allowedValues": "[map(filter(steps('controlPlane').workspacesApi.value, (ws) => equals(ws.location, steps('controlPlane').location.name)), (vdws) => parse(concat('{\"label\":\"', vdws.name, '\",\"description\":\"Friendly Name: ', vdws.properties.friendlyName, ', Resource Group: ', first(skip(split(vdws.id, '/'), 4)), '\",\"value\":\"', vdws.id, '\"}')))]"
-									},
-									"visible": "[equals(steps('controlPlane').workspace.createOption, 'update')]"
-								}
-							]
-						},
-						{
-							"name": "naming",
-							"type": "Microsoft.Common.Section",
-							"visible": true,
-							"label": "Naming",
-							"elements": [
-								{
-									"name": "workspaceFriendlyName",
-									"type": "Microsoft.Common.TextBox",
-									"label": "Workspace Friendly Name",
-									"toolTip": "Input the friendly name for the AVD workspace that will be displayed in the end user's client.",
-									"constraints": {
-										"required": false,
-										"regex": "^.{1,64}$",
-										"validationMessage": "The value must be between 1 and 64 characters in length."
-									},
-									"visible": "[not(equals(steps('controlPlane').workspace.createOption, 'update'))]"
-								},
-								{
-									"name": "desktopFriendlyName",
-									"type": "Microsoft.Common.TextBox",
-									"label": "Session Desktop Friendly Name",
-									"defaultValue": "",
-									"toolTip": "Input the friendly name for the default SessionDesktop that will be displayed in the end user's client.",
-									"constraints": {
-										"required": false,
-										"regex": "^.{1,20}$",
-										"validationMessage": "The value must be between 1 and 20 characters in length."
-									}
-								}
-							]
 						},
 						{
 							"name": "hostPool",
-							"type": "Microsoft.Common.Section",
+							"type": "Microsoft.Solutions.ResourceSelector",
 							"visible": true,
-							"label": "Host Pool",
-							"elements": [
-								{
-									"name": "validation",
-									"type": "Microsoft.Common.CheckBox",
-									"label": "Validation Environment",
-									"toolTip": "Choose whether to deploy the host pool as a validation environment. This allows you test preview features for AVD before they are released to production.",
-									"constraints": {
-										"required": false
-									}
-								},
-								{
-									"name": "type",
-									"type": "Microsoft.Common.DropDown",
-									"label": "Type",
-									"defaultValue": "Pooled",
-									"multiLine": true,
-									"toolTip": "",
-									"constraints": {
-										"required": true,
-										"allowedValues": [
-											{
-												"label": "Pooled",
-												"value": "Pooled"
-											},
-											{
-												"label": "Personal",
-												"value": "Personal"
-											}
-										]
-									}
-								},
-								{
-									"name": "loadBalancerAlgorithm",
-									"type": "Microsoft.Common.DropDown",
-									"visible": "[equals(steps('controlPlane').hostPool.type, 'Pooled')]",
-									"label": "Load Balancing Algorithm",
-									"defaultValue": "Breadth-First",
-									"multiLine": true,
-									"toolTip": "Breadth-first load balancing distributes new user sessions across all available session hosts in the host pool. Depth-first load balancing distributes new user sessions to an available session host with the highest number of connections but has not reached its maximum session limit threshold.",
-									"constraints": {
-										"required": true,
-										"allowedValues": [
-											{
-												"label": "Breadth-First",
-												"description": "Each new session is placed on the next VM. (Performance Optimized)",
-												"value": "BreadthFirst"
-											},
-											{
-												"label": "Depth-First",
-												"description": "Each new session is placed on the same VM until max sessions limit. (Cost Optimized)",
-												"value": "DepthFirst"
-											}
-										]
-									}
-								},
-								{
-									"name": "rdpProperties",
-									"type": "Microsoft.Common.TextBox",
-									"visible": true,
-									"label": "Custom RDP properties",
-									"toolTip": "Specify the configuration for the RDP properties on the AVD host pool.",
-									"constraints": {
-										"required": false
-									}
-								},
-								{
-									"name": "maxSessions",
-									"type": "Microsoft.Common.TextBox",
-									"visible": "[equals(steps('controlPlane').hostPool.type, 'Pooled')]",
-									"label": "Max Session Limit",
-									"defaultValue": "8",
-									"toolTip": "The maximum number of users that have concurrent sessions on a session host. When setting a host pool to have depth first load balancing or planning to use Autoscaling, you must set an appropriate max session limit according to the configuration of your deployment and capacity of your VMs.",
-									"constraints": {
-										"required": true,
-										"regex": "\\d+",
-										"validationMessage": "The value must be one or more digits."
-									}
-								},
-								{
-									"name": "assignmentType",
-									"type": "Microsoft.Common.DropDown",
-									"visible": "[equals(steps('controlPlane').hostPool.type, 'Personal')]",
-									"label": "Assignment Type",
-									"defaultValue": "Automatic (Recommended)",
-									"multiLine": true,
-									"toolTip": "Automatic assignment - The service will select an available host and assign it to an user./nDirect assignment - Admin selects a specific host to assign to an user.",
-									"constraints": {
-										"required": true,
-										"allowedValues": [
-											{
-												"label": "Automatic (Recommended)",
-												"description": "Users are assigned an available VM the first time they connect.",
-												"value": "Automatic"
-											},
-											{
-												"label": "Direct",
-												"description": "An administrator assigns a VM for each individual user.",
-												"value": "Direct"
-											}
-										]
-									}
-								}
-							]
+							"label": "Hostpool to update",
+							"resourceType": "Microsoft.DesktopVirtualization/hostPools",
+							"constraints": {
+								"required": true
+							},
+							"scope": {
+								"subscriptionId": "[steps('basics').scope.subscription.subscriptionId]",
+								"location": "[steps('basics').scope.location.name]"
+							}
 						},
 						{
-							"name": "assignments",
-							"type": "Microsoft.Common.Section",
-							"label": "Assignments",
-							"visible": true,
-							"elements": [
-								{
-									"name": "groupPickerBlade",
-									"type": "Microsoft.Solutions.BladeInvokeControl",
-									"openBladeStatus": "[steps('controlPlane').assignments.groupSelector.changing]",
-									"bladeReference": {
-										"name": "ObjectPickerBlade",
-										"extension": "Microsoft_AAD_IAM",
-										"parameters": {
-											"queries": 32,
-											"disablers": 4,
-											"bladeSubtitle": "Pick the groups to assign",
-											"additionalQueriesOnSearch": 0,
-											"advancedQueryOptions": {
-												"suggestedObjectsOptions": {}
-											},
-											"selectionMaximum": 3,
-											"selectionMinimum": 1,
-											"bladeTitle": "Select Groups",
-											"informationHeader": {
-												"informationText": "Select the groups to assign to the desktop application group",
-												"informationLink": ""
-											},
-											"inviteEnabled": true,
-											"searchBoxLabel": "Search for a group",
-											"searchBoxPlaceHolderText": "Enter a string in the group name",
-											"searchBoxTooltip": "This is the tooltip",
-											"searchGridNoRowsMessage": "No groups found",
-											"selectButtonText": "Select Groups",
-											"selectedGridLabel": "Selected Groups",
-											"selectedGridNoRowsMessage": "You must select at least one group"
-										},
-										"inFullScreen": false
-									},
-									"transforms": {
-										"selection": "selectedObjects|[*].{displayName:displayName, objectId:id}"
-									}
-								},
-								{
-									"name": "groupSelector",
-									"type": "Microsoft.Common.Selector",
-									"label": "Select Groups",
-									"keyPath": "displayName",
-									"descriptionKeyPath": "id",
-									"value": "[steps('controlPlane').assignments.groupPickerBlade.transformed.selection]",
-									"visible": true,
-									"barColor": "[if(empty(steps('controlPlane').assignments.groupPickerBlade), '#FF0000', '#7fba00')]",
-									"constraints": {
-										"required": true
-									},
-									"link": "[if(empty(steps('controlPlane').assignments.groupPickerBlade), 'Select groups', 'Re-select groups')]"
-								}
-							]
-						},
-						{
-							"name": "scalingPlan",
-							"type": "Microsoft.Common.Section",
-							"label": "Scaling Plan",
-							"elements": [
-								{
-									"name": "deployScalingPlan",
-									"type": "Microsoft.Common.OptionsGroup",
-									"label": "Deploy Scaling Plan",
-									"defaultValue": "No",
-									"toolTip": "Select Yes to configure and deploy a scaling plan specific to the host pool.",
-									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Yes",
-												"value": true
-											},
-											{
-												"label": "No",
-												"value": false
-											}
-										],
-										"required": true
-									},
-									"visible": true
-								},
-								{
-									"name": "exclusionTag",
-									"type": "Microsoft.Common.TextBox",
-									"label": "Tag to exclude hosts from Scaling",
-									"placeholder": "",
-									"defaultValue": "DoNotScale",
-									"toolTip": "Use only allowed characters",
-									"constraints": {
-										"required": true,
-										"regex": "^[a-z0-9A-Z]{1,30}$",
-										"validationMessage": "Only alphanumeric characters are allowed, and the value must be 1-30 characters long."
-									},
-									"visible": "[steps('controlPlane').scalingPlan.deployScalingPlan]"
-								},
-								{
-									"name": "textBlock",
-									"type": "Microsoft.Common.TextBlock",
-									"visible": "[steps('controlPlane').scalingPlan.deployScalingPlan]",
-									"options": {
-										"text": "Use the grids and selectors below to configure the Weekday Scaling Plan schedule."
-									}
-								},
-								{
-									"name": "weekdayRampUpSchedule",
-									"type": "Microsoft.Common.EditableGrid",
-									"ariaLabel": "Enter Weekday Schedule Information",
-									"label": "Weekday Ramp Up Schedule",
-									"constraints": {
-										"width": "Full",
-										"rows": {
-											"count": {
-												"min": 1,
-												"max": 1
-											}
-										},
-										"columns": [
-											{
-												"id": "startTime",
-												"header": "Ramp Up Time",
-												"width": "2fr",
-												"element": {
-													"type": "Microsoft.Common.TextBox",
-													"placeholder": "8:00",
-													"constraints": {
-														"required": true,
-														"validations": [
-															{
-																"regex": "^(0?[1-9]|1[0-9]|2[0-3]):[0-5][0-9]$",
-																"message": "Must be a valid 24-hour time format without leading zeros."
-															}
-														]
-													}
-												}
-											},
-											{
-												"id": "minimumHostsPct",
-												"header": "Min % of Hosts",
-												"width": "1fr",
-												"element": {
-													"type": "Microsoft.Common.TextBox",
-													"placeholder": "20",
-													"constraints": {
-														"required": true,
-														"validations": [
-															{
-																"regex": "^([1-9][0-9]?|100)$",
-																"message": "Must be an integer from 1 - 100."
-															}
-														]
-													}
-												}
-											},
-											{
-												"id": "capacityThresholdPct",
-												"header": "Capacity threshold (%)",
-												"width": "2fr",
-												"element": {
-													"type": "Microsoft.Common.TextBox",
-													"placeholder": "60",
-													"constraints": {
-														"required": true,
-														"validations": [
-															{
-																"regex": "^([1-9][0-9]?|100)$",
-																"message": "Must be an integer from 1 - 100."
-															}
-														]
-													}
-												}
-											},
-											{
-												"id": "loadBalancingAlgorithm",
-												"header": "Load Balancing Algorithm",
-												"width": "1fr",
-												"element": {
-													"type": "Microsoft.Common.DropDown",
-													"constraints": {
-														"allowedValues": [
-															{
-																"label": "Breadth-First",
-																"value": "BreadthFirst"
-															},
-															{
-																"label": "Depth-First",
-																"value": "DepthFirst"
-															}
-														],
-														"defaultValue": "Breadth-First",
-														"required": true
-													}
-												}
-											}
-										]
-									},
-									"visible": "[steps('controlPlane').scalingPlan.deployScalingPlan]"
-								},
-								{
-									"name": "weekdayPeakSchedule",
-									"type": "Microsoft.Common.EditableGrid",
-									"ariaLabel": "Enter Weekday Schedule Information",
-									"label": "Weekday Peak Schedule",
-									"constraints": {
-										"width": "Full",
-										"rows": {
-											"count": {
-												"min": 1,
-												"max": 1
-											}
-										},
-										"columns": [
-											{
-												"id": "startTime",
-												"header": "Peak Start Time",
-												"width": "5fr",
-												"element": {
-													"type": "Microsoft.Common.TextBox",
-													"placeholder": "9:00",
-													"constraints": {
-														"required": true,
-														"validations": [
-															{
-																"regex": "^(0?[1-9]|1[0-9]|2[0-3]):[0-5][0-9]$",
-																"message": "Must be a valid 24-hour time format without leading zeros."
-															}
-														]
-													}
-												}
-											},
-											{
-												"id": "loadBalancingAlgorithm",
-												"header": "Load Balancing Algorithm",
-												"width": "1fr",
-												"element": {
-													"type": "Microsoft.Common.DropDown",
-													"constraints": {
-														"allowedValues": [
-															{
-																"label": "Breadth-First",
-																"value": "BreadthFirst"
-															},
-															{
-																"label": "Depth-First",
-																"value": "DepthFirst"
-															}
-														],
-														"defaultValue": "Depth-First",
-														"required": true
-													}
-												}
-											}
-										]
-									},
-									"visible": "[steps('controlPlane').scalingPlan.deployScalingPlan]"
-								},
-								{
-									"name": "weekdayRampDownSchedule",
-									"type": "Microsoft.Common.EditableGrid",
-									"ariaLabel": "Enter Weekday Schedule Information",
-									"label": "Weekday Ramp Down Schedule",
-									"constraints": {
-										"width": "Full",
-										"rows": {
-											"count": {
-												"min": 1,
-												"max": 1
-											}
-										},
-										"columns": [
-											{
-												"id": "startTime",
-												"header": "Ramp Down Start Time",
-												"width": "2fr",
-												"element": {
-													"type": "Microsoft.Common.TextBox",
-													"placeholder": "18:00",
-													"constraints": {
-														"required": true,
-														"validations": [
-															{
-																"regex": "^(0?[1-9]|1[0-9]|2[0-3]):[0-5][0-9]$",
-																"message": "Must be a valid 24-hour time format without leading zeros."
-															}
-														]
-													}
-												}
-											},
-											{
-												"id": "minimumHostsPct",
-												"header": "Min % of Hosts",
-												"width": "1fr",
-												"element": {
-													"type": "Microsoft.Common.TextBox",
-													"placeholder": "10",
-													"constraints": {
-														"required": true,
-														"validations": [
-															{
-																"regex": "^([1-9][0-9]?|100)$",
-																"message": "Must be an integer from 1 - 100."
-															}
-														]
-													}
-												}
-											},
-											{
-												"id": "capacityThresholdPct",
-												"header": "Capacity threshold (%)",
-												"width": "2fr",
-												"element": {
-													"type": "Microsoft.Common.TextBox",
-													"placeholder": "90",
-													"constraints": {
-														"required": true,
-														"validations": [
-															{
-																"regex": "^([1-9][0-9]?|100)$",
-																"message": "Must be an integer from 1 - 100."
-															}
-														]
-													}
-												}
-											},
-											{
-												"id": "loadBalancingAlgorithm",
-												"header": "Load Balancing Algorithm",
-												"width": "1fr",
-												"element": {
-													"type": "Microsoft.Common.DropDown",
-													"constraints": {
-														"allowedValues": [
-															{
-																"label": "Breadth-First",
-																"value": "BreadthFirst"
-															},
-															{
-																"label": "Depth-First",
-																"value": "DepthFirst"
-															}
-														],
-														"defaultValue": "Depth-First",
-														"required": true
-													}
-												}
-											}
-										]
-									},
-									"visible": "[steps('controlPlane').scalingPlan.deployScalingPlan]"
-								},
-								{
-									"name": "forceLogoff",
-									"type": "Microsoft.Common.OptionsGroup",
-									"label": "Force Logoff during Ramp Down",
-									"defaultValue": "No",
-									"toolTip": "",
-									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Yes",
-												"value": true
-											},
-											{
-												"label": "No",
-												"value": false
-											}
-										],
-										"required": true
-									},
-									"visible": "[steps('controlPlane').scalingPlan.deployScalingPlan]"
-								},
-								{
-									"name": "minsToLogoff",
-									"type": "Microsoft.Common.TextBox",
-									"label": "Number of minutes before users are forcefully logged off",
-									"placeholder": "30",
-									"toolTip": "Use only integers",
-									"constraints": {
-										"required": true,
-										"regex": "^(?:[1-9]|[1-9][0-9]|1[01][0-9]|120)$",
-										"validationMessage": "Must be an integer from 1 - 120."
-									},
-									"visible": "[and(steps('controlPlane').scalingPlan.deployScalingPlan, steps('controlPlane').scalingPlan.forceLogoff)]"
-								},
-								{
-									"name": "weekdayOffPeakSchedule",
-									"type": "Microsoft.Common.EditableGrid",
-									"ariaLabel": "Enter Weekday Off Peak Schedule Information",
-									"label": "Weekday Off Peak Schedule",
-									"constraints": {
-										"width": "Full",
-										"rows": {
-											"count": {
-												"min": 1,
-												"max": 1
-											}
-										},
-										"columns": [
-											{
-												"id": "startTime",
-												"header": "Off Peak Start Time",
-												"width": "5fr",
-												"element": {
-													"type": "Microsoft.Common.TextBox",
-													"placeholder": "22:00",
-													"constraints": {
-														"required": true,
-														"validations": [
-															{
-																"regex": "^(0?[1-9]|1[0-9]|2[0-3]):[0-5][0-9]$",
-																"message": "Must be a valid 24-hour time format without leading zeros."
-															}
-														]
-													}
-												}
-											},
-											{
-												"id": "loadBalancingAlgorithm",
-												"header": "Load Balancing Algorithm",
-												"width": "1fr",
-												"element": {
-													"type": "Microsoft.Common.DropDown",
-													"constraints": {
-														"allowedValues": [
-															{
-																"label": "Breadth-First",
-																"value": "BreadthFirst"
-															},
-															{
-																"label": "Depth-First",
-																"value": "DepthFirst"
-															}
-														],
-														"defaultValue": "Depth-First",
-														"required": true
-													}
-												}
-											}
-										]
-									},
-									"visible": "[steps('controlPlane').scalingPlan.deployScalingPlan]"
-								}
-							],
-							"visible": "[equals(steps('controlPlane').hostPool.type, 'Pooled')]"
+							"name": "hostPoolApi",
+							"type": "Microsoft.Solutions.ArmApiControl",
+							"condition": "[not(empty(steps('basics').hostPool))]",
+							"request": {
+								"method": "GET",
+								"path": "[concat(steps('basics').scope.hostPool.id, '?api-version=2024-04-03)]"
+							}
 						}
 					]
-				},
+				},				
 				{
 					"name": "hosts",
 					"label": "Session Hosts",
@@ -1139,7 +280,7 @@
 											"SecurityType": "properties.features[?name=='SecurityType'].value | [0]"
 										}
 									}
-								}								
+								}
 							]
 						},
 						{
@@ -1309,7 +450,7 @@
 											"objectId": "[value[?displayName=='Confidential VM Orchestrator'] | [0].id]"
 										}
 									}
-								},								
+								},
 								{
 									"name": "confDiskEncryptionPrincipal",
 									"type": "Microsoft.Common.TextBox",
@@ -1674,7 +815,7 @@
 									}
 								}
 							]
-						},						
+						},
 						{
 							"name": "credentials",
 							"type": "Microsoft.Common.Section",
@@ -1702,7 +843,7 @@
 									},
 									"visible": true
 								},
-{
+								{
 									"name": "domainJoinUserPrincipalName",
 									"type": "Microsoft.Common.TextBox",
 									"label": "Domain Join Account UserPrincipalName",
@@ -1763,34 +904,34 @@
 									"visible": "[equals(steps('hosts').credentials.source, 'manual')]"
 								},
 								{
-                                    "name": "secretsInfoBox1",
-                                    "type": "Microsoft.Common.InfoBox",
-                                    "visible": "[and(equals(steps('hosts').identity.solution, 'EntraId'), equals(steps('hosts').credentials.source, 'keyVault'))]",
-                                    "options": {
-                                        "text": "This add-on requires that the following secret names and values are stored in a key vault that you will select below:</br><ul><li><b>VirtualMachineAdminUserName</b>: The virtual machine administrator username.</li><li><b>VirtualMachineAdminPassword</b>: The virtual machine administrator password.",
-                                        "style": "Info"
-                                    }
-                                },
+									"name": "secretsInfoBox1",
+									"type": "Microsoft.Common.InfoBox",
+									"visible": "[and(equals(steps('hosts').identity.solution, 'EntraId'), equals(steps('hosts').credentials.source, 'keyVault'))]",
+									"options": {
+										"text": "This add-on requires that the following secret names and values are stored in a key vault that you will select below:</br><ul><li><b>VirtualMachineAdminUserName</b>: The virtual machine administrator username.</li><li><b>VirtualMachineAdminPassword</b>: The virtual machine administrator password.",
+										"style": "Info"
+									}
+								},
 								{
-                                    "name": "secretsInfoBox2",
-                                    "type": "Microsoft.Common.InfoBox",
-                                    "visible": "[and(not(equals(steps('hosts').identity.solution, 'EntraId')), equals(steps('hosts').credentials.source, 'keyVault'))]",
-                                    "options": {
-                                        "text": "This add-on requires that the following secret names and values are stored in a key vault that you will select below:</br><ul><li><b>DomainJoinUserPrincipalName</b>: The domain join account UserPrincipalName (i.e., domjoin@contoso.local).</li><li><b>DomainJoinUserPassword</b>: The password associated with the domain join user account.</li><li><b>VirtualMachineAdminUserName</b>: The virtual machine administrator username.</li><li><b>VirtualMachineAdminPassword</b>: The virtual machine administrator password.",
-                                        "style": "Info"
-                                    }
-                                },
+									"name": "secretsInfoBox2",
+									"type": "Microsoft.Common.InfoBox",
+									"visible": "[and(not(equals(steps('hosts').identity.solution, 'EntraId')), equals(steps('hosts').credentials.source, 'keyVault'))]",
+									"options": {
+										"text": "This add-on requires that the following secret names and values are stored in a key vault that you will select below:</br><ul><li><b>DomainJoinUserPrincipalName</b>: The domain join account UserPrincipalName (i.e., domjoin@contoso.local).</li><li><b>DomainJoinUserPassword</b>: The password associated with the domain join user account.</li><li><b>VirtualMachineAdminUserName</b>: The virtual machine administrator username.</li><li><b>VirtualMachineAdminPassword</b>: The virtual machine administrator password.",
+										"style": "Info"
+									}
+								},
 								{
-                                    "name": "keyVault",
-                                    "type": "Microsoft.Solutions.ResourceSelector",
-                                    "label": "Select Keyvault containing workload secrets",
-                                    "resourceType": "Microsoft.KeyVault/vaults",
-                                    "toolTip": "Select Keyvault which contains the domain join secrets",
-                                    "constraints": {
-                                        "required": true
-                                    },
+									"name": "keyVault",
+									"type": "Microsoft.Solutions.ResourceSelector",
+									"label": "Select Keyvault containing workload secrets",
+									"resourceType": "Microsoft.KeyVault/vaults",
+									"toolTip": "Select Keyvault which contains the domain join secrets",
+									"constraints": {
+										"required": true
+									},
 									"visible": "[equals(steps('hosts').credentials.source, 'keyVault')]"
-                                }
+								}
 							]
 						},
 						{
@@ -3872,15 +3013,15 @@
 				"diskSku": "[steps('hosts').specs.diskSku]",
 				"diskSizeGB": "[steps('hosts').specs.diskSizeGB]",
 				"virtualMachineSize": "[if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric)]",
-				"availabilityZones": "[if(and(equals(steps('hosts').dedicatedHosts.deployToDedicatedHosts, false), equals(steps('hosts').availability.availability, 'AvailabilityZones')), steps('hosts').availability.availabilityZones, parse('[]'))]",				
+				"availabilityZones": "[if(and(equals(steps('hosts').dedicatedHosts.deployToDedicatedHosts, false), equals(steps('hosts').availability.availability, 'AvailabilityZones')), steps('hosts').availability.availabilityZones, parse('[]'))]",
 				"enableAcceleratedNetworking": "[if(and(bool(first(map(filter(first(map(filter(steps('hosts').resourceSkusApi.value, (sku) => contains(sku.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (sku) => sku.capabilities)), (sku) => equals(sku.name, 'AcceleratedNetworkingEnabled')), (sku) => sku.value))), or(equals(steps('hosts').image.source, 'marketplace'), bool(steps('hosts').image.imageDefinitionApi.transformed.IsAcceleratedNetworkSupported))), steps('hosts').specs.enableAcceleratedNetworking, false)]",
 				"hibernationEnabled": "[if(and(equals(steps('controlPlane').hostPool.type, 'Personal'), bool(first(map(filter(first(map(filter(steps('hosts').resourceSkusApi.value, (sku) => contains(sku.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (sku) => sku.capabilities)), (sku) => equals(sku.name, 'HibernationSupported')), (sku) => sku.value))), or(equals(steps('hosts').image.source, 'marketplace'), bool(steps('hosts').image.imageDefinitionApi.transformed.IsHibernateSupported))), steps('hosts').specs.hibernationEnabled, false)]",
 				"identitySolution": "[if(and(equals(steps('hosts').identity.solution, 'EntraId'), steps('hosts').identity.intune), 'EntraIdIntuneEnrollment', steps('hosts').identity.solution)]",
 				"domainName": "[steps('hosts').identity.domainName]",
 				"vmOUPath": "[if(equals(steps('hosts').identity.solution, 'EntraId'), '', steps('hosts').identity.ouPath)]",
-				"domainJoinUserPassword": "[if(and(not(equals(steps('hosts').identity.solution, 'EntraId')), equals(steps('hosts').credentials.source, 'manual')), steps('hosts').credentials.domainJoinUserPassword, '')]",				
-				"domainJoinUserPrincipalName": "[if(and(not(equals(steps('hosts').identity.solution, 'EntraId')), equals(steps('hosts').credentials.source, 'manual')), steps('hosts').credentials.domainJoinUserPrincipalName, '')]",				
-				"virtualMachineAdminPassword": "[if(equals(steps('hosts').credentials.source, 'manual'), steps('hosts').credentials.localAdminPassword, '')]",				
+				"domainJoinUserPassword": "[if(and(not(equals(steps('hosts').identity.solution, 'EntraId')), equals(steps('hosts').credentials.source, 'manual')), steps('hosts').credentials.domainJoinUserPassword, '')]",
+				"domainJoinUserPrincipalName": "[if(and(not(equals(steps('hosts').identity.solution, 'EntraId')), equals(steps('hosts').credentials.source, 'manual')), steps('hosts').credentials.domainJoinUserPrincipalName, '')]",
+				"virtualMachineAdminPassword": "[if(equals(steps('hosts').credentials.source, 'manual'), steps('hosts').credentials.localAdminPassword, '')]",
 				"virtualMachineAdminUserName": "[if(equals(steps('hosts').credentials.source, 'manual'), steps('hosts').credentials.localAdminUsername, '')]",
 				"credentialsKeyVaultResourceId": "[if(equals(steps('hosts').credentials.source, 'keyVault'), steps('hosts').credentials.keyVault.id, '')]",
 				"avdAgentsDSCPackage": "[steps('hosts').registration.avdAgentsDSCPackage]",
