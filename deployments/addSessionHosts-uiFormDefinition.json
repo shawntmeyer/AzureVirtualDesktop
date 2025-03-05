@@ -57,7 +57,7 @@
 							"condition": "[not(empty(steps('basics').hostPool))]",
 							"request": {
 								"method": "GET",
-								"path": "[concat(steps('basics').scope.hostPool.id, '?api-version=2024-04-03)]"
+								"path": "[concat(steps('basics').scope.hostPool.id, '?api-version=2024-04-03')]"
 							}
 						}
 					]
@@ -86,6 +86,7 @@
 								{
 									"name": "virtualMachineNamePrefix",
 									"type": "Microsoft.Common.TextBox",
+                                    "defaultValue": "[parse(steps('basics').hostPoolApi.properties.vmTemplate).namePrefix]",
 									"label": "Virtual Machine Name Prefix",
 									"toolTip": "Provide a Virtual Machine name prefix consisting of alphanumeric and dashes up to 12 characters long. A three character numeric suffix will be appended to the name padded with zeros (0).",
 									"constraints": {
@@ -173,7 +174,7 @@
 									"type": "Microsoft.Common.DropDown",
 									"label": "Image Source",
 									"filter": true,
-									"defaultValue": "Marketplace",
+									"defaultValue": "[if(equals(parse(steps('basics').hostPoolApi.properties.vmTemplate).imageType, 'CustomImage'), 'Compute Gallery', 'Marketplace')]",
 									"toolTip": "Select the type of image to deploy on the session hosts.",
 									"constraints": {
 										"required": true,
@@ -193,7 +194,7 @@
 									"name": "offer",
 									"type": "Microsoft.Common.DropDown",
 									"label": "Offer",
-									"defaultValue": "Office 365",
+									"defaultValue": "[parse(steps('basics').hostPoolApi.properties.vmTemplate).galleryImageOffer]",
 									"toolTip": "Select the desired marketplace image offer.",
 									"constraints": {
 										"allowedValues": [
@@ -227,7 +228,7 @@
 									"name": "sku",
 									"type": "Microsoft.Common.DropDown",
 									"label": "SKU",
-									"defaultValue": "win11-24h2-avd-m365",
+									"defaultValue": "[parse(steps('basics').hostPoolApi.properties.vmTemplate).galleryImageSKU]",
 									"toolTip": "Select the desired marketplace image SKU.",
 									"constraints": {
 										"allowedValues": "[map(steps('hosts').image.skuApi, (sku) => parse(concat('{\"label\":\"', sku.name, '\",\"value\":\"', sku.name, '\"}')))]",
@@ -261,6 +262,7 @@
 									"name": "imageDefinition",
 									"type": "Microsoft.Common.DropDown",
 									"label": "Image Definition",
+                                    "defaultValue": "[last(split(parse(steps('basics').hostPoolApi.properties.vmTemplate).customImageId, '/'))]",
 									"constraints": {
 										"allowedValues": "[steps('hosts').image.imageDefinitionsApi.transformed.list]",
 										"required": true
@@ -293,11 +295,11 @@
 									"type": "Microsoft.Common.DropDown",
 									"label": "Security Type",
 									"placeholder": "",
-									"defaultValue": "Trusted Launch",
+									"defaultValue": "[parse(steps('basics').hostPoolApi.properties.vmTemplate).securityType]",
 									"toolTip": "Select the appropriate Security Type configuration for the Virtual Machine. Note that 'Confidential Virtual Machines' are not available in all regions and the option may not appear.",
 									"constraints": {
-										"allowedValues": "[if(and(not(empty(steps('hosts').resourceSkusApi.transformed.confidentialVMSizes)), or(equals(steps('hosts').image.source, 'marketplace'), equals(steps('hosts').image.imageDefinitionApi.transformed.SecurityType, 'TrustedLaunchAndConfidentialVmSupported'))), parse('[{\"label\":\"Confidential Virtual Machine\",\"value\":\"ConfidentialVM\"},{\"label\":\"Standard\",\"value\":\"Standard\"},{\"label\":\"Trusted Launch\",\"value\":\"TrustedLaunch\"}]'), if(and(not(empty(steps('hosts').resourceSkusApi.transformed.confidentialVMSizes)), equals(steps('hosts').image.source, 'gallery'), equals(steps('hosts').image.imageDefinitionApi.transformed.SecurityType, 'ConfidentialVM')), parse('[{\"label\":\"Confidential Virtual Machine\",\"value\":\"ConfidentialVM\"}]'), if(and(not(empty(steps('hosts').resourceSkusApi.transformed.confidentialVMSizes)), equals(steps('hosts').image.source, 'gallery'), equals(steps('hosts').image.imageDefinitionApi.transformed.SecurityType, 'ConfidentialVmSupported')), parse('[{\"label\":\"Confidential Virtual Machine\",\"value\":\"ConfidentialVM\"},{\"label\":\"Standard\",\"value\":\"Standard\"}]'), if(and(equals(steps('hosts').image.source, 'gallery'), equals(steps('hosts').image.imageDefinitionApi.transformed.SecurityType, 'TrustedLaunch')), parse('[{\"label\":\"Trusted Launch\",\"value\":\"TrustedLaunch\"}]'), if(and(equals(steps('hosts').image.source, 'gallery'), contains(steps('hosts').image.imageDefinitionApi.transformed.SecurityType, 'TrustedLaunch'), contains(steps('hosts').image.imageDefinitionApi.transformed.SecurityType, 'Supported')), parse('[{\"label\":\"Standard\",\"value\":\"Standard\"},{\"label\":\"Trusted Launch\",\"value\":\"TrustedLaunch\"}]'), if(and(equals(steps('hosts').image.source, 'gallery'), or(equals(steps('hosts').image.imageDefinitionApi.transformed.SecurityType, 'ConfidentialVmSupported'), empty(steps('hosts').image.imageDefinitionApi.transformed.SecurityType))), parse('[{\"label\":\"Standard\",\"value\":\"Standard\"}]'), parse('[]')))))))]",
-										"required": true
+										"allowedValues": "[if(and(not(empty(steps('hosts').resourceSkusApi.transformed.confidentialVMSizes)), or(equals(steps('hosts').image.source, 'marketplace'), equals(steps('hosts').image.imageDefinitionApi.transformed.SecurityType, 'TrustedLaunchAndConfidentialVmSupported'))), parse('[{\"label\":\"Confidential Virtual Machine\",\"value\":\"ConfidentialVM\"},{\"label\":\"Standard\",\"value\":\"Standard\"},{\"label\":\"Trusted Launch\",\"value\":\"TrustedLaunch\"}]'), if(and(not(empty(steps('hosts').resourceSkusApi.transformed.confidentialVMSizes)), equals(steps('hosts').image.source, 'gallery'), equals(steps('hosts').image.imageDefinitionApi.transformed.SecurityType, 'ConfidentialVM')), parse('[{\"label\":\"Confidential Virtual Machine\",\"value\":\"ConfidentialVM\"}]'), if(and(not(empty(steps('hosts').resourceSkusApi.transformed.confidentialVMSizes)), equals(steps('hosts').image.source, 'gallery'), equals(steps('hosts').image.imageDefinitionApi.transformed.SecurityType, 'ConfidentialVmSupported')), parse('[{\"label\":\"Confidential Virtual Machine\",\"value\":\"ConfidentialVM\"},{\"label\":\"Standard\",\"value\":\"Standard\"}]'), if(and(equals(steps('hosts').image.source, 'gallery'), equals(steps('hosts').image.imageDefinitionApi.transformed.SecurityType, 'TrustedLaunch')), parse('[{\"label\":\"Trusted Launch\",\"value\":\"TrustedLaunch\"}]'), if(or(equals(steps('hosts').image.source, 'marketplace'), and(equals(steps('hosts').image.source, 'gallery'), contains(steps('hosts').image.imageDefinitionApi.transformed.SecurityType, 'TrustedLaunch'), contains(steps('hosts').image.imageDefinitionApi.transformed.SecurityType, 'Supported'))), parse('[{\"label\":\"Standard\",\"value\":\"Standard\"},{\"label\":\"Trusted Launch\",\"value\":\"TrustedLaunch\"}]'), if(and(equals(steps('hosts').image.source, 'gallery'), or(equals(steps('hosts').image.imageDefinitionApi.transformed.SecurityType, 'ConfidentialVmSupported'), empty(steps('hosts').image.imageDefinitionApi.transformed.SecurityType))), parse('[{\"label\":\"Standard\",\"value\":\"Standard\"}]'), parse('[]')))))))]",
+                                        "required": true
 									},
 									"visible": true
 								},
@@ -306,7 +308,7 @@
 									"type": "Microsoft.Common.CheckBox",
 									"label": "Enable Secure Boot",
 									"toolTip": "Secure boot helps protect your VMs against boot kits, rootkits, and kernel-level malware.",
-									"defaultValue": true,
+									"defaultValue": "[parse(steps('basics').hostPoolApi.properties.vmTemplate).secureBoot]",
 									"visible": "[not(equals(steps('hosts').security.securityType, 'Standard'))]"
 								},
 								{
@@ -314,7 +316,7 @@
 									"type": "Microsoft.Common.CheckBox",
 									"label": "Enable vTPM",
 									"toolTip": "Virtual Trusted Platform Module (vTPM) is TPM2.0 compliant and validates your VM boot integrity apart from securely storing keys and secrets.",
-									"defaultValue": true,
+									"defaultValue": "[parse(steps('basics').hostPoolApi.properties.vmTemplate).vTPM]",
 									"visible": "[not(equals(steps('hosts').security.securityType, 'Standard'))]"
 								},
 								{
@@ -581,7 +583,7 @@
 									"type": "Microsoft.Common.DropDown",
 									"label": "OS Disk SKU",
 									"filter": true,
-									"defaultValue": "Premium_LRS",
+									"defaultValue": "[parse(steps('basics').hostPoolApi.properties.vmTemplate).osDiskType]",
 									"toolTip": "Select the disk SKU for the operating system disk.",
 									"constraints": {
 										"required": true,
@@ -606,36 +608,31 @@
 									"type": "Microsoft.Common.DropDown",
 									"label": "OS Disk Size",
 									"placeholder": "",
-									"defaultValue": "Default from Image (Typically 128 GB)",
-									"toolTip": "",
+									"defaultValue": "[if(lessOrEquals(parse(steps('basics').hostPoolApi.properties.vmTemplate).diskSizeGB, 512), concat(parse(steps('basics').hostPoolApi.properties.vmTemplate).diskSizeGB, ' GB'), concat(div(parse(steps('basics').hostPoolApi.properties.vmTemplate).diskSizeGB, 1024), ' TB'))]",
 									"constraints": {
 										"allowedValues": [
 											{
-												"label": "Default from Image (Typically 128 GB)",
-												"value": 0
-											},
-											{
-												"label": "Resize to 64 GB (P6)",
+												"label": "64 GB",
 												"value": 64
 											},
 											{
-												"label": "Resize to 128 GB (P10)",
+												"label": "128 GB",
 												"value": 128
 											},
 											{
-												"label": "Resize to 256 GB (P15)",
+												"label": "256 GB",
 												"value": 256
 											},
 											{
-												"label": "Resize to 512 GB (P20)",
+												"label": "512 GB",
 												"value": 512
 											},
 											{
-												"label": "Resize to 1 TB (P30)",
+												"label": "1 TB",
 												"value": 1024
 											},
 											{
-												"label": "Resize to 2 TB (P40)",
+												"label": "2 TB",
 												"value": 2048
 											}
 										],
@@ -649,18 +646,7 @@
 									"label": "Size",
 									"toolTip": "Select the size of the virtual machines. Multi-session hosts should have 4 - 24 vCPUs. Single session host should have 2 or more vCPUs.",
 									"recommendedSizes": [
-										"Standard_D4ads_v5",
-										"Standard_D8ads_v5",
-										"Standard_D16ads_v5",
-										"Standard_D32ads_v5",
-										"Standard_D4ds_v4",
-										"Standard_D8ds_v4",
-										"Standard_D16ds_v4",
-										"Standard_D32ds_v4",
-										"Standard_D4s_v3",
-										"Standard_D8s_v3",
-										"Standard_D16s_v3",
-										"Standard_D32s_v3"
+                                        "[parse(steps('basics').hostPoolApi.properties.vmTemplate).virtualMachineSize]"										
 									],
 									"options": {
 										"hideDiskTypeFilter": "[if(equals(steps('hosts').specs.diskSku, 'Premium_LRS'), true, false)]"
@@ -677,7 +663,7 @@
 									"name": "sizeConfidentialVM",
 									"type": "Microsoft.Common.DropDown",
 									"label": "Virtual Machine Size",
-									"defaultValue": "[if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), 'Standard_DC4ads_v5' ,'Standard_D4ads_v5')]",
+									"defaultValue": "[parse(steps('basics').hostPoolApi.properties.vmTemplate).virtualMachineSize]",
 									"toolTip": "Select the size of the virtual machines. Multi-session hosts should have 4 - 24 vCPUs. Single session host should have 2 or more vCPUs.",
 									"defaultDescription": "",
 									"constraints": {
@@ -698,6 +684,7 @@
 									"name": "hibernationEnabled",
 									"type": "Microsoft.Common.CheckBox",
 									"label": "Enable Hibernation",
+                                    "defaultValue": "[parse(steps('basics').hostPoolApi.properties.vmTemplate).hibernate]",
 									"toolTip": "Hibernation allows you to pause VMs that aren't being used and save on compute costs where the VMs don't need to run 24/7.",
 									"visible": "[and(equals(steps('controlPlane').hostPool.type, 'Personal'), bool(first(map(filter(first(map(filter(steps('hosts').resourceSkusApi.value, (sku) => contains(sku.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (sku) => sku.capabilities)), (sku) => equals(sku.name, 'HibernationSupported')), (sku) => sku.value))), or(equals(steps('hosts').image.source, 'marketplace'), bool(steps('hosts').image.imageDefinitionApi.transformed.IsHibernateSupported)))]"
 								}
@@ -823,87 +810,6 @@
 							"label": "Credentials",
 							"elements": [
 								{
-									"name": "source",
-									"type": "Microsoft.Common.OptionsGroup",
-									"label": "[if(equals(steps('hosts').identity.solution, 'EntraId'), 'VM Admin Credentials source', 'Domain Join and VM Admin Credentials source')]",
-									"defaultValue": "Manual Entry",
-									"toolTip": "Select 'Manual Entry' to specify the secrets manually or 'Key Vault' to reference secrets from a Key Vault.",
-									"constraints": {
-										"allowedValues": [
-											{
-												"label": "Key Vault",
-												"value": "keyVault"
-											},
-											{
-												"label": "Manual Entry",
-												"value": "manual"
-											}
-										],
-										"required": true
-									},
-									"visible": true
-								},
-								{
-									"name": "domainJoinUserPrincipalName",
-									"type": "Microsoft.Common.TextBox",
-									"label": "Domain Join Account UserPrincipalName",
-									"toolTip": "Enter the user principal name with domain join privileges.",
-									"placeholder": "domainjoin@contoso.com",
-									"constraints": {
-										"required": true,
-										"regex": "^[a-z0-9A-Z_.-]+@(?:[a-z0-9]+\\.)+[a-z]+$",
-										"validationMessage": "The value must be a valid user principal name."
-									},
-									"visible": "[and(not(equals(steps('hosts').identity.solution, 'EntraId')), equals(steps('hosts').credentials.source, 'manual'))]"
-								},
-								{
-									"name": "domainJoinUserPassword",
-									"type": "Microsoft.Common.PasswordBox",
-									"label": {
-										"password": "Domain Join Account Password",
-										"confirmPassword": "Confirm Password"
-									},
-									"toolTip": "Enter a password that is alphanumeric, contains at least 12 characters, 1 letter, 1 number and 1 special character.",
-									"constraints": {
-										"required": true
-									},
-									"options": {
-										"hideConfirmation": false
-									},
-									"visible": "[and(not(equals(steps('hosts').identity.solution, 'EntraId')), equals(steps('hosts').credentials.source, 'manual'))]"
-								},
-								{
-									"name": "localAdminUsername",
-									"type": "Microsoft.Common.TextBox",
-									"label": "Local Admin Username",
-									"defaultValue": "",
-									"toolTip": "Input the username for the local administrator account.",
-									"constraints": {
-										"required": true,
-										"regex": "",
-										"validationMessage": ""
-									},
-									"visible": "[equals(steps('hosts').credentials.source, 'manual')]"
-								},
-								{
-									"name": "localAdminPassword",
-									"type": "Microsoft.Common.PasswordBox",
-									"label": {
-										"password": "Local Admin Password",
-										"confirmPassword": "Confirm Password"
-									},
-									"toolTip": "Input the password for the local administrator account.",
-									"constraints": {
-										"required": true,
-										"regex": "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=_!*<>()])(?=\\S+$).{12,123}$",
-										"validationMessage": "The value must be within 12 to 123 characters, be alphanumeric, and include 1 lower case character, 1 upper case character, 1 number, and 1 special character that is not '//' or '-'."
-									},
-									"options": {
-										"hideConfirmation": false
-									},
-									"visible": "[equals(steps('hosts').credentials.source, 'manual')]"
-								},
-								{
 									"name": "secretsInfoBox1",
 									"type": "Microsoft.Common.InfoBox",
 									"visible": "[and(equals(steps('hosts').identity.solution, 'EntraId'), equals(steps('hosts').credentials.source, 'keyVault'))]",
@@ -929,8 +835,7 @@
 									"toolTip": "Select Keyvault which contains the domain join secrets",
 									"constraints": {
 										"required": true
-									},
-									"visible": "[equals(steps('hosts').credentials.source, 'keyVault')]"
+									}
 								}
 							]
 						},

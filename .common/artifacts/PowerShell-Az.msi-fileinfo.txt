@@ -1,5 +1,5 @@
-DownloadUrl = https://github.com/Azure/azure-powershell/releases/download/v13.2.0-February2025/Az-Cmdlets-13.2.0.39336-x64.msi
-Download File = Az-Cmdlets-13.2.0.39336-x64.msi
+DownloadUrl = https://github.com/Azure/azure-powershell/releases/download/v13.3.0-March2025/Az-Cmdlets-13.3.0.39388-x64.msi
+Download File = Az-Cmdlets-13.3.0.39388-x64.msi
 
 File                   : {PowerShell-Az.msi}
 UpgradeCode            : {EBC1AD5E-1BBE-45B5-9E8D-ACFC8951C253}
@@ -10,10 +10,10 @@ ARPNOMODIFY            : 1
 POWERSHELLEXE          : c:\windows\system32\WindowsPowerShell\v1.0\powershell.exe
 ARPPRODUCTICON         : icon.ico
 Manufacturer           : Microsoft Corporation
-ProductCode            : {F3B9C56D-FBF0-4DB5-A623-2E7B3036E421}
+ProductCode            : {617D26F4-5068-4A1F-8D92-B75A71D4038B}
 ProductLanguage        : 1033
-ProductName            : Microsoft Azure PowerShell - February 2025
-ProductVersion         : 13.2.0.39336
+ProductName            : Microsoft Azure PowerShell - March 2025
+ProductVersion         : 13.3.0.39388
 DefaultUIFont          : WixUI_Font_Normal
 WixUI_Mode             : Minimal
 ErrorDialog            : ErrorDlg

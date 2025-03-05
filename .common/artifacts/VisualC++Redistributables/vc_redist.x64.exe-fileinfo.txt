@@ -1,0 +1,2 @@
+DownloadUrl = https://aka.ms/vs/17/release/vc_redist.x64.exe
+@{ProductVersion=14.42.34438.0; FileVersion=14.42.34438.0}
