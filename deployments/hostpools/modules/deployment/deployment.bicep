@@ -72,7 +72,7 @@ var roleAssignmentsHosts = union(
       subscription: subscription().subscriptionId
     }
     {
-      roleDefinitionId: roleDefinitions.RoleBasedAccessControlAdministrator // (Purpose: remove the hosts rsource group role assignment for the deployment identity. This role Assignment must remain last in the list.)
+      roleDefinitionId: roleDefinitions.RoleBasedAccessControlAdministrator // (Purpose: remove the hosts resource group role assignment for the deployment identity. This role Assignment must remain last in the list.)
       depName: 'Hosts-RBACAdmin'
       resourceGroup: resourceGroupHosts
       subscription: subscription().subscriptionId

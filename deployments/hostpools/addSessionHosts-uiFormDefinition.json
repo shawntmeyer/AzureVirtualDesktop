@@ -335,45 +335,26 @@
 							"label": "Disk Encryption Options",
 							"elements": [
 								{
-									"name": "diskEncryptionTextBlock",
-									"type": "Microsoft.Common.TextBlock",
-									"visible": true,
-									"options": {
-										"text": "There are several types of encryption available for your managed disks including Azure Disk Storage Server-Side Encryption (SSE), Encryption at Host (EAH), and Confidential disk encryption (when the Confidential VM security type is selected)."
-									}
+									"name": "useDiskEncryptionSet",
+									"type": "Microsoft.Common.CheckBox",
+									"label": "Enable Customer-Managed Keys or Confidential VM Disk Encryption",
+									"toolTip": "Check to select an existing Disk Encryption Set",
+									"defaultValue": "[if(equals(steps('basics').prereqs.encryptionAtHostFeatureApi.properties.state, 'Registered'), true, false)]",
+									"visible": "[not(equals(steps('hosts').security.securityType, 'ConfidentialVM'))]"
 								},
 								{
-									"name": "sseTextBlock",
-									"type": "Microsoft.Common.TextBlock",
-									"visible": true,
-									"options": {
-										"text": "<ul><li><b>Azure Disk Storage Server-Side Encryption</b> is always enabled and automatically encrypts your data stored on Azure managed disks (OS and data disks) when persisting on the storage clusters.</li></ul>"
-									}
-								},
-								{
-									"name": "encryptionAtHostTextBlock",
-									"type": "Microsoft.Common.TextBlock",
-									"visible": true,
-									"options": {
-										"text": "<ul><li><b>Encryption at host</b> enhances Azure Disk Storage Server-Side Encryption to ensure that all temp disks and disk caches are encrypted at rest and flow encrypted to the Storage clusters.</li></ul>",
-										"link": {
-											"label": "Learn more",
-											"uri": "http://go.microsoft.com/fwlink/?LinkId=2133517"
-										}
-									}
-								},
-								{
-									"name": "confidentialVMEncryptionTextBlock",
-									"type": "Microsoft.Common.TextBlock",
-									"visible": "[equals(steps('hosts').security.securityType, 'ConfidentialVM')]",
-									"options": {
-										"text": "<ul><li><b>Confidential disk encryption</b> binds disk encryption keys to the virtual machine's TPM and makes the protected disk content accessible only to the VM. The TPM and VM guest state is always encrypted in attested code using keys released by a secure protocol that bypasses the hypervisor and host operating system. Currently only available for the OS disk. Encryption at host may be used for other disks on a Confidential VM in addition to Confidential Disk Encryption.</li></ul>",
-										"link": {
-											"label": "Learn more",
-											"uri": "http://go.microsoft.com/fwlink/?LinkId=2133517"
-										}
-									}
-								},
+                                    "name": "diskEncryptionSetApi",
+                                    "type": "Microsoft.Solutions.ArmApiControl",
+                                    "condition": "[steps('hosts').diskEncryption.useDiskEncryptionSet]",
+                                    "request": {
+                                        "method": "GET",
+                                        "path": "[concat(steps('basics').resourceScope.resourceGroup.id, '/providers/Microsoft.Compute/diskEncryptionSets?api-version=2024-03-02')]",
+                                        "transforms": {
+                                            "list": "value|[*].{label:name, value:id}"
+                                        }
+                                    }
+                                },
+								
 								{
 									"name": "encryptionAtHost",
 									"type": "Microsoft.Common.CheckBox",
@@ -382,24 +363,8 @@
 									"defaultValue": "[if(equals(steps('basics').prereqs.encryptionAtHostFeatureApi.properties.state, 'Registered'), true, false)]",
 									"visible": "[not(equals(steps('hosts').security.securityType, 'ConfidentialVM'))]"
 								},
-								{
-									"name": "encryptionAtHostNotRegisteredErrorBox",
-									"type": "Microsoft.Common.InfoBox",
-									"visible": "[and(not(equals(steps('basics').prereqs.encryptionAtHostFeatureApi.properties.state, 'Registered')), steps('hosts').diskEncryption.encryptionAtHost)]",
-									"options": {
-										"style": "Error",
-										"text": "The 'Encryption At Host' feature is not registered in your subscription. Follow the guidance at this link to enable the feature and restart the deployment.",
-										"uri": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-enable-host-based-encryption-portal?tabs=azure-powershell"
-									}
-								},
-								{
-									"name": "confidentialVMOSDiskEncryption",
-									"type": "Microsoft.Common.CheckBox",
-									"label": "Confidential OS Disk Encryption",
-									"toolTip": "Check to enable Confidential VM disk encryption",
-									"defaultValue": true,
-									"visible": "[equals(steps('hosts').security.securityType, 'ConfidentialVM')]"
-								},
+								
+								
 								{
 									"name": "keyManagementTextBlock",
 									"type": "Microsoft.Common.TextBlock",

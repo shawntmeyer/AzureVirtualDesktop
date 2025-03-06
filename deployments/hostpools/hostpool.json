@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "11687654285983969198"
+      "templateHash": "6930813446303396825"
     }
   },
   "parameters": {
@@ -1687,9 +1687,6 @@
           "globalFeedPrivateEndpointSubnetResourceId": {
             "value": "[parameters('globalFeedPrivateEndpointSubnetResourceId')]"
           },
-          "customImageResourceId": {
-            "value": "[parameters('customImageResourceId')]"
-          },
           "dedicatedHostGroupResourceId": {
             "value": "[parameters('dedicatedHostGroupResourceId')]"
           },
@@ -1701,12 +1698,6 @@
           },
           "deployScalingPlan": {
             "value": "[parameters('deployScalingPlan')]"
-          },
-          "diskSizeGB": {
-            "value": "[parameters('diskSizeGB')]"
-          },
-          "diskSku": {
-            "value": "[parameters('diskSku')]"
           },
           "domainName": {
             "value": "[parameters('domainName')]"
@@ -1729,23 +1720,11 @@
           "fslogixStorageService": {
             "value": "[parameters('fslogixStorageService')]"
           },
-          "hibernationEnabled": {
-            "value": "[parameters('hibernationEnabled')]"
-          },
           "hostPoolType": {
             "value": "[parameters('hostPoolType')]"
           },
           "identitySolution": {
             "value": "[parameters('identitySolution')]"
-          },
-          "imageOffer": {
-            "value": "[parameters('imageOffer')]"
-          },
-          "imagePublisher": {
-            "value": "[parameters('imagePublisher')]"
-          },
-          "imageSku": {
-            "value": "[parameters('imageSku')]"
           },
           "locations": {
             "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.locations.value]"
@@ -1798,23 +1777,8 @@
           "sessionHostIndex": {
             "value": "[parameters('sessionHostIndex')]"
           },
-          "securityType": {
-            "value": "[parameters('securityType')]"
-          },
-          "secureBootEnabled": {
-            "value": "[parameters('secureBootEnabled')]"
-          },
-          "vTpmEnabled": {
-            "value": "[parameters('vTpmEnabled')]"
-          },
           "tags": {
             "value": "[parameters('tags')]"
-          },
-          "virtualMachineNamePrefix": {
-            "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.virtualMachineNamePrefix.value]"
-          },
-          "virtualMachineSize": {
-            "value": "[parameters('virtualMachineSize')]"
           },
           "vmOUPath": {
             "value": "[parameters('vmOUPath')]"
@@ -1830,7 +1794,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "13222494362581018206"
+              "templateHash": "10287475372448783855"
             }
           },
           "parameters": {
@@ -1841,9 +1805,6 @@
               "type": "array"
             },
             "avdPrivateLinkPrivateRoutes": {
-              "type": "string"
-            },
-            "customImageResourceId": {
               "type": "string"
             },
             "globalFeedPrivateEndpointSubnetResourceId": {
@@ -1858,12 +1819,6 @@
             "deployScalingPlan": {
               "type": "bool",
               "defaultValue": false
-            },
-            "diskSizeGB": {
-              "type": "int"
-            },
-            "diskSku": {
-              "type": "string"
             },
             "domainName": {
               "type": "string"
@@ -1889,21 +1844,9 @@
             "fslogixStorageService": {
               "type": "string"
             },
-            "hibernationEnabled": {
-              "type": "bool"
-            },
             "hostPoolType": {
               "type": "string",
               "defaultValue": "Pooled DepthFirst"
-            },
-            "imageOffer": {
-              "type": "string"
-            },
-            "imagePublisher": {
-              "type": "string"
-            },
-            "imageSku": {
-              "type": "string"
             },
             "locations": {
               "type": "object"
@@ -1962,23 +1905,8 @@
             "sessionHostIndex": {
               "type": "int"
             },
-            "securityType": {
-              "type": "string"
-            },
-            "secureBootEnabled": {
-              "type": "bool"
-            },
-            "vTpmEnabled": {
-              "type": "bool"
-            },
             "tags": {
               "type": "object"
-            },
-            "virtualMachineNamePrefix": {
-              "type": "string"
-            },
-            "virtualMachineSize": {
-              "type": "string"
             },
             "vmOUPath": {
               "type": "string"
@@ -2044,9 +1972,7 @@
             "fslogixStorageSolution": "[split(parameters('fslogixStorageService'), ' ')[0]]",
             "storageSuffix": "[environment().suffixes.storage]",
             "timeDifference": "[parameters('locations')[parameters('locationVirtualMachines')].timeDifference]",
-            "timeZone": "[parameters('locations')[parameters('locationVirtualMachines')].timeZone]",
-            "virtualMachineTemplateImage": "[if(empty(parameters('customImageResourceId')), createObject('imageType', 'Gallery', 'galleryImageOffer', parameters('imageOffer'), 'galleryImagePublisher', parameters('imagePublisher'), 'galleryImageSKU', parameters('imageSku'), 'customImageId', null()), createObject('imageType', 'CustomImage', 'galleryImageOffer', null(), 'galleryImagePublisher', null(), 'galleryImageSKU', null(), 'customImageId', parameters('customImageResourceId')))]",
-            "virtualMachineTemplate": "[union(variables('virtualMachineTemplateImage'), createObject('namePrefix', parameters('virtualMachineNamePrefix'), 'osDiskType', parameters('diskSku'), 'diskSizeGB', parameters('diskSizeGB'), 'virtualMachineSize', parameters('virtualMachineSize'), 'hibernate', parameters('hibernationEnabled'), 'securityType', parameters('securityType'), 'secureBoot', parameters('secureBootEnabled'), 'vTPM', parameters('vTpmEnabled')))]"
+            "timeZone": "[parameters('locations')[parameters('locationVirtualMachines')].timeZone]"
           },
           "resources": [],
           "outputs": {
@@ -2141,10 +2067,6 @@
             "timeZone": {
               "type": "string",
               "value": "[variables('timeZone')]"
-            },
-            "virtualMachineTemplate": {
-              "type": "string",
-              "value": "[string(variables('virtualMachineTemplate'))]"
             }
           }
         }
@@ -4896,6 +4818,9 @@
           "hostPoolValidationEnvironment": {
             "value": "[parameters('hostPoolValidationEnvironment')]"
           },
+          "hostPoolVmTemplate": {
+            "value": "[string(createObject('namePrefix', parameters('virtualMachineNamePrefix'), 'imageType', if(empty(parameters('customImageResourceId')), 'Gallery', 'CustomImage'), 'customImageId', if(empty(parameters('customImageResourceId')), null(), parameters('customImageResourceId')), 'galleryImageOffer', if(empty(parameters('customImageResourceId')), parameters('imageOffer'), null()), 'galleryImagePublisher', if(empty(parameters('customImageResourceId')), parameters('imagePublisher'), null()), 'galleryImageSKU', if(empty(parameters('customImageResourceId')), parameters('imageSku'), null()), 'osDiskType', parameters('diskSku'), 'diskSizeGB', parameters('diskSizeGB'), 'virtualMachineSize', parameters('virtualMachineSize'), 'encryptionAtHost', parameters('encryptionAtHost'), 'acceleratedNetworking', parameters('enableAcceleratedNetworking'), 'diskEncryptionSetName', if(parameters('confidentialVMOSDiskEncryption'), reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.diskEncryptionSetNames.value.ConfidentialVMs, if(startsWith(parameters('keyManagementDisks'), 'CustomerManaged'), reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.diskEncryptionSetNames.value.CustomerManaged, if(contains(parameters('keyManagementDisks'), 'PlatformManagedAndCustomerManaged'), reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.diskEncryptionSetNames.value.PlatformAndCustomerManaged, null()))), 'hibernate', parameters('hibernationEnabled'), 'securityType', parameters('securityType'), 'secureBoot', parameters('secureBootEnabled'), 'vTPM', parameters('vTpmEnabled')))]"
+          },
           "locationControlPlane": {
             "value": "[parameters('locationControlPlane')]"
           },
@@ -4943,9 +4868,6 @@
           "timeStamp": {
             "value": "[parameters('timeStamp')]"
           },
-          "virtualMachineTemplate": {
-            "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Logic_{0}', parameters('timeStamp'))), '2022-09-01').outputs.virtualMachineTemplate.value]"
-          },
           "virtualMachinesTimeZone": {
             "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Logic_{0}', parameters('timeStamp'))), '2022-09-01').outputs.timeZone.value]"
           },
@@ -4969,24 +4891,27 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "14266569514592499181"
+              "templateHash": "17792276541601147320"
             }
           },
           "parameters": {
+            "appGroupSecurityGroups": {
+              "type": "array"
+            },
             "avdPrivateDnsZoneResourceId": {
               "type": "string"
             },
             "avdPrivateLinkPrivateRoutes": {
               "type": "string"
             },
-            "hostPoolRDPProperties": {
+            "deploymentUserAssignedIdentityClientId": {
+              "type": "string"
+            },
+            "deploymentVirtualMachineName": {
               "type": "string"
             },
             "deployScalingPlan": {
               "type": "bool"
-            },
-            "deploymentUserAssignedIdentityClientId": {
-              "type": "string"
             },
             "desktopApplicationGroupName": {
               "type": "string"
@@ -4994,19 +4919,46 @@
             "desktopFriendlyName": {
               "type": "string"
             },
+            "enableMonitoring": {
+              "type": "bool"
+            },
             "existingGlobalWorkspaceResourceId": {
               "type": "string"
             },
             "existingFeedWorkspaceResourceId": {
               "type": "string"
             },
+            "globalFeedPrivateDnsZoneResourceId": {
+              "type": "string"
+            },
+            "globalFeedPrivateEndpointSubnetResourceId": {
+              "type": "string"
+            },
             "globalWorkspaceName": {
               "type": "string"
+            },
+            "hostPoolMaxSessionLimit": {
+              "type": "int"
             },
             "hostPoolName": {
               "type": "string"
             },
+            "hostPoolPrivateEndpointSubnetResourceId": {
+              "type": "string"
+            },
+            "hostPoolPublicNetworkAccess": {
+              "type": "string"
+            },
+            "hostPoolRDPProperties": {
+              "type": "string"
+            },
             "hostPoolType": {
+              "type": "string"
+            },
+            "hostPoolValidationEnvironment": {
+              "type": "bool"
+            },
+            "hostPoolVmTemplate": {
               "type": "string"
             },
             "locationControlPlane": {
@@ -5021,40 +4973,19 @@
             "logAnalyticsWorkspaceResourceId": {
               "type": "string"
             },
-            "deploymentVirtualMachineName": {
-              "type": "string"
-            },
-            "hostPoolMaxSessionLimit": {
-              "type": "int"
-            },
-            "hostPoolPublicNetworkAccess": {
-              "type": "string"
-            },
-            "enableMonitoring": {
-              "type": "bool"
-            },
             "privateEndpointNameConv": {
               "type": "string"
             },
             "privateEndpointNICNameConv": {
               "type": "string"
             },
-            "globalFeedPrivateDnsZoneResourceId": {
-              "type": "string"
-            },
-            "globalFeedPrivateEndpointSubnetResourceId": {
-              "type": "string"
-            },
-            "hostPoolPrivateEndpointSubnetResourceId": {
-              "type": "string"
-            },
             "resourceGroupControlPlane": {
               "type": "string"
             },
-            "resourceGroupGlobalFeed": {
+            "resourceGroupDeployment": {
               "type": "string"
             },
-            "resourceGroupDeployment": {
+            "resourceGroupGlobalFeed": {
               "type": "string"
             },
             "roleDefinitions": {
@@ -5069,31 +5000,22 @@
             "scalingPlanSchedules": {
               "type": "array"
             },
-            "appGroupSecurityGroups": {
-              "type": "array"
-            },
             "tags": {
               "type": "object"
             },
             "timeStamp": {
               "type": "string"
             },
-            "hostPoolValidationEnvironment": {
-              "type": "bool"
-            },
-            "virtualMachineTemplate": {
+            "virtualMachinesTimeZone": {
               "type": "string"
             },
-            "virtualMachinesTimeZone": {
+            "workspaceFeedPrivateEndpointSubnetResourceId": {
               "type": "string"
             },
             "workspaceFriendlyName": {
               "type": "string"
             },
             "workspaceName": {
-              "type": "string"
-            },
-            "workspaceFeedPrivateEndpointSubnetResourceId": {
               "type": "string"
             },
             "workspacePublicNetworkAccess": {
@@ -5291,7 +5213,7 @@
                     "value": "[parameters('timeStamp')]"
                   },
                   "virtualMachineTemplate": {
-                    "value": "[parameters('virtualMachineTemplate')]"
+                    "value": "[parameters('hostPoolVmTemplate')]"
                   }
                 },
                 "template": {

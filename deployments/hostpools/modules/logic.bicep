@@ -3,14 +3,13 @@ targetScope = 'subscription'
 param identitySolution string
 param appGroupSecurityGroups array
 param avdPrivateLinkPrivateRoutes string
-param customImageResourceId string
 param globalFeedPrivateEndpointSubnetResourceId string
 param dedicatedHostGroupResourceId string
 param dedicatedHostResourceId string
+param deploymentType string
 param deployScalingPlan bool = false
-param diskSizeGB int
-param diskSku string
 param domainName string
+param drainMode bool
 param deployFSLogixStorage bool
 param fslogixContainerType string
 param fslogixFileShareNames object
@@ -18,11 +17,7 @@ param fslogixOUPath string
 param fslogixShardOptions string
 param fslogixShardGroups array
 param fslogixStorageService string
-param hibernationEnabled bool
 param hostPoolType string = 'Pooled DepthFirst'
-param imageOffer string
-param imagePublisher string
-param imageSku string
 param locations object
 param locationVirtualMachines string
 param resourceGroupControlPlane string
@@ -40,12 +35,7 @@ param scalingPlanForceLogoff bool = false
 param scalingPlanMinsBeforeLogoff int = 0
 param sessionHostCount int
 param sessionHostIndex int
-param securityType string
-param secureBootEnabled bool
-param vTpmEnabled bool
 param tags object
-param virtualMachineNamePrefix string
-param virtualMachineSize string
 param vmOUPath string
 param workspaceResourceId string
 
@@ -150,7 +140,7 @@ var countStorage = identitySolution == 'EntraId' || identitySolution == 'EntraId
 var netbios = split(domainName, '.')[0]
 var pooledHostPool = split(hostPoolType, ' ')[0] == 'Pooled' ? true : false
 
-var resGroupDeployment = [resourceGroupDeployment]
+var resGroupDeployment = deploymentType == 'Complete' || drainMode ? [resourceGroupDeployment] : []
 var resGroupHosts = [resourceGroupHosts]
 var resGroupControlPlane = empty(workspaceResourceId) ? [resourceGroupControlPlane] : []
 var resGroupGlobalFeed = avdPrivateLinkPrivateRoutes == 'All' && !empty(globalFeedPrivateEndpointSubnetResourceId)
@@ -196,33 +186,6 @@ var storageSuffix = environment().suffixes.storage
 var timeDifference = locations[locationVirtualMachines].timeDifference
 var timeZone = locations[locationVirtualMachines].timeZone
 
-var virtualMachineTemplateImage = empty(customImageResourceId)
-  ? {
-      imageType: 'Gallery'
-      galleryImageOffer: imageOffer
-      galleryImagePublisher: imagePublisher
-      galleryImageSKU: imageSku
-      customImageId: null
-    }
-  : {
-      imageType: 'CustomImage'
-      galleryImageOffer: null
-      galleryImagePublisher: null
-      galleryImageSKU: null
-      customImageId: customImageResourceId
-    }
-
-var virtualMachineTemplate = union(virtualMachineTemplateImage, {
-  namePrefix: virtualMachineNamePrefix
-  osDiskType: diskSku
-  diskSizeGB: diskSizeGB
-  virtualMachineSize: virtualMachineSize
-  hibernate: hibernationEnabled
-  securityType: securityType
-  secureBoot: secureBootEnabled
-  vTPM: vTpmEnabled
-})
-
 output availabilitySetsCount int = availabilitySetsCount
 output beginAvSetRange int = beginAvSetRange
 output dedicatedHostGroupZones array = !empty(dedicatedHostGroupName) ? dedicatedHostGroup.zones : []
@@ -246,4 +209,3 @@ output storageSuffix string = storageSuffix
 output tags object = varTags
 output timeDifference string = timeDifference
 output timeZone string = timeZone
-output virtualMachineTemplate string = string(virtualMachineTemplate)

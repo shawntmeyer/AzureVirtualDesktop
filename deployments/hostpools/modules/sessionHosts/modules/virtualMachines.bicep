@@ -12,6 +12,7 @@ param dataCollectionEndpointResourceId string
 param dedicatedHostGroupResourceId string
 param dedicatedHostGroupZones array
 param dedicatedHostResourceId string
+param deploymentUserAssignedIdentityClientId string
 param deploymentVirtualMachineName string
 param diskAccessId string
 param diskEncryptionSetResourceId string
@@ -24,7 +25,7 @@ param domainJoinUserPassword string
 param domainJoinUserPrincipalName string
 param domainName string
 param drainMode bool
-param drainModeUserAssignedIdentityClientId string
+
 param enableAcceleratedNetworking bool
 param enableMonitoring bool
 param encryptionAtHost bool
@@ -655,7 +656,7 @@ module setDrainMode '../../../../sharedModules/resources/compute/virtual-machine
       }      
       {
         name: 'UserAssignedIdentityClientId'
-        value: drainModeUserAssignedIdentityClientId
+        value: deploymentUserAssignedIdentityClientId
       }
       {
         name: 'VirtualMachineNamePrefix'
