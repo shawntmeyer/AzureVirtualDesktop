@@ -3,6 +3,7 @@ param hostPoolRDPProperties string
 param hostPoolName string
 param hostPoolPublicNetworkAccess string
 param hostPoolType string
+//param hostPoolVmTemplateTags object = {}
 param location string
 param logAnalyticsWorkspaceResourceId string
 param privateEndpoint bool
@@ -16,12 +17,33 @@ param tags object
 param timeStamp string
 param time string = utcNow('u')
 param hostPoolValidationEnvironment bool
-param virtualMachineTemplate string
+param virtualMachineTemplate object
+
+var hostPoolVmTemplateTags = {
+  vmDomain: virtualMachineTemplate.domain
+  vmOUPath: virtualMachineTemplate.ouPath
+  vmNamePrefix: virtualMachineTemplate.namePrefix
+  vmImageType: virtualMachineTemplate.imageType
+  vmCustomImageId: virtualMachineTemplate.customImageId
+  vmImageOffer: virtualMachineTemplate.galleryImageOffer
+  vmImagePublisher: virtualMachineTemplate.galleryImagePublisher
+  vmImageSKU: virtualMachineTemplate.galleryImageSKU
+  vmOSDiskType: virtualMachineTemplate.osDiskType
+  vmDiskSizeGB: virtualMachineTemplate.diskSizeGB
+  vmSize: virtualMachineTemplate.vmSize.id
+  vmEncryptionAtHost: virtualMachineTemplate.encryptionAtHost
+  vmAcceleratedNetworking: virtualMachineTemplate.acceleratedNetworking
+  vmDiskEncryptionSetName: virtualMachineTemplate.diskEncryptionSetName
+  vmHibernate: virtualMachineTemplate.hibernationEnabled
+  vmSecurityType: virtualMachineTemplate.securityType
+  vmSecureBoot: virtualMachineTemplate.secureBootEnabled
+  vmVirtualTPM: virtualMachineTemplate.virtualTpmEnabled
+}
 
 resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' = {
   name: hostPoolName
   location: location
-  tags: union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroup().name}/providers/Microsoft.DesktopVirtualization/hostPools/${hostPoolName}'}, tags[?'Microsoft.DesktopVirtualization/hostPools'] ?? {})
+  tags: union(hostPoolVmTemplateTags, {'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroup().name}/providers/Microsoft.DesktopVirtualization/hostPools/${hostPoolName}'}, tags[?'Microsoft.DesktopVirtualization/hostPools'] ?? {})
   properties: {
     hostPoolType: split(hostPoolType, ' ')[0]
     maxSessionLimit: hostPoolMaxSessionLimit
@@ -36,7 +58,7 @@ resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' = {
     personalDesktopAssignmentType: contains(hostPoolType, 'Personal') ? split(hostPoolType, ' ')[1] : null
     publicNetworkAccess: hostPoolPublicNetworkAccess
     startVMOnConnect: true
-    vmTemplate: virtualMachineTemplate
+    vmTemplate: string(virtualMachineTemplate)
   }
 }
 

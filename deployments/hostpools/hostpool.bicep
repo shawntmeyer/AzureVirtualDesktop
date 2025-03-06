@@ -252,6 +252,12 @@ param diskSku string = 'Premium_LRS'
 @description('Optional. The VM SKU for the AVD session hosts.')
 param virtualMachineSize string = 'Standard_D4ads_v5'
 
+@description('Optional. The Number of cores for the AVD session hosts.')
+param vCPUs int = 0
+
+@description('Optional. The amount of memory in GB for the AVD session hosts.')
+param memoryGB int = 0
+
 @description('Optional. Determines whether or not to enable accelerated networking for the session host VMs.')
 param enableAcceleratedNetworking bool = true
 
@@ -622,17 +628,24 @@ var locationGlobalFeed = !empty(globalFeedPrivateEndpointSubnetResourceId)
 var resourceGroupsCount = 3 + (empty(existingFeedWorkspaceResourceId) ? 1 : 0) + (deployFSLogixStorage ? 1 : 0) + (avdPrivateLinkPrivateRoutes == 'All' && !empty(globalFeedPrivateEndpointSubnetResourceId)
   ? 1
   : 0)
-
 var hostPoolVmTemplate = {
+  domain: !empty(domainName) ? domainName : null
+  ouPath: !empty(vmOUPath) ? vmOUPath : null
   namePrefix: virtualMachineNamePrefix
   imageType: empty(customImageResourceId) ? 'Gallery' : 'CustomImage'
+  imageUri: null
   customImageId: empty(customImageResourceId) ? null : customImageResourceId
   galleryImageOffer: empty(customImageResourceId) ? imageOffer : null
   galleryImagePublisher: empty(customImageResourceId) ? imagePublisher : null
   galleryImageSKU: empty(customImageResourceId) ? imageSku : null
   osDiskType: diskSku
   diskSizeGB: diskSizeGB
-  virtualMachineSize: virtualMachineSize
+  useManagedDisks: true
+  vmSize: {
+    id: virtualMachineSize
+    cores: vCPUs == 0 ? null : vCPUs
+    ram: memoryGB == 0 ? null : memoryGB
+  }
   encryptionAtHost: encryptionAtHost
   acceleratedNetworking: enableAcceleratedNetworking
   diskEncryptionSetName: confidentialVMOSDiskEncryption
@@ -646,6 +659,7 @@ var hostPoolVmTemplate = {
   securityType: securityType
   secureBoot: secureBootEnabled
   vTPM: vTpmEnabled
+  vmInfrastructureType: 'Cloud'
 }
 
 // Existing Session Host Virtual Network location
@@ -856,7 +870,7 @@ module controlPlane 'modules/controlPlane/controlPlane.bicep' = if (deploymentTy
     hostPoolRDPProperties: hostPoolRDPProperties
     hostPoolType: hostPoolType
     hostPoolValidationEnvironment: hostPoolValidationEnvironment
-    hostPoolVmTemplate: string(hostPoolVmTemplate)
+    hostPoolVmTemplate: hostPoolVmTemplate
     locationControlPlane: locationControlPlane
     locationGlobalFeed: locationGlobalFeed
     locationVirtualMachines: locationVirtualMachines

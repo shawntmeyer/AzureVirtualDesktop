@@ -21,7 +21,7 @@ param hostPoolPublicNetworkAccess string
 param hostPoolRDPProperties string
 param hostPoolType string
 param hostPoolValidationEnvironment bool
-param hostPoolVmTemplate string
+param hostPoolVmTemplate object
 param locationControlPlane string
 param locationGlobalFeed string
 param locationVirtualMachines string
@@ -128,7 +128,7 @@ module hostPool 'modules/hostPool.bicep' = {
     privateEndpointName: hostPoolPrivateEndpointName
     privateEndpointNICName: hostPoolPrivateEndpointNICName
     privateEndpointSubnetResourceId: hostPoolPrivateEndpointSubnetResourceId
-    tags: tags
+    tags: tags 
     timeStamp: timeStamp
     virtualMachineTemplate: hostPoolVmTemplate
   }
