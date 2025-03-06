@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "15102852842151097100"
+      "templateHash": "10703909809483573331"
     }
   },
   "parameters": {
@@ -66,6 +66,13 @@
       "defaultValue": "",
       "metadata": {
         "description": "Optional. The resource Id of an existing Recovery Services Vault that will be used to store Virtual Machine Backups. Only used when \"DeploymentType\" is \"SessionHostOnly\"."
+      }
+    },
+    "existingDiskAccessResourceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional. The resource id of the existing disk access resource for private link access to the managed disks. Only used when \"DeploymentType\" is \"SessionHostOnly\"."
       }
     },
     "existingAVDInsightsDataCollectionRuleResourceId": {
@@ -14017,6 +14024,9 @@
           "encryptionAtHost": {
             "value": "[parameters('encryptionAtHost')]"
           },
+          "existingDiskAccessResourceId": {
+            "value": "[parameters('existingDiskAccessResourceId')]"
+          },
           "existingDiskEncryptionSetResourceId": {
             "value": "[parameters('existingDiskEncryptionSetResourceId')]"
           },
@@ -14171,7 +14181,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "10729810006496310602"
+              "templateHash": "3045882969849555493"
             }
           },
           "parameters": {
@@ -14285,6 +14295,9 @@
             },
             "encryptionAtHost": {
               "type": "bool"
+            },
+            "existingDiskAccessResourceId": {
+              "type": "string"
             },
             "existingDiskEncryptionSetResourceId": {
               "type": "string"
@@ -14545,7 +14558,7 @@
               }
             },
             {
-              "condition": "[parameters('deployDiskAccessResource')]",
+              "condition": "[and(parameters('deployDiskAccessResource'), equals(parameters('deploymentType'), 'Complete'))]",
               "type": "Microsoft.Resources/deployments",
               "apiVersion": "2022-09-01",
               "name": "[format('DiskAccess_{0}', parameters('timeStamp'))]",
@@ -17531,7 +17544,7 @@
                   "dedicatedHostResourceId": {
                     "value": "[parameters('dedicatedHostResourceId')]"
                   },
-                  "diskAccessId": "[if(parameters('deployDiskAccessResource'), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupHosts')), 'Microsoft.Resources/deployments', format('DiskAccess_{0}', parameters('timeStamp'))), '2022-09-01').outputs.resourceId.value), createObject('value', ''))]",
+                  "diskAccessId": "[if(equals(parameters('deploymentType'), 'Complete'), if(parameters('deployDiskAccessResource'), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupHosts')), 'Microsoft.Resources/deployments', format('DiskAccess_{0}', parameters('timeStamp'))), '2022-09-01').outputs.resourceId.value), createObject('value', '')), createObject('value', parameters('existingDiskAccessResourceId')))]",
                   "diskEncryptionSetResourceId": "[if(and(equals(parameters('deploymentType'), 'Complete'), or(not(equals(parameters('keyManagementDisks'), 'PlatformManaged')), parameters('confidentialVMOSDiskEncryption'))), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupHosts')), 'Microsoft.Resources/deployments', format('DiskEncryption_{0}', parameters('timeStamp'))), '2022-09-01').outputs.diskEncryptionSetResourceId.value), if(not(empty(parameters('existingDiskEncryptionSetResourceId'))), createObject('value', parameters('existingDiskEncryptionSetResourceId')), createObject('value', '')))]",
                   "diskNamePrefix": {
                     "value": "[parameters('diskNamePrefix')]"

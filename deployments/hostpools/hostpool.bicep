@@ -30,6 +30,9 @@ param existingDiskEncryptionSetResourceId string = ''
 @description('Optional. The resource Id of an existing Recovery Services Vault that will be used to store Virtual Machine Backups. Only used when "DeploymentType" is "SessionHostOnly".')
 param existingRecoveryServicesVaultResourceId string = ''
 
+@description('Optional. The resource id of the existing disk access resource for private link access to the managed disks. Only used when "DeploymentType" is "SessionHostOnly".')
+param existingDiskAccessResourceId string = ''
+
 @description('Optional. The resource Id of the existing AVD Insights Data Collection Rule. Only used when "DeploymentType" is "SessionHostOnly".')
 param existingAVDInsightsDataCollectionRuleResourceId string = ''
 
@@ -1039,6 +1042,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     enableAcceleratedNetworking: enableAcceleratedNetworking
     enableMonitoring: enableMonitoring
     encryptionAtHost: encryptionAtHost
+    existingDiskAccessResourceId: existingDiskAccessResourceId
     existingDiskEncryptionSetResourceId: existingDiskEncryptionSetResourceId
     existingRecoveryServicesVaultResourceId: existingRecoveryServicesVaultResourceId
     fslogixConfigureSessionHosts: fslogixConfigureSessionHosts

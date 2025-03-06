@@ -3038,7 +3038,6 @@
 								{
 									"name": "recoveryServices",
 									"type": "Microsoft.Common.CheckBox",
-									"visible": true,
 									"label": "Enable Recovery Services",
 									"toolTip": "Choose to deploy backups for your solution. For a personal host pool, this will enable backups on the virtual machines. For a pooled host pool, this will enable backups on the FSLogix file share when using Azure Files."
 								},
@@ -3060,6 +3059,36 @@
 									"label": "Recovery Services Vault",
 									"constraints": {
 										"allowedValues": "[steps('management').backup.recoveryServicesVaultApi.transformed.list]",
+										"required": true
+									},
+									"visible": "[and(equals(steps('basics').deploymentType, 'SessionHostsOnly'), steps('management').backup.recoveryServices)]"
+								},
+								{
+									"name": "associateDiskAccessResource",
+									"type": "Microsoft.Common.CheckBox",
+									"label": "Associate VM(s) with Disk Access Resource",
+									"toolTip": "Disk Access Resources are used to allow Azure Backup to access the managed disk over the private network in order to perform the backup.",
+									"visible": "[and(equals(steps('basics').deploymentType, 'SessionHostsOnly'), steps('management').backup.recoveryServices)]"
+								},
+								{
+									"name": "diskAccessesApi",
+									"type": "Microsoft.Solutions.ArmApiControl",
+									"condition": "[and(equals(steps('basics').deploymentType, 'SessionHostsOnly'), steps('management').backup.recoveryServices)]",
+									"request": {
+										"method": "GET",
+										"path": "[concat(steps('basics').resourceGroup, '/providers/Microsoft.Compute/diskAccessess?api-version=2024-03-02')]",
+										"transforms": {
+											"list": "value|[*].{label:name, value:id}"
+										}
+									}
+								},
+								{
+									"name": "diskAccess",
+									"type": "Microsoft.Common.DropDown",
+									"label": "Disk Access",
+									"toolTip": "Select the existing Disk Access Resource",
+									"constraints": {
+										"allowedValues": "[steps('management').backup.diskAccessessApi.transformed.list]",
 										"required": true
 									},
 									"visible": "[and(equals(steps('basics').deploymentType, 'SessionHostsOnly'), steps('management').backup.recoveryServices)]"
@@ -4117,6 +4146,7 @@
 				"deployIncreaseQuota": "[if(and(equals(steps('basics').deploymentType, 'Complete'), equals(steps('userProfiles').azureFiles.storageSku, 'Premium')), steps('management').automation.deployIncreaseQuota, false)]",
 				"recoveryServices": "[steps('management').backup.recoveryServices]",
 				"existingRecoveryServicesVaultResourceId": "[if(and(equals(steps('basics').deploymentType, 'SessionHostsOnly'), equals(steps('controlPlane').hostPoolApi.properties.hostPoolType, 'Personal'), steps('management').backup.recoveryServices), steps('management').backup.recoveryServicesVault, '')]",
+				"existingDiskAccessResourceId": "[and(equals(steps('basics').deploymentType, 'SessionHostsOnly'), equals(steps('controlPlane').hostPoolApi.properties.hostPoolType, 'Personal'), steps('management').backup.recoveryServices, steps('management').backup.associateDiskAccessResource), steps('management').backup.diskAccess]",
 				"deploySecretsKeyVault": "[if(equals(steps('basics').deploymentType, 'Complete'), steps('management').keyVaults.deploySecretsKeyVault, false)]",
 				"keyVaultRetentionInDays": "[if(and(equals(steps('basics').deploymentType, 'Complete'), or(steps('management').keyVaults.deploySecretsKeyVault, contains(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), contains(steps('userProfiles').azureFiles.keyManagement, 'CustomerManaged'))), steps('management').keyVaults.keyVaultRetentionInDays, 7)]",
 				"keyExpirationInDays": "[if(and(equals(steps('basics').deploymentType, 'Complete'), or(contains(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), contains(steps('userProfiles').azureFiles.keyManagement, 'CustomerManaged'))), steps('management').keyVaults.keyExpirationInDays, 180)]",

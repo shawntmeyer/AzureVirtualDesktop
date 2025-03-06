@@ -39,6 +39,7 @@ param domainName string
 param drainMode bool
 param enableAcceleratedNetworking bool
 param encryptionAtHost bool
+param existingDiskAccessResourceId string
 param existingDiskEncryptionSetResourceId string
 param existingRecoveryServicesVaultResourceId string
 param fslogixFileShareNames array
@@ -136,7 +137,7 @@ module hostPoolUpdate 'modules/hostPoolUpdate.bicep' = if(deploymentType != 'Com
   } 
 }
 
-module diskAccessResource '../../../sharedModules/resources/compute/disk-access/main.bicep' = if (deployDiskAccessResource) {
+module diskAccessResource '../../../sharedModules/resources/compute/disk-access/main.bicep' = if (deployDiskAccessResource && deploymentType == 'Complete') {
   scope: resourceGroup(resourceGroupHosts)
   name: 'DiskAccess_${timeStamp}'
   params: {
@@ -269,7 +270,7 @@ module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sess
     dedicatedHostGroupResourceId: dedicatedHostGroupResourceId
     dedicatedHostGroupZones: dedicatedHostGroupZones
     dedicatedHostResourceId: dedicatedHostResourceId
-    diskAccessId: deployDiskAccessResource ? diskAccessResource.outputs.resourceId : ''
+    diskAccessId: deploymentType == 'Complete' ? deployDiskAccessResource ? diskAccessResource.outputs.resourceId : '' : existingDiskAccessResourceId
     diskEncryptionSetResourceId: ( deploymentType == 'Complete' && (keyManagementDisks != 'PlatformManaged' || confidentialVMOSDiskEncryption )) ? diskEncryption.outputs.diskEncryptionSetResourceId : !empty(existingDiskEncryptionSetResourceId) ? existingDiskEncryptionSetResourceId : ''
     diskNamePrefix: diskNamePrefix
     diskSizeGB: diskSizeGB
