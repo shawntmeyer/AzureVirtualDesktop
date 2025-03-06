@@ -3045,7 +3045,7 @@
 								{
 									"name": "recoveryServicesVaultApi",
 									"type": "Microsoft.Solutions.ArmApiControl",
-									"condition": "[and(equals(steps('basics').deploymentType, 'Complete'), steps('management').backup.recoveryServices)]",
+									"condition": "[and(equals(steps('basics').deploymentType, 'SessionHostsOnly'), steps('management').backup.recoveryServices)]",
 									"request": {
 										"method": "GET",
 										"path": "[concat(steps('basics').resourceGroup, '/providers/Microsoft.RecoveryServices/vaults?api-version=2024-10-01')]",
