@@ -3115,7 +3115,7 @@
 								},
 								{
 									"name": "dataCollectionRulesApi",
-									"condition": "[and(equals(steps('basics').deploymentType, 'Complete'), steps('management').monitoring.enableMonitoring)]",
+									"condition": "[and(equals(steps('basics').deploymentType, 'SessionHostsOnly'), steps('management').monitoring.enableMonitoring)]",
 									"type": "Microsoft.Solutions.ArmApiControl",
 									"request": {
 										"method": "GET",
@@ -3125,7 +3125,7 @@
 								{
 									"name": "avdInsightsDataCollectionRule",
 									"type": "Microsoft.Common.DropDown",
-									"visible": "[and(equals(steps('basics').deploymentType, 'Complete'), steps('management').monitoring.enableMonitoring)]",
+									"visible": "[and(equals(steps('basics').deploymentType, 'SessionHostsOnly'), steps('management').monitoring.enableMonitoring)]",
 									"label": "AVD Insights Data Collection Rule",
 									"multiLine": true,
 									"toolTip": "Select the existing AVD Insights Data Collection Rule.",
@@ -3137,7 +3137,7 @@
 								{
 									"name": "vmInsightsDataCollectionRule",
 									"type": "Microsoft.Common.DropDown",
-									"visible": "[and(equals(steps('basics').deploymentType, 'Complete'), steps('management').monitoring.enableMonitoring)]",
+									"visible": "[and(equals(steps('basics').deploymentType, 'SessionHostsOnly'), steps('management').monitoring.enableMonitoring)]",
 									"label": "VM Insights Data Collection Rule",
 									"multiLine": true,
 									"toolTip": "Select the existing Virtual Machines Insights Data Collection Rule.",
@@ -3166,7 +3166,7 @@
 								},
 								{
 									"name": "dataCollectionEndpointsApi",
-									"condition": "[and(equals(steps('basics').deploymentType, 'Complete'), steps('management').monitoring.enableMonitoring)]",
+									"condition": "[and(equals(steps('basics').deploymentType, 'SessionHostsOnly'), steps('management').monitoring.enableMonitoring)]",
 									"type": "Microsoft.Solutions.ArmApiControl",
 									"request": {
 										"method": "GET",
@@ -3176,7 +3176,7 @@
 								{
 									"name": "dataCollectionEndpoint",
 									"type": "Microsoft.Common.DropDown",
-									"visible": "[and(equals(steps('basics').deploymentType, 'Complete'), steps('management').monitoring.enableMonitoring)]",
+									"visible": "[and(equals(steps('basics').deploymentType, 'SessionHostsOnly'), steps('management').monitoring.enableMonitoring)]",
 									"label": "Data Collection Endpoint",
 									"multiLine": true,
 									"toolTip": "Select the existing Data Collection Endpoint.",
