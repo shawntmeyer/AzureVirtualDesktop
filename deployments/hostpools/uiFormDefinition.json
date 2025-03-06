@@ -2844,7 +2844,7 @@
 									"multiselect": true,
 									"toolTip": "",
 									"constraints": {
-										"allowedValues": "[map(filter(steps('userProfiles').azureFiles.storageAccountsApi.transformed.list, (sa) => equals(sa.region, steps('basics').scope.location.name)), (sa) => parse(concat('{\"label\":\"', sa.saName, '\",\"description\":\"Sku: ', sa.skuName, ', Location: ', sa.region, '\", \"value\":\"', sa.resourceId, '\"}')))]",
+										"allowedValues": "[map(filter(steps('userProfiles').azureFiles.storageAccountsApi.transformed.list, (sa) => equals(sa.region, steps('basics').scope.location.name)), (sa) => parse(concat('{\"label\":\"', sa.saName, '\",\"description\":\"ResourceGroup: ', first(skip(split(sa.resourceId, '/'), 4)),  ', Location: ', sa.region, '\", \"value\":\"', sa.resourceId, '\"}')))]",
 										"required": true
 									},
 									"visible": "[and(steps('userProfiles').configureSessionHosts, not(equals(steps('userProfiles').deployStorage, true)))]"
@@ -2914,7 +2914,7 @@
 									"multiselect": true,
 									"toolTip": "",
 									"constraints": {
-										"allowedValues": "[map(filter(steps('userProfiles').azureFiles.storageAccountsApi.transformed.list, (sa) => equals(sa.region, steps('userProfiles').azureFiles.remoteLocation)), (sa) => parse(concat('{\"label\":\"', sa.saName, '\",\"description\":\"Sku: ', sa.skuName, '\", \"value\":\"', sa.resourceId, '\"}')))]",
+										"allowedValues": "[map(filter(steps('userProfiles').azureFiles.storageAccountsApi.transformed.list, (sa) => equals(sa.region, steps('userProfiles').azureFiles.remoteLocation)), (sa) => parse(concat('{\"label\":\"', sa.saName, '\",\"description\":\"ResourceGroup: ', first(skip(split(sa.resourceId, '/'), 4)), '\", \"value\":\"', sa.resourceId, '\"}')))]",
 										"required": false
 									},
 									"visible": "[and(steps('userProfiles').configureSessionHosts, contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]"
