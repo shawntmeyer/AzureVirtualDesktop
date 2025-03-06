@@ -678,7 +678,6 @@ resource avdPrivateLinkGlobalFeedNetwork 'Microsoft.Network/virtualNetworks@2023
 }
 
 // Existing Key Vaults for Secrets (only used for UI deployments since you can specify references in Parameter files.)
-
 resource kvCredentials 'Microsoft.KeyVault/vaults@2023-07-01' existing = if (!empty(credentialsKeyVaultResourceId)) {
   name: last(split(credentialsKeyVaultResourceId, '/'))
   scope: resourceGroup(split(credentialsKeyVaultResourceId, '/')[2], split(credentialsKeyVaultResourceId, '/')[4])
@@ -747,7 +746,7 @@ module logic 'modules/logic.bicep' = {
 
 // Resource Groups
 module rgs 'modules/resourceGroups.bicep' = [
-  for i in range(0, resourceGroupsCount): {
+  for i in range(0, resourceGroupsCount): if (deploymentType == 'Complete') {
     name: 'ResourceGroup_${i}_${timeStamp}'
     params: {
       location: contains(logic.outputs.resourceGroupNames[i], 'control-plane')
@@ -1082,7 +1081,9 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     networkInterfaceNamePrefix: resourceNames.outputs.networkInterfaceNamePrefix
     recoveryServices: contains(hostPoolType, 'Personal') ? recoveryServices : false
     recoveryServicesVaultName: resourceNames.outputs.recoveryServicesVaultNames.VirtualMachines
-    resourceGroupHosts: deploymentType == 'Complete' ? resourceNames.outputs.resourceGroupHosts : existingHostsResourceGroupName
+    resourceGroupHosts: deploymentType == 'Complete'
+      ? resourceNames.outputs.resourceGroupHosts
+      : existingHostsResourceGroupName
     resourceGroupDeployment: resourceNames.outputs.resourceGroupDeployment
     roleDefinitions: logic.outputs.roleDefinitions
     securityDataCollectionRulesResourceId: securityDataCollectionRulesResourceId
