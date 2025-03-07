@@ -58,7 +58,7 @@ Each persona might include details like:
 This identifier combined with the index parameter (when provided) is used to create the host pool, desktop application group,
 and other host pool specific resource names.
 ''')
-param identifier string
+param identifier string = ''
 
 @maxLength(2)
 @description('''Optional. An index value used to distinquish each host pool with the same persona identifier. This can be provided to shard
@@ -468,6 +468,8 @@ param fslogixStorageIndex int = 1
 param keyManagementStorageAccounts string = 'MicrosoftManaged'
 
 @description('Optional. The retention period for the Azure Key Vault.')
+@minValue(7)
+@maxValue(90)
 param keyVaultRetentionInDays int = 90
 
 @description('Optional. The OU Path where the FSLogix Storage Accounts or NetApp Accounts will be joined in the ADDS.')

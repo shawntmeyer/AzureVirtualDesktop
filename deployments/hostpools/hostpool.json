@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "2147890114451367722"
+      "templateHash": "9813245280799728889"
     }
   },
   "parameters": {
@@ -98,6 +98,7 @@
     },
     "identifier": {
       "type": "string",
+      "defaultValue": "",
       "maxLength": 9,
       "metadata": {
         "description": "Required. Identifier used to describe the persona of the hostpool(s).\nA persona refers to a detailed profile that represents a specific user type, considering their unique needs,\nusage patterns, and requirements. Essentially, it's a fictional character that helps IT professionals\nunderstand and address the varying demands of different users within an organization.\nEach persona might include details like:\n  Role: What job they perform within the organization.  \n  Applications: What applications they use regularly.\n  Workload: The intensity of resource usage, such as compute, storage, and network.\n  Access Needs: How they access the virtual desktop—remotely or on-premises.\n  Security Requirements: Specific security measures necessary for their role.\nThis identifier combined with the index parameter (when provided) is used to create the host pool, desktop application group,\nand other host pool specific resource names.\n"
@@ -735,6 +736,8 @@
     "keyVaultRetentionInDays": {
       "type": "int",
       "defaultValue": 90,
+      "minValue": 7,
+      "maxValue": 90,
       "metadata": {
         "description": "Optional. The retention period for the Azure Key Vault."
       }
