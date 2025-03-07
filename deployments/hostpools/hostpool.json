@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "9813245280799728889"
+      "templateHash": "16956482731796906280"
     }
   },
   "parameters": {
@@ -5011,7 +5011,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "2389292290511030806"
+              "templateHash": "528024481884271687"
             }
           },
           "parameters": {
@@ -5343,7 +5343,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "6557868052647867920"
+                      "templateHash": "14392007157638318840"
                     }
                   },
                   "parameters": {
@@ -5424,8 +5424,8 @@
                       "vmDiskEncryptionSetName": "[coalesce(tryGet(parameters('virtualMachineTemplate'), 'diskEncryptionSetName'), false())]",
                       "vmHibernate": "[coalesce(tryGet(parameters('virtualMachineTemplate'), 'hibernate'), false())]",
                       "vmSecurityType": "[coalesce(tryGet(parameters('virtualMachineTemplate'), 'securityType'), 'Standard')]",
-                      "vmSecureBoot": "[coalesce(tryGet(parameters('virtualMachineTemplate'), 'secureBootEnabled'), false())]",
-                      "vmVirtualTPM": "[coalesce(tryGet(parameters('virtualMachineTemplate'), 'virtualTpmEnabled'), false())]"
+                      "vmSecureBoot": "[coalesce(tryGet(parameters('virtualMachineTemplate'), 'secureBoot'), false())]",
+                      "vmVirtualTPM": "[coalesce(tryGet(parameters('virtualMachineTemplate'), 'vTPM'), false())]"
                     }
                   },
                   "resources": [

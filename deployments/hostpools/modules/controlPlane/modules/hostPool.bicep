@@ -36,8 +36,8 @@ var hostPoolVmTemplateTags = {
   vmDiskEncryptionSetName: virtualMachineTemplate.?diskEncryptionSetName ?? false
   vmHibernate: virtualMachineTemplate.?hibernate ?? false
   vmSecurityType: virtualMachineTemplate.?securityType ?? 'Standard'
-  vmSecureBoot: virtualMachineTemplate.?secureBootEnabled ?? false
-  vmVirtualTPM: virtualMachineTemplate.?virtualTpmEnabled ?? false
+  vmSecureBoot: virtualMachineTemplate.?secureBoot ?? false
+  vmVirtualTPM: virtualMachineTemplate.?vTPM ?? false
 }
 
 resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' = {

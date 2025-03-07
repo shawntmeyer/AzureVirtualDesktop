@@ -88,6 +88,30 @@
 							"visible": "[equals(steps('basics').deploymentType, 'SessionHostsOnly')]"
 						},
 						{
+							"name": "recoveryServicesVaultApi",
+							"type": "Microsoft.Solutions.ArmApiControl",
+							"condition": "[and(equals(steps('basics').deploymentType, 'SessionHostsOnly'), not(empty(steps('basics').resourceGroup)))]",
+							"request": {
+								"method": "GET",
+								"path": "[concat(steps('basics').resourceGroup, '/providers/Microsoft.RecoveryServices/vaults?api-version=2024-10-01')]",
+								"transforms": {
+									"list": "value|[*].{label:name, value:id}"
+								}
+							}
+						},
+						{
+							"name": "diskAccessesApi",
+							"type": "Microsoft.Solutions.ArmApiControl",
+							"condition": "[and(equals(steps('basics').deploymentType, 'SessionHostsOnly'), not(empty(steps('basics').resourceGroup)))]",
+							"request": {
+								"method": "GET",
+								"path": "[concat(steps('basics').resourceGroup, '/providers/Microsoft.Compute/diskAccesses?api-version=2024-03-02')]",
+								"transforms": {
+									"list": "value|[*].{label:name, value:id}"
+								}
+							}
+						},
+						{
 							"name": "prereqs",
 							"type": "Microsoft.Common.Section",
 							"label": "Solution Prerequisites",
@@ -1363,6 +1387,7 @@
 								{
 									"name": "existingDiskEncryptionSet",
 									"type": "Microsoft.Common.DropDown",
+									"defaultValue": "[steps('controlPlane').hostPoolApi.tags.vmDiskEncryptionSetName]",
 									"label": "Disk Encryption Set",
 									"constraints": {
 										"allowedValues": "[steps('hosts').diskEncryption.diskEncryptionSetApi.transformed.list]",
@@ -3039,26 +3064,16 @@
 									"name": "recoveryServices",
 									"type": "Microsoft.Common.CheckBox",
 									"label": "Enable Recovery Services",
+									"defaultValue": "[if(equals(steps('basics').deploymentType, 'Complete'), true, if(empty(steps('basics').recoveryServicesVaultApi), false, true))]",
 									"toolTip": "Choose to deploy backups for your solution. For a personal host pool, this will enable backups on the virtual machines. For a pooled host pool, this will enable backups on the FSLogix file share when using Azure Files."
-								},
-								{
-									"name": "recoveryServicesVaultApi",
-									"type": "Microsoft.Solutions.ArmApiControl",
-									"condition": "[and(equals(steps('basics').deploymentType, 'SessionHostsOnly'), steps('management').backup.recoveryServices)]",
-									"request": {
-										"method": "GET",
-										"path": "[concat(steps('basics').resourceGroup, '/providers/Microsoft.RecoveryServices/vaults?api-version=2024-10-01')]",
-										"transforms": {
-											"list": "value|[*].{label:name, value:id}"
-										}
-									}
 								},
 								{
 									"name": "recoveryServicesVault",
 									"type": "Microsoft.Common.DropDown",
 									"label": "Recovery Services Vault",
+									"defaultValue": "[first(steps('basics').recoveryServicesVaultApi.transformed.list).label]",
 									"constraints": {
-										"allowedValues": "[steps('management').backup.recoveryServicesVaultApi.transformed.list]",
+										"allowedValues": "[steps('basics').recoveryServicesVaultApi.transformed.list]",
 										"required": true
 									},
 									"visible": "[and(equals(steps('basics').deploymentType, 'SessionHostsOnly'), steps('management').backup.recoveryServices)]"
@@ -3067,28 +3082,18 @@
 									"name": "associateDiskAccessResource",
 									"type": "Microsoft.Common.CheckBox",
 									"label": "Associate VM(s) with Disk Access Resource",
+									"defaultValue": "[not(empty(steps('basics').diskAccessesApi))]",
 									"toolTip": "Disk Access Resources are used to allow Azure Backup to access the managed disk over the private network in order to perform the backup.",
-									"visible": "[and(equals(steps('basics').deploymentType, 'SessionHostsOnly'), steps('management').backup.recoveryServices)]"
-								},
-								{
-									"name": "diskAccessesApi",
-									"type": "Microsoft.Solutions.ArmApiControl",
-									"condition": "[and(equals(steps('basics').deploymentType, 'SessionHostsOnly'), steps('management').backup.associateDiskAccessResource)]",
-									"request": {
-										"method": "GET",
-										"path": "[concat(steps('basics').resourceGroup, '/providers/Microsoft.Compute/diskAccesses?api-version=2024-03-02')]",
-										"transforms": {
-											"list": "value|[*].{label:name, value:id}"
-										}
-									}
+									"visible": "[and(equals(steps('basics').deploymentType, 'SessionHostsOnly'), not(empty(steps('basics').diskAccessesApi)))]"
 								},
 								{
 									"name": "diskAccess",
 									"type": "Microsoft.Common.DropDown",
 									"label": "Disk Access",
+									"defaultValue": "[first(steps('basics').diskAccessesApi.transformed.list).label]",
 									"toolTip": "Select the existing Disk Access Resource",
 									"constraints": {
-										"allowedValues": "[steps('management').backup.diskAccessesApi.transformed.list]",
+										"allowedValues": "[steps('basics').diskAccessesApi.transformed.list]",
 										"required": true
 									},
 									"visible": "[and(equals(steps('basics').deploymentType, 'SessionHostsOnly'), steps('management').backup.associateDiskAccessResource)]"
