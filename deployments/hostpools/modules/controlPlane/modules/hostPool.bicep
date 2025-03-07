@@ -20,14 +20,14 @@ param hostPoolValidationEnvironment bool
 param virtualMachineTemplate object
 
 var hostPoolVmTemplateTags = {
-  vmDomain: virtualMachineTemplate.?domain ?? null
-  vmOUPath: virtualMachineTemplate.?ouPath ?? null
+  vmDomain: virtualMachineTemplate.?domain ?? ''
+  vmOUPath: virtualMachineTemplate.?ouPath ?? ''
   vmNamePrefix: virtualMachineTemplate.namePrefix
   vmImageType: virtualMachineTemplate.imageType
-  vmCustomImageId: virtualMachineTemplate.?customImageId ?? null
-  vmImageOffer: virtualMachineTemplate.?galleryImageOffer ?? null
-  vmImagePublisher: virtualMachineTemplate.?galleryImagePublisher ?? null
-  vmImageSKU: virtualMachineTemplate.?galleryImageSKU ?? null
+  vmCustomImageId: virtualMachineTemplate.?customImageId ?? ''
+  vmImageOffer: virtualMachineTemplate.?galleryImageOffer ?? ''
+  vmImagePublisher: virtualMachineTemplate.?galleryImagePublisher ?? ''
+  vmImageSKU: virtualMachineTemplate.?galleryImageSKU ?? ''
   vmOSDiskType: virtualMachineTemplate.osDiskType
   vmDiskSizeGB: virtualMachineTemplate.diskSizeGB
   vmSize: virtualMachineTemplate.vmSize.id

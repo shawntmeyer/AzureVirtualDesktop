@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "14394995945612980736"
+      "templateHash": "2147890114451367722"
     }
   },
   "parameters": {
@@ -5008,7 +5008,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "6606960527907658434"
+              "templateHash": "2389292290511030806"
             }
           },
           "parameters": {
@@ -5340,7 +5340,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "3202729467620483332"
+                      "templateHash": "6557868052647867920"
                     }
                   },
                   "parameters": {
@@ -5405,14 +5405,14 @@
                   },
                   "variables": {
                     "hostPoolVmTemplateTags": {
-                      "vmDomain": "[coalesce(tryGet(parameters('virtualMachineTemplate'), 'domain'), null())]",
-                      "vmOUPath": "[coalesce(tryGet(parameters('virtualMachineTemplate'), 'ouPath'), null())]",
+                      "vmDomain": "[coalesce(tryGet(parameters('virtualMachineTemplate'), 'domain'), '')]",
+                      "vmOUPath": "[coalesce(tryGet(parameters('virtualMachineTemplate'), 'ouPath'), '')]",
                       "vmNamePrefix": "[parameters('virtualMachineTemplate').namePrefix]",
                       "vmImageType": "[parameters('virtualMachineTemplate').imageType]",
-                      "vmCustomImageId": "[coalesce(tryGet(parameters('virtualMachineTemplate'), 'customImageId'), null())]",
-                      "vmImageOffer": "[coalesce(tryGet(parameters('virtualMachineTemplate'), 'galleryImageOffer'), null())]",
-                      "vmImagePublisher": "[coalesce(tryGet(parameters('virtualMachineTemplate'), 'galleryImagePublisher'), null())]",
-                      "vmImageSKU": "[coalesce(tryGet(parameters('virtualMachineTemplate'), 'galleryImageSKU'), null())]",
+                      "vmCustomImageId": "[coalesce(tryGet(parameters('virtualMachineTemplate'), 'customImageId'), '')]",
+                      "vmImageOffer": "[coalesce(tryGet(parameters('virtualMachineTemplate'), 'galleryImageOffer'), '')]",
+                      "vmImagePublisher": "[coalesce(tryGet(parameters('virtualMachineTemplate'), 'galleryImagePublisher'), '')]",
+                      "vmImageSKU": "[coalesce(tryGet(parameters('virtualMachineTemplate'), 'galleryImageSKU'), '')]",
                       "vmOSDiskType": "[parameters('virtualMachineTemplate').osDiskType]",
                       "vmDiskSizeGB": "[parameters('virtualMachineTemplate').diskSizeGB]",
                       "vmSize": "[parameters('virtualMachineTemplate').vmSize.id]",
