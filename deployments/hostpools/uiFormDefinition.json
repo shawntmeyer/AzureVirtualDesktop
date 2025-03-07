@@ -3460,6 +3460,7 @@
 								{
 									"name": "azureBackupPrivateDnsZone",
 									"type": "Microsoft.Common.DropDown",
+									"defaultValue": "[first(map(filter(steps('zeroTrust').privateEndpoints.privateDNSZonesApi.value, (zone) => contains(zone.name, '.backup.')), (zone) => zone.name))]",
 									"visible": "[and(steps('management').backup.recoveryServices, steps('zeroTrust').privateEndpoints.deployPrivateEndpoints, steps('zeroTrust').privateEndpoints.enablePrivateDNSIntegration)]",
 									"label": "Azure Backup",
 									"multiLine": true,
@@ -3472,6 +3473,7 @@
 								{
 									"name": "azureBlobPrivateDnsZone",
 									"type": "Microsoft.Common.DropDown",
+									"defaultValue": "[first(map(filter(steps('zeroTrust').privateEndpoints.privateDNSZonesApi.value, (zone) => contains(zone.name, 'privatelink.blob.')), (zone) => zone.name))]",
 									"visible": "[and(or(steps('management').backup.recoveryServices, steps('management').automation.deployIncreaseQuota), steps('zeroTrust').privateEndpoints.deployPrivateEndpoints, steps('zeroTrust').privateEndpoints.enablePrivateDNSIntegration)]",
 									"label": "Azure Blob Storage",
 									"multiLine": true,
@@ -3484,6 +3486,7 @@
 								{
 									"name": "azureFilesPrivateDnsZone",
 									"type": "Microsoft.Common.DropDown",
+									"defaultValue": "[first(map(filter(steps('zeroTrust').privateEndpoints.privateDNSZonesApi.value, (zone) => contains(zone.name, 'privatelink.file.')), (zone) => zone.name))]",
 									"visible": "[and(or(and(equals(steps('userProfiles').deployStorage, true), equals(steps('userProfiles').storageService, 'AzureFiles')), steps('management').automation.deployIncreaseQuota), steps('zeroTrust').privateEndpoints.deployPrivateEndpoints, steps('zeroTrust').privateEndpoints.enablePrivateDNSIntegration)]",
 									"label": "Azure Files",
 									"multiLine": true,
@@ -3497,6 +3500,7 @@
 									"name": "azureKeyVaultPrivateDnsZone",
 									"type": "Microsoft.Common.DropDown",
 									"label": "Azure Key Vault",
+									"defaultValue": "[first(map(filter(steps('zeroTrust').privateEndpoints.privateDNSZonesApi.value, (zone) => contains(zone.name, 'privatelink.vaultcore.')), (zone) => zone.name))]",
 									"multiLine": true,
 									"toolTip": "Select the existing Private DNS Zone for Azure Key Vaults.",
 									"constraints": {
@@ -3508,6 +3512,7 @@
 								{
 									"name": "azureQueuePrivateDnsZone",
 									"type": "Microsoft.Common.DropDown",
+									"defaultValue": "[first(map(filter(steps('zeroTrust').privateEndpoints.privateDNSZonesApi.value, (zone) => contains(zone.name, 'privatelink.queue.')), (zone) => zone.name))]",
 									"visible": "[and(or(steps('management').backup.recoveryServices, steps('management').automation.deployIncreaseQuota), steps('zeroTrust').privateEndpoints.deployPrivateEndpoints, steps('zeroTrust').privateEndpoints.enablePrivateDNSIntegration)]",
 									"label": "Azure Queue Storage",
 									"multiLine": true,
@@ -3520,6 +3525,7 @@
 								{
 									"name": "azureTablePrivateDnsZone",
 									"type": "Microsoft.Common.DropDown",
+									"defaultValue": "[first(map(filter(steps('zeroTrust').privateEndpoints.privateDNSZonesApi.value, (zone) => contains(zone.name, 'privatelink.table.')), (zone) => zone.name))]",
 									"visible": "[and(steps('management').automation.deployIncreaseQuota, steps('zeroTrust').privateEndpoints.deployPrivateEndpoints, steps('zeroTrust').privateEndpoints.enablePrivateDNSIntegration)]",
 									"label": "Azure Table Storage",
 									"multiLine": true,
@@ -3532,6 +3538,7 @@
 								{
 									"name": "azureFunctionAppPrivateDnsZone",
 									"type": "Microsoft.Common.DropDown",
+									"defaultValue": "[first(map(filter(steps('zeroTrust').privateEndpoints.privateDNSZonesApi.value, (zone) => or(startsWith(zone.name, 'privatelink.azurewebsites.'), startsWith(zone.name, 'privatelink.appservice.'))), (zone) => zone.name))]",
 									"visible": "[and(steps('management').automation.deployIncreaseQuota, steps('zeroTrust').privateEndpoints.deployPrivateEndpoints, steps('zeroTrust').privateEndpoints.enablePrivateDNSIntegration)]",
 									"label": "Azure Web App",
 									"multiLine": true,
@@ -3545,6 +3552,7 @@
 									"name": "azureFunctionAppScmPrivateDnsZone",
 									"type": "Microsoft.Common.DropDown",
 									"visible": "[and(steps('management').automation.deployIncreaseQuota, steps('zeroTrust').privateEndpoints.deployPrivateEndpoints, steps('zeroTrust').privateEndpoints.enablePrivateDNSIntegration)]",
+									"defaultValue": "[first(map(filter(steps('zeroTrust').privateEndpoints.privateDNSZonesApi.value, (zone) => contains(zone.name, 'scm.privatelink.')), (zone) => zone.name))]",
 									"label": "Azure Web App SCM",
 									"multiLine": true,
 									"toolTip": "Select the existing Private DNS Zone for Azure Function Apps",
@@ -4004,6 +4012,7 @@
 									"name": "wvdPrivateLinkDnsZone",
 									"type": "Microsoft.Common.DropDown",
 									"visible": "[and(steps('zeroTrust').avdPrivateLink.enablePrivateLink, steps('zeroTrust').avdPrivateLink.enablePrivateDNSIntegration)]",
+									"defaultValue": "[first(map(filter(steps('zeroTrust').avdPrivateLink.privateDNSZonesApi.value, (zone) => contains(zone.name, 'privatelink.wvd.')), (zone) => zone.name))]",
 									"label": "AVD Private DNS Zone",
 									"multiLine": true,
 									"toolTip": "Select the existing Private DNS Zone for the Remote Session connection and Workspace Feed (if applicable).",
@@ -4017,7 +4026,7 @@
 									"type": "Microsoft.Common.DropDown",
 									"visible": "[and(steps('zeroTrust').avdPrivateLink.enablePrivateLink, steps('zeroTrust').avdPrivateLink.enablePrivateDNSIntegration, equals(steps('zeroTrust').avdPrivateLink.avdPrivateLinkConfig, 'All'))]",
 									"label": "Global Feed Private DNS Zone",
-									"defaultValue": "",
+									"defaultValue": "[first(map(filter(steps('zeroTrust').avdPrivateLink.privateDNSZonesApi.value, (zone) => contains(zone.name, 'privatelink-global.wvd.')), (zone) => zone.name))]",
 									"multiLine": true,
 									"toolTip": "Select the existing Private DNS Zone for the global Feed.",
 									"constraints": {
