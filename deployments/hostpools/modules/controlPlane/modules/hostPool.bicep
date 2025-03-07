@@ -20,24 +20,24 @@ param hostPoolValidationEnvironment bool
 param virtualMachineTemplate object
 
 var hostPoolVmTemplateTags = {
-  vmDomain: virtualMachineTemplate.domain
-  vmOUPath: virtualMachineTemplate.ouPath
+  vmDomain: virtualMachineTemplate.?domain ?? null
+  vmOUPath: virtualMachineTemplate.?ouPath ?? null
   vmNamePrefix: virtualMachineTemplate.namePrefix
   vmImageType: virtualMachineTemplate.imageType
-  vmCustomImageId: virtualMachineTemplate.customImageId
-  vmImageOffer: virtualMachineTemplate.galleryImageOffer
-  vmImagePublisher: virtualMachineTemplate.galleryImagePublisher
-  vmImageSKU: virtualMachineTemplate.galleryImageSKU
+  vmCustomImageId: virtualMachineTemplate.?customImageId ?? null
+  vmImageOffer: virtualMachineTemplate.?galleryImageOffer ?? null
+  vmImagePublisher: virtualMachineTemplate.?galleryImagePublisher ?? null
+  vmImageSKU: virtualMachineTemplate.?galleryImageSKU ?? null
   vmOSDiskType: virtualMachineTemplate.osDiskType
   vmDiskSizeGB: virtualMachineTemplate.diskSizeGB
   vmSize: virtualMachineTemplate.vmSize.id
-  vmEncryptionAtHost: virtualMachineTemplate.encryptionAtHost
-  vmAcceleratedNetworking: virtualMachineTemplate.acceleratedNetworking
-  vmDiskEncryptionSetName: virtualMachineTemplate.diskEncryptionSetName
-  vmHibernate: virtualMachineTemplate.hibernationEnabled
-  vmSecurityType: virtualMachineTemplate.securityType
-  vmSecureBoot: virtualMachineTemplate.secureBootEnabled
-  vmVirtualTPM: virtualMachineTemplate.virtualTpmEnabled
+  vmEncryptionAtHost: virtualMachineTemplate.?encryptionAtHost ?? false
+  vmAcceleratedNetworking: virtualMachineTemplate.?acceleratedNetworking ?? false
+  vmDiskEncryptionSetName: virtualMachineTemplate.?diskEncryptionSetName ?? false
+  vmHibernate: virtualMachineTemplate.?hibernate ?? false
+  vmSecurityType: virtualMachineTemplate.?securityType ?? 'Standard'
+  vmSecureBoot: virtualMachineTemplate.?secureBootEnabled ?? false
+  vmVirtualTPM: virtualMachineTemplate.?virtualTpmEnabled ?? false
 }
 
 resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' = {
