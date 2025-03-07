@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "10703909809483573331"
+      "templateHash": "17642240411440410229"
     }
   },
   "parameters": {
@@ -14113,7 +14113,7 @@
           "networkInterfaceNamePrefix": {
             "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.networkInterfaceNamePrefix.value]"
           },
-          "recoveryServices": "[if(contains(parameters('hostPoolType'), 'Personal'), createObject('value', parameters('recoveryServices')), createObject('value', false()))]",
+          "recoveryServices": "[if(equals(parameters('deploymentType'), 'Complete'), if(contains(parameters('hostPoolType'), 'Personal'), createObject('value', parameters('recoveryServices')), createObject('value', false())), createObject('value', parameters('recoveryServices')))]",
           "recoveryServicesVaultName": {
             "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.recoveryServicesVaultNames.value.VirtualMachines]"
           },
@@ -14181,7 +14181,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "3045882969849555493"
+              "templateHash": "249187097633356929"
             }
           },
           "parameters": {
@@ -21080,7 +21080,7 @@
                 "name": "protectedItems_Vm",
                 "count": "[length(range(1, parameters('sessionHostBatchCount')))]"
               },
-              "condition": "[parameters('recoveryServices')]",
+              "condition": "[and(parameters('recoveryServices'), or(equals(parameters('deploymentType'), 'Complete'), not(empty(parameters('existingRecoveryServicesVaultResourceId')))))]",
               "type": "Microsoft.Resources/deployments",
               "apiVersion": "2022-09-01",
               "name": "[format('BackupProtectedItems_VirtualMachines_{0}_{1}', sub(range(1, parameters('sessionHostBatchCount'))[copyIndex()], 1), parameters('timeStamp'))]",
@@ -21094,8 +21094,8 @@
                   "location": {
                     "value": "[parameters('location')]"
                   },
-                  "PolicyId": "[if(parameters('recoveryServices'), if(equals(parameters('deploymentType'), 'Complete'), createObject('value', format('{0}/backupPolicies/{1}', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupHosts')), 'Microsoft.Resources/deployments', format('RecoveryServicesVault_VirtualMachines_{0}', parameters('timeStamp'))), '2022-09-01').outputs.resourceId.value, variables('backupPolicyName'))), createObject('value', format('{0}/backupPolicies/{1}', parameters('existingRecoveryServicesVaultResourceId'), variables('backupPolicyName')))), createObject('value', ''))]",
-                  "recoveryServicesVaultName": "[if(parameters('recoveryServices'), if(equals(parameters('deploymentType'), 'Complete'), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupHosts')), 'Microsoft.Resources/deployments', format('RecoveryServicesVault_VirtualMachines_{0}', parameters('timeStamp'))), '2022-09-01').outputs.name.value), createObject('value', last(split(parameters('existingRecoveryServicesVaultResourceId'), '/')))), createObject('value', ''))]",
+                  "PolicyId": "[if(equals(parameters('deploymentType'), 'Complete'), createObject('value', format('{0}/backupPolicies/{1}', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupHosts')), 'Microsoft.Resources/deployments', format('RecoveryServicesVault_VirtualMachines_{0}', parameters('timeStamp'))), '2022-09-01').outputs.resourceId.value, variables('backupPolicyName'))), createObject('value', format('{0}/backupPolicies/{1}', parameters('existingRecoveryServicesVaultResourceId'), variables('backupPolicyName'))))]",
+                  "recoveryServicesVaultName": "[if(equals(parameters('deploymentType'), 'Complete'), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupHosts')), 'Microsoft.Resources/deployments', format('RecoveryServicesVault_VirtualMachines_{0}', parameters('timeStamp'))), '2022-09-01').outputs.name.value), createObject('value', last(split(parameters('existingRecoveryServicesVaultResourceId'), '/'))))]",
                   "sessionHostCount": "[if(and(equals(range(1, parameters('sessionHostBatchCount'))[copyIndex()], parameters('sessionHostBatchCount')), greater(parameters('divisionRemainderValue'), 0)), createObject('value', parameters('divisionRemainderValue')), createObject('value', parameters('maxResourcesPerTemplateDeployment')))]",
                   "sessionHostIndex": "[if(equals(range(1, parameters('sessionHostBatchCount'))[copyIndex()], 1), createObject('value', parameters('sessionHostIndex')), createObject('value', add(mul(sub(range(1, parameters('sessionHostBatchCount'))[copyIndex()], 1), parameters('maxResourcesPerTemplateDeployment')), parameters('sessionHostIndex'))))]",
                   "tags": {

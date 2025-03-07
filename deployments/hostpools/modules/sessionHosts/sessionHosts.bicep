@@ -393,13 +393,13 @@ module recoveryServicesVault '../../../sharedModules/resources/recovery-services
   }
 }
 
-module protectedItems_Vm 'modules/protectedItems.bicep' = [for i in range(1, sessionHostBatchCount): if (recoveryServices) {
+module protectedItems_Vm 'modules/protectedItems.bicep' = [for i in range(1, sessionHostBatchCount): if (recoveryServices && (deploymentType == 'Complete' || !empty(existingRecoveryServicesVaultResourceId))) {
   name: 'BackupProtectedItems_VirtualMachines_${i-1}_${timeStamp}'
   scope: resourceGroup(resourceGroupHosts)
   params: {
     location: location
-    PolicyId: recoveryServices ? ( deploymentType == 'Complete' ? '${recoveryServicesVault.outputs.resourceId}/backupPolicies/${backupPolicyName}' : '${existingRecoveryServicesVaultResourceId}/backupPolicies/${backupPolicyName}' ) : ''
-    recoveryServicesVaultName: recoveryServices ? ( deploymentType == 'Complete' ? recoveryServicesVault.outputs.name : last(split(existingRecoveryServicesVaultResourceId, '/')) ) : ''
+    PolicyId: deploymentType == 'Complete' ? '${recoveryServicesVault.outputs.resourceId}/backupPolicies/${backupPolicyName}' : '${existingRecoveryServicesVaultResourceId}/backupPolicies/${backupPolicyName}'
+    recoveryServicesVaultName: deploymentType == 'Complete' ? recoveryServicesVault.outputs.name : last(split(existingRecoveryServicesVaultResourceId, '/'))
     sessionHostCount: i == sessionHostBatchCount && divisionRemainderValue > 0 ? divisionRemainderValue : maxResourcesPerTemplateDeployment
     sessionHostIndex: i == 1 ? sessionHostIndex : ((i - 1) * maxResourcesPerTemplateDeployment) + sessionHostIndex
     tags: union({'cm-resource-parent': hostPoolResourceId}, tags[?'Microsoft.recoveryServices/vaults'] ?? {})

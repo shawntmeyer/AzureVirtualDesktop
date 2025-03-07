@@ -1083,7 +1083,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     privateEndpointNICNameConv: resourceNames.outputs.privateEndpointNICNameConv
     privateEndpointSubnetResourceId: hostPoolResourcesPrivateEndpointSubnetResourceId
     networkInterfaceNamePrefix: resourceNames.outputs.networkInterfaceNamePrefix
-    recoveryServices: contains(hostPoolType, 'Personal') ? recoveryServices : false
+    recoveryServices: deploymentType == 'Complete' ? contains(hostPoolType, 'Personal') ? recoveryServices : false : recoveryServices
     recoveryServicesVaultName: resourceNames.outputs.recoveryServicesVaultNames.VirtualMachines
     resourceGroupHosts: deploymentType == 'Complete'
       ? resourceNames.outputs.resourceGroupHosts
