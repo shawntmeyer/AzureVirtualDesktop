@@ -2,13 +2,6 @@
 
 # Troubleshooting
 
-## Use Key Vault Secrets
-
-If you are utilizing the Template Spec UI to deploy the Azure Virtual Desktop hostpool and are trying to reference existing Key Vault secrets, you may not be able to list the existing secrets in the UI. There can be two reasons:
-
-1. The key vault network firewall blocks public network access and you are not running the template spec or blue-button deployment from a machine that is able to access the Virtual Network where the key vault private endpoint is attached. Fix this by running the deployment from a jump host inside your azure environment.
-2. The user account logged into the Azure Portal when running the template spec or blue-button deployment does not have the rights granted by the [Key Vault Secrets User role](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/security#key-vault-secrets-user). Fix this issue by granting the user this role on the key vault.
-
 ## Role Assignment Failure
 
 ### Symptom
@@ -87,17 +80,35 @@ This may be due to an issue with the file name (or Url) specified in the 'avdAge
 Complete these steps to determine if this is the issue.
 
 1. Review the inputs of your failed deployment at the root level. Look for and save the value of the 'avdAgentsDSCPackage' parameter to Notepad. Keep Notepad Open.
+
 2. Follow the standard portal instructions from [Add session hosts to a host pool](https://learn.microsoft.com/en-us/azure/virtual-desktop/add-session-hosts-host-pool?tabs=portal%2Cgui&pivots=host-pool-standard) to the **Review + create** tab, but do not click **Create**.
+   
 3. Select **Download a template for automation**.
 
    ![Download Template](images/DownloadTemplate.png)
 
 4. Select the **Parameters** link on the **Template** screen.
+
    ![Parameters](images/SelectTemplateParameters.png)
-5. Search for the **artifactsLocation** parameter and then copy the contents to Notepad below the entry from Step 1.
+
+5. Search for the **artifactsLocation** parameter and then copy the contents to Notepad below the entry from Step 1
 
    ![artifactsLocation](images/artifactsLocation.png)
 
 6. Compare the values and note if the value is incorrect. Update the 'avdAgentsDSCPackage' parameter value in your parameters file or use this new value in the **AVD Agent DSC Package** text box on the **Session Hosts** pane of the template spec (or blue-button deployment).
 
    ![AVD Agent DSC Package](images/AVDAgentDSCPackageUI.png)
+
+## Access Denied for FSLogix Shares when using Hybrid Identities
+
+### Symptom
+
+The user is unable to logon due to an FSLogix failure that presents as an access denied.
+
+### Problem
+
+The share permissions are assigned using the same group as the AppSecurityGroup. The problem occurs when this group is a cloud-only group (not sourced from Windows Server AD) and the session hosts are not hybrid joined.
+
+### Solution
+
+The easiest thing to do is to [enable hybrid join](https://learn.microsoft.com/en-us/entra/identity/devices/how-to-hybrid-join) for your session hosts as this provides the best user experience and enables Entra ID SSO. If you have already enabled hybrid join, you may need to wait up to 60 minutes for your system to complete the hybrid join process after deployment. If you are unable to enable hybrid join, then you can configure the storage account to use default share permission for all users and set the role to 'Storage File Data SMB Share Contributor' or assign a hybrid group containing the same users using the hostpool to the IAM blade of the storage account and give them the 'Storage File Data SMB Share Contributor' role. For more information see: https://learn.microsoft.com/en-us/fslogix/how-to-configure-storage-permissions
