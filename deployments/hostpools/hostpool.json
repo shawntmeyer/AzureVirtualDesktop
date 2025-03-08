@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "196446500378108636"
+      "templateHash": "7274733752934215076"
     }
   },
   "parameters": {
@@ -1058,20 +1058,20 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "16877229097327330813"
+              "templateHash": "6882445092035523020"
             }
           },
           "parameters": {
-            "identifier": {
-              "type": "string"
-            },
-            "index": {
-              "type": "string"
-            },
             "existingFeedWorkspaceResourceId": {
               "type": "string"
             },
             "fslogixStorageCustomPrefix": {
+              "type": "string"
+            },
+            "identifier": {
+              "type": "string"
+            },
+            "index": {
               "type": "string"
             },
             "locationControlPlane": {
@@ -1884,13 +1884,10 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "3368256606506825946"
+              "templateHash": "8622905962887839171"
             }
           },
           "parameters": {
-            "identitySolution": {
-              "type": "string"
-            },
             "appGroupSecurityGroups": {
               "type": "array"
             },
@@ -1906,6 +1903,9 @@
             "dedicatedHostResourceId": {
               "type": "string"
             },
+            "deployFSLogixStorage": {
+              "type": "bool"
+            },
             "deploymentType": {
               "type": "string"
             },
@@ -1917,9 +1917,6 @@
               "type": "string"
             },
             "drainMode": {
-              "type": "bool"
-            },
-            "deployFSLogixStorage": {
               "type": "bool"
             },
             "fslogixContainerType": {
@@ -1943,6 +1940,9 @@
             "hostPoolType": {
               "type": "string",
               "defaultValue": "Pooled DepthFirst"
+            },
+            "identitySolution": {
+              "type": "string"
             },
             "locations": {
               "type": "object"
@@ -1971,7 +1971,15 @@
             "scalingPlanExclusionTag": {
               "type": "string"
             },
-            "scalingPlanRampUpSchedule": {
+            "scalingPlanForceLogoff": {
+              "type": "bool",
+              "defaultValue": false
+            },
+            "scalingPlanMinsBeforeLogoff": {
+              "type": "int",
+              "defaultValue": 0
+            },
+            "scalingPlanOffPeakSchedule": {
               "type": "object",
               "defaultValue": {}
             },
@@ -1983,17 +1991,9 @@
               "type": "object",
               "defaultValue": {}
             },
-            "scalingPlanOffPeakSchedule": {
+            "scalingPlanRampUpSchedule": {
               "type": "object",
               "defaultValue": {}
-            },
-            "scalingPlanForceLogoff": {
-              "type": "bool",
-              "defaultValue": false
-            },
-            "scalingPlanMinsBeforeLogoff": {
-              "type": "int",
-              "defaultValue": 0
             },
             "sessionHostCount": {
               "type": "int"

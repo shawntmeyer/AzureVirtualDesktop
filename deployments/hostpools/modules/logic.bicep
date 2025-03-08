@@ -1,16 +1,15 @@
 targetScope = 'subscription'
 
-param identitySolution string
 param appGroupSecurityGroups array
 param avdPrivateLinkPrivateRoutes string
 param globalFeedPrivateEndpointSubnetResourceId string
 param dedicatedHostGroupResourceId string
 param dedicatedHostResourceId string
+param deployFSLogixStorage bool
 param deploymentType string
 param deployScalingPlan bool = false
 param domainName string
 param drainMode bool
-param deployFSLogixStorage bool
 param fslogixContainerType string
 param fslogixFileShareNames object
 param fslogixOUPath string
@@ -18,6 +17,7 @@ param fslogixShardOptions string
 param fslogixShardGroups array
 param fslogixStorageService string
 param hostPoolType string = 'Pooled DepthFirst'
+param identitySolution string
 param locations object
 param locationVirtualMachines string
 param resourceGroupControlPlane string
@@ -27,12 +27,12 @@ param resourceGroupHosts string
 param resourceGroupManagement string
 param resourceGroupStorage string
 param scalingPlanExclusionTag string
-param scalingPlanRampUpSchedule object = {}
-param scalingPlanPeakSchedule object = {}
-param scalingPlanRampDownSchedule object = {}
-param scalingPlanOffPeakSchedule object = {}
 param scalingPlanForceLogoff bool = false
 param scalingPlanMinsBeforeLogoff int = 0
+param scalingPlanOffPeakSchedule object = {}
+param scalingPlanPeakSchedule object = {}
+param scalingPlanRampDownSchedule object = {}
+param scalingPlanRampUpSchedule object = {}
 param sessionHostCount int
 param sessionHostIndex int
 param tags object

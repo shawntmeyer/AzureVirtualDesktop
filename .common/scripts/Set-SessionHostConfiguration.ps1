@@ -635,11 +635,12 @@ Write-Log -message "*** Setting Registry Values ***"
 ForEach ($Setting in $RegSettings) {
     Set-RegistryValue -Name $Setting.Name -Path $Setting.Path -PropertyType $Setting.PropertyType -Value $Setting.Value -Verbose
 }
-
+<#
 # Resize OS Disk
 Write-Log -message "Resizing OS Disk"
 $driveLetter = $env:SystemDrive.Substring(0,1)
 $size = Get-PartitionSupportedSize -DriveLetter $driveLetter
 Resize-Partition -DriveLetter $driveLetter -Size $size.SizeMax
 Write-Log -message "OS Disk Resized"
+#>
 Write-Log -message "Done"
