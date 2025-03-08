@@ -459,6 +459,13 @@ If ($ConfigureFSLogix) {
         Write-Log -message "Adding AccessNetworkAsComputerObject for cloud only identities."
         # Attach the users VHD(x) as the computer: https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=profiles#accessnetworkascomputerobject
         $RegSettings.Add([PSCustomObject]@{Name = 'AccessNetworkAsComputerObject'; Path = 'HKLM:\SOFTWARE\FSLogix\Profiles'; PropertyType = 'DWord'; Value = 1 })
+        # Disable Roaming the Recycle Bin because it corrupts. https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=profiles#roamrecyclebin
+        $RegSettings.Add([PSCustomObject]@{Path = 'HKLM:\SOFTWARE\FSLogix\Apps'; Name = 'RoamRecycleBin'; PropertyType = 'DWord'; Value = 0 })
+        # Disable the Recycle Bin
+        Reg LOAD HKLM\DefaultUser "$env:SystemDrive\Users\Default User\NtUser.dat"
+        Set-RegistryValue -Key 'HKLM:\DefaultUser\Software\icrosoft\Windows\CurrentVersion\Policies\Explorer' -Name NoRecycleFiles -Type DWord -Value 1
+        Write-Log -Message "Unloading default user hive."
+        $null = cmd /c REG UNLOAD "HKLM\Default" '2>&1'
     }
 
     if ($CloudCache -eq $True) {
