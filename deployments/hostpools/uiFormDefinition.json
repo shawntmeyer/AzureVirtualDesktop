@@ -38,6 +38,25 @@
 							"visible": true
 						},
 						{
+							"name": "hostPool",
+							"type": "Microsoft.Solutions.ResourceSelector",
+							"visible": "[equals(steps('basics').deploymentType, 'SessionHostsOnly')]",
+							"label": "Select the hostpool to update",
+							"resourceType": "Microsoft.DesktopVirtualization/hostPools",
+							"constraints": {
+								"required": true
+							}
+						},
+						{
+							"name": "hostPoolApi",
+							"type": "Microsoft.Solutions.ArmApiControl",
+							"condition": "[not(empty(steps('basics').hostPool.id))]",
+							"request": {
+								"method": "GET",
+								"path": "[concat(steps('basics').hostPool.id, '?api-version=2024-04-03')]"
+							}
+						},	
+						{
 							"name": "scope",
 							"type": "Microsoft.Common.ResourceScope",
 							"instanceDetailsLabel": "Deployment Details",
@@ -54,6 +73,15 @@
 							"request": {
 								"method": "GET",
 								"path": "/subscriptions?api-version=2022-12-01"
+							}
+						},
+						{
+							"name": "resourceGroupsApi",
+							"type": "Microsoft.Solutions.ArmApiControl",
+							"condition": "[and(equals(steps('basics').deploymentType, 'SessionHostsOnly'), not(empty(steps('basics').scope.subscription.id)))]",
+							"request": {
+								"method": "GET",
+								"path": "[concat(steps('basics').scope.subscription.id, '/resourcegroups?api-version=2021-04-01')]"
 							}
 						},
 						{
@@ -81,8 +109,9 @@
 							"name": "resourceGroup",
 							"type": "Microsoft.Common.DropDown",
 							"label": "Virtual Machine Resource Group",
+							"multiLine": true,
 							"constraints": {
-								"allowedValues": "[steps('basics').resourceGroupsApi.transformed.list]",
+								"allowedValues": "[map(filter(filter(steps('basics').resourceGroupsApi.value, (rg) => and(equals(rg.location, steps('basics').scope.location.name), contains(rg.name, 'hosts'), not(empty(rg.tags)))), (rg) => not(empty(rg.tags.cm-resource-parent))), (rg) => parse(concat('{\"label\":\"', rg.name, '\",\"description\":\"hostPool: ', last(split(rg.tags.cm-resource-parent, '/')), '\",\"value\":{\"name\":\"', rg.name, '\",\"id\":\"', rg.id, '\"}}')))]",
 								"required": true
 							},
 							"visible": "[equals(steps('basics').deploymentType, 'SessionHostsOnly')]"
@@ -311,24 +340,13 @@
 					"label": "Control Plane",
 					"elements": [
 						{
-							"name": "existingHostPool",
-							"type": "Microsoft.Solutions.ResourceSelector",
+							"name": "controlPlaneTextBlock0",
+							"type": "Microsoft.Common.TextBlock",
 							"visible": "[equals(steps('basics').deploymentType, 'SessionHostsOnly')]",
-							"label": "Hostpool to update",
-							"resourceType": "Microsoft.DesktopVirtualization/hostPools",
-							"constraints": {
-								"required": true
+							"options": {
+								"text": "This page is intentionally blank when only completing a Session Host Deployment."
 							}
-						},
-						{
-							"name": "hostPoolApi",
-							"type": "Microsoft.Solutions.ArmApiControl",
-							"condition": "[not(empty(steps('controlPlane').existingHostPool))]",
-							"request": {
-								"method": "GET",
-								"path": "[concat(steps('controlPlane').existingHostPool.id, '?api-version=2024-04-03')]"
-							}
-						},
+						},						
 						{
 							"name": "workspacesApi",
 							"type": "Microsoft.Solutions.ArmApiControl",
@@ -1031,7 +1049,7 @@
 									"name": "virtualMachineNamePrefix",
 									"type": "Microsoft.Common.TextBox",
 									"label": "Virtual Machine Name Prefix",
-									"defaultValue": "[if(or(equals(steps('basics').deploymentType, 'Complete'), empty(steps('controlPlane').hostPoolApi.tags.vmNamePrefix)), concat('avd', steps('basics').naming.identifier), steps('controlPlane').hostPoolApi.tags.vmNamePrefix)]",
+									"defaultValue": "[if(or(equals(steps('basics').deploymentType, 'Complete'), empty(steps('basics').hostPoolApi.tags.vmNamePrefix)), concat('avd', steps('basics').naming.identifier), steps('basics').hostPoolApi.tags.vmNamePrefix)]",
 									"toolTip": "Provide a Virtual Machine name prefix consisting of alphanumeric and dashes up to 12 characters long. A three character numeric suffix will be appended to the name padded with zeros (0).",
 									"constraints": {
 										"required": true,
@@ -1118,7 +1136,7 @@
 									"type": "Microsoft.Common.DropDown",
 									"label": "Image Source",
 									"filter": true,
-									"defaultValue": "[if(or(equals(steps('basics').deploymentType, 'Complete'), empty(steps('controlPlane').hostPoolApi.tags.vmImageType)), 'Marketplace', if(equals(steps('controlPlane').hostPoolApi.tags.vmImageType, 'CustomImage'), 'Compute Gallery', 'Marketplace'))]",
+									"defaultValue": "[if(or(equals(steps('basics').deploymentType, 'Complete'), empty(steps('basics').hostPoolApi.tags.vmImageType)), 'Marketplace', if(equals(steps('basics').hostPoolApi.tags.vmImageType, 'CustomImage'), 'Compute Gallery', 'Marketplace'))]",
 									"toolTip": "Select the type of image to deploy on the session hosts.",
 									"constraints": {
 										"required": true,
@@ -1138,7 +1156,7 @@
 									"name": "offer",
 									"type": "Microsoft.Common.DropDown",
 									"label": "Offer",
-									"defaultValue": "[if(or(equals(steps('basics').deploymentType, 'Complete'), empty(steps('controlPlane').hostPoolApi.tags.vmImageOffer)), 'Office-365', steps('controlPlane').hostPoolApi.tags.vmImageOffer)]",
+									"defaultValue": "[if(or(equals(steps('basics').deploymentType, 'Complete'), empty(steps('basics').hostPoolApi.tags.vmImageOffer)), 'Office-365', steps('basics').hostPoolApi.tags.vmImageOffer)]",
 									"toolTip": "Select the desired marketplace image offer.",
 									"constraints": {
 										"allowedValues": [
@@ -1172,7 +1190,7 @@
 									"name": "sku",
 									"type": "Microsoft.Common.DropDown",
 									"label": "SKU",
-									"defaultValue": "[if(or(equals(steps('basics').deploymentType, 'Complete'), empty(steps('controlPlane').hostPoolApi.tags.vmImageSKU)), 'win11-24h2-avd-m365', steps('controlPlane').hostPoolApi.tags.vmImageSKU)]",
+									"defaultValue": "[if(or(equals(steps('basics').deploymentType, 'Complete'), empty(steps('basics').hostPoolApi.tags.vmImageSKU)), 'win11-24h2-avd-m365', steps('basics').hostPoolApi.tags.vmImageSKU)]",
 									"toolTip": "Select the desired marketplace image SKU.",
 									"constraints": {
 										"allowedValues": "[map(filter(steps('hosts').image.skuApi, (sku) => and(startsWith(sku.name, 'win'), or(contains(sku.name, 'ent'), contains(sku.name, 'avd')))), (sku) => parse(concat('{\"label\":\"', sku.name, '\",\"value\":\"', sku.name, '\"}')))]",
@@ -1205,7 +1223,7 @@
 								{
 									"name": "imageDefinition",
 									"type": "Microsoft.Common.DropDown",
-									"defaultValue": "[if(or(equals(steps('basics').deploymentType, 'Complete'), empty(steps('controlPlane').hostPoolApi.tags.vmCustomImageId)), '', last(split(steps('controlPlane').hostPoolApi.tags.vmCustomImageId, '/')))]",
+									"defaultValue": "[if(or(equals(steps('basics').deploymentType, 'Complete'), empty(steps('basics').hostPoolApi.tags.vmCustomImageId)), '', last(split(steps('basics').hostPoolApi.tags.vmCustomImageId, '/')))]",
 									"label": "Image Definition",
 									"constraints": {
 										"allowedValues": "[steps('hosts').image.imageDefinitionsApi.transformed.list]",
@@ -1239,7 +1257,7 @@
 									"type": "Microsoft.Common.DropDown",
 									"label": "Security Type",
 									"placeholder": "",
-									"defaultValue": "[if(equals(steps('basics').deploymentType, 'Complete'), 'TrustedLaunch', coalesce(steps('controlPlane').hostPoolApi.tags.vmSecurityType, 'TrustedLaunch'))]",
+									"defaultValue": "[if(equals(steps('basics').deploymentType, 'Complete'), 'TrustedLaunch', coalesce(steps('basics').hostPoolApi.tags.vmSecurityType, 'TrustedLaunch'))]",
 									"toolTip": "Select the appropriate Security Type configuration for the Virtual Machine. Note that 'ConfidentialVMs' are not available in all regions and the option may not appear.",
 									"constraints": {
 										"allowedValues": "[if(and(not(empty(steps('hosts').resourceSkusApi.transformed.confidentialVMSizes)), or(equals(steps('hosts').image.source, 'marketplace'), equals(steps('hosts').image.imageDefinitionApi.transformed.SecurityType, 'TrustedLaunchAndConfidentialVmSupported'))), parse('[{\"label\":\"ConfidentialVM\",\"value\":\"ConfidentialVM\"},{\"label\":\"Standard\",\"value\":\"Standard\"},{\"label\":\"TrustedLaunch\",\"value\":\"TrustedLaunch\"}]'), if(and(not(empty(steps('hosts').resourceSkusApi.transformed.confidentialVMSizes)), equals(steps('hosts').image.source, 'gallery'), equals(steps('hosts').image.imageDefinitionApi.transformed.SecurityType, 'ConfidentialVM')), parse('[{\"label\":\"ConfidentialVM\",\"value\":\"ConfidentialVM\"}]'), if(and(not(empty(steps('hosts').resourceSkusApi.transformed.confidentialVMSizes)), equals(steps('hosts').image.source, 'gallery'), equals(steps('hosts').image.imageDefinitionApi.transformed.SecurityType, 'ConfidentialVmSupported')), parse('[{\"label\":\"ConfidentialVM\",\"value\":\"ConfidentialVM\"},{\"label\":\"Standard\",\"value\":\"Standard\"}]'), if(and(equals(steps('hosts').image.source, 'gallery'), equals(steps('hosts').image.imageDefinitionApi.transformed.SecurityType, 'TrustedLaunch')), parse('[{\"label\":\"TrustedLaunch\",\"value\":\"TrustedLaunch\"}]'), if(or(equals(steps('hosts').image.source, 'marketplace'), and(equals(steps('hosts').image.source, 'gallery'), contains(steps('hosts').image.imageDefinitionApi.transformed.SecurityType, 'TrustedLaunch'), contains(steps('hosts').image.imageDefinitionApi.transformed.SecurityType, 'Supported'))), parse('[{\"label\":\"Standard\",\"value\":\"Standard\"},{\"label\":\"TrustedLaunch\",\"value\":\"TrustedLaunch\"}]'), if(and(equals(steps('hosts').image.source, 'gallery'), or(equals(steps('hosts').image.imageDefinitionApi.transformed.SecurityType, 'ConfidentialVmSupported'), empty(steps('hosts').image.imageDefinitionApi.transformed.SecurityType))), parse('[{\"label\":\"Standard\",\"value\":\"Standard\"}]'), parse('[]')))))))]",
@@ -1252,7 +1270,7 @@
 									"type": "Microsoft.Common.CheckBox",
 									"label": "Enable Secure Boot",
 									"toolTip": "Secure boot helps protect your VMs against boot kits, rootkits, and kernel-level malware.",
-									"defaultValue": "[if(or(equals(steps('basics').deploymentType, 'Complete'), empty(steps('controlPlane').hostPoolApi.tags.vmSecureBoot)), true, bool(steps('controlPlane').hostPoolApi.tags.vmSecureBoot))]",
+									"defaultValue": "[if(or(equals(steps('basics').deploymentType, 'Complete'), empty(steps('basics').hostPoolApi.tags.vmSecureBoot)), true, bool(steps('basics').hostPoolApi.tags.vmSecureBoot))]",
 									"visible": "[not(equals(steps('hosts').security.securityType, 'Standard'))]"
 								},
 								{
@@ -1260,7 +1278,7 @@
 									"type": "Microsoft.Common.CheckBox",
 									"label": "Enable vTPM",
 									"toolTip": "Virtual Trusted Platform Module (vTPM) is TPM2.0 compliant and validates your VM boot integrity apart from securely storing keys and secrets.",
-									"defaultValue": "[if(or(equals(steps('basics').deploymentType, 'Complete'), empty(steps('controlPlane').hostPoolApi.tags.vmVirtualTPM)), true, bool(steps('controlPlane').hostPoolApi.tags.vmVirtualTPM))]",
+									"defaultValue": "[if(or(equals(steps('basics').deploymentType, 'Complete'), empty(steps('basics').hostPoolApi.tags.vmVirtualTPM)), true, bool(steps('basics').hostPoolApi.tags.vmVirtualTPM))]",
 									"visible": "[not(equals(steps('hosts').security.securityType, 'Standard'))]"
 								},
 								{
@@ -1323,7 +1341,7 @@
 									"type": "Microsoft.Common.CheckBox",
 									"label": "Encryption At Host",
 									"toolTip": "Check to enable Encryption At Host",
-									"defaultValue": "[if(equals(steps('basics').encryptionAtHostFeatureApi.properties.state, 'Registered'), if(equals(steps('basics').deploymentType, 'Complete'), true, bool(steps('controlPlane').hostPoolApi.tags.vmEncryptionAtHost)), false)]",
+									"defaultValue": "[if(equals(steps('basics').encryptionAtHostFeatureApi.properties.state, 'Registered'), if(equals(steps('basics').deploymentType, 'Complete'), true, bool(steps('basics').hostPoolApi.tags.vmEncryptionAtHost)), false)]",
 									"visible": "[not(equals(steps('hosts').security.securityType, 'ConfidentialVM'))]"
 								},
 								{
@@ -1368,7 +1386,7 @@
 									"name": "selectDiskEncryptionSet",
 									"type": "Microsoft.Common.CheckBox",
 									"label": "Enable Customer-Managed Keys on OS Disk",
-									"defaultValue": "[not(empty(steps('controlPlane').hostPoolApi.tags.vmDiskEncryptionSetName))]",
+									"defaultValue": "[not(empty(steps('basics').hostPoolApi.tags.vmDiskEncryptionSetName))]",
 									"toolTip": "Enables a zero trust configuration on the session host disks.",
 									"visible": "[equals(steps('basics').deploymentType, 'SessionHostsOnly')]"
 								},
@@ -1387,7 +1405,7 @@
 								{
 									"name": "existingDiskEncryptionSet",
 									"type": "Microsoft.Common.DropDown",
-									"defaultValue": "[steps('controlPlane').hostPoolApi.tags.vmDiskEncryptionSetName]",
+									"defaultValue": "[steps('basics').hostPoolApi.tags.vmDiskEncryptionSetName]",
 									"label": "Disk Encryption Set",
 									"constraints": {
 										"allowedValues": "[steps('hosts').diskEncryption.diskEncryptionSetApi.transformed.list]",
@@ -1567,7 +1585,7 @@
 									"type": "Microsoft.Common.DropDown",
 									"label": "OS Disk SKU",
 									"filter": true,
-									"defaultValue": "[if(equals(steps('basics').deploymentType, 'Complete'), 'Premium_LRS', coalesce(steps('controlPlane').hostPoolApi.tags.vmOSDiskType, 'Premium_LRS'))]",
+									"defaultValue": "[if(equals(steps('basics').deploymentType, 'Complete'), 'Premium_LRS', coalesce(steps('basics').hostPoolApi.tags.vmOSDiskType, 'Premium_LRS'))]",
 									"toolTip": "Select the disk SKU for the operating system disk.",
 									"constraints": {
 										"required": true,
@@ -1592,7 +1610,7 @@
 									"type": "Microsoft.Common.DropDown",
 									"label": "OS Disk Size (GB)",
 									"placeholder": "",
-									"defaultValue": "[if(equals(steps('basics').deploymentType, 'Complete'), '128', coalesce(steps('controlPlane').hostPoolApi.tags.vmDiskSizeGB, '128'))]",
+									"defaultValue": "[if(equals(steps('basics').deploymentType, 'Complete'), '128', coalesce(steps('basics').hostPoolApi.tags.vmDiskSizeGB, '128'))]",
 									"toolTip": "",
 									"constraints": {
 										"allowedValues": [
@@ -1627,7 +1645,7 @@
 									"label": "Size",
 									"toolTip": "Select the size of the virtual machines. Multi-session hosts should have 4 - 24 vCPUs. Single session host should have 2 or more vCPUs.",
 									"recommendedSizes": [
-										"[if(equals(steps('basics').deploymentType, 'Complete'), 'Standard_D4ads_v5', coalesce(steps('controlPlane').hostPoolApi.tags.vmSize, 'Standard_D4ads_v5'))]",
+										"[if(equals(steps('basics').deploymentType, 'Complete'), 'Standard_D4ads_v5', coalesce(steps('basics').hostPoolApi.tags.vmSize, 'Standard_D4ads_v5'))]",
 										"Standard_D8ads_v5",
 										"Standard_D16ads_v5",
 										"Standard_D32ads_v5",
@@ -1668,7 +1686,7 @@
 									"name": "enableAcceleratedNetworking",
 									"type": "Microsoft.Common.CheckBox",
 									"label": "Enable accelerated networking",
-									"defaultValue": "[if(or(equals(steps('basics').deploymentType, 'Complete'), empty(steps('controlPlane').hostPoolApi.tags.vmAcceleratedNetworking)), true, bool(steps('controlPlane').hostPoolApi.tags.vmAcceleratedNetworking))]",
+									"defaultValue": "[if(or(equals(steps('basics').deploymentType, 'Complete'), empty(steps('basics').hostPoolApi.tags.vmAcceleratedNetworking)), true, bool(steps('basics').hostPoolApi.tags.vmAcceleratedNetworking))]",
 									"toolTip": "Enables low latency and high throughput on the network interface.",
 									"visible": "[and(bool(first(map(filter(first(map(filter(steps('hosts').resourceSkusApi.value, (sku) => contains(sku.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (sku) => sku.capabilities)), (sku) => equals(sku.name, 'AcceleratedNetworkingEnabled')), (sku) => sku.value))), or(equals(steps('hosts').image.source, 'marketplace'), bool(steps('hosts').image.imageDefinitionApi.transformed.IsAcceleratedNetworkSupported)))]"
 								},
@@ -1676,7 +1694,7 @@
 									"name": "hibernationEnabled",
 									"type": "Microsoft.Common.CheckBox",
 									"label": "Enable Hibernation",
-									"defaultValue": "[if(equals(steps('basics').deploymentType, 'Complete'), false, empty(steps('controlPlane').hostPoolApi.tags.vmHibernate)), false, bool(steps('controlPlane').hostPoolApi.tags.vmHibernate))]",
+									"defaultValue": "[if(equals(steps('basics').deploymentType, 'Complete'), false, empty(steps('basics').hostPoolApi.tags.vmHibernate)), false, bool(steps('basics').hostPoolApi.tags.vmHibernate))]",
 									"toolTip": "Hibernation allows you to pause VMs that aren't being used and save on compute costs where the VMs don't need to run 24/7.",
 									"visible": "[and(equals(steps('controlPlane').hostPool.type, 'Personal'), bool(first(map(filter(first(map(filter(steps('hosts').resourceSkusApi.value, (sku) => contains(sku.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (sku) => sku.capabilities)), (sku) => equals(sku.name, 'HibernationSupported')), (sku) => sku.value))), or(equals(steps('hosts').image.source, 'marketplace'), bool(steps('hosts').image.imageDefinitionApi.transformed.IsHibernateSupported)))]"
 								}
@@ -1730,7 +1748,7 @@
 									"type": "Microsoft.Common.OptionsGroup",
 									"visible": true,
 									"label": "Identity Provider",
-									"defaultValue": "[if(equals(steps('basics').deploymentType, 'Complete'), 'Active Directory Domain Services (AD DS)', if(empty{steps('controlPlane').hostPoolApi.tags.vmDomain), 'Entra Id', 'Active Directory Domain Services (AD DS)'))]",
+									"defaultValue": "[if(equals(steps('basics').deploymentType, 'Complete'), 'Active Directory Domain Services (AD DS)', if(empty{steps('basics').hostPoolApi.tags.vmDomain), 'Entra Id', 'Active Directory Domain Services (AD DS)'))]",
 									"toolTip": "Choose the Identity Solution for the Virtual Machines.",
 									"constraints": {
 										"required": true,
@@ -1775,7 +1793,7 @@
 									"name": "domainName",
 									"type": "Microsoft.Common.TextBox",
 									"visible": "[not(equals(steps('hosts').identity.solution, 'EntraId'))]",
-									"defaultValue": "[if(equals(steps('basics').deploymentType, 'Complete'), '', coalesce(steps('controlPlane').hostPoolApi.tags.vmDomain, ''))]",
+									"defaultValue": "[if(equals(steps('basics').deploymentType, 'Complete'), '', coalesce(steps('basics').hostPoolApi.tags.vmDomain, ''))]",
 									"label": "Domain Name",
 									"toolTip": "Provide domain name for the selected Active Directory solution.",
 									"placeholder": "Example: contoso.com",
@@ -1786,7 +1804,7 @@
 								{
 									"name": "ouPath",
 									"type": "Microsoft.Common.TextBox",
-									"defaultValue": "[if(equals(steps('basics').deploymentType, 'Complete'), '', coalesce(steps('controlPlane').hostPoolApi.tags.vmOUPath , ''))]",
+									"defaultValue": "[if(equals(steps('basics').deploymentType, 'Complete'), '', coalesce(steps('basics').hostPoolApi.tags.vmOUPath , ''))]",
 									"visible": "[not(equals(steps('hosts').identity.solution, 'EntraId'))]",
 									"label": "OU Path",
 									"toolTip": "Input the distinguished name of the desired organization unit for the AVD session hosts.",
@@ -3058,7 +3076,7 @@
 							"name": "backup",
 							"type": "Microsoft.Common.Section",
 							"label": "Backup and Recovery",
-							"visible": "[or(equals(steps('basics').deploymentType, 'Complete'), equals(steps('controlPlane').hostPoolApi.properties.hostPoolType, 'Personal'))]",
+							"visible": "[or(equals(steps('basics').deploymentType, 'Complete'), equals(steps('basics').hostPoolApi.properties.hostPoolType, 'Personal'))]",
 							"elements": [
 								{
 									"name": "recoveryServices",
@@ -4080,8 +4098,8 @@
 				"identifier": "[if(equals(steps('basics').deploymentType, 'Complete'), steps('basics').naming.identifier, '')]",
 				"index": "[if(equals(steps('basics').deploymentType, 'Complete'), steps('basics').naming.index, '')]",
 				"nameConvResTypeAtEnd": "[if(equals(steps('basics').deploymentType, 'Complete'), steps('basics').naming.nameConvResTypeAtEnd, false)]",
-				"existingHostPoolResourceId": "[if(equals(steps('basics').deploymentType, 'SessionHostsOnly'), steps('controlPlane').existingHostPool.id, '')]",
-				"locationControlPlane": "[if(equals(steps('basics').deploymentType, 'Complete'), steps('controlPlane').location.name, steps('controlPlane').hostPoolApi.location)]",
+				"existingHostPoolResourceId": "[if(equals(steps('basics').deploymentType, 'SessionHostsOnly'), steps('basics').hostPool.id, '')]",
+				"locationControlPlane": "[if(equals(steps('basics').deploymentType, 'Complete'), steps('controlPlane').location.name, steps('basics').hostPoolApi.location)]",
 				"existingFeedWorkspaceResourceId": "[if(and(equals(steps('basics').deploymentType, 'Complete'), equals(steps('controlPlane').workspace.createOption, 'update')), steps('controlPlane').workspace.existingWorkspace, '')]",
 				"workspaceFriendlyName": "[if(and(equals(steps('basics').deploymentType, 'Complete'), not(equals(steps('controlPlane').workspace.createOption, 'update'))), steps('controlPlane').naming.workspaceFriendlyName, '')]",
 				"desktopFriendlyName": "[if(equals(steps('basics').deploymentType, 'Complete'), steps('controlPlane').naming.desktopFriendlyName, '')]",
@@ -4160,8 +4178,8 @@
 				"drainMode": "[steps('management').automation.drainMode]",
 				"deployIncreaseQuota": "[if(and(equals(steps('basics').deploymentType, 'Complete'), equals(steps('userProfiles').azureFiles.storageSku, 'Premium')), steps('management').automation.deployIncreaseQuota, false)]",
 				"recoveryServices": "[steps('management').backup.recoveryServices]",
-				"existingRecoveryServicesVaultResourceId": "[if(and(equals(steps('basics').deploymentType, 'SessionHostsOnly'), equals(steps('controlPlane').hostPoolApi.properties.hostPoolType, 'Personal'), steps('management').backup.recoveryServices), steps('management').backup.recoveryServicesVault, '')]",
-				"existingDiskAccessResourceId": "[if(and(equals(steps('basics').deploymentType, 'SessionHostsOnly'), equals(steps('controlPlane').hostPoolApi.properties.hostPoolType, 'Personal'), steps('management').backup.recoveryServices, steps('management').backup.associateDiskAccessResource), steps('management').backup.diskAccess, '')]",
+				"existingRecoveryServicesVaultResourceId": "[if(and(equals(steps('basics').deploymentType, 'SessionHostsOnly'), equals(steps('basics').hostPoolApi.properties.hostPoolType, 'Personal'), steps('management').backup.recoveryServices), steps('management').backup.recoveryServicesVault, '')]",
+				"existingDiskAccessResourceId": "[if(and(equals(steps('basics').deploymentType, 'SessionHostsOnly'), equals(steps('basics').hostPoolApi.properties.hostPoolType, 'Personal'), steps('management').backup.recoveryServices, steps('management').backup.associateDiskAccessResource), steps('management').backup.diskAccess, '')]",
 				"deploySecretsKeyVault": "[if(and(equals(steps('basics').deploymentType, 'Complete'), equals(steps('hosts').credentials.source, 'manual')), steps('management').keyVaults.deploySecretsKeyVault, false)]",
 				"keyVaultRetentionInDays": "[if(and(equals(steps('basics').deploymentType, 'Complete'), or(steps('management').keyVaults.deploySecretsKeyVault, contains(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), contains(steps('userProfiles').azureFiles.keyManagement, 'CustomerManaged'))), steps('management').keyVaults.keyVaultRetentionInDays, 7)]",
 				"keyExpirationInDays": "[if(and(equals(steps('basics').deploymentType, 'Complete'), or(contains(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), contains(steps('userProfiles').azureFiles.keyManagement, 'CustomerManaged'))), steps('management').keyVaults.keyExpirationInDays, 180)]",
