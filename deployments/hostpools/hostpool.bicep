@@ -758,7 +758,17 @@ module rgs 'modules/resourceGroups.bicep' = [
         ? locationControlPlane
         : (contains(logic.outputs.resourceGroupNames[i], 'global-feed') ? locationGlobalFeed : locationVirtualMachines)
       resourceGroupName: logic.outputs.resourceGroupNames[i]
-      tags: tags
+      tags: contains(logic.outputs.resourceGroupNames[i], 'storage') || contains(
+          logic.outputs.resourceGroupNames[i],
+          'hosts'
+        )
+        ? union(
+            tags[?'Microsoft.Resources/resourceGroups'] ?? {},
+            {
+              'cm-resource-parent': '${subscription().id}/resourceGroups/${resourceNames.outputs.resourceGroupControlPlane}/providers/Microsoft.DesktopVirtualization/hostpools/${resourceNames.outputs.hostPoolName}'
+            }
+          )
+        : tags[?'Microsoft.Resources/resourceGroups'] ?? {}
     }
   }
 ]
@@ -1085,7 +1095,9 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     privateEndpointNICNameConv: resourceNames.outputs.privateEndpointNICNameConv
     privateEndpointSubnetResourceId: hostPoolResourcesPrivateEndpointSubnetResourceId
     networkInterfaceNamePrefix: resourceNames.outputs.networkInterfaceNamePrefix
-    recoveryServices: deploymentType == 'Complete' ? contains(hostPoolType, 'Personal') ? recoveryServices : false : recoveryServices
+    recoveryServices: deploymentType == 'Complete'
+      ? contains(hostPoolType, 'Personal') ? recoveryServices : false
+      : recoveryServices
     recoveryServicesVaultName: resourceNames.outputs.recoveryServicesVaultNames.VirtualMachines
     resourceGroupHosts: deploymentType == 'Complete'
       ? resourceNames.outputs.resourceGroupHosts

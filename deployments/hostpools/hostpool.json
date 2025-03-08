@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "7274733752934215076"
+      "templateHash": "1894372747165834805"
     }
   },
   "parameters": {
@@ -2189,9 +2189,7 @@
           "resourceGroupName": {
             "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Logic_{0}', parameters('timeStamp'))), '2022-09-01').outputs.resourceGroupNames.value[range(0, variables('resourceGroupsCount'))[copyIndex()]]]"
           },
-          "tags": {
-            "value": "[parameters('tags')]"
-          }
+          "tags": "[if(or(contains(reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Logic_{0}', parameters('timeStamp'))), '2022-09-01').outputs.resourceGroupNames.value[range(0, variables('resourceGroupsCount'))[copyIndex()]], 'storage'), contains(reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Logic_{0}', parameters('timeStamp'))), '2022-09-01').outputs.resourceGroupNames.value[range(0, variables('resourceGroupsCount'))[copyIndex()]], 'hosts')), createObject('value', union(coalesce(tryGet(parameters('tags'), 'Microsoft.Resources/resourceGroups'), createObject()), createObject('cm-resource-parent', format('{0}/resourceGroups/{1}/providers/Microsoft.DesktopVirtualization/hostpools/{2}', subscription().id, reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.resourceGroupControlPlane.value, reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.hostPoolName.value)))), createObject('value', coalesce(tryGet(parameters('tags'), 'Microsoft.Resources/resourceGroups'), createObject())))]"
         },
         "template": {
           "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
@@ -2200,7 +2198,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "543772041798828357"
+              "templateHash": "7285330678634458430"
             }
           },
           "parameters": {
@@ -2220,13 +2218,14 @@
               "apiVersion": "2020-10-01",
               "name": "[parameters('resourceGroupName')]",
               "location": "[parameters('location')]",
-              "tags": "[coalesce(tryGet(parameters('tags'), 'Microsoft.Resources/resourceGroups'), createObject())]"
+              "tags": "[parameters('tags')]"
             }
           ]
         }
       },
       "dependsOn": [
-        "[subscriptionResourceId('Microsoft.Resources/deployments', format('Logic_{0}', parameters('timeStamp')))]"
+        "[subscriptionResourceId('Microsoft.Resources/deployments', format('Logic_{0}', parameters('timeStamp')))]",
+        "[subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp')))]"
       ]
     },
     {
