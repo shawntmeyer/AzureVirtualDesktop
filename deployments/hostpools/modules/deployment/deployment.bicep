@@ -1,6 +1,6 @@
 targetScope = 'subscription'
 
-param identitySolution string
+param appGroupSecurityGroups array
 param avdObjectId string
 param confidentialVMOSDiskEncryption bool
 param deployScalingPlan bool
@@ -14,6 +14,7 @@ param deploymentVmSize string
 param encryptionAtHost bool
 param fslogix bool
 param hostPoolName string
+param identitySolution string
 param keyManagementDisks string
 param locationVirtualMachines string
 param ouPath string
@@ -134,7 +135,7 @@ module deploymentUserAssignedIdentity '../../../sharedModules/resources/managed-
 }
 
 // Role Assignment required for Start VM On Connect
-resource roleAssignment_PowerOnContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+resource roleAssignment_PowerOnContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!deployScalingPlan) {
   name: guid(avdObjectId, roleDefinitions.DesktopVirtualizationPowerOnContributor, subscription().id)
   properties: {
     roleDefinitionId: resourceId(
@@ -156,6 +157,17 @@ resource roleAssignment_PowerOnOffContributor 'Microsoft.Authorization/roleAssig
     principalId: avdObjectId
   }
 }
+
+// Required for EntraID login
+module roleAssignment_VirtualMachineUserLogin '../../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = [for i in range(0, length(appGroupSecurityGroups)): if (!contains(identitySolution, 'DomainServices')) {
+  name: 'RA-VMLoginUser-${i}_${timeStamp}'
+  scope: resourceGroup(resourceGroupHosts)
+  params: {
+    principalId: appGroupSecurityGroups[i]
+    principalType: 'Group'
+    roleDefinitionId: roleDefinitions.VirtualMachineUserLogin
+  }
+}]
 
 module roleAssignments_deployment '../../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = [
   for i in range(0, length(roleAssignments)): {

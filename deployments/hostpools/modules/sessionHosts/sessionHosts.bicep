@@ -1,6 +1,5 @@
 targetScope = 'subscription'
 
-param appGroupSecurityGroups array
 param deploymentType string
 param artifactsContainerUri string
 param artifactsUserAssignedIdentityResourceId string
@@ -77,7 +76,6 @@ param recoveryServices bool
 param recoveryServicesVaultName string
 param resourceGroupDeployment string
 param resourceGroupHosts string
-param roleDefinitions object
 param secureBootEnabled bool
 param securityDataCollectionRulesResourceId string
 param securityType string
@@ -222,18 +220,6 @@ module availabilitySets '../../../sharedModules/resources/compute/availability-s
     location: location
     skuName: 'Aligned'
     tags: union({'cm-resource-parent': hostPoolResourceId}, tags[?'Microsoft.Compute/availabilitySets'] ?? {})
-  }
-}]
-
-// Role Assignment for Virtual Machine Login User
-// This module deploys the role assignments to login to Azure AD joined session hosts
-module roleAssignments '../../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = [for i in range(0, length(appGroupSecurityGroups)): if (deploymentType == 'Complete' && !contains(identitySolution, 'DomainServices')) {
-  name: 'RA-VMLoginUser-${i}_${timeStamp}'
-  scope: resourceGroup(resourceGroupHosts)
-  params: {
-    principalId: appGroupSecurityGroups[i]
-    principalType: 'Group'
-    roleDefinitionId: roleDefinitions.VirtualMachineUserLogin
   }
 }]
 

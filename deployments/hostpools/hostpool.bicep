@@ -766,6 +766,7 @@ module rgs 'modules/resourceGroups.bicep' = [
 module deploymentPrereqs 'modules/deployment/deployment.bicep' = if (deploymentType == 'Complete' || drainMode) {
   name: 'Deployment_Prereqs_${timeStamp}'
   params: {
+    appGroupSecurityGroups: map(appGroupSecurityGroups, group => group.objectId)
     avdObjectId: avdObjectId
     confidentialVMOSDiskEncryption: confidentialVMOSDiskEncryption
     deployScalingPlan: deployScalingPlan
@@ -986,7 +987,6 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (deploymentType == 'Complete
 module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
   name: 'SessionHosts_${timeStamp}'
   params: {
-    appGroupSecurityGroups: map(appGroupSecurityGroups, group => group.objectId)
     artifactsContainerUri: artifactsContainerUri
     artifactsUserAssignedIdentityResourceId: artifactsUserAssignedIdentityResourceId
     avdInsightsDataCollectionRulesResourceId: enableMonitoring
@@ -1091,7 +1091,6 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
       ? resourceNames.outputs.resourceGroupHosts
       : existingHostsResourceGroupName
     resourceGroupDeployment: resourceNames.outputs.resourceGroupDeployment
-    roleDefinitions: logic.outputs.roleDefinitions
     securityDataCollectionRulesResourceId: securityDataCollectionRulesResourceId
     securityType: securityType
     secureBootEnabled: secureBootEnabled
