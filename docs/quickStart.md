@@ -24,7 +24,7 @@ There are several Azure resource prerequisite that are required to run this depl
 - **Azure Permissions:** ensure the principal deploying the solution has the "Owner" or ("Contributor" and "User Access Administrator") roles assigned on the target Azure subscription. If you wish to reference the secrets in an existing Key Vault (including one deployed by this solution) via the Template Spec UI deployment, you'll need to have the "Key Vault Secrets User" role assigned to this Key Vault either through inheritance from a higher scope or directly on the resource.
 - **Security Group:** create a security group for your AVD users.
   - Active Directory Domain Services: create the group in Active Directory and ensure the group has synchronized to Entra ID.
-  - Entra ID: create the group.
+  - Entra ID: create the group in Entra ID.
   - Entra Domain Services: create the group in Entra ID and ensure the group has synchronized to Entra ID Domain Services.
 
 ### Optional
