@@ -119,10 +119,10 @@
 						{
 							"name": "recoveryServicesVaultApi",
 							"type": "Microsoft.Solutions.ArmApiControl",
-							"condition": "[and(equals(steps('basics').deploymentType, 'SessionHostsOnly'), not(empty(steps('basics').resourceGroup)))]",
+							"condition": "[and(equals(steps('basics').deploymentType, 'SessionHostsOnly'), not(empty(steps('basics').resourceGroup.id)))]",
 							"request": {
 								"method": "GET",
-								"path": "[concat(steps('basics').resourceGroup, '/providers/Microsoft.RecoveryServices/vaults?api-version=2024-10-01')]",
+								"path": "[concat(steps('basics').resourceGroup.id, '/providers/Microsoft.RecoveryServices/vaults?api-version=2024-10-01')]",
 								"transforms": {
 									"list": "value|[*].{label:name, value:id}"
 								}
@@ -131,10 +131,10 @@
 						{
 							"name": "diskAccessesApi",
 							"type": "Microsoft.Solutions.ArmApiControl",
-							"condition": "[and(equals(steps('basics').deploymentType, 'SessionHostsOnly'), not(empty(steps('basics').resourceGroup)))]",
+							"condition": "[and(equals(steps('basics').deploymentType, 'SessionHostsOnly'), not(empty(steps('basics').resourceGroup.id)))]",
 							"request": {
 								"method": "GET",
-								"path": "[concat(steps('basics').resourceGroup, '/providers/Microsoft.Compute/diskAccesses?api-version=2024-03-02')]",
+								"path": "[concat(steps('basics').resourceGroup.id, '/providers/Microsoft.Compute/diskAccesses?api-version=2024-03-02')]",
 								"transforms": {
 									"list": "value|[*].{label:name, value:id}"
 								}
@@ -1396,7 +1396,7 @@
 									"condition": "[steps('hosts').diskEncryption.selectDiskEncryptionSet]",
 									"request": {
 										"method": "GET",
-										"path": "[concat(steps('basics').resourceGroup, '/providers/Microsoft.Compute/diskEncryptionSets?api-version=2024-03-02')]",
+										"path": "[concat(steps('basics').resourceGroup.id, '/providers/Microsoft.Compute/diskEncryptionSets?api-version=2024-03-02')]",
 										"transforms": {
 											"list": "value|[*].{label:name, value:id}"
 										}
@@ -4116,7 +4116,7 @@
 				"scalingPlanOffPeakSchedule": "[if(steps('controlPlane').scalingPlan.deployScalingPlan, first(steps('controlPlane').scalingPlan.weekdayOffPeakSchedule), parse('{}'))]",
 				"scalingPlanForceLogoff": "[if(steps('controlPlane').scalingPlan.deployScalingPlan, steps('controlPlane').scalingPlan.forceLogoff, false)]",
 				"scalingPlanMinsBeforeLogoff": "[if(and(steps('controlPlane').scalingPlan.deployScalingPlan, steps('controlPlane').scalingPlan.forceLogoff), steps('controlPlane').scalingPlan.minsToLogoff, 0)]",
-				"existingHostsResourceGroupName": "[if(equals(steps('basics').deploymentType, 'SessionHostsOnly'), last(split(steps('basics').resourceGroup, '/')), '')]",
+				"existingHostsResourceGroupName": "[if(equals(steps('basics').deploymentType, 'SessionHostsOnly'), steps('basics').resourceGroup.name, '')]",
 				"virtualMachineNamePrefix": "[steps('hosts').naming.virtualMachineNamePrefix]",
 				"sessionHostIndex": "[steps('hosts').naming.index]",
 				"sessionHostCount": "[steps('hosts').specs.count]",
