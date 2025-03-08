@@ -18,3 +18,5 @@ resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2024-04-03' = {
     }
   }
 }
+
+output resourceId string = hostPool.id

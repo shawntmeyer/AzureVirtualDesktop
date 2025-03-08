@@ -280,7 +280,7 @@ module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sess
     fslogixRemoteStorageAccountResourceIds: fslogixRemoteStorageAccountResourceIds    
     fslogixStorageService: fslogixStorageService
     hibernationEnabled: hibernationEnabled
-    hostPoolResourceId: hostPoolResourceId
+    hostPoolResourceId: deploymentType == 'Complete' ? hostPoolResourceId : hostPoolUpdate.outputs.resourceId
     identitySolution: identitySolution
     imageOffer: imageOffer
     imagePublisher: imagePublisher

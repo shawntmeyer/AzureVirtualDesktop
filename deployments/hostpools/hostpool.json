@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "17239465772717278431"
+      "templateHash": "7805561533888939904"
     }
   },
   "parameters": {
@@ -14287,7 +14287,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "12079252487701999494"
+              "templateHash": "15141310580978796050"
             }
           },
           "parameters": {
@@ -14613,7 +14613,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "4897009707105474638"
+                      "templateHash": "12823071397471804402"
                     }
                   },
                   "parameters": {
@@ -14653,7 +14653,13 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "outputs": {
+                    "resourceId": {
+                      "type": "string",
+                      "value": "[resourceId('Microsoft.DesktopVirtualization/hostPools', parameters('name'))]"
+                    }
+                  }
                 }
               }
             },
@@ -17621,9 +17627,7 @@
                   "hibernationEnabled": {
                     "value": "[parameters('hibernationEnabled')]"
                   },
-                  "hostPoolResourceId": {
-                    "value": "[parameters('hostPoolResourceId')]"
-                  },
+                  "hostPoolResourceId": "[if(equals(parameters('deploymentType'), 'Complete'), createObject('value', parameters('hostPoolResourceId')), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, split(parameters('hostPoolResourceId'), '/')[4]), 'Microsoft.Resources/deployments', format('HostPoolRegistrationTokenUpdate_{0}', parameters('timeStamp'))), '2022-09-01').outputs.resourceId.value))]",
                   "identitySolution": {
                     "value": "[parameters('identitySolution')]"
                   },
@@ -19028,6 +19032,7 @@
                 "availabilitySets",
                 "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupHosts')), 'Microsoft.Resources/deployments', format('DiskAccess_{0}', parameters('timeStamp')))]",
                 "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupHosts')), 'Microsoft.Resources/deployments', format('DiskEncryption_{0}', parameters('timeStamp')))]",
+                "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, split(parameters('hostPoolResourceId'), '/')[4]), 'Microsoft.Resources/deployments', format('HostPoolRegistrationTokenUpdate_{0}', parameters('timeStamp')))]",
                 "localNetAppVolumes",
                 "remoteNetAppVolumes"
               ]
