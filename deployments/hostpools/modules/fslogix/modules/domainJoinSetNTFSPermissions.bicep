@@ -77,6 +77,10 @@ var azureFilesParameters = [
     name: 'UserAssignedIdentityClientId'
     value: userAssignedIdentityClientId
   }
+  {
+    name: 'UserGroupNames'
+    value: string(userGroupNames)
+  }
 ]
 
 var azureNetAppParameters = [
