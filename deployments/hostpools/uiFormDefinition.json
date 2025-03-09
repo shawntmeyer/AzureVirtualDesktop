@@ -203,16 +203,16 @@
 											"advancedQueryOptions": {},
 											"selectionMaximum": 1,
 											"selectionMinimum": 1,
-											"bladeTitle": "Select the Service Principal",
+											"bladeTitle": "Select the Enterprise Application",
 											"informationHeader": {
-												"informationText": "Select the 'Azure Virtual Desktop' service principal."
+												"informationText": "Select the 'Azure Virtual Desktop' Enterprise Application."
 											},
-											"searchBoxLabel": "Search for the 'Azure Virtual Desktop' service principal",
+											"searchBoxLabel": "Search for the 'Azure Virtual Desktop' Enterprise Application",
 											"searchBoxPlaceHolderText": "Enter 'Azure Virtual Desktop'",
-											"searchGridNoRowsMessage": "No Service Principals found",
-											"selectButtonText": "Select Service Principal",
-											"selectedGridLabel": "Selected Service Principal",
-											"selectedGridNoRowsMessage": "You must select the 'Azure Virtual Desktop' service principal"
+											"searchGridNoRowsMessage": "No Enterprise Applications found",
+											"selectButtonText": "Select Enterprise Application",
+											"selectedGridLabel": "Selected Enterprise Application",
+											"selectedGridNoRowsMessage": "You must select the 'Azure Virtual Desktop' Enterprise Application"
 										}
 									},
 									"transforms": {
@@ -222,14 +222,14 @@
 								{
 									"name": "servicePrincipalSelector",
 									"type": "Microsoft.Common.Selector",
-									"label": "Select the <b>Azure Virtual Desktop</b> Service Principal",
+									"label": "Select the <b>Azure Virtual Desktop</b> Enterprise Application",
 									"keyPath": "displayName",
 									"value": "[steps('basics').prereqs.servicePrincipalPickerBlade.transformed.selection]",
 									"barColor": "[if(empty(steps('basics').prereqs.servicePrincipalPickerBlade), '#FF0000', '#7fba00')]",
 									"constraints": {
 										"required": true
 									},
-									"link": "[if(empty(steps('basics').prereqs.servicePrincipalPickerBlade), 'Select Service Principal', first(map(steps('basics').prereqs.servicePrincipalPickerBlade.transformed.selection, (sp) => sp.displayName)))]",
+									"link": "[if(empty(steps('basics').prereqs.servicePrincipalPickerBlade), 'Select Enterprise Application', first(map(steps('basics').prereqs.servicePrincipalPickerBlade.transformed.selection, (sp) => sp.displayName)))]",
 									"visible": "[empty(first(steps('basics').prereqs.avdServicePrincipalsApi.value))]"
 								}
 							]
