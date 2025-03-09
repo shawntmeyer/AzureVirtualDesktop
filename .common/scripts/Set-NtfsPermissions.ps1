@@ -477,7 +477,7 @@ try {
                     Write-Log -message "Processing File Share: $FileShare"
                     if ($AdminGroups.Count -gt 0) {
                         Write-Log -message "Admin Groups provided, executing Update-ACL with Admin Groups"
-                        Update-ACL -AdminGroups $AdminGroups -Credential $StorageKeyCredential -FileShare $FileShare
+                        Update-ACL -AdminGroups $AdminGroups -Credential $StorageKeyCredential -FileShare $FileShare -UserGroups $UserGroups
                     }
                     Else {
                         Write-Log -message "Admin Groups not provided, executing Update-ACL without Admin Groups"
