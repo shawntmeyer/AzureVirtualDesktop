@@ -946,6 +946,7 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (deploymentType == 'Complete
     domainName: domainName
     fslogixAdminGroups: fslogixAdminGroups
     fslogixFileShares: logic.outputs.fslogixFileShareNames
+    fslogixShardOptions: fslogixShardOptions
     fslogixStorageAccountEncryptionKeysVaultNameConv: resourceNames.outputs.keyVaultNames.FSLogixEncryptionKeys
     fslogixUserGroups: logic.outputs.fslogixUserGroups
     hostPoolResourceId: deploymentType == 'Complete'

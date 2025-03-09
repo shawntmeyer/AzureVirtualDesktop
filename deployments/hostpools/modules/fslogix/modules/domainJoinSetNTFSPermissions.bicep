@@ -9,6 +9,7 @@ param location string
 param netAppServers array = []
 param ouPath string = ''
 param resourceGroupStorage string = ''
+param shardingOptions string
 param storageAccountNamePrefix string = ''
 param storageCount int = 0
 param storageIndex int = 0
@@ -39,6 +40,10 @@ var azureFilesParameters = [
   {
     name: 'ResourceManagerUri'
     value: environment().resourceManager
+  }
+  {
+    name: 'ShardAzureFilesStorage'
+    value: shardingOptions == 'None' ? 'true' : 'false'
   }
   {
     name: 'StorageAccountPrefix'

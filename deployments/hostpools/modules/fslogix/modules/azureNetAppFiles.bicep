@@ -152,6 +152,7 @@ module SetNTFSPermissions 'domainJoinSetNTFSPermissions.bicep' = {
     domainJoinUserPassword: domainJoinUserPassword
     location: location  
     netAppServers: netappServerFqdns
+    shardingOptions: 'None'
     shares: shares
     storageSolution: storageSolution
     timeStamp: timeStamp

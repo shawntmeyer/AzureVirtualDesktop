@@ -20,6 +20,7 @@ param domainJoinUserPrincipalName string
 param domainName string
 param fslogixFileShares array
 param fslogixAdminGroups array
+param fslogixShardOptions string
 param fslogixStorageAccountEncryptionKeysVaultNameConv string
 param fslogixUserGroups array
 param functionAppDelegatedSubnetResourceId string
@@ -134,9 +135,6 @@ module azureFiles 'modules/azureFiles.bicep' = if (storageSolution == 'AzureFile
     encryptionKeyKeyVaultUris: keyManagementStorageAccounts == 'MicrosoftManaged' ? [] : customerManagedKeys.outputs.keyVaultUris
     encryptionUserAssignedIdentityResourceId: keyManagementStorageAccounts == 'MicrosoftManaged' ? '' : customerManagedKeys.outputs.userAssignedIdentityResourceId
     fileShares: fslogixFileShares
-    fslogixShareSizeInGB: shareSizeInGB
-    fslogixAdminGroups: fslogixAdminGroups
-    fslogixUserGroups: fslogixUserGroups
     functionAppDelegatedSubnetResourceId: functionAppDelegatedSubnetResourceId
     hostPoolResourceId: hostPoolResourceId
     identitySolution: identitySolution
@@ -162,6 +160,10 @@ module azureFiles 'modules/azureFiles.bicep' = if (storageSolution == 'AzureFile
     resourceGroupDeployment: resourceGroupDeployment
     resourceGroupStorage: resourceGroupStorage
     serverFarmId: serverFarmId
+    shardingOptions: fslogixShardOptions
+    shareAdminGroups: fslogixAdminGroups
+    shareSizeInGB: shareSizeInGB
+    shareUserGroups: fslogixUserGroups
     storageAccountNamePrefix: storageAccountNamePrefix
     storageCount: storageCount
     storageEncryptionKeyName: keyManagementStorageAccounts == 'MicrosoftManaged' ? '' : customerManagedKeys.outputs.storageEncryptionKeyName
