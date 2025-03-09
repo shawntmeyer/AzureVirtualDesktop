@@ -19,7 +19,6 @@ param userGroupNames array = []
 param userAssignedIdentityClientId string = ''
 param virtualMachineName string
 
-// We don't send userGroupNames to the script, as they are not set for Azure Files. All permissions handled by Share Permissions (i.e., RBAC on the storage account).
 var azureFilesParameters = [
   {
     name: 'AdminGroupNames'

@@ -120,7 +120,7 @@ function Update-ACL {
         [pscredential]$Credential,
         [Parameter(Mandatory = $true)]
         [String]$FileShare,
-        [Parameter(Mandatory = $false)]
+        [Parameter(Mandatory = $true)]
         [Array]$UserGroups
     )
     # Map Drive
