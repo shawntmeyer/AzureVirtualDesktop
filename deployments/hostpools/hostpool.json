@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "7207671376339462825"
+      "templateHash": "13684229448870337035"
     }
   },
   "parameters": {
@@ -3250,7 +3250,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "16356932742609858760"
+              "templateHash": "754210187935697323"
             }
           },
           "parameters": {
@@ -3354,7 +3354,7 @@
                     "value": false
                   },
                   "enableSoftDelete": {
-                    "value": true
+                    "value": false
                   },
                   "enableVaultForDeployment": {
                     "value": false
@@ -3370,9 +3370,6 @@
                     "value": {
                       "secureList": "[variables('secretList')]"
                     }
-                  },
-                  "softDeleteRetentionInDays": {
-                    "value": "[parameters('keyVaultRetentionInDays')]"
                   },
                   "tags": {
                     "value": "[coalesce(tryGet(parameters('tags'), 'Microsoft.KeyVault/vaults'), createObject())]"

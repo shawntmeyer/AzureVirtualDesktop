@@ -52,7 +52,7 @@ module secretsKeyVault '../../../sharedModules/resources/key-vault/vault/main.bi
     name: keyVaultName
     diagnosticWorkspaceId: enableMonitoring ? logAnalyticsWorkspace.outputs.resourceId : ''
     enablePurgeProtection: false
-    enableSoftDelete: true
+    enableSoftDelete: false
     enableVaultForDeployment: false
     enableVaultForDiskEncryption: false
     enableVaultForTemplateDeployment: true
@@ -85,7 +85,6 @@ module secretsKeyVault '../../../sharedModules/resources/key-vault/vault/main.bi
     secrets: {
       secureList: secretList
     }
-    softDeleteRetentionInDays: keyVaultRetentionInDays
     tags: tags[?'Microsoft.KeyVault/vaults'] ?? {}
     vaultSku: 'standard'
   }
