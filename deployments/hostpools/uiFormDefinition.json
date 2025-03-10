@@ -426,7 +426,7 @@
 									"name": "source",
 									"type": "Microsoft.Common.OptionsGroup",
 									"label": "[if(equals(steps('identity').virtualMachines.solution, 'EntraId'), 'VM Admin Credentials source', 'Domain Join and VM Admin Credentials source')]",
-									"defaultValue": "Manual Entry",
+									"defaultValue": "[if(equals(steps('basics').deploymentType, 'Complete'), 'Manual Entry', 'Key Vault')]",
 									"toolTip": "Select 'Manual Entry' to specify the secrets manually or 'Key Vault' to reference secrets from a Key Vault.",
 									"constraints": {
 										"allowedValues": [
