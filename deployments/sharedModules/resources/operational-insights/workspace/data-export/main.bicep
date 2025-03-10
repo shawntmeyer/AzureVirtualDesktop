@@ -1,11 +1,3 @@
-metadata name = 'Log Analytics Workspace Data Exports'
-metadata description = 'This module deploys a Log Analytics Workspace Data Export.'
-metadata owner = 'Azure/module-maintainers'
-
-// ============== //
-//   Parameters   //
-// ============== //
-
 @description('Required. The data export rule name.')
 @minLength(4)
 @maxLength(63)
@@ -23,11 +15,6 @@ param enable bool = false
 @description('Optional. An array of tables to export, for example: [\'Heartbeat\', \'SecurityEvent\'].')
 param tableNames array = []
 
-// =============== //
-//   Deployments   //
-// =============== //
-
-
 resource workspace 'Microsoft.OperationalInsights/workspaces@2022-10-01' existing = {
   name: workspaceName
 }
@@ -42,15 +29,8 @@ resource dataExport 'Microsoft.OperationalInsights/workspaces/dataExports@2020-0
   }
 }
 
-// =========== //
-//   Outputs   //
-// =========== //
-
 @description('The name of the data export.')
 output name string = dataExport.name
 
 @description('The resource ID of the data export.')
 output resourceId string = dataExport.id
-
-@description('The name of the resource group the data export was created in.')
-output resourceGroupName string = resourceGroup().name

@@ -1,7 +1,3 @@
-metadata name = 'Private Endpoint Private DNS Zone Groups'
-metadata description = 'This module deploys a Private Endpoint Private DNS Zone Group.'
-metadata owner = 'Azure/module-maintainers'
-
 @description('Conditional. The name of the parent private endpoint. Required if the template is used in a standalone deployment.')
 param privateEndpointName string
 
@@ -37,6 +33,3 @@ output name string = privateDnsZoneGroup.name
 
 @description('The resource ID of the private endpoint DNS zone group.')
 output resourceId string = privateDnsZoneGroup.id
-
-@description('The resource group the private endpoint DNS zone group was deployed into.')
-output resourceGroupName string = resourceGroup().name

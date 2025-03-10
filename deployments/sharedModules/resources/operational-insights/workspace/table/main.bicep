@@ -1,11 +1,3 @@
-metadata name = 'Log Analytics Workspace Tables'
-metadata description = 'This module deploys a Log Analytics Workspace Table.'
-metadata owner = 'Azure/module-maintainers'
-
-// ============== //
-//   Parameters   //
-// ============== //
-
 @description('Required. The name of the table.')
 param name string
 
@@ -38,10 +30,6 @@ param searchResults object = {}
 @maxValue(2555)
 param totalRetentionInDays int = -1
 
-// =============== //
-//   Deployments   //
-// =============== //
-
 resource workspace 'Microsoft.OperationalInsights/workspaces@2022-10-01' existing = {
   name: workspaceName
 }
@@ -52,16 +40,14 @@ resource table 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = {
   properties: {
     plan: plan
     restoredLogs: restoredLogs
-    retentionInDays: retentionInDays
+    #disable-next-line BCP329
+    retentionInDays: retentionInDays == -1 ? null : retentionInDays
     schema: schema
     searchResults: searchResults
-    totalRetentionInDays: totalRetentionInDays
+    #disable-next-line BCP329
+    totalRetentionInDays: totalRetentionInDays == -1 ? null : totalRetentionInDays
   }
 }
-
-// =========== //
-//   Outputs   //
-// =========== //
 
 @description('The name of the table.')
 output name string = table.name
