@@ -46,6 +46,7 @@ module imageVersion '../../../sharedModules/resources/compute/gallery/image/vers
     endOfLifeDate: imageVersionEndOfLifeDate
     excludeFromLatest: imageVersionExcludeFromLatest
     replicaCount: imageVersionDefaultReplicaCount
+    replicationMode: 'Full'
     storageAccountType: imageVersionDefaultStorageAccountType
     sourceId: contains(imageDefinitionSecurityType, 'Supported') ? managedImage.outputs.resourceId : virtualMachineResourceId
     targetRegions: imageVersionReplicationRegions
