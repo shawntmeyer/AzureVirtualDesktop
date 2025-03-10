@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "3289857360863683056"
+      "templateHash": "10047363753862563508"
     }
   },
   "parameters": {
@@ -5111,7 +5111,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "6681374523744780386"
+              "templateHash": "4127477275572120289"
             }
           },
           "parameters": {
@@ -6227,7 +6227,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "2013647441907822827"
+                      "templateHash": "7215651041766038870"
                     }
                   },
                   "parameters": {
@@ -6291,7 +6291,7 @@
                       "location": "[if(empty(parameters('existingWorkspaceProperties')), parameters('location'), parameters('existingWorkspaceProperties').location)]",
                       "tags": "[if(empty(parameters('existingWorkspaceProperties')), coalesce(tryGet(parameters('tags'), 'Microsoft.DesktopVirtualization/Workspaces'), createObject()), parameters('existingWorkspaceProperties').tags)]",
                       "properties": {
-                        "applicationGroupReferences": "[if(empty(parameters('existingWorkspaceProperties')), createArray(parameters('applicationGroupResourceId')), union(createArray(parameters('applicationGroupResourceId')), parameters('existingWorkspaceProperties').applicationGroupReferences))]",
+                        "applicationGroupReferences": "[if(empty(parameters('existingWorkspaceProperties')), createArray(parameters('applicationGroupResourceId')), if(contains(parameters('existingWorkspaceProperties').applicationGroupReferences, parameters('applicationGroupResourceId')), parameters('existingWorkspaceProperties').applicationGroupReferences, union(parameters('existingWorkspaceProperties').applicationGroupReferences, createArray(parameters('applicationGroupResourceId')))))]",
                         "friendlyName": "[if(empty(parameters('existingWorkspaceProperties')), parameters('friendlyName'), parameters('existingWorkspaceProperties').friendlyName)]",
                         "publicNetworkAccess": "[if(empty(parameters('existingWorkspaceProperties')), parameters('publicNetworkAccess'), parameters('existingWorkspaceProperties').publicNetworkAccess)]"
                       }
@@ -6956,7 +6956,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "2013647441907822827"
+                      "templateHash": "7215651041766038870"
                     }
                   },
                   "parameters": {
@@ -7020,7 +7020,7 @@
                       "location": "[if(empty(parameters('existingWorkspaceProperties')), parameters('location'), parameters('existingWorkspaceProperties').location)]",
                       "tags": "[if(empty(parameters('existingWorkspaceProperties')), coalesce(tryGet(parameters('tags'), 'Microsoft.DesktopVirtualization/Workspaces'), createObject()), parameters('existingWorkspaceProperties').tags)]",
                       "properties": {
-                        "applicationGroupReferences": "[if(empty(parameters('existingWorkspaceProperties')), createArray(parameters('applicationGroupResourceId')), union(createArray(parameters('applicationGroupResourceId')), parameters('existingWorkspaceProperties').applicationGroupReferences))]",
+                        "applicationGroupReferences": "[if(empty(parameters('existingWorkspaceProperties')), createArray(parameters('applicationGroupResourceId')), if(contains(parameters('existingWorkspaceProperties').applicationGroupReferences, parameters('applicationGroupResourceId')), parameters('existingWorkspaceProperties').applicationGroupReferences, union(parameters('existingWorkspaceProperties').applicationGroupReferences, createArray(parameters('applicationGroupResourceId')))))]",
                         "friendlyName": "[if(empty(parameters('existingWorkspaceProperties')), parameters('friendlyName'), parameters('existingWorkspaceProperties').friendlyName)]",
                         "publicNetworkAccess": "[if(empty(parameters('existingWorkspaceProperties')), parameters('publicNetworkAccess'), parameters('existingWorkspaceProperties').publicNetworkAccess)]"
                       }

@@ -21,7 +21,7 @@ resource workspace 'Microsoft.DesktopVirtualization/workspaces@2023-09-05' = {
   location: empty(existingWorkspaceProperties) ? location : existingWorkspaceProperties.location
   tags: empty(existingWorkspaceProperties) ? tags[?'Microsoft.DesktopVirtualization/Workspaces'] ?? {} : existingWorkspaceProperties.tags
   properties: {
-    applicationGroupReferences: empty(existingWorkspaceProperties) ? [applicationGroupResourceId] : union([applicationGroupResourceId], existingWorkspaceProperties.applicationGroupReferences)
+    applicationGroupReferences: empty(existingWorkspaceProperties) ? [applicationGroupResourceId] : contains(existingWorkspaceProperties.applicationGroupReferences, applicationGroupResourceId) ? existingWorkspaceProperties.applicationGroupReferences : union(existingWorkspaceProperties.applicationGroupReferences, [applicationGroupResourceId])
     friendlyName: empty(existingWorkspaceProperties) ? friendlyName : existingWorkspaceProperties.friendlyName
     publicNetworkAccess: empty(existingWorkspaceProperties) ? publicNetworkAccess : existingWorkspaceProperties.publicNetworkAccess
   }
