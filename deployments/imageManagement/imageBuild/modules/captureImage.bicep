@@ -45,6 +45,7 @@ module imageVersion '../../../sharedModules/resources/compute/gallery/image/vers
     imageName: imageName
     endOfLifeDate: imageVersionEndOfLifeDate
     excludeFromLatest: imageVersionExcludeFromLatest
+    hostCaching: 'ReadWrite'
     replicaCount: imageVersionDefaultReplicaCount
     replicationMode: 'Full'
     storageAccountType: imageVersionDefaultStorageAccountType
