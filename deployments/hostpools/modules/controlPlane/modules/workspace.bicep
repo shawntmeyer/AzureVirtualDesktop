@@ -16,12 +16,15 @@ param tags object
 param timeStamp string
 param workspaceName string
 
+var existingWorkspaceReferences = !empty(existingWorkspaceProperties) ? map(existingWorkspaceProperties.applicationGroupReferences, resId => toLower(resId)) : []
+var appGroupResId = toLower(applicationGroupResourceId)
+
 resource workspace 'Microsoft.DesktopVirtualization/workspaces@2023-09-05' = {
   name: empty(existingWorkspaceProperties) ? workspaceName : existingWorkspaceProperties.name
   location: empty(existingWorkspaceProperties) ? location : existingWorkspaceProperties.location
   tags: empty(existingWorkspaceProperties) ? tags[?'Microsoft.DesktopVirtualization/Workspaces'] ?? {} : existingWorkspaceProperties.tags
   properties: {
-    applicationGroupReferences: empty(existingWorkspaceProperties) ? [applicationGroupResourceId] : contains(existingWorkspaceProperties.applicationGroupReferences, applicationGroupResourceId) ? existingWorkspaceProperties.applicationGroupReferences : union(existingWorkspaceProperties.applicationGroupReferences, [applicationGroupResourceId])
+    applicationGroupReferences: empty(existingWorkspaceProperties) ? [applicationGroupResourceId] : union(existingWorkspaceReferences, [appGroupResId])
     friendlyName: empty(existingWorkspaceProperties) ? friendlyName : existingWorkspaceProperties.friendlyName
     publicNetworkAccess: empty(existingWorkspaceProperties) ? publicNetworkAccess : existingWorkspaceProperties.publicNetworkAccess
   }

@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "10047363753862563508"
+      "templateHash": "16507647100970632689"
     }
   },
   "parameters": {
@@ -5111,7 +5111,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "4127477275572120289"
+              "templateHash": "18031646919959874584"
             }
           },
           "parameters": {
@@ -6227,7 +6227,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "7215651041766038870"
+                      "templateHash": "3543676168964758956"
                     }
                   },
                   "parameters": {
@@ -6283,6 +6283,10 @@
                       "type": "string"
                     }
                   },
+                  "variables": {
+                    "existingWorkspaceReferences": "[if(not(empty(parameters('existingWorkspaceProperties'))), map(parameters('existingWorkspaceProperties').applicationGroupReferences, lambda('resId', toLower(lambdaVariables('resId')))), createArray())]",
+                    "appGroupResId": "[toLower(parameters('applicationGroupResourceId'))]"
+                  },
                   "resources": [
                     {
                       "type": "Microsoft.DesktopVirtualization/workspaces",
@@ -6291,7 +6295,7 @@
                       "location": "[if(empty(parameters('existingWorkspaceProperties')), parameters('location'), parameters('existingWorkspaceProperties').location)]",
                       "tags": "[if(empty(parameters('existingWorkspaceProperties')), coalesce(tryGet(parameters('tags'), 'Microsoft.DesktopVirtualization/Workspaces'), createObject()), parameters('existingWorkspaceProperties').tags)]",
                       "properties": {
-                        "applicationGroupReferences": "[if(empty(parameters('existingWorkspaceProperties')), createArray(parameters('applicationGroupResourceId')), if(contains(parameters('existingWorkspaceProperties').applicationGroupReferences, parameters('applicationGroupResourceId')), parameters('existingWorkspaceProperties').applicationGroupReferences, union(parameters('existingWorkspaceProperties').applicationGroupReferences, createArray(parameters('applicationGroupResourceId')))))]",
+                        "applicationGroupReferences": "[if(empty(parameters('existingWorkspaceProperties')), createArray(parameters('applicationGroupResourceId')), union(variables('existingWorkspaceReferences'), createArray(variables('appGroupResId'))))]",
                         "friendlyName": "[if(empty(parameters('existingWorkspaceProperties')), parameters('friendlyName'), parameters('existingWorkspaceProperties').friendlyName)]",
                         "publicNetworkAccess": "[if(empty(parameters('existingWorkspaceProperties')), parameters('publicNetworkAccess'), parameters('existingWorkspaceProperties').publicNetworkAccess)]"
                       }
@@ -6956,7 +6960,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "7215651041766038870"
+                      "templateHash": "3543676168964758956"
                     }
                   },
                   "parameters": {
@@ -7012,6 +7016,10 @@
                       "type": "string"
                     }
                   },
+                  "variables": {
+                    "existingWorkspaceReferences": "[if(not(empty(parameters('existingWorkspaceProperties'))), map(parameters('existingWorkspaceProperties').applicationGroupReferences, lambda('resId', toLower(lambdaVariables('resId')))), createArray())]",
+                    "appGroupResId": "[toLower(parameters('applicationGroupResourceId'))]"
+                  },
                   "resources": [
                     {
                       "type": "Microsoft.DesktopVirtualization/workspaces",
@@ -7020,7 +7028,7 @@
                       "location": "[if(empty(parameters('existingWorkspaceProperties')), parameters('location'), parameters('existingWorkspaceProperties').location)]",
                       "tags": "[if(empty(parameters('existingWorkspaceProperties')), coalesce(tryGet(parameters('tags'), 'Microsoft.DesktopVirtualization/Workspaces'), createObject()), parameters('existingWorkspaceProperties').tags)]",
                       "properties": {
-                        "applicationGroupReferences": "[if(empty(parameters('existingWorkspaceProperties')), createArray(parameters('applicationGroupResourceId')), if(contains(parameters('existingWorkspaceProperties').applicationGroupReferences, parameters('applicationGroupResourceId')), parameters('existingWorkspaceProperties').applicationGroupReferences, union(parameters('existingWorkspaceProperties').applicationGroupReferences, createArray(parameters('applicationGroupResourceId')))))]",
+                        "applicationGroupReferences": "[if(empty(parameters('existingWorkspaceProperties')), createArray(parameters('applicationGroupResourceId')), union(variables('existingWorkspaceReferences'), createArray(variables('appGroupResId'))))]",
                         "friendlyName": "[if(empty(parameters('existingWorkspaceProperties')), parameters('friendlyName'), parameters('existingWorkspaceProperties').friendlyName)]",
                         "publicNetworkAccess": "[if(empty(parameters('existingWorkspaceProperties')), parameters('publicNetworkAccess'), parameters('existingWorkspaceProperties').publicNetworkAccess)]"
                       }
