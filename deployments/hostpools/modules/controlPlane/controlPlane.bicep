@@ -154,7 +154,7 @@ module applicationGroup 'modules/applicationGroup.bicep' = {
   }
 }
 
-resource getExistingFeedWorkspace 'Microsoft.DesktopVirtualization/workspaces@2023-09-05' existing = if (!empty(existingFeedWorkspaceResourceId)) {
+resource existingFeedWorkspace 'Microsoft.DesktopVirtualization/workspaces@2023-09-05' existing = if (!empty(existingFeedWorkspaceResourceId)) {
   name: last(split(existingFeedWorkspaceResourceId, '/'))
   scope: resourceGroup(split(existingFeedWorkspaceResourceId, '/')[2], split(existingFeedWorkspaceResourceId, '/')[4])
 }
@@ -167,13 +167,13 @@ module feedWorkspace 'modules/workspace.bicep' = {
     enableMonitoring: enableMonitoring
     existingWorkspaceProperties: !empty(existingFeedWorkspaceResourceId)
       ? {
-          applicationGroupReferences: getExistingFeedWorkspace.properties.applicationGroupReferences
-          friendlyName: getExistingFeedWorkspace.properties.friendlyName
-          location: getExistingFeedWorkspace.location
-          name: getExistingFeedWorkspace.name
-          publicNetworkAccess: getExistingFeedWorkspace.properties.publicNetworkAccess
+          applicationGroupReferences: existingFeedWorkspace.properties.applicationGroupReferences
+          friendlyName: existingFeedWorkspace.properties.friendlyName
+          location: existingFeedWorkspace.location
+          name: existingFeedWorkspace.name
+          publicNetworkAccess: existingFeedWorkspace.properties.publicNetworkAccess
           resourceId: existingFeedWorkspaceResourceId
-          tags: getExistingFeedWorkspace.tags
+          tags: existingFeedWorkspace.tags
         }
       : {}
     friendlyName: workspaceFriendlyName

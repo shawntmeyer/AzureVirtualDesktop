@@ -838,7 +838,6 @@ module management 'modules/management/management.bicep' = if (deploymentType == 
     domainJoinUserPrincipalName: domainJoinUserPrincipalName
     deploySecretsKeyVault: deploySecretsKeyVault
     keyVaultName: resourceNames.outputs.keyVaultNames.VMSecrets
-    keyVaultRetentionInDays: keyVaultRetentionInDays
     location: locationVirtualMachines
     logAnalyticsWorkspaceName: resourceNames.outputs.logAnalyticsWorkspaceName
     logAnalyticsWorkspaceRetention: logAnalyticsWorkspaceRetention

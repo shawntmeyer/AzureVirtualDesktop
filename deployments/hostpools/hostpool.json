@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "13684229448870337035"
+      "templateHash": "3289857360863683056"
     }
   },
   "parameters": {
@@ -3197,9 +3197,6 @@
           "keyVaultName": {
             "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.keyVaultNames.value.VMSecrets]"
           },
-          "keyVaultRetentionInDays": {
-            "value": "[parameters('keyVaultRetentionInDays')]"
-          },
           "location": {
             "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('virtualMachineSubnetResourceId'), '/')[2], split(parameters('virtualMachineSubnetResourceId'), '/')[4]), 'Microsoft.Network/virtualNetworks', split(parameters('virtualMachineSubnetResourceId'), '/')[8]), '2023-04-01', 'full').location]"
           },
@@ -3250,7 +3247,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "754210187935697323"
+              "templateHash": "5841456172813251168"
             }
           },
           "parameters": {
@@ -3283,9 +3280,6 @@
             },
             "keyVaultName": {
               "type": "string"
-            },
-            "keyVaultRetentionInDays": {
-              "type": "int"
             },
             "location": {
               "type": "string"
@@ -3385,7 +3379,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "1554697480441578434"
+                      "templateHash": "1119181612828359813"
                     }
                   },
                   "parameters": {
@@ -3440,14 +3434,14 @@
                     },
                     "enableSoftDelete": {
                       "type": "bool",
-                      "defaultValue": true,
+                      "defaultValue": false,
                       "metadata": {
-                        "description": "Optional. Switch to enable/disable Key Vault's soft delete feature."
+                        "description": "Required. Switch to enable/disable Key Vault's soft delete feature."
                       }
                     },
                     "softDeleteRetentionInDays": {
                       "type": "int",
-                      "defaultValue": 90,
+                      "defaultValue": 0,
                       "metadata": {
                         "description": "Optional. softDelete data retention days. It accepts >=7 and <=90."
                       }
@@ -3468,7 +3462,7 @@
                     },
                     "enablePurgeProtection": {
                       "type": "bool",
-                      "defaultValue": true,
+                      "defaultValue": false,
                       "metadata": {
                         "description": "Optional. Provide 'true' to enable Key Vault's purge protection feature."
                       }
@@ -3616,8 +3610,8 @@
                         "enabledForDeployment": "[parameters('enableVaultForDeployment')]",
                         "enabledForTemplateDeployment": "[parameters('enableVaultForTemplateDeployment')]",
                         "enabledForDiskEncryption": "[parameters('enableVaultForDiskEncryption')]",
-                        "enableSoftDelete": "[parameters('enableSoftDelete')]",
-                        "softDeleteRetentionInDays": "[parameters('softDeleteRetentionInDays')]",
+                        "enableSoftDelete": "[if(parameters('enableSoftDelete'), parameters('enableSoftDelete'), null())]",
+                        "softDeleteRetentionInDays": "[if(parameters('enableSoftDelete'), parameters('softDeleteRetentionInDays'), null())]",
                         "enableRbacAuthorization": "[parameters('enableRbacAuthorization')]",
                         "createMode": "[parameters('createMode')]",
                         "enablePurgeProtection": "[if(parameters('enablePurgeProtection'), parameters('enablePurgeProtection'), null())]",
@@ -5117,7 +5111,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "528024481884271687"
+              "templateHash": "6681374523744780386"
             }
           },
           "parameters": {
@@ -6233,7 +6227,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "2217483966716790692"
+                      "templateHash": "2013647441907822827"
                     }
                   },
                   "parameters": {
@@ -6297,9 +6291,9 @@
                       "location": "[if(empty(parameters('existingWorkspaceProperties')), parameters('location'), parameters('existingWorkspaceProperties').location)]",
                       "tags": "[if(empty(parameters('existingWorkspaceProperties')), coalesce(tryGet(parameters('tags'), 'Microsoft.DesktopVirtualization/Workspaces'), createObject()), parameters('existingWorkspaceProperties').tags)]",
                       "properties": {
-                        "applicationGroupReferences": "[if(empty(parameters('existingWorkspaceProperties')), createArray(parameters('applicationGroupResourceId')), union(parameters('existingWorkspaceProperties').applicationGroupReferences, createArray(parameters('applicationGroupResourceId'))))]",
+                        "applicationGroupReferences": "[if(empty(parameters('existingWorkspaceProperties')), createArray(parameters('applicationGroupResourceId')), union(createArray(parameters('applicationGroupResourceId')), parameters('existingWorkspaceProperties').applicationGroupReferences))]",
                         "friendlyName": "[if(empty(parameters('existingWorkspaceProperties')), parameters('friendlyName'), parameters('existingWorkspaceProperties').friendlyName)]",
-                        "publicNetworkAccess": "[parameters('publicNetworkAccess')]"
+                        "publicNetworkAccess": "[if(empty(parameters('existingWorkspaceProperties')), parameters('publicNetworkAccess'), parameters('existingWorkspaceProperties').publicNetworkAccess)]"
                       }
                     },
                     {
@@ -6962,7 +6956,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "2217483966716790692"
+                      "templateHash": "2013647441907822827"
                     }
                   },
                   "parameters": {
@@ -7026,9 +7020,9 @@
                       "location": "[if(empty(parameters('existingWorkspaceProperties')), parameters('location'), parameters('existingWorkspaceProperties').location)]",
                       "tags": "[if(empty(parameters('existingWorkspaceProperties')), coalesce(tryGet(parameters('tags'), 'Microsoft.DesktopVirtualization/Workspaces'), createObject()), parameters('existingWorkspaceProperties').tags)]",
                       "properties": {
-                        "applicationGroupReferences": "[if(empty(parameters('existingWorkspaceProperties')), createArray(parameters('applicationGroupResourceId')), union(parameters('existingWorkspaceProperties').applicationGroupReferences, createArray(parameters('applicationGroupResourceId'))))]",
+                        "applicationGroupReferences": "[if(empty(parameters('existingWorkspaceProperties')), createArray(parameters('applicationGroupResourceId')), union(createArray(parameters('applicationGroupResourceId')), parameters('existingWorkspaceProperties').applicationGroupReferences))]",
                         "friendlyName": "[if(empty(parameters('existingWorkspaceProperties')), parameters('friendlyName'), parameters('existingWorkspaceProperties').friendlyName)]",
-                        "publicNetworkAccess": "[parameters('publicNetworkAccess')]"
+                        "publicNetworkAccess": "[if(empty(parameters('existingWorkspaceProperties')), parameters('publicNetworkAccess'), parameters('existingWorkspaceProperties').publicNetworkAccess)]"
                       }
                     },
                     {
@@ -7556,7 +7550,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "9068307619496611476"
+              "templateHash": "8805965899648799827"
             }
           },
           "parameters": {
@@ -7813,7 +7807,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "6971278900629601154"
+                      "templateHash": "6627530954351619219"
                     }
                   },
                   "parameters": {
@@ -7966,7 +7960,7 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.33.93.31351",
-                              "templateHash": "1554697480441578434"
+                              "templateHash": "1119181612828359813"
                             }
                           },
                           "parameters": {
@@ -8021,14 +8015,14 @@
                             },
                             "enableSoftDelete": {
                               "type": "bool",
-                              "defaultValue": true,
+                              "defaultValue": false,
                               "metadata": {
-                                "description": "Optional. Switch to enable/disable Key Vault's soft delete feature."
+                                "description": "Required. Switch to enable/disable Key Vault's soft delete feature."
                               }
                             },
                             "softDeleteRetentionInDays": {
                               "type": "int",
-                              "defaultValue": 90,
+                              "defaultValue": 0,
                               "metadata": {
                                 "description": "Optional. softDelete data retention days. It accepts >=7 and <=90."
                               }
@@ -8049,7 +8043,7 @@
                             },
                             "enablePurgeProtection": {
                               "type": "bool",
-                              "defaultValue": true,
+                              "defaultValue": false,
                               "metadata": {
                                 "description": "Optional. Provide 'true' to enable Key Vault's purge protection feature."
                               }
@@ -8197,8 +8191,8 @@
                                 "enabledForDeployment": "[parameters('enableVaultForDeployment')]",
                                 "enabledForTemplateDeployment": "[parameters('enableVaultForTemplateDeployment')]",
                                 "enabledForDiskEncryption": "[parameters('enableVaultForDiskEncryption')]",
-                                "enableSoftDelete": "[parameters('enableSoftDelete')]",
-                                "softDeleteRetentionInDays": "[parameters('softDeleteRetentionInDays')]",
+                                "enableSoftDelete": "[if(parameters('enableSoftDelete'), parameters('enableSoftDelete'), null())]",
+                                "softDeleteRetentionInDays": "[if(parameters('enableSoftDelete'), parameters('softDeleteRetentionInDays'), null())]",
                                 "enableRbacAuthorization": "[parameters('enableRbacAuthorization')]",
                                 "createMode": "[parameters('createMode')]",
                                 "enablePurgeProtection": "[if(parameters('enablePurgeProtection'), parameters('enablePurgeProtection'), null())]",
@@ -14176,7 +14170,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "13303812295504833056"
+              "templateHash": "8880271759780680999"
             }
           },
           "parameters": {
@@ -15183,7 +15177,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "4946060450002742922"
+                      "templateHash": "7426862298960403296"
                     }
                   },
                   "parameters": {
@@ -15304,7 +15298,7 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.33.93.31351",
-                              "templateHash": "1554697480441578434"
+                              "templateHash": "1119181612828359813"
                             }
                           },
                           "parameters": {
@@ -15359,14 +15353,14 @@
                             },
                             "enableSoftDelete": {
                               "type": "bool",
-                              "defaultValue": true,
+                              "defaultValue": false,
                               "metadata": {
-                                "description": "Optional. Switch to enable/disable Key Vault's soft delete feature."
+                                "description": "Required. Switch to enable/disable Key Vault's soft delete feature."
                               }
                             },
                             "softDeleteRetentionInDays": {
                               "type": "int",
-                              "defaultValue": 90,
+                              "defaultValue": 0,
                               "metadata": {
                                 "description": "Optional. softDelete data retention days. It accepts >=7 and <=90."
                               }
@@ -15387,7 +15381,7 @@
                             },
                             "enablePurgeProtection": {
                               "type": "bool",
-                              "defaultValue": true,
+                              "defaultValue": false,
                               "metadata": {
                                 "description": "Optional. Provide 'true' to enable Key Vault's purge protection feature."
                               }
@@ -15535,8 +15529,8 @@
                                 "enabledForDeployment": "[parameters('enableVaultForDeployment')]",
                                 "enabledForTemplateDeployment": "[parameters('enableVaultForTemplateDeployment')]",
                                 "enabledForDiskEncryption": "[parameters('enableVaultForDiskEncryption')]",
-                                "enableSoftDelete": "[parameters('enableSoftDelete')]",
-                                "softDeleteRetentionInDays": "[parameters('softDeleteRetentionInDays')]",
+                                "enableSoftDelete": "[if(parameters('enableSoftDelete'), parameters('enableSoftDelete'), null())]",
+                                "softDeleteRetentionInDays": "[if(parameters('enableSoftDelete'), parameters('softDeleteRetentionInDays'), null())]",
                                 "enableRbacAuthorization": "[parameters('enableRbacAuthorization')]",
                                 "createMode": "[parameters('createMode')]",
                                 "enablePurgeProtection": "[if(parameters('enablePurgeProtection'), parameters('enablePurgeProtection'), null())]",

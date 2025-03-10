@@ -12,7 +12,6 @@ param domainJoinUserPassword string
 @secure()
 param domainJoinUserPrincipalName string
 param keyVaultName string
-param keyVaultRetentionInDays int
 param location string
 param logAnalyticsWorkspaceName string
 param logAnalyticsWorkspaceRetention int
