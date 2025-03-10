@@ -329,13 +329,12 @@ try {
             $AzureManagementHeader = @{
                 'Content-Type'  = 'application/json'
                 'Authorization' = 'Bearer ' + $AzureManagementAccessToken
-            }      
+            }   
             for ($i = 0; $i -lt $StCount; $i++) {
                 # Build the Storage Account Name and FQDN
                 $StorageAccountName = $StorageAccountPrefix + ($i + $StIndex).ToString().PadLeft(2, '0')
                 Write-Log -message "Processing Storage Account Name: $StorageAccountName"
-                $FileServer = '\\' + $StorageAccountName + $FilesSuffix                
-                
+                $FileServer = '\\' + $StorageAccountName + $FilesSuffix
                 # Get the storage account key
                 $StorageKey = (Invoke-RestMethod `
                         -Headers $AzureManagementHeader `
@@ -392,7 +391,6 @@ try {
                 }
                 Write-Log -message "Creating the AD computer object for the Azure Storage Account"
                 $ComputerObject = New-ADComputer -Credential $DomainCredential -Name $StorageAccountName -Path $OuPath -ServicePrincipalNames $SPN -AccountPassword $ComputerPassword -Description $Description -PassThru
-
                 # Update the Azure Storage Account with the domain join 'INFO'
                 Write-Log -message "Updating the Azure Storage Account with the domain join 'INFO'"
                 $SamAccountName = switch ($KerberosEncryptionType) {
@@ -460,16 +458,16 @@ try {
             if ($ShardAzureFilesStorage -eq 'true') {
                 foreach ($Share in $Shares) {
                     $FileShare = $FileServer + '\' + $Share
-                    $UserGroup = $UserGroups[$i]
-                    [array]$ArrayGroup = $UserGroup -Split(',')
-                    Write-Log -message "Processing File Share: $FileShare with UserGroup = $UserGroup"
+                    $UserGroup = $null
+                    [array]$UserGroup += $UserGroups[$i]
+                    Write-Log -message "Processing File Share: $FileShare with UserGroup = $($UserGroups[$i])"
                     if ($AdminGroups.Count -gt 0) {
                         Write-Log -message "Admin Groups provided, executing Update-ACL with Admin Groups"
-                        Update-ACL -AdminGroups $AdminGroups -Credential $StorageKeyCredential -FileShare $FileShare -UserGroups $ArrayGroup
+                        Update-ACL -AdminGroups $AdminGroups -Credential $StorageKeyCredential -FileShare $FileShare -UserGroups $UserGroup
                     }
                     Else {
                         Write-Log -message "Admin Groups not provided, executing Update-ACL without Admin Groups"
-                        Update-ACL -Credential $StorageKeyCredential -FileShare $FileShare -UserGroups $ArrayGroup
+                        Update-ACL -Credential $StorageKeyCredential -FileShare $FileShare -UserGroups $UserGroup
                     }
                 }
             }

@@ -28,11 +28,10 @@ param replicaCount int
 
 @sys.description('Optional. Optional parameter which specifies the mode to be used for replication. This property is not updatable.')
 @allowed([
-  ''
   'Full'
   'Shallow'
 ])
-param replicationMode string = ''
+param replicationMode string = 'Full'
 
 @sys.description('Optional. Specifies the storage account type to be used to store the image. This property is not updatable.')
 @allowed([
@@ -133,7 +132,7 @@ resource version 'Microsoft.Compute/galleries/images/versions@2022-03-03' = {
       endOfLifeDate: !empty(endOfLifeDate) ? endOfLifeDate : null
       excludeFromLatest: excludeFromLatest
       replicaCount: replicaCount
-      replicationMode: !empty(replicationMode) ? replicationMode : null
+      replicationMode: replicationMode
       storageAccountType: storageAccountType
       targetRegions: targetRegionsVar
     }

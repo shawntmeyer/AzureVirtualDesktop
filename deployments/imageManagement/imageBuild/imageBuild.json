@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "2265603925492244946"
+      "templateHash": "7940088860331048944"
     },
     "name": "Zero Trust Architecture Custom Windows Image Builder",
     "description": "This solution allows you to create a custom image much like Azure VM Image Builder, but utilizes zero trust architecture and does not require that service.",
@@ -12422,7 +12422,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "1395708859513266824"
+              "templateHash": "6694398302522969960"
             }
           },
           "parameters": {
@@ -12750,7 +12750,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "12658885593511687007"
+                      "templateHash": "6621924146950843652"
                     },
                     "name": "Compute Galleries Image Version",
                     "description": "This module deploys an Azure Compute Gallery Image Definition Version",
@@ -12806,9 +12806,8 @@
                     },
                     "replicationMode": {
                       "type": "string",
-                      "defaultValue": "",
+                      "defaultValue": "Full",
                       "allowedValues": [
-                        "",
                         "Full",
                         "Shallow"
                       ],
@@ -12941,7 +12940,7 @@
                           "endOfLifeDate": "[if(not(empty(parameters('endOfLifeDate'))), parameters('endOfLifeDate'), null())]",
                           "excludeFromLatest": "[parameters('excludeFromLatest')]",
                           "replicaCount": "[parameters('replicaCount')]",
-                          "replicationMode": "[if(not(empty(parameters('replicationMode'))), parameters('replicationMode'), null())]",
+                          "replicationMode": "[parameters('replicationMode')]",
                           "storageAccountType": "[parameters('storageAccountType')]",
                           "targetRegions": "[variables('targetRegionsVar')]"
                         },
@@ -13316,7 +13315,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "12658885593511687007"
+              "templateHash": "6621924146950843652"
             },
             "name": "Compute Galleries Image Version",
             "description": "This module deploys an Azure Compute Gallery Image Definition Version",
@@ -13372,9 +13371,8 @@
             },
             "replicationMode": {
               "type": "string",
-              "defaultValue": "",
+              "defaultValue": "Full",
               "allowedValues": [
-                "",
                 "Full",
                 "Shallow"
               ],
@@ -13507,7 +13505,7 @@
                   "endOfLifeDate": "[if(not(empty(parameters('endOfLifeDate'))), parameters('endOfLifeDate'), null())]",
                   "excludeFromLatest": "[parameters('excludeFromLatest')]",
                   "replicaCount": "[parameters('replicaCount')]",
-                  "replicationMode": "[if(not(empty(parameters('replicationMode'))), parameters('replicationMode'), null())]",
+                  "replicationMode": "[parameters('replicationMode')]",
                   "storageAccountType": "[parameters('storageAccountType')]",
                   "targetRegions": "[variables('targetRegionsVar')]"
                 },
