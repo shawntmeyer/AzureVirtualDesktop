@@ -272,6 +272,7 @@ $redirectionsXMLContent = @'
 <Exclude Copy="0">AppData\Local\Packages\MSTeams_8wekyb3d8bbwe\LocalCache\Microsoft\MSTeams\Logs</Exclude>
 <Exclude Copy="0">AppData\Local\Packages\MSTeams_8wekyb3d8bbwe\LocalCache\Microsoft\MSTeams\PerfLog</Exclude>
 <Exclude Copy="0">AppData\Local\Packages\MSTeams_8wekyb3d8bbwe\LocalCache\Microsoft\MSTeams\EBWebView\WV2Profile_tfw\GPUCache</Exclude>
+<Exclude Copy="0">AppData\Local\Packages\Microsoft.Windows.StartMenuExperienceHost_cw5n1h2txyewy\TempState</Exclude>
 </Excludes>
 <Includes>
 </Includes>
@@ -302,11 +303,31 @@ Write-Log -message "ProfileShareName: $ProfileShareName"
 Write-Log -message "OfficeShareName: $OfficeShareName"
 Write-Log -message "StorageService: $StorageService"
 
+$TeamsInstalled = Get-AppxProvisionedPackage -Online | Where-Object {$_.DisplayName -eq 'MSTeams'}
+$M365AppsInstalled = Get-InstalledApplication -Name 'Microsoft 365 Apps'
+
+if ($M365AppsInstalled) {
+    Write-Log -message 'New Microsoft 365 Apps are installed on this image.'
+}
+
+if ($TeamsInstalled) {
+    Write-Log -message 'New Teams Client is installed on this image.'
+}
+
 Write-Log -message "*** Building Array of Registry Settings ***"
 $RegSettings = New-Object System.Collections.ArrayList
 If ($DisableUpdates -eq 'true') {
     # Disable Automatic Updates: https://learn.microsoft.com/azure/virtual-desktop/set-up-customize-master-image#disable-automatic-updates
     $RegSettings.Add(@{Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU'; Name = 'NoAutoUpdate'; PropertyType = 'DWORD'; Value = 1})
+    If ($M365AppsInstalled) {
+        # Disable Office Automatic Updates: https://learn.microsoft.com/azure/virtual-desktop/set-up-customize-master-image#disable-office-automatic-updates
+        $RegSettings.Add(@{Path = 'HKLM:\SOFTWARE\Policies\Microsoft\office\16.0\common\officeupdate'; Name = 'hideupdatenotifications'; PropertyType = 'DWORD'; Value = 1})
+        $RegSettings.Add(@{Path = 'HKLM:\SOFTWARE\Policies\Microsoft\office\16.0\common\officeupdate'; Name = 'hideenabledisableupdates'; PropertyType = 'DWORD'; Value = 1})
+    }
+    If ($TeamsInstalled) {
+        # Disable Teams Auto-Update: https://learn.microsoft.com/en-us/microsoftteams/new-teams-vdi-requirements-deploy#disable-new-teams-autoupdate-in-non-persistent-vdi
+        $RegSettings.Add(@{Path = 'HKLM:\SOFTWARE\Microsoft\Teams'; Name = 'disableAutoUpdate'; PropertyType = 'DWORD'; Value = 1})
+    }
 }
 # Enable Time Zone Redirection: https://learn.microsoft.com/azure/virtual-desktop/set-up-customize-master-image#set-up-time-zone-redirection
 $RegSettings.Add(@{Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services'; Name = 'fEnableTimeZoneRedirection'; PropertyType = 'DWORD'; Value = 1})
@@ -608,7 +629,7 @@ If ($ConfigureFSLogix) {
         }    
     }
     Write-Log -message "Checking for Teams"
-    If (Get-InstalledApplication 'Teams') {
+    If ($TeamsInstalled) {
         Write-Log -message "Teams is installed"
         $customRedirFolder = "$env:ProgramData\FSLogix_CustomRedirections"
         Write-Log -message "Creating custom redirections.xml file in $customRedirFolder"
