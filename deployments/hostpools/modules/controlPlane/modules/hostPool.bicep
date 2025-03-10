@@ -33,7 +33,7 @@ var vmImageOffer = empty(virtualMachineTemplate.galleryImageOffer)
   : { vmImageOffer: virtualMachineTemplate.galleryImageOffer }
 var vmImagePublisher = empty(virtualMachineTemplate.galleryImagePublisher)
   ? {}
-  : { vmImagePublisher: virtualMachineTemplate.vmImagePublisher }
+  : { vmImagePublisher: virtualMachineTemplate.galleryImagePublisher }
 var vmImageSKU = empty(virtualMachineTemplate.galleryImageSKU)
   ? {}
   : { vmImageSku: virtualMachineTemplate.galleryImageSKU }

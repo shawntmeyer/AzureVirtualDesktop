@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "4635274365529182930"
+      "templateHash": "311722797804359808"
     }
   },
   "parameters": {
@@ -5083,7 +5083,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "16523931913204535220"
+              "templateHash": "6536015366422424856"
             }
           },
           "parameters": {
@@ -5415,7 +5415,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "10164060991260595826"
+                      "templateHash": "9316424093112464929"
                     }
                   },
                   "parameters": {
@@ -5483,7 +5483,7 @@
                     "vmOUPath": "[if(empty(parameters('virtualMachineTemplate').ouPath), createObject(), createObject('vmOUPath', parameters('virtualMachineTemplate').ouPath))]",
                     "vmCustomImageId": "[if(empty(parameters('virtualMachineTemplate').customImageId), createObject(), createObject('vmCustomImageId', parameters('virtualMachineTemplate').customImageId))]",
                     "vmImageOffer": "[if(empty(parameters('virtualMachineTemplate').galleryImageOffer), createObject(), createObject('vmImageOffer', parameters('virtualMachineTemplate').galleryImageOffer))]",
-                    "vmImagePublisher": "[if(empty(parameters('virtualMachineTemplate').galleryImagePublisher), createObject(), createObject('vmImagePublisher', parameters('virtualMachineTemplate').vmImagePublisher))]",
+                    "vmImagePublisher": "[if(empty(parameters('virtualMachineTemplate').galleryImagePublisher), createObject(), createObject('vmImagePublisher', parameters('virtualMachineTemplate').galleryImagePublisher))]",
                     "vmImageSKU": "[if(empty(parameters('virtualMachineTemplate').galleryImageSKU), createObject(), createObject('vmImageSku', parameters('virtualMachineTemplate').galleryImageSKU))]",
                     "vmDiskEncryptionSetName": "[if(empty(parameters('virtualMachineTemplate').diskEncryptionSetName), createObject(), createObject('vmDiskEncryptionSetName', parameters('virtualMachineTemplate').diskEncryptionSetName))]",
                     "vmHibernate": "[if(empty(parameters('virtualMachineTemplate').hibernate), createObject(), createObject('vmHibernate', parameters('virtualMachineTemplate').hibernate))]",
