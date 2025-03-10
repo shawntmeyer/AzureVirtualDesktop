@@ -2539,7 +2539,7 @@
 									"visible": "[and(or(steps('userProfiles').configureSessionHosts, equals(steps('userProfiles').deployStorage, true)), not(equals(steps('identity').virtualMachines.solution, 'EntraId')))]",
 									"options": {
 										"style": "Info",
-										"text": "If you choose to Shard the user profile storage, you must provide a group to assign to each storage account. In order to minimize login times, to provide create more than four (4) storage accounts, you must select the 'Sharding via Object Specific Settings' option below and use the instructions found in the link here to configure object specific settings for the VHDLocations or CCDLocations paths.",
+										"text": "If you choose to Shard the user profile storage, you must provide a group to assign to each storage account. In order to minimize login times, to provide more than four (4) storage accounts, you must select the 'Sharding via Object Specific Settings' option below and, for ease of configuration, select 'Configure FSLogix registry settings on session hosts' above. You can find instructions on how to configure the regisry at the link provided.",
 										"uri": "https://learn.microsoft.com/en-us/fslogix/how-to-configure-object-specific-settings"
 									}
 								},
