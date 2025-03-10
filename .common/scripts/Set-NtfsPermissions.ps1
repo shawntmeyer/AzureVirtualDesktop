@@ -460,14 +460,15 @@ try {
             if ($ShardAzureFilesStorage -eq 'true') {
                 foreach ($Share in $Shares) {
                     $FileShare = $FileServer + '\' + $Share
-                    Write-Log -message "Processing File Share: $FileShare"
+                    $UserGroup = $UserGroups[$i]
+                    Write-Log -message "Processing File Share: $FileShare with UserGroup = $UserGroup"
                     if ($AdminGroups.Count -gt 0) {
                         Write-Log -message "Admin Groups provided, executing Update-ACL with Admin Groups"
-                        Update-ACL -AdminGroups $AdminGroups -Credential $StorageKeyCredential -FileShare $FileShare -UserGroups @($UserGroups[$i])
+                        Update-ACL -AdminGroups $AdminGroups -Credential $StorageKeyCredential -FileShare $FileShare -UserGroups @($UserGroup)
                     }
                     Else {
                         Write-Log -message "Admin Groups not provided, executing Update-ACL without Admin Groups"
-                        Update-ACL -Credential $StorageKeyCredential -FileShare $FileShare -UserGroups @($UserGroups[$i])
+                        Update-ACL -Credential $StorageKeyCredential -FileShare $FileShare -UserGroups @($UserGroup)
                     }
                 }
             }

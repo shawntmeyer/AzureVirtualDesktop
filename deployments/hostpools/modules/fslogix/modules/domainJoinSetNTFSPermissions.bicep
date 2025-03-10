@@ -42,7 +42,7 @@ var azureFilesParameters = [
   }
   {
     name: 'ShardAzureFilesStorage'
-    value: shardingOptions == 'None' ? 'true' : 'false'
+    value: shardingOptions == 'None' ? 'false' : 'true'
   }
   {
     name: 'StorageAccountPrefix'
