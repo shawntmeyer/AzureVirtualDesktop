@@ -1,6 +1,6 @@
 targetScope = 'subscription'
 
-param appGroupSecurityGroups array
+param deploymentType string
 param artifactsContainerUri string
 param artifactsUserAssignedIdentityResourceId string
 param availability string
@@ -36,9 +36,11 @@ param diskSku string
 param divisionRemainderValue int
 param domainName string
 param drainMode bool
-param drainModeUserAssignedIdentityClientId string
 param enableAcceleratedNetworking bool
 param encryptionAtHost bool
+param existingDiskAccessResourceId string
+param existingDiskEncryptionSetResourceId string
+param existingRecoveryServicesVaultResourceId string
 param fslogixFileShareNames array
 param fslogixConfigureSessionHosts bool
 param fslogixContainerType string
@@ -74,7 +76,6 @@ param recoveryServices bool
 param recoveryServicesVaultName string
 param resourceGroupDeployment string
 param resourceGroupHosts string
-param roleDefinitions object
 param secureBootEnabled bool
 param securityDataCollectionRulesResourceId string
 param securityType string
@@ -116,7 +117,25 @@ var backupPrivateDNSZoneResourceIds = [
 
 var nonEmptyBackupPrivateDNSZoneResourceIds = filter(backupPrivateDNSZoneResourceIds, zone => !empty(zone))
 
-module diskAccessResource '../../../sharedModules/resources/compute/disk-access/main.bicep' = if (deployDiskAccessResource) {
+// Call on the hotspool
+resource hostPoolGet 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' existing = if(deploymentType != 'Complete') {
+  name: last(split(hostPoolResourceId, '/'))
+  scope: resourceGroup(split(hostPoolResourceId, '/')[4])
+}
+
+module hostPoolUpdate 'modules/hostPoolUpdate.bicep' = if(deploymentType != 'Complete') {
+  name: 'HostPoolRegistrationTokenUpdate_${timeStamp}'
+  scope: resourceGroup(split(hostPoolResourceId, '/')[4])
+  params: {
+    hostPoolType: deploymentType != 'Complete' ? hostPoolGet.properties.hostPoolType : ''
+    loadBalancerType: deploymentType != 'Complete' ? hostPoolGet.properties.loadBalancerType : ''
+    location: deploymentType != 'Complete' ? hostPoolGet.location : location
+    name: deploymentType != 'Complete' ? hostPoolGet.name : ''
+    preferredAppGroupType: deploymentType != 'Complete' ? hostPoolGet.properties.preferredAppGroupType : ''
+  } 
+}
+
+module diskAccessResource '../../../sharedModules/resources/compute/disk-access/main.bicep' = if (deployDiskAccessResource && deploymentType == 'Complete') {
   scope: resourceGroup(resourceGroupHosts)
   name: 'DiskAccess_${timeStamp}'
   params: {
@@ -157,7 +176,7 @@ module diskAccessPolicy 'modules/diskNetworkAccessPolicy.bicep' = if (deployDisk
   }
 }
 
-module diskEncryption 'modules/diskEncryption.bicep' =  if (keyManagementDisks != 'PlatformManaged' || confidentialVMOSDiskEncryption) {
+module diskEncryption 'modules/diskEncryption.bicep' =  if (deploymentType == 'Complete' && (keyManagementDisks != 'PlatformManaged' || confidentialVMOSDiskEncryption)) {
   name: 'DiskEncryption_${timeStamp}'
   scope: resourceGroup(resourceGroupHosts)
   params: {    
@@ -204,18 +223,6 @@ module availabilitySets '../../../sharedModules/resources/compute/availability-s
   }
 }]
 
-// Role Assignment for Virtual Machine Login User
-// This module deploys the role assignments to login to Azure AD joined session hosts
-module roleAssignments '../../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = [for i in range(0, length(appGroupSecurityGroups)): if (!contains(identitySolution, 'DomainServices')) {
-  name: 'RA-VMLoginUser-${i}_${timeStamp}'
-  scope: resourceGroup(resourceGroupHosts)
-  params: {
-    principalId: appGroupSecurityGroups[i]
-    principalType: 'Group'
-    roleDefinitionId: roleDefinitions.VirtualMachineUserLogin
-  }
-}]
-
 module localNetAppVolumes 'modules/getNetAppVolumeSmbServerFqdn.bicep' = [for i in range(0, length(sortedLocalNetAppResourceIds)): if(!empty(sortedLocalNetAppResourceIds)) {
   name: 'localNetAppVolumes-${i}-${timeStamp}'
   params: {
@@ -241,6 +248,7 @@ module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sess
     availability: availability
     availabilityZones: availabilityZones
     availabilitySetNamePrefix: availabilitySetNamePrefix
+    avdInsightsDataCollectionRulesResourceId: avdInsightsDataCollectionRulesResourceId
     batchCount: i
     confidentialVMOSDiskEncryptionType: confidentialVMOSDiskEncryptionType
     customImageResourceId: customImageResourceId
@@ -248,17 +256,19 @@ module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sess
     dedicatedHostGroupResourceId: dedicatedHostGroupResourceId
     dedicatedHostGroupZones: dedicatedHostGroupZones
     dedicatedHostResourceId: dedicatedHostResourceId
-    diskAccessId: deployDiskAccessResource ? diskAccessResource.outputs.resourceId : ''
-    diskEncryptionSetResourceId: keyManagementDisks != 'PlatformManaged' || confidentialVMOSDiskEncryption ? diskEncryption.outputs.diskEncryptionSetResourceId : ''
+    diskAccessId: deploymentType == 'Complete' ? deployDiskAccessResource ? diskAccessResource.outputs.resourceId : '' : existingDiskAccessResourceId
+    diskEncryptionSetResourceId: ( deploymentType == 'Complete' && (keyManagementDisks != 'PlatformManaged' || confidentialVMOSDiskEncryption )) ? diskEncryption.outputs.diskEncryptionSetResourceId : !empty(existingDiskEncryptionSetResourceId) ? existingDiskEncryptionSetResourceId : ''
     diskNamePrefix: diskNamePrefix
     diskSizeGB: diskSizeGB
     diskSku: diskSku
     domainJoinUserPassword: domainJoinUserPassword
     domainJoinUserPrincipalName: domainJoinUserPrincipalName
     domainName: domainName
+    deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
+    deploymentVirtualMachineName: deploymentVirtualMachineName
     drainMode: drainMode
-    drainModeUserAssignedIdentityClientId: drainModeUserAssignedIdentityClientId
     enableAcceleratedNetworking: enableAcceleratedNetworking
+    enableMonitoring: enableMonitoring
     encryptionAtHost: encryptionAtHost
     fslogixConfigureSessionHosts: fslogixConfigureSessionHosts
     fslogixContainerType: fslogixContainerType
@@ -270,21 +280,17 @@ module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sess
     fslogixRemoteStorageAccountResourceIds: fslogixRemoteStorageAccountResourceIds    
     fslogixStorageService: fslogixStorageService
     hibernationEnabled: hibernationEnabled
-    hostPoolResourceId: hostPoolResourceId
+    hostPoolResourceId: deploymentType == 'Complete' ? hostPoolResourceId : hostPoolUpdate.outputs.resourceId
     identitySolution: identitySolution
     imageOffer: imageOffer
     imagePublisher: imagePublisher
     imageSku: imageSku
     integrityMonitoring: integrityMonitoring
     location: location
-    deploymentVirtualMachineName: deploymentVirtualMachineName
-    enableMonitoring: enableMonitoring
     networkInterfaceNamePrefix: networkInterfaceNamePrefix
     ouPath: ouPath
-    sessionHostCustomizations: sessionHostCustomizations
-    avdInsightsDataCollectionRulesResourceId: avdInsightsDataCollectionRulesResourceId
-    vmInsightsDataCollectionRulesResourceId: vmInsightsDataCollectionRulesResourceId 
     resourceGroupDeployment: resourceGroupDeployment
+    sessionHostCustomizations: sessionHostCustomizations
     securityDataCollectionRulesResourceId: securityDataCollectionRulesResourceId
     secureBootEnabled: secureBootEnabled
     securityType: securityType
@@ -300,6 +306,7 @@ module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sess
     virtualMachineAdminUserName: virtualMachineAdminUserName
     virtualMachineNamePrefix: virtualMachineNamePrefix
     virtualMachineSize: virtualMachineSize
+    vmInsightsDataCollectionRulesResourceId: vmInsightsDataCollectionRulesResourceId 
     vTpmEnabled: vTpmEnabled
   }
   dependsOn: [
@@ -307,7 +314,7 @@ module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sess
   ]
 }]
 
-module recoveryServicesVault '../../../sharedModules/resources/recovery-services/vault/main.bicep' = if (recoveryServices) {
+module recoveryServicesVault '../../../sharedModules/resources/recovery-services/vault/main.bicep' = if (deploymentType == 'Complete' && recoveryServices) {
   name: 'RecoveryServicesVault_VirtualMachines_${timeStamp}'
   scope: resourceGroup(resourceGroupHosts)
   params: {
@@ -372,13 +379,13 @@ module recoveryServicesVault '../../../sharedModules/resources/recovery-services
   }
 }
 
-module protectedItems_Vm 'modules/protectedItems.bicep' = [for i in range(1, sessionHostBatchCount): if (recoveryServices) {
+module protectedItems_Vm 'modules/protectedItems.bicep' = [for i in range(1, sessionHostBatchCount): if (recoveryServices && (deploymentType == 'Complete' || !empty(existingRecoveryServicesVaultResourceId))) {
   name: 'BackupProtectedItems_VirtualMachines_${i-1}_${timeStamp}'
   scope: resourceGroup(resourceGroupHosts)
   params: {
     location: location
-    PolicyId: recoveryServices ? '${recoveryServicesVault.outputs.resourceId}/backupPolicies/${backupPolicyName}' : ''
-    recoveryServicesVaultName: recoveryServices ? recoveryServicesVault.outputs.name : ''
+    PolicyId: deploymentType == 'Complete' ? '${recoveryServicesVault.outputs.resourceId}/backupPolicies/${backupPolicyName}' : '${existingRecoveryServicesVaultResourceId}/backupPolicies/${backupPolicyName}'
+    recoveryServicesVaultName: deploymentType == 'Complete' ? recoveryServicesVault.outputs.name : last(split(existingRecoveryServicesVaultResourceId, '/'))
     sessionHostCount: i == sessionHostBatchCount && divisionRemainderValue > 0 ? divisionRemainderValue : maxResourcesPerTemplateDeployment
     sessionHostIndex: i == 1 ? sessionHostIndex : ((i - 1) * maxResourcesPerTemplateDeployment) + sessionHostIndex
     tags: union({'cm-resource-parent': hostPoolResourceId}, tags[?'Microsoft.recoveryServices/vaults'] ?? {})

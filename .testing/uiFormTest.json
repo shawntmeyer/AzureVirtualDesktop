@@ -1,0 +1,57 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2021-09-09/uiFormDefinition.schema.json",
+	"view": {
+		"kind": "Form",
+		"properties": {
+			"title": "Azure Virtual Desktop Host Pool",
+			"steps": [
+				{
+					"name": "basics",
+					"label": "Deployment Basics",
+					"elements": [
+						{
+							"name": "scope",
+							"type": "Microsoft.Common.ResourceScope",
+							"instanceDetailsLabel": "Deployment Details",
+							"location": {
+								"label": "Region (Session Hosts, Storage, and Management Resources)",
+								"resourceTypes": [
+									"Microsoft.resources/resourceGroups"
+								]
+							}
+						},						
+						{
+							"name": "servicePrincipalsFilteredApi",
+							"type": "Microsoft.Solutions.GraphApiControl",
+							"request": {
+								"method": "GET",
+								"path": "/v1.0/servicePrincipals?$filter=startsWith(displayName, 'Azure Virtual Desktop')&$select=displayName,id",
+								"transforms": {
+									"avd": "[value[?displayName=='Azure Virtual Desktop'] | [0].id]",
+									"avdARMProvider": "[value[?displayName=='Azure Virtual Desktop ARM Provider'] | [0].id]"
+								}
+							}
+						},
+						{
+                            "name": "avdObjectId",
+                            "type": "Microsoft.Common.TextBox",
+                            "label": "AVD Object Id",
+                            "placeholder": "",
+                            "defaultValue": "",
+                            "toolTip": "Search your Entra ID tenant for the Azure Virtual Desktop or Windows Virtual Desktop enterprise Application with Applicaton ID (9cdead84-a844-4324-93f2-b2e6bb768d07) and enter the Object Id here.",
+                            "visible": "[empty(steps('basics').servicePrincipalsFilteredApi)]"
+                        }						
+					]
+				}
+			]
+		},
+		"outputs": {
+			"kind": "Subscription",
+			"subscriptionId": "[steps('basics').scope.subscription.id]",
+			"location": "[steps('basics').scope.location.name]",
+			"parameters": {
+				"avdSpIdTransformed": "[steps('basics').avdObjectId]"
+			}
+		}
+	}
+}

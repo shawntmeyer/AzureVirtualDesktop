@@ -12,6 +12,7 @@ param dataCollectionEndpointResourceId string
 param dedicatedHostGroupResourceId string
 param dedicatedHostGroupZones array
 param dedicatedHostResourceId string
+param deploymentUserAssignedIdentityClientId string
 param deploymentVirtualMachineName string
 param diskAccessId string
 param diskEncryptionSetResourceId string
@@ -24,7 +25,7 @@ param domainJoinUserPassword string
 param domainJoinUserPrincipalName string
 param domainName string
 param drainMode bool
-param drainModeUserAssignedIdentityClientId string
+
 param enableAcceleratedNetworking bool
 param enableMonitoring bool
 param encryptionAtHost bool
@@ -500,31 +501,11 @@ resource runCommand_ConfigureSessionHost 'Microsoft.Compute/virtualMachines/runC
       {
         name: 'DisableUpdates'
         value: 'false'
-      }    
-    ]
-    source: {
-      script: loadTextContent('../../../../../.common/scripts/Set-SessionHostConfiguration.ps1')
-    }
-    treatFailureAsDeploymentFailure: true
-    timeoutInSeconds: 120
-  }
-  dependsOn: [
-    extension_AADLoginForWindows
-    extension_JsonADDomainExtension
-    extension_AmdGpuDriverWindows
-    extension_NvidiaGpuDriverWindows
-    extension_IaasAntimalware
-    extension_AzureMonitorWindowsAgent
-    extension_GuestAttestation
-  ]
-}]
-
-resource runCommand_ConfigureFSLogix 'Microsoft.Compute/virtualMachines/runCommands@2023-09-01' = [for i in range(0, sessionHostCount): if (fslogixConfigureSessionHosts) {
-  parent: virtualMachine[i]
-  name: 'configureFSLogix'
-  location: location
-  properties: {
-    parameters: [
+      }
+      {
+        name: 'ConfigureFSLogix'
+        value: fslogixConfigureSessionHosts ? 'true' : 'false'
+      }
       {
         name: 'CloudCache'
         value: contains(fslogixContainerType, 'CloudCache') ? 'true' : 'false'
@@ -560,9 +541,9 @@ resource runCommand_ConfigureFSLogix 'Microsoft.Compute/virtualMachines/runComma
       {
         name: 'StorageService'
         value: fslogixStorageService
-      }      
+      }          
     ]
-    protectedParameters: [
+    protectedParameters: fslogixConfigureSessionHosts ? [
       {
         name: 'LocalStorageAccountKeys'
         value: string(fslogixLocalStorageAccountKeys)
@@ -571,15 +552,21 @@ resource runCommand_ConfigureFSLogix 'Microsoft.Compute/virtualMachines/runComma
         name: 'RemoteStorageAccountKeys'
         value: string(fslogixRemoteStorageAccountKeys)
       }
-    ]
+    ] : null
     source: {
-      script: loadTextContent('../../../../../.common/scripts/Set-FSLogixSessionHostConfiguration.ps1')
+      script: loadTextContent('../../../../../.common/scripts/Set-SessionHostConfiguration.ps1')
     }
-    timeoutInSeconds: 180
-    treatFailureAsDeploymentFailure: true    
+    treatFailureAsDeploymentFailure: true
+    timeoutInSeconds: 120
   }
   dependsOn: [
-    runCommand_ConfigureSessionHost
+    extension_AADLoginForWindows
+    extension_JsonADDomainExtension
+    extension_AmdGpuDriverWindows
+    extension_NvidiaGpuDriverWindows
+    extension_IaasAntimalware
+    extension_AzureMonitorWindowsAgent
+    extension_GuestAttestation
   ]
 }]
 
@@ -593,7 +580,6 @@ module postDeploymentScripts 'invokeCustomizations.bicep' = [for i in range(0, s
   }
   dependsOn: [
     runCommand_ConfigureSessionHost
-    runCommand_ConfigureFSLogix
   ]
 }]
 
@@ -628,7 +614,6 @@ resource extension_DSC_installAvdAgents 'Microsoft.Compute/virtualMachines/exten
     }
     dependsOn: [
       runCommand_ConfigureSessionHost
-      runCommand_ConfigureFSLogix
       postDeploymentScripts
     ]
   }
@@ -671,7 +656,7 @@ module setDrainMode '../../../../sharedModules/resources/compute/virtual-machine
       }      
       {
         name: 'UserAssignedIdentityClientId'
-        value: drainModeUserAssignedIdentityClientId
+        value: deploymentUserAssignedIdentityClientId
       }
       {
         name: 'VirtualMachineNamePrefix'

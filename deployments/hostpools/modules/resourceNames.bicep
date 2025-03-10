@@ -1,9 +1,9 @@
 targetScope = 'subscription'
 
-param identifier string
-param index string
 param existingFeedWorkspaceResourceId string
 param fslogixStorageCustomPrefix string
+param identifier string
+param index string
 param locationControlPlane string
 param locationGlobalFeed string
 param locationVirtualMachines string

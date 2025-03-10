@@ -156,9 +156,6 @@ resource publicIpAddress_diagnosticSettings 'Microsoft.Insights/diagnosticSettin
   scope: publicIpAddress
 }
 
-@description('The resource group the public IP address was deployed into.')
-output resourceGroupName string = resourceGroup().name
-
 @description('The name of the public IP address.')
 output name string = publicIpAddress.name
 

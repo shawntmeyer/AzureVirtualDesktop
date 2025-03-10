@@ -1,7 +1,3 @@
-metadata name = 'Log Analytics Workspaces'
-metadata description = 'This module deploys a Log Analytics Workspace.'
-metadata owner = 'Azure/module-maintainers'
-
 @description('Required. Name of the Log Analytics workspace.')
 param name string
 
@@ -290,9 +286,6 @@ module logAnalyticsWorkspace_solutions '../../operations-management/solution/mai
 
 @description('The resource ID of the deployed log analytics workspace.')
 output resourceId string = logAnalyticsWorkspace.id
-
-@description('The resource group of the deployed log analytics workspace.')
-output resourceGroupName string = resourceGroup().name
 
 @description('The name of the deployed log analytics workspace.')
 output name string = logAnalyticsWorkspace.name

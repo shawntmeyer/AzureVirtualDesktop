@@ -9,6 +9,7 @@ param location string
 param netAppServers array = []
 param ouPath string = ''
 param resourceGroupStorage string = ''
+param shardingOptions string
 param storageAccountNamePrefix string = ''
 param storageCount int = 0
 param storageIndex int = 0
@@ -18,7 +19,6 @@ param userGroupNames array = []
 param userAssignedIdentityClientId string = ''
 param virtualMachineName string
 
-// We don't send userGroupNames to the script, as they are not set for Azure Files. All permissions handled by Share Permissions (i.e., RBAC on the storage account).
 var azureFilesParameters = [
   {
     name: 'AdminGroupNames'
@@ -39,6 +39,10 @@ var azureFilesParameters = [
   {
     name: 'ResourceManagerUri'
     value: environment().resourceManager
+  }
+  {
+    name: 'ShardAzureFilesStorage'
+    value: shardingOptions == 'None' ? 'true' : 'false'
   }
   {
     name: 'StorageAccountPrefix'
@@ -71,6 +75,10 @@ var azureFilesParameters = [
   {
     name: 'UserAssignedIdentityClientId'
     value: userAssignedIdentityClientId
+  }
+  {
+    name: 'UserGroupNames'
+    value: string(userGroupNames)
   }
 ]
 

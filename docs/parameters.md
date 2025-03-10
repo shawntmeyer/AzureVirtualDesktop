@@ -8,8 +8,7 @@
 
 | Parameter | Description | Type | Allowed | Default |
 | --------- | ----------- | :--: | :-----: | ------- |
-| `avdObjectId` | The Object ID for the Azure Virtual Desktop application in Entra Id with Application Id = '9cdead84-a844-4324-93f2-b2e6bb768d07'.  The Object ID can found by selecting Microsoft Applications using the Application type filter in the Enterprise Applications blade of Entra Id. If you use the custom UI and template spec, this value is obtained automatically. | string | object id | |
-| `identifier` | An identifier used to distinquish each host pool. This normally represents the persona. | string | 3- 10 characters | |
+
 | `identitySolution` | The service providing domain services for Azure Virtual Desktop.  This is needed to properly configure the session hosts and if applicable, the Azure Storage Account. | string | 'ActiveDirectoryDomainServices'<br/>'EntraDomainServices'<br/>'EntraId'<br/>'EntraIdIntuneEnrollment' | |
 | `virtualMachineNamePrefix` | The prefix of the virtual machine name. Virtual Machines are named based on the prefix with the 3 character index incremented at the end (i.e., prefix001, prefix002, etc.) | string | 2 - 12 characters | |
 | `virtualMachineSubnetResourceId` | The resource Id of the subnet onto which the Virtual Machines will be deployed. | string | resource id | |
@@ -18,18 +17,22 @@
 
 | Parameter | Description | Type | Allowed | Default |
 | --------- | ----------- | :--: | :-----: | ------- |
+| `avdObjectId` | The Object ID for the Azure Virtual Desktop application in Entra Id with Application Id = '9cdead84-a844-4324-93f2-b2e6bb768d07'.  The Object ID can found by selecting Microsoft Applications using the Application type filter in the Enterprise Applications blade of Entra Id. If you use the custom UI and template spec, this value is obtained automatically or service Principal selector is presented. Required when `deploymentType` = 'Complete'. | string | object id | |
 | `confidentialVMOrchestratorObjectId` | The object ID of the Confidential VM Orchestrator enterprise application with application ID "bf7b6499-ff71-4aa2-97a4-f372087be7f0". Required when `confidentialVMOSDiskEncryption` is set to true.  You must create this application in your tenant before deploying this solution using the powershell provided at https://learn.microsoft.com/en-us/azure/confidential-computing/quick-create-confidential-vm-portal#prerequisites. | string | object id | '' |
+| `credentialsKeyVaultResourceId` | The secrets keyvault resource Id. This key vault must contain the following secrets: 'VirtualMachineAdminUserName', 'VirtualMachineAdminPassword', and if applicable, 'DomainJoinUserPrincipalName' and 'DomainJoinUserPassword'. This can be used in leueu of providing the `domainJoinUserPrincipalName`, `domainJoinUserPassword`, `virtualMachineAdminUserName`, and `virtualMachineAdminPassword` parameters. | string | resourceId | '' |
 | `domainName` | The name of the domain that provides ADDS to the AVD session hosts and is synchronized with Azure AD. Required when `identitySolution` contains 'DomainServices'. | string | | '' |
-| `domainJoinUserPrincipalName` | The User Principal Name of the user with the rights to join the computer to the domain in the specified OU path. Required when `identitySolution` contains 'DomainServices'. | secure string | either a secure string or a reference to a key vault following the guidance at https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/key-vault-parameter?tabs=azure-cli or see the Zero Trust example below. | '' |
-| `domainJoinUserPassword` | The password of the user with the rights to join the computer to the domain in the specified OU path. Required when `identitySolution` contains 'DomainServices'. | secure string | either a secure string or a reference to a key vault following the guidance at https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/key-vault-parameter?tabs=azure-cli or see the Zero Trust example below. | '' |
-
+| `domainJoinUserPrincipalName` | The User Principal Name of the user with the rights to join the computer to the domain in the specified OU path. Required when `identitySolution` contains 'DomainServices' and when not specifying the `credentialsKeyVaultResourceId`. | secure string | either a secure string or a reference to a key vault following the guidance at https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/key-vault-parameter?tabs=azure-cli. | '' |
+| `domainJoinUserPassword` | The password of the user with the rights to join the computer to the domain in the specified OU path. Required when `identitySolution` contains 'DomainServices' and not specifying the `credentialsKeyVaultResourceId`. | secure string | either a secure string or a reference to a key vault following the guidance at https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/key-vault-parameter?tabs=azure-cli. | '' |
+| `existingHostPoolResourceId` | The resource ID of the existing host to which hosts will be added when the `deploymentType` = 'SessionHostsOnly'. | string | resourceId | '' |
+| `existingHostsResourceGroupName` | The name of the resource group housing the compute objects (i.e., virtual machines, disks, nics, recovery services vault, disk encryption sets, disk accesses, etc.) when the the `deploymentType` = 'SessionHostsOnly'. | string | | '' |
+| `identifier` | An identifier used to distinquish each host pool. This normally represents the persona. Required when `deploymentType` = 'Complete'. | string | 3- 10 characters | |
 | `managementPrivateEndpointSubnetResourceId` | The resource id of the subnet on which to create the management resource private endpoints. Required when the `managementPrivateEndpoints` parameter is set to true. | string | resource id | '' |
 | `storagePrivateEndpointSubnetResourceId` | The resource id of the subnet on which the storage private endpoints will be attached. Required when the `storagePrivateEndpoints` parameter is set to true. | string | resource id | '' |
 | `hostPoolPrivateEndpointSubnetResourceId` | The resource ID of the subnet where the AVD Private Link endpoints will be created. Required when `avdPrivateLinkPrivateRoutes` is not set to 'None'. | string | resource id | '' |
 | `feedPrivateEndpointSubnetResourceId` | The resource ID of the subnet where the AVD Private Link endpoints will be created. Required when `avdPrivateLinkPrivateRoutes` is set to 'FeedAndHostPool' or 'All'. | string | resource id | '' |
 | `globalFeedPrivateEndpointSubnetResourceId` | The resource ID of the subnet where the Global Feed AVD Private Link endpoint will be created. Required when `avdPrivateLinkPrivateRoutes` is set to 'All'. | string | resource id | '' |
-| `virtualMachineAdminUserName` | The local administrator username. Required when not using the template spec ui. | secure string | either a secure string or a reference to a key vault following the guidance at https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/key-vault-parameter?tabs=azure-cli or see the Zero Trust example below. | '' |
-| `virtualMachineAdminPassword` | The local administrator password. Required when not using the template spec ui. | secure string | either a secure string or a reference to a key vault following the guidance at https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/key-vault-parameter?tabs=azure-cli or see the Zero Trust example below. | '' |
+| `virtualMachineAdminUserName` | The local administrator username. Required when not specifying the `credentialsKeyVaultResourceId`. | secure string | either a secure string or a reference to a key vault following the guidance at https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/key-vault-parameter?tabs=azure-cli or see the Zero Trust example below. | '' |
+| `virtualMachineAdminPassword` | The local administrator password. Required when not specifying the `credentialsKeyVaultResourceId`. | secure string | either a secure string or a reference to a key vault following the guidance at https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/key-vault-parameter?tabs=azure-cli. | '' |
 
 ### Optional Parameters
 
@@ -44,7 +47,7 @@
 | `artifactsContainerUri` | The full URI of the storage account and container that contains any scripts you want to run on each host during deployment. | string | resource id | '' |
 | `artifactsUserAssignedIdentityResourceId` | The resource ID of the managed identity with Storage Blob Data Reader Access to the artifacts storage Account. Required when the cseUris parameter is not empty. | string | resource id | '' |
 | `availability` | Set the desired availability / SLA with a pooled host pool.  The best practice is to deploy to availability Zones for resilency. | string | 'none'<br/>'availabilitySets'<br/>'availabilityZones' | 'availabilityZones' |
-| `avdAgentsModuleUri` | Sets the publically accessible download location for the Desired State Configuration zip file where the script and installers are located for the AVD Agents. This parameter may need to be updated periodically to ensure you are using the latest version. You can obtain this value by going through the Add new session host flow inside a host pool and showing the template and parameters. This value will be exposed in the parameters. | string | Allowed | url | https://wvdportalstorageblob.blob.${environment().suffixes.storage}/galleryartifacts/Configuration_*version*.zip | 
+| `avdAgentsDSCPackage` | Sets the package name for the Desired State Configuration zip file where the script and installers are located for the AVD Agents. This parameter may need to be updated periodically to ensure you are using the latest version. You can obtain this value by going through the Add new session host flow inside a host pool and showing the template and parameters. This value will be exposed in the parameters. | string | Allowed | url | Configuration_*version*.zip | 
 | `avdPrivateLinkPrivateRoutes` | Determines if Azure Private Link with Azure Virtual Desktop is enabled. Selecting "None" disables AVD Private Link deployment. Selecting one of the other options enables deployment of the required endpoints. See [AVD Private Link Setup](https://learn.microsoft.com/en-us/azure/virtual-desktop/private-link-setup?tabs=portal%2Cportal-2) for more information. | string | 'None'<br/>'HostPool'<br/>'FeedAndHostPool' | 'None' |
 | `azureMonitorPrivateLinkScopeResourceId` | The resource Id of an existing Azure Monitor Private Link Scope resource. If specified, the log analytics workspace and data collection endpoint created by this solution will automatically be associated to this resource to configure private routing of Azure Monitor traffic. | string | valid resource Id | '' |
 | `confidentialVMOSDiskEncryption` | Confidential disk encryption is an additional layer of encryption which binds the disk encryption keys to the virtual machine TPM and makes the disk content accessible only to the VM. | bool | true<br/>false | false |
@@ -52,10 +55,18 @@
 | `dedicatedHostResourceId` | The resource Id of a specific Dedicated Host on which to deploy the Virtual Machines. This parameter takes precedence over the `dedicatedHostGroupResourceId` parameter. | string | resource id | '' |
 | `dedicatedHostGroupResourceId` | The resource Id of the Dedicated Host Group on to which the Virtual Machines are to be deployed. The Dedicated Host Group must support Automatic Host Assignment for this value to be used. | string | resource id | '' |
 | `deployFSLogixStorage` | Determines whether resources to support FSLogix profile storage are deployed. | bool | true<br/>true| false |
+| `deploymentType` | Determines whether the control plane, management, and compute resources are deployed or if the deployment will just add session hosts to an existing pool. | string | 'Complete'</br>'SessionHostsOnly' | 'Complete' |
 | `deployScalingPlan` | Determines if the scaling plan is deployed to the host pool. | bool | true<br/>false | false |
+| `deploySecretsKeyVault` | Determine if the solution deploys the shared credentals key vault. | bool | true<br/>false | false |
 | `diskSizeGB` | The size of the session host OS disks. When set to 0, it defaults to the image size. | int | 0<br/>32<br/>64<br/>128<br/>256<br/>512<br/>1024<br/>2048<br/> | 0 |
 | `enableAcceleratedNetworking` | Determines whether or not to enable accelerated networking on the session host vms. | bool | true<br/>false | true | 
+| `existingAVDInsightsDataCollectionRuleResourceId` | The resource Id of the AVD Insights data collection rule to use when `deploymentType` = 'SessionHostsOnly'. | string | resourceId | '' |
+| `existingDataCollectionEndpointResourceId` | The resource Id of the Data Collection Endpoint to use when `deploymentType` = 'SessionHostsOnly'. | string | resourceId | '' |
+| `existingDiskAccessResourceId` | The resource Id of the disk access to use when `deploymentType` = 'SessionHostsOnly' and the host pool type is personal. Used for allowing recovery services vault access to the managed disk in a zero trust configuration. | string | resourceId | '' |
+| `existingDiskEncryptionSetResourceId` | The resource Id of the disk encryption set to use when `deploymentType` = 'SessionHostsOnly'. Used for customer-managed keys. | string | resourceId | '' |
 | `existingFeedWorkspaceResourceId` | The resource Id of an existing AVD Workspace that you want to update with the new application group reference for the desktop application group. This parameter is required when deploying additional host pools to the same region and using the same businessUnitIdentifier or the workspace application groups will be overwritten with only the new application group reference. | string | valid resource id | '' |
+| `existingRecoveryServicesVaultResourceId` | The resource Id of the recovery services vault to use when `deploymentType` = 'SessionHostsOnly'. Used for personal hosts pools only when `recoveryServices` = true. | string | resourceId | '' |
+| `existingVMInsightsDataCollectionRuleResourceId` | The resource Id of the VM Insights data collection rule to use when `deploymentType` = 'SessionHostsOnly'. | string | resourceId | '' |
 | `fslogixAdminGroups` |  An array of objects, defining the administrator groups who will be granted full control access to the FSLogix share. The groups must exist in AD and Entra.<br/>Each object must include the following key value pairs:<br/>- 'displayName': The display name of the security group.<br/>- 'objectId': The Object ID of the security group. | array (of objects) | [{"displayName":"EntraGroupDisplayName","objectId":"guid"}] | [] |
 | `fslogixEXistingLocalNetAppVolumeResourceIds` | Existing local (in the same region as the session host VMs) NetApp Files Volume Resource Ids. If Office Containers are used, then list the FSLogix Profile Container Volume first and the Office Container Volume second. Only used when `deployFSLogixStorage` = 'false', `fslogixConfigureSessionHosts` = 'true' and `fslogixStorageService` contains 'AzureNetAppFiles'. | array | [] |
 | `fslogixEXistingLocalStorageAccountResourceIds` | Existing local (in the same region as the session host VMs) Azure Storage account Resource Ids. Only used when `deployFSLogixStorage` = 'false', `fslogixConfigureSessionHosts` = 'true' and `fslogixStorageService` contains 'AzureFilesFiles'. | array | [] |
@@ -99,6 +110,7 @@
 | `keyExpirationInDays` | The number of days that key in the key vault will remain valid. | Int | 30-180 | 180 |
 | `keyManagementDisks` | The type of encryption key management used for the OS disk. | string | 'PlatformManaged'<br/>'CustomerManaged'<br/>'<br/>'CustomerManagedHSM'<br/>'PlatformManagedAndCustomerManaged'<br/>'PlatformManagedAndCustomerManagedHSM' | 'PlatformManaged' |
 | `keyManagementStorageAccounts` | The type of encryption key management used for the FSLogix storage accounts | string | 'MicrosoftManaged'<br/>'CustomerManaged'<br/>'CustomerManagedHSM' | 'MicrosoftManaged' |
+| `keyVaultRetentionInDays` | The amount of time in days that a keyvault will be retained in soft delete status before being automatically purged. If purge protection is enabled as will be the case with the key vaults used for customer-managed keys, then this determines the time before a key vault can be permanent deleted. | int | | 90 |
 | `managementPrivateEndpoints` | Determines if private endpoints are created for all management resources (i.e., Automation Accounts, Key Vaults) | bool | true<br/>false | false |
 | `managementPrivateEndpointSubnetResourceId` | The resource id of the subnet on which to create the management resource private endpoints. | string | resource id | '' |
 | `storagePrivateEndpoints` | Determines if private endpoints are created for all storage resources. | bool | true<br/>false | false |
@@ -110,16 +122,15 @@
 | `securityType` | The Security Type of the Azure Virtual Machine. | string | 'Standard'<br/>'TrustedLaunch'<br/>'ConfidentialVM' | 'TrustedLaunch' |
 | `sessionHostCustomizations` | An array of objects containing the customization scripts or application you want to run on each session host virtual machine. Each object must contain the 'name' and 'blobNameOrUri' properties and optionally an 'arguments' property that defines the script or installer arguments. | array (of objects) | | [] |
 | `vTpmEnabled` | Virtual Trusted Platform Module (vTPM) is TPM2.0 compliant and validates your VM boot integrity apart from securely storing keys and secrets. | bool | true<br/>false | true |
+| `virtualMachineSize` | The size of the virtual machine deployed by this solution. | string | valid size | 'Standard_D4ads_v5' |
+| `vCPUs` | The number of virtual CPUs presented by the virtual machines. Used to create the vmTemplate property and tags on the host pool when `deploymentType` = 'Complete'. Not set if left at default. | int | | 0 |
+| `memoryGB` | The amount of memory presented by the virtual machines in GB. Used to create the vmTemplate property and tags on the host pool when `deploymentType` = 'Complete'. Not set if left at default. | int | | 0 |
 | `workspaceResourceId` | The resource Id of an existing Azure Virtual Desktop Workspace that will be updated with the new desktop application group. If specified, then the `regionControlPlane` is not used and instead the region and resource group where this workspace is located is used. | string | resource id | '' |
 
 ### UI Generated / Automatic Parameters
 
 | Parameter | Description | Type | Allowed | Default |
 | --------- | ----------- | :--: | :-----: | ------- |
-| `virtualMachineAdminPwdKvReference` | This parameter is only used by the UI deployment when selecting KeyVault as the source of the Virtual Machine Admin Username and Password. Although this can be used with a normal template deployment, it is recommended to use the regular reference object for the `virtualMachineAdminPassword` parameter. | Object | {"id":"KeyVaultResourceId","secretName":"secretName"} | {}
-| `virtualMachineAdminUserNameKvReference` | This parameter is only used by the UI deployment when selecting KeyVault as the source of the Virtual Machine Admin UserName and Password. Although this can be used with a normal template deployment, it is recommended to use the regular reference object for the `virtualMachineAdminUserName` parameter. | Object | {"id":"KeyVaultResourceId","secretName":"secretName"} | {}
-| `domainJoinUserPwdKvReference` | This parameter is only used by the UI deployment when selecting KeyVault as the source of the domain join credentials. Although this can be used with a normal template deployment, it is recommended to use the regular reference object for the `domainJoinUserPassword` parameter. | Object | {"id":"KeyVaultResourceId","secretName":"secretName"} | {}
-| `domainJoinUserPrincipalNameKvReference`| This parameter is only used by the UI deployment when selecting KeyVault as the source of the domain join credentials. Although this can be used with a normal template deployment, it is recommended to use the regular reference object for the `domainJoinUserPrincipalName` parameter. | Object | {"id":"KeyVaultResourceId","secretName":"secretName"} | {}
 | `timeStamp` | This value is automatically generated by the template when deployed and should not be provided or modified. | string | string | utc date time in yyyyMMddhhmmss format |
 
 ## Examples
@@ -184,22 +195,9 @@ This example shows a Zero Trust Compliant host pool that includes AVD Private Li
             "value": "avd-hp1-eus-"
         },
         // Get Secrets from a Key Vault (Optional)
-        "virtualMachineAdminUserName": {
-            "reference": {
-                "keyVault": {
-                    "id": "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/rg-y5-admin-avd-management-use/providers/Microsoft.KeyVault/vaults/kv-y5-admin-sec-use"
-                },
-                "secretName": "virtualMachineAdminUserName"
-            }
-        },
-        "virtualMachineAdminPassword": {
-            "reference": {
-                "keyVault": {
-                    "id": "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/rg-y5-admin-avd-management-use/providers/Microsoft.KeyVault/vaults/kv-y5-admin-sec-use"
-                },
-                "secretName": "virtualMachineAdminPassword"
-            }
-        },    
+        "credentialsKeyVaultResourceId": {
+            "value"  : "/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/rg-y5-admin-avd-management-use/providers/Microsoft.KeyVault/vaults/kv-y5-admin-sec-use"
+        },  
         // Storage Private Endpoints (required)
         "deployFSLogix": {
             "value": true

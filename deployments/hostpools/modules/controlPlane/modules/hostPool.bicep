@@ -1,11 +1,12 @@
-param privateEndpoint bool
 param hostPoolPrivateDnsZoneResourceId string
 param hostPoolRDPProperties string
 param hostPoolName string
 param hostPoolPublicNetworkAccess string
 param hostPoolType string
+//param hostPoolVmTemplateTags object = {}
 param location string
 param logAnalyticsWorkspaceResourceId string
+param privateEndpoint bool
 param privateEndpointLocation string
 param privateEndpointName string
 param privateEndpointNICName string
@@ -16,12 +17,64 @@ param tags object
 param timeStamp string
 param time string = utcNow('u')
 param hostPoolValidationEnvironment bool
-param virtualMachineTemplate string
+param virtualMachineTemplate object
+
+var vmDomain = empty(virtualMachineTemplate.domain)
+  ? {}
+  : { vmDomain: virtualMachineTemplate.domain }
+var vmOUPath = empty(virtualMachineTemplate.ouPath)
+  ? {}
+  : { vmOUPath: virtualMachineTemplate.ouPath }
+var vmCustomImageId = empty(virtualMachineTemplate.customImageId)
+  ? {}
+  : { vmCustomImageId: virtualMachineTemplate.customImageId }
+var vmImageOffer = empty(virtualMachineTemplate.galleryImageOffer)
+  ? {}
+  : { vmImageOffer: virtualMachineTemplate.galleryImageOffer }
+var vmImagePublisher = empty(virtualMachineTemplate.galleryImagePublisher)
+  ? {}
+  : { vmImagePublisher: virtualMachineTemplate.galleryImagePublisher }
+var vmImageSKU = empty(virtualMachineTemplate.galleryImageSKU)
+  ? {}
+  : { vmImageSku: virtualMachineTemplate.galleryImageSKU }
+var vmDiskEncryptionSetName = empty(virtualMachineTemplate.diskEncryptionSetName)
+  ? {}
+  : { vmDiskEncryptionSetName: virtualMachineTemplate.diskEncryptionSetName }
+
+var hostPoolVmTemplateTags = union(
+  {
+    vmNamePrefix: virtualMachineTemplate.namePrefix
+    vmImageType: virtualMachineTemplate.imageType
+    vmOSDiskType: virtualMachineTemplate.osDiskType
+    vmDiskSizeGB: virtualMachineTemplate.diskSizeGB
+    vmSize: virtualMachineTemplate.vmSize.id
+    vmEncryptionAtHost: virtualMachineTemplate.?encryptionAtHost ?? false
+    vmAcceleratedNetworking: virtualMachineTemplate.?acceleratedNetworking ?? false
+    vmHibernate: virtualMachineTemplate.?hibernate ?? false
+    vmSecurityType: virtualMachineTemplate.?securityType ?? 'Standard'
+    vmSecureBoot: virtualMachineTemplate.?secureBoot ?? false
+    vmVirtualTPM: virtualMachineTemplate.?vTPM ?? false
+    vmSubnetId: virtualMachineTemplate.subnetId
+  },
+  vmDomain,
+  vmOUPath,
+  vmCustomImageId,
+  vmImageOffer,
+  vmImagePublisher,
+  vmImageSKU,
+  vmDiskEncryptionSetName
+)
 
 resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' = {
   name: hostPoolName
   location: location
-  tags: union({'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroup().name}/providers/Microsoft.DesktopVirtualization/hostPools/${hostPoolName}'}, tags[?'Microsoft.DesktopVirtualization/hostPools'] ?? {})
+  tags: union(
+    hostPoolVmTemplateTags,
+    {
+      'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroup().name}/providers/Microsoft.DesktopVirtualization/hostPools/${hostPoolName}'
+    },
+    tags[?'Microsoft.DesktopVirtualization/hostPools'] ?? {}
+  )
   properties: {
     hostPoolType: split(hostPoolType, ' ')[0]
     maxSessionLimit: hostPoolMaxSessionLimit
@@ -36,11 +89,11 @@ resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' = {
     personalDesktopAssignmentType: contains(hostPoolType, 'Personal') ? split(hostPoolType, ' ')[1] : null
     publicNetworkAccess: hostPoolPublicNetworkAccess
     startVMOnConnect: true
-    vmTemplate: virtualMachineTemplate
+    vmTemplate: string(virtualMachineTemplate)
   }
 }
 
-module hostPool_PrivateEndpoint '../../../../sharedModules/resources/network/private-endpoint/main.bicep' = if(privateEndpoint && !empty(privateEndpointSubnetResourceId)) {
+module hostPool_PrivateEndpoint '../../../../sharedModules/resources/network/private-endpoint/main.bicep' = if (privateEndpoint && !empty(privateEndpointSubnetResourceId)) {
   name: '${hostPoolName}_privateEndpoint_${timeStamp}'
   params: {
     customNetworkInterfaceName: privateEndpointNICName
@@ -49,16 +102,21 @@ module hostPool_PrivateEndpoint '../../../../sharedModules/resources/network/pri
     ]
     location: !empty(privateEndpointLocation) ? privateEndpointLocation : location
     name: privateEndpointName
-    privateDnsZoneGroup: empty(hostPoolPrivateDnsZoneResourceId) ? null : {
-      privateDNSResourceIds: [
-        hostPoolPrivateDnsZoneResourceId
-      ]
-    }
+    privateDnsZoneGroup: empty(hostPoolPrivateDnsZoneResourceId)
+      ? null
+      : {
+          privateDNSResourceIds: [
+            hostPoolPrivateDnsZoneResourceId
+          ]
+        }
     serviceResourceId: hostPool.id
     subnetResourceId: privateEndpointSubnetResourceId
-    tags: union({
-      'cm-resource-parent': hostPool.id
-    }, tags[?'Microsoft.Network/privateEndpoints'] ?? {}) 
+    tags: union(
+      {
+        'cm-resource-parent': hostPool.id
+      },
+      tags[?'Microsoft.Network/privateEndpoints'] ?? {}
+    )
   }
 }
 

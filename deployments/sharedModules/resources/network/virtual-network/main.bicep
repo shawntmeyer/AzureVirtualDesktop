@@ -1,7 +1,3 @@
-metadata name = 'Virtual Networks'
-metadata description = 'This module deploys a Virtual Network (vNet).'
-metadata owner = 'Azure/module-maintainers'
-
 @description('Required. The Virtual Network (vNet) Name.')
 param name string
 
@@ -119,23 +115,23 @@ resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-04-01' = {
       name: subnet.name
       properties: {
         addressPrefix: subnet.addressPrefix
-        addressPrefixes: contains(subnet, 'addressPrefixes') ? subnet.addressPrefixes : []
-        applicationGatewayIPConfigurations: contains(subnet, 'applicationGatewayIPConfigurations') ? subnet.applicationGatewayIPConfigurations : []
-        delegations: contains(subnet, 'delegations') ? subnet.delegations : []
-        ipAllocations: contains(subnet, 'ipAllocations') ? subnet.ipAllocations : []
+        addressPrefixes: subnet.?addressPrefixes ?? []
+        applicationGatewayIPConfigurations: subnet.?applicationGatewayIPConfigurations ?? []
+        delegations: subnet.?delegations ?? []
+        ipAllocations: subnet.?ipAllocations ?? []
         natGateway: contains(subnet, 'natGatewayId') ? {
           id: subnet.natGatewayId
         } : null
         networkSecurityGroup: contains(subnet, 'networkSecurityGroupId') ? {
           id: subnet.networkSecurityGroupId
         } : null
-        privateEndpointNetworkPolicies: contains(subnet, 'privateEndpointNetworkPolicies') ? subnet.privateEndpointNetworkPolicies : null
-        privateLinkServiceNetworkPolicies: contains(subnet, 'privateLinkServiceNetworkPolicies') ? subnet.privateLinkServiceNetworkPolicies : null
+        privateEndpointNetworkPolicies: subnet.?privateEndpointNetworkPolicies ?? null
+        privateLinkServiceNetworkPolicies: subnet.?privateLinkServiceNetworkPolicies ?? null
         routeTable: contains(subnet, 'routeTableId') ? {
           id: subnet.routeTableId
         } : null
-        serviceEndpoints: contains(subnet, 'serviceEndpoints') ? subnet.serviceEndpoints : []
-        serviceEndpointPolicies: contains(subnet, 'serviceEndpointPolicies') ? subnet.serviceEndpointPolicies : []
+        serviceEndpoints: subnet.?serviceEndpoints ?? []
+        serviceEndpointPolicies: subnet.?serviceEndpointPolicies ?? []
       }
     }]
   }
@@ -147,12 +143,12 @@ module virtualNetwork_peering_local 'virtual-network-peering/main.bicep' = [for 
   params: {
     localVnetName: virtualNetwork.name
     remoteVirtualNetworkId: peering.remoteVirtualNetworkId
-    name: contains(peering, 'name') ? peering.name : '${name}-${last(split(peering.remoteVirtualNetworkId, '/'))}'
-    allowForwardedTraffic: contains(peering, 'allowForwardedTraffic') ? peering.allowForwardedTraffic : true
-    allowGatewayTransit: contains(peering, 'allowGatewayTransit') ? peering.allowGatewayTransit : false
-    allowVirtualNetworkAccess: contains(peering, 'allowVirtualNetworkAccess') ? peering.allowVirtualNetworkAccess : true
-    doNotVerifyRemoteGateways: contains(peering, 'doNotVerifyRemoteGateways') ? peering.doNotVerifyRemoteGateways : true
-    useRemoteGateways: contains(peering, 'useRemoteGateways') ? peering.useRemoteGateways : false
+    name: peering.?name ?? '${name}-${last(split(peering.remoteVirtualNetworkId, '/'))}'
+    allowForwardedTraffic: peering.?allowForwardedTraffic ?? true
+    allowGatewayTransit: peering.?allowGatewayTransit ?? false
+    allowVirtualNetworkAccess: peering.?allowVirtualNetworkAccess ?? true
+    doNotVerifyRemoteGateways: peering.?doNotVerifyRemoteGateways ?? true
+    useRemoteGateways: peering.?useRemoteGateways ?? false
   }
 }]
 
@@ -163,12 +159,12 @@ module virtualNetwork_peering_remote 'virtual-network-peering/main.bicep' = [for
   params: {
     localVnetName: last(split(peering.remoteVirtualNetworkId, '/'))!
     remoteVirtualNetworkId: virtualNetwork.id
-    name: contains(peering, 'remotePeeringName') ? peering.remotePeeringName : '${last(split(peering.remoteVirtualNetworkId, '/'))}-${name}'
-    allowForwardedTraffic: contains(peering, 'remotePeeringAllowForwardedTraffic') ? peering.remotePeeringAllowForwardedTraffic : true
-    allowGatewayTransit: contains(peering, 'remotePeeringAllowGatewayTransit') ? peering.remotePeeringAllowGatewayTransit : false
-    allowVirtualNetworkAccess: contains(peering, 'remotePeeringAllowVirtualNetworkAccess') ? peering.remotePeeringAllowVirtualNetworkAccess : true
-    doNotVerifyRemoteGateways: contains(peering, 'remotePeeringDoNotVerifyRemoteGateways') ? peering.remotePeeringDoNotVerifyRemoteGateways : true
-    useRemoteGateways: contains(peering, 'remotePeeringUseRemoteGateways') ? peering.remotePeeringUseRemoteGateways : false
+    name: peering.?remotePeeringName ?? '${last(split(peering.remoteVirtualNetworkId, '/'))}-${name}'
+    allowForwardedTraffic: peering.?remotePeeringAllowForwardedTraffic ?? true
+    allowGatewayTransit: peering.?remotePeeringAllowGatewayTransit ?? false
+    allowVirtualNetworkAccess: peering.?remotePeeringAllowVirtualNetworkAccess ?? true
+    doNotVerifyRemoteGateways: peering.?remotePeeringDoNotVerifyRemoteGateways ?? true
+    useRemoteGateways: peering.?remotePeeringUseRemoteGateways ?? false
   }
 }]
 
@@ -184,9 +180,6 @@ resource virtualNetwork_diagnosticSettings 'Microsoft.Insights/diagnosticSetting
   }
   scope: virtualNetwork
 }
-
-@description('The resource group the virtual network was deployed into.')
-output resourceGroupName string = resourceGroup().name
 
 @description('The resource ID of the virtual network.')
 output resourceId string = virtualNetwork.id

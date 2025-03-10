@@ -1,7 +1,3 @@
-metadata name = 'Log Analytics Workspace Linked Storage Accounts'
-metadata description = 'This module deploys a Log Analytics Workspace Linked Storage Account.'
-metadata owner = 'Azure/module-maintainers'
-
 @description('Conditional. The name of the parent Log Analytics workspace. Required if the template is used in a standalone deployment.')
 param logAnalyticsWorkspaceName string
 
@@ -36,6 +32,3 @@ output name string = linkedStorageAccount.name
 
 @description('The resource ID of the deployed linked storage account.')
 output resourceId string = linkedStorageAccount.id
-
-@description('The resource group where the linked storage account is deployed.')
-output resourceGroupName string = resourceGroup().name

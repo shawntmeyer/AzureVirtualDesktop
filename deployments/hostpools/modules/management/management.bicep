@@ -12,7 +12,6 @@ param domainJoinUserPassword string
 @secure()
 param domainJoinUserPrincipalName string
 param keyVaultName string
-param keyVaultRetentionInDays int
 param location string
 param logAnalyticsWorkspaceName string
 param logAnalyticsWorkspaceRetention int
@@ -52,7 +51,7 @@ module secretsKeyVault '../../../sharedModules/resources/key-vault/vault/main.bi
     name: keyVaultName
     diagnosticWorkspaceId: enableMonitoring ? logAnalyticsWorkspace.outputs.resourceId : ''
     enablePurgeProtection: false
-    enableSoftDelete: true
+    enableSoftDelete: false
     enableVaultForDeployment: false
     enableVaultForDiskEncryption: false
     enableVaultForTemplateDeployment: true
@@ -85,7 +84,6 @@ module secretsKeyVault '../../../sharedModules/resources/key-vault/vault/main.bi
     secrets: {
       secureList: secretList
     }
-    softDeleteRetentionInDays: keyVaultRetentionInDays
     tags: tags[?'Microsoft.KeyVault/vaults'] ?? {}
     vaultSku: 'standard'
   }

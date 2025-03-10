@@ -1,7 +1,3 @@
-metadata name = 'Log Analytics Workspace Saved Searches'
-metadata description = 'This module deploys a Log Analytics Workspace Saved Search.'
-metadata owner = 'Azure/module-maintainers'
-
 @description('Conditional. The name of the parent Log Analytics workspace. Required if the template is used in a standalone deployment.')
 param logAnalyticsWorkspaceName string
 
@@ -54,9 +50,6 @@ resource savedSearch 'Microsoft.OperationalInsights/workspaces/savedSearches@202
 
 @description('The resource ID of the deployed saved search.')
 output resourceId string = savedSearch.id
-
-@description('The resource group where the saved search is deployed.')
-output resourceGroupName string = resourceGroup().name
 
 @description('The name of the deployed saved search.')
 output name string = savedSearch.name

@@ -15,9 +15,6 @@ param domainJoinUserPrincipalName string
 param encryptionKeyKeyVaultUris array
 param encryptionUserAssignedIdentityResourceId string
 param fileShares array
-param fslogixAdminGroups array
-param fslogixShareSizeInGB int
-param fslogixUserGroups array
 param functionAppDelegatedSubnetResourceId string
 param hostPoolResourceId string
 param identitySolution string
@@ -43,6 +40,10 @@ param recoveryServicesVaultName string
 param resourceGroupDeployment string
 param resourceGroupStorage string
 param serverFarmId string
+param shardingOptions string
+param shareAdminGroups array
+param shareSizeInGB int
+param shareUserGroups array
 param storageAccountNamePrefix string
 param storageEncryptionKeyName string = ''
 param storageCount int
@@ -54,9 +55,6 @@ param timeStamp string
 param timeZone string
 
 var adminRoleDefinitionId = 'a7264617-510b-434b-a828-9731dc254ea7' // Storage File Data SMB Share Elevated Contributor
-var userRoleDefinitionId = '0c867c2a-1d8c-454a-a3db-ab2ea1bdc8bb' // Storage File Data SMB Share Contributor  
-var fslogixShareUserGroupObjectIds = map(fslogixUserGroups, group => group.objectId)
-var fslogixAdminGroupObjectIds = map(fslogixAdminGroups, group => group.objectId)
 
 var privateEndpointVnetName = !empty(privateEndpointSubnetResourceId) && privateEndpoint
   ? split(privateEndpointSubnetResourceId, '/')[8]
@@ -103,6 +101,7 @@ resource storageAccounts 'Microsoft.Storage/storageAccounts@2022-09-01' = [
       allowedCopyScope: privateEndpoint ? 'PrivateLink' : 'AAD'
       allowSharedKeyAccess: true
       azureFilesIdentityBasedAuthentication: {
+        defaultSharePermission: contains(identitySolution, 'DomainServices') ? 'StorageFileDataSmbShareContributor' : null
         directoryServiceOptions: identitySolution == 'EntraDomainServices' ? 'AADDS' : 'None'
       }
       defaultToOAuthAuthentication: false
@@ -176,43 +175,13 @@ resource fileServices 'Microsoft.Storage/storageAccounts/fileServices@2022-09-01
 
 // Assigns the SMB Elevated Contributor role to the Storage Account for admins so they can adjust NTFS permissions if needed.
 module roleAssignmentsAdmins '../../common/roleAssignment-storageAccount.bicep' = [
-  for i in range(0, storageCount): if (contains(identitySolution, 'DomainServices') && !empty(fslogixAdminGroupObjectIds)) {
+  for i in range(0, storageCount): if (contains(identitySolution, 'DomainServices') && !empty(shareAdminGroups)) {
     name: '${storageAccounts[i].name}_AdminRoleAssignments_${timeStamp}'
     params: {
-      principalIds: fslogixAdminGroupObjectIds
+      principalIds: map(shareAdminGroups, group => group.objectId)
       principalType: 'Group'
       storageAccountResourceId: storageAccounts[i].id
       roleDefinitionId: adminRoleDefinitionId
-    }
-  }
-]
-
-// Assigns the SMB Contributor role to the Storage Account so users can save their profiles to the file share using FSLogix.
-module roleAssignmentsUsers '../../common/roleAssignment-storageAccount.bicep' = if (storageCount == 1 && contains(
-  identitySolution,
-  'DomainServices'
-)) {
-  name: 'StorageAccounts_UserRoleAssignments_${timeStamp}'
-  params: {
-    principalIds: fslogixShareUserGroupObjectIds
-    principalType: 'Group'
-    storageAccountResourceId: storageAccounts[0].id
-    roleDefinitionId: userRoleDefinitionId
-  }
-}
-
-// Assigns the SMB Contributor role to the Storage Account so users can save their profiles to the file share using FSLogix. Since the storage count > 1, the count of security principals matches the number of storage accounts, so the role assignment is done in a loop 1:1.
-module roleAssignmentsUsersSharding '../../common/roleAssignment-storageAccount.bicep' = [
-  for i in range(0, storageCount): if (!empty(fslogixUserGroups) && storageCount > 1 && contains(
-    identitySolution,
-    'DomainServices'
-  )) {
-    name: '${storageAccounts[i].name}_UserRoleAssignment_${timeStamp}'
-    params: {
-      principalIds: array(fslogixShareUserGroupObjectIds[i])
-      principalType: 'Group'
-      storageAccountResourceId: storageAccounts[i].id
-      roleDefinitionId: userRoleDefinitionId
     }
   }
 ]
@@ -222,13 +191,11 @@ module shares 'shares.bicep' = [
     name: '${storageAccounts[i].name}_fileShares_${timeStamp}'
     params: {
       fileShares: fileShares
-      shareSizeInGB: fslogixShareSizeInGB
+      shareSizeInGB: shareSizeInGB
       StorageAccountName: storageAccounts[i].name
       storageSku: storageSku
     }
     dependsOn: [
-      roleAssignmentsUsers
-      roleAssignmentsUsersSharding
       roleAssignmentsAdmins
     ]
   }
@@ -311,13 +278,14 @@ module SetNTFSPermissions 'domainJoinSetNTFSPermissions.bicep' = if (contains(id
   name: 'Set-NTFSPermissions_${timeStamp}'
   scope: resourceGroup(resourceGroupDeployment)
   params: {
-    adminGroupNames: map(fslogixAdminGroups, group => group.displayName)
+    adminGroupNames: map(shareAdminGroups, group => group.displayName)
     domainJoinUserPrincipalName: domainJoinUserPrincipalName
     domainJoinUserPassword: domainJoinUserPassword
     kerberosEncryptionType: kerberosEncryptionType
     location: location
     ouPath: ouPath
     resourceGroupStorage: resourceGroupStorage
+    shardingOptions: shardingOptions
     shares: fileShares
     storageAccountNamePrefix: storageAccountNamePrefix
     storageCount: storageCount
@@ -325,6 +293,7 @@ module SetNTFSPermissions 'domainJoinSetNTFSPermissions.bicep' = if (contains(id
     storageSolution: storageSolution
     timeStamp: timeStamp
     userAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
+    userGroupNames: map(shareUserGroups, group => group.displayName)
     virtualMachineName: deploymentVirtualMachineName
   }
   dependsOn: [

@@ -21,11 +21,11 @@ param enableVaultForTemplateDeployment bool = true
 @description('Optional. Specifies if the azure platform has access to the vault for enabling disk encryption scenarios.')
 param enableVaultForDiskEncryption bool = true
 
-@description('Optional. Switch to enable/disable Key Vault\'s soft delete feature.')
-param enableSoftDelete bool = true
+@description('Required. Switch to enable/disable Key Vault\'s soft delete feature.')
+param enableSoftDelete bool = false
 
 @description('Optional. softDelete data retention days. It accepts >=7 and <=90.')
-param softDeleteRetentionInDays int = 90
+param softDeleteRetentionInDays int = 0
 
 @description('Optional. Property that controls how data actions are authorized. When true, the key vault will use Role Based Access Control (RBAC) for authorization of data actions, and the access policies specified in vault properties will be ignored. When false, the key vault will use the access policies specified in vault properties, and any policy stored on Azure Resource Manager will be ignored. Note that management actions are always authorized with RBAC.')
 param enableRbacAuthorization bool = true
@@ -34,7 +34,7 @@ param enableRbacAuthorization bool = true
 param createMode string = 'default'
 
 @description('Optional. Provide \'true\' to enable Key Vault\'s purge protection feature.')
-param enablePurgeProtection bool = true
+param enablePurgeProtection bool = false
 
 @description('Optional. Specifies the SKU for the vault.')
 @allowed([
@@ -127,8 +127,8 @@ resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' = {
     enabledForDeployment: enableVaultForDeployment
     enabledForTemplateDeployment: enableVaultForTemplateDeployment
     enabledForDiskEncryption: enableVaultForDiskEncryption
-    enableSoftDelete: enableSoftDelete
-    softDeleteRetentionInDays: softDeleteRetentionInDays
+    enableSoftDelete: enableSoftDelete ? enableSoftDelete : null
+    softDeleteRetentionInDays: enableSoftDelete ? softDeleteRetentionInDays : null
     enableRbacAuthorization: enableRbacAuthorization
     createMode: createMode
     enablePurgeProtection: enablePurgeProtection ? enablePurgeProtection : null

@@ -5,6 +5,9 @@ param
 
     [Parameter(Mandatory = $true)]
     [String]$Shares,
+
+    [Parameter(Mandatory = $false)]
+    [string]$ShardAzureFilesStorage,
     
     [Parameter(Mandatory = $false)]
     [String]$DomainAccountType = "ComputerAccount",
@@ -72,12 +75,14 @@ Function ConvertFrom-JsonString {
     If ($JsonString -ne '[]' -and $JsonString -ne $null) {
         [array]$Array = $JsonString.replace('\"', '"') | ConvertFrom-Json
         If ($Array.Length -gt 0) {
-            If ($SensitiveValues) {Write-Log -message "Array '$Name' has $($Array.Length) members"} Else {Write-Log -message "$($Name): '$($Array -join "', '")'"}
+            If ($SensitiveValues) { Write-Log -message "Array '$Name' has $($Array.Length) members" } Else { Write-Log -message "$($Name): '$($Array -join "', '")'" }
             Return $Array
-        } Else {
+        }
+        Else {
             Return $null
         }            
-    } Else {
+    }
+    Else {
         Return $null
     }    
 }
@@ -92,7 +97,7 @@ Function Get-FullyQualifiedGroupName {
     $Group = $null
     $Group = Get-ADGroup -Filter "Name -eq '$groupDisplayName'" -Credential $Credential    
     If ($null -ne $Group) {
-         # Extract the domain components from the distinguished name
+        # Extract the domain components from the distinguished name
         $domainComponents = ($group.DistinguishedName -split ',') | Where-Object { $_ -like 'DC=*' }
         # Construct the domain name
         $domainName = ($domainComponents -replace 'DC=', '') -join '.'
@@ -115,7 +120,7 @@ function Update-ACL {
         [pscredential]$Credential,
         [Parameter(Mandatory = $true)]
         [String]$FileShare,
-        [Parameter(Mandatory = $false)]
+        [Parameter(Mandatory = $true)]
         [Array]$UserGroups
     )
     # Map Drive
@@ -133,7 +138,7 @@ function Update-ACL {
     $Users = [System.Security.Principal.Ntaccount]("Users")
     Write-Log -message "[Update-ACL]: Purging Existing Access Control Entries for 'Users' from ACL"
     $ACL.PurgeAccessRules($Users)
-    If($AdminGroups.Count -gt 0) {
+    If ($AdminGroups.Count -gt 0) {
         ForEach ($Group in $AdminGroups) {
             Write-Log -message "[Update-ACL]: Adding ACE '$($Group):Full Control' to ACL."
             $Ntaccount = [System.Security.Principal.Ntaccount]("$Group")
@@ -141,19 +146,14 @@ function Update-ACL {
             $ACL.SetAccessRule($ACE)
         }
     }
-    If ($UserGroups.Count -gt 0) {
-        ForEach ($Group in $UserGroups) {
-            Write-Log -message "[Update-ACL]: Adding ACE '$($Group):Modify (This Folder Only)' to ACL."
-            $Ntaccount = [System.Security.Principal.Ntaccount]("$Group")
-            $ACE = ([System.Security.AccessControl.FileSystemAccessRule]::new("$Ntaccount", "Modify", "None", "None", "Allow"))
-            $ACL.SetAccessRule($ACE)
-        }
-    } Else {
-        Write-Log -message "[Update-ACL]: Adding ACE 'Domain Users:Modify (This Folder Only)' to ACL."
-        $Ntaccount = [System.Security.Principal.Ntaccount]("Domain Users")
+
+    ForEach ($Group in $UserGroups) {
+        Write-Log -message "[Update-ACL]: Adding ACE '$($Group):Modify (This Folder Only)' to ACL."
+        $Ntaccount = [System.Security.Principal.Ntaccount]("$Group")
         $ACE = ([System.Security.AccessControl.FileSystemAccessRule]::new("$Ntaccount", "Modify", "None", "None", "Allow"))
         $ACL.SetAccessRule($ACE)
     }
+
     Write-Log -message "[Update-ACL]: Adding ACE 'Creator Owner:Modify (Subfolder and Files Only)' to ACL."
     $ACE = ([System.Security.AccessControl.FileSystemAccessRule]::new("$CreatorOwner", "Modify", "ContainerInherit,ObjectInherit", "InheritOnly", "Allow"))
     $ACL.SetAccessRule($ACE)
@@ -272,10 +272,26 @@ try {
             If ($null -ne $FullyQualifiedGroupName) {
                 Write-Log -message "Found Group: $FullyQualifiedGroupName"
                 $AdminGroups += $FullyQualifiedGroupName
-            } Else {
+            }
+            Else {
                 Write-Log -message "Admin Group not found in Active Directory"
             }            
         }
+    }
+
+    Write-Log -message "Processing UserGroupNames by searching AD for Groups with the provided display name and returning the SamAccountName"
+    [array]$UserGroups = @()
+    ForEach ($DisplayName in $UserGroupNames) {
+        Write-Log -message "Processing UserGroupName: $DisplayName"
+        $FullyQualifiedGroupName = $null
+        $FullyQualifiedGroupName = Get-FullyQualifiedGroupName -GroupDisplayName $DisplayName -Credential $DomainCredential
+        If ($null -ne $FullyQualifiedGroupName) {
+            Write-Log -message "Found Group: $FullyQualifiedGroupName"
+            $UserGroups += $FullyQualifiedGroupName
+        }
+        Else {
+            Write-Log -message "User not found"
+        }    
     }
 
     Switch ($StorageSolution) {
@@ -322,9 +338,9 @@ try {
                 
                 # Get the storage account key
                 $StorageKey = (Invoke-RestMethod `
-                                -Headers $AzureManagementHeader `
-                                -Method 'POST' `
-                                -Uri $($ResourceManagerUriFixed + '/subscriptions/' + $SubscriptionId + '/resourceGroups/' + $StorageAccountResourceGroupName + '/providers/Microsoft.Storage/storageAccounts/' + $StorageAccountName + '/listKeys?api-version=2023-05-01')).keys[0].value
+                        -Headers $AzureManagementHeader `
+                        -Method 'POST' `
+                        -Uri $($ResourceManagerUriFixed + '/subscriptions/' + $SubscriptionId + '/resourceGroups/' + $StorageAccountResourceGroupName + '/providers/Microsoft.Storage/storageAccounts/' + $StorageAccountName + '/listKeys?api-version=2023-05-01')).keys[0].value
                 
                 # Create credential for accessing the storage account
                 Write-Log -message "Building Storage Key Credential"
@@ -335,17 +351,17 @@ try {
                 # Get / create kerberos key for Azure Storage Account
                 Write-Log -message "Getting Kerberos Key for Azure Storage Account"
                 $KerberosKey = ((Invoke-RestMethod `
-                                    -Headers $AzureManagementHeader `
-                                    -Method 'POST' `
-                                    -Uri $($ResourceManagerUriFixed + '/subscriptions/' + $SubscriptionId + '/resourceGroups/' + $StorageAccountResourceGroupName + '/providers/Microsoft.Storage/storageAccounts/' + $StorageAccountName + '/listKeys?api-version=2023-05-01&$expand=kerb')).keys | Where-Object { $_.Keyname -contains 'kerb1' }).Value
+                            -Headers $AzureManagementHeader `
+                            -Method 'POST' `
+                            -Uri $($ResourceManagerUriFixed + '/subscriptions/' + $SubscriptionId + '/resourceGroups/' + $StorageAccountResourceGroupName + '/providers/Microsoft.Storage/storageAccounts/' + $StorageAccountName + '/listKeys?api-version=2023-05-01&$expand=kerb')).keys | Where-Object { $_.Keyname -contains 'kerb1' }).Value
                 
                 if (!$KerberosKey) {
                     Write-Log -message "Kerberos Key not found, Generating a new key"
                     $null = Invoke-RestMethod `
-                                -Body (@{keyName = 'kerb1' } | ConvertTo-Json) `
-                                -Headers $AzureManagementHeader `
-                                -Method 'POST' `
-                                -Uri $($ResourceManagerUriFixed + '/subscriptions/' + $SubscriptionId + '/resourceGroups/' + $StorageAccountResourceGroupName + '/providers/Microsoft.Storage/storageAccounts/' + $StorageAccountName + '/regenerateKey?api-version=2023-05-01')
+                        -Body (@{keyName = 'kerb1' } | ConvertTo-Json) `
+                        -Headers $AzureManagementHeader `
+                        -Method 'POST' `
+                        -Uri $($ResourceManagerUriFixed + '/subscriptions/' + $SubscriptionId + '/resourceGroups/' + $StorageAccountResourceGroupName + '/providers/Microsoft.Storage/storageAccounts/' + $StorageAccountName + '/regenerateKey?api-version=2023-05-01')
                     $Key = ((Invoke-RestMethod `
                                 -Headers $AzureManagementHeader `
                                 -Method 'POST' `
@@ -370,7 +386,8 @@ try {
                 if ($Computer) {
                     Write-Log -message "Computer account object for Azure Storage Account found, removing the existing object"
                     Remove-ADComputer -Credential $DomainCredential -Identity $StorageAccountName -Confirm:$false
-                } Else {
+                }
+                Else {
                     Write-Log -message "Computer account object for Azure Storage Account not found"
                 }
                 Write-Log -message "Creating the AD computer object for the Azure Storage Account"
@@ -401,10 +418,10 @@ try {
                     } | ConvertTo-Json -Depth 6 -Compress)  
 
                 $null = Invoke-RestMethod `
-                        -Body $Body `
-                        -Headers $AzureManagementHeader `
-                        -Method 'PATCH' `
-                        -Uri $($ResourceManagerUriFixed + '/subscriptions/' + $SubscriptionId + '/resourceGroups/' + $StorageAccountResourceGroupName + '/providers/Microsoft.Storage/storageAccounts/' + $StorageAccountName + '?api-version=2023-05-01')             
+                    -Body $Body `
+                    -Headers $AzureManagementHeader `
+                    -Method 'PATCH' `
+                    -Uri $($ResourceManagerUriFixed + '/subscriptions/' + $SubscriptionId + '/resourceGroups/' + $StorageAccountResourceGroupName + '/providers/Microsoft.Storage/storageAccounts/' + $StorageAccountName + '?api-version=2023-05-01')             
                 
                 # Enable AES256 encryption if selected
                 if ($KerberosEncryptionType -eq 'AES256') {
@@ -416,17 +433,17 @@ try {
                     # Reset the Kerberos key on the Storage Account
                     Write-Log -message "Resetting the kerb1 key on the Storage Account"
                     $null = Invoke-RestMethod `
-                            -Body (@{keyName = 'kerb1' } | ConvertTo-Json) `
-                            -Headers $AzureManagementHeader `
-                            -Method 'POST' `
-                            -Uri $($ResourceManagerUriFixed + '/subscriptions/' + $SubscriptionId + '/resourceGroups/' + $StorageAccountResourceGroupName + '/providers/Microsoft.Storage/storageAccounts/' + $StorageAccountName + '/regenerateKey?api-version=2023-05-01')
+                        -Body (@{keyName = 'kerb1' } | ConvertTo-Json) `
+                        -Headers $AzureManagementHeader `
+                        -Method 'POST' `
+                        -Uri $($ResourceManagerUriFixed + '/subscriptions/' + $SubscriptionId + '/resourceGroups/' + $StorageAccountResourceGroupName + '/providers/Microsoft.Storage/storageAccounts/' + $StorageAccountName + '/regenerateKey?api-version=2023-05-01')
                     
                     Write-Log -message "Resetting the kerb2 key on the Storage Account"
                     $null = Invoke-RestMethod `
-                            -Body (@{keyName = 'kerb2' } | ConvertTo-Json) `
-                            -Headers $AzureManagementHeader `
-                            -Method 'POST' `
-                            -Uri $($ResourceManagerUriFixed + '/subscriptions/' + $SubscriptionId + '/resourceGroups/' + $StorageAccountResourceGroupName + '/providers/Microsoft.Storage/storageAccounts/' + $StorageAccountName + '/regenerateKey?api-version=2023-05-01')
+                        -Body (@{keyName = 'kerb2' } | ConvertTo-Json) `
+                        -Headers $AzureManagementHeader `
+                        -Method 'POST' `
+                        -Uri $($ResourceManagerUriFixed + '/subscriptions/' + $SubscriptionId + '/resourceGroups/' + $StorageAccountResourceGroupName + '/providers/Microsoft.Storage/storageAccounts/' + $StorageAccountName + '/regenerateKey?api-version=2023-05-01')
 
                     $Key = ((Invoke-RestMethod `
                                 -Headers $AzureManagementHeader `
@@ -440,68 +457,67 @@ try {
                 }
 
             }
-            foreach ($Share in $Shares) {
-                # Mount file share
-                $FileShare = $FileServer + '\' + $Share
-                Write-Log -message "Processing File Share: $FileShare"
-                if ($AdminGroups.Count -gt 0) {
-                    Write-Log -message "Admin Groups provided, executing Update-ACL with Admin Groups"
-                    Update-ACL -AdminGroups $AdminGroups -Credential $StorageKeyCredential -FileShare $FileShare
-                } Else {
-                    Write-Log -message "Admin Groups not provided, executing Update-ACL without Admin Groups"
-                    Update-ACL -Credential $StorageKeyCredential -FileShare $FileShare
+            if ($ShardAzureFilesStorage -eq 'true') {
+                foreach ($Share in $Shares) {
+                    $FileShare = $FileServer + '\' + $Share
+                    Write-Log -message "Processing File Share: $FileShare"
+                    if ($AdminGroups.Count -gt 0) {
+                        Write-Log -message "Admin Groups provided, executing Update-ACL with Admin Groups"
+                        Update-ACL -AdminGroups $AdminGroups -Credential $StorageKeyCredential -FileShare $FileShare -UserGroups @($UserGroups[$i])
+                    }
+                    Else {
+                        Write-Log -message "Admin Groups not provided, executing Update-ACL without Admin Groups"
+                        Update-ACL -Credential $StorageKeyCredential -FileShare $FileShare -UserGroups @($UserGroups[$i])
+                    }
+                }
+            }
+            Else {
+                foreach ($Share in $Shares) {
+                    $FileShare = $FileServer + '\' + $Share
+                    Write-Log -message "Processing File Share: $FileShare"
+                    if ($AdminGroups.Count -gt 0) {
+                        Write-Log -message "Admin Groups provided, executing Update-ACL with Admin Groups"
+                        Update-ACL -AdminGroups $AdminGroups -Credential $StorageKeyCredential -FileShare $FileShare -UserGroups $UserGroups
+                    }
+                    Else {
+                        Write-Log -message "Admin Groups not provided, executing Update-ACL without Admin Groups"
+                        Update-ACL -Credential $StorageKeyCredential -FileShare $FileShare -UserGroups $UserGroups
+                    }
                 }
             }
         }
         'AzureNetAppFiles' {
-            Write-Log -message "Processing Azure NetApp Files"
-            # Must get the SamAccountName for all the DisplayNames provided.
-            if ($UserGroupNames.Count -gt 0) {
-                Write-Log -message "Processing UserGroupNames by searching AD for Groups with the provided display name and returning the SamAccountName"
-                [array]$UserGroups = @()
-                ForEach ($DisplayName in $UserGroupNames) {
-                    Write-Log -message "Processing UserGroupName: $DisplayName"
-                    $FullyQualifiedGroupName = $null
-                    $FullyQualifiedGroupName = Get-FullyQualifiedGroupName -GroupDisplayName $DisplayName -Credential $DomainCredential
-                    If ($null -ne $FullyQualifiedGroupName) {
-                        Write-Log -message "Found Group: $FullyQualifiedGroupName"
-                            $UserGroups += $FullyQualifiedGroupName
-                    } Else {
-                        Write-Log -message "User not found"
-                    }    
-                }
-            }
+            Write-Log -message "Processing Azure NetApp Files"        
 
             [array]$NetAppServers = ConvertFrom-JsonString -JsonString $NetAppServers -Name 'NetAppServers'
 
             $ProfileShare = "\\$($NetAppServers[0])\$($Shares[0])"
             Write-Log -message "Processing Profile Share: $ProfileShare"
-            if ($AdminGroups.Count -gt 0 -and $UserGroups.Count -gt 0) {
+            if ($AdminGroups.Count -gt 0) {
                 Write-Log -message "Admin Groups and UserGroups provided, executing Update-ACL with Admin Groups and UserGroups"
                 Update-ACL -AdminGroups $AdminGroups -Credential $DomainCredential -FileShare $ProfileShare -UserGroups $UserGroups
-            } ElseIf ($AdminGroups.Count -gt 0 -and $UserGroups.Count -eq 0) {
-                Write-Log -message "Admin Groups provided, executing Update-ACL with Admin Groups only"
-                Update-ACL -AdminGroups $AdminGroups -Credential $DomainCredential -FileShare $ProfileShare
-            } ElseIf ($AdminGroups.Count -eq 0 -and $UserGroups.Count -gt 0) {
+            }
+            Else {
                 Write-Log -message "UserGroups provided, executing Update-ACL with UserGroups only"
                 Update-ACL -Credential $DomainCredential -FileShare $ProfileShare -UserGroups $UserGroups
-            } Else {
-                Write-Log -message "No Admin Groups or UserGroups provided, executing Update-ACL without Admin Groups or UserGroups"
-                Update-ACL -Credential $DomainCredential -FileShare $ProfileShare
             }
+            
             If ($NetAppServers.Count -gt 1 -and $Shares.Count -gt 1) {
                 $OfficeShare = "\\" + $NetAppServers[1] + "\" + $Shares[1]
                 Write-Log -message "Processing Office Share: $OfficeShare"
-                If($AdminGroups.Count -gt 0 -and $UserGroups.Count -gt 0) {
+                If ($AdminGroups.Count -gt 0 -and $UserGroups.Count -gt 0) {
                     Write-Log -message "Admin Groups and UserGroups provided, executing Update-ACL with Admin Groups and UserGroups"
                     Update-ACL -AdminGroups $AdminGroups -Credential $DomainCredential -FileShare $OfficeShare -UserGroups $UserGroups
-                } ElseIf ($AdminGroups.Count -gt 0 -and $UserGroups.Count -eq 0) {
+                }
+                ElseIf ($AdminGroups.Count -gt 0 -and $UserGroups.Count -eq 0) {
                     Write-Log -message "Admin Groups provided, executing Update-ACL with Admin Groups only"
                     Update-ACL -AdminGroups $AdminGroups -Credential $DomainCredential -FileShare $OfficeShare
-                } ElseIf ($AdminGroups.Count -eq 0 -and $UserGroups.Count -gt 0) {
+                }
+                ElseIf ($AdminGroups.Count -eq 0 -and $UserGroups.Count -gt 0) {
                     Write-Log -message "UserGroups provided, executing Update-ACL with UserGroups only"
                     Update-ACL -Credential $DomainCredential -FileShare $OfficeShare -UserGroups $UserGroups
-                } Else {
+                }
+                Else {
                     Write-Log -message "No Admin Groups or UserGroups provided, executing Update-ACL without Admin Groups or UserGroups"
                     Update-ACL -Credential $DomainCredential -FileShare $OfficeShare
                 }

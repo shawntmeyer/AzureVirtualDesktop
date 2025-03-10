@@ -2,13 +2,6 @@
 
 # Troubleshooting
 
-## Use Key Vault Secrets
-
-If you are utilizing the Template Spec UI to deploy the Azure Virtual Desktop hostpool and are trying to reference existing Key Vault secrets, you may not be able to list the existing secrets in the UI. There can be two reasons:
-
-1. The key vault network firewall blocks public network access and you are not running the template spec or blue-button deployment from a machine that is able to access the Virtual Network where the key vault private endpoint is attached. Fix this by running the deployment from a jump host inside your azure environment.
-2. The user account logged into the Azure Portal when running the template spec or blue-button deployment does not have the rights granted by the [Key Vault Secrets User role](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/security#key-vault-secrets-user). Fix this issue by granting the user this role on the key vault.
-
 ## Role Assignment Failure
 
 ### Symptom
@@ -87,14 +80,18 @@ This may be due to an issue with the file name (or Url) specified in the 'avdAge
 Complete these steps to determine if this is the issue.
 
 1. Review the inputs of your failed deployment at the root level. Look for and save the value of the 'avdAgentsDSCPackage' parameter to Notepad. Keep Notepad Open.
+
 2. Follow the standard portal instructions from [Add session hosts to a host pool](https://learn.microsoft.com/en-us/azure/virtual-desktop/add-session-hosts-host-pool?tabs=portal%2Cgui&pivots=host-pool-standard) to the **Review + create** tab, but do not click **Create**.
+   
 3. Select **Download a template for automation**.
 
    ![Download Template](images/DownloadTemplate.png)
 
 4. Select the **Parameters** link on the **Template** screen.
+
    ![Parameters](images/SelectTemplateParameters.png)
-5. Search for the **artifactsLocation** parameter and then copy the contents to Notepad below the entry from Step 1.
+
+5. Search for the **artifactsLocation** parameter and then copy the contents to Notepad below the entry from Step 1
 
    ![artifactsLocation](images/artifactsLocation.png)
 

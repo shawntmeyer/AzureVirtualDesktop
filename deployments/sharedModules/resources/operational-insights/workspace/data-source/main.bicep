@@ -1,7 +1,3 @@
-metadata name = 'Log Analytics Workspace Datasources'
-metadata description = 'This module deploys a Log Analytics Workspace Data Source.'
-metadata owner = 'Azure/module-maintainers'
-
 @description('Conditional. The name of the parent Log Analytics workspace. Required if the template is used in a standalone deployment.')
 param logAnalyticsWorkspaceName string
 
@@ -83,9 +79,6 @@ resource dataSource 'Microsoft.OperationalInsights/workspaces/dataSources@2020-0
 
 @description('The resource ID of the deployed data source.')
 output resourceId string = dataSource.id
-
-@description('The resource group where the data source is deployed.')
-output resourceGroupName string = resourceGroup().name
 
 @description('The name of the deployed data source.')
 output name string = dataSource.name

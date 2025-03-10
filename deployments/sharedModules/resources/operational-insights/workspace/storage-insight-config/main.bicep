@@ -1,7 +1,3 @@
-metadata name = 'Log Analytics Workspace Storage Insight Configs'
-metadata description = 'This module deploys a Log Analytics Workspace Storage Insight Config.'
-metadata owner = 'Azure/module-maintainers'
-
 @description('Conditional. The name of the parent Log Analytics workspace. Required if the template is used in a standalone deployment.')
 param logAnalyticsWorkspaceName string
 
@@ -44,9 +40,6 @@ resource storageinsightconfig 'Microsoft.OperationalInsights/workspaces/storageI
 
 @description('The resource ID of the deployed storage insights configuration.')
 output resourceId string = storageinsightconfig.id
-
-@description('The resource group where the storage insight configuration is deployed.')
-output resourceGroupName string = resourceGroup().name
 
 @description('The name of the storage insights configuration.')
 output name string = storageinsightconfig.name

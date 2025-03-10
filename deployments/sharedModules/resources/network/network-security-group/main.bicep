@@ -68,17 +68,17 @@ resource networkSecurityGroup 'Microsoft.Network/networkSecurityGroups@2023-04-0
         access: securityRule.properties.access
         priority: securityRule.properties.priority
         direction: securityRule.properties.direction
-        description: contains(securityRule.properties, 'description') ? securityRule.properties.description : ''
-        sourcePortRange: contains(securityRule.properties, 'sourcePortRange') ? securityRule.properties.sourcePortRange : ''
-        sourcePortRanges: contains(securityRule.properties, 'sourcePortRanges') ? securityRule.properties.sourcePortRanges : []
-        destinationPortRange: contains(securityRule.properties, 'destinationPortRange') ? securityRule.properties.destinationPortRange : ''
-        destinationPortRanges: contains(securityRule.properties, 'destinationPortRanges') ? securityRule.properties.destinationPortRanges : []
-        sourceAddressPrefix: contains(securityRule.properties, 'sourceAddressPrefix') ? securityRule.properties.sourceAddressPrefix : ''
-        destinationAddressPrefix: contains(securityRule.properties, 'destinationAddressPrefix') ? securityRule.properties.destinationAddressPrefix : ''
-        sourceAddressPrefixes: contains(securityRule.properties, 'sourceAddressPrefixes') ? securityRule.properties.sourceAddressPrefixes : []
-        destinationAddressPrefixes: contains(securityRule.properties, 'destinationAddressPrefixes') ? securityRule.properties.destinationAddressPrefixes : []
-        sourceApplicationSecurityGroups: contains(securityRule.properties, 'sourceApplicationSecurityGroups') ? securityRule.properties.sourceApplicationSecurityGroups : []
-        destinationApplicationSecurityGroups: contains(securityRule.properties, 'destinationApplicationSecurityGroups') ? securityRule.properties.destinationApplicationSecurityGroups : []
+        description: securityRule.properties.?description ?? ''
+        sourcePortRange: securityRule.properties.?sourcePortRange ?? ''
+        sourcePortRanges: securityRule.properties.?sourcePortRanges ?? []
+        destinationPortRange: securityRule.properties.?destinationPortRange ?? ''
+        destinationPortRanges: securityRule.properties.?destinationPortRanges ?? []
+        sourceAddressPrefix: securityRule.properties.?sourceAddressPrefix ?? ''
+        destinationAddressPrefix: securityRule.properties.?destinationAddressPrefix ?? ''
+        sourceAddressPrefixes: securityRule.properties.?sourceAddressPrefixes ?? []
+        destinationAddressPrefixes: securityRule.properties.?destinationAddressPrefixes ?? []
+        sourceApplicationSecurityGroups: securityRule.properties.?sourceApplicationSecurityGroups ?? []
+        destinationApplicationSecurityGroups: securityRule.properties.?destinationApplicationSecurityGroups ?? []
       }
     }]
   }
@@ -93,17 +93,17 @@ module networkSecurityGroup_securityRules 'security-rule/main.bicep' = [for (sec
     access: securityRule.properties.access
     priority: securityRule.properties.priority
     direction: securityRule.properties.direction
-    description: contains(securityRule.properties, 'description') ? securityRule.properties.description : ''
-    sourcePortRange: contains(securityRule.properties, 'sourcePortRange') ? securityRule.properties.sourcePortRange : ''
-    sourcePortRanges: contains(securityRule.properties, 'sourcePortRanges') ? securityRule.properties.sourcePortRanges : []
-    destinationPortRange: contains(securityRule.properties, 'destinationPortRange') ? securityRule.properties.destinationPortRange : ''
-    destinationPortRanges: contains(securityRule.properties, 'destinationPortRanges') ? securityRule.properties.destinationPortRanges : []
-    sourceAddressPrefix: contains(securityRule.properties, 'sourceAddressPrefix') ? securityRule.properties.sourceAddressPrefix : ''
-    destinationAddressPrefix: contains(securityRule.properties, 'destinationAddressPrefix') ? securityRule.properties.destinationAddressPrefix : ''
-    sourceAddressPrefixes: contains(securityRule.properties, 'sourceAddressPrefixes') ? securityRule.properties.sourceAddressPrefixes : []
-    destinationAddressPrefixes: contains(securityRule.properties, 'destinationAddressPrefixes') ? securityRule.properties.destinationAddressPrefixes : []
-    sourceApplicationSecurityGroups: contains(securityRule.properties, 'sourceApplicationSecurityGroups') ? securityRule.properties.sourceApplicationSecurityGroups : []
-    destinationApplicationSecurityGroups: contains(securityRule.properties, 'destinationApplicationSecurityGroups') ? securityRule.properties.destinationApplicationSecurityGroups : []
+    description: securityRule.properties.?description ?? ''
+    sourcePortRange: securityRule.properties.?sourcePortRange ?? ''
+    sourcePortRanges: securityRule.properties.?sourcePortRanges ?? []
+    destinationPortRange: securityRule.properties.?destinationPortRange ?? ''
+    destinationPortRanges: securityRule.properties.?destinationPortRanges ?? []
+    sourceAddressPrefix: securityRule.properties.?sourceAddressPrefix ?? ''
+    destinationAddressPrefix: securityRule.properties.?destinationAddressPrefix ?? ''
+    sourceAddressPrefixes: securityRule.properties.?sourceAddressPrefixes ?? []
+    destinationAddressPrefixes: securityRule.properties.?destinationAddressPrefixes ?? []
+    sourceApplicationSecurityGroups: securityRule.properties.?sourceApplicationSecurityGroups ?? []
+    destinationApplicationSecurityGroups: securityRule.properties.?destinationApplicationSecurityGroups ?? []
   }
 }]
 
