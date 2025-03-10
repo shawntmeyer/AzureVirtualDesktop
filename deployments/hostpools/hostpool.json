@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "6891898791686992894"
+      "templateHash": "4352575750523206025"
     }
   },
   "parameters": {
@@ -2330,7 +2330,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "5994991657182939993"
+              "templateHash": "6943937345502264018"
             }
           },
           "parameters": {
@@ -2514,7 +2514,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "1801195192480389559"
+                      "templateHash": "336397517795335014"
                     }
                   },
                   "parameters": {
@@ -2542,38 +2542,19 @@
                   "outputs": {
                     "name": {
                       "type": "string",
-                      "metadata": {
-                        "description": "The name of the user assigned identity."
-                      },
                       "value": "[parameters('name')]"
                     },
                     "resourceId": {
                       "type": "string",
-                      "metadata": {
-                        "description": "The resource ID of the user assigned identity."
-                      },
                       "value": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name'))]"
                     },
                     "principalId": {
                       "type": "string",
-                      "metadata": {
-                        "description": "The principal ID (object ID) of the user assigned identity."
-                      },
                       "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name')), '2023-01-31').principalId]"
                     },
                     "clientId": {
                       "type": "string",
-                      "metadata": {
-                        "description": "The client ID (application ID) of the user assigned identity."
-                      },
                       "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name')), '2023-01-31').clientId]"
-                    },
-                    "resourceGroupName": {
-                      "type": "string",
-                      "metadata": {
-                        "description": "The resource group the user assigned identity was deployed into."
-                      },
-                      "value": "[resourceGroup().name]"
                     }
                   }
                 }
@@ -3247,7 +3228,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "5841456172813251168"
+              "templateHash": "15219696743859579755"
             }
           },
           "parameters": {
@@ -3379,7 +3360,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "1119181612828359813"
+                      "templateHash": "5291659471723629687"
                     }
                   },
                   "parameters": {
@@ -3961,7 +3942,7 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.33.93.31351",
-                              "templateHash": "3051445080245504600"
+                              "templateHash": "11658371369068881992"
                             },
                             "name": "Private Endpoints"
                           },
@@ -4099,11 +4080,8 @@
                                     "_generator": {
                                       "name": "bicep",
                                       "version": "0.33.93.31351",
-                                      "templateHash": "311745235647626630"
-                                    },
-                                    "name": "Private Endpoint Private DNS Zone Groups",
-                                    "description": "This module deploys a Private Endpoint Private DNS Zone Group.",
-                                    "owner": "Azure/module-maintainers"
+                                      "templateHash": "13133310131592221995"
+                                    }
                                   },
                                   "parameters": {
                                     "privateEndpointName": {
@@ -4166,13 +4144,6 @@
                                         "description": "The resource ID of the private endpoint DNS zone group."
                                       },
                                       "value": "[resourceId('Microsoft.Network/privateEndpoints/privateDnsZoneGroups', parameters('privateEndpointName'), parameters('name'))]"
-                                    },
-                                    "resourceGroupName": {
-                                      "type": "string",
-                                      "metadata": {
-                                        "description": "The resource group the private endpoint DNS zone group was deployed into."
-                                      },
-                                      "value": "[resourceGroup().name]"
                                     }
                                   }
                                 }
@@ -5111,7 +5082,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "9269066654443762961"
+              "templateHash": "17934254405460549457"
             }
           },
           "parameters": {
@@ -5443,7 +5414,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "14876780139641297021"
+                      "templateHash": "6581832549007294815"
                     }
                   },
                   "parameters": {
@@ -5605,7 +5576,7 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.33.93.31351",
-                              "templateHash": "3051445080245504600"
+                              "templateHash": "11658371369068881992"
                             },
                             "name": "Private Endpoints"
                           },
@@ -5743,11 +5714,8 @@
                                     "_generator": {
                                       "name": "bicep",
                                       "version": "0.33.93.31351",
-                                      "templateHash": "311745235647626630"
-                                    },
-                                    "name": "Private Endpoint Private DNS Zone Groups",
-                                    "description": "This module deploys a Private Endpoint Private DNS Zone Group.",
-                                    "owner": "Azure/module-maintainers"
+                                      "templateHash": "13133310131592221995"
+                                    }
                                   },
                                   "parameters": {
                                     "privateEndpointName": {
@@ -5810,13 +5778,6 @@
                                         "description": "The resource ID of the private endpoint DNS zone group."
                                       },
                                       "value": "[resourceId('Microsoft.Network/privateEndpoints/privateDnsZoneGroups', parameters('privateEndpointName'), parameters('name'))]"
-                                    },
-                                    "resourceGroupName": {
-                                      "type": "string",
-                                      "metadata": {
-                                        "description": "The resource group the private endpoint DNS zone group was deployed into."
-                                      },
-                                      "value": "[resourceGroup().name]"
                                     }
                                   }
                                 }
@@ -6216,7 +6177,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "3543676168964758956"
+                      "templateHash": "6848010725095124320"
                     }
                   },
                   "parameters": {
@@ -6349,7 +6310,7 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.33.93.31351",
-                              "templateHash": "3051445080245504600"
+                              "templateHash": "11658371369068881992"
                             },
                             "name": "Private Endpoints"
                           },
@@ -6487,11 +6448,8 @@
                                     "_generator": {
                                       "name": "bicep",
                                       "version": "0.33.93.31351",
-                                      "templateHash": "311745235647626630"
-                                    },
-                                    "name": "Private Endpoint Private DNS Zone Groups",
-                                    "description": "This module deploys a Private Endpoint Private DNS Zone Group.",
-                                    "owner": "Azure/module-maintainers"
+                                      "templateHash": "13133310131592221995"
+                                    }
                                   },
                                   "parameters": {
                                     "privateEndpointName": {
@@ -6554,13 +6512,6 @@
                                         "description": "The resource ID of the private endpoint DNS zone group."
                                       },
                                       "value": "[resourceId('Microsoft.Network/privateEndpoints/privateDnsZoneGroups', parameters('privateEndpointName'), parameters('name'))]"
-                                    },
-                                    "resourceGroupName": {
-                                      "type": "string",
-                                      "metadata": {
-                                        "description": "The resource group the private endpoint DNS zone group was deployed into."
-                                      },
-                                      "value": "[resourceGroup().name]"
                                     }
                                   }
                                 }
@@ -6949,7 +6900,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "3543676168964758956"
+                      "templateHash": "6848010725095124320"
                     }
                   },
                   "parameters": {
@@ -7082,7 +7033,7 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.33.93.31351",
-                              "templateHash": "3051445080245504600"
+                              "templateHash": "11658371369068881992"
                             },
                             "name": "Private Endpoints"
                           },
@@ -7220,11 +7171,8 @@
                                     "_generator": {
                                       "name": "bicep",
                                       "version": "0.33.93.31351",
-                                      "templateHash": "311745235647626630"
-                                    },
-                                    "name": "Private Endpoint Private DNS Zone Groups",
-                                    "description": "This module deploys a Private Endpoint Private DNS Zone Group.",
-                                    "owner": "Azure/module-maintainers"
+                                      "templateHash": "13133310131592221995"
+                                    }
                                   },
                                   "parameters": {
                                     "privateEndpointName": {
@@ -7287,13 +7235,6 @@
                                         "description": "The resource ID of the private endpoint DNS zone group."
                                       },
                                       "value": "[resourceId('Microsoft.Network/privateEndpoints/privateDnsZoneGroups', parameters('privateEndpointName'), parameters('name'))]"
-                                    },
-                                    "resourceGroupName": {
-                                      "type": "string",
-                                      "metadata": {
-                                        "description": "The resource group the private endpoint DNS zone group was deployed into."
-                                      },
-                                      "value": "[resourceGroup().name]"
                                     }
                                   }
                                 }
@@ -7547,7 +7488,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "8805965899648799827"
+              "templateHash": "3347439760401696292"
             }
           },
           "parameters": {
@@ -7804,7 +7745,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "6627530954351619219"
+                      "templateHash": "4024236244952920259"
                     }
                   },
                   "parameters": {
@@ -7957,7 +7898,7 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.33.93.31351",
-                              "templateHash": "1119181612828359813"
+                              "templateHash": "5291659471723629687"
                             }
                           },
                           "parameters": {
@@ -8539,7 +8480,7 @@
                                     "_generator": {
                                       "name": "bicep",
                                       "version": "0.33.93.31351",
-                                      "templateHash": "3051445080245504600"
+                                      "templateHash": "11658371369068881992"
                                     },
                                     "name": "Private Endpoints"
                                   },
@@ -8677,11 +8618,8 @@
                                             "_generator": {
                                               "name": "bicep",
                                               "version": "0.33.93.31351",
-                                              "templateHash": "311745235647626630"
-                                            },
-                                            "name": "Private Endpoint Private DNS Zone Groups",
-                                            "description": "This module deploys a Private Endpoint Private DNS Zone Group.",
-                                            "owner": "Azure/module-maintainers"
+                                              "templateHash": "13133310131592221995"
+                                            }
                                           },
                                           "parameters": {
                                             "privateEndpointName": {
@@ -8744,13 +8682,6 @@
                                                 "description": "The resource ID of the private endpoint DNS zone group."
                                               },
                                               "value": "[resourceId('Microsoft.Network/privateEndpoints/privateDnsZoneGroups', parameters('privateEndpointName'), parameters('name'))]"
-                                            },
-                                            "resourceGroupName": {
-                                              "type": "string",
-                                              "metadata": {
-                                                "description": "The resource group the private endpoint DNS zone group was deployed into."
-                                              },
-                                              "value": "[resourceGroup().name]"
                                             }
                                           }
                                         }
@@ -8864,7 +8795,7 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.33.93.31351",
-                              "templateHash": "1801195192480389559"
+                              "templateHash": "336397517795335014"
                             }
                           },
                           "parameters": {
@@ -8892,38 +8823,19 @@
                           "outputs": {
                             "name": {
                               "type": "string",
-                              "metadata": {
-                                "description": "The name of the user assigned identity."
-                              },
                               "value": "[parameters('name')]"
                             },
                             "resourceId": {
                               "type": "string",
-                              "metadata": {
-                                "description": "The resource ID of the user assigned identity."
-                              },
                               "value": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name'))]"
                             },
                             "principalId": {
                               "type": "string",
-                              "metadata": {
-                                "description": "The principal ID (object ID) of the user assigned identity."
-                              },
                               "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name')), '2023-01-31').principalId]"
                             },
                             "clientId": {
                               "type": "string",
-                              "metadata": {
-                                "description": "The client ID (application ID) of the user assigned identity."
-                              },
                               "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name')), '2023-01-31').clientId]"
-                            },
-                            "resourceGroupName": {
-                              "type": "string",
-                              "metadata": {
-                                "description": "The resource group the user assigned identity was deployed into."
-                              },
-                              "value": "[resourceGroup().name]"
                             }
                           }
                         }
@@ -9686,7 +9598,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "13640566336754108713"
+                      "templateHash": "7257959907442991254"
                     }
                   },
                   "parameters": {
@@ -10195,7 +10107,7 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.33.93.31351",
-                              "templateHash": "3051445080245504600"
+                              "templateHash": "11658371369068881992"
                             },
                             "name": "Private Endpoints"
                           },
@@ -10333,11 +10245,8 @@
                                     "_generator": {
                                       "name": "bicep",
                                       "version": "0.33.93.31351",
-                                      "templateHash": "311745235647626630"
-                                    },
-                                    "name": "Private Endpoint Private DNS Zone Groups",
-                                    "description": "This module deploys a Private Endpoint Private DNS Zone Group.",
-                                    "owner": "Azure/module-maintainers"
+                                      "templateHash": "13133310131592221995"
+                                    }
                                   },
                                   "parameters": {
                                     "privateEndpointName": {
@@ -10400,13 +10309,6 @@
                                         "description": "The resource ID of the private endpoint DNS zone group."
                                       },
                                       "value": "[resourceId('Microsoft.Network/privateEndpoints/privateDnsZoneGroups', parameters('privateEndpointName'), parameters('name'))]"
-                                    },
-                                    "resourceGroupName": {
-                                      "type": "string",
-                                      "metadata": {
-                                        "description": "The resource group the private endpoint DNS zone group was deployed into."
-                                      },
-                                      "value": "[resourceGroup().name]"
                                     }
                                   }
                                 }
@@ -10793,11 +10695,8 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.33.93.31351",
-                              "templateHash": "4069499129908254300"
-                            },
-                            "name": "Recovery Services Vaults",
-                            "description": "This module deploys a Recovery Services Vault.",
-                            "owner": "Azure/module-maintainers"
+                              "templateHash": "4845136783401556015"
+                            }
                           },
                           "parameters": {
                             "name": {
@@ -11087,11 +10986,8 @@
                                     "_generator": {
                                       "name": "bicep",
                                       "version": "0.33.93.31351",
-                                      "templateHash": "7435151881279146833"
-                                    },
-                                    "name": "Recovery Services Vault Replication Fabrics",
-                                    "description": "This module deploys a Replication Fabric for Azure to Azure disaster recovery scenario of Azure Site Recovery.\r\n\r\n> Note: this module currently support only the `instanceType: 'Azure'` scenario.",
-                                    "owner": "Azure/module-maintainers"
+                                      "templateHash": "1838646602864838437"
+                                    }
                                   },
                                   "parameters": {
                                     "recoveryVaultName": {
@@ -11480,11 +11376,8 @@
                                     "_generator": {
                                       "name": "bicep",
                                       "version": "0.33.93.31351",
-                                      "templateHash": "4595229573814195818"
-                                    },
-                                    "name": "Recovery Services Vault Replication Policies",
-                                    "description": "This module deploys a Recovery Services Vault Replication Policy for Disaster Recovery scenario.\r\n\r\n> **Note**: this version of the module only supports the `instanceType: 'A2A'` scenario.",
-                                    "owner": "Azure/module-maintainers"
+                                      "templateHash": "16916097208484981044"
+                                    }
                                   },
                                   "parameters": {
                                     "recoveryVaultName": {
@@ -11605,11 +11498,8 @@
                                     "_generator": {
                                       "name": "bicep",
                                       "version": "0.33.93.31351",
-                                      "templateHash": "2018016552851090432"
-                                    },
-                                    "name": "Recovery Services Vault Backup Storage Config",
-                                    "description": "This module deploys a Recovery Service Vault Backup Storage Configuration.",
-                                    "owner": "Azure/module-maintainers"
+                                      "templateHash": "9107440221915412128"
+                                    }
                                   },
                                   "parameters": {
                                     "recoveryVaultName": {
@@ -11732,11 +11622,8 @@
                                     "_generator": {
                                       "name": "bicep",
                                       "version": "0.33.93.31351",
-                                      "templateHash": "11269902013883403317"
-                                    },
-                                    "name": "Recovery Services Vault Protection Container",
-                                    "description": "This module deploys a Recovery Services Vault Protection Container.",
-                                    "owner": "Azure/module-maintainers"
+                                      "templateHash": "7572534498163457915"
+                                    }
                                   },
                                   "parameters": {
                                     "recoveryVaultName": {
@@ -11873,11 +11760,8 @@
                                             "_generator": {
                                               "name": "bicep",
                                               "version": "0.33.93.31351",
-                                              "templateHash": "13042128468095046242"
-                                            },
-                                            "name": "Recovery Service Vaults Protection Container Protected Item",
-                                            "description": "This module deploys a Recovery Services Vault Protection Container Protected Item.",
-                                            "owner": "Azure/module-maintainers"
+                                              "templateHash": "9260870681196699872"
+                                            }
                                           },
                                           "parameters": {
                                             "name": {
@@ -12039,11 +11923,8 @@
                                     "_generator": {
                                       "name": "bicep",
                                       "version": "0.33.93.31351",
-                                      "templateHash": "11741874058395625395"
-                                    },
-                                    "name": "Recovery Services Vault Backup Policies",
-                                    "description": "This module deploys a Recovery Services Vault Backup Policy.",
-                                    "owner": "Azure/module-maintainers"
+                                      "templateHash": "9940693734388360809"
+                                    }
                                   },
                                   "parameters": {
                                     "recoveryVaultName": {
@@ -12148,11 +12029,8 @@
                                     "_generator": {
                                       "name": "bicep",
                                       "version": "0.33.93.31351",
-                                      "templateHash": "16374096412152323253"
-                                    },
-                                    "name": "Recovery Services Vault Backup Config",
-                                    "description": "This module deploys a Recovery Services Vault Backup Config.",
-                                    "owner": "Azure/module-maintainers"
+                                      "templateHash": "14021125506857299561"
+                                    }
                                   },
                                   "parameters": {
                                     "recoveryVaultName": {
@@ -12321,11 +12199,8 @@
                                     "_generator": {
                                       "name": "bicep",
                                       "version": "0.33.93.31351",
-                                      "templateHash": "7759556735500972163"
-                                    },
-                                    "name": "Recovery Services Vault Replication Alert Settings",
-                                    "description": "This module deploys a Recovery Services Vault Replication Alert Settings.",
-                                    "owner": "Azure/module-maintainers"
+                                      "templateHash": "14545934311038736572"
+                                    }
                                   },
                                   "parameters": {
                                     "recoveryVaultName": {
@@ -12468,7 +12343,7 @@
                                     "_generator": {
                                       "name": "bicep",
                                       "version": "0.33.93.31351",
-                                      "templateHash": "3051445080245504600"
+                                      "templateHash": "11658371369068881992"
                                     },
                                     "name": "Private Endpoints"
                                   },
@@ -12606,11 +12481,8 @@
                                             "_generator": {
                                               "name": "bicep",
                                               "version": "0.33.93.31351",
-                                              "templateHash": "311745235647626630"
-                                            },
-                                            "name": "Private Endpoint Private DNS Zone Groups",
-                                            "description": "This module deploys a Private Endpoint Private DNS Zone Group.",
-                                            "owner": "Azure/module-maintainers"
+                                              "templateHash": "13133310131592221995"
+                                            }
                                           },
                                           "parameters": {
                                             "privateEndpointName": {
@@ -12673,13 +12545,6 @@
                                                 "description": "The resource ID of the private endpoint DNS zone group."
                                               },
                                               "value": "[resourceId('Microsoft.Network/privateEndpoints/privateDnsZoneGroups', parameters('privateEndpointName'), parameters('name'))]"
-                                            },
-                                            "resourceGroupName": {
-                                              "type": "string",
-                                              "metadata": {
-                                                "description": "The resource group the private endpoint DNS zone group was deployed into."
-                                              },
-                                              "value": "[resourceGroup().name]"
                                             }
                                           }
                                         }
@@ -14167,7 +14032,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "8880271759780680999"
+              "templateHash": "16982656088055995152"
             }
           },
           "parameters": {
@@ -14584,7 +14449,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "16522594636771638922"
+                      "templateHash": "4729024828418903136"
                     }
                   },
                   "parameters": {
@@ -14671,7 +14536,7 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.33.93.31351",
-                              "templateHash": "3051445080245504600"
+                              "templateHash": "11658371369068881992"
                             },
                             "name": "Private Endpoints"
                           },
@@ -14809,11 +14674,8 @@
                                     "_generator": {
                                       "name": "bicep",
                                       "version": "0.33.93.31351",
-                                      "templateHash": "311745235647626630"
-                                    },
-                                    "name": "Private Endpoint Private DNS Zone Groups",
-                                    "description": "This module deploys a Private Endpoint Private DNS Zone Group.",
-                                    "owner": "Azure/module-maintainers"
+                                      "templateHash": "13133310131592221995"
+                                    }
                                   },
                                   "parameters": {
                                     "privateEndpointName": {
@@ -14876,13 +14738,6 @@
                                         "description": "The resource ID of the private endpoint DNS zone group."
                                       },
                                       "value": "[resourceId('Microsoft.Network/privateEndpoints/privateDnsZoneGroups', parameters('privateEndpointName'), parameters('name'))]"
-                                    },
-                                    "resourceGroupName": {
-                                      "type": "string",
-                                      "metadata": {
-                                        "description": "The resource group the private endpoint DNS zone group was deployed into."
-                                      },
-                                      "value": "[resourceGroup().name]"
                                     }
                                   }
                                 }
@@ -15174,7 +15029,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "7426862298960403296"
+                      "templateHash": "6880914380977678083"
                     }
                   },
                   "parameters": {
@@ -15295,7 +15150,7 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.33.93.31351",
-                              "templateHash": "1119181612828359813"
+                              "templateHash": "5291659471723629687"
                             }
                           },
                           "parameters": {
@@ -15877,7 +15732,7 @@
                                     "_generator": {
                                       "name": "bicep",
                                       "version": "0.33.93.31351",
-                                      "templateHash": "3051445080245504600"
+                                      "templateHash": "11658371369068881992"
                                     },
                                     "name": "Private Endpoints"
                                   },
@@ -16015,11 +15870,8 @@
                                             "_generator": {
                                               "name": "bicep",
                                               "version": "0.33.93.31351",
-                                              "templateHash": "311745235647626630"
-                                            },
-                                            "name": "Private Endpoint Private DNS Zone Groups",
-                                            "description": "This module deploys a Private Endpoint Private DNS Zone Group.",
-                                            "owner": "Azure/module-maintainers"
+                                              "templateHash": "13133310131592221995"
+                                            }
                                           },
                                           "parameters": {
                                             "privateEndpointName": {
@@ -16082,13 +15934,6 @@
                                                 "description": "The resource ID of the private endpoint DNS zone group."
                                               },
                                               "value": "[resourceId('Microsoft.Network/privateEndpoints/privateDnsZoneGroups', parameters('privateEndpointName'), parameters('name'))]"
-                                            },
-                                            "resourceGroupName": {
-                                              "type": "string",
-                                              "metadata": {
-                                                "description": "The resource group the private endpoint DNS zone group was deployed into."
-                                              },
-                                              "value": "[resourceGroup().name]"
                                             }
                                           }
                                         }
@@ -18984,11 +18829,8 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "4069499129908254300"
-                    },
-                    "name": "Recovery Services Vaults",
-                    "description": "This module deploys a Recovery Services Vault.",
-                    "owner": "Azure/module-maintainers"
+                      "templateHash": "4845136783401556015"
+                    }
                   },
                   "parameters": {
                     "name": {
@@ -19278,11 +19120,8 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.33.93.31351",
-                              "templateHash": "7435151881279146833"
-                            },
-                            "name": "Recovery Services Vault Replication Fabrics",
-                            "description": "This module deploys a Replication Fabric for Azure to Azure disaster recovery scenario of Azure Site Recovery.\r\n\r\n> Note: this module currently support only the `instanceType: 'Azure'` scenario.",
-                            "owner": "Azure/module-maintainers"
+                              "templateHash": "1838646602864838437"
+                            }
                           },
                           "parameters": {
                             "recoveryVaultName": {
@@ -19671,11 +19510,8 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.33.93.31351",
-                              "templateHash": "4595229573814195818"
-                            },
-                            "name": "Recovery Services Vault Replication Policies",
-                            "description": "This module deploys a Recovery Services Vault Replication Policy for Disaster Recovery scenario.\r\n\r\n> **Note**: this version of the module only supports the `instanceType: 'A2A'` scenario.",
-                            "owner": "Azure/module-maintainers"
+                              "templateHash": "16916097208484981044"
+                            }
                           },
                           "parameters": {
                             "recoveryVaultName": {
@@ -19796,11 +19632,8 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.33.93.31351",
-                              "templateHash": "2018016552851090432"
-                            },
-                            "name": "Recovery Services Vault Backup Storage Config",
-                            "description": "This module deploys a Recovery Service Vault Backup Storage Configuration.",
-                            "owner": "Azure/module-maintainers"
+                              "templateHash": "9107440221915412128"
+                            }
                           },
                           "parameters": {
                             "recoveryVaultName": {
@@ -19923,11 +19756,8 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.33.93.31351",
-                              "templateHash": "11269902013883403317"
-                            },
-                            "name": "Recovery Services Vault Protection Container",
-                            "description": "This module deploys a Recovery Services Vault Protection Container.",
-                            "owner": "Azure/module-maintainers"
+                              "templateHash": "7572534498163457915"
+                            }
                           },
                           "parameters": {
                             "recoveryVaultName": {
@@ -20064,11 +19894,8 @@
                                     "_generator": {
                                       "name": "bicep",
                                       "version": "0.33.93.31351",
-                                      "templateHash": "13042128468095046242"
-                                    },
-                                    "name": "Recovery Service Vaults Protection Container Protected Item",
-                                    "description": "This module deploys a Recovery Services Vault Protection Container Protected Item.",
-                                    "owner": "Azure/module-maintainers"
+                                      "templateHash": "9260870681196699872"
+                                    }
                                   },
                                   "parameters": {
                                     "name": {
@@ -20230,11 +20057,8 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.33.93.31351",
-                              "templateHash": "11741874058395625395"
-                            },
-                            "name": "Recovery Services Vault Backup Policies",
-                            "description": "This module deploys a Recovery Services Vault Backup Policy.",
-                            "owner": "Azure/module-maintainers"
+                              "templateHash": "9940693734388360809"
+                            }
                           },
                           "parameters": {
                             "recoveryVaultName": {
@@ -20339,11 +20163,8 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.33.93.31351",
-                              "templateHash": "16374096412152323253"
-                            },
-                            "name": "Recovery Services Vault Backup Config",
-                            "description": "This module deploys a Recovery Services Vault Backup Config.",
-                            "owner": "Azure/module-maintainers"
+                              "templateHash": "14021125506857299561"
+                            }
                           },
                           "parameters": {
                             "recoveryVaultName": {
@@ -20512,11 +20333,8 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.33.93.31351",
-                              "templateHash": "7759556735500972163"
-                            },
-                            "name": "Recovery Services Vault Replication Alert Settings",
-                            "description": "This module deploys a Recovery Services Vault Replication Alert Settings.",
-                            "owner": "Azure/module-maintainers"
+                              "templateHash": "14545934311038736572"
+                            }
                           },
                           "parameters": {
                             "recoveryVaultName": {
@@ -20659,7 +20477,7 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.33.93.31351",
-                              "templateHash": "3051445080245504600"
+                              "templateHash": "11658371369068881992"
                             },
                             "name": "Private Endpoints"
                           },
@@ -20797,11 +20615,8 @@
                                     "_generator": {
                                       "name": "bicep",
                                       "version": "0.33.93.31351",
-                                      "templateHash": "311745235647626630"
-                                    },
-                                    "name": "Private Endpoint Private DNS Zone Groups",
-                                    "description": "This module deploys a Private Endpoint Private DNS Zone Group.",
-                                    "owner": "Azure/module-maintainers"
+                                      "templateHash": "13133310131592221995"
+                                    }
                                   },
                                   "parameters": {
                                     "privateEndpointName": {
@@ -20864,13 +20679,6 @@
                                         "description": "The resource ID of the private endpoint DNS zone group."
                                       },
                                       "value": "[resourceId('Microsoft.Network/privateEndpoints/privateDnsZoneGroups', parameters('privateEndpointName'), parameters('name'))]"
-                                    },
-                                    "resourceGroupName": {
-                                      "type": "string",
-                                      "metadata": {
-                                        "description": "The resource group the private endpoint DNS zone group was deployed into."
-                                      },
-                                      "value": "[resourceGroup().name]"
                                     }
                                   }
                                 }
