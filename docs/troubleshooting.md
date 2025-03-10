@@ -98,17 +98,3 @@ Complete these steps to determine if this is the issue.
 6. Compare the values and note if the value is incorrect. Update the 'avdAgentsDSCPackage' parameter value in your parameters file or use this new value in the **AVD Agent DSC Package** text box on the **Session Hosts** pane of the template spec (or blue-button deployment).
 
    ![AVD Agent DSC Package](images/AVDAgentDSCPackageUI.png)
-
-## Access Denied for FSLogix Shares when using Hybrid Identities
-
-### Symptom
-
-The user is unable to logon due to an FSLogix failure that presents as an access denied.
-
-### Problem
-
-The share permissions are assigned using the same group as the AppSecurityGroup. The problem occurs when this group is a cloud-only group (not sourced from Windows Server AD) and the session hosts are not hybrid joined.
-
-### Solution
-
-The easiest thing to do is to [enable hybrid join](https://learn.microsoft.com/en-us/entra/identity/devices/how-to-hybrid-join) for your session hosts as this provides the best user experience and enables Entra ID SSO. If you have already enabled hybrid join, you may need to wait up to 60 minutes for your system to complete the hybrid join process after deployment. If you are unable to enable hybrid join, then you can configure the storage account to use default share permission for all users and set the role to 'Storage File Data SMB Share Contributor' or assign a hybrid group containing the same users using the hostpool to the IAM blade of the storage account and give them the 'Storage File Data SMB Share Contributor' role. For more information see: https://learn.microsoft.com/en-us/fslogix/how-to-configure-storage-permissions
