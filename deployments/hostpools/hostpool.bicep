@@ -664,6 +664,7 @@ var hostPoolVmTemplate = {
   securityType: securityType
   secureBoot: secureBootEnabled
   vTPM: vTpmEnabled
+  subnetId: virtualMachineSubnetResourceId
   vmInfrastructureType: 'Cloud'
 }
 

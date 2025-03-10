@@ -1295,7 +1295,7 @@
 									"name": "hostsVirtualNetwork",
 									"type": "Microsoft.Common.DropDown",
 									"label": "Virtual Network",
-									"defaultValue": "[last(split(steps('hosts').network.virtualNetwork, '/'))]",
+									"defaultValue": "[if(equals(steps('basics').deploymentType, 'SessionHostsOnly'), coalesce(first(skip(split(steps('basics').hostPoolApi.tags.vmSubnetId, '/'), 8)), ''), '')]",
 									"multiLine": true,
 									"toolTip": "Select the virtual network to which the session hosts will be attached.",
 									"constraints": {
@@ -1317,7 +1317,7 @@
 									"type": "Microsoft.Common.DropDown",
 									"visible": true,
 									"label": "Subnet",
-									"defaultValue": "",
+									"defaultValue": "[if(equals(steps('basics').deploymentType, 'SessionHostsOnly'), coalesce(last(split(steps('basics').hostPoolApi.tags.vmSubnetId, '/')), ''), '')]",
 									"toolTip": "Select an existing subnet for the AVD session hosts.",
 									"constraints": {
 										"required": true,
@@ -4030,6 +4030,7 @@
 		},
 		"outputs": {
 			"parameters": {
+				"defaultValue": "[if(equals(steps('basics').deploymentType, 'SessionHostsOnly'), coalesce(first(skip(split(steps('basics').hostPoolApi.tags.vmSubnetId, '/'), 8)), ''), '')]",
 				"deploymentType": "[steps('basics').deploymentType]",
 				"avdObjectId": "[if(empty(steps('basics').prereqs.avdServicePrincipalsApi), if(equals(steps('basics').deploymentType, 'Complete'), first(map(steps('basics').prereqs.servicePrincipalPickerBlade.transformed.selection, (sp) => sp.id)), ''), first(steps('basics').prereqs.avdServicePrincipalsApi.transformed.avd))]",
 				"identifier": "[if(equals(steps('basics').deploymentType, 'Complete'), steps('basics').naming.identifier, '')]",

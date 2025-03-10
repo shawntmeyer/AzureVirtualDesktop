@@ -54,6 +54,7 @@ var hostPoolVmTemplateTags = union(
     vmSecurityType: virtualMachineTemplate.?securityType ?? 'Standard'
     vmSecureBoot: virtualMachineTemplate.?secureBoot ?? false
     vmVirtualTPM: virtualMachineTemplate.?vTPM ?? false
+    vmSubnetId: virtualMachineTemplate.subnetId
   },
   vmDomain,
   vmOUPath,

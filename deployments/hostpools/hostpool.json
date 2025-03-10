@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "4352575750523206025"
+      "templateHash": "4635274365529182930"
     }
   },
   "parameters": {
@@ -5011,6 +5011,7 @@
               "securityType": "[parameters('securityType')]",
               "secureBoot": "[parameters('secureBootEnabled')]",
               "vTPM": "[parameters('vTpmEnabled')]",
+              "subnetId": "[parameters('virtualMachineSubnetResourceId')]",
               "vmInfrastructureType": "Cloud"
             }
           },
@@ -5082,7 +5083,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "17934254405460549457"
+              "templateHash": "16523931913204535220"
             }
           },
           "parameters": {
@@ -5414,7 +5415,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "6581832549007294815"
+                      "templateHash": "10164060991260595826"
                     }
                   },
                   "parameters": {
@@ -5486,7 +5487,7 @@
                     "vmImageSKU": "[if(empty(parameters('virtualMachineTemplate').galleryImageSKU), createObject(), createObject('vmImageSku', parameters('virtualMachineTemplate').galleryImageSKU))]",
                     "vmDiskEncryptionSetName": "[if(empty(parameters('virtualMachineTemplate').diskEncryptionSetName), createObject(), createObject('vmDiskEncryptionSetName', parameters('virtualMachineTemplate').diskEncryptionSetName))]",
                     "vmHibernate": "[if(empty(parameters('virtualMachineTemplate').hibernate), createObject(), createObject('vmHibernate', parameters('virtualMachineTemplate').hibernate))]",
-                    "hostPoolVmTemplateTags": "[union(createObject('vmNamePrefix', parameters('virtualMachineTemplate').namePrefix, 'vmImageType', parameters('virtualMachineTemplate').imageType, 'vmOSDiskType', parameters('virtualMachineTemplate').osDiskType, 'vmDiskSizeGB', parameters('virtualMachineTemplate').diskSizeGB, 'vmSize', parameters('virtualMachineTemplate').vmSize.id, 'vmEncryptionAtHost', coalesce(tryGet(parameters('virtualMachineTemplate'), 'encryptionAtHost'), false()), 'vmAcceleratedNetworking', coalesce(tryGet(parameters('virtualMachineTemplate'), 'acceleratedNetworking'), false()), 'vmSecurityType', coalesce(tryGet(parameters('virtualMachineTemplate'), 'securityType'), 'Standard'), 'vmSecureBoot', coalesce(tryGet(parameters('virtualMachineTemplate'), 'secureBoot'), false()), 'vmVirtualTPM', coalesce(tryGet(parameters('virtualMachineTemplate'), 'vTPM'), false())), variables('vmDomain'), variables('vmOUPath'), variables('vmCustomImageId'), variables('vmImageOffer'), variables('vmImagePublisher'), variables('vmImageSKU'), variables('vmDiskEncryptionSetName'), variables('vmHibernate'))]"
+                    "hostPoolVmTemplateTags": "[union(createObject('vmNamePrefix', parameters('virtualMachineTemplate').namePrefix, 'vmImageType', parameters('virtualMachineTemplate').imageType, 'vmOSDiskType', parameters('virtualMachineTemplate').osDiskType, 'vmDiskSizeGB', parameters('virtualMachineTemplate').diskSizeGB, 'vmSize', parameters('virtualMachineTemplate').vmSize.id, 'vmEncryptionAtHost', coalesce(tryGet(parameters('virtualMachineTemplate'), 'encryptionAtHost'), false()), 'vmAcceleratedNetworking', coalesce(tryGet(parameters('virtualMachineTemplate'), 'acceleratedNetworking'), false()), 'vmSecurityType', coalesce(tryGet(parameters('virtualMachineTemplate'), 'securityType'), 'Standard'), 'vmSecureBoot', coalesce(tryGet(parameters('virtualMachineTemplate'), 'secureBoot'), false()), 'vmVirtualTPM', coalesce(tryGet(parameters('virtualMachineTemplate'), 'vTPM'), false()), 'vmSubnetId', parameters('virtualMachineTemplate').subnetId), variables('vmDomain'), variables('vmOUPath'), variables('vmCustomImageId'), variables('vmImageOffer'), variables('vmImagePublisher'), variables('vmImageSKU'), variables('vmDiskEncryptionSetName'), variables('vmHibernate'))]"
                   },
                   "resources": [
                     {
