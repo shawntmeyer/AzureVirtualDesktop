@@ -19,31 +19,62 @@ param time string = utcNow('u')
 param hostPoolValidationEnvironment bool
 param virtualMachineTemplate object
 
-var hostPoolVmTemplateTags = {
-  vmDomain: virtualMachineTemplate.?domain ?? ''
-  vmOUPath: virtualMachineTemplate.?ouPath ?? ''
-  vmNamePrefix: virtualMachineTemplate.namePrefix
-  vmImageType: virtualMachineTemplate.imageType
-  vmCustomImageId: virtualMachineTemplate.?customImageId ?? ''
-  vmImageOffer: virtualMachineTemplate.?galleryImageOffer ?? ''
-  vmImagePublisher: virtualMachineTemplate.?galleryImagePublisher ?? ''
-  vmImageSKU: virtualMachineTemplate.?galleryImageSKU ?? ''
-  vmOSDiskType: virtualMachineTemplate.osDiskType
-  vmDiskSizeGB: virtualMachineTemplate.diskSizeGB
-  vmSize: virtualMachineTemplate.vmSize.id
-  vmEncryptionAtHost: virtualMachineTemplate.?encryptionAtHost ?? false
-  vmAcceleratedNetworking: virtualMachineTemplate.?acceleratedNetworking ?? false
-  vmDiskEncryptionSetName: virtualMachineTemplate.?diskEncryptionSetName ?? false
-  vmHibernate: virtualMachineTemplate.?hibernate ?? false
-  vmSecurityType: virtualMachineTemplate.?securityType ?? 'Standard'
-  vmSecureBoot: virtualMachineTemplate.?secureBoot ?? false
-  vmVirtualTPM: virtualMachineTemplate.?vTPM ?? false
-}
+var vmDomain = empty(virtualMachineTemplate.domain)
+  ? {}
+  : { vmDomain: virtualMachineTemplate.domain }
+var vmOUPath = empty(virtualMachineTemplate.ouPath)
+  ? {}
+  : { vmOUPath: virtualMachineTemplate.ouPath }
+var vmCustomImageId = empty(virtualMachineTemplate.customImageId)
+  ? {}
+  : { vmCustomImageId: virtualMachineTemplate.customImageId }
+var vmImageOffer = empty(virtualMachineTemplate.galleryImageOffer)
+  ? {}
+  : { vmImageOffer: virtualMachineTemplate.galleryImageOffer }
+var vmImagePublisher = empty(virtualMachineTemplate.galleryImagePublisher)
+  ? {}
+  : { vmImagePublisher: virtualMachineTemplate.vmImagePublisher }
+var vmImageSKU = empty(virtualMachineTemplate.galleryImageSKU)
+  ? {}
+  : { vmImageSku: virtualMachineTemplate.galleryImageSKU }
+var vmDiskEncryptionSetName = empty(virtualMachineTemplate.diskEncryptionSetName)
+  ? {}
+  : { vmDiskEncryptionSetName: virtualMachineTemplate.diskEncryptionSetName }
+var vmHibernate = empty(virtualMachineTemplate.hibernate) ? {} : { vmHibernate: virtualMachineTemplate.hibernate }
+
+var hostPoolVmTemplateTags = union(
+  {
+    vmNamePrefix: virtualMachineTemplate.namePrefix
+    vmImageType: virtualMachineTemplate.imageType
+    vmOSDiskType: virtualMachineTemplate.osDiskType
+    vmDiskSizeGB: virtualMachineTemplate.diskSizeGB
+    vmSize: virtualMachineTemplate.vmSize.id
+    vmEncryptionAtHost: virtualMachineTemplate.?encryptionAtHost ?? false
+    vmAcceleratedNetworking: virtualMachineTemplate.?acceleratedNetworking ?? false
+    vmSecurityType: virtualMachineTemplate.?securityType ?? 'Standard'
+    vmSecureBoot: virtualMachineTemplate.?secureBoot ?? false
+    vmVirtualTPM: virtualMachineTemplate.?vTPM ?? false
+  },
+  vmDomain,
+  vmOUPath,
+  vmCustomImageId,
+  vmImageOffer,
+  vmImagePublisher,
+  vmImageSKU,
+  vmDiskEncryptionSetName,
+  vmHibernate
+)
 
 resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' = {
   name: hostPoolName
   location: location
-  tags: union(hostPoolVmTemplateTags, {'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroup().name}/providers/Microsoft.DesktopVirtualization/hostPools/${hostPoolName}'}, tags[?'Microsoft.DesktopVirtualization/hostPools'] ?? {})
+  tags: union(
+    hostPoolVmTemplateTags,
+    {
+      'cm-resource-parent': '${subscription().id}}/resourceGroups/${resourceGroup().name}/providers/Microsoft.DesktopVirtualization/hostPools/${hostPoolName}'
+    },
+    tags[?'Microsoft.DesktopVirtualization/hostPools'] ?? {}
+  )
   properties: {
     hostPoolType: split(hostPoolType, ' ')[0]
     maxSessionLimit: hostPoolMaxSessionLimit
@@ -62,7 +93,7 @@ resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' = {
   }
 }
 
-module hostPool_PrivateEndpoint '../../../../sharedModules/resources/network/private-endpoint/main.bicep' = if(privateEndpoint && !empty(privateEndpointSubnetResourceId)) {
+module hostPool_PrivateEndpoint '../../../../sharedModules/resources/network/private-endpoint/main.bicep' = if (privateEndpoint && !empty(privateEndpointSubnetResourceId)) {
   name: '${hostPoolName}_privateEndpoint_${timeStamp}'
   params: {
     customNetworkInterfaceName: privateEndpointNICName
@@ -71,16 +102,21 @@ module hostPool_PrivateEndpoint '../../../../sharedModules/resources/network/pri
     ]
     location: !empty(privateEndpointLocation) ? privateEndpointLocation : location
     name: privateEndpointName
-    privateDnsZoneGroup: empty(hostPoolPrivateDnsZoneResourceId) ? null : {
-      privateDNSResourceIds: [
-        hostPoolPrivateDnsZoneResourceId
-      ]
-    }
+    privateDnsZoneGroup: empty(hostPoolPrivateDnsZoneResourceId)
+      ? null
+      : {
+          privateDNSResourceIds: [
+            hostPoolPrivateDnsZoneResourceId
+          ]
+        }
     serviceResourceId: hostPool.id
     subnetResourceId: privateEndpointSubnetResourceId
-    tags: union({
-      'cm-resource-parent': hostPool.id
-    }, tags[?'Microsoft.Network/privateEndpoints'] ?? {}) 
+    tags: union(
+      {
+        'cm-resource-parent': hostPool.id
+      },
+      tags[?'Microsoft.Network/privateEndpoints'] ?? {}
+    )
   }
 }
 

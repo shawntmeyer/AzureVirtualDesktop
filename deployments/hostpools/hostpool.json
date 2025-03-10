@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "16507647100970632689"
+      "templateHash": "6891898791686992894"
     }
   },
   "parameters": {
@@ -5111,7 +5111,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "18031646919959874584"
+              "templateHash": "9269066654443762961"
             }
           },
           "parameters": {
@@ -5443,7 +5443,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "14392007157638318840"
+                      "templateHash": "14876780139641297021"
                     }
                   },
                   "parameters": {
@@ -5507,26 +5507,15 @@
                     }
                   },
                   "variables": {
-                    "hostPoolVmTemplateTags": {
-                      "vmDomain": "[coalesce(tryGet(parameters('virtualMachineTemplate'), 'domain'), '')]",
-                      "vmOUPath": "[coalesce(tryGet(parameters('virtualMachineTemplate'), 'ouPath'), '')]",
-                      "vmNamePrefix": "[parameters('virtualMachineTemplate').namePrefix]",
-                      "vmImageType": "[parameters('virtualMachineTemplate').imageType]",
-                      "vmCustomImageId": "[coalesce(tryGet(parameters('virtualMachineTemplate'), 'customImageId'), '')]",
-                      "vmImageOffer": "[coalesce(tryGet(parameters('virtualMachineTemplate'), 'galleryImageOffer'), '')]",
-                      "vmImagePublisher": "[coalesce(tryGet(parameters('virtualMachineTemplate'), 'galleryImagePublisher'), '')]",
-                      "vmImageSKU": "[coalesce(tryGet(parameters('virtualMachineTemplate'), 'galleryImageSKU'), '')]",
-                      "vmOSDiskType": "[parameters('virtualMachineTemplate').osDiskType]",
-                      "vmDiskSizeGB": "[parameters('virtualMachineTemplate').diskSizeGB]",
-                      "vmSize": "[parameters('virtualMachineTemplate').vmSize.id]",
-                      "vmEncryptionAtHost": "[coalesce(tryGet(parameters('virtualMachineTemplate'), 'encryptionAtHost'), false())]",
-                      "vmAcceleratedNetworking": "[coalesce(tryGet(parameters('virtualMachineTemplate'), 'acceleratedNetworking'), false())]",
-                      "vmDiskEncryptionSetName": "[coalesce(tryGet(parameters('virtualMachineTemplate'), 'diskEncryptionSetName'), false())]",
-                      "vmHibernate": "[coalesce(tryGet(parameters('virtualMachineTemplate'), 'hibernate'), false())]",
-                      "vmSecurityType": "[coalesce(tryGet(parameters('virtualMachineTemplate'), 'securityType'), 'Standard')]",
-                      "vmSecureBoot": "[coalesce(tryGet(parameters('virtualMachineTemplate'), 'secureBoot'), false())]",
-                      "vmVirtualTPM": "[coalesce(tryGet(parameters('virtualMachineTemplate'), 'vTPM'), false())]"
-                    }
+                    "vmDomain": "[if(empty(parameters('virtualMachineTemplate').domain), createObject(), createObject('vmDomain', parameters('virtualMachineTemplate').domain))]",
+                    "vmOUPath": "[if(empty(parameters('virtualMachineTemplate').ouPath), createObject(), createObject('vmOUPath', parameters('virtualMachineTemplate').ouPath))]",
+                    "vmCustomImageId": "[if(empty(parameters('virtualMachineTemplate').customImageId), createObject(), createObject('vmCustomImageId', parameters('virtualMachineTemplate').customImageId))]",
+                    "vmImageOffer": "[if(empty(parameters('virtualMachineTemplate').galleryImageOffer), createObject(), createObject('vmImageOffer', parameters('virtualMachineTemplate').galleryImageOffer))]",
+                    "vmImagePublisher": "[if(empty(parameters('virtualMachineTemplate').galleryImagePublisher), createObject(), createObject('vmImagePublisher', parameters('virtualMachineTemplate').vmImagePublisher))]",
+                    "vmImageSKU": "[if(empty(parameters('virtualMachineTemplate').galleryImageSKU), createObject(), createObject('vmImageSku', parameters('virtualMachineTemplate').galleryImageSKU))]",
+                    "vmDiskEncryptionSetName": "[if(empty(parameters('virtualMachineTemplate').diskEncryptionSetName), createObject(), createObject('vmDiskEncryptionSetName', parameters('virtualMachineTemplate').diskEncryptionSetName))]",
+                    "vmHibernate": "[if(empty(parameters('virtualMachineTemplate').hibernate), createObject(), createObject('vmHibernate', parameters('virtualMachineTemplate').hibernate))]",
+                    "hostPoolVmTemplateTags": "[union(createObject('vmNamePrefix', parameters('virtualMachineTemplate').namePrefix, 'vmImageType', parameters('virtualMachineTemplate').imageType, 'vmOSDiskType', parameters('virtualMachineTemplate').osDiskType, 'vmDiskSizeGB', parameters('virtualMachineTemplate').diskSizeGB, 'vmSize', parameters('virtualMachineTemplate').vmSize.id, 'vmEncryptionAtHost', coalesce(tryGet(parameters('virtualMachineTemplate'), 'encryptionAtHost'), false()), 'vmAcceleratedNetworking', coalesce(tryGet(parameters('virtualMachineTemplate'), 'acceleratedNetworking'), false()), 'vmSecurityType', coalesce(tryGet(parameters('virtualMachineTemplate'), 'securityType'), 'Standard'), 'vmSecureBoot', coalesce(tryGet(parameters('virtualMachineTemplate'), 'secureBoot'), false()), 'vmVirtualTPM', coalesce(tryGet(parameters('virtualMachineTemplate'), 'vTPM'), false())), variables('vmDomain'), variables('vmOUPath'), variables('vmCustomImageId'), variables('vmImageOffer'), variables('vmImagePublisher'), variables('vmImageSKU'), variables('vmDiskEncryptionSetName'), variables('vmHibernate'))]"
                   },
                   "resources": [
                     {
