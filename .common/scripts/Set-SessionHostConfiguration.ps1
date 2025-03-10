@@ -319,6 +319,10 @@ $RegSettings = New-Object System.Collections.ArrayList
 If ($DisableUpdates -eq 'true') {
     # Disable Automatic Updates: https://learn.microsoft.com/azure/virtual-desktop/set-up-customize-master-image#disable-automatic-updates
     $RegSettings.Add(@{Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU'; Name = 'NoAutoUpdate'; PropertyType = 'DWORD'; Value = 1})
+    # Disable Edge Updates : https://learn.microsoft.com/en-us/deployedge/microsoft-edge-update-policies#updatedefault
+    $RegSettings.Add(@{Path = 'HKLM:\SOFTWARE\Policies\Microsoft\EdgeUpdate'; Name = 'UpdateDefault'; PropertyType = 'DWORD'; Value = 0})
+    # Set the OneDrive Update Ring to Deferred: https://learn.microsoft.com/en-us/sharepoint/use-group-policy#set-the-sync-app-update-ring
+    $RegSettings.Add(@{Path = 'HKLM:\SOFTWARE\Policies\Microsoft\OneDrive'; Name = 'GPOSetUpdateRing'; PropertyType = 'DWORD'; Value = 0})
     If ($M365AppsInstalled) {
         # Disable Office Automatic Updates: https://learn.microsoft.com/azure/virtual-desktop/set-up-customize-master-image#disable-office-automatic-updates
         $RegSettings.Add(@{Path = 'HKLM:\SOFTWARE\Policies\Microsoft\office\16.0\common\officeupdate'; Name = 'hideupdatenotifications'; PropertyType = 'DWORD'; Value = 1})
