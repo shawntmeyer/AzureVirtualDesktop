@@ -40,7 +40,6 @@ var vmImageSKU = empty(virtualMachineTemplate.galleryImageSKU)
 var vmDiskEncryptionSetName = empty(virtualMachineTemplate.diskEncryptionSetName)
   ? {}
   : { vmDiskEncryptionSetName: virtualMachineTemplate.diskEncryptionSetName }
-var vmHibernate = empty(virtualMachineTemplate.hibernate) ? {} : { vmHibernate: virtualMachineTemplate.hibernate }
 
 var hostPoolVmTemplateTags = union(
   {
@@ -51,6 +50,7 @@ var hostPoolVmTemplateTags = union(
     vmSize: virtualMachineTemplate.vmSize.id
     vmEncryptionAtHost: virtualMachineTemplate.?encryptionAtHost ?? false
     vmAcceleratedNetworking: virtualMachineTemplate.?acceleratedNetworking ?? false
+    vmHibernate: virtualMachineTemplate.?hibernate ?? false
     vmSecurityType: virtualMachineTemplate.?securityType ?? 'Standard'
     vmSecureBoot: virtualMachineTemplate.?secureBoot ?? false
     vmVirtualTPM: virtualMachineTemplate.?vTPM ?? false
@@ -62,8 +62,7 @@ var hostPoolVmTemplateTags = union(
   vmImageOffer,
   vmImagePublisher,
   vmImageSKU,
-  vmDiskEncryptionSetName,
-  vmHibernate
+  vmDiskEncryptionSetName
 )
 
 resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' = {
