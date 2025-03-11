@@ -198,21 +198,21 @@
 										"extension": "Microsoft_AAD_IAM",
 										"parameters": {
 											"queries": 4,
-											"bladeSubtitle": "Pick the Service Principal",
+											"bladeSubtitle": "Azure/Windows Virtual Desktop Enterprise Application",
 											"additionalQueriesOnSearch": 0,
 											"advancedQueryOptions": {},
 											"selectionMaximum": 1,
 											"selectionMinimum": 1,
 											"bladeTitle": "Select the Enterprise Application",
 											"informationHeader": {
-												"informationText": "Select the 'Azure Virtual Desktop' Enterprise Application."
+												"informationText": "Select the 'Azure/Windows Virtual Desktop' Enterprise Application."
 											},
-											"searchBoxLabel": "Search for the 'Azure Virtual Desktop' Enterprise Application",
-											"searchBoxPlaceHolderText": "Enter 'Azure Virtual Desktop'",
+											"searchBoxLabel": "Copy '9cdead84-a844-4324-93f2-b2e6bb768d07' into the search box",
+											"searchBoxPlaceHolderText": "Enter '9cdead84-a844-4324-93f2-b2e6bb768d07'",
 											"searchGridNoRowsMessage": "No Enterprise Applications found",
 											"selectButtonText": "Select Enterprise Application",
 											"selectedGridLabel": "Selected Enterprise Application",
-											"selectedGridNoRowsMessage": "You must select the 'Azure Virtual Desktop' Enterprise Application"
+											"selectedGridNoRowsMessage": "You must select the 'Azure/Windows Virtual Desktop' Enterprise Application"
 										}
 									},
 									"transforms": {
