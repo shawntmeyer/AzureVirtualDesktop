@@ -453,35 +453,34 @@ try {
                     $NewPassword = ConvertTo-SecureString -String $Key -AsPlainText -Force
                     Set-ADAccountPassword -Credential $DomainCredential -Identity $DistinguishedName -Reset -NewPassword $NewPassword | Out-Null
                 }
-
-            }
-            if ($ShardAzureFilesStorage -eq 'true') {
-                foreach ($Share in $Shares) {
-                    $FileShare = $FileServer + '\' + $Share
-                    $UserGroup = $null
-                    [array]$UserGroup += $UserGroups[$i]
-                    Write-Log -message "Processing File Share: $FileShare with UserGroup = $($UserGroups[$i])"
-                    if ($AdminGroups.Count -gt 0) {
-                        Write-Log -message "Admin Groups provided, executing Update-ACL with Admin Groups"
-                        Update-ACL -AdminGroups $AdminGroups -Credential $StorageKeyCredential -FileShare $FileShare -UserGroups $UserGroup
-                    }
-                    Else {
-                        Write-Log -message "Admin Groups not provided, executing Update-ACL without Admin Groups"
-                        Update-ACL -Credential $StorageKeyCredential -FileShare $FileShare -UserGroups $UserGroup
+                if ($ShardAzureFilesStorage -eq 'true') {
+                    foreach ($Share in $Shares) {
+                        $FileShare = $FileServer + '\' + $Share
+                        $UserGroup = $null
+                        [array]$UserGroup += $UserGroups[$i]
+                        Write-Log -message "Processing File Share: $FileShare with UserGroup = $($UserGroups[$i])"
+                        if ($AdminGroups.Count -gt 0) {
+                            Write-Log -message "Admin Groups provided, executing Update-ACL with Admin Groups"
+                            Update-ACL -AdminGroups $AdminGroups -Credential $StorageKeyCredential -FileShare $FileShare -UserGroups $UserGroup
+                        }
+                        Else {
+                            Write-Log -message "Admin Groups not provided, executing Update-ACL without Admin Groups"
+                            Update-ACL -Credential $StorageKeyCredential -FileShare $FileShare -UserGroups $UserGroup
+                        }
                     }
                 }
-            }
-            Else {
-                foreach ($Share in $Shares) {
-                    $FileShare = $FileServer + '\' + $Share
-                    Write-Log -message "Processing File Share: $FileShare"
-                    if ($AdminGroups.Count -gt 0) {
-                        Write-Log -message "Admin Groups provided, executing Update-ACL with Admin Groups"
-                        Update-ACL -AdminGroups $AdminGroups -Credential $StorageKeyCredential -FileShare $FileShare -UserGroups $UserGroups
-                    }
-                    Else {
-                        Write-Log -message "Admin Groups not provided, executing Update-ACL without Admin Groups"
-                        Update-ACL -Credential $StorageKeyCredential -FileShare $FileShare -UserGroups $UserGroups
+                Else {
+                    foreach ($Share in $Shares) {
+                        $FileShare = $FileServer + '\' + $Share
+                        Write-Log -message "Processing File Share: $FileShare"
+                        if ($AdminGroups.Count -gt 0) {
+                            Write-Log -message "Admin Groups provided, executing Update-ACL with Admin Groups"
+                            Update-ACL -AdminGroups $AdminGroups -Credential $StorageKeyCredential -FileShare $FileShare -UserGroups $UserGroups
+                        }
+                        Else {
+                            Write-Log -message "Admin Groups not provided, executing Update-ACL without Admin Groups"
+                            Update-ACL -Credential $StorageKeyCredential -FileShare $FileShare -UserGroups $UserGroups
+                        }
                     }
                 }
             }
