@@ -433,13 +433,13 @@ If (Test-Path -Path "$env:SystemRoot\System32\Lgpo.exe") {
             Set-RegistryValue -Key 'HKCU:\DefaultUser\Software\Policies\Microsoft\Office\16.0\Outlook\Cached Mode' -Name CalendarSyncWindowSettingMonths -Type DWord -Value $CalendarSyncMonths
         }
         Write-Log -Message "Unloading default user hive."
-        $null = cmd /c REG UNLOAD "HKLM\Default" '2>&1'
+        $null = cmd /c REG UNLOAD "HKLM\DefaultUser" '2>&1'
         If ($LastExitCode -ne 0) {
             # sometimes the registry doesn't unload properly so we have to perform powershell garbage collection first.
             [GC]::Collect()
             [GC]::WaitForPendingFinalizers()
             Start-Sleep -Seconds 5
-            $null = cmd /c REG UNLOAD "HKLM\Default" '2>&1'
+            $null = cmd /c REG UNLOAD "HKLM\DefaultUser" '2>&1'
             If ($LastExitCode -eq 0) {
                 Write-Log -Message "Hive unloaded successfully."
             }
