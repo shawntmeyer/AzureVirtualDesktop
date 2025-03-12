@@ -53,6 +53,8 @@ Start-Transcript -Path "$env:SystemRoot\Logs\Install-$SoftwareName.log" -Force
 Write-OutputWithTimeStamp "Starting Script to install '$SoftwareName' with the following parameters:"
 Write-Output ( $PSBoundParameters | Format-Table -AutoSize )
 
+$environment = $Environment.ToLower()
+
 If ($AppsToInstall -ne '' -and $null -ne $AppsToInstall) {
     [array]$AppsToInstall = $AppsToInstall.Replace('\"', '"') | ConvertFrom-Json
 }
@@ -90,7 +92,7 @@ $webClient.DownloadFile("$Uri", "$DestFile")
 Start-Sleep -Seconds 5
 If (!(Test-Path -Path $DestFile)) { Write-Error "Failed to download $SourceFileName"; Exit 1 }
 Write-OutputWithTimeStamp "Finished downloading"
-If ($Environment -ne 'USSec' -and $Environment -ne 'USNat') {
+If ($environment -ne 'ussec' -and $environment -ne 'usnat') {
     Write-OutputWithTimeStamp "Extracting the Office 365 Deployment Toolkit."
     Start-Process -FilePath $destFile -ArgumentList "/extract:`"$TempDir\ODT`" /quiet /passive /norestart" -Wait -PassThru | Out-Null
     $Setup = (Get-ChildItem -Path "$TempDir\ODT" -Filter '*setup*.exe').FullName
@@ -134,10 +136,10 @@ if ($AppsToInstall -notcontains 'Word') {
 $Content += '<Configuration>'
 
 Switch ($Environment) {
-    "USSec" {
+    "ussec" {
         $Content += '  <Add AllowCdnFallback="TRUE" SourcePath="https://officexo.azurefd.microsoft.scloud/prsstelecontainer/55336b82-a18d-4dd6-b5f6-9e5095c314a6/" Channel="MonthlyEnterprise" OfficeClientEdition="64">'
     }
-    "USNat" { 
+    "usnat" { 
         $Content += '  <Add AllowCdnFallback="TRUE" SourcePath="https://officexo.azurefd.eaglex.ic.gov/prsstelecontainer/55336b82-a18d-4dd6-b5f6-9e5095c314a6/" Channel="MonthlyEnterprise" OfficeClientEdition="64">'
     }
     Default {
