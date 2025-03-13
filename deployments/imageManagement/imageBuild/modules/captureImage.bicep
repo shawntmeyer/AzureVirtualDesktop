@@ -17,9 +17,6 @@ param tags object
 param timeStamp string
 param virtualMachineResourceId string
 
-
-
-
 // Image Definitions with Security Type = 'TrustedLaunchSupported', 'ConfidentialVMSupported', or TrustedLaunchConfidentialVMSupported' do not
 // support capture directly from a VM. Must create a legacy managed image first.
 
@@ -49,7 +46,8 @@ module imageVersion '../../../sharedModules/resources/compute/gallery/image/vers
     replicaCount: imageVersionDefaultReplicaCount
     replicationMode: 'Full'
     storageAccountType: imageVersionDefaultStorageAccountType
-    sourceId: contains(imageDefinitionSecurityType, 'Supported') ? managedImage.outputs.resourceId : virtualMachineResourceId
+    sourceId: contains(imageDefinitionSecurityType, 'Supported') ? managedImage.outputs.resourceId : ''
+    virtualMachineId: !contains(imageDefinitionSecurityType, 'Supported') ? virtualMachineResourceId : ''
     targetRegions: imageVersionReplicationRegions
     tags: tags[?'Microsoft.Compute/galleries/images/versions'] ?? {}
   }

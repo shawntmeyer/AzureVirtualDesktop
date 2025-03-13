@@ -40,13 +40,13 @@ param customBuildResourceGroupName string = ''
 param customSourceImageResourceId string = ''
 
 @description('The Marketplace Image publisher')
-param publisher string
+param mpPublisher string
 
 @description('The Marketplace Image offer')
-param offer string
+param mpOffer string
 
 @description('The Marketplace Image sku')
-param sku string
+param mpSku string
 
 @description('Optional. Determines if "EncryptionAtHost" is enabled on the VMs.')
 param encryptionAtHost bool = true
@@ -289,7 +289,10 @@ var resourceAbbreviations = loadJsonContent('../../../.common/data/resourceAbbre
 
 var computeLocation = vnet.location
 var depPrefix = !empty(deploymentPrefix) ? '${deploymentPrefix}-' : ''
-var logStorageAccountName = take(replace(toLower('sa${depPrefix}log${uniqueString(subscription().id,imageBuildResourceGroupName)}'), '-', ''),24)
+var logStorageAccountName = take(
+  replace(toLower('sa${depPrefix}log${uniqueString(subscription().id,imageBuildResourceGroupName)}'), '-', ''),
+  24
+)
 
 var imageBuildResourceGroupName = empty(imageBuildResourceGroupId)
   ? (empty(customBuildResourceGroupName)
@@ -307,42 +310,32 @@ var logContainerUri = collectCustomizationLogs
 
 var imageDefinitionFeatures = empty(imageDefinitionResourceId)
   ? [
-      {
-        name: 'IsHibernateSupported'
-        value: imageDefinitionIsHibernateSupported
-      }
-      {
-        name: 'IsAcceleratedNetworkSupported'
-        value: imageDefinitionIsAcceleratedNetworkSupported
-      }
-      {
-        name: 'DiskControllerTypes'
-        value: imageDefinitionIsHigherStoragePerformanceSupported
-      }
-      {
-        name: 'SecurityType'
-        value: imageDefinitionSecurityType
-      }
+      union(
+        imageDefinitionIsHibernateSupported ? { name: 'IsHibernateSupported', value: 'True' } : {},
+        imageDefinitionIsAcceleratedNetworkSupported ? { name: 'IsAcceleratedNetworkSupported', value: 'True' } : {},
+        imageDefinitionIsHigherStoragePerformanceSupported ? { name: 'DiskControllerTypes', value: 'SCSI, NVMe' } : {},
+        imageDefinitionSecurityType != 'Standard' ? { name: 'SecurityType', value: imageDefinitionSecurityType } : {}
+      )
     ]
   : existingImageDefinition.properties.features
 
-var galleryImageDefinitionHyperVGeneration = endsWith(sku, 'g2') || startsWith(sku, 'win11') ? 'V2' : 'V1'
+var galleryImageDefinitionHyperVGeneration = endsWith(mpSku, 'g2') || startsWith(mpSku, 'win11') ? 'V2' : 'V1'
 var galleryImageDefinitionName = empty(imageDefinitionResourceId)
   ? (empty(customImageDefinitionName)
       ? '${replace('${resourceAbbreviations.imageDefinitions}-${replace(galleryImageDefinitionPublisher, '-', '')}-${replace(galleryImageDefinitionOffer, '-', '')}-${replace(galleryImageDefinitionSku, '-', '')}', ' ', '')}'
       : customImageDefinitionName)
   : last(split(imageDefinitionResourceId, '/'))
-var galleryImageDefinitionOffer = !empty(imageDefinitionOffer) ? replace(imageDefinitionOffer, ' ', '') : offer
+var galleryImageDefinitionOffer = !empty(imageDefinitionOffer) ? replace(imageDefinitionOffer, ' ', '') : mpOffer
 var galleryImageDefinitionPublisher = !empty(imageDefinitionPublisher)
   ? replace(imageDefinitionPublisher, ' ', '')
-  : publisher
+  : mpPublisher
 
 var galleryImageDefinitionSecurityType = empty(imageDefinitionResourceId)
   ? imageDefinitionSecurityType
-  : !empty(filter(imageDefinitionFeatures, feature => feature.name == 'SecurityType'))
-      ? filter(imageDefinitionFeatures, feature => feature.name == 'SecurityType')[0].value
+  : !empty(filter(existingImageDefinition.properties.features, feature => feature.name == 'SecurityType'))
+      ? filter(existingImageDefinition.properties.features, feature => feature.name == 'SecurityType')[0].value
       : 'Standard'
-var galleryImageDefinitionSku = !empty(imageDefinitionSku) ? replace(imageDefinitionSku, ' ', '') : sku
+var galleryImageDefinitionSku = !empty(imageDefinitionSku) ? replace(imageDefinitionSku, ' ', '') : mpSku
 // build an image version from the ISO 8601 timestamp
 var autoImageVersionName = '${substring(timeStamp, 2, 2)}.${substring(timeStamp, 4, 4)}.${substring(timeStamp, 9, 4)}'
 var imageVersionName = imageMajorVersion != -1 && imageMajorVersion != -1 && imagePatch != -1
@@ -384,7 +377,7 @@ var imageVersionEndOfLifeDate = imageVersionEOLinDays > 0 ? dateTimeAdd(timeStam
 var imageVmName = take('${depPrefix}vmimg-${uniqueString(timeStamp)}', 15)
 var orchestrationVmName = take('${depPrefix}vmorc-${uniqueString(timeStamp)}', 15)
 
-var securityType = galleryImageDefinitionSecurityType == 'TrustedLaunch'
+var vmSecurityType = galleryImageDefinitionSecurityType == 'TrustedLaunch'
   ? 'TrustedLaunch'
   : galleryImageDefinitionSecurityType == 'ConfidentialVM' ? 'ConfidentialVM' : 'Standard'
 
@@ -437,13 +430,10 @@ module imageDefinition '../../sharedModules/resources/compute/gallery/image/main
   scope: resourceGroup(split(computeGalleryResourceId, '/')[4])
   params: {
     location: location
+    features: imageDefinitionFeatures
     galleryName: last(split(computeGalleryResourceId, '/'))
     name: galleryImageDefinitionName
     hyperVGeneration: galleryImageDefinitionHyperVGeneration
-    isHibernateSupported: imageDefinitionIsHibernateSupported
-    isAcceleratedNetworkSupported: imageDefinitionIsAcceleratedNetworkSupported
-    isHigherStoragePerformanceSupported: imageDefinitionIsHigherStoragePerformanceSupported
-    securityType: imageDefinitionSecurityType
     osType: 'Windows'
     osState: 'Generalized'
     publisher: galleryImageDefinitionPublisher
@@ -465,27 +455,10 @@ module remoteImageDefinition '../../sharedModules/resources/compute/gallery/imag
     galleryName: last(split(remoteComputeGalleryResourceId, '/'))
     location: remoteLocation
     name: empty(imageDefinitionResourceId) ? galleryImageDefinitionName : last(split(imageDefinitionResourceId, '/'))
+    features: imageDefinitionFeatures
     hyperVGeneration: empty(imageDefinitionResourceId)
       ? galleryImageDefinitionHyperVGeneration
       : any(existingImageDefinition.properties.hyperVGeneration)
-    isHibernateSupported: !empty(filter(imageDefinitionFeatures, feature => feature.name == 'IsHibernateSupported'))
-      ? bool(filter(imageDefinitionFeatures, feature => feature.name == 'IsHibernateSupported')[0].value)
-      : false
-    isAcceleratedNetworkSupported: !empty(filter(
-        imageDefinitionFeatures,
-        feature => feature.name == 'IsAcceleratedNetworkSupported'
-      ))
-      ? bool(filter(imageDefinitionFeatures, feature => feature.name == 'IsAcceleratedNetworkSupported')[0].value)
-      : false
-    isHigherStoragePerformanceSupported: !empty(filter(
-        imageDefinitionFeatures,
-        feature => feature.name == 'DiskControllerTypes'
-      ))
-      ? bool(filter(imageDefinitionFeatures, feature => feature.name == 'DiskControllerTypes')[0].value)
-      : false
-    securityType: !empty(filter(imageDefinitionFeatures, feature => feature.name == 'SecurityType'))
-      ? any(filter(imageDefinitionFeatures, feature => feature.name == 'SecurityType')[0].value)
-      : 'Standard'
     osType: 'Windows'
     osState: 'Generalized'
     publisher: empty(imageDefinitionResourceId)
@@ -681,6 +654,9 @@ module imageVm '../../sharedModules/resources/compute/virtual-machine/main.bicep
   name: '${depPrefix}Image-VM-${timeStamp}'
   scope: resourceGroup(imageBuildResourceGroupName)
   params: {
+    hibernationEnabled: !empty(filter(imageDefinitionFeatures, feature => feature.name == 'IsHibernateSupported'))
+    ? bool(filter(imageDefinitionFeatures, feature => feature.name == 'IsHibernateSupported')[0].value)
+    : false
     location: computeLocation
     name: imageVmName
     adminPassword: adminPw
@@ -689,9 +665,9 @@ module imageVm '../../sharedModules/resources/compute/virtual-machine/main.bicep
     encryptionAtHost: encryptionAtHost
     imageReference: empty(customSourceImageResourceId)
       ? {
-          publisher: publisher
-          offer: offer
-          sku: sku
+          publisher: mpPublisher
+          offer: mpOffer
+          sku: mpSku
           version: 'latest'
         }
       : {
@@ -699,7 +675,9 @@ module imageVm '../../sharedModules/resources/compute/virtual-machine/main.bicep
         }
     nicConfigurations: [
       {
-        enableAcceleratedNetworking: imageDefinitionIsAcceleratedNetworkSupported
+        enableAcceleratedNetworking: !empty(filter(imageDefinitionFeatures, feature => feature.name == 'IsAcceleratedNetworkSupported'))
+        ? bool(filter(imageDefinitionFeatures, feature => feature.name == 'IsAcceleratedNetworkSupported')[0].value)
+        : false
         deleteOption: 'Delete'
         ipConfigurations: [
           {
@@ -720,9 +698,9 @@ module imageVm '../../sharedModules/resources/compute/virtual-machine/main.bicep
       }
     }
     osType: 'Windows'
-    securityType: securityType
-    secureBootEnabled: securityType == 'TrustedLaunch' ? true : false
-    vTpmEnabled: securityType == 'TrustedLaunch' ? true : false
+    securityType: vmSecurityType
+    secureBootEnabled: vmSecurityType == 'TrustedLaunch' ? true : false
+    vTpmEnabled: vmSecurityType == 'TrustedLaunch' ? true : false
     tags: tags[?'Microsoft.Compute/virtualMachines'] ?? {}
     userAssignedIdentities: empty(userAssignedIdentityResourceId)
       ? {

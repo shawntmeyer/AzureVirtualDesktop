@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "5248072502272918202"
+      "templateHash": "3148828362676547612"
     },
     "name": "Zero Trust Architecture Custom Windows Image Builder",
     "description": "This solution allows you to create a custom image much like Azure VM Image Builder, but utilizes zero trust architecture and does not require that service.",
@@ -81,19 +81,19 @@
         "description": "Optional. The resource Id of the source image to use for the image build. If not provided, the latest image from the specified publisher, offer, and sku will be used."
       }
     },
-    "publisher": {
+    "mpPublisher": {
       "type": "string",
       "metadata": {
         "description": "The Marketplace Image publisher"
       }
     },
-    "offer": {
+    "mpOffer": {
       "type": "string",
       "metadata": {
         "description": "The Marketplace Image offer"
       }
     },
-    "sku": {
+    "mpSku": {
       "type": "string",
       "metadata": {
         "description": "The Marketplace Image sku"
@@ -894,11 +894,11 @@
     "adminPw": "[format('1qaz@WSX{0}', uniqueString(subscription().id, variables('imageBuildResourceGroupName')))]",
     "adminUserName": "vmadmin",
     "logContainerName": "image-customization-logs",
-    "galleryImageDefinitionHyperVGeneration": "[if(or(endsWith(parameters('sku'), 'g2'), startsWith(parameters('sku'), 'win11')), 'V2', 'V1')]",
+    "galleryImageDefinitionHyperVGeneration": "[if(or(endsWith(parameters('mpSku'), 'g2'), startsWith(parameters('mpSku'), 'win11')), 'V2', 'V1')]",
     "galleryImageDefinitionName": "[if(empty(parameters('imageDefinitionResourceId')), if(empty(parameters('customImageDefinitionName')), format('{0}', replace(format('{0}-{1}-{2}-{3}', variables('resourceAbbreviations').imageDefinitions, replace(variables('galleryImageDefinitionPublisher'), '-', ''), replace(variables('galleryImageDefinitionOffer'), '-', ''), replace(variables('galleryImageDefinitionSku'), '-', '')), ' ', '')), parameters('customImageDefinitionName')), last(split(parameters('imageDefinitionResourceId'), '/')))]",
-    "galleryImageDefinitionOffer": "[if(not(empty(parameters('imageDefinitionOffer'))), replace(parameters('imageDefinitionOffer'), ' ', ''), parameters('offer'))]",
-    "galleryImageDefinitionPublisher": "[if(not(empty(parameters('imageDefinitionPublisher'))), replace(parameters('imageDefinitionPublisher'), ' ', ''), parameters('publisher'))]",
-    "galleryImageDefinitionSku": "[if(not(empty(parameters('imageDefinitionSku'))), replace(parameters('imageDefinitionSku'), ' ', ''), parameters('sku'))]",
+    "galleryImageDefinitionOffer": "[if(not(empty(parameters('imageDefinitionOffer'))), replace(parameters('imageDefinitionOffer'), ' ', ''), parameters('mpOffer'))]",
+    "galleryImageDefinitionPublisher": "[if(not(empty(parameters('imageDefinitionPublisher'))), replace(parameters('imageDefinitionPublisher'), ' ', ''), parameters('mpPublisher'))]",
+    "galleryImageDefinitionSku": "[if(not(empty(parameters('imageDefinitionSku'))), replace(parameters('imageDefinitionSku'), ' ', ''), parameters('mpSku'))]",
     "autoImageVersionName": "[format('{0}.{1}.{2}', substring(parameters('timeStamp'), 2, 2), substring(parameters('timeStamp'), 4, 4), substring(parameters('timeStamp'), 9, 4))]",
     "imageVersionName": "[if(and(and(not(equals(parameters('imageMajorVersion'), -1)), not(equals(parameters('imageMajorVersion'), -1))), not(equals(parameters('imagePatch'), -1))), format('{0}.{1}.{2}', parameters('imageMajorVersion'), parameters('imageMinorVersion'), parameters('imagePatch')), variables('autoImageVersionName'))]",
     "imageVersionEndOfLifeDate": "[if(greater(parameters('imageVersionEOLinDays'), 0), dateTimeAdd(parameters('timeStamp'), format('P{0}D', parameters('imageVersionEOLinDays'))), '')]",
@@ -1007,6 +1007,7 @@
           "location": {
             "value": "[parameters('location')]"
           },
+          "features": "[if(empty(parameters('imageDefinitionResourceId')), createObject('value', createArray(union(if(parameters('imageDefinitionIsHibernateSupported'), createObject('name', 'IsHibernateSupported', 'value', 'True'), createObject()), if(parameters('imageDefinitionIsAcceleratedNetworkSupported'), createObject('name', 'IsAcceleratedNetworkSupported', 'value', 'True'), createObject()), if(parameters('imageDefinitionIsHigherStoragePerformanceSupported'), createObject('name', 'DiskControllerTypes', 'value', 'SCSI, NVMe'), createObject()), if(not(equals(parameters('imageDefinitionSecurityType'), 'Standard')), createObject('name', 'SecurityType', 'value', parameters('imageDefinitionSecurityType')), createObject())))), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features))]",
           "galleryName": {
             "value": "[last(split(parameters('computeGalleryResourceId'), '/'))]"
           },
@@ -1015,18 +1016,6 @@
           },
           "hyperVGeneration": {
             "value": "[variables('galleryImageDefinitionHyperVGeneration')]"
-          },
-          "isHibernateSupported": {
-            "value": "[parameters('imageDefinitionIsHibernateSupported')]"
-          },
-          "isAcceleratedNetworkSupported": {
-            "value": "[parameters('imageDefinitionIsAcceleratedNetworkSupported')]"
-          },
-          "isHigherStoragePerformanceSupported": {
-            "value": "[parameters('imageDefinitionIsHigherStoragePerformanceSupported')]"
-          },
-          "securityType": {
-            "value": "[parameters('imageDefinitionSecurityType')]"
           },
           "osType": {
             "value": "Windows"
@@ -1054,7 +1043,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "13078416586510542741"
+              "templateHash": "14676162968994237400"
             },
             "name": "Compute Galleries Image Definitions",
             "description": "This module deploys an Azure Compute Gallery Image Definition.",
@@ -1182,42 +1171,6 @@
                 "description": "Optional. The hypervisor generation of the Virtual Machine."
               }
             },
-            "securityType": {
-              "type": "string",
-              "defaultValue": "Standard",
-              "allowedValues": [
-                "Standard",
-                "TrustedLaunch",
-                "TrustedLaunchSupported",
-                "ConfidentialVM",
-                "ConfidentialVMSupported",
-                "TrustedLaunchAndConfidentialVMSupported"
-              ],
-              "metadata": {
-                "description": "Optional. The security type of the image. Requires a hyperVGeneration V2."
-              }
-            },
-            "isHibernateSupported": {
-              "type": "bool",
-              "defaultValue": false,
-              "metadata": {
-                "description": "Optional. The image will support hibernation."
-              }
-            },
-            "isAcceleratedNetworkSupported": {
-              "type": "bool",
-              "defaultValue": false,
-              "metadata": {
-                "description": "Optional. The image supports accelerated networking.</p>Accelerated networking enables single root I/O virtualization (SR-IOV) to a VM, greatly improving its networking performance.</p>This high-performance path bypasses the host from the data path, which reduces latency, jitter, and CPU utilization for the most demanding network workloads on supported VM types."
-              }
-            },
-            "isHigherStoragePerformanceSupported": {
-              "type": "bool",
-              "defaultValue": false,
-              "metadata": {
-                "description": "Optional. The image supports Higher Storage Performance with NVMe."
-              }
-            },
             "description": {
               "type": "string",
               "defaultValue": "",
@@ -1230,6 +1183,13 @@
               "defaultValue": "",
               "metadata": {
                 "description": "Optional. The Eula agreement for the gallery Image Definition. Has to be a valid URL."
+              }
+            },
+            "features": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Optional. The features of the gallery Image Definition.\nExample:\n[\n  {\n      name: 'DiskControllerTypes'\n      value: 'SCSI, NVMe'\n  }\n  {\n    name: 'SecurityType'\n    value: 'TrustedLaunch'\n  }\n  {\n    name: 'IsAcceleratedNetworkSupported'\n    value: 'True'\n  }\n  {\n    name: 'IsHibernateSupported'\n    value: 'True'\n  }\n]\nSecurityType can be: 'TrustedLaunch', 'TrustedLaunchSupported', 'ConfidentialVM', 'ConfidentialVMSupported', 'TrustedLaunchAndConfidentialVMSupported'\n"
               }
             },
             "privacyStatementUri": {
@@ -1289,13 +1249,6 @@
               }
             }
           },
-          "variables": {
-            "hibernateSupported": "[if(parameters('isHibernateSupported'), 'true', 'false')]",
-            "acceleratedNetworkSupported": "[if(parameters('isAcceleratedNetworkSupported'), 'true', 'false')]",
-            "diskControllerTypes": "[if(parameters('isHigherStoragePerformanceSupported'), createArray(createObject('name', 'DiskControllerTypes', 'value', 'SCSI, NVMe')), createArray())]",
-            "gaFeatures": "[if(not(equals(parameters('securityType'), 'Standard')), createArray(createObject('name', 'SecurityType', 'value', parameters('securityType')), createObject('name', 'IsAcceleratedNetworkSupported', 'value', variables('acceleratedNetworkSupported')), createObject('name', 'IsHibernateSupported', 'value', variables('hibernateSupported'))), createArray(createObject('name', 'IsAcceleratedNetworkSupported', 'value', variables('acceleratedNetworkSupported')), createObject('name', 'IsHibernateSupported', 'value', variables('hibernateSupported'))))]",
-            "features": "[if(not(empty(variables('diskControllerTypes'))), union(variables('gaFeatures'), variables('diskControllerTypes')), variables('gaFeatures'))]"
-          },
           "resources": [
             {
               "type": "Microsoft.Compute/galleries/images",
@@ -1322,16 +1275,12 @@
                   }
                 },
                 "hyperVGeneration": "[parameters('hyperVGeneration')]",
-                "features": "[variables('features')]",
+                "features": "[parameters('features')]",
                 "description": "[parameters('description')]",
                 "eula": "[if(not(empty(parameters('eula'))), parameters('eula'), null())]",
                 "privacyStatementUri": "[parameters('privacyStatementUri')]",
                 "releaseNoteUri": "[parameters('releaseNoteUri')]",
-                "purchasePlan": {
-                  "product": "[if(not(empty(parameters('productName'))), parameters('productName'), null())]",
-                  "name": "[if(not(empty(parameters('planName'))), parameters('planName'), null())]",
-                  "publisher": "[if(not(empty(parameters('planPublisherName'))), parameters('planPublisherName'), null())]"
-                },
+                "purchasePlan": "[if(or(or(not(empty(parameters('productName'))), not(empty(parameters('planName')))), not(empty(parameters('planPublisherName')))), createObject('product', if(not(empty(parameters('productName'))), parameters('productName'), null()), 'name', if(not(empty(parameters('planName'))), parameters('planName'), null()), 'publisher', if(not(empty(parameters('planPublisherName'))), parameters('planPublisherName'), null())), null())]",
                 "endOfLifeDate": "[parameters('endOfLife')]",
                 "disallowed": {
                   "diskTypes": "[parameters('excludedDiskTypes')]"
@@ -1391,11 +1340,8 @@
           },
           "location": "[if(not(empty(parameters('remoteComputeGalleryResourceId'))), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('remoteComputeGalleryResourceId'), '/')[2], split(parameters('remoteComputeGalleryResourceId'), '/')[4]), 'Microsoft.Compute/galleries', last(split(parameters('remoteComputeGalleryResourceId'), '/'))), '2024-03-03', 'full').location), createObject('value', ''))]",
           "name": "[if(empty(parameters('imageDefinitionResourceId')), createObject('value', variables('galleryImageDefinitionName')), createObject('value', last(split(parameters('imageDefinitionResourceId'), '/'))))]",
+          "features": "[if(empty(parameters('imageDefinitionResourceId')), createObject('value', createArray(union(if(parameters('imageDefinitionIsHibernateSupported'), createObject('name', 'IsHibernateSupported', 'value', 'True'), createObject()), if(parameters('imageDefinitionIsAcceleratedNetworkSupported'), createObject('name', 'IsAcceleratedNetworkSupported', 'value', 'True'), createObject()), if(parameters('imageDefinitionIsHigherStoragePerformanceSupported'), createObject('name', 'DiskControllerTypes', 'value', 'SCSI, NVMe'), createObject()), if(not(equals(parameters('imageDefinitionSecurityType'), 'Standard')), createObject('name', 'SecurityType', 'value', parameters('imageDefinitionSecurityType')), createObject())))), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features))]",
           "hyperVGeneration": "[if(empty(parameters('imageDefinitionResourceId')), createObject('value', variables('galleryImageDefinitionHyperVGeneration')), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').hyperVGeneration))]",
-          "isHibernateSupported": "[if(not(empty(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(createObject('name', 'IsHibernateSupported', 'value', parameters('imageDefinitionIsHibernateSupported')), createObject('name', 'IsAcceleratedNetworkSupported', 'value', parameters('imageDefinitionIsAcceleratedNetworkSupported')), createObject('name', 'DiskControllerTypes', 'value', parameters('imageDefinitionIsHigherStoragePerformanceSupported')), createObject('name', 'SecurityType', 'value', parameters('imageDefinitionSecurityType'))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'IsHibernateSupported'))))), createObject('value', bool(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(createObject('name', 'IsHibernateSupported', 'value', parameters('imageDefinitionIsHibernateSupported')), createObject('name', 'IsAcceleratedNetworkSupported', 'value', parameters('imageDefinitionIsAcceleratedNetworkSupported')), createObject('name', 'DiskControllerTypes', 'value', parameters('imageDefinitionIsHigherStoragePerformanceSupported')), createObject('name', 'SecurityType', 'value', parameters('imageDefinitionSecurityType'))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'IsHibernateSupported')))[0].value)), createObject('value', false()))]",
-          "isAcceleratedNetworkSupported": "[if(not(empty(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(createObject('name', 'IsHibernateSupported', 'value', parameters('imageDefinitionIsHibernateSupported')), createObject('name', 'IsAcceleratedNetworkSupported', 'value', parameters('imageDefinitionIsAcceleratedNetworkSupported')), createObject('name', 'DiskControllerTypes', 'value', parameters('imageDefinitionIsHigherStoragePerformanceSupported')), createObject('name', 'SecurityType', 'value', parameters('imageDefinitionSecurityType'))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'IsAcceleratedNetworkSupported'))))), createObject('value', bool(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(createObject('name', 'IsHibernateSupported', 'value', parameters('imageDefinitionIsHibernateSupported')), createObject('name', 'IsAcceleratedNetworkSupported', 'value', parameters('imageDefinitionIsAcceleratedNetworkSupported')), createObject('name', 'DiskControllerTypes', 'value', parameters('imageDefinitionIsHigherStoragePerformanceSupported')), createObject('name', 'SecurityType', 'value', parameters('imageDefinitionSecurityType'))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'IsAcceleratedNetworkSupported')))[0].value)), createObject('value', false()))]",
-          "isHigherStoragePerformanceSupported": "[if(not(empty(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(createObject('name', 'IsHibernateSupported', 'value', parameters('imageDefinitionIsHibernateSupported')), createObject('name', 'IsAcceleratedNetworkSupported', 'value', parameters('imageDefinitionIsAcceleratedNetworkSupported')), createObject('name', 'DiskControllerTypes', 'value', parameters('imageDefinitionIsHigherStoragePerformanceSupported')), createObject('name', 'SecurityType', 'value', parameters('imageDefinitionSecurityType'))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'DiskControllerTypes'))))), createObject('value', bool(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(createObject('name', 'IsHibernateSupported', 'value', parameters('imageDefinitionIsHibernateSupported')), createObject('name', 'IsAcceleratedNetworkSupported', 'value', parameters('imageDefinitionIsAcceleratedNetworkSupported')), createObject('name', 'DiskControllerTypes', 'value', parameters('imageDefinitionIsHigherStoragePerformanceSupported')), createObject('name', 'SecurityType', 'value', parameters('imageDefinitionSecurityType'))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'DiskControllerTypes')))[0].value)), createObject('value', false()))]",
-          "securityType": "[if(not(empty(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(createObject('name', 'IsHibernateSupported', 'value', parameters('imageDefinitionIsHibernateSupported')), createObject('name', 'IsAcceleratedNetworkSupported', 'value', parameters('imageDefinitionIsAcceleratedNetworkSupported')), createObject('name', 'DiskControllerTypes', 'value', parameters('imageDefinitionIsHigherStoragePerformanceSupported')), createObject('name', 'SecurityType', 'value', parameters('imageDefinitionSecurityType'))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType'))))), createObject('value', filter(if(empty(parameters('imageDefinitionResourceId')), createArray(createObject('name', 'IsHibernateSupported', 'value', parameters('imageDefinitionIsHibernateSupported')), createObject('name', 'IsAcceleratedNetworkSupported', 'value', parameters('imageDefinitionIsAcceleratedNetworkSupported')), createObject('name', 'DiskControllerTypes', 'value', parameters('imageDefinitionIsHigherStoragePerformanceSupported')), createObject('name', 'SecurityType', 'value', parameters('imageDefinitionSecurityType'))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value), createObject('value', 'Standard'))]",
           "osType": {
             "value": "Windows"
           },
@@ -1416,7 +1362,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "13078416586510542741"
+              "templateHash": "14676162968994237400"
             },
             "name": "Compute Galleries Image Definitions",
             "description": "This module deploys an Azure Compute Gallery Image Definition.",
@@ -1544,42 +1490,6 @@
                 "description": "Optional. The hypervisor generation of the Virtual Machine."
               }
             },
-            "securityType": {
-              "type": "string",
-              "defaultValue": "Standard",
-              "allowedValues": [
-                "Standard",
-                "TrustedLaunch",
-                "TrustedLaunchSupported",
-                "ConfidentialVM",
-                "ConfidentialVMSupported",
-                "TrustedLaunchAndConfidentialVMSupported"
-              ],
-              "metadata": {
-                "description": "Optional. The security type of the image. Requires a hyperVGeneration V2."
-              }
-            },
-            "isHibernateSupported": {
-              "type": "bool",
-              "defaultValue": false,
-              "metadata": {
-                "description": "Optional. The image will support hibernation."
-              }
-            },
-            "isAcceleratedNetworkSupported": {
-              "type": "bool",
-              "defaultValue": false,
-              "metadata": {
-                "description": "Optional. The image supports accelerated networking.</p>Accelerated networking enables single root I/O virtualization (SR-IOV) to a VM, greatly improving its networking performance.</p>This high-performance path bypasses the host from the data path, which reduces latency, jitter, and CPU utilization for the most demanding network workloads on supported VM types."
-              }
-            },
-            "isHigherStoragePerformanceSupported": {
-              "type": "bool",
-              "defaultValue": false,
-              "metadata": {
-                "description": "Optional. The image supports Higher Storage Performance with NVMe."
-              }
-            },
             "description": {
               "type": "string",
               "defaultValue": "",
@@ -1592,6 +1502,13 @@
               "defaultValue": "",
               "metadata": {
                 "description": "Optional. The Eula agreement for the gallery Image Definition. Has to be a valid URL."
+              }
+            },
+            "features": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Optional. The features of the gallery Image Definition.\nExample:\n[\n  {\n      name: 'DiskControllerTypes'\n      value: 'SCSI, NVMe'\n  }\n  {\n    name: 'SecurityType'\n    value: 'TrustedLaunch'\n  }\n  {\n    name: 'IsAcceleratedNetworkSupported'\n    value: 'True'\n  }\n  {\n    name: 'IsHibernateSupported'\n    value: 'True'\n  }\n]\nSecurityType can be: 'TrustedLaunch', 'TrustedLaunchSupported', 'ConfidentialVM', 'ConfidentialVMSupported', 'TrustedLaunchAndConfidentialVMSupported'\n"
               }
             },
             "privacyStatementUri": {
@@ -1651,13 +1568,6 @@
               }
             }
           },
-          "variables": {
-            "hibernateSupported": "[if(parameters('isHibernateSupported'), 'true', 'false')]",
-            "acceleratedNetworkSupported": "[if(parameters('isAcceleratedNetworkSupported'), 'true', 'false')]",
-            "diskControllerTypes": "[if(parameters('isHigherStoragePerformanceSupported'), createArray(createObject('name', 'DiskControllerTypes', 'value', 'SCSI, NVMe')), createArray())]",
-            "gaFeatures": "[if(not(equals(parameters('securityType'), 'Standard')), createArray(createObject('name', 'SecurityType', 'value', parameters('securityType')), createObject('name', 'IsAcceleratedNetworkSupported', 'value', variables('acceleratedNetworkSupported')), createObject('name', 'IsHibernateSupported', 'value', variables('hibernateSupported'))), createArray(createObject('name', 'IsAcceleratedNetworkSupported', 'value', variables('acceleratedNetworkSupported')), createObject('name', 'IsHibernateSupported', 'value', variables('hibernateSupported'))))]",
-            "features": "[if(not(empty(variables('diskControllerTypes'))), union(variables('gaFeatures'), variables('diskControllerTypes')), variables('gaFeatures'))]"
-          },
           "resources": [
             {
               "type": "Microsoft.Compute/galleries/images",
@@ -1684,16 +1594,12 @@
                   }
                 },
                 "hyperVGeneration": "[parameters('hyperVGeneration')]",
-                "features": "[variables('features')]",
+                "features": "[parameters('features')]",
                 "description": "[parameters('description')]",
                 "eula": "[if(not(empty(parameters('eula'))), parameters('eula'), null())]",
                 "privacyStatementUri": "[parameters('privacyStatementUri')]",
                 "releaseNoteUri": "[parameters('releaseNoteUri')]",
-                "purchasePlan": {
-                  "product": "[if(not(empty(parameters('productName'))), parameters('productName'), null())]",
-                  "name": "[if(not(empty(parameters('planName'))), parameters('planName'), null())]",
-                  "publisher": "[if(not(empty(parameters('planPublisherName'))), parameters('planPublisherName'), null())]"
-                },
+                "purchasePlan": "[if(or(or(not(empty(parameters('productName'))), not(empty(parameters('planName')))), not(empty(parameters('planPublisherName')))), createObject('product', if(not(empty(parameters('productName'))), parameters('productName'), null()), 'name', if(not(empty(parameters('planName'))), parameters('planName'), null()), 'publisher', if(not(empty(parameters('planPublisherName'))), parameters('planPublisherName'), null())), null())]",
                 "endOfLifeDate": "[parameters('endOfLife')]",
                 "disallowed": {
                   "diskTypes": "[parameters('excludedDiskTypes')]"
@@ -4778,7 +4684,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "4108644559694399275"
+              "templateHash": "3410959993783166575"
             }
           },
           "parameters": {
@@ -4853,11 +4759,29 @@
                 "description": "Required. Specifies the OS disk. For security reasons, it is recommended to specify DiskEncryptionSet into the osDisk object.  Restrictions: DiskEncryptionSet cannot be enabled if Azure Disk Encryption (guest-VM encryption using bitlocker/DM-Crypt) is enabled on your VMs."
               }
             },
+            "diskControllerType": {
+              "type": "string",
+              "defaultValue": "SCSI",
+              "allowedValues": [
+                "SCSI",
+                "NVMe"
+              ],
+              "metadata": {
+                "description": "Optional. Specifies the disk controller type. Default value is SCSI."
+              }
+            },
             "dataDisks": {
               "type": "array",
               "defaultValue": [],
               "metadata": {
                 "description": "Optional. Specifies the data disks. For security reasons, it is recommended to specify DiskEncryptionSet into the dataDisk object. Restrictions: DiskEncryptionSet cannot be enabled if Azure Disk Encryption (guest-VM encryption using bitlocker/DM-Crypt) is enabled on your VMs."
+              }
+            },
+            "hibernationEnabled": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Optional. Specifies the hibernation state for the virtual machine. Restrictions: Hibernation is not supported for virtual machines with nested virtualization enabled."
               }
             },
             "ultraSSDEnabled": {
@@ -5372,6 +5296,10 @@
               "zones": "[if(not(equals(parameters('availabilityZone'), 0)), array(parameters('availabilityZone')), null())]",
               "plan": "[if(not(empty(parameters('plan'))), parameters('plan'), null())]",
               "properties": {
+                "additionalCapabilities": {
+                  "hibernationEnabled": "[parameters('hibernationEnabled')]",
+                  "ultraSSDEnabled": "[parameters('ultraSSDEnabled')]"
+                },
                 "hardwareProfile": {
                   "vmSize": "[parameters('vmSize')]"
                 },
@@ -5400,6 +5328,7 @@
                     }
                   ],
                   "imageReference": "[parameters('imageReference')]",
+                  "diskControllerType": "[parameters('diskControllerType')]",
                   "osDisk": {
                     "name": "[format('{0}-disk-os-01', parameters('name'))]",
                     "createOption": "[coalesce(tryGet(parameters('osDisk'), 'createOption'), 'FromImage')]",
@@ -5411,9 +5340,6 @@
                       "diskEncryptionSet": "[if(contains(parameters('osDisk').managedDisk, 'diskEncryptionSet'), createObject('id', parameters('osDisk').managedDisk.diskEncryptionSet.id), null())]"
                     }
                   }
-                },
-                "additionalCapabilities": {
-                  "ultraSSDEnabled": "[parameters('ultraSSDEnabled')]"
                 },
                 "osProfile": {
                   "computerName": "[parameters('computerName')]",
@@ -8124,6 +8050,7 @@
         },
         "mode": "Incremental",
         "parameters": {
+          "hibernationEnabled": "[if(not(empty(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(union(if(parameters('imageDefinitionIsHibernateSupported'), createObject('name', 'IsHibernateSupported', 'value', 'True'), createObject()), if(parameters('imageDefinitionIsAcceleratedNetworkSupported'), createObject('name', 'IsAcceleratedNetworkSupported', 'value', 'True'), createObject()), if(parameters('imageDefinitionIsHigherStoragePerformanceSupported'), createObject('name', 'DiskControllerTypes', 'value', 'SCSI, NVMe'), createObject()), if(not(equals(parameters('imageDefinitionSecurityType'), 'Standard')), createObject('name', 'SecurityType', 'value', parameters('imageDefinitionSecurityType')), createObject()))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'IsHibernateSupported'))))), createObject('value', bool(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(union(if(parameters('imageDefinitionIsHibernateSupported'), createObject('name', 'IsHibernateSupported', 'value', 'True'), createObject()), if(parameters('imageDefinitionIsAcceleratedNetworkSupported'), createObject('name', 'IsAcceleratedNetworkSupported', 'value', 'True'), createObject()), if(parameters('imageDefinitionIsHigherStoragePerformanceSupported'), createObject('name', 'DiskControllerTypes', 'value', 'SCSI, NVMe'), createObject()), if(not(equals(parameters('imageDefinitionSecurityType'), 'Standard')), createObject('name', 'SecurityType', 'value', parameters('imageDefinitionSecurityType')), createObject()))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'IsHibernateSupported')))[0].value)), createObject('value', false()))]",
           "location": {
             "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('subnetResourceId'), '/')[2], split(parameters('subnetResourceId'), '/')[4]), 'Microsoft.Network/virtualNetworks', split(parameters('subnetResourceId'), '/')[8]), '2023-05-01', 'full').location]"
           },
@@ -8142,11 +8069,11 @@
           "encryptionAtHost": {
             "value": "[parameters('encryptionAtHost')]"
           },
-          "imageReference": "[if(empty(parameters('customSourceImageResourceId')), createObject('value', createObject('publisher', parameters('publisher'), 'offer', parameters('offer'), 'sku', parameters('sku'), 'version', 'latest')), createObject('value', createObject('id', parameters('customSourceImageResourceId'))))]",
+          "imageReference": "[if(empty(parameters('customSourceImageResourceId')), createObject('value', createObject('publisher', parameters('mpPublisher'), 'offer', parameters('mpOffer'), 'sku', parameters('mpSku'), 'version', 'latest')), createObject('value', createObject('id', parameters('customSourceImageResourceId'))))]",
           "nicConfigurations": {
             "value": [
               {
-                "enableAcceleratedNetworking": "[parameters('imageDefinitionIsAcceleratedNetworkSupported')]",
+                "enableAcceleratedNetworking": "[if(not(empty(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(union(if(parameters('imageDefinitionIsHibernateSupported'), createObject('name', 'IsHibernateSupported', 'value', 'True'), createObject()), if(parameters('imageDefinitionIsAcceleratedNetworkSupported'), createObject('name', 'IsAcceleratedNetworkSupported', 'value', 'True'), createObject()), if(parameters('imageDefinitionIsHigherStoragePerformanceSupported'), createObject('name', 'DiskControllerTypes', 'value', 'SCSI, NVMe'), createObject()), if(not(equals(parameters('imageDefinitionSecurityType'), 'Standard')), createObject('name', 'SecurityType', 'value', parameters('imageDefinitionSecurityType')), createObject()))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'IsAcceleratedNetworkSupported'))))), bool(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(union(if(parameters('imageDefinitionIsHibernateSupported'), createObject('name', 'IsHibernateSupported', 'value', 'True'), createObject()), if(parameters('imageDefinitionIsAcceleratedNetworkSupported'), createObject('name', 'IsAcceleratedNetworkSupported', 'value', 'True'), createObject()), if(parameters('imageDefinitionIsHigherStoragePerformanceSupported'), createObject('name', 'DiskControllerTypes', 'value', 'SCSI, NVMe'), createObject()), if(not(equals(parameters('imageDefinitionSecurityType'), 'Standard')), createObject('name', 'SecurityType', 'value', parameters('imageDefinitionSecurityType')), createObject()))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'IsAcceleratedNetworkSupported')))[0].value), false())]",
                 "deleteOption": "Delete",
                 "ipConfigurations": [
                   {
@@ -8172,9 +8099,9 @@
           "osType": {
             "value": "Windows"
           },
-          "securityType": "[if(equals(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), if(not(empty(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(createObject('name', 'IsHibernateSupported', 'value', parameters('imageDefinitionIsHibernateSupported')), createObject('name', 'IsAcceleratedNetworkSupported', 'value', parameters('imageDefinitionIsAcceleratedNetworkSupported')), createObject('name', 'DiskControllerTypes', 'value', parameters('imageDefinitionIsHigherStoragePerformanceSupported')), createObject('name', 'SecurityType', 'value', parameters('imageDefinitionSecurityType'))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType'))))), filter(if(empty(parameters('imageDefinitionResourceId')), createArray(createObject('name', 'IsHibernateSupported', 'value', parameters('imageDefinitionIsHibernateSupported')), createObject('name', 'IsAcceleratedNetworkSupported', 'value', parameters('imageDefinitionIsAcceleratedNetworkSupported')), createObject('name', 'DiskControllerTypes', 'value', parameters('imageDefinitionIsHigherStoragePerformanceSupported')), createObject('name', 'SecurityType', 'value', parameters('imageDefinitionSecurityType'))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value, 'Standard')), 'TrustedLaunch'), createObject('value', 'TrustedLaunch'), if(equals(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), if(not(empty(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(createObject('name', 'IsHibernateSupported', 'value', parameters('imageDefinitionIsHibernateSupported')), createObject('name', 'IsAcceleratedNetworkSupported', 'value', parameters('imageDefinitionIsAcceleratedNetworkSupported')), createObject('name', 'DiskControllerTypes', 'value', parameters('imageDefinitionIsHigherStoragePerformanceSupported')), createObject('name', 'SecurityType', 'value', parameters('imageDefinitionSecurityType'))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType'))))), filter(if(empty(parameters('imageDefinitionResourceId')), createArray(createObject('name', 'IsHibernateSupported', 'value', parameters('imageDefinitionIsHibernateSupported')), createObject('name', 'IsAcceleratedNetworkSupported', 'value', parameters('imageDefinitionIsAcceleratedNetworkSupported')), createObject('name', 'DiskControllerTypes', 'value', parameters('imageDefinitionIsHigherStoragePerformanceSupported')), createObject('name', 'SecurityType', 'value', parameters('imageDefinitionSecurityType'))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value, 'Standard')), 'ConfidentialVM'), createObject('value', 'ConfidentialVM'), createObject('value', 'Standard')))]",
-          "secureBootEnabled": "[if(equals(if(equals(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), if(not(empty(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(createObject('name', 'IsHibernateSupported', 'value', parameters('imageDefinitionIsHibernateSupported')), createObject('name', 'IsAcceleratedNetworkSupported', 'value', parameters('imageDefinitionIsAcceleratedNetworkSupported')), createObject('name', 'DiskControllerTypes', 'value', parameters('imageDefinitionIsHigherStoragePerformanceSupported')), createObject('name', 'SecurityType', 'value', parameters('imageDefinitionSecurityType'))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType'))))), filter(if(empty(parameters('imageDefinitionResourceId')), createArray(createObject('name', 'IsHibernateSupported', 'value', parameters('imageDefinitionIsHibernateSupported')), createObject('name', 'IsAcceleratedNetworkSupported', 'value', parameters('imageDefinitionIsAcceleratedNetworkSupported')), createObject('name', 'DiskControllerTypes', 'value', parameters('imageDefinitionIsHigherStoragePerformanceSupported')), createObject('name', 'SecurityType', 'value', parameters('imageDefinitionSecurityType'))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value, 'Standard')), 'TrustedLaunch'), 'TrustedLaunch', if(equals(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), if(not(empty(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(createObject('name', 'IsHibernateSupported', 'value', parameters('imageDefinitionIsHibernateSupported')), createObject('name', 'IsAcceleratedNetworkSupported', 'value', parameters('imageDefinitionIsAcceleratedNetworkSupported')), createObject('name', 'DiskControllerTypes', 'value', parameters('imageDefinitionIsHigherStoragePerformanceSupported')), createObject('name', 'SecurityType', 'value', parameters('imageDefinitionSecurityType'))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType'))))), filter(if(empty(parameters('imageDefinitionResourceId')), createArray(createObject('name', 'IsHibernateSupported', 'value', parameters('imageDefinitionIsHibernateSupported')), createObject('name', 'IsAcceleratedNetworkSupported', 'value', parameters('imageDefinitionIsAcceleratedNetworkSupported')), createObject('name', 'DiskControllerTypes', 'value', parameters('imageDefinitionIsHigherStoragePerformanceSupported')), createObject('name', 'SecurityType', 'value', parameters('imageDefinitionSecurityType'))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value, 'Standard')), 'ConfidentialVM'), 'ConfidentialVM', 'Standard')), 'TrustedLaunch'), createObject('value', true()), createObject('value', false()))]",
-          "vTpmEnabled": "[if(equals(if(equals(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), if(not(empty(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(createObject('name', 'IsHibernateSupported', 'value', parameters('imageDefinitionIsHibernateSupported')), createObject('name', 'IsAcceleratedNetworkSupported', 'value', parameters('imageDefinitionIsAcceleratedNetworkSupported')), createObject('name', 'DiskControllerTypes', 'value', parameters('imageDefinitionIsHigherStoragePerformanceSupported')), createObject('name', 'SecurityType', 'value', parameters('imageDefinitionSecurityType'))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType'))))), filter(if(empty(parameters('imageDefinitionResourceId')), createArray(createObject('name', 'IsHibernateSupported', 'value', parameters('imageDefinitionIsHibernateSupported')), createObject('name', 'IsAcceleratedNetworkSupported', 'value', parameters('imageDefinitionIsAcceleratedNetworkSupported')), createObject('name', 'DiskControllerTypes', 'value', parameters('imageDefinitionIsHigherStoragePerformanceSupported')), createObject('name', 'SecurityType', 'value', parameters('imageDefinitionSecurityType'))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value, 'Standard')), 'TrustedLaunch'), 'TrustedLaunch', if(equals(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), if(not(empty(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(createObject('name', 'IsHibernateSupported', 'value', parameters('imageDefinitionIsHibernateSupported')), createObject('name', 'IsAcceleratedNetworkSupported', 'value', parameters('imageDefinitionIsAcceleratedNetworkSupported')), createObject('name', 'DiskControllerTypes', 'value', parameters('imageDefinitionIsHigherStoragePerformanceSupported')), createObject('name', 'SecurityType', 'value', parameters('imageDefinitionSecurityType'))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType'))))), filter(if(empty(parameters('imageDefinitionResourceId')), createArray(createObject('name', 'IsHibernateSupported', 'value', parameters('imageDefinitionIsHibernateSupported')), createObject('name', 'IsAcceleratedNetworkSupported', 'value', parameters('imageDefinitionIsAcceleratedNetworkSupported')), createObject('name', 'DiskControllerTypes', 'value', parameters('imageDefinitionIsHigherStoragePerformanceSupported')), createObject('name', 'SecurityType', 'value', parameters('imageDefinitionSecurityType'))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value, 'Standard')), 'ConfidentialVM'), 'ConfidentialVM', 'Standard')), 'TrustedLaunch'), createObject('value', true()), createObject('value', false()))]",
+          "securityType": "[if(equals(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), if(not(empty(filter(reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features, lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType'))))), filter(reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features, lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value, 'Standard')), 'TrustedLaunch'), createObject('value', 'TrustedLaunch'), if(equals(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), if(not(empty(filter(reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features, lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType'))))), filter(reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features, lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value, 'Standard')), 'ConfidentialVM'), createObject('value', 'ConfidentialVM'), createObject('value', 'Standard')))]",
+          "secureBootEnabled": "[if(equals(if(equals(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), if(not(empty(filter(reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features, lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType'))))), filter(reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features, lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value, 'Standard')), 'TrustedLaunch'), 'TrustedLaunch', if(equals(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), if(not(empty(filter(reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features, lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType'))))), filter(reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features, lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value, 'Standard')), 'ConfidentialVM'), 'ConfidentialVM', 'Standard')), 'TrustedLaunch'), createObject('value', true()), createObject('value', false()))]",
+          "vTpmEnabled": "[if(equals(if(equals(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), if(not(empty(filter(reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features, lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType'))))), filter(reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features, lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value, 'Standard')), 'TrustedLaunch'), 'TrustedLaunch', if(equals(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), if(not(empty(filter(reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features, lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType'))))), filter(reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features, lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value, 'Standard')), 'ConfidentialVM'), 'ConfidentialVM', 'Standard')), 'TrustedLaunch'), createObject('value', true()), createObject('value', false()))]",
           "tags": {
             "value": "[coalesce(tryGet(parameters('tags'), 'Microsoft.Compute/virtualMachines'), createObject())]"
           },
@@ -8190,7 +8117,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "4108644559694399275"
+              "templateHash": "3410959993783166575"
             }
           },
           "parameters": {
@@ -8265,11 +8192,29 @@
                 "description": "Required. Specifies the OS disk. For security reasons, it is recommended to specify DiskEncryptionSet into the osDisk object.  Restrictions: DiskEncryptionSet cannot be enabled if Azure Disk Encryption (guest-VM encryption using bitlocker/DM-Crypt) is enabled on your VMs."
               }
             },
+            "diskControllerType": {
+              "type": "string",
+              "defaultValue": "SCSI",
+              "allowedValues": [
+                "SCSI",
+                "NVMe"
+              ],
+              "metadata": {
+                "description": "Optional. Specifies the disk controller type. Default value is SCSI."
+              }
+            },
             "dataDisks": {
               "type": "array",
               "defaultValue": [],
               "metadata": {
                 "description": "Optional. Specifies the data disks. For security reasons, it is recommended to specify DiskEncryptionSet into the dataDisk object. Restrictions: DiskEncryptionSet cannot be enabled if Azure Disk Encryption (guest-VM encryption using bitlocker/DM-Crypt) is enabled on your VMs."
+              }
+            },
+            "hibernationEnabled": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Optional. Specifies the hibernation state for the virtual machine. Restrictions: Hibernation is not supported for virtual machines with nested virtualization enabled."
               }
             },
             "ultraSSDEnabled": {
@@ -8784,6 +8729,10 @@
               "zones": "[if(not(equals(parameters('availabilityZone'), 0)), array(parameters('availabilityZone')), null())]",
               "plan": "[if(not(empty(parameters('plan'))), parameters('plan'), null())]",
               "properties": {
+                "additionalCapabilities": {
+                  "hibernationEnabled": "[parameters('hibernationEnabled')]",
+                  "ultraSSDEnabled": "[parameters('ultraSSDEnabled')]"
+                },
                 "hardwareProfile": {
                   "vmSize": "[parameters('vmSize')]"
                 },
@@ -8812,6 +8761,7 @@
                     }
                   ],
                   "imageReference": "[parameters('imageReference')]",
+                  "diskControllerType": "[parameters('diskControllerType')]",
                   "osDisk": {
                     "name": "[format('{0}-disk-os-01', parameters('name'))]",
                     "createOption": "[coalesce(tryGet(parameters('osDisk'), 'createOption'), 'FromImage')]",
@@ -8823,9 +8773,6 @@
                       "diskEncryptionSet": "[if(contains(parameters('osDisk').managedDisk, 'diskEncryptionSet'), createObject('id', parameters('osDisk').managedDisk.diskEncryptionSet.id), null())]"
                     }
                   }
-                },
-                "additionalCapabilities": {
-                  "ultraSSDEnabled": "[parameters('ultraSSDEnabled')]"
                 },
                 "osProfile": {
                   "computerName": "[parameters('computerName')]",
@@ -12384,7 +12331,7 @@
           "imageBuildResourceGroupName": {
             "value": "[variables('imageBuildResourceGroupName')]"
           },
-          "imageDefinitionSecurityType": "[if(empty(parameters('imageDefinitionResourceId')), createObject('value', parameters('imageDefinitionSecurityType')), if(not(empty(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(createObject('name', 'IsHibernateSupported', 'value', parameters('imageDefinitionIsHibernateSupported')), createObject('name', 'IsAcceleratedNetworkSupported', 'value', parameters('imageDefinitionIsAcceleratedNetworkSupported')), createObject('name', 'DiskControllerTypes', 'value', parameters('imageDefinitionIsHigherStoragePerformanceSupported')), createObject('name', 'SecurityType', 'value', parameters('imageDefinitionSecurityType'))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType'))))), createObject('value', filter(if(empty(parameters('imageDefinitionResourceId')), createArray(createObject('name', 'IsHibernateSupported', 'value', parameters('imageDefinitionIsHibernateSupported')), createObject('name', 'IsAcceleratedNetworkSupported', 'value', parameters('imageDefinitionIsAcceleratedNetworkSupported')), createObject('name', 'DiskControllerTypes', 'value', parameters('imageDefinitionIsHigherStoragePerformanceSupported')), createObject('name', 'SecurityType', 'value', parameters('imageDefinitionSecurityType'))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value), createObject('value', 'Standard')))]",
+          "imageDefinitionSecurityType": "[if(empty(parameters('imageDefinitionResourceId')), createObject('value', parameters('imageDefinitionSecurityType')), if(not(empty(filter(reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features, lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType'))))), createObject('value', filter(reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features, lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value), createObject('value', 'Standard')))]",
           "imageName": "[if(not(empty(parameters('imageDefinitionResourceId'))), createObject('value', last(split(parameters('imageDefinitionResourceId'), '/'))), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, split(parameters('computeGalleryResourceId'), '/')[4]), 'Microsoft.Resources/deployments', format('{0}Gallery-Image-Definition-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.name.value))]",
           "imageVersionDefaultReplicaCount": {
             "value": "[parameters('imageVersionDefaultReplicaCount')]"
@@ -12422,7 +12369,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "6694398302522969960"
+              "templateHash": "5549991841185165593"
             }
           },
           "parameters": {
@@ -12735,7 +12682,8 @@
                   "storageAccountType": {
                     "value": "[parameters('imageVersionDefaultStorageAccountType')]"
                   },
-                  "sourceId": "[if(contains(parameters('imageDefinitionSecurityType'), 'Supported'), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}Image-{1}', parameters('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.resourceId.value), createObject('value', parameters('virtualMachineResourceId')))]",
+                  "sourceId": "[if(contains(parameters('imageDefinitionSecurityType'), 'Supported'), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}Image-{1}', parameters('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.resourceId.value), createObject('value', ''))]",
+                  "virtualMachineId": "[if(not(contains(parameters('imageDefinitionSecurityType'), 'Supported')), createObject('value', parameters('virtualMachineResourceId')), createObject('value', ''))]",
                   "targetRegions": {
                     "value": "[parameters('imageVersionReplicationRegions')]"
                   },
@@ -12750,11 +12698,8 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "6621924146950843652"
-                    },
-                    "name": "Compute Galleries Image Version",
-                    "description": "This module deploys an Azure Compute Gallery Image Definition Version",
-                    "author": "shawn.meyer@microsoft.com"
+                      "templateHash": "18239753126752064575"
+                    }
                   },
                   "parameters": {
                     "name": {
@@ -12801,7 +12746,7 @@
                     "replicaCount": {
                       "type": "int",
                       "metadata": {
-                        "description": "Optional. The number of replicas of the Image Version to be created per region.\nThis property would take effect for a region when regionalReplicaCount is not specified. This property is updatable."
+                        "description": "Optional. The number of replicas of the Image Version to be created per region. This property would take effect for a region when regionalReplicaCount is not specified. This property is updatable."
                       }
                     },
                     "replicationMode": {
@@ -12831,7 +12776,7 @@
                       "type": "array",
                       "defaultValue": [],
                       "metadata": {
-                        "description": "Optional. The target regions where the Image Version is going to be replicated to.\nIf this object is not specified, then the deployment location will be used."
+                        "description": "Optional. The target regions where the Image Version is going to be replicated to. If this object is not specified, then the deployment location will be used."
                       }
                     },
                     "diskEncryptionSetId": {
@@ -12884,7 +12829,7 @@
                       "type": "string",
                       "defaultValue": "",
                       "metadata": {
-                        "description": "Optional. The id of the gallery artifact version source. Can specify a disk uri, snapshot uri, user image or storage account resource."
+                        "description": "Optional. The id of the gallery artifact version source. Can specify a OS disk resource id or snapshot resource id."
                       }
                     },
                     "osDiskImageSourceUri": {
@@ -12898,7 +12843,7 @@
                       "type": "string",
                       "defaultValue": "",
                       "metadata": {
-                        "description": "Optional. The id of the gallery artifact version source. Can specify a disk uri, snapshot uri, user image or storage account resource."
+                        "description": "Optional. The id of the gallery artifact version source. Can specify a managed disk resource id, snapshot resource id, or storage account resource."
                       }
                     },
                     "tags": {
@@ -12906,6 +12851,13 @@
                       "defaultValue": {},
                       "metadata": {
                         "description": "Optional. Tags for all resources."
+                      }
+                    },
+                    "virtualMachineId": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Optional. The virtual machine id of the source image."
                       }
                     }
                   },
@@ -12917,8 +12869,7 @@
                         "input": "[if(equals(parameters('targetRegions')[copyIndex('regionMatchArray')].name, parameters('location')), true(), false())]"
                       }
                     ],
-                    "sourceStorageProfile": "[if(not(empty(parameters('sourceId'))), createObject('id', parameters('sourceId')), createObject())]",
-                    "osDiskImageStorageProfile": "[if(or(not(empty(parameters('osDiskImageSourceId'))), not(empty(parameters('osDiskImageSourceUri')))), createObject('hostCaching', parameters('hostCaching'), 'source', createObject('id', if(not(empty(parameters('osDiskImageSourceId'))), parameters('osDiskImageSourceId'), null()), 'uri', if(not(empty(parameters('osDiskImageSourceUri'))), parameters('osDiskImageSourceUri'), null()))), createObject())]",
+                    "storageProfile": "[if(or(not(empty(parameters('sourceId'))), not(empty(parameters('virtualMachineId')))), createObject('source', createObject('id', if(not(empty(parameters('sourceId'))), parameters('sourceId'), null()), 'virtualMachineId', if(not(empty(parameters('virtualMachineId'))), parameters('virtualMachineId'), null()))), createObject('osDiskImage', createObject('hostCaching', parameters('hostCaching'), 'source', createObject('id', if(not(empty(parameters('osDiskImageSourceId'))), parameters('osDiskImageSourceId'), null()), 'uri', if(not(empty(parameters('osDiskImageSourceUri'))), parameters('osDiskImageSourceUri'), null())))))]",
                     "targetRegionDefault": [
                       {
                         "encryption": "[if(not(empty(parameters('diskEncryptionSetId'))), createObject('osDiskImage', createObject('diskEncryptionSetId', parameters('diskEncryptionSetId'), 'securityProfile', createObject('confidentialVMEncryptionType', if(not(empty(parameters('confidentialVMEncryptionType'))), parameters('confidentialVMEncryptionType'), null()), 'secureVMDiskEncryptionSetId', if(not(empty(parameters('secureVMDiskEncryptionSetId'))), parameters('secureVMDiskEncryptionSetId'), null())))), null())]",
@@ -12932,7 +12883,7 @@
                   "resources": [
                     {
                       "type": "Microsoft.Compute/galleries/images/versions",
-                      "apiVersion": "2022-03-03",
+                      "apiVersion": "2024-03-03",
                       "name": "[format('{0}/{1}/{2}', parameters('galleryName'), parameters('imageName'), parameters('name'))]",
                       "location": "[parameters('location')]",
                       "properties": {
@@ -12947,10 +12898,7 @@
                         "safetyProfile": {
                           "allowDeletionOfReplicatedLocations": "[parameters('allowDeletionOfReplicatedLocations')]"
                         },
-                        "storageProfile": {
-                          "osDiskImage": "[variables('osDiskImageStorageProfile')]",
-                          "source": "[variables('sourceStorageProfile')]"
-                        }
+                        "storageProfile": "[variables('storageProfile')]"
                       },
                       "tags": "[parameters('tags')]"
                     }
@@ -12982,7 +12930,7 @@
                       "metadata": {
                         "description": "The location the resource was deployed into."
                       },
-                      "value": "[reference(resourceId('Microsoft.Compute/galleries/images/versions', parameters('galleryName'), parameters('imageName'), parameters('name')), '2022-03-03', 'full').location]"
+                      "value": "[reference(resourceId('Microsoft.Compute/galleries/images/versions', parameters('galleryName'), parameters('imageName'), parameters('name')), '2024-03-03', 'full').location]"
                     }
                   }
                 }
@@ -13046,7 +12994,7 @@
               },
               {
                 "name": "ImageResourceId",
-                "value": "[if(contains(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), if(not(empty(filter(if(empty(parameters('imageDefinitionResourceId')), createArray(createObject('name', 'IsHibernateSupported', 'value', parameters('imageDefinitionIsHibernateSupported')), createObject('name', 'IsAcceleratedNetworkSupported', 'value', parameters('imageDefinitionIsAcceleratedNetworkSupported')), createObject('name', 'DiskControllerTypes', 'value', parameters('imageDefinitionIsHigherStoragePerformanceSupported')), createObject('name', 'SecurityType', 'value', parameters('imageDefinitionSecurityType'))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType'))))), filter(if(empty(parameters('imageDefinitionResourceId')), createArray(createObject('name', 'IsHibernateSupported', 'value', parameters('imageDefinitionIsHibernateSupported')), createObject('name', 'IsAcceleratedNetworkSupported', 'value', parameters('imageDefinitionIsAcceleratedNetworkSupported')), createObject('name', 'DiskControllerTypes', 'value', parameters('imageDefinitionIsHigherStoragePerformanceSupported')), createObject('name', 'SecurityType', 'value', parameters('imageDefinitionSecurityType'))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features), lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value, 'Standard')), 'Supported'), reference(subscriptionResourceId('Microsoft.Resources/deployments', format('{0}Capture-Image-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.managedImageId.value, '')]"
+                "value": "[if(contains(if(empty(parameters('imageDefinitionResourceId')), parameters('imageDefinitionSecurityType'), if(not(empty(filter(reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features, lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType'))))), filter(reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('imageDefinitionResourceId'), '/')[2], split(parameters('imageDefinitionResourceId'), '/')[4]), 'Microsoft.Compute/galleries/images', split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[0], split(format('{0}/{1}', split(parameters('imageDefinitionResourceId'), '/')[8], last(split(parameters('imageDefinitionResourceId'), '/'))), '/')[1]), '2024-03-03').features, lambda('feature', equals(lambdaVariables('feature').name, 'SecurityType')))[0].value, 'Standard')), 'Supported'), reference(subscriptionResourceId('Microsoft.Resources/deployments', format('{0}Capture-Image-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.managedImageId.value, '')]"
               },
               {
                 "name": "ImageVmResourceId",
@@ -13315,11 +13263,8 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "6621924146950843652"
-            },
-            "name": "Compute Galleries Image Version",
-            "description": "This module deploys an Azure Compute Gallery Image Definition Version",
-            "author": "shawn.meyer@microsoft.com"
+              "templateHash": "18239753126752064575"
+            }
           },
           "parameters": {
             "name": {
@@ -13366,7 +13311,7 @@
             "replicaCount": {
               "type": "int",
               "metadata": {
-                "description": "Optional. The number of replicas of the Image Version to be created per region.\nThis property would take effect for a region when regionalReplicaCount is not specified. This property is updatable."
+                "description": "Optional. The number of replicas of the Image Version to be created per region. This property would take effect for a region when regionalReplicaCount is not specified. This property is updatable."
               }
             },
             "replicationMode": {
@@ -13396,7 +13341,7 @@
               "type": "array",
               "defaultValue": [],
               "metadata": {
-                "description": "Optional. The target regions where the Image Version is going to be replicated to.\nIf this object is not specified, then the deployment location will be used."
+                "description": "Optional. The target regions where the Image Version is going to be replicated to. If this object is not specified, then the deployment location will be used."
               }
             },
             "diskEncryptionSetId": {
@@ -13449,7 +13394,7 @@
               "type": "string",
               "defaultValue": "",
               "metadata": {
-                "description": "Optional. The id of the gallery artifact version source. Can specify a disk uri, snapshot uri, user image or storage account resource."
+                "description": "Optional. The id of the gallery artifact version source. Can specify a OS disk resource id or snapshot resource id."
               }
             },
             "osDiskImageSourceUri": {
@@ -13463,7 +13408,7 @@
               "type": "string",
               "defaultValue": "",
               "metadata": {
-                "description": "Optional. The id of the gallery artifact version source. Can specify a disk uri, snapshot uri, user image or storage account resource."
+                "description": "Optional. The id of the gallery artifact version source. Can specify a managed disk resource id, snapshot resource id, or storage account resource."
               }
             },
             "tags": {
@@ -13471,6 +13416,13 @@
               "defaultValue": {},
               "metadata": {
                 "description": "Optional. Tags for all resources."
+              }
+            },
+            "virtualMachineId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. The virtual machine id of the source image."
               }
             }
           },
@@ -13482,8 +13434,7 @@
                 "input": "[if(equals(parameters('targetRegions')[copyIndex('regionMatchArray')].name, parameters('location')), true(), false())]"
               }
             ],
-            "sourceStorageProfile": "[if(not(empty(parameters('sourceId'))), createObject('id', parameters('sourceId')), createObject())]",
-            "osDiskImageStorageProfile": "[if(or(not(empty(parameters('osDiskImageSourceId'))), not(empty(parameters('osDiskImageSourceUri')))), createObject('hostCaching', parameters('hostCaching'), 'source', createObject('id', if(not(empty(parameters('osDiskImageSourceId'))), parameters('osDiskImageSourceId'), null()), 'uri', if(not(empty(parameters('osDiskImageSourceUri'))), parameters('osDiskImageSourceUri'), null()))), createObject())]",
+            "storageProfile": "[if(or(not(empty(parameters('sourceId'))), not(empty(parameters('virtualMachineId')))), createObject('source', createObject('id', if(not(empty(parameters('sourceId'))), parameters('sourceId'), null()), 'virtualMachineId', if(not(empty(parameters('virtualMachineId'))), parameters('virtualMachineId'), null()))), createObject('osDiskImage', createObject('hostCaching', parameters('hostCaching'), 'source', createObject('id', if(not(empty(parameters('osDiskImageSourceId'))), parameters('osDiskImageSourceId'), null()), 'uri', if(not(empty(parameters('osDiskImageSourceUri'))), parameters('osDiskImageSourceUri'), null())))))]",
             "targetRegionDefault": [
               {
                 "encryption": "[if(not(empty(parameters('diskEncryptionSetId'))), createObject('osDiskImage', createObject('diskEncryptionSetId', parameters('diskEncryptionSetId'), 'securityProfile', createObject('confidentialVMEncryptionType', if(not(empty(parameters('confidentialVMEncryptionType'))), parameters('confidentialVMEncryptionType'), null()), 'secureVMDiskEncryptionSetId', if(not(empty(parameters('secureVMDiskEncryptionSetId'))), parameters('secureVMDiskEncryptionSetId'), null())))), null())]",
@@ -13497,7 +13448,7 @@
           "resources": [
             {
               "type": "Microsoft.Compute/galleries/images/versions",
-              "apiVersion": "2022-03-03",
+              "apiVersion": "2024-03-03",
               "name": "[format('{0}/{1}/{2}', parameters('galleryName'), parameters('imageName'), parameters('name'))]",
               "location": "[parameters('location')]",
               "properties": {
@@ -13512,10 +13463,7 @@
                 "safetyProfile": {
                   "allowDeletionOfReplicatedLocations": "[parameters('allowDeletionOfReplicatedLocations')]"
                 },
-                "storageProfile": {
-                  "osDiskImage": "[variables('osDiskImageStorageProfile')]",
-                  "source": "[variables('sourceStorageProfile')]"
-                }
+                "storageProfile": "[variables('storageProfile')]"
               },
               "tags": "[parameters('tags')]"
             }
@@ -13547,7 +13495,7 @@
               "metadata": {
                 "description": "The location the resource was deployed into."
               },
-              "value": "[reference(resourceId('Microsoft.Compute/galleries/images/versions', parameters('galleryName'), parameters('imageName'), parameters('name')), '2022-03-03', 'full').location]"
+              "value": "[reference(resourceId('Microsoft.Compute/galleries/images/versions', parameters('galleryName'), parameters('imageName'), parameters('name')), '2024-03-03', 'full').location]"
             }
           }
         }
