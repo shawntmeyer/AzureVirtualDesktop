@@ -1498,7 +1498,7 @@
 										"validationMessage": "The value must contain only valid characters, no spaces, and be between 2 and 64 characters in length."
 									},
 									"visible": "[equals(steps('imageDest').imageDefinition.useExImageDef, false)]"
-								},								
+								},
 								{
 									"name": "securityType",
 									"type": "Microsoft.Common.DropDown",
@@ -1574,7 +1574,7 @@
 									"type": "Microsoft.Common.DropDown",
 									"label": "Higher storage performance with NVMe (preview)",
 									"defaultValue": "No",
-									"toolTip": "Set this to 'Yes' to enable the capture of VMs and disks on NVMe storage.",
+									"toolTip": "Set this to 'Yes' to enable the creation of an image that supports VMs using NVMe storage.",
 									"constraints": {
 										"required": false,
 										"allowedValues": [
@@ -1589,6 +1589,16 @@
 										]
 									},
 									"visible": "[and(equals(steps('imageDest').imageDefinition.useExImageDef, false), or(contains(steps('imageVm').imageSource.sku, 'g2'), contains(steps('imageVm').imageSource.sku, 'win11'), contains(steps('imageVm').imageSource.sku, '2022')))]"
+								},
+								{
+									"name": "nvmeWarningBox",
+									"type": "Microsoft.Common.InfoBox",
+									"visible": "[steps('imageDest').imageDefinition.isNVMeSupported]",
+									"options": {
+										"style": "Warning",
+										"text": "NVMe support is only available on select VM Sizes. See this link to ensure the vm size is compatible with NVMe before continuing.",
+										"uri": "https://learn.microsoft.com/en-us/azure/virtual-machines/nvme-overview"
+									}
 								}
 							]
 						},

@@ -655,13 +655,18 @@ module imageVm '../../sharedModules/resources/compute/virtual-machine/main.bicep
   scope: resourceGroup(imageBuildResourceGroupName)
   params: {
     hibernationEnabled: !empty(filter(imageDefinitionFeatures, feature => feature.name == 'IsHibernateSupported'))
-    ? bool(filter(imageDefinitionFeatures, feature => feature.name == 'IsHibernateSupported')[0].value)
-    : false
+      ? bool(filter(imageDefinitionFeatures, feature => feature.name == 'IsHibernateSupported')[0].value)
+      : false
     location: computeLocation
     name: imageVmName
     adminPassword: adminPw
     adminUsername: adminUserName
     bootDiagnostics: false
+    diskControllerType: !empty(filter(imageDefinitionFeatures, feature => feature.name == 'DiskControllerTypes'))
+      ? contains(filter(imageDefinitionFeatures, feature => feature.name == 'DiskControllerTypes')[0].value, 'NVMe')
+          ? 'NVMe'
+          : 'SCSI'
+      : 'SCSI'
     encryptionAtHost: encryptionAtHost
     imageReference: empty(customSourceImageResourceId)
       ? {
@@ -675,9 +680,12 @@ module imageVm '../../sharedModules/resources/compute/virtual-machine/main.bicep
         }
     nicConfigurations: [
       {
-        enableAcceleratedNetworking: !empty(filter(imageDefinitionFeatures, feature => feature.name == 'IsAcceleratedNetworkSupported'))
-        ? bool(filter(imageDefinitionFeatures, feature => feature.name == 'IsAcceleratedNetworkSupported')[0].value)
-        : false
+        enableAcceleratedNetworking: !empty(filter(
+            imageDefinitionFeatures,
+            feature => feature.name == 'IsAcceleratedNetworkSupported'
+          ))
+          ? bool(filter(imageDefinitionFeatures, feature => feature.name == 'IsAcceleratedNetworkSupported')[0].value)
+          : false
         deleteOption: 'Delete'
         ipConfigurations: [
           {
