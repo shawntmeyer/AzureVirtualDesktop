@@ -401,6 +401,9 @@ The [deployments/Deploy-ImageManagement.ps1](../deployments/Deploy-ImageManageme
 
     d. Uploads the contents of the temporary directory as individual blobs to the storage account blob container overwriting any existing blobs with the same name.
 
+> [!Important]
+> For Air-Gapped cloud instructions, see [Custom Image Air-Gapped Cloud Considerations](imageAir-GappedCloud.md) for more detailed instructions.
+
 ### Create a Custom Image (optional)
 
 A custom image may be required or desired by customers in order to pre-populate VMs with applications and settings.

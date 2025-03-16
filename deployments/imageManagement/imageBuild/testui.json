@@ -35,7 +35,19 @@
 									"context": "\"@odata.context\""
 								}
 							}
-						},						
+						},
+						{
+							"name": "textBlock1",
+							"type": "Microsoft.Common.TextBlock",
+							"visible": true,
+							"options": {
+								"text": "[if(or(contains(steps('basics').meApi.transformed.context, 'microsoft.us'), contains(steps('basics').meApi.transformed.context, 'microsoft.com')), 'Public', 'Air-Gapped Cloud')]",
+								"link": {
+									"label": "Learn more",
+									"uri": "https://www.microsoft.com"
+								}
+							}
+						},
 						{
 							"name": "scope",
 							"type": "Microsoft.Common.ResourceScope",
@@ -542,7 +554,7 @@
 						{
 							"name": "warningBoxInternet",
 							"type": "Microsoft.Common.InfoBox",
-							"visible": "[and(not(contains(steps('basics').meApi.transformed.context, 'microsoft.us')), not(contains(steps('basics').meApi.transformed.context, 'microsoft.com')), steps('imageCustomizations').downloadLatestMicrosoftContent)]",
+							"visible": "[and(or(contains(steps('basics').meApi.transformed.context, 'microsoft.us'), contains(steps('basics').meApi.transformed.context, 'microsoft.com')), steps('imageCustomizations').downloadLatestMicrosoftContent)]",
 							"options": {
 								"style": "Warning",
 								"text": "This page of the wizard allows you to add predefined and custom defined image customizations. The built-in customizations (i.e., FSLogix, Office, OneDrive, Teams, Virtual Desktop Optimization Tool) require Internet access in order to be able to download the installers from Microsoft. If this is not available, then you must enable the Zero Trust option after completing the prerequisite deployment of Image Management Resources."
@@ -551,7 +563,7 @@
 						{
 							"name": "warningBoxAirGapped",
 							"type": "Microsoft.Common.InfoBox",
-							"visible": "[and(or(contains(steps('basics').meApi.transformed.context, 'scloud'), contains(steps('basics').meApi.transformed.context, 'eaglex')), steps('imageCustomizations').downloadLatestMicrosoftContent)]",
+							"visible": "[and(not(contains(steps('basics').meApi.transformed.context, 'microsoft.us')), not(contains(steps('basics').meApi.transformed.context, 'microsoft.com')), steps('imageCustomizations').downloadLatestMicrosoftContent)]",
 							"options": {
 								"style": "Warning",
 								"text": "This page of the wizard allows you to add predefined and custom defined image customizations. The FSLogix, M365 Apps, OneDrive, and Teams installations require access to the air-gapped cloud-specific download locations in order to be able to download the installers required. If this is not available, then you must enable the Zero Trust option after completing the prerequisite deployment of Image Management Resources.",
@@ -567,8 +579,7 @@
 									"name": "installFsLogix",
 									"type": "Microsoft.Common.CheckBox",
 									"label": "Install FsLogix Agent",
-									"toolTip": "Check to install FsLogix Agent",
-									"visible": "[or(steps('prereqs').storage.enableZeroTrustStorage, and(not(contains(steps('basics').meApi.transformed.context, 'eaglex')), not(contains(steps('basics').meApi.transformed.context, 'scloud'))))]"
+									"toolTip": "Check to install FsLogix Agent"
 								}
 							]
 						},
@@ -709,7 +720,7 @@
 								{
 									"name": "warningBoxAirGapped",
 									"type": "Microsoft.Common.InfoBox",
-									"visible": "[and(equals(steps('prereqs').storage.enableZeroTrustStorage, false), steps('imageCustomizations').office.installTeams, or(contains(steps('basics').meApi.transformed.context, 'scloud'), contains(steps('basics').meApi.transformed.context, 'eaglex')), steps('imageCustomizations').downloadLatestMicrosoftContent)]",
+									"visible": "[and(equals(steps('prereqs').storage.enableZeroTrustStorage, false), steps('imageCustomizations').office.installTeams, not(contains(steps('basics').meApi.transformed.context, 'microsoft.us')), not(contains(steps('basics').meApi.transformed.context, 'microsoft.com')), steps('imageCustomizations').downloadLatestMicrosoftContent)]",
 									"options": {
 										"style": "Warning",
 										"text": "Teams will not be installed with the media optimizations enabled as the required installers are not available on Air-Gapped clouds. In order to support optimizations, you should download Webview2, the WebRTC Redirector Service, and the latest Visual Studio C++ Redistributables, and put them in a storage account and then set up the zero trust configuration with a user-assigned managed identity.",
@@ -1046,7 +1057,7 @@
 									"type": "Microsoft.Common.CheckBox",
 									"label": "Apply Virtual Desktop Optimizations",
 									"toolTip": "Select to apply the customizations prescribed in the Virtual Desktop Optimization Tool",
-									"visible": "[or(steps('prereqs').storage.enableZeroTrustStorage, and(not(contains(steps('basics').meApi.transformed.context, 'eaglex')), not(contains(steps('basics').meApi.transformed.context, 'scloud'))))]"
+									"visible": true
 								}
 							]
 						},
@@ -2007,16 +2018,16 @@
 				"mpPublisher": "[steps('imageVm').imageSource.publisher]",
 				"mpOffer": "[steps('imageVm').imageSource.offer]",
 				"mpSku": "[steps('imageVm').imageSource.sku]",
-                "downloadLatestMicrosoftContent": "[steps('imageCustomizations').downloadLatestMicrosoftContent]",
+                "downloadLatestMicrosoftContent": "[steps('imageVm').imageSource.downloadLatestMicrosoftContent]",
                 "customizations": "[if(steps('imageCustomizations').customSoftware.addCustomSoftware, steps('imageCustomizations').customSoftware.customizations, parse('[]'))]",
 				"vdiCustomizations": "[if(steps('imageCustomizations').customSoftware.addVDICustomSoftware, steps('imageCustomizations').customSoftware.vdiCustomizations, parse ('[]'))]",
-				"installFsLogix": "[if(or(steps('prereqs').storage.enableZeroTrustStorage, and(not(contains(steps('basics').meApi.transformed.context, 'eaglex')), not(contains(steps('basics').meApi.transformed.context, 'scloud')))), steps('imageCustomizations').fslogix.installFsLogix, false)]",
+				"installFsLogix": "[if(equals(steps('imageCustomizations').fslogix.installFsLogix, true), steps('imageCustomizations').fslogix.installFsLogix,'false')]",
 				"office365AppsToInstall": "[if(equals(steps('imageVm').imageSource.offer, 'office-365'), parse('[]'), steps('imageCustomizations').office.office365AppsToInstall)]",
 				"installOneDrive": "[if(equals(steps('imageVm').imageSource.offer, 'office-365'), false, steps('imageCustomizations').office.installOneDrive)]",
 				"installTeams": "[if(equals(steps('imageVm').imageSource.offer, 'office-365'), false, steps('imageCustomizations').office.installTeams)]",
 				"teamsCloudType": "[if(steps('imageCustomizations').office.installTeams, steps('imageCustomizations').office.teamsCloudType, 'Commercial')]",
 				"appsToRemove": "[steps('imageCustomizations').customizations.appsToRemove]",
-				"installVirtualDesktopOptimizationTool": "[if(or(steps('prereqs').storage.enableZeroTrustStorage, and(not(contains(steps('basics').meApi.transformed.context, 'eaglex')), not(contains(steps('basics').meApi.transformed.context, 'scloud')))), steps('imageCustomizations').customizations.installVirtualDesktopOptimizationTool, false)]",
+				"installVirtualDesktopOptimizationTool": "[steps('imageCustomizations').customizations.installVirtualDesktopOptimizationTool]",
 				"installUpdates": "[steps('imageCustomizations').updates.installUpdates]",
 				"updateService": "[steps('imageCustomizations').updates.updateService]",
 				"wsusServer": "[if(equals(steps('imageCustomizations').updates.updateService, 'WSUS'), steps('imageCustomizations').updates.wsusServer, '')]",

@@ -35,7 +35,6 @@ param imageBuildResourceGroupId string = ''
 param customBuildResourceGroupName string = ''
 
 // Source Image Properties
-
 @description('Optional. The resource Id of the source image to use for the image build. If not provided, the latest image from the specified publisher, offer, and sku will be used.')
 param customSourceImageResourceId string = ''
 
@@ -58,23 +57,17 @@ param vmSize string
 @description('Optional. List of Appx Apps to Remove. Default is [].')
 param appsToRemove array = []
 
+@description('Optional. Always download the newest bits from the web for FSLogix, Microsoft 365, OneDrive, and Teams. Overrides the default behavior of using the storage account.')
+param downloadLatestMicrosoftContent bool = false
+
 @description('Optional. Install FSLogix Agent.')
 param installFsLogix bool = false
-
-@description('Conditional. The name of the blob (or Full URI) of FSLogix.zip. Required when "InstallFSLogix" is true and "DownloadLatestCustomizationSources" is false.')
-param fslogixSetupBlobName string = 'FSLogix.zip'
 
 @description('Optional. List of Office 365 ProPlus Apps to Install. Default is [].')
 param office365AppsToInstall array = []
 
-@description('Conditional. The name of the blob (or full URI) of the Office Deployment Tool. Required when "Office365AppsToInstall" is not empty and "DownloadLatestCustomizationSources" is false.')
-param officeDeploymentToolBlobName string = 'Office365DeploymentTool.exe'
-
 @description('Optional. Install OneDrive Per Machine.')
 param installOneDrive bool = false
-
-@description('Conditional. The name of the blob (or full URI) of OneDriveSetup.exe. Required when "InstallOneDrive" is true and "DownloadLatestCustomizationSources" is false.')
-param onedriveSetupBlobName string = 'OneDriveSetup.exe'
 
 @description('Optional. Install Microsoft Teams.')
 param installTeams bool = false
@@ -91,14 +84,8 @@ param installTeams bool = false
 @description('Optional. The Teams Governmant Cloud type.')
 param teamsCloudType string = 'Commercial'
 
-@description('Conditional. The name of the blob (or full Uri) of the Teams installer. Required when "InstallTeams" is true and "DownloadLatestCustomizationSources" is false.')
-param teamsInstallerBlobName string = 'Microsoft-Teams.zip'
-
 @description('Optional. Apply the Virtual Desktop Optimization Tool customizations.')
 param installVirtualDesktopOptimizationTool bool = false
-
-@description('Conditional. The name of the zip blob containing the Virtual Desktop Optimization Tool Script and files. Required when "InstallVirtualDesktopOptimizationTool" is true and "DownloadLatestCustomizationSources" is false.')
-param vDotBlobName string = 'VDOT.zip'
 
 @description('''An array of image customization objects that are executed first before any restarts or updates.
 Each object contains the following properties:
@@ -283,9 +270,11 @@ var installers = []
 // elimnate duplicates
 var customizers = union(customizations, installers)
 
-var cloud = environment().name
+var cloud = toLower(environment().name)
+
 var locations = loadJsonContent('../../../.common/data/locations.json')[environment().name]
 var resourceAbbreviations = loadJsonContent('../../../.common/data/resourceAbbreviations.json')
+var downloads = cloud == 'usnat' ? loadJsonContent('../parameters/usnat.downloads.parameters.json') : cloud == 'ussec' ? loadJsonContent('../parameters/ussec.downloads.parameters.json') : loadJsonContent('../parameters/public.downloads.parameters.json')
 
 var computeLocation = vnet.location
 var depPrefix = !empty(deploymentPrefix) ? '${deploymentPrefix}-' : ''
@@ -750,12 +739,9 @@ module customizeImage 'modules/customizeImage.bicep' = {
     updateService: updateService
     wsusServer: wsusServer
     artifactsContainerUri: artifactsContainerUri
-    fslogixSetupBlobName: fslogixSetupBlobName
-    officeDeploymentToolBlobName: officeDeploymentToolBlobName
-    onedriveSetupBlobName: onedriveSetupBlobName
-    teamsInstallerBlobName: teamsInstallerBlobName
+    downloads: downloads
+    downloadLatestMicrosoftContent: downloadLatestMicrosoftContent
     vdiCustomizations: vdiCustomizations
-    vDotBlobName: vDotBlobName
   }
 }
 

@@ -131,6 +131,8 @@ if ((!$SkipDownloadingNewSources) -and (Test-Path -Path $downloadFilePath)) {
     Write-Verbose "###########################################################################"
     $DownloadDir = Join-Path -Path $TempArtifactsDir -ChildPath 'downloads'
     New-Item -Path $DownloadDir -ItemType Directory -Force
+    $FileVersionInfoFile = Join-Path -Path $ArtifactsDir -ChildPath 'uploadedFileVersionInfo.txt'
+    New-Item -Path $FileVersionInfoFile -ItemType File -Force
     $downloadJson = Get-Content -Path $downloadFilePath -Raw -ErrorAction 'Stop'
     try {
         $Downloads = $downloadJson | ConvertFrom-Json -ErrorAction 'Stop'
@@ -138,19 +140,24 @@ if ((!$SkipDownloadingNewSources) -and (Test-Path -Path $downloadFilePath)) {
     catch {
         Write-Error "Configuration JSON content could not be converted to a PowerShell object" -ErrorAction 'Stop'
     }
-    foreach ($Download in $Downloads.Artifacts) {
-        $SoftwareName = $Download.Name
+    foreach ($key in $Downloads.PSObject.Properties.Name) {
+        $Download = $Downloads.$key
+        $SoftwareName = $key
         Write-Output "--------------------------------------------------"
         Write-Output "## Start - $SoftwareName ##"
-        If ($Download.DownloadUrl -ne '') {
-            Write-Output "Download Url directly available."
-            $DownloadUrl = $Download.DownloadUrl
-        }
-        Elseif ($Download.WebSiteUrl -ne '' -and $Download.SearchString -ne '') {
+        if ($Download.WebSiteUrl -ne '' -and $Download.SearchString -ne '') {
             $WebSiteUrl = $Download.WebSiteUrl
             $SearchString = $Download.SearchString
             Write-Output "Determining download Url for latest version of '$SoftwareName' from '$WebsiteUrl'."
             $DownloadUrl = Get-InternetUrl -WebSiteUrl $WebSiteUrl -searchstring $SearchString -ErrorAction SilentlyContinue
+            If($null -eq $DownloadUrl -and $Download.DownloadUrl -ne '') {
+                Write-Output "Download Url directly available."
+                $DownloadUrl = $Download.DownloadUrl
+            }
+        }
+        ElseIf($Download.DownloadUrl -ne '') {
+            Write-Output "Download Url directly available."
+            $DownloadUrl = $Download.DownloadUrl
         }
         Elseif ($Download.APIUrl -ne '') {
             $APIUrl = $Download.APIUrl
@@ -180,27 +187,7 @@ if ((!$SkipDownloadingNewSources) -and (Test-Path -Path $downloadFilePath)) {
             $ReleasesUri = "https://api.github.com/repos/$Repo/releases/latest"
             Write-Output "Retrieving the url of the latest version from '$Repo' Github repo."
             $DownloadUrl = ((Invoke-RestMethod -Method GET -Uri $ReleasesUri).assets | Where-Object name -like $FileNamePattern).browser_download_url
-        }
-        ElseIf ($Download.Name -like 'Teams Classic*') {
-            Switch ($TeamsTenantType) {
-                "Commercial" { $DownloadUrl = "https://teams.microsoft.com/downloads/desktopurl?env=production&plat=windows&arch=x64&managedInstaller=true&download=true" }
-                "DepartmentOfDefense" { $DownloadUrl = "https://dod.teams.microsoft.us/downloads/desktopurl?env=production&plat=windows&arch=x64&managedInstaller=true&download=true" }
-                "GovernmentCommunityCloud" { $DownloadUrl = "https://teams.microsoft.com/downloads/desktopurl?env=production&plat=windows&arch=x64&managedInstaller=true&ring=general_gcc&download=true" }
-                "GovernmentCommunityCloudHigh" { $DownloadUrl = "https://gov.teams.microsoft.us/downloads/desktopurl?env=production&plat=windows&arch=x64&managedInstaller=true&download=true" }
-                "USNat" { 
-                    $WebSiteUrl = 'https://teams.eaglex.ic.gov/download'
-                    $SearchString = 'Teams 64-bit'
-                    $DownloadUrl = Get-InternetUrl -WebSiteUrl $WebSiteUrl -searchstring $SearchString
-                    $DownloadUrl = $DownloadUrl -replace '.exe', '.msi'
-                 }
-                 "USSec" {
-                    $webSiteUrl = 'https://teams.microsoft.scloud/download'
-                    $SearchString = 'Teams 64-bit'
-                    $DownloadUrl = Get-InternetUrl -WebSiteUrl $WebSiteUrl -searchstring $SearchString
-                    $DownloadUrl = $DownloadUrl -replace '.exe', '.msi'
-                 }
-            }                        
-        }
+        }      
 
         If (($DownloadUrl -ne '') -and ($null -ne $DownloadUrl)) {
             Write-Output "Downloading '$SoftwareName'."
@@ -210,9 +197,8 @@ if ((!$SkipDownloadingNewSources) -and (Test-Path -Path $downloadFilePath)) {
                 $DestFileName = $Download.DestinationFileName
                 $DestFileFullName = Join-Path $TempSoftwareDownloadDir -ChildPath $DestFileName                
                 # Build Version File for Artifacts Directory
-                $VersionFileName = $DestFileName + "-fileinfo.txt"
-                $VersionFilePath = Join-Path $TempSoftwareDownloadDir -ChildPath $VersionFileName
                 $VersionText = @()
+                $VersionText += "SoftwareName = $SoftwareName"
                 $VersionText += "DownloadUrl = $DownloadUrl"
                 Try {
                     # Not supplying the destination file name first so we can try to get the original file name that was downloaded for version information.
@@ -227,14 +213,16 @@ if ((!$SkipDownloadingNewSources) -and (Test-Path -Path $downloadFilePath)) {
                     $VersionText += "Download File = $(split-path $DownloadedFileFullName -leaf)"
                 }
                 Write-Output "Finished downloading '$SoftwareName' from Internet."
-                Write-Output "Saving File Information to '$VersionFilePath'"
+                Write-Output "Saving File Information to '$FileVersionInfoFile'"
                 If ([System.IO.Path]::GetExtension($DestFileFullName) -eq '.msi') {
                     $VersionText += Get-MSIInfo -Path $DestFileFullName
                 } Elseif ([System.IO.Path]::GetExtension($DestFileFullName) -eq '.exe') {
                     $Version = (Get-ItemProperty -Path $DestFileFullName).VersionInfo | Select-Object ProductVersion, FileVersion
                     $VersionText += "$Version"
                 }
-                $VersionText | Out-File $VersionFilePath -Force
+                $VersionText += "Downloaded on = $(Get-Date)"
+                $VersionText += "--------------------------------------------------"
+                Add-Content -Path $FileVersionInfoFile -Value $VersionText
             }
             Catch {
                 Write-Error "Error downloading software from '$DownloadUrl': $_."

@@ -3,7 +3,7 @@ param(
     [string]$BlobStorageSuffix,
     [string]$BuildDir='',
     [string]$UserAssignedIdentityClientId,
-    [string]$Uri=''
+    [string]$Uri
 )
 function Write-OutputWithTimeStamp {
     param(
@@ -20,9 +20,6 @@ Start-Transcript -Path "$env:SystemRoot\Logs\Install-$Name.log" -Force
 Write-OutputWithTimeStamp "Starting '$SoftwareName' install script with following Parameters:"
 Write-Output ( $PSBoundParameters | Format-Table -AutoSize )
 
-If ($Uri -eq '') {
-    $Uri = 'https://aka.ms/fslogix_download'
-}
 If ($BuildDir -ne '') {
     $TempDir = Join-Path $BuildDir -ChildPath $Name
 }

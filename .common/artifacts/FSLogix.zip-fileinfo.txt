@@ -1,2 +1,0 @@
-DownloadUrl = https://aka.ms/fslogix_download
-Download File = FSLogix_25.02.zip

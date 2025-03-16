@@ -1,2 +1,2 @@
-DownloadUrl = https://msedge.sf.dl.delivery.mp.microsoft.com/filestreamingservice/files/b87c27d1-4fe3-4145-a804-24deda351ae4/MicrosoftEdgePolicyTemplates.cab
-Download File = MicrosoftEdgePolicyTemplates.cab
+DownloadUrl = https://aka.ms/vs/17/release/vc_redist.x64.exe
+Download File = vc_redist.x64.exe

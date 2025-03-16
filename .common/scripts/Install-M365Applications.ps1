@@ -53,21 +53,23 @@ Start-Transcript -Path "$env:SystemRoot\Logs\Install-$SoftwareName.log" -Force
 Write-OutputWithTimeStamp "Starting Script to install '$SoftwareName' with the following parameters:"
 Write-Output ( $PSBoundParameters | Format-Table -AutoSize )
 
-$environment = $Environment.ToLower()
+Switch ($Environment) {
+    "ussec" {
+        $ChannelLine = '  <Add AllowCdnFallback="TRUE" SourcePath="https://officexo.azurefd.microsoft.scloud/prsstelecontainer/55336b82-a18d-4dd6-b5f6-9e5095c314a6/" Channel="MonthlyEnterprise" OfficeClientEdition="64">'
+    }
+    "usnat" {
+        $ChannelLine = '  <Add AllowCdnFallback="TRUE" SourcePath="https://officexo.azurefd.eaglex.ic.gov/prsstelecontainer/55336b82-a18d-4dd6-b5f6-9e5095c314a6/" Channel="MonthlyEnterprise" OfficeClientEdition="64">'
+    }
+    Default {
+        $ChannelLine = '  <Add OfficeClientEdition="64" Channel="MonthlyEnterprise">'
+    }
+}
 
 If ($AppsToInstall -ne '' -and $null -ne $AppsToInstall) {
     [array]$AppsToInstall = $AppsToInstall.Replace('\"', '"') | ConvertFrom-Json
 }
 Else {
     [array]$AppsToInstall = @("Access", "Excel", "OneNote", "Outlook", "PowerPoint", "Word")
-}
-
-If ($Uri -eq '') {
-    $WebsiteUri = 'https://go.microsoft.com/fwlink/p/?LinkID=626065'
-    $Uri = Get-InternetUrl -WebSiteUrl $WebsiteUri -SearchString 'OfficeDeploymentTool'
-    If ($Uri -eq '' -or $null -eq $Uri) {
-        $Uri = 'https://download.microsoft.com/download/2/7/A/27AF1BE6-DD20-4CB4-B154-EBAB8A7D4A7E/officedeploymenttool_18324-20194.exe'
-    }
 }
 
 If ($BuildDir -ne '') {
@@ -92,7 +94,7 @@ $webClient.DownloadFile("$Uri", "$DestFile")
 Start-Sleep -Seconds 5
 If (!(Test-Path -Path $DestFile)) { Write-Error "Failed to download $SourceFileName"; Exit 1 }
 Write-OutputWithTimeStamp "Finished downloading"
-If ($environment -ne 'ussec' -and $environment -ne 'usnat') {
+If ($Environment -ne 'ussec' -and $Environment -ne 'usnat') {
     Write-OutputWithTimeStamp "Extracting the Office 365 Deployment Toolkit."
     Start-Process -FilePath $destFile -ArgumentList "/extract:`"$TempDir\ODT`" /quiet /passive /norestart" -Wait -PassThru | Out-Null
     $Setup = (Get-ChildItem -Path "$TempDir\ODT" -Filter '*setup*.exe').FullName
@@ -134,18 +136,7 @@ if ($AppsToInstall -notcontains 'Word') {
 }
 
 $Content += '<Configuration>'
-
-Switch ($Environment) {
-    "ussec" {
-        $Content += '  <Add AllowCdnFallback="TRUE" SourcePath="https://officexo.azurefd.microsoft.scloud/prsstelecontainer/55336b82-a18d-4dd6-b5f6-9e5095c314a6/" Channel="MonthlyEnterprise" OfficeClientEdition="64">'
-    }
-    "usnat" { 
-        $Content += '  <Add AllowCdnFallback="TRUE" SourcePath="https://officexo.azurefd.eaglex.ic.gov/prsstelecontainer/55336b82-a18d-4dd6-b5f6-9e5095c314a6/" Channel="MonthlyEnterprise" OfficeClientEdition="64">'
-    }
-    Default {
-        $Content += '  <Add OfficeClientEdition="64" Channel="MonthlyEnterprise">'
-    }
-}
+$Content += $ChannelLine
 
 If ($AppsToInstall -contains 'Access' -or $AppsToInstall -contains 'Excel' -or $AppsToInstall -contains 'OneNote' -or $AppsToInstall -contains 'Outlook' -or $AppsToInstall -contains 'PowerPoint' -or $AppsToInstall -contains 'Publisher' -or $AppsToInstall -contains 'Word') {
     $Content += '    <Product ID="O365ProPlusRetail">'

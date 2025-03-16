@@ -1,48 +1,110 @@
 {
-    "Artifacts": [
-        {
-            "Name": "Office 365 Deployment Tool",
-            "DownloadUrl": "https://officexo.azurefd.eaglex.ic.gov/prsstelecontainer/wsus/setup.exe",
-            "WebSiteUrl": "",
-            "SearchString": "",
-            "APIUrl": "",
-            "GitHubRepo": "",
-            "GitHubFileNamePattern": "",
-            "DestinationFileName": "Office365DeploymentTool.exe",
-            "DestinationFolders": [""]
-        },
-        {
-            "Name": "OneDrive",
-            "DownloadUrl": "https://update.azure.odsync.eaglex.ic.gov/onedrivecontainer/Win/Installer64/OneDriveSetup.exe",
-            "WebSiteUrl": "",
-            "SearchString": "",
-            "APIUrl": "",
-            "GitHubRepo": "",
-            "GitHubFileNamePattern": "",
-            "DestinationFileName": "OneDriveSetup.exe",
-            "DestinationFolders": [""]
-        },
-        {
-            "Name": "Teams Bootstrapper",
-            "DownloadUrl": "https://statics.teams.eaglex.ic.gov/production-teamsprovision/lkg/teamsbootstrapper.exe",
-            "WebSiteUrl": "",
-            "SearchString": "",
-            "APIUrl": "",
-            "GitHubRepo": "",
-            "GitHubFileNamePattern": "",
-            "DestinationFileName": "teamsbootstrapper.exe",
-            "DestinationFolders": ["Microsoft-Teams"]
-        },     
-        {
-            "Name": "Teams 64-bit MSIX",
-            "DownloadUrl": "https://statics.teams.eaglex.ic.gov/production-windows-x64/enterprise/webview2/lkg/MSTeams-x64.msix",
-            "WebSiteUrl": "",
-            "SearchString": "",
-            "APIUrl": "",
-            "GitHubRepo": "",
-            "GitHubFileNamePattern": "",
-            "DestinationFileName": "MSTeams-x64.msix",
-            "DestinationFolders": ["Microsoft-Teams"]
-        }        
-    ]
+    "Office365DeploymentTool": {
+        "DownloadUrl": "https://officexo.azurefd.eaglex.ic.gov/prsstelecontainer/wsus/setup.exe",
+        "WebSiteUrl": "",
+        "SearchString": "",
+        "APIUrl": "",
+        "GitHubRepo": "",
+        "GitHubFileNamePattern": "",
+        "DestinationFileName": "Office365DeploymentTool.exe",
+        "DestinationFolders": [
+            ""
+        ]
+    },
+    "OneDrive": {
+        "DownloadUrl": "https://update.azure.odsync.eaglex.ic.gov/onedrivecontainer/Win/Installer64/OneDriveSetup.exe",
+        "WebSiteUrl": "",
+        "SearchString": "",
+        "APIUrl": "",
+        "GitHubRepo": "",
+        "GitHubFileNamePattern": "",
+        "DestinationFileName": "OneDriveSetup.exe",
+        "DestinationFolders": [
+            ""
+        ]
+    },
+    "TeamsBootstrapper": {
+        "DownloadUrl": "https://statics.teams.eaglex.ic.gov/production-teamsprovision/lkg/teamsbootstrapper.exe",
+        "WebSiteUrl": "",
+        "SearchString": "",
+        "APIUrl": "",
+        "GitHubRepo": "",
+        "GitHubFileNamePattern": "",
+        "DestinationFileName": "teamsbootstrapper.exe",
+        "DestinationFolders": [
+            ""
+        ]
+    },
+    "Teams64BitMSIX":{
+        "DownloadUrl": "https://statics.teams.eaglex.ic.gov/production-windows-x64/enterprise/webview2/lkg/MSTeams-x64.msix",
+        "WebSiteUrl": "",
+        "SearchString": "",
+        "APIUrl": "",
+        "GitHubRepo": "",
+        "GitHubFileNamePattern": "",
+        "DestinationFileName": "MSTeams-x64.msix",
+        "DestinationFolders": [
+            ""
+        ]
+    },
+    "WebView2Runtime": {
+        "DownloadUrl": "",
+        "WebSiteUrl": "",
+        "SearchString": "",
+        "APIUrl": "",
+        "GitHubRepo": "",
+        "GitHubFileNamePattern": "",
+        "DestinationFileName": "WebView2.exe",
+        "DestinationFolders": [
+            ""
+        ]
+    },
+    "RemoteDesktopWebRTCRedirectorService": {
+        "DownloadUrl": "",
+        "WebsiteUrl": "",
+        "SearchString": "",
+        "APIUrl": "",
+        "GitHubRepo": "",
+        "GitHubFileNamePattern": "",
+        "DestinationFileName": "MsRdcWebRTCSvc.msi",
+        "DestinationFolders": [
+            ""
+        ]
+    },
+    "VisualStudioRedistributables": {
+        "DownloadUrl": "",
+        "WebSiteUrl": "",
+        "SearchString": "",
+        "APIUrl": "",
+        "GitHubRepo": "",
+        "GitHubFileNamePattern": "",
+        "DestinationFileName": "vc_redist.x64.exe",
+        "DestinationFolders": [
+            ""            
+        ]
+    },
+    "FSLogix": {
+        "DownloadUrl": "",
+        "WebSiteUrl": "",
+        "SearchString": "",
+        "APIUrl": "",
+        "GitHubRepo": "",
+        "GitHubFileNamePattern": "",
+        "DestinationFileName": "FSLogix.zip",
+        "DestinationFolders": [
+            ""
+        ]
+    },
+    "VirtualDesktopOptimizationTool": {
+        "DownloadUrl": "",
+        "WebsiteUrl": "",
+        "SearchString": "",
+        "APIUrl": "",
+        "GitHubRepo": "",
+        "GitHubFileNamePattern": "",
+        "DestinationFileName": "VDOT.zip",
+        "DestinationFolders": [
+            ""
+        ]
+    }
 }
