@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "4202797343553686218"
+      "templateHash": "15912923104473788669"
     }
   },
   "parameters": {
@@ -7488,7 +7488,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "3446144776460754098"
+              "templateHash": "10872158242926263543"
             }
           },
           "parameters": {
@@ -9598,7 +9598,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.33.93.31351",
-                      "templateHash": "11377727352412544532"
+                      "templateHash": "17705697508239075308"
                     }
                   },
                   "parameters": {
@@ -9806,10 +9806,7 @@
                         "allowCrossTenantReplication": false,
                         "allowedCopyScope": "[if(parameters('privateEndpoint'), 'PrivateLink', 'AAD')]",
                         "allowSharedKeyAccess": true,
-                        "azureFilesIdentityBasedAuthentication": {
-                          "defaultSharePermission": "[if(contains(parameters('identitySolution'), 'DomainServices'), 'StorageFileDataSmbShareContributor', null())]",
-                          "directoryServiceOptions": "[if(equals(parameters('identitySolution'), 'EntraDomainServices'), 'AADDS', 'None')]"
-                        },
+                        "azureFilesIdentityBasedAuthentication": "[if(contains(parameters('identitySolution'), 'DomainServices'), createObject('defaultSharePermission', 'StorageFileDataSmbShareContributor', 'directoryServiceOptions', if(equals(parameters('identitySolution'), 'EntraDomainServices'), 'AADDS', 'None')), null())]",
                         "defaultToOAuthAuthentication": false,
                         "dnsEndpointType": "Standard",
                         "encryption": {
