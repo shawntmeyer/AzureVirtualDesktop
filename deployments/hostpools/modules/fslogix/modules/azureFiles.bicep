@@ -100,10 +100,10 @@ resource storageAccounts 'Microsoft.Storage/storageAccounts@2022-09-01' = [
       allowCrossTenantReplication: false
       allowedCopyScope: privateEndpoint ? 'PrivateLink' : 'AAD'
       allowSharedKeyAccess: true
-      azureFilesIdentityBasedAuthentication: {
-        defaultSharePermission: contains(identitySolution, 'DomainServices') ? 'StorageFileDataSmbShareContributor' : null
+      azureFilesIdentityBasedAuthentication: contains(identitySolution, 'DomainServices') ? {
+        defaultSharePermission: 'StorageFileDataSmbShareContributor'
         directoryServiceOptions: identitySolution == 'EntraDomainServices' ? 'AADDS' : 'None'
-      }
+      } : null
       defaultToOAuthAuthentication: false
       dnsEndpointType: 'Standard'
       encryption: {
