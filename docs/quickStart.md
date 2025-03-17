@@ -4,10 +4,17 @@
 
 ## Overview
 
+This solution consists of two main components:
+
+1. Azure Virtual Desktop Host Pool Deployment - Complete Host Pool Deployment with associated resources such as Key Vaults, FSLogix storage accounts (or NetApp accounts), and monitoring resources.
+2. Azure Virtual Desktop Custom Image Creation - Allows the creation of a custom image using automation in any cloud.
+
+These two components are not dependent on one another (i.e., you can utilize one without the other or both together). They have some common prerequisites and some that are unique to each component. The barrier to entry is not high if you want to setup a simple PoC deployment, but to incorporate all the Zero-Trust capabilities, you'll need to complete the prerequisites within this guide.
+
 There are two main avenues for deploying the Azure Virtual Desktop (AVD) solution:
 
 1. Command Line Tools - Bicep and the PowerShell Az Modules
-1. Template Spec Deployment and GUI
+2. Template Spec Deployment and GUI
 
 Both methods require some initial setup in order for a successful deployment
 
