@@ -28,7 +28,7 @@ There are several Azure resource prerequisite that are required to run this depl
 - **Networking:** deployment requires a minimum of 1 Azure Virtual Network with one subnet to which the deployment virtual machine (deployment helper) and the session host(s) will be attached. For a PoC type implementation of AVD with Entra ID authentication, this Vnet can be standalone as there are no custom DNS requirements; however, for hybrid identity scenarios and zero trust implementations, the Virtual Network has DNS requirements as documented below under optional. Machines on this network need to be able to connect to the following network destinations:
   - Resource Manager Url TCP Port 443 (Commercial - management.azure.com, US Gov - management.usgovcloudapi.net, USSec - management.microsoft.scloud, USNat - management.eaglex.ic.gov). You can leverage the [AzureResourceManager service tag](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/service-tags) in NSGs and the Azure Firewall to configure this access.
 - **Image Management Resources:** the deployment of the custom image build option depends on many artifacts that must be hosted in Azure Blob storage to satisfy Zero Trust principals or to build the custom image on Air-Gapped clouds. This repo contains a helper script that should be used to deploy the image management resources and upload the artifacts to the created storage account. See *deployments/imageManagement/Deploy-ImageManagement.ps1*.
-- **Azure Permissions:** ensure the principal deploying the solution has the "Owner" or ("Contributor" and "User Access Administrator") roles assigned on the target Azure subscription. If you wish to reference the secrets in an existing Key Vault (including one deployed by this solution) via the Template Spec UI deployment, you'll need to have the "Key Vault Secrets User" role assigned to this Key Vault either through inheritance from a higher scope or directly on the resource.
+- **Azure Permissions:** ensure the principal deploying the solution has the "Owner" or ("Contributor" and "User Access Administrator") roles assigned on the target Azure subscription. > **Important:** Ensure that your role assignment does not have a condition that prevents you from assigning the 'Role-Based Access Control Administrator' role to other principals as the deployment assigns this role to the deployment user-assigned managed identity in order to allow it to automatically remove the role assignments that it creates during deployment.
 - **Security Group:** create a security group for your AVD users.
   - Active Directory Domain Services: create the group in Active Directory and ensure the group has synchronized to Entra ID.
   - Entra ID: create the group in Entra ID.
@@ -228,71 +228,6 @@ In order to deploy the Azure Virtual Desktop standalone or spoke network and req
 
 4. Once all values are populated, deploy the template. Parameter values and the template can be downloaded from the deployment view.
 
-If you do not wish to utilize the template spec to deploy the required networking, you can follow the instructions below to create the required networking components via PowerShell. These instructions assume a standalone network for deploying a Proof of Concept (be sure to updated the variable values).
-
-1. Create a new resource group if one does not already exist:
-
-    ``` powershell
-    $Location       = '<Region>'
-    $ResGroupName   = '<Resource Group Name>'
-    New-AzResourceGroup -Location $Location -Name $ResGroupName
-    ```
-
-2. Create the VNet:
-
-    ``` powershell
-    $VnetName           = '<VNet Name>'
-    $VnetAddressPrefix  = '10.0.0.0/16'
-    $VirtualNetwork     = New-AzVirtualNetwork -Name $VnetName -ResourceGroupName $ResGroupName -Location $Location -AddressPrefix $VnetAddressPrefix
-    ```
-
-3. Create the virtual machine subnet configuration:
-
-   ``` powershell
-   $SubnetName          = '<Virtual Machine Subnet Name>'
-   $SubnetAddressPrefix = '10.0.0.0/24'
-   $SubnetConfig        = Add-AzVirtualNetworkSubnetConfig -Name $SubnetName -VirtualNetwork $VirtualNetwork -AddressPrefix $SubnetAddressPrefix
-   ```
-
-4. Associate the subnet configuration to the virtual network:
-
-   ``` powershell
-   $VirtualNetwork | Set-AzVirtualNetwork
-   ```
-
-5. Retrieve the Subnet Resource Id:
-
-   ``` powershell
-   $VNet = Get-AzVirtualNetwork -Name $VnetName -ResourceGroupName $ResGroupName
-   ($VNet.Subnets | Where-Object {$_.Name -eq "$SubnetName"}).Id
-   ```
-
-   Save the resource id of the subnet for use in the parameters files below as follows:
-
-   1. imageBuild - 'subnetResourceId'
-   2. hostpools = 'virtualMachineSubnetResourceId'
-
-6. Create the private endpoint subnet configuration:
-
-   ``` powershell
-   $SubnetName          = '<Private Endpoint Subnet Name>'
-   $SubnetAddressPrefix = '10.1.0.0/24'
-   $SubnetConfig        = Add-AzVirtualNetworkSubnetConfig -Name $SubnetName -VirtualNetwork $VirtualNetwork -AddressPrefix $SubnetAddressPrefix
-   ```
-
-7. Associate the subnet configuration to the virtual network:
-
-   ``` powershell
-   $VirtualNetwork | Set-AzVirtualNetwork
-   ```
-
-8. Retrieve the Subnet Resource Id:
-
-   ``` powershell
-   $VNet = Get-AzVirtualNetwork -Name $VnetName -ResourceGroupName $ResGroupName
-   ($VNet.Subnets | Where-Object {$_.Name -eq "$SubnetName"}).Id
-   ```
-
    Save the resource id of the subnet for use in the parameters files below as follows:
 
    1. imageManagement - `privateEndpointSubnetResourceId`
@@ -304,27 +239,6 @@ While utilizing private endpoints is optional, it must be deployed in order to f
 - Image Management - Blob Storage Account
 - Image Build - Blob Storage Account for logging customizations
 - AVD Deployment - Azure Files for FSLogix profiles, Azure Key Vault for storing secrets and Customer Managed Keys, AVD Private Link, Azure Recovery Services, and the Function App deployed to increase premium storage account quotas.
-
-Prior to running the Deploy-ImageManagement script, if the Azure Blob private DNS zone does not exist, you will want to create the Azure Blob private DNS zone via the portal, the Azure Virtual Desktop Networking template spec, or through Powershell. See [DNS Prerequisites](#prerequisites) for the correct values per environment.:
-
-``` powershell
-$ResGroupName = '<Resource Group Name>'
-$ZoneName = '<privateDNSZoneName>'
-$Zone = New-AzPrivateDnsZone -Name $ZoneName -ResourceGroupName $ResGroupName
-```
-
-The zone then needs to be linked to the Virtual Network created above.
-
-``` powershell
-$VNet = Get-AzVirtualNetwork -Name $VnetName -ResourceGroupName $ResGroupName
-$Link = New-AzPrivateDnsVirtualNetworkLink -ZoneName $ZoneName -ResourceGroupName $ResGroupName -Name "Blob-$VnetName-Link" -VirtualNetworkId $Vnet.Id
-```
-
-Retrieve the private DNS zone resource id using the following PowerShell command and save it for the 'azureBlobPrivateDnsZoneResourceId' the parameters below.
-
-``` powershell
-$Zone.ResourceId
-```
 
 ### Confidential VM Disk Encryption with Customer Managed Keys (Optional)
 
@@ -421,8 +335,7 @@ This deployment can be done via Command Line, Blue Button, or through a Template
 
 This option opens the deployment UI for the solution in the Azure Portal. Be sure to select the button for the correct cloud. If your desired cloud is not listed, please use the template spec detailed in the Quick Start guide.
 
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#blade/Microsoft_Azure_CreateUIDef/CustomDeploymentBlade/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2FFederalAVD%2Fmaster%2F%2Fdeployments%2FimageManagement%2FimageBuild%2FimageBuild.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2FFederalAVD%2Fmaster%2F%2Fdeployments%2FimageManagement%2FimageBuild%2FuiFormDefinition.json)
-[![Deploy to Azure Gov](https://aka.ms/deploytoazuregovbutton)](https://portal.azure.us/#blade/Microsoft_Azure_CreateUIDef/CustomDeploymentBlade/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2FFederalAVD%2Fmaster%2F%2Fdeployments%2FimageManagement%2FimageBuild%2FimageBuild.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2FFederalAVD%2Fmaster%2F%2Fdeployments%2FimageManagement%2FimageBuild%2FuiFormDefinition.json)
+|[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#blade/Microsoft_Azure_CreateUIDef/CustomDeploymentBlade/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2FFederalAVD%2Fmaster%2F%2Fdeployments%2FimageManagement%2FimageBuild%2FimageBuild.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2FFederalAVD%2Fmaster%2F%2Fdeployments%2FimageManagement%2FimageBuild%2FuiFormDefinition.json)|[![Deploy to Azure Gov](https://aka.ms/deploytoazuregovbutton)](https://portal.azure.us/#blade/Microsoft_Azure_CreateUIDef/CustomDeploymentBlade/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2FFederalAVD%2Fmaster%2F%2Fdeployments%2FimageManagement%2FimageBuild%2FimageBuild.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2FFederalAVD%2Fmaster%2F%2Fdeployments%2FimageManagement%2FimageBuild%2FuiFormDefinition.json)|
 
 #### Option 2: Using a Template Spec and Portal Form
 
@@ -463,8 +376,7 @@ The AVD solution includes all necessary resources to deploy a usable virtual des
 
 This option opens the deployment UI for the solution in the Azure Portal. Be sure to select the button for the correct cloud. If your desired cloud is not listed, please use the template spec detailed in the Quick Start guide.
 
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#blade/Microsoft_Azure_CreateUIDef/CustomDeploymentBlade/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2FFederalAVD%2Fmaster%2F%2Fdeployments%2Fhostpools%2Fhostpool.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2FFederalAVD%2Fmaster%2F%2Fdeployments%2Fhostpools%2FuiFormDefinition.json)
-[![Deploy to Azure Gov](https://aka.ms/deploytoazuregovbutton)](https://portal.azure.us/#blade/Microsoft_Azure_CreateUIDef/CustomDeploymentBlade/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2FFederalAVD%2Fmaster%2F%2Fdeployments%2Fhostpools%2Fhostpool.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2FFederalAVD%2Fmaster%2F%2Fdeployments%2Fhostpools%2FuiFormDefinition.json)
+|[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#blade/Microsoft_Azure_CreateUIDef/CustomDeploymentBlade/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2FFederalAVD%2Fmaster%2F%2Fdeployments%2Fhostpools%2Fhostpool.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2FFederalAVD%2Fmaster%2F%2Fdeployments%2Fhostpools%2FuiFormDefinition.json)|[![Deploy to Azure Gov](https://aka.ms/deploytoazuregovbutton)](https://portal.azure.us/#blade/Microsoft_Azure_CreateUIDef/CustomDeploymentBlade/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2FFederalAVD%2Fmaster%2F%2Fdeployments%2Fhostpools%2Fhostpool.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2FFederalAVD%2Fmaster%2F%2Fdeployments%2Fhostpools%2FuiFormDefinition.json)|
 
 #### Option 2: Using a Template Spec and Portal Form**
 
