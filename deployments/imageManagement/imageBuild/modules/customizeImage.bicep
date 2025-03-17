@@ -663,7 +663,7 @@ resource cleanup 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
   location: location
   parent: imageVm
   properties: {
-    asyncExecution: false
+    asyncExecution: true
     parameters: [
       {
         name: 'BuildDir'

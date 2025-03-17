@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.33.93.31351",
-      "templateHash": "7470415329481425293"
+      "templateHash": "11479747670035805451"
     },
     "name": "Zero Trust Architecture Custom Windows Image Builder",
     "description": "This solution allows you to create a custom image much like Azure VM Image Builder, but utilizes zero trust architecture and does not require that service.",
@@ -11955,7 +11955,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.33.93.31351",
-              "templateHash": "13927661293953721750"
+              "templateHash": "17073679648173053129"
             }
           },
           "parameters": {
@@ -12422,7 +12422,7 @@
               "name": "[format('{0}/{1}', parameters('imageVmName'), 'cleanup-Image')]",
               "location": "[parameters('location')]",
               "properties": {
-                "asyncExecution": false,
+                "asyncExecution": true,
                 "parameters": [
                   {
                     "name": "BuildDir",
@@ -13374,10 +13374,6 @@
           "asyncExecution": {
             "value": true
           },
-          "errorBlobManagedIdentity": "[if(empty(if(parameters('collectCustomizationLogs'), format('{0}{1}/', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}Logs-StorageAccount-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.primaryBlobEndpoint.value, variables('logContainerName')), '')), createObject('value', null()), createObject('value', createObject('clientId', if(empty(parameters('userAssignedIdentityResourceId')), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}ManagedIdentity-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.clientId.value, reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('userAssignedIdentityResourceId'), '/')[2], split(parameters('userAssignedIdentityResourceId'), '/')[4]), 'Microsoft.ManagedIdentity/userAssignedIdentities', last(split(parameters('userAssignedIdentityResourceId'), '/'))), '2023-01-31').clientId))))]",
-          "errorBlobContainerUri": "[if(empty(if(parameters('collectCustomizationLogs'), format('{0}{1}/', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}Logs-StorageAccount-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.primaryBlobEndpoint.value, variables('logContainerName')), '')), createObject('value', null()), createObject('value', format('{0}{1}-Remove-Resources-error-{2}.log', if(parameters('collectCustomizationLogs'), format('{0}{1}/', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}Logs-StorageAccount-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.primaryBlobEndpoint.value, variables('logContainerName')), ''), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}Orchestration-VM-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.name.value, parameters('timeStamp'))))]",
-          "outputBlobManagedIdentity": "[if(empty(if(parameters('collectCustomizationLogs'), format('{0}{1}/', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}Logs-StorageAccount-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.primaryBlobEndpoint.value, variables('logContainerName')), '')), createObject('value', null()), createObject('value', createObject('clientId', if(empty(parameters('userAssignedIdentityResourceId')), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}ManagedIdentity-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.clientId.value, reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('userAssignedIdentityResourceId'), '/')[2], split(parameters('userAssignedIdentityResourceId'), '/')[4]), 'Microsoft.ManagedIdentity/userAssignedIdentities', last(split(parameters('userAssignedIdentityResourceId'), '/'))), '2023-01-31').clientId))))]",
-          "outputBlobContainerUri": "[if(empty(if(parameters('collectCustomizationLogs'), format('{0}{1}/', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}Logs-StorageAccount-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.primaryBlobEndpoint.value, variables('logContainerName')), '')), createObject('value', null()), createObject('value', format('{0}{1}-Remove-Resources-output-{2}.log', if(parameters('collectCustomizationLogs'), format('{0}{1}/', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}Logs-StorageAccount-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.primaryBlobEndpoint.value, variables('logContainerName')), ''), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}Orchestration-VM-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.name.value, parameters('timeStamp'))))]",
           "location": {
             "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('subnetResourceId'), '/')[2], split(parameters('subnetResourceId'), '/')[4]), 'Microsoft.Network/virtualNetworks', split(parameters('subnetResourceId'), '/')[8]), '2023-05-01', 'full').location]"
           },
@@ -13609,7 +13605,6 @@
       "dependsOn": [
         "[subscriptionResourceId('Microsoft.Resources/deployments', format('{0}Capture-Image-{1}', variables('depPrefix'), parameters('timeStamp')))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}Image-VM-{1}', variables('depPrefix'), parameters('timeStamp')))]",
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}Logs-StorageAccount-{1}', variables('depPrefix'), parameters('timeStamp')))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}Orchestration-VM-{1}', variables('depPrefix'), parameters('timeStamp')))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}ManagedIdentity-{1}', variables('depPrefix'), parameters('timeStamp')))]"
       ]
