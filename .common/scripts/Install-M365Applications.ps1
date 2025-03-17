@@ -4,7 +4,7 @@ param(
     [string]$BlobStorageSuffix,
     [string]$BuildDir='',
     [string]$Environment,
-    [string]$Uri='',
+    [string]$Uri,
     [string]$UserAssignedIdentityClientId
 )
 $ErrorActionPreference = "Stop"
@@ -52,18 +52,6 @@ $SoftwareName = 'Microsoft-365-Applications'
 Start-Transcript -Path "$env:SystemRoot\Logs\Install-$SoftwareName.log" -Force
 Write-OutputWithTimeStamp "Starting Script to install '$SoftwareName' with the following parameters:"
 Write-Output ( $PSBoundParameters | Format-Table -AutoSize )
-
-Switch ($Environment) {
-    "ussec" {
-        $ChannelLine = '  <Add AllowCdnFallback="TRUE" SourcePath="https://officexo.azurefd.microsoft.scloud/prsstelecontainer/55336b82-a18d-4dd6-b5f6-9e5095c314a6/" Channel="MonthlyEnterprise" OfficeClientEdition="64">'
-    }
-    "usnat" {
-        $ChannelLine = '  <Add AllowCdnFallback="TRUE" SourcePath="https://officexo.azurefd.eaglex.ic.gov/prsstelecontainer/55336b82-a18d-4dd6-b5f6-9e5095c314a6/" Channel="MonthlyEnterprise" OfficeClientEdition="64">'
-    }
-    Default {
-        $ChannelLine = '  <Add OfficeClientEdition="64" Channel="MonthlyEnterprise">'
-    }
-}
 
 If ($AppsToInstall -ne '' -and $null -ne $AppsToInstall) {
     [array]$AppsToInstall = $AppsToInstall.Replace('\"', '"') | ConvertFrom-Json
@@ -136,7 +124,16 @@ if ($AppsToInstall -notcontains 'Word') {
 }
 
 $Content += '<Configuration>'
-$Content += $ChannelLine
+If ($Environment -eq 'ussec') {
+    $Content += '  <Add AllowCdnFallback="TRUE" SourcePath="https://officexo.azurefd.microsoft.scloud/prsstelecontainer/55336b82-a18d-4dd6-b5f6-9e5095c314a6/" Channel="MonthlyEnterprise" OfficeClientEdition="64">'
+
+}
+Elseif ($Environment -eq 'usnat') {
+    $Content += '  <Add AllowCdnFallback="TRUE" SourcePath="https://officexo.azurefd.eaglex.ic.gov/prsstelecontainer/55336b82-a18d-4dd6-b5f6-9e5095c314a6/" Channel="MonthlyEnterprise" OfficeClientEdition="64">'
+}
+Else {
+    $Content += '  <Add OfficeClientEdition="64" Channel="MonthlyEnterprise">'
+}
 
 If ($AppsToInstall -contains 'Access' -or $AppsToInstall -contains 'Excel' -or $AppsToInstall -contains 'OneNote' -or $AppsToInstall -contains 'Outlook' -or $AppsToInstall -contains 'PowerPoint' -or $AppsToInstall -contains 'Publisher' -or $AppsToInstall -contains 'Word') {
     $Content += '    <Product ID="O365ProPlusRetail">'

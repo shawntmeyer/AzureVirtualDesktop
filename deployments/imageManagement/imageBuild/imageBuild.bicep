@@ -289,7 +289,8 @@ var imageBuildResourceGroupName = empty(imageBuildResourceGroupId)
       : customBuildResourceGroupName)
   : last(split(imageBuildResourceGroupId, '/'))
 
-var adminPw = '1qaz@WSX${uniqueString(subscription().id, imageBuildResourceGroupName)}'
+var adminPw = '1qaz@WSX1qaz@WSX'   
+//var adminPw = '1qaz@WSX${uniqueString(subscription().id, imageBuildResourceGroupName)}'
 var adminUserName = 'vmadmin'
 
 var logContainerName = 'image-customization-logs'
@@ -612,10 +613,9 @@ module orchestrationVm '../../sharedModules/resources/compute/virtual-machine/ma
       }
     ]
     osDisk: {
-      caching: 'None'
+      caching: 'ReadWrite'
       createOption: 'fromImage'
       deleteOption: 'Delete'
-      diskSizeGB: '128'
       managedDisk: {
         storageAccountType: 'Standard_LRS'
       }
@@ -686,10 +686,9 @@ module imageVm '../../sharedModules/resources/compute/virtual-machine/main.bicep
       }
     ]
     osDisk: {
-      caching: 'None'
+      caching: 'ReadWrite'
       createOption: 'fromImage'
       deleteOption: 'Delete'
-      diskSizeGB: '128'
       managedDisk: {
         storageAccountType: 'Premium_LRS'
       }

@@ -196,6 +196,25 @@ resource applications 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01'
   }
 ]
 
+resource firstImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
+  name: 'restart-vm-1'
+  location: location
+  parent: orchestrationVm
+  properties: {
+    asyncExecution: false
+    parameters: restartVMParameters
+    source: {
+      script: loadTextContent('../../../../.common/scripts/Restart-Vm.ps1')
+    }
+    treatFailureAsDeploymentFailure: true
+  }
+  dependsOn: [
+    createBuildDir
+    removeAppxPackages
+    applications
+  ]
+}
+
 resource fslogix 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = if (installFsLogix) {
   name: 'fslogix'
   location: location
@@ -236,9 +255,7 @@ resource fslogix 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = if
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
-    createBuildDir
-    removeAppxPackages
-    applications
+    firstImageVmRestart
   ]
 }
 
@@ -290,10 +307,8 @@ resource office 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if 
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
-    createBuildDir
-    removeAppxPackages
-    applications
     fslogix
+    firstImageVmRestart
   ]
 }
 
@@ -337,9 +352,7 @@ resource onedrive 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = i
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
-    createBuildDir
-    removeAppxPackages
-    applications
+    firstImageVmRestart
     fslogix
     office
   ]
@@ -351,15 +364,15 @@ var teamsUris = cloud != 'usnat' && cloud != 'ussec'
           downloads.TeamsBootstrapper.DownloadUrl
           downloads.Teams64BitMSIX.DownloadUrl
           downloads.WebView2RunTime.DownloadUrl
-          downloads.RemoteDesktopWebRTCRedirectorService.DownloadUrl
           downloads.VisualStudioRedistributables.DownloadUrl
+          downloads.RemoteDesktopWebRTCRedirectorService.DownloadUrl
         ]
       : [
           '${artifactsContainerUri}/${downloads.TeamsBootstrapper.DestinationFileName}'
           '${artifactsContainerUri}/${downloads.Teams64BitMSIX.DestinationFileName}'
           '${artifactsContainerUri}/${downloads.WebView2RunTime.DestinationFileName}'
-          '${artifactsContainerUri}/${downloads.RemoteDesktopWebRTCRedirectorService.DestinationFileName}'
           '${artifactsContainerUri}/${downloads.VisualStudioRedistributables.DestinationFileName}'
+          '${artifactsContainerUri}/${downloads.RemoteDesktopWebRTCRedirectorService.DestinationFileName}'
         ]
   : empty(artifactsContainerUri)
       ? [
@@ -371,15 +384,15 @@ var teamsUris = cloud != 'usnat' && cloud != 'ussec'
               downloads.TeamsBootstrapper.DownloadUrl
               downloads.Teams64BitMSIX.DownloadUrl
               '${artifactsContainerUri}/${downloads.WebView2RunTime.DestinationFileName}'
-              '${artifactsContainerUri}/${downloads.RemoteDesktopWebRTCRedirectorService.DestinationFileName}'
               '${artifactsContainerUri}/${downloads.VisualStudioRedistributables.DestinationFileName}'
+              '${artifactsContainerUri}/${downloads.RemoteDesktopWebRTCRedirectorService.DestinationFileName}'
             ]
           : [
               '${artifactsContainerUri}/${downloads.TeamsBootstrapper.DestinationFileName}'
               '${artifactsContainerUri}/${downloads.Teams64BitMSIX.DestinationFileName}'
               '${artifactsContainerUri}/${downloads.WebView2RunTime.DestinationFileName}'
-              '${artifactsContainerUri}/${downloads.RemoteDesktopWebRTCRedirectorService.DestinationFileName}'
               '${artifactsContainerUri}/${downloads.VisualStudioRedistributables.DestinationFileName}'
+              '${artifactsContainerUri}/${downloads.RemoteDesktopWebRTCRedirectorService.DestinationFileName}'
             ]
 var teamsDestFileNames = length(teamsUris) == 2
   ? [
@@ -390,8 +403,8 @@ var teamsDestFileNames = length(teamsUris) == 2
       downloads.TeamsBootstrapper.DestinationFileName
       downloads.Teams64BitMSIX.DestinationFileName
       downloads.WebView2RunTime.DestinationFileName
-      downloads.RemoteDesktopWebRTCRedirectorService.DestinationFileName
       downloads.VisualStudioRedistributables.DestinationFileName
+      downloads.RemoteDesktopWebRTCRedirectorService.DestinationFileName
     ]
 
 resource teams 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (installTeams) {
@@ -440,17 +453,15 @@ resource teams 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
-    createBuildDir
-    removeAppxPackages
-    applications
+    firstImageVmRestart
     fslogix
     office
     onedrive
   ]
 }
 
-resource firstImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
-  name: 'restart-vm-1'
+resource secondImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if( installFsLogix || !empty(office365AppsToInstall) || installOneDrive || installTeams ) {
+  name: 'restart-vm-2'
   location: location
   parent: orchestrationVm
   properties: {
@@ -462,9 +473,6 @@ resource firstImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
-    createBuildDir
-    removeAppxPackages
-    applications
     fslogix
     office
     onedrive
@@ -517,12 +525,12 @@ resource microsoftUpdates 'Microsoft.Compute/virtualMachines/runCommands@2023-03
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
-    firstImageVmRestart
+    secondImageVmRestart
   ]
 }
 
-resource secondImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (installUpdates) {
-  name: 'restart-vm-2'
+resource thirdImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (installUpdates) {
+  name: 'restart-vm-3'
   location: location
   parent: orchestrationVm
   properties: {
@@ -577,12 +585,12 @@ resource vdot 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (i
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
-    secondImageVmRestart
+    thirdImageVmRestart
   ]
 }
 
-resource thirdImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (installVirtualDesktopOptimizationTool) {
-  name: 'restart-vm-3'
+resource fourthImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (installVirtualDesktopOptimizationTool) {
+  name: 'restart-vm-4'
   location: location
   parent: orchestrationVm
   properties: {
@@ -645,6 +653,7 @@ resource vdiApplications 'Microsoft.Compute/virtualMachines/runCommands@2023-03-
       firstImageVmRestart
       secondImageVmRestart
       thirdImageVmRestart
+      fourthImageVmRestart
     ]
   }
 ]
@@ -670,6 +679,7 @@ resource cleanup 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
     firstImageVmRestart
     secondImageVmRestart
     thirdImageVmRestart
+    fourthImageVmRestart
     vdiApplications
   ]
 }

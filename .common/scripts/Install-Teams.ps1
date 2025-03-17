@@ -79,7 +79,7 @@ If ($Uris.Length -gt 2) {
     If (!(Test-Path -Path $WebView2File)) {
         Write-OutputWithTimeStamp -Message "Failed to download the WebView2 file."
         $WebView2File = $null
-    }
+    }    
     $vcRedistFile = Join-Path -Path $TempDir -ChildPath $DestFileNames[3]
     If (!(Test-Path -Path $vcRedistFile)) {
         Write-OutputWithTimeStamp -Message "Failed to download the Visual C++ Redistributable file."
@@ -129,16 +129,14 @@ If (-not $WebView2Installed -and $null -ne $WebView2File) {
 }
 If ($null -ne $vcRedistFile) {
     Write-OutputWithTimeStamp "Installing Microsoft Visual C++ Redistributables."
-    $VCRedistInstaller = Start-Process -FilePath $vcRedistFile -ArgumentList "/install /quiet /norestart" -Wait -PassThru
-    If ($($VCRedistInstaller.ExitCode) -eq 0 ) {
+    $VCRedistInstall = Start-Process -FilePath $vcRedistFile -ArgumentList "/install /passive /norestart" -Wait -PassThru
+    If ($VCRedistInstall.ExitCode -eq 0 ) {
         Write-OutputWithTimeStamp "Installed the latest version of Microsoft Visual C++ Redistributable"
     }
     Else {
-        Write-OutputWithTimeStamp "Installion of the Microsoft Visual C++ Redistributable failed with exit code $($VCRedistInstaller.ExitCode)"
+        Write-OutputWithTimeStamp "Installion of the Microsoft Visual C++ Redistributable failed with exit code $($VCRedistInstall.ExitCode)"
     }
 }
-
-# install the Remote Desktop WebRTC Redirector Service
 If ($null -ne $webRTCFile) {
     Write-OutputWithTimeStamp "Installing the Remote Desktop WebRTC Redirector Service"
     $WebRTCInstall = Start-Process -FilePath msiexec.exe -ArgumentList "/i $webRTCFile /quiet /norestart" -Wait -PassThru

@@ -406,7 +406,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2022-11-01' = {
         name: '${name}-disk-os-01'
         createOption: osDisk.?createOption ?? 'FromImage'
         deleteOption: osDisk.?deleteOption ?? 'Delete'
-        diskSizeGB: osDisk.diskSizeGB
+        diskSizeGB: osDisk.?diskSizeGB ?? null
         caching: osDisk.?caching ?? 'ReadOnly'
         managedDisk: {
           storageAccountType: osDisk.managedDisk.storageAccountType
