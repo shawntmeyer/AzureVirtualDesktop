@@ -11,12 +11,13 @@ This solution consists of two main components:
 
 These two components are not dependent on one another (i.e., you can utilize one without the other or both together). They have some common prerequisites and some that are unique to each component. The barrier to entry is not high if you want to setup a simple PoC deployment, but to incorporate all the Zero-Trust capabilities, you'll need to complete the prerequisites within this guide.
 
-There are two main avenues for deploying the Azure Virtual Desktop (AVD) solution:
+There are three main methods for deploying the Azure Virtual Desktop (AVD) components:
 
-1. Command Line Tools - Bicep and the PowerShell Az Modules
+1. Blue-Button Deployment from Github (not applicable to Air-Gapped Clouds)
 2. Template Spec Deployment and GUI
+3. Command Line Tools - Bicep and the PowerShell Az Modules.
 
-Both methods require some initial setup in order for a successful deployment
+All methods require some initial setup in order for a successful deployment
 
 ## Prerequisites
 
@@ -24,22 +25,52 @@ There are several Azure resource prerequisite that are required to run this depl
 
 ### Required
 
-- **Licenses:** ensure you have the [required licensing for AVD](https://learn.microsoft.com/en-us/azure/virtual-desktop/overview#requirements).
-- **Networking:** deployment requires a minimum of 1 Azure Virtual Network with one subnet to which the deployment virtual machine (deployment helper) and the session host(s) will be attached. For a PoC type implementation of AVD with Entra ID authentication, this Vnet can be standalone as there are no custom DNS requirements; however, for hybrid identity scenarios and zero trust implementations, the Virtual Network has DNS requirements as documented below under optional. Machines on this network need to be able to connect to the following network destinations:
-  - Resource Manager Url TCP Port 443 (Commercial - management.azure.com, US Gov - management.usgovcloudapi.net, USSec - management.microsoft.scloud, USNat - management.eaglex.ic.gov). You can leverage the [AzureResourceManager service tag](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/service-tags) in NSGs and the Azure Firewall to configure this access.
-- **Image Management Resources:** the deployment of the custom image build option depends on many artifacts that must be hosted in Azure Blob storage to satisfy Zero Trust principals or to build the custom image on Air-Gapped clouds. See [Air-Gapped Cloud Image Management Details](imageAir-GappedCloud.md) for more information. This repo contains a helper script that should be used to deploy the image management resources and upload the artifacts to the created storage account. See *deployments/imageManagement/Deploy-ImageManagement.ps1*.
-- **Azure Permissions:** ensure the principal deploying the solution has the "Owner" or ("Contributor" and "User Access Administrator") roles assigned on the target Azure subscription.
+- <details><summary><b>Licenses</b></summary>
+
+  Ensure you have the [required licensing for AVD](https://learn.microsoft.com/en-us/azure/virtual-desktop/overview#requirements).
+  </details>
+- <details><summary><b>Networking</b></summary>
+  
+  Deployment requires a minimum of 1 Azure Virtual Network with one subnet to which the deployment virtual machine (deployment helper) and the session host(s) will be attached. For a PoC type implementation of AVD with Entra ID authentication, this Vnet can be standalone as there are no custom DNS requirements; however, for hybrid identity scenarios and zero trust implementations, the Virtual Network has DNS requirements as documented below under optional.
+  
+  Machines on this network need to be able to connect to the following network destinations:
+  <ul>
+  <li>Resource Manager Url TCP Port 443 (Commercial - management.azure.com, US Gov - management.usgovcloudapi.net, USSec - management.microsoft.scloud, USNat - management.eaglex.ic.gov). You can leverage the [AzureResourceManager service tag](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/service-tags) in NSGs and the Azure Firewall to configure this access.
+  </li>
+  </ul>
+  </details>
+- <details><summary><b>Desktop Virtualization Resource Provider</b></summary>
+  
+  This feature is not enabled on subscriptions by default. Use the following link to enable the Microsoft.DesktopVirtualization resource provider in your subscription: [Enable the Feature](https://learn.microsoft.com/en-us/azure/virtual-desktop/prerequisites?tabs=portal)
+  </details>
+- <details><summary><b>Image Management Resources</b></summary>
+  
+  The deployment of the custom image build option depends on many artifacts that must be hosted in Azure Blob storage to satisfy Zero Trust principals or to build the custom image on Air-Gapped clouds. See [Air-Gapped Cloud Image Management Details](imageAir-GappedCloud.md) for more information. This repo contains a helper script that should be used to deploy the image management resources and upload the artifacts to the created storage account. See *deployments/imageManagement/Deploy-ImageManagement.ps1*.
+  </details>
+- <details><summary><b>Azure Permissions</b></summary>
+  
+  Ensure the principal deploying the solution has the "Owner" or ("Contributor" and "User Access Administrator") roles assigned on the target Azure subscription.
+  
   > **Important:** Ensure that your role assignment does not have a condition that prevents you from assigning the 'Role-Based Access Control Administrator' role to other principals as the deployment assigns this role to the deployment user-assigned managed identity in order to allow it to automatically remove the role assignments that it creates during deployment.
-- **Security Group:** create a security group for your AVD users.
-  - Active Directory Domain Services: create the group in Active Directory and ensure the group has synchronized to Entra ID.
-  - Entra ID: create the group in Entra ID.
-  - Entra Domain Services: create the group in Entra ID and ensure the group has synchronized to Entra ID Domain Services.
+  </details>
+- <details><summary><b>Security Group</b></summary>
+  Create a security group for your AVD users.
+  <ul>
+  <li>Active Directory Domain Services: create the group in Active Directory and ensure the group has synchronized to Entra ID.</li>
+  <li>Entra ID: create the group in Entra ID.</li>
+  <li>Entra Domain Services: create the group in Entra ID and ensure the group has synchronized to Entra ID Domain Services.</li>
+  </details>
 
 ### Optional
 
-- **Domain Services:** if you plan to domain join the session hosts, ensure Active Directory Domain Services or Entra Domain Services is available in your enviroment and that you are synchronizing the required objects. AD Sites & Services should be configured for the address space of your Azure virtual network if you are extending your on-premises Active Directory infrastruture into the cloud.
-- **Disk Encryption:** the "encryption at host" feature should be deployed on the virtual machines to meet Zero Trust compliance. This feature is not enabled in your Azure subscription by default and must be manually enabled. Use the following steps to enable the feature: [Enable Encryption at Host](https://learn.microsoft.com/azure/virtual-machines/disks-enable-host-based-encryption-portal).
-- **DNS:** There are several DNS requirements:
+- <details><summary><b>Domain Services</b></summary>
+  
+  If you plan to domain join the session hosts, ensure Active Directory Domain Services or Entra Domain Services is available in your enviroment and that you are synchronizing the required objects. AD Sites & Services should be configured for the address space of your Azure virtual network if you are extending your on-premises Active Directory infrastruture into the cloud.
+  </details>
+- <details><summary><b>DNS</b></summary>
+  
+  There are several DNS requirements:
+
   - If you plan to domain join the sessions hosts, you must configure your subnets to resolve the Domain SRV records for domain location services to function. This is normally accomplished by configuring custom DNS settings on your AVD session host Virtual Networks to point to the Domain Controllers or using a DNS resolver that can resolve the internal domain records.
   - In order to use private links and disable public access to storage accounts, key vaults, and other PaaS resources (in accordance with Zero Trust Guidance), you must ensure that the following private DNS zones are also resolvable from the session host Virtual Networks:
 
@@ -54,10 +85,10 @@ There are several Azure resource prerequisite that are required to run this depl
     | **Azure Queue Storage**<br>- storage quota function app | privatelink.queue.core.windows.net | privatelink.queue.core.usgovcloudapi.net | privatelink.queue.core.microsoft.scloud | privatelink.queue.core.eaglex.ic.gov |
     | **Azure Table Storage**<br>- storage quota function app | privatelink.table.core.windows.net | privatelink.table.core.usgovcloudapi.net | privatelink.table.core.microsoft.scloud | privatelink.table.core.eaglex.ic.gov |
     | **Azure Web Sites**<br>- storage quota function app | privatelink.azurewebsites.net</br>scm.privatelink.azurewebsites.net | privatelink.azurewebsites.us</br>scm.privatelink.azurewebsites.us | privatelink.appservice.microsoft.scloud</br>scm.privatelink.appservice.microsoft.scloud | privatelink.appservice.eaglex.ic.gov</br>scm.privatelink.appservice.eaglex.ic.gov |
-
+  </details>
 - <details><summary><b>Domain Permissions</b></summary>
   <ul>
-    <li> For Active Directory Domain Services, create a principal to domain join the session hosts and Azure Files, using the following steps:
+    <li> For <b>Active Directory Domain Services</b>, create a principal to domain join the session hosts and Azure Files, using the following steps:
         <ol>
             <li>Open <b>Active Directory Users and Computers</b>.</li>
             <li>Navigate to your service accounts Organizational Unit (OU).</li>
@@ -76,18 +107,24 @@ There are several Azure resource prerequisite that are required to run this depl
             <li>In the <b>Permission Entry for <i>OU Name</i></b> window, ensure that the "Applies to:" drop down is set to "Descendant Computer objects" and then under Permissions, select only "Read all properties", "Write all properties", "Read permissions", "Modify permissions", "Change password", "Reset password", "Validated write to DNS host name", and "Validated write to service principal name". Select <b>OK</b> to save the entry.</li>
             <li>Select <b>OK</b> until you are returned to the <b>Active Directory Users and Computers</b> window.</li>
         </ol>
-        <li>for Entra ID Domain Services, ensure the principal is a member of the "AAD DC Administrators" group in Azure AD.</li>
+        <li>For <b>Entra ID Domain Services</b>, ensure the principal is a member of the "AAD DC Administrators" group in Azure AD.</li>
         </ul>
-    </details>
+  </details>
 - <details><summary><b>FSLogix with Azure NetApp Files</b></summary>
+  
   The following steps must be completed if you plan to use this service.
   <ul>
     <li>[Register the resource provider](https://learn.microsoft.com/azure/azure-netapp-files/azure-netapp-files-register)</li>
     <li>[Enable the shared AD feature](https://learn.microsoft.com/azure/azure-netapp-files/create-active-directory-connections#shared_ad) - this feature is required if you plan to deploy more than one domain joined NetApp account in the same Azure subscription and region.</li>
   </ul>
   </details>
-- **Enable AVD Private Link** this feature is not enabled on subscriptions by default. Use the following link to enable AVD Private Link on your subscription: [Enable the Feature](https://learn.microsoft.com/azure/virtual-desktop/private-link-setup?tabs=portal%2Cportal-2#enable-the-feature)
-- <details><summary><b>Marketplace Image:</b> If you plan to deploy this solution using PowerShell or AzureCLI and use a marketplace image for the virtual machines, use the code below to find the appropriate image (the Template Spec and Blue Button deployment UIs also automatically populate the available options.).</summary>
+- <details><summary><b>AVD Private Link</b></summary>
+  
+    This feature is not enabled on subscriptions by default. Use the following link to enable AVD Private Link on your subscription: [Enable the Feature](https://learn.microsoft.com/azure/virtual-desktop/private-link-setup)
+  </details>
+- <details><summary><b>Marketplace Image:</b></summary>
+  
+  If you plan to deploy this solution using PowerShell or AzureCLI and use a marketplace image for the virtual machines, use the code below to find the appropriate image (the Template Spec and Blue Button deployment UIs also automatically populate the available options.).
 
   ```powershell
   # Determine the Publisher; input the location for your AVD deployment
@@ -106,6 +143,39 @@ There are several Azure resource prerequisite that are required to run this depl
   $Sku = ''
   Get-AzVMImage -Location $Location -PublisherName $Publisher -Offer $Offer -Skus $Sku | Select-Object * | Format-List
   ```
+  </details>
+- <details><summary><b>Encryption At Host</b></summary>
+  
+    The "encryption at host" feature should be deployed on the virtual machines to meet Zero Trust compliance. This feature is not enabled in your Azure subscription by default and must be manually enabled. Use the following steps to enable the feature: [Enable Encryption at Host](https://learn.microsoft.com/azure/virtual-machines/disks-enable-host-based-encryption-portal).
+    </details>
+- <details><summary><b>Confidential VM Disk Encryption with Customer Managed Keys</b></summary>
+
+    In order to deploy Virtual Machines with Confidential VM encryption and customer managed keys, you will need to create the 'Confidential VM Orchestrator' application in your tenant. Use the following steps to complete this prerequisite.
+
+    <ol>
+    <li>Open PowerShell (perferably PowerShell 7 or later), and install the latest Az Modules.
+
+    If you launched PowerShell (or pwsh) as an administrator, use the following command:
+    ``` powershell
+    Install-Module -Name Microsoft.Graph -AllowClobber -Force
+    ```
+
+    If you did not launch pwsh as an administrator, use the following command:
+
+    ``` powershell
+    Install-Module -Name Microsoft.Graph -AllowClobber -Force -Scope CurrentUser
+    ```
+    </li>
+    <li>From the same PowerShell (or pwsh) console, execute the following PowerShell commands replacing "your tenant ID" with the correct value.
+
+    ``` powershell
+    Connect-Graph -Tenant "your tenant ID" Application.ReadWrite.All
+    New-MgServicePrincipal -AppId bf7b6499-ff71-4aa2-97a4-f372087be7f0 -DisplayName "Confidential VM Orchestrator"
+    ```
+    </li>
+    </ol>
+
+    You will then need to specify the objectId property of this new service principal in the 'confidentialVMOrchestratorObjectId' parameter for the AVD Host Pool Deployment. The parameters for this deployment are documented at [AVD Host Pool Parameters](parameters.md#avd-host-pool-deployment-parameters).
   </details>
 
 ### Tools
@@ -168,20 +238,6 @@ Additional Information can be found [here](https://learn.microsoft.com/en-us/azu
    ``` powershell
    Set-AzContext -Subscription <subscriptionID>
    ```
-
-### Resource Provider Registration
-
-You must make sure the Microsoft.DesktopVirtualization provider is registered in your subscription.
-
-``` powershell
-Register-AzResourceProvider -ProviderNamespace Microsoft.DesktopVirtualization
-```
-
-Optionally, to comply with Zero Trust and other IC customer baselines, you must use 'EncryptionAtHost'. To use encryption at host, you have to register the resource provider.
-
-``` powershell
-Register-AzProviderFeature -FeatureName EncryptionAtHost -ProviderNamespace Microsoft.Compute
-```
 
 ### Template Spec Creation
 
@@ -270,35 +326,6 @@ While utilizing private endpoints is optional, it must be deployed in order to f
 - Image Management - Blob Storage Account
 - Image Build - Blob Storage Account for logging customizations
 - AVD Deployment - Azure Files for FSLogix profiles, Azure Key Vault for storing secrets and Customer Managed Keys, AVD Private Link, Azure Recovery Services, and the Function App deployed to increase premium storage account quotas.
-
-### Confidential VM Disk Encryption with Customer Managed Keys (Optional)
-
-In order to deploy Virtual Machines with Confidential VM encryption and customer managed keys, you will need to create the 'Confidential VM Orchestrator' application in your tenant.
-
-Use the following steps to complete this prerequisite.
-
-1. Open PowerShell (perferably PowerShell 7 or later), and install the latest Az Modules.
-
-   If you launched PowerShell (or pwsh) as an administrator, use the following command:
-
-   ``` powershell
-   Install-Module -Name Microsoft.Graph -AllowClobber -Force
-   ```
-
-   If you did not launch pwsh as an administrator, use the following command:
-
-   ``` powershell
-   Install-Module -Name Microsoft.Graph -AllowClobber -Force -Scope CurrentUser
-   ```
-
-1. From the same PowerShell (or pwsh) console, execute the following PowerShell commands replacing "your tenant ID" with the correct value.
-
-   ``` powershell
-   Connect-Graph -Tenant "your tenant ID" Application.ReadWrite.All
-   New-MgServicePrincipal -AppId bf7b6499-ff71-4aa2-97a4-f372087be7f0 -DisplayName "Confidential VM Orchestrator"
-   ```
-
-You will then need to specify the objectId property of this new service principal in the 'confidentialVMOrchestratorObjectId' parameter for the AVD Host Pool Deployment. The parameters for this deployment are documented at [AVD Host Pool Parameters](parameters.md#avd-host-pool-deployment-parameters).
 
 ## Deployment
 
