@@ -1,9 +1,9 @@
 param(
     [string]$APIVersion,
     [string]$BlobStorageSuffix,
-    [string]$BuildDir='',
+    [string]$BuildDir = '',
     [string]$UserAssignedIdentityClientId,
-    [string]$Uri=''
+    [string]$Uri
 )
 
 $ErrorActionPreference = "Stop"
@@ -22,10 +22,6 @@ $SoftwareName = 'OneDrive'
 Start-Transcript -Path "$env:SystemRoot\Logs\Install-$SoftwareName.log" -Force
 Write-OutputWithTimeStamp "Starting Script to install '$SoftwareName' with the following parameters:"
 Write-Output ( $PSBoundParameters | Format-Table -AutoSize )
-
-If ($Uri -eq '') {
-    $Uri = 'https://go.microsoft.com/fwlink/p/?linkid=2121808'
-}
 
 If ($BuildDir -ne '') {
     $TempDir = Join-Path $BuildDir -ChildPath $SoftwareName

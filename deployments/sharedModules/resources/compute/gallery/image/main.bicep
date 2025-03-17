@@ -69,31 +69,35 @@ param maxRecommendedMemory int = 16
 ])
 param hyperVGeneration string = 'V2'
 
-@sys.description('Optional. The security type of the image. Requires a hyperVGeneration V2.')
-@allowed([
-  'Standard'
-  'TrustedLaunch'
-  'TrustedLaunchSupported'
-  'ConfidentialVM'
-  'ConfidentialVMSupported'
-  'TrustedLaunchAndConfidentialVMSupported'
-])
-param securityType string = 'Standard'
-
-@sys.description('Optional. The image will support hibernation.')
-param isHibernateSupported bool = false
-
-@sys.description('Optional. The image supports accelerated networking.</p>Accelerated networking enables single root I/O virtualization (SR-IOV) to a VM, greatly improving its networking performance.</p>This high-performance path bypasses the host from the data path, which reduces latency, jitter, and CPU utilization for the most demanding network workloads on supported VM types.')
-param isAcceleratedNetworkSupported bool = false
-
-@sys.description('Optional. The image supports Higher Storage Performance with NVMe.')
-param isHigherStoragePerformanceSupported bool = false
-
 @sys.description('Optional. The description of this gallery Image Definition resource. This property is updatable.')
 param description string = ''
 
 @sys.description('Optional. The Eula agreement for the gallery Image Definition. Has to be a valid URL.')
 param eula string = ''
+
+@sys.description('''Optional. The features of the gallery Image Definition.
+Example:
+[
+  {
+      name: 'DiskControllerTypes'
+      value: 'SCSI, NVMe'
+  }
+  {
+    name: 'SecurityType'
+    value: 'TrustedLaunch'
+  }
+  {
+    name: 'IsAcceleratedNetworkSupported'
+    value: 'True'
+  }
+  {
+    name: 'IsHibernateSupported'
+    value: 'True'
+  }
+]
+SecurityType can be: 'TrustedLaunch', 'TrustedLaunchSupported', 'ConfidentialVM', 'ConfidentialVMSupported', 'TrustedLaunchAndConfidentialVMSupported'
+''')
+param features array = []
 
 @sys.description('Optional. The privacy statement uri. Has to be a valid URL.')
 param privacyStatementUri string = ''
@@ -118,42 +122,6 @@ param excludedDiskTypes array = []
 
 @sys.description('Optional. Tags for all resources.')
 param tags object = {}
-
-var hibernateSupported = isHibernateSupported ? 'true' : 'false'
-var acceleratedNetworkSupported = isAcceleratedNetworkSupported ? 'true' : 'false'
-
-var diskControllerTypes = isHigherStoragePerformanceSupported ? [
-  {
-    name: 'DiskControllerTypes'
-    value: 'SCSI, NVMe'
-  }
- ] : []
-
-var gaFeatures = securityType != 'Standard' ? [
-  {
-    name: 'SecurityType'
-    value: securityType
-  }
-  {
-    name: 'IsAcceleratedNetworkSupported'
-    value: acceleratedNetworkSupported
-  }
-  {
-    name: 'IsHibernateSupported'
-    value: hibernateSupported
-  }
-] : [
-  {
-    name: 'IsAcceleratedNetworkSupported'
-    value: acceleratedNetworkSupported
-  }
-  {
-    name: 'IsHibernateSupported'
-    value: hibernateSupported
-  }
-]
-
-var features = !empty(diskControllerTypes) ? union(gaFeatures, diskControllerTypes) : gaFeatures
 
 resource gallery 'Microsoft.Compute/galleries@2022-03-03' existing = {
   name: galleryName
@@ -188,11 +156,11 @@ resource image 'Microsoft.Compute/galleries/images@2022-03-03' = {
     eula: !empty(eula) ? eula : null
     privacyStatementUri: privacyStatementUri
     releaseNoteUri: releaseNoteUri
-    purchasePlan: {
+    purchasePlan: !empty(productName) || !empty(planName) || !empty(planPublisherName) ? {
       product: !empty(productName) ? productName : null
       name: !empty(planName) ? planName : null
       publisher: !empty(planPublisherName) ? planPublisherName : null
-    }
+    } : null
     endOfLifeDate: endOfLife
     disallowed: {
       diskTypes: excludedDiskTypes

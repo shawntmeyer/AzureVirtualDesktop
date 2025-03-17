@@ -57,7 +57,7 @@ Function Get-InternetUrl {
 
         }
         else {
-            Write-Log -Category Error -Message "No download URL found using search term."
+            Write-Warning "No download URL found using search term."
             Return $null
         }
     }

@@ -35,18 +35,17 @@ param imageBuildResourceGroupId string = ''
 param customBuildResourceGroupName string = ''
 
 // Source Image Properties
-
 @description('Optional. The resource Id of the source image to use for the image build. If not provided, the latest image from the specified publisher, offer, and sku will be used.')
 param customSourceImageResourceId string = ''
 
 @description('The Marketplace Image publisher')
-param publisher string
+param mpPublisher string
 
 @description('The Marketplace Image offer')
-param offer string
+param mpOffer string
 
 @description('The Marketplace Image sku')
-param sku string
+param mpSku string
 
 @description('Optional. Determines if "EncryptionAtHost" is enabled on the VMs.')
 param encryptionAtHost bool = true
@@ -58,23 +57,17 @@ param vmSize string
 @description('Optional. List of Appx Apps to Remove. Default is [].')
 param appsToRemove array = []
 
+@description('Optional. Always download the newest bits from the web for FSLogix, Microsoft 365, OneDrive, and Teams. Overrides the default behavior of using the storage account.')
+param downloadLatestMicrosoftContent bool = false
+
 @description('Optional. Install FSLogix Agent.')
 param installFsLogix bool = false
-
-@description('Conditional. The name of the blob (or Full URI) of FSLogix.zip. Required when "InstallFSLogix" is true and "DownloadLatestCustomizationSources" is false.')
-param fslogixSetupBlobName string = 'FSLogix.zip'
 
 @description('Optional. List of Office 365 ProPlus Apps to Install. Default is [].')
 param office365AppsToInstall array = []
 
-@description('Conditional. The name of the blob (or full URI) of the Office Deployment Tool. Required when "Office365AppsToInstall" is not empty and "DownloadLatestCustomizationSources" is false.')
-param officeDeploymentToolBlobName string = 'Office365DeploymentTool.exe'
-
 @description('Optional. Install OneDrive Per Machine.')
 param installOneDrive bool = false
-
-@description('Conditional. The name of the blob (or full URI) of OneDriveSetup.exe. Required when "InstallOneDrive" is true and "DownloadLatestCustomizationSources" is false.')
-param onedriveSetupBlobName string = 'OneDriveSetup.exe'
 
 @description('Optional. Install Microsoft Teams.')
 param installTeams bool = false
@@ -91,14 +84,8 @@ param installTeams bool = false
 @description('Optional. The Teams Governmant Cloud type.')
 param teamsCloudType string = 'Commercial'
 
-@description('Conditional. The name of the blob (or full Uri) of the Teams installer. Required when "InstallTeams" is true and "DownloadLatestCustomizationSources" is false.')
-param teamsInstallerBlobName string = 'Microsoft-Teams.zip'
-
 @description('Optional. Apply the Virtual Desktop Optimization Tool customizations.')
 param installVirtualDesktopOptimizationTool bool = false
-
-@description('Conditional. The name of the zip blob containing the Virtual Desktop Optimization Tool Script and files. Required when "InstallVirtualDesktopOptimizationTool" is true and "DownloadLatestCustomizationSources" is false.')
-param vDotBlobName string = 'VDOT.zip'
 
 @description('''An array of image customization objects that are executed first before any restarts or updates.
 Each object contains the following properties:
@@ -283,13 +270,18 @@ var installers = []
 // elimnate duplicates
 var customizers = union(customizations, installers)
 
-var cloud = environment().name
+var cloud = toLower(environment().name)
+
 var locations = loadJsonContent('../../../.common/data/locations.json')[environment().name]
 var resourceAbbreviations = loadJsonContent('../../../.common/data/resourceAbbreviations.json')
+var downloads = cloud == 'usnat' ? loadJsonContent('../parameters/usnat.downloads.parameters.json') : cloud == 'ussec' ? loadJsonContent('../parameters/ussec.downloads.parameters.json') : loadJsonContent('../parameters/public.downloads.parameters.json')
 
 var computeLocation = vnet.location
 var depPrefix = !empty(deploymentPrefix) ? '${deploymentPrefix}-' : ''
-var logStorageAccountName = take(replace(toLower('sa${depPrefix}log${uniqueString(subscription().id,imageBuildResourceGroupName)}'), '-', ''),24)
+var logStorageAccountName = take(
+  replace(toLower('sa${depPrefix}log${uniqueString(subscription().id,imageBuildResourceGroupName)}'), '-', ''),
+  24
+)
 
 var imageBuildResourceGroupName = empty(imageBuildResourceGroupId)
   ? (empty(customBuildResourceGroupName)
@@ -297,7 +289,8 @@ var imageBuildResourceGroupName = empty(imageBuildResourceGroupId)
       : customBuildResourceGroupName)
   : last(split(imageBuildResourceGroupId, '/'))
 
-var adminPw = '1qaz@WSX${uniqueString(subscription().id, imageBuildResourceGroupName)}'
+var adminPw = '1qaz@WSX1qaz@WSX'   
+//var adminPw = '1qaz@WSX${uniqueString(subscription().id, imageBuildResourceGroupName)}'
 var adminUserName = 'vmadmin'
 
 var logContainerName = 'image-customization-logs'
@@ -307,42 +300,32 @@ var logContainerUri = collectCustomizationLogs
 
 var imageDefinitionFeatures = empty(imageDefinitionResourceId)
   ? [
-      {
-        name: 'IsHibernateSupported'
-        value: imageDefinitionIsHibernateSupported
-      }
-      {
-        name: 'IsAcceleratedNetworkSupported'
-        value: imageDefinitionIsAcceleratedNetworkSupported
-      }
-      {
-        name: 'DiskControllerTypes'
-        value: imageDefinitionIsHigherStoragePerformanceSupported
-      }
-      {
-        name: 'SecurityType'
-        value: imageDefinitionSecurityType
-      }
+      union(
+        imageDefinitionIsHibernateSupported ? { name: 'IsHibernateSupported', value: 'True' } : {},
+        imageDefinitionIsAcceleratedNetworkSupported ? { name: 'IsAcceleratedNetworkSupported', value: 'True' } : {},
+        imageDefinitionIsHigherStoragePerformanceSupported ? { name: 'DiskControllerTypes', value: 'SCSI, NVMe' } : {},
+        imageDefinitionSecurityType != 'Standard' ? { name: 'SecurityType', value: imageDefinitionSecurityType } : {}
+      )
     ]
   : existingImageDefinition.properties.features
 
-var galleryImageDefinitionHyperVGeneration = endsWith(sku, 'g2') || startsWith(sku, 'win11') ? 'V2' : 'V1'
+var galleryImageDefinitionHyperVGeneration = endsWith(mpSku, 'g2') || startsWith(mpSku, 'win11') ? 'V2' : 'V1'
 var galleryImageDefinitionName = empty(imageDefinitionResourceId)
   ? (empty(customImageDefinitionName)
       ? '${replace('${resourceAbbreviations.imageDefinitions}-${replace(galleryImageDefinitionPublisher, '-', '')}-${replace(galleryImageDefinitionOffer, '-', '')}-${replace(galleryImageDefinitionSku, '-', '')}', ' ', '')}'
       : customImageDefinitionName)
   : last(split(imageDefinitionResourceId, '/'))
-var galleryImageDefinitionOffer = !empty(imageDefinitionOffer) ? replace(imageDefinitionOffer, ' ', '') : offer
+var galleryImageDefinitionOffer = !empty(imageDefinitionOffer) ? replace(imageDefinitionOffer, ' ', '') : mpOffer
 var galleryImageDefinitionPublisher = !empty(imageDefinitionPublisher)
   ? replace(imageDefinitionPublisher, ' ', '')
-  : publisher
+  : mpPublisher
 
 var galleryImageDefinitionSecurityType = empty(imageDefinitionResourceId)
   ? imageDefinitionSecurityType
-  : !empty(filter(imageDefinitionFeatures, feature => feature.name == 'SecurityType'))
-      ? filter(imageDefinitionFeatures, feature => feature.name == 'SecurityType')[0].value
+  : !empty(filter(existingImageDefinition.properties.features, feature => feature.name == 'SecurityType'))
+      ? filter(existingImageDefinition.properties.features, feature => feature.name == 'SecurityType')[0].value
       : 'Standard'
-var galleryImageDefinitionSku = !empty(imageDefinitionSku) ? replace(imageDefinitionSku, ' ', '') : sku
+var galleryImageDefinitionSku = !empty(imageDefinitionSku) ? replace(imageDefinitionSku, ' ', '') : mpSku
 // build an image version from the ISO 8601 timestamp
 var autoImageVersionName = '${substring(timeStamp, 2, 2)}.${substring(timeStamp, 4, 4)}.${substring(timeStamp, 9, 4)}'
 var imageVersionName = imageMajorVersion != -1 && imageMajorVersion != -1 && imagePatch != -1
@@ -384,7 +367,7 @@ var imageVersionEndOfLifeDate = imageVersionEOLinDays > 0 ? dateTimeAdd(timeStam
 var imageVmName = take('${depPrefix}vmimg-${uniqueString(timeStamp)}', 15)
 var orchestrationVmName = take('${depPrefix}vmorc-${uniqueString(timeStamp)}', 15)
 
-var securityType = galleryImageDefinitionSecurityType == 'TrustedLaunch'
+var vmSecurityType = galleryImageDefinitionSecurityType == 'TrustedLaunch'
   ? 'TrustedLaunch'
   : galleryImageDefinitionSecurityType == 'ConfidentialVM' ? 'ConfidentialVM' : 'Standard'
 
@@ -437,13 +420,10 @@ module imageDefinition '../../sharedModules/resources/compute/gallery/image/main
   scope: resourceGroup(split(computeGalleryResourceId, '/')[4])
   params: {
     location: location
+    features: imageDefinitionFeatures
     galleryName: last(split(computeGalleryResourceId, '/'))
     name: galleryImageDefinitionName
     hyperVGeneration: galleryImageDefinitionHyperVGeneration
-    isHibernateSupported: imageDefinitionIsHibernateSupported
-    isAcceleratedNetworkSupported: imageDefinitionIsAcceleratedNetworkSupported
-    isHigherStoragePerformanceSupported: imageDefinitionIsHigherStoragePerformanceSupported
-    securityType: imageDefinitionSecurityType
     osType: 'Windows'
     osState: 'Generalized'
     publisher: galleryImageDefinitionPublisher
@@ -465,27 +445,10 @@ module remoteImageDefinition '../../sharedModules/resources/compute/gallery/imag
     galleryName: last(split(remoteComputeGalleryResourceId, '/'))
     location: remoteLocation
     name: empty(imageDefinitionResourceId) ? galleryImageDefinitionName : last(split(imageDefinitionResourceId, '/'))
+    features: imageDefinitionFeatures
     hyperVGeneration: empty(imageDefinitionResourceId)
       ? galleryImageDefinitionHyperVGeneration
       : any(existingImageDefinition.properties.hyperVGeneration)
-    isHibernateSupported: !empty(filter(imageDefinitionFeatures, feature => feature.name == 'IsHibernateSupported'))
-      ? bool(filter(imageDefinitionFeatures, feature => feature.name == 'IsHibernateSupported')[0].value)
-      : false
-    isAcceleratedNetworkSupported: !empty(filter(
-        imageDefinitionFeatures,
-        feature => feature.name == 'IsAcceleratedNetworkSupported'
-      ))
-      ? bool(filter(imageDefinitionFeatures, feature => feature.name == 'IsAcceleratedNetworkSupported')[0].value)
-      : false
-    isHigherStoragePerformanceSupported: !empty(filter(
-        imageDefinitionFeatures,
-        feature => feature.name == 'DiskControllerTypes'
-      ))
-      ? bool(filter(imageDefinitionFeatures, feature => feature.name == 'DiskControllerTypes')[0].value)
-      : false
-    securityType: !empty(filter(imageDefinitionFeatures, feature => feature.name == 'SecurityType'))
-      ? any(filter(imageDefinitionFeatures, feature => feature.name == 'SecurityType')[0].value)
-      : 'Standard'
     osType: 'Windows'
     osState: 'Generalized'
     publisher: empty(imageDefinitionResourceId)
@@ -650,10 +613,9 @@ module orchestrationVm '../../sharedModules/resources/compute/virtual-machine/ma
       }
     ]
     osDisk: {
-      caching: 'None'
+      caching: 'ReadWrite'
       createOption: 'fromImage'
       deleteOption: 'Delete'
-      diskSizeGB: '128'
       managedDisk: {
         storageAccountType: 'Standard_LRS'
       }
@@ -681,17 +643,25 @@ module imageVm '../../sharedModules/resources/compute/virtual-machine/main.bicep
   name: '${depPrefix}Image-VM-${timeStamp}'
   scope: resourceGroup(imageBuildResourceGroupName)
   params: {
+    hibernationEnabled: !empty(filter(imageDefinitionFeatures, feature => feature.name == 'IsHibernateSupported'))
+      ? bool(filter(imageDefinitionFeatures, feature => feature.name == 'IsHibernateSupported')[0].value)
+      : false
     location: computeLocation
     name: imageVmName
     adminPassword: adminPw
     adminUsername: adminUserName
     bootDiagnostics: false
+    diskControllerType: !empty(filter(imageDefinitionFeatures, feature => feature.name == 'DiskControllerTypes'))
+      ? contains(filter(imageDefinitionFeatures, feature => feature.name == 'DiskControllerTypes')[0].value, 'NVMe')
+          ? 'NVMe'
+          : 'SCSI'
+      : 'SCSI'
     encryptionAtHost: encryptionAtHost
     imageReference: empty(customSourceImageResourceId)
       ? {
-          publisher: publisher
-          offer: offer
-          sku: sku
+          publisher: mpPublisher
+          offer: mpOffer
+          sku: mpSku
           version: 'latest'
         }
       : {
@@ -699,7 +669,12 @@ module imageVm '../../sharedModules/resources/compute/virtual-machine/main.bicep
         }
     nicConfigurations: [
       {
-        enableAcceleratedNetworking: imageDefinitionIsAcceleratedNetworkSupported
+        enableAcceleratedNetworking: !empty(filter(
+            imageDefinitionFeatures,
+            feature => feature.name == 'IsAcceleratedNetworkSupported'
+          ))
+          ? bool(filter(imageDefinitionFeatures, feature => feature.name == 'IsAcceleratedNetworkSupported')[0].value)
+          : false
         deleteOption: 'Delete'
         ipConfigurations: [
           {
@@ -711,18 +686,17 @@ module imageVm '../../sharedModules/resources/compute/virtual-machine/main.bicep
       }
     ]
     osDisk: {
-      caching: 'None'
+      caching: 'ReadWrite'
       createOption: 'fromImage'
       deleteOption: 'Delete'
-      diskSizeGB: '128'
       managedDisk: {
         storageAccountType: 'Premium_LRS'
       }
     }
     osType: 'Windows'
-    securityType: securityType
-    secureBootEnabled: securityType == 'TrustedLaunch' ? true : false
-    vTpmEnabled: securityType == 'TrustedLaunch' ? true : false
+    securityType: vmSecurityType
+    secureBootEnabled: vmSecurityType == 'TrustedLaunch' ? true : false
+    vTpmEnabled: vmSecurityType == 'TrustedLaunch' ? true : false
     tags: tags[?'Microsoft.Compute/virtualMachines'] ?? {}
     userAssignedIdentities: empty(userAssignedIdentityResourceId)
       ? {
@@ -764,12 +738,9 @@ module customizeImage 'modules/customizeImage.bicep' = {
     updateService: updateService
     wsusServer: wsusServer
     artifactsContainerUri: artifactsContainerUri
-    fslogixSetupBlobName: fslogixSetupBlobName
-    officeDeploymentToolBlobName: officeDeploymentToolBlobName
-    onedriveSetupBlobName: onedriveSetupBlobName
-    teamsInstallerBlobName: teamsInstallerBlobName
+    downloads: downloads
+    downloadLatestMicrosoftContent: downloadLatestMicrosoftContent
     vdiCustomizations: vdiCustomizations
-    vDotBlobName: vDotBlobName
   }
 }
 
@@ -842,26 +813,6 @@ module removeImageBuildResources '../../sharedModules/resources/compute/virtual-
   scope: resourceGroup(imageBuildResourceGroupName)
   params: {
     asyncExecution: true
-    errorBlobManagedIdentity: empty(logContainerUri)
-      ? null
-      : {
-          clientId: empty(userAssignedIdentityResourceId)
-            ? userAssignedIdentity.outputs.clientId
-            : existingUserAssignedIdentity.properties.clientId
-        }
-    errorBlobContainerUri: empty(logContainerUri)
-      ? null
-      : '${logContainerUri}${orchestrationVm.outputs.name}-Remove-Resources-error-${timeStamp}.log'
-    outputBlobManagedIdentity: empty(logContainerUri)
-      ? null
-      : {
-          clientId: empty(userAssignedIdentityResourceId)
-            ? userAssignedIdentity.outputs.clientId
-            : existingUserAssignedIdentity.properties.clientId
-        }
-    outputBlobContainerUri: empty(logContainerUri)
-      ? null
-      : '${logContainerUri}${orchestrationVm.outputs.name}-Remove-Resources-output-${timeStamp}.log'
     location: computeLocation
     name: 'RemoveImageBuildResources'
     parameters: [

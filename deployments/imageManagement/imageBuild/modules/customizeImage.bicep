@@ -2,6 +2,8 @@ targetScope = 'resourceGroup'
 
 param appsToRemove array
 param cloud string
+param downloads object
+param downloadLatestMicrosoftContent bool
 param location string = resourceGroup().location
 param artifactsContainerUri string
 param customizations array
@@ -9,38 +11,41 @@ param logBlobContainerUri string
 param orchestrationVmName string
 param imageVmName string
 param installFsLogix bool
-param fslogixSetupBlobName string
 param installOneDrive bool
 param installTeams bool
 param installUpdates bool
 param installVirtualDesktopOptimizationTool bool
 param office365AppsToInstall array
-param onedriveSetupBlobName string
-param vDotBlobName string
-param officeDeploymentToolBlobName string
-param teamsInstallerBlobName string
 param teamsCloudType string
 param timeStamp string = utcNow('yyMMddhhmm')
 param updateService string
-param vdiCustomizations array
 param userAssignedIdentityClientId string
+param vdiCustomizations array
 param wsusServer string
 
 var buildDir = 'c:\\BuildDir'
 
-var apiVersion = environment().name == 'USNat' ? '2017-08-01' : '2018-02-01'
+var apiVersion = cloud == 'usnat' ? '2017-08-01' : '2018-02-01'
 
-var customizers = [for customization in customizations: {
-  name: replace(customization.name, ' ', '-')
-  uri: contains(customization.blobNameOrUri, '://') ? customization.blobNameOrUri : '${artifactsContainerUri}/${customization.blobNameOrUri}'
-  arguments: customization.?arguments ?? ''
-}]
+var customizers = [
+  for customization in customizations: {
+    name: replace(customization.name, ' ', '-')
+    uri: contains(customization.blobNameOrUri, '://')
+      ? customization.blobNameOrUri
+      : '${artifactsContainerUri}/${customization.blobNameOrUri}'
+    arguments: customization.?arguments ?? ''
+  }
+]
 
-var vdiCustomizers = [for customization in vdiCustomizations: {
-  name: replace(customization.name, ' ', '-')
-  uri: contains(customization.blobNameOrUri, '://') ? customization.blobNameOrUri : '${artifactsContainerUri}/${customization.blobNameOrUri}'
-  arguments: customization.?arguments ?? ''
-}]
+var vdiCustomizers = [
+  for customization in vdiCustomizations: {
+    name: replace(customization.name, ' ', '-')
+    uri: contains(customization.blobNameOrUri, '://')
+      ? customization.blobNameOrUri
+      : '${artifactsContainerUri}/${customization.blobNameOrUri}'
+    arguments: customization.?arguments ?? ''
+  }
+]
 
 var commonScriptParams = [
   {
@@ -58,7 +63,7 @@ var commonScriptParams = [
   {
     name: 'UserAssignedIdentityClientId'
     value: userAssignedIdentityClientId
-  }  
+  }
 ]
 
 var restartVMParameters = [
@@ -112,14 +117,22 @@ resource removeAppxPackages 'Microsoft.Compute/virtualMachines/runCommands@2024-
   location: location
   parent: imageVm
   properties: {
-    errorBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
-      clientId: userAssignedIdentityClientId
-    }
-    errorBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-Remove-AppxPackages-error-${timeStamp}.log' 
-    outputBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
-      clientId: userAssignedIdentityClientId
-    }
-    outputBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-Remove-AppxPackages-output-${timeStamp}.log'
+    errorBlobManagedIdentity: empty(logBlobContainerUri)
+      ? null
+      : {
+          clientId: userAssignedIdentityClientId
+        }
+    errorBlobUri: empty(logBlobContainerUri)
+      ? null
+      : '${logBlobContainerUri}${imageVmName}-Remove-AppxPackages-error-${timeStamp}.log'
+    outputBlobManagedIdentity: empty(logBlobContainerUri)
+      ? null
+      : {
+          clientId: userAssignedIdentityClientId
+        }
+    outputBlobUri: empty(logBlobContainerUri)
+      ? null
+      : '${logBlobContainerUri}${imageVmName}-Remove-AppxPackages-output-${timeStamp}.log'
     parameters: [
       {
         name: 'AppsToRemove'
@@ -134,71 +147,64 @@ resource removeAppxPackages 'Microsoft.Compute/virtualMachines/runCommands@2024-
 }
 
 @batchSize(1)
-resource applications 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = [for customizer in customizers: {
-  name: customizer.name
-  location: location
-  parent: imageVm
-  properties: {
-    asyncExecution: false
-    errorBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
-      clientId: userAssignedIdentityClientId
-    }
-    errorBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-${customizer.name}-error-${timeStamp}.log' 
-    outputBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
-      clientId: userAssignedIdentityClientId
-    }
-    outputBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-${customizer.name}-output-${timeStamp}.log'
-    parameters: union(commonScriptParams, [      
-      {
-        name: 'Uri'
-        value: customizer.uri
+resource applications 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = [
+  for customizer in customizers: {
+    name: customizer.name
+    location: location
+    parent: imageVm
+    properties: {
+      asyncExecution: false
+      errorBlobManagedIdentity: empty(logBlobContainerUri)
+        ? null
+        : {
+            clientId: userAssignedIdentityClientId
+          }
+      errorBlobUri: empty(logBlobContainerUri)
+        ? null
+        : '${logBlobContainerUri}${imageVmName}-${customizer.name}-error-${timeStamp}.log'
+      outputBlobManagedIdentity: empty(logBlobContainerUri)
+        ? null
+        : {
+            clientId: userAssignedIdentityClientId
+          }
+      outputBlobUri: empty(logBlobContainerUri)
+        ? null
+        : '${logBlobContainerUri}${imageVmName}-${customizer.name}-output-${timeStamp}.log'
+      parameters: union(commonScriptParams, [
+        {
+          name: 'Uri'
+          value: customizer.uri
+        }
+        {
+          name: 'Name'
+          value: customizer.name
+        }
+        {
+          name: 'Arguments'
+          value: customizer.arguments
+        }
+      ])
+      source: {
+        script: loadTextContent('../../../../.common/scripts/Invoke-Customization.ps1')
       }
-      {
-        name: 'Name'
-        value: customizer.name
-      }
-      {
-        name: 'Arguments'
-        value: customizer.arguments
-      }
-    ])
-    source: {
-      script: loadTextContent('../../../../.common/scripts/Invoke-Customization.ps1')
+      treatFailureAsDeploymentFailure: true
     }
-    treatFailureAsDeploymentFailure: true
+    dependsOn: [
+      createBuildDir
+      removeAppxPackages
+    ]
   }
-  dependsOn: [
-    createBuildDir
-    removeAppxPackages
-  ]
-}]
+]
 
-resource fslogix 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = if(installFsLogix) {
-  name: 'fslogix'
+resource firstImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
+  name: 'restart-vm-1'
   location: location
-  parent: imageVm
+  parent: orchestrationVm
   properties: {
     asyncExecution: false
-    errorBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
-      clientId: userAssignedIdentityClientId
-    }
-    errorBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-FSLogix-error-${timeStamp}.log' 
-    outputBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
-      clientId: userAssignedIdentityClientId
-    }
-    outputBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-FSLogix-output-${timeStamp}.log'
-    parameters: union(commonScriptParams, [
-      {
-        name: 'Name'
-        value: 'FSLogix'
-      }
-      {
-        name: 'Uri'
-        value: !empty(artifactsContainerUri) ? '${artifactsContainerUri}/${fslogixSetupBlobName}' : ''
-      }
-    ])
+    parameters: restartVMParameters
     source: {
-      script: loadTextContent('../../../../.common/scripts/Install-FSLogix.ps1')
+      script: loadTextContent('../../../../.common/scripts/Restart-Vm.ps1')
     }
     treatFailureAsDeploymentFailure: true
   }
@@ -209,20 +215,72 @@ resource fslogix 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = if
   ]
 }
 
-resource office 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if(!empty(office365AppsToInstall)) {
+resource fslogix 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = if (installFsLogix) {
+  name: 'fslogix'
+  location: location
+  parent: imageVm
+  properties: {
+    asyncExecution: false
+    errorBlobManagedIdentity: empty(logBlobContainerUri)
+      ? null
+      : {
+          clientId: userAssignedIdentityClientId
+        }
+    errorBlobUri: empty(logBlobContainerUri)
+      ? null
+      : '${logBlobContainerUri}${imageVmName}-FSLogix-error-${timeStamp}.log'
+    outputBlobManagedIdentity: empty(logBlobContainerUri)
+      ? null
+      : {
+          clientId: userAssignedIdentityClientId
+        }
+    outputBlobUri: empty(logBlobContainerUri)
+      ? null
+      : '${logBlobContainerUri}${imageVmName}-FSLogix-output-${timeStamp}.log'
+    parameters: union(commonScriptParams, [
+      {
+        name: 'Name'
+        value: 'FSLogix'
+      }
+      {
+        name: 'Uri'
+        value: cloud != 'usnat' && cloud != 'ussec' && (downloadLatestMicrosoftContent || empty(artifactsContainerUri))
+          ? downloads.FSLogix.DownloadUrl
+          : '${artifactsContainerUri}/${downloads.FSLogix.DestinationFileName}'
+      }
+    ])
+    source: {
+      script: loadTextContent('../../../../.common/scripts/Install-FSLogix.ps1')
+    }
+    treatFailureAsDeploymentFailure: true
+  }
+  dependsOn: [
+    firstImageVmRestart
+  ]
+}
+
+resource office 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (!empty(office365AppsToInstall)) {
   name: 'm365Apps'
   location: location
   parent: imageVm
   properties: {
     asyncExecution: false
-    errorBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
-      clientId: userAssignedIdentityClientId
-    }
-    errorBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-Office-error-${timeStamp}.log' 
-    outputBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
-      clientId: userAssignedIdentityClientId
-    }
-    outputBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-Office-output-${timeStamp}.log'
+    errorBlobManagedIdentity: empty(logBlobContainerUri)
+      ? null
+      : {
+          clientId: userAssignedIdentityClientId
+        }
+    errorBlobUri: empty(logBlobContainerUri)
+      ? null
+      : '${logBlobContainerUri}${imageVmName}-Office-error-${timeStamp}.log'
+    outputBlobManagedIdentity: empty(logBlobContainerUri)
+      ? null
+      : {
+          clientId: userAssignedIdentityClientId
+        }
+    outputBlobUri: empty(logBlobContainerUri)
+      ? null
+      : '${logBlobContainerUri}${imageVmName}-Office-output-${timeStamp}.log'
     parameters: union(commonScriptParams, [
       {
         name: 'Environment'
@@ -238,7 +296,9 @@ resource office 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if(
       }
       {
         name: 'Uri'
-        value: !empty(artifactsContainerUri) ? '${artifactsContainerUri}/${officeDeploymentToolBlobName}' : ''
+        value: downloadLatestMicrosoftContent || empty(artifactsContainerUri)
+          ? downloads.Office365DeploymentTool.DownloadUrl
+          : '${artifactsContainerUri}/${downloads.Office365DeploymentTool.DestinationFileName}'
       }
     ])
     source: {
@@ -247,27 +307,33 @@ resource office 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if(
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
-    createBuildDir
-    removeAppxPackages
-    applications
     fslogix
+    firstImageVmRestart
   ]
 }
 
-resource onedrive 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = if(installOneDrive) {
+resource onedrive 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = if (installOneDrive) {
   name: 'onedrive'
   location: location
   parent: imageVm
   properties: {
     asyncExecution: false
-    errorBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
-      clientId: userAssignedIdentityClientId
-    }
-    errorBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-OneDrive-error-${timeStamp}.log' 
-    outputBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
-      clientId: userAssignedIdentityClientId
-    }
-    outputBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-OneDrive-output-${timeStamp}.log'
+    errorBlobManagedIdentity: empty(logBlobContainerUri)
+      ? null
+      : {
+          clientId: userAssignedIdentityClientId
+        }
+    errorBlobUri: empty(logBlobContainerUri)
+      ? null
+      : '${logBlobContainerUri}${imageVmName}-OneDrive-error-${timeStamp}.log'
+    outputBlobManagedIdentity: empty(logBlobContainerUri)
+      ? null
+      : {
+          clientId: userAssignedIdentityClientId
+        }
+    outputBlobUri: empty(logBlobContainerUri)
+      ? null
+      : '${logBlobContainerUri}${imageVmName}-OneDrive-output-${timeStamp}.log'
     parameters: union(commonScriptParams, [
       {
         name: 'Name'
@@ -275,7 +341,9 @@ resource onedrive 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = i
       }
       {
         name: 'Uri'
-        value: !empty(artifactsContainerUri) ? '${artifactsContainerUri}/${onedriveSetupBlobName}' : ''
+        value: downloadLatestMicrosoftContent || empty(artifactsContainerUri)
+          ? downloads.OneDrive.DownloadUrl
+          : '${artifactsContainerUri}/${downloads.OneDrive.DestinationFileName}'
       }
     ])
     source: {
@@ -284,13 +352,60 @@ resource onedrive 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = i
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
-    createBuildDir
-    removeAppxPackages
-    applications
+    firstImageVmRestart
     fslogix
     office
   ]
 }
+
+var teamsUris = cloud != 'usnat' && cloud != 'ussec'
+  ? downloadLatestMicrosoftContent || empty(artifactsContainerUri)
+      ? [
+          downloads.TeamsBootstrapper.DownloadUrl
+          downloads.Teams64BitMSIX.DownloadUrl
+          downloads.WebView2RunTime.DownloadUrl
+          downloads.VisualStudioRedistributables.DownloadUrl
+          downloads.RemoteDesktopWebRTCRedirectorService.DownloadUrl
+        ]
+      : [
+          '${artifactsContainerUri}/${downloads.TeamsBootstrapper.DestinationFileName}'
+          '${artifactsContainerUri}/${downloads.Teams64BitMSIX.DestinationFileName}'
+          '${artifactsContainerUri}/${downloads.WebView2RunTime.DestinationFileName}'
+          '${artifactsContainerUri}/${downloads.VisualStudioRedistributables.DestinationFileName}'
+          '${artifactsContainerUri}/${downloads.RemoteDesktopWebRTCRedirectorService.DestinationFileName}'
+        ]
+  : empty(artifactsContainerUri)
+      ? [
+          downloads.TeamsBootstrapper.DownloadUrl
+          downloads.Teams64BitMSIX.DownloadUrl
+        ]
+      : downloadLatestMicrosoftContent
+          ? [
+              downloads.TeamsBootstrapper.DownloadUrl
+              downloads.Teams64BitMSIX.DownloadUrl
+              '${artifactsContainerUri}/${downloads.WebView2RunTime.DestinationFileName}'
+              '${artifactsContainerUri}/${downloads.VisualStudioRedistributables.DestinationFileName}'
+              '${artifactsContainerUri}/${downloads.RemoteDesktopWebRTCRedirectorService.DestinationFileName}'
+            ]
+          : [
+              '${artifactsContainerUri}/${downloads.TeamsBootstrapper.DestinationFileName}'
+              '${artifactsContainerUri}/${downloads.Teams64BitMSIX.DestinationFileName}'
+              '${artifactsContainerUri}/${downloads.WebView2RunTime.DestinationFileName}'
+              '${artifactsContainerUri}/${downloads.VisualStudioRedistributables.DestinationFileName}'
+              '${artifactsContainerUri}/${downloads.RemoteDesktopWebRTCRedirectorService.DestinationFileName}'
+            ]
+var teamsDestFileNames = length(teamsUris) == 2
+  ? [
+      downloads.TeamsBootstrapper.DestinationFileName
+      downloads.Teams64BitMSIX.DestinationFileName
+    ]
+  : [
+      downloads.TeamsBootstrapper.DestinationFileName
+      downloads.Teams64BitMSIX.DestinationFileName
+      downloads.WebView2RunTime.DestinationFileName
+      downloads.VisualStudioRedistributables.DestinationFileName
+      downloads.RemoteDesktopWebRTCRedirectorService.DestinationFileName
+    ]
 
 resource teams 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (installTeams) {
   name: 'teams'
@@ -298,27 +413,39 @@ resource teams 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (
   parent: imageVm
   properties: {
     asyncExecution: false
-    errorBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
-      clientId: userAssignedIdentityClientId
-    }
-    errorBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-Teams-error-${timeStamp}.log' 
-    outputBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
-      clientId: userAssignedIdentityClientId
-    }
-    outputBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-Teams-output-${timeStamp}.log'
+    errorBlobManagedIdentity: empty(logBlobContainerUri)
+      ? null
+      : {
+          clientId: userAssignedIdentityClientId
+        }
+    errorBlobUri: empty(logBlobContainerUri)
+      ? null
+      : '${logBlobContainerUri}${imageVmName}-Teams-error-${timeStamp}.log'
+    outputBlobManagedIdentity: empty(logBlobContainerUri)
+      ? null
+      : {
+          clientId: userAssignedIdentityClientId
+        }
+    outputBlobUri: empty(logBlobContainerUri)
+      ? null
+      : '${logBlobContainerUri}${imageVmName}-Teams-output-${timeStamp}.log'
     parameters: union(commonScriptParams, [
       {
         name: 'Name'
         value: 'Teams'
-      }      
+      }
       {
-        name: 'Uri'
-        value: !empty(artifactsContainerUri) ? '${artifactsContainerUri}/${teamsInstallerBlobName}' : ''
+        name: 'Uris'
+        value: string(teamsUris)
+      }
+      {
+        name: 'DestFileNames'
+        value: string(teamsDestFileNames)
       }
       {
         name: 'TeamsCloudType'
         value: teamsCloudType
-      }  
+      }
     ])
     source: {
       script: loadTextContent('../../../../.common/scripts/Install-Teams.ps1')
@@ -326,20 +453,18 @@ resource teams 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
-    createBuildDir
-    removeAppxPackages
-    applications
+    firstImageVmRestart
     fslogix
     office
     onedrive
   ]
 }
 
-resource firstImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
-  name: 'restart-vm-1'
+resource secondImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if( installFsLogix || !empty(office365AppsToInstall) || installOneDrive || installTeams ) {
+  name: 'restart-vm-2'
   location: location
   parent: orchestrationVm
-  properties: {    
+  properties: {
     asyncExecution: false
     parameters: restartVMParameters
     source: {
@@ -348,9 +473,6 @@ resource firstImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
-    createBuildDir
-    removeAppxPackages
-    applications
     fslogix
     office
     onedrive
@@ -358,50 +480,60 @@ resource firstImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023
   ]
 }
 
-resource microsoftUpdates 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if(installUpdates) {
+resource microsoftUpdates 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (installUpdates) {
   name: 'microsoft-updates'
   location: location
   parent: imageVm
   properties: {
     asyncExecution: false
-    errorBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
-      clientId: userAssignedIdentityClientId
-    }
-    errorBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-Install-Updates-error-${timeStamp}.log' 
-    outputBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
-      clientId: userAssignedIdentityClientId
-    }
-    outputBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-Install-Updates-output-${timeStamp}.log'
-    parameters: updateService == 'WSUS' ? [
-      {
-        name: 'Service'
-        value: updateService
-      }
-      {
-        name: 'WSUSServer'
-        value: wsusServer
-      }
-    ] : [
-      {
-        name: 'Service'
-        value: updateService
-      }
-    ]   
+    errorBlobManagedIdentity: empty(logBlobContainerUri)
+      ? null
+      : {
+          clientId: userAssignedIdentityClientId
+        }
+    errorBlobUri: empty(logBlobContainerUri)
+      ? null
+      : '${logBlobContainerUri}${imageVmName}-Install-Updates-error-${timeStamp}.log'
+    outputBlobManagedIdentity: empty(logBlobContainerUri)
+      ? null
+      : {
+          clientId: userAssignedIdentityClientId
+        }
+    outputBlobUri: empty(logBlobContainerUri)
+      ? null
+      : '${logBlobContainerUri}${imageVmName}-Install-Updates-output-${timeStamp}.log'
+    parameters: updateService == 'WSUS'
+      ? [
+          {
+            name: 'Service'
+            value: updateService
+          }
+          {
+            name: 'WSUSServer'
+            value: wsusServer
+          }
+        ]
+      : [
+          {
+            name: 'Service'
+            value: updateService
+          }
+        ]
     source: {
       script: loadTextContent('../../../../.common/scripts/Invoke-WindowsUpdate.ps1')
     }
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
-    firstImageVmRestart
+    secondImageVmRestart
   ]
 }
 
-resource secondImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if(installUpdates) {
-  name: 'restart-vm-2'
+resource thirdImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (installUpdates) {
+  name: 'restart-vm-3'
   location: location
   parent: orchestrationVm
-  properties: {    
+  properties: {
     asyncExecution: false
     parameters: restartVMParameters
     source: {
@@ -420,14 +552,20 @@ resource vdot 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (i
   parent: imageVm
   properties: {
     asyncExecution: false
-    errorBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
-      clientId: userAssignedIdentityClientId
-    }
-    errorBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-vdot-error-${timeStamp}.log' 
-    outputBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
-      clientId: userAssignedIdentityClientId
-    }
-    outputBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-vdot-output-${timeStamp}.log'
+    errorBlobManagedIdentity: empty(logBlobContainerUri)
+      ? null
+      : {
+          clientId: userAssignedIdentityClientId
+        }
+    errorBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-vdot-error-${timeStamp}.log'
+    outputBlobManagedIdentity: empty(logBlobContainerUri)
+      ? null
+      : {
+          clientId: userAssignedIdentityClientId
+        }
+    outputBlobUri: empty(logBlobContainerUri)
+      ? null
+      : '${logBlobContainerUri}${imageVmName}-vdot-output-${timeStamp}.log'
     parameters: union(commonScriptParams, [
       {
         name: 'Name'
@@ -435,7 +573,9 @@ resource vdot 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (i
       }
       {
         name: 'Uri'
-        value: !empty(artifactsContainerUri) ? '${artifactsContainerUri}/${vDotBlobName}' : ''
+        value: cloud != 'usnat' && cloud != 'ussec' && (downloadLatestMicrosoftContent || empty(artifactsContainerUri))
+          ? downloads.VirtualDesktopOptimizationTool.DownloadUrl
+          : '${artifactsContainerUri}/${downloads.VirtualDesktopOptimizationTool.DestinationFileName}'
       }
     ])
     source: {
@@ -445,15 +585,15 @@ resource vdot 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (i
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
-    secondImageVmRestart
+    thirdImageVmRestart
   ]
 }
 
-resource thirdImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (installVirtualDesktopOptimizationTool) {
-  name: 'restart-vm-3'
+resource fourthImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (installVirtualDesktopOptimizationTool) {
+  name: 'restart-vm-4'
   location: location
   parent: orchestrationVm
-  properties: {    
+  properties: {
     asyncExecution: false
     parameters: restartVMParameters
     source: {
@@ -467,45 +607,56 @@ resource thirdImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023
 }
 
 @batchSize(1)
-resource vdiApplications 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = [for customizer in vdiCustomizers: {
-  name: customizer.name
-  location: location
-  parent: imageVm
-  properties: {
-    asyncExecution: false
-    errorBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
-      clientId: userAssignedIdentityClientId
-    }
-    errorBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-${customizer.name}-error-${timeStamp}.log' 
-    outputBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
-      clientId: userAssignedIdentityClientId
-    }
-    outputBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-${customizer.name}-output-${timeStamp}.log'
-    parameters: union(commonScriptParams, [      
-      {
-        name: 'Uri'
-        value: customizer.uri
+resource vdiApplications 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = [
+  for customizer in vdiCustomizers: {
+    name: customizer.name
+    location: location
+    parent: imageVm
+    properties: {
+      asyncExecution: false
+      errorBlobManagedIdentity: empty(logBlobContainerUri)
+        ? null
+        : {
+            clientId: userAssignedIdentityClientId
+          }
+      errorBlobUri: empty(logBlobContainerUri)
+        ? null
+        : '${logBlobContainerUri}${imageVmName}-${customizer.name}-error-${timeStamp}.log'
+      outputBlobManagedIdentity: empty(logBlobContainerUri)
+        ? null
+        : {
+            clientId: userAssignedIdentityClientId
+          }
+      outputBlobUri: empty(logBlobContainerUri)
+        ? null
+        : '${logBlobContainerUri}${imageVmName}-${customizer.name}-output-${timeStamp}.log'
+      parameters: union(commonScriptParams, [
+        {
+          name: 'Uri'
+          value: customizer.uri
+        }
+        {
+          name: 'Name'
+          value: customizer.name
+        }
+        {
+          name: 'Arguments'
+          value: customizer.arguments
+        }
+      ])
+      source: {
+        script: loadTextContent('../../../../.common/scripts/Invoke-Customization.ps1')
       }
-      {
-        name: 'Name'
-        value: customizer.name
-      }
-      {
-        name: 'Arguments'
-        value: customizer.arguments
-      }
-    ])
-    source: {
-      script: loadTextContent('../../../../.common/scripts/Invoke-Customization.ps1')
+      treatFailureAsDeploymentFailure: true
     }
-    treatFailureAsDeploymentFailure: true
+    dependsOn: [
+      firstImageVmRestart
+      secondImageVmRestart
+      thirdImageVmRestart
+      fourthImageVmRestart
+    ]
   }
-  dependsOn: [
-    firstImageVmRestart
-    secondImageVmRestart
-    thirdImageVmRestart
-  ]
-}]
+]
 
 resource cleanup 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
   name: 'cleanup-Image'
@@ -528,6 +679,7 @@ resource cleanup 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
     firstImageVmRestart
     secondImageVmRestart
     thirdImageVmRestart
+    fourthImageVmRestart
     vdiApplications
   ]
 }
@@ -538,14 +690,22 @@ resource sysprep 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
   parent: imageVm
   properties: {
     asyncExecution: false
-    errorBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
-        clientId: userAssignedIdentityClientId
-    }
-    errorBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-Sysprep-error-${timeStamp}.log' 
-    outputBlobManagedIdentity: empty(logBlobContainerUri) ? null : {
-        clientId: userAssignedIdentityClientId
-    }
-    outputBlobUri: empty(logBlobContainerUri) ? null : '${logBlobContainerUri}${imageVmName}-Sysprep-output-${timeStamp}.log'
+    errorBlobManagedIdentity: empty(logBlobContainerUri)
+      ? null
+      : {
+          clientId: userAssignedIdentityClientId
+        }
+    errorBlobUri: empty(logBlobContainerUri)
+      ? null
+      : '${logBlobContainerUri}${imageVmName}-Sysprep-error-${timeStamp}.log'
+    outputBlobManagedIdentity: empty(logBlobContainerUri)
+      ? null
+      : {
+          clientId: userAssignedIdentityClientId
+        }
+    outputBlobUri: empty(logBlobContainerUri)
+      ? null
+      : '${logBlobContainerUri}${imageVmName}-Sysprep-output-${timeStamp}.log'
     source: {
       script: loadTextContent('../../../../.common/scripts/Invoke-Sysprep.ps1')
     }

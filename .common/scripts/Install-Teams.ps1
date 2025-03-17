@@ -1,10 +1,11 @@
 param(
     [string]$APIVersion,
     [string]$BlobStorageSuffix,
-    [string]$BuildDir='',
-    [string]$UserAssignedIdentityClientId,
+    [string]$BuildDir = '',
+    [string]$UserAssignedIdentityClientId = '',
     [string]$TeamsCloudType,
-    [string]$Uri=''
+    [string]$Uris,
+    [string]$DestFileNames
 )
 
 $ErrorActionPreference = 'Stop'
@@ -21,7 +22,11 @@ function Write-OutputWithTimeStamp {
 $SoftwareName = 'Teams'
 Start-Transcript -Path "$env:SystemRoot\Logs\Install-$SoftwareName.log" -Force
 Write-OutputWithTimeStamp "Starting script to install $SoftwareName with the following parameters:"
-Write-Output ( $PSBoundParameters | Format-Table -AutoSize )
+Write-Output "APIVersion: $APIVersion"
+Write-Output "BlobStorageSuffix: $BlobStorageSuffix"
+Write-Output "BuildDir: $BuildDir"
+Write-Output "UserAssignedIdentityClientId: $UserAssignedIdentityClientId"
+Write-Output "TeamsCloudType: $TeamsCloudType"
 If ($null -ne $BuildDir -and $BuildDir -ne '') {
     $TempDir = Join-Path $BuildDir -ChildPath $SoftwareName
 }
@@ -30,54 +35,81 @@ Else {
 }
 New-Item -Path $TempDir -ItemType Directory -Force | Out-Null  
 
-$WebClient = New-Object System.Net.WebClient
-If ($Null -ne $Uri -and $Uri -ne '' -and $Uri -match $BlobStorageSuffix -and $UserAssignedIdentityClientId -ne '') {
-    $StorageEndpoint = ($Uri -split "://")[0] + "://" + ($Uri -split "/")[2] + "/"
-    $TokenUri = "http://169.254.169.254/metadata/identity/oauth2/token?api-version=$APIVersion&resource=$StorageEndpoint&client_id=$UserAssignedIdentityClientId"
-    $AccessToken = ((Invoke-WebRequest -Headers @{Metadata = $true } -Uri $TokenUri -UseBasicParsing).Content | ConvertFrom-Json).access_token
-    $WebClient.Headers.Add('x-ms-version', '2017-11-09')
-    $webClient.Headers.Add("Authorization", "Bearer $AccessToken")
-    $SourceFileName = ($Uri -Split "/")[-1]
-    $DestFile = Join-Path -Path $TempDir -ChildPath $SourceFileName
+[array]$Uris = $Uris.Replace('\"', '"') | ConvertFrom-Json
+Write-Output "Uris:"
+ForEach ($Uri in $Uris) {
+    Write-Output " $Uri"
+}
+[array]$DestFileNames = $DestFileNames.Replace('\"', '"') | ConvertFrom-Json
+Write-Output "DestFileNames:"    
+ForEach ($DestFileName in $DestFileNames) {
+    Write-Output " $DestFileName"
+}
+For ($i = 0; $i -lt $Uris.Length; $i++) {
+    $WebClient = New-Object System.Net.WebClient
+    $Uri = $Uris[$i]
+    $DestFileName = $DestFileNames[$i]
+    if ($Uri -match $BlobStorageSuffix) {
+        $StorageEndpoint = ($Uri -split "://")[0] + "://" + ($Uri -split "/")[2] + "/"
+        $TokenUri = "http://169.254.169.254/metadata/identity/oauth2/token?api-version=$APIVersion&resource=$StorageEndpoint&client_id=$UserAssignedIdentityClientId"
+        $AccessToken = ((Invoke-WebRequest -Headers @{Metadata = $true } -Uri $TokenUri -UseBasicParsing).Content | ConvertFrom-Json).access_token
+        $WebClient.Headers.Add('x-ms-version', '2017-11-09')
+        $webClient.Headers.Add("Authorization", "Bearer $AccessToken")
+    }
+    $DestFile = Join-Path -Path $TempDir -ChildPath $DestFileName
     Write-OutputWithTimeStamp "Downloading '$Uri' to '$DestFile'."
-    $webClient.DownloadFile("$Uri", "$DestFile")
-    Start-Sleep -Seconds 5
-    If (!(Test-Path -Path $DestFile)) { Write-Error "Failed to download $SourceFileName"; Exit 1 }
-    Expand-Archive -Path $destFile -DestinationPath $TempDir -Force
-    $WebView2File = (Get-ChildItem -Path $TempDir -filter 'webview*.exe' -Recurse).FullName
-    $vcRedistFile = (Get-ChildItem -Path $TempDir -filter 'vc*.exe' -Recurse).FullName
-    $webRTCFile = (Get-ChildItem -Path $TempDir -filter 'MsRdcWebRTCSvc.msi' -Recurse).FullName
-    $BootStrapperFile = (Get-ChildItem -Path $TempDir -filter '*bootstrapper.exe' -Recurse).FullName
-    $MSIXFile = (Get-ChildItem -Path $TempDir -filter '*.msix' -Recurse).FullName
+    $ErrorActionPreference = 'SilentlyContinue'
+    $webClient.DownloadFile($Uri, $DestFile)
+    Unblock-File -Path $DestFile
+    $ErrorActionPreference = 'Stop'
+    $WebClient = $null
+}
+$BootStrapperFile = Join-Path -Path $TempDir -ChildPath $DestFileNames[0]
+If (!(Test-Path -Path $BootStrapperFile)) {
+    Write-Error "Failed to download the Teams bootstrapper file."
+    Exit 1
+}
+$MSIXFile = Join-Path -Path $TempDir -ChildPath $DestFileNames[1]
+If (!(Test-Path -Path $MSIXFile)) {
+    Write-Error "Failed to download the Teams MSIX file."
+    Exit 1
+}
+If ($Uris.Length -gt 2) {
+    $WebView2File = Join-Path -Path $TempDir -ChildPath $DestFileNames[2]
+    If (!(Test-Path -Path $WebView2File)) {
+        Write-OutputWithTimeStamp -Message "Failed to download the WebView2 file."
+        $WebView2File = $null
+    }    
+    $vcRedistFile = Join-Path -Path $TempDir -ChildPath $DestFileNames[3]
+    If (!(Test-Path -Path $vcRedistFile)) {
+        Write-OutputWithTimeStamp -Message "Failed to download the Visual C++ Redistributable file."
+        $vcRedistFile = $null
+    }
+    $webRTCFile = Join-Path -Path $TempDir -ChildPath $DestFileNames[4]
+    If (!(Test-Path -Path $webRTCFile)) {
+        Write-OutputWithTimeStamp -Message "Failed to download the WebRTC file."
+        $webRTCFile = $null
+    }
 }
 Else {
-    Write-OutputWithTimeStamp "No valid Uri provided. Downloading required installers from the internet."
-    $WebView2File = Join-Path -Path $TempDir -ChildPath 'webview2RuntimeInstaller.exe'
-    Write-OutputWithTimeStamp "Downloading WebView2 Runtime Installer"
-    $WebClient.DownloadFile('https://go.microsoft.com/fwlink/?linkid=2124703', $WebView2File)
-    Write-OutputWithTimeStamp "Downloading Visual C++ Redistributables"
-    $vcRedistFile = Join-Path -Path $TempDir -ChildPath 'vc_redist.x64.exe'
-    $WebClient.DownloadFile('https://aka.ms/vs/16/release/vc_redist.x64.exe', $vcRedistFile)
-    Write-OutputWithTimeStamp "Downloading Remote Desktop WebRTC Redirector Service"
-    $webRTCFile = Join-Path -Path $TempDir -ChildPath 'MsRdcWebRTCSvc.msi'
-    $WebClient.DownloadFile('https://aka.ms/msrdcwebrtcsvc/msi', $webRTCFile)
-    Write-OutputWithTimeStamp "Downloading Teams Bootstrapper"
-    $BootStrapperFile = Join-Path -Path $TempDir -ChildPath 'Teams_bootstrapper.exe'
-    $WebClient.DownloadFile('https://go.microsoft.com/fwlink/?linkid=2243204&clcid=0x409', $BootStrapperFile)
-    Write-OutputWithTimeStamp "Downloading Teams MSIX"
-    $MSIXFile = Join-Path -Path $TempDir -ChildPath 'Teams_windows_x64.msix'
-    $WebClient.DownloadFile('https://go.microsoft.com/fwlink/?linkid=2196106', $MSIXFile)    
+    $WebView2File = $null
+    $vcRedistFile = $null
+    $webRTCFile = $null
 }
-Write-OutputWithTimeStamp "Enabling media optimizations for Teams"
+
+If ($WebView2File -or $vcRedistFile -or $webRTCFile) {
+    Write-OutputWithTimeStamp "Starting installation of Teams dependencies."
+}
+Else {
+    Write-OutputWithTimeStamp "No dependencies to install."
+}
+
 # Enable media optimizations for Team
-New-Item -Path "HKLM:\SOFTWARE\Microsoft\Teams" -Force
-New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Teams" -Name IsWVDEnvironment -PropertyType DWORD -Value 1 -Force
-Write-OutputWithTimeStamp "Installing Microsoft Visual C++ Redistributables."
-$VCRedistInstaller = Start-Process -FilePath $vcRedistFile -ArgumentList "/install /quiet /norestart" -Wait -PassThru
-If ($($VCRedistInstaller.ExitCode) -eq 0 ) {
-    Write-OutputWithTimeStamp "Installed the latest version of Microsoft Visual C++ Redistributable"
-}
+New-Item -Path "HKLM:\SOFTWARE\Microsoft\Teams" -Force | Out-Null
+New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Teams" -Name IsWVDEnvironment -PropertyType DWORD -Value 1 -Force | Out-Null
+
 # Check to see if WebView2 is already installed
+Write-OutputWithTimeStamp "Checking if WebView2 Runtime is already installed."
 If (Test-Path -Path 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}') {
     If (Get-ItemProperty -Path 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}' -Name pv -ErrorAction SilentlyContinue) {
         $WebView2Installed = $True
@@ -85,24 +117,45 @@ If (Test-Path -Path 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3
         Write-OutputWithTimeStamp "WebView2 Runtime is already installed. Version: $InstalledVersion"
     }
 }
-If (-not $WebView2Installed) {
-    Write-OutputWithTimeStamp "Installing the latest version of the Microsoft WebView2 Runtime"
+If (-not $WebView2Installed -and $null -ne $WebView2File) {
+    Write-OutputWithTimeStamp "WebView2 runtime not installed, installing the latest version."
     $WebView2Installer = Start-Process -FilePath $WebView2File -ArgumentList "/silent /install" -Wait -PassThru
     If ($($WebView2Installer.ExitCode) -eq 0 ) {
         Write-OutputWithTimeStamp "Installed the latest version of the Microsoft WebView2 Runtime"
     }
+    Else {
+        Write-OutputWithTimeStamp "Installion of the Microsoft WebView2 Runtime failed with exit code $($WebView2Installer.ExitCode)"
+    }
 }
-
-# install the Remote Desktop WebRTC Redirector Service
-Write-OutputWithTimeStamp "Installing the Remote Desktop WebRTC Redirector Service"
-$WebRTCInstall = Start-Process -FilePath msiexec.exe -ArgumentList "/i $webRTCFile /quiet /norestart" -Wait -PassThru
-If ($($WebRTCInstall.ExitCode) -eq 0) {
-    Write-OutputWithTimeStamp "Installed the Remote Desktop WebRTC Redirector Service"
+If ($null -ne $vcRedistFile) {
+    Write-OutputWithTimeStamp "Installing Microsoft Visual C++ Redistributables."
+    $VCRedistInstall = Start-Process -FilePath $vcRedistFile -ArgumentList "/install /passive /norestart" -Wait -PassThru
+    If ($VCRedistInstall.ExitCode -eq 0 ) {
+        Write-OutputWithTimeStamp "Installed the latest version of Microsoft Visual C++ Redistributable"
+    }
+    Else {
+        Write-OutputWithTimeStamp "Installion of the Microsoft Visual C++ Redistributable failed with exit code $($VCRedistInstall.ExitCode)"
+    }
 }
+If ($null -ne $webRTCFile) {
+    Write-OutputWithTimeStamp "Installing the Remote Desktop WebRTC Redirector Service"
+    $WebRTCInstall = Start-Process -FilePath msiexec.exe -ArgumentList "/i $webRTCFile /quiet /norestart" -Wait -PassThru
+    If ($($WebRTCInstall.ExitCode) -eq 0) {
+        Write-OutputWithTimeStamp "Installed the Remote Desktop WebRTC Redirector Service"
+    }
+    Else {
+        Write-OutputWithTimeStamp "Installation of the Remote Desktop WebRTC Redirector Service failed with exit code $($WebRTCInstall.ExitCode)"
+    }
+}
+Write-OutputWithTimeStamp "Starting Teams installation."
 $TeamsInstall = Start-Process -FilePath "$BootStrapperFile" -ArgumentList "-p -o `"$MSIXFile`"" -Wait -PassThru
 If ($($TeamsInstall.ExitCode) -eq 0) {
     Write-OutputWithTimeStamp "Installed Teams successfully."
 }
+Else {
+    Write-OutputWithTimeStamp "Teams installation failed with exit code $($TeamsInstall.ExitCode)"
+}
+
 Switch ($TeamsCloudType) {
     "GCC" {
         $CloudType = 2

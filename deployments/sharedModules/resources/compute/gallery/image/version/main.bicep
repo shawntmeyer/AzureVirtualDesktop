@@ -1,7 +1,3 @@
-metadata name = 'Compute Galleries Image Version'
-metadata description = 'This module deploys an Azure Compute Gallery Image Definition Version'
-metadata author = 'shawn.meyer@microsoft.com'
-
 @sys.description('Required. Name of the image version.')
 param name string
 
@@ -22,8 +18,7 @@ param endOfLifeDate string = ''
 @sys.description('Optional. If set to true, Virtual Machines deployed from the latest version of the Image Definition will not use this Image Version.')
 param excludeFromLatest bool = false
 
-@sys.description('''Optional. The number of replicas of the Image Version to be created per region.
-This property would take effect for a region when regionalReplicaCount is not specified. This property is updatable.''')
+@sys.description('Optional. The number of replicas of the Image Version to be created per region. This property would take effect for a region when regionalReplicaCount is not specified. This property is updatable.')
 param replicaCount int
 
 @sys.description('Optional. Optional parameter which specifies the mode to be used for replication. This property is not updatable.')
@@ -41,8 +36,7 @@ param replicationMode string = 'Full'
 ])
 param storageAccountType string = 'Standard_LRS'
 
-@sys.description('''Optional. The target regions where the Image Version is going to be replicated to.
-If this object is not specified, then the deployment location will be used.''')
+@sys.description('Optional. The target regions where the Image Version is going to be replicated to. If this object is not specified, then the deployment location will be used.')
 param targetRegions array = []
 
 @sys.description('Optional. A relative URI containing the resource ID of the disk encryption set.')
@@ -71,50 +65,62 @@ param allowDeletionOfReplicatedLocations bool = true
 ])
 param hostCaching string = 'None'
 
-@sys.description('Optional. The id of the gallery artifact version source. Can specify a disk uri, snapshot uri, user image or storage account resource.')
+@sys.description('Optional. The id of the gallery artifact version source. Can specify a OS disk resource id or snapshot resource id.')
 param osDiskImageSourceId string = ''
 
 @sys.description('Optional. The uri of the gallery artifact version source. Currently used to specify vhd/blob source.')
 param osDiskImageSourceUri string = ''
 
-@sys.description('Optional. The id of the gallery artifact version source. Can specify a disk uri, snapshot uri, user image or storage account resource.')
+@sys.description('Optional. The id of the gallery artifact version source. Can specify a managed disk resource id, snapshot resource id, or storage account resource.')
 param sourceId string = ''
 
 @sys.description('Optional. Tags for all resources.')
 param tags object = {}
 
-var sourceStorageProfile = !empty(sourceId) ?  {
-  id: sourceId
-} : {}
+@sys.description('Optional. The virtual machine id of the source image.')
+param virtualMachineId string = ''
 
-var osDiskImageStorageProfile = !empty(osDiskImageSourceId) || !empty(osDiskImageSourceUri) ? {
-  hostCaching: hostCaching
-  source: {
-    id: !empty(osDiskImageSourceId) ? osDiskImageSourceId : null
-    uri: !empty(osDiskImageSourceUri) ? osDiskImageSourceUri : null
-  }
-} : {}
+var storageProfile = !empty(sourceId) || !empty(virtualMachineId)
+  ? {
+      source: {
+        id: !empty(sourceId) ? sourceId : null
+        virtualMachineId: !empty(virtualMachineId) ? virtualMachineId : null
+      }
+    }
+  : {
+      osDiskImage: {
+        hostCaching: hostCaching
+        source: {
+          id: !empty(osDiskImageSourceId) ? osDiskImageSourceId : null
+          uri: !empty(osDiskImageSourceUri) ? osDiskImageSourceUri : null
+        }
+      }
+    }
 
 var targetRegionDefault = [
   {
-    encryption: !empty(diskEncryptionSetId) ? {
-      osDiskImage: {
-        diskEncryptionSetId : diskEncryptionSetId
-        securityProfile: {
-          confidentialVMEncryptionType: !empty(confidentialVMEncryptionType) ? confidentialVMEncryptionType : null
-          secureVMDiskEncryptionSetId: !empty(secureVMDiskEncryptionSetId) ? secureVMDiskEncryptionSetId : null
+    encryption: !empty(diskEncryptionSetId)
+      ? {
+          osDiskImage: {
+            diskEncryptionSetId: diskEncryptionSetId
+            securityProfile: {
+              confidentialVMEncryptionType: !empty(confidentialVMEncryptionType) ? confidentialVMEncryptionType : null
+              secureVMDiskEncryptionSetId: !empty(secureVMDiskEncryptionSetId) ? secureVMDiskEncryptionSetId : null
+            }
+          }
         }
-      }
-    } : null
+      : null
     name: location
     storageAccountType: storageAccountType
   }
 ]
 // determine if targetRegions contains the deployment location with the next two variables
-var regionMatchArray = [for region in targetRegions: region.name == location ? true : false ]
+var regionMatchArray = [for region in targetRegions: region.name == location ? true : false]
 var targetRegionsContainsLocation = contains(regionMatchArray, true) ? true : false
 // cannot simply use a union function on an array of objects because there could be duplicates which will cause failures.
-var targetRegionsVar = !empty(targetRegions) ? (targetRegionsContainsLocation ? targetRegions : union(targetRegions, targetRegionDefault)) : targetRegionDefault
+var targetRegionsVar = !empty(targetRegions)
+  ? (targetRegionsContainsLocation ? targetRegions : union(targetRegions, targetRegionDefault))
+  : targetRegionDefault
 
 resource gallery 'Microsoft.Compute/galleries@2022-03-03' existing = {
   name: galleryName
@@ -123,7 +129,7 @@ resource gallery 'Microsoft.Compute/galleries@2022-03-03' existing = {
   }
 }
 
-resource version 'Microsoft.Compute/galleries/images/versions@2022-03-03' = {
+resource version 'Microsoft.Compute/galleries/images/versions@2024-03-03' = {
   location: location
   name: name
   parent: gallery::image
@@ -139,10 +145,7 @@ resource version 'Microsoft.Compute/galleries/images/versions@2022-03-03' = {
     safetyProfile: {
       allowDeletionOfReplicatedLocations: allowDeletionOfReplicatedLocations
     }
-    storageProfile: {
-      osDiskImage: osDiskImageStorageProfile
-      source: sourceStorageProfile
-    }
+    storageProfile: storageProfile
   }
   tags: tags
 }
