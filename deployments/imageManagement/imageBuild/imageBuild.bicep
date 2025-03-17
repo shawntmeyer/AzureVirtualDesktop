@@ -813,26 +813,6 @@ module removeImageBuildResources '../../sharedModules/resources/compute/virtual-
   scope: resourceGroup(imageBuildResourceGroupName)
   params: {
     asyncExecution: true
-    errorBlobManagedIdentity: empty(logContainerUri)
-      ? null
-      : {
-          clientId: empty(userAssignedIdentityResourceId)
-            ? userAssignedIdentity.outputs.clientId
-            : existingUserAssignedIdentity.properties.clientId
-        }
-    errorBlobContainerUri: empty(logContainerUri)
-      ? null
-      : '${logContainerUri}${orchestrationVm.outputs.name}-Remove-Resources-error-${timeStamp}.log'
-    outputBlobManagedIdentity: empty(logContainerUri)
-      ? null
-      : {
-          clientId: empty(userAssignedIdentityResourceId)
-            ? userAssignedIdentity.outputs.clientId
-            : existingUserAssignedIdentity.properties.clientId
-        }
-    outputBlobContainerUri: empty(logContainerUri)
-      ? null
-      : '${logContainerUri}${orchestrationVm.outputs.name}-Remove-Resources-output-${timeStamp}.log'
     location: computeLocation
     name: 'RemoveImageBuildResources'
     parameters: [
