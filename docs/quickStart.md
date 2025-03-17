@@ -27,8 +27,9 @@ There are several Azure resource prerequisite that are required to run this depl
 - **Licenses:** ensure you have the [required licensing for AVD](https://learn.microsoft.com/en-us/azure/virtual-desktop/overview#requirements).
 - **Networking:** deployment requires a minimum of 1 Azure Virtual Network with one subnet to which the deployment virtual machine (deployment helper) and the session host(s) will be attached. For a PoC type implementation of AVD with Entra ID authentication, this Vnet can be standalone as there are no custom DNS requirements; however, for hybrid identity scenarios and zero trust implementations, the Virtual Network has DNS requirements as documented below under optional. Machines on this network need to be able to connect to the following network destinations:
   - Resource Manager Url TCP Port 443 (Commercial - management.azure.com, US Gov - management.usgovcloudapi.net, USSec - management.microsoft.scloud, USNat - management.eaglex.ic.gov). You can leverage the [AzureResourceManager service tag](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/service-tags) in NSGs and the Azure Firewall to configure this access.
-- **Image Management Resources:** the deployment of the custom image build option depends on many artifacts that must be hosted in Azure Blob storage to satisfy Zero Trust principals or to build the custom image on Air-Gapped clouds. This repo contains a helper script that should be used to deploy the image management resources and upload the artifacts to the created storage account. See *deployments/imageManagement/Deploy-ImageManagement.ps1*.
-- **Azure Permissions:** ensure the principal deploying the solution has the "Owner" or ("Contributor" and "User Access Administrator") roles assigned on the target Azure subscription. > **Important:** Ensure that your role assignment does not have a condition that prevents you from assigning the 'Role-Based Access Control Administrator' role to other principals as the deployment assigns this role to the deployment user-assigned managed identity in order to allow it to automatically remove the role assignments that it creates during deployment.
+- **Image Management Resources:** the deployment of the custom image build option depends on many artifacts that must be hosted in Azure Blob storage to satisfy Zero Trust principals or to build the custom image on Air-Gapped clouds. See [Air-Gapped Cloud Image Management Details](imageAir-GappedCloud.md) for more information. This repo contains a helper script that should be used to deploy the image management resources and upload the artifacts to the created storage account. See *deployments/imageManagement/Deploy-ImageManagement.ps1*.
+- **Azure Permissions:** ensure the principal deploying the solution has the "Owner" or ("Contributor" and "User Access Administrator") roles assigned on the target Azure subscription.
+  > **Important:** Ensure that your role assignment does not have a condition that prevents you from assigning the 'Role-Based Access Control Administrator' role to other principals as the deployment assigns this role to the deployment user-assigned managed identity in order to allow it to automatically remove the role assignments that it creates during deployment.
 - **Security Group:** create a security group for your AVD users.
   - Active Directory Domain Services: create the group in Active Directory and ensure the group has synchronized to Entra ID.
   - Entra ID: create the group in Entra ID.
@@ -54,30 +55,39 @@ There are several Azure resource prerequisite that are required to run this depl
     | **Azure Table Storage**<br>- storage quota function app | privatelink.table.core.windows.net | privatelink.table.core.usgovcloudapi.net | privatelink.table.core.microsoft.scloud | privatelink.table.core.eaglex.ic.gov |
     | **Azure Web Sites**<br>- storage quota function app | privatelink.azurewebsites.net</br>scm.privatelink.azurewebsites.net | privatelink.azurewebsites.us</br>scm.privatelink.azurewebsites.us | privatelink.appservice.microsoft.scloud</br>scm.privatelink.appservice.microsoft.scloud | privatelink.appservice.eaglex.ic.gov</br>scm.privatelink.appservice.eaglex.ic.gov |
 
-- **Domain Permissions**
-  - For Active Directory Domain Services, create a principal to domain join the session hosts and Azure Files, using the following steps:
-    1. Open **Active Directory Users and Computers**.
-    2. Navigate to your service accounts Organizational Unit (OU).
-    3. Right-click on the OU and select **New > User**.
-    4. Type the appropriate values into the dialog box. Recommend that you set a strong password and set the *Password never expires* option. Complete the creation of the *service* account.
-    5. In the **Active Directory Users and Computers** mmc, select **View > Advanced Features** from the menu bar.
-    6. Create an OU for the AVD computers if not already present.
-    7. Right-click on the AVD computer OU and select **Properties**.
-    8. Select the **Security** tab.
-    9. Click the **Advanced** button.
-    10. In the **Advanced Security Settings for *OU Name*** window, click the **Add** button.
-    11. Select a principal by clicking on the **Select a principal** link. Search for the newly created *service* account, click on **Check Names**, and then click **OK**.
-    12. In the **Permission Entry for *OU Name*** window, ensure that the "Applies to:" drop down is set to "This object and all descendant objects" and then under Permissions, select only "Create Computer Objects" and "Delete Computer Objects". Select **OK** to save the entry.
-    13. Back in the **Advanced Security Settings for *OU Name*** window, click the **Add** button.
-    14. Select a principal by clicking on the **Select a principal** link. Search for the newly created *service* account, click on **Check Names**, and then click **OK**.
-    15. In the **Permission Entry for *OU Name*** window, ensure that the "Applies to:" drop down is set to "Descendant Computer objects" and then under Permissions, select only "Read all properties", "Write all properties", "Read permissions", "Modify permissions", "Change password", "Reset password", "Validated write to DNS host name", and "Validated write to service principal name". Select **OK** to save the entry.
-    16. Select **OK** until you are returned to the **Active Directory Users and Computers** window.
-  - for Entra ID Domain Services, ensure the principal is a member of the "AAD DC Administrators" group in Azure AD.
-- **FSLogix with Azure NetApp Files:** the following steps must be completed if you plan to use this service.
-  - [Register the resource provider](https://learn.microsoft.com/azure/azure-netapp-files/azure-netapp-files-register)
-  - [Enable the shared AD feature](https://learn.microsoft.com/azure/azure-netapp-files/create-active-directory-connections#shared_ad) - this feature is required if you plan to deploy more than one domain joined NetApp account in the same Azure subscription and region.
+- <details><summary><b>Domain Permissions</b></summary>
+  <ul>
+    <li> For Active Directory Domain Services, create a principal to domain join the session hosts and Azure Files, using the following steps:
+        <ol>
+            <li>Open <b>Active Directory Users and Computers</b>.</li>
+            <li>Navigate to your service accounts Organizational Unit (OU).</li>
+            <li>Right-click on the OU and select <b>New > User</b>.</li>
+            <li>Type the appropriate values into the dialog box. Recommend that you set a strong password and set the <i>Password never expires</i> option. Complete the creation of the <i>service</i> account.</li>
+            <li>In the <b>Active Directory Users and Computers</b> mmc, select <b>View > Advanced Features</b> from the menu bar.</li>
+            <li>Create an OU for the AVD computers if not already present.</li>
+            <li>Right-click on the AVD computer OU and select <b>Properties</b>.</li>
+            <li>Select the <b>Security</b> tab.</li>
+            <li>Click the <b>Advanced</b> button.</li>
+            <li>In the <b>Advanced Security Settings for <i>OU Name</i></b> window, click the <b>Add</b> button.</li>
+            <li>Select a principal by clicking on the <b>Select a principal</b> link. Search for the newly created <i>service</i> account, click on <b>Check Names</b>, and then click <b>OK</b>.
+            <li>In the <b>Permission Entry for <i>OU Name</i></b> window, ensure that the "Applies to:" drop down is set to "This object and all descendant objects" and then under Permissions, select only "Create Computer Objects" and "Delete Computer Objects". Select <b>OK</b> to save the entry.</li>
+            <li>Back in the <b>Advanced Security Settings for <i>OU Name</i></b> window, click the <b>Add</b> button.</li>
+            <li>Select a principal by clicking on the <b>Select a principal</b> link. Search for the newly created <i>service</i> account, click on <b>Check Names</b>, and then click <b>OK</b>.
+            <li>In the <b>Permission Entry for <i>OU Name</i></b> window, ensure that the "Applies to:" drop down is set to "Descendant Computer objects" and then under Permissions, select only "Read all properties", "Write all properties", "Read permissions", "Modify permissions", "Change password", "Reset password", "Validated write to DNS host name", and "Validated write to service principal name". Select <b>OK</b> to save the entry.</li>
+            <li>Select <b>OK</b> until you are returned to the <b>Active Directory Users and Computers</b> window.</li>
+        </ol>
+        <li>for Entra ID Domain Services, ensure the principal is a member of the "AAD DC Administrators" group in Azure AD.</li>
+        </ul>
+    </details>
+- <details><summary><b>FSLogix with Azure NetApp Files</b></summary>
+  The following steps must be completed if you plan to use this service.
+  <ul>
+    <li>[Register the resource provider](https://learn.microsoft.com/azure/azure-netapp-files/azure-netapp-files-register)</li>
+    <li>[Enable the shared AD feature](https://learn.microsoft.com/azure/azure-netapp-files/create-active-directory-connections#shared_ad) - this feature is required if you plan to deploy more than one domain joined NetApp account in the same Azure subscription and region.</li>
+  </ul>
+  </details>
 - **Enable AVD Private Link** this feature is not enabled on subscriptions by default. Use the following link to enable AVD Private Link on your subscription: [Enable the Feature](https://learn.microsoft.com/azure/virtual-desktop/private-link-setup?tabs=portal%2Cportal-2#enable-the-feature)
-- **Marketplace Image:** If you plan to deploy this solution using PowerShell or AzureCLI and use a marketplace image for the virtual machines, use the code below to find the appropriate image (the Template Spec and Blue Button deployment UIs also automatically populate the available options.):
+- <details><summary><b>Marketplace Image:</b> If you plan to deploy this solution using PowerShell or AzureCLI and use a marketplace image for the virtual machines, use the code below to find the appropriate image (the Template Spec and Blue Button deployment UIs also automatically populate the available options.).</summary>
 
   ```powershell
   # Determine the Publisher; input the location for your AVD deployment
@@ -95,9 +105,8 @@ There are several Azure resource prerequisite that are required to run this depl
   # Determine the Image Version; common offers are '21h1-evd-o365pp' and 'win11-21h2-avd-m365'
   $Sku = ''
   Get-AzVMImage -Location $Location -PublisherName $Publisher -Offer $Offer -Skus $Sku | Select-Object * | Format-List
-
-  # Common version is 'latest'
   ```
+  </details>
 
 ### Tools
 
@@ -216,7 +225,9 @@ In order to deploy the Azure Virtual Desktop standalone or spoke network and req
 
 #### Option 1: Blue-Button Deployment via the Azure Portal
 
-1. Click on the appropriate button below. Note: For Air-Gapped Networks, you must use a template spec.
+> **Important:** For Air-Gapped Networks, you must use a template spec.
+
+1. Click on the appropriate button below.
 
     [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#blade/Microsoft_Azure_CreateUIDef/CustomDeploymentBlade/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2FFederalAVD%2Fmaster%2F%2Fdeployments%2Fnetworking%2Fnetworking.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2FFederalAVD%2Fmaster%2F%2Fdeployments%2Fnetworking%2FuiFormDefinition.json) [![Deploy to Azure Gov](https://aka.ms/deploytoazuregovbutton)](https://portal.azure.us/#blade/Microsoft_Azure_CreateUIDef/CustomDeploymentBlade/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2FFederalAVD%2Fmaster%2F%2Fdeployments%2Fnetworking%2Fnetworking.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2FFederalAVD%2Fmaster%2F%2Fdeployments%2Fnetworking%2FuiFormDefinition.json)
 
@@ -324,23 +335,23 @@ The [deployments/Deploy-ImageManagement.ps1](../deployments/Deploy-ImageManageme
     .\Deploy-ImageManagement.ps1 -DeployImageManagementResources -Location <Region> [-SkipDownloadingNewSources] [-TempDir <Temp directory for artifacts>] [-DeleteExistingBlobs] [-TeamsTenantType <TeamsTenantType>]
     ```
 
-    This script:
-
-    a. With the '-DeployImageManagementResources' switch, deploys the resources in the [deployments/imageManagement/imageManagement.bicep](../deployments/imageManagement/imageManagement.bicep) to create the following Azure resources in the Image Management resource group:
-
-    - [Compute Gallery](https://learn.microsoft.com/en-us/azure/virtual-machines/azure-compute-gallery)
-    - [Storage Account](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview)
-    - [Storage Account Blob Container](https://learn.microsoft.com/en-us/azure/storage/blobs/blob-containers-portal)
-    - **[Optional]** [Storage Account Diagnostic Setting to LogAnalytics](https://learn.microsoft.com/en-us/azure/storage/blobs/monitor-blob-storage?tabs=azure-portal)
-    - [User Assigned Managed Identity](https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/overview)
-    - [Necessary role assignments](https://learn.microsoft.com/en-US/Azure/role-based-access-control/role-assignments)
-    - **[Optional]** [Private Endpoint](https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview)
-
-    b. If the '-SkipDownloadingNewSources' switch is <u>not</u> set, downloads new source files into a temporary directory, generates a text file containing file versioning information, and then copies those directories/files to the Artifacts directory overwriting any existing files.
-
-    c. Compresses the contents of each subfolder in the Artifacts directory into a zip file into a second temporary directory. Copies any files in the root of the Artifacts directory into the same temporary directory.
-
-    d. Uploads the contents of the temporary directory as individual blobs to the storage account blob container overwriting any existing blobs with the same name.
+<details><summary><b>Script Details</b></summary>
+<ol>
+    <li>With the '-DeployImageManagementResources' switch, deploys the resources in the [deployments/imageManagement/imageManagement.bicep](../deployments/imageManagement/imageManagement.bicep) to create the following Azure resources in the Image Management resource group:
+        <ul>
+            <li>[Compute Gallery](https://learn.microsoft.com/en-us/azure/virtual-machines/azure-compute-gallery)</li>
+            <li>[Storage Account](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview)</li>
+            <li>[Storage Account Blob Container](https://learn.microsoft.com/en-us/azure/storage/blobs/blob-containers-portal)</li>
+            <li><b>Optional</b> [Storage Account Diagnostic Setting to LogAnalytics](https://learn.microsoft.com/en-us/azure/storage/blobs/monitor-blob-storage?tabs=azure-portal)</li>
+            <li>[User Assigned Managed Identity](https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/overview)</li>
+            <li>[Necessary role assignments](https://learn.microsoft.com/en-US/Azure/role-based-access-control/role-assignments)</li>
+            <li><b>Optional</b> [Private Endpoint](https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview)</li>
+        </ul>
+    </li>
+    <li>If the '-SkipDownloadingNewSources' switch is <u>not</u> set, downloads new source files into a temporary directory, generates a text file containing file versioning information, and then copies those directories/files to the Artifacts directory overwriting any existing files.</li>
+    <li>Compresses the contents of each subfolder in the Artifacts directory into a zip file into a second temporary directory. Copies any files in the root of the Artifacts directory into the same temporary directory.</li>
+    <li>Uploads the contents of the temporary directory as individual blobs to the storage account blob container overwriting any existing blobs with the same name.</li>
+</details>
 
 > [!Important]
 > For Air-Gapped cloud instructions, see [Custom Image Air-Gapped Cloud Considerations](imageAir-GappedCloud.md) for more detailed instructions.
@@ -352,6 +363,8 @@ A custom image may be required or desired by customers in order to pre-populate 
 This deployment can be done via Command Line, Blue Button, or through a Template Spec UI in the Portal.
 
 #### Option 1: Blue-Button Deployment via the Azure Portal
+
+> **Important:** For Air-Gapped Networks, you must use a template spec.
 
 This option opens the deployment UI for the solution in the Azure Portal. Be sure to select the button for the correct cloud. If your desired cloud is not listed, please use the template spec detailed in the Quick Start guide.
 
@@ -389,10 +402,9 @@ This option opens the deployment UI for the solution in the Azure Portal. Be sur
 
 The AVD solution includes all necessary resources to deploy a usable virtual desktop experience within Azure. This includes a host pool, application group, virtual machine(s) as well as other auxilary resources such as monitoring and profile management.
 
-> [!Important]
-> When choosing the settings for the source image, make sure that all settings are compatible or the build may fail. For example, choose a VM size that is compatible with the storage type (ie. Premium_LRS)
-
 #### Option 1: Blue-Button Deployment via the Azure Portal
+
+> **Important:** For Air-Gapped Networks, you must use a template spec.
 
 This option opens the deployment UI for the solution in the Azure Portal. Be sure to select the button for the correct cloud. If your desired cloud is not listed, please use the template spec detailed in the Quick Start guide.
 
