@@ -392,13 +392,13 @@ The AVD solution includes all necessary resources to deploy a usable virtual des
 > [!Important]
 > When choosing the settings for the source image, make sure that all settings are compatible or the build may fail. For example, choose a VM size that is compatible with the storage type (ie. Premium_LRS)
 
-#### Option 1: Blue-Button Deployment**
+#### Option 1: Blue-Button Deployment via the Azure Portal
 
 This option opens the deployment UI for the solution in the Azure Portal. Be sure to select the button for the correct cloud. If your desired cloud is not listed, please use the template spec detailed in the Quick Start guide.
 
 [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#blade/Microsoft_Azure_CreateUIDef/CustomDeploymentBlade/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2FFederalAVD%2Fmaster%2F%2Fdeployments%2Fhostpools%2Fhostpool.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2FFederalAVD%2Fmaster%2F%2Fdeployments%2Fhostpools%2FuiFormDefinition.json) [![Deploy to Azure Gov](https://aka.ms/deploytoazuregovbutton)](https://portal.azure.us/#blade/Microsoft_Azure_CreateUIDef/CustomDeploymentBlade/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2FFederalAVD%2Fmaster%2F%2Fdeployments%2Fhostpools%2Fhostpool.json/uiFormDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2FFederalAVD%2Fmaster%2F%2Fdeployments%2Fhostpools%2FuiFormDefinition.json)
 
-#### Option 2: Using a Template Spec and Portal Form**
+#### Option 2: Using a Template Spec and Portal Form
 
 1. Go to Template Specs in the Azure Portal
 
@@ -414,7 +414,7 @@ This option opens the deployment UI for the solution in the Azure Portal. Be sur
 
 1. Once all values are populated, deploy the template. Parameter values and the template can be downloaded from the deployment view
 
-#### Option 3: Using Command Line**
+#### Option 3: Using Command Line
 
 1. Create a parameters file [`<identifier>`-`<index>`.parameters.json] based on [deployments/hostpools/parameters/solution.parameters.json](../deployments/hostpools/parameters/hostpool.parameters.json) by reviewing the documentation at [AVD Host Pool Parameters](parameters.md#avd-host-pool-deployment-parameters).
 
