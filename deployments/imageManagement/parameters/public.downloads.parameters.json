@@ -30,9 +30,9 @@
         ]
     },
     "Office365DeploymentTool": {
-        "DownloadUrl": "https://download.microsoft.com/download/6c1eeb25-cf8b-41d9-8d0d-cc1dbc032140/officedeploymenttool_18526-20146.exe",
-        "WebSiteUrl": "https://go.microsoft.com/fwlink/p/?LinkID=626065",
-        "SearchString": "*officedeploymenttool*",
+        "DownloadUrl": "https://officecdn.microsoft.com/pr/wsus/setup.exe",
+        "WebSiteUrl": "",
+        "SearchString": "",
         "APIUrl": "",
         "GitHubRepo": "",
         "GitHubFileNamePattern": "",
