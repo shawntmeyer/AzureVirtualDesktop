@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.34.1.11899",
-      "templateHash": "9654596721936729275"
+      "templateHash": "14047165218515100038"
     }
   },
   "parameters": {
@@ -14090,7 +14090,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.34.1.11899",
-              "templateHash": "6474749189544879948"
+              "templateHash": "10301349510469239073"
             }
           },
           "parameters": {
@@ -17496,7 +17496,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.34.1.11899",
-                      "templateHash": "15671002651104498826"
+                      "templateHash": "289735776133183632"
                     }
                   },
                   "parameters": {
@@ -18229,7 +18229,7 @@
                           "script": "[variables('$fxv#0')]"
                         },
                         "treatFailureAsDeploymentFailure": true,
-                        "timeoutInSeconds": 300
+                        "timeoutInSeconds": 600
                       },
                       "dependsOn": [
                         "extension_AADLoginForWindows",
