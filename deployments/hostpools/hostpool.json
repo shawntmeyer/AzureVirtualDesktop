@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.34.44.8038",
-      "templateHash": "8845714393850341097"
+      "templateHash": "8652135744451346075"
     }
   },
   "parameters": {
@@ -2350,7 +2350,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.34.44.8038",
-              "templateHash": "2522031539106745221"
+              "templateHash": "12293026398958807753"
             }
           },
           "parameters": {
@@ -2460,12 +2460,6 @@
               {
                 "roleDefinitionId": "[parameters('roleDefinitions').DesktopVirtualizationSessionHostOperator]",
                 "depName": "ControlPlane-DVSessionHostOp",
-                "resourceGroup": "[parameters('resourceGroupControlPlane')]",
-                "subscription": "[subscription().subscriptionId]"
-              },
-              {
-                "roleDefinitionId": "[parameters('roleDefinitions').DesktopVirtualizationWorkspaceContributor]",
-                "depName": "ControlPlane-DVWorkspaceCont",
                 "resourceGroup": "[parameters('resourceGroupControlPlane')]",
                 "subscription": "[subscription().subscriptionId]"
               },
