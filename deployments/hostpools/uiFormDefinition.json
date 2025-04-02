@@ -4147,7 +4147,7 @@
 				"secureBootEnabled": "[if(equals(steps('hosts').security.securityType, 'Standard'), false, steps('hosts').security.secureBootEnabled)]",
 				"vTpmEnabled": "[if(equals(steps('hosts').security.securityType, 'Standard'), false, steps('hosts').security.vTpmEnabled)]",
 				"encryptionAtHost": "[steps('hosts').diskEncryption.encryptionAtHost]",
-				"existingDiskEncryptionSetResourceId": "[if(and(equals(steps('basics').deploymentType, 'SessionHostsOnly'), steps('hosts').diskEncryption.selectDiskEncryptionSet), steps('hosts').diskEncryption.existingDiskEncryptionSet.id, '')]",
+				"existingDiskEncryptionSetResourceId": "[if(and(equals(steps('basics').deploymentType, 'SessionHostsOnly'), steps('hosts').diskEncryption.selectDiskEncryptionSet), steps('hosts').diskEncryption.existingDiskEncryptionSet, '')]",
 				"keyManagementDisks": "[if(equals(steps('basics').deploymentType, 'Complete'), steps('hosts').diskEncryption.keyManagement, 'PlatformManaged')]",
 				"confidentialVMOSDiskEncryption": "[if(equals(steps('basics').deploymentType, 'Complete'), steps('hosts').diskEncryption.confidentialVMOSDiskEncryption, false)]",
 				"confidentialVMOrchestratorObjectId": "[if(and(equals(steps('basics').deploymentType, 'Complete'), steps('hosts').diskEncryption.confidentialVMOSDiskEncryption, equals(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged')), if(empty(first(steps('hosts').diskEncryption.confDiskEncryptionPrincipalApi.value)), steps('hosts').diskEncryption.confDiskEncryptionPrincipal, first(steps('hosts').diskEncryption.confDiskEncryptionPrincipalApi.transformed.objectId)), '')]",
