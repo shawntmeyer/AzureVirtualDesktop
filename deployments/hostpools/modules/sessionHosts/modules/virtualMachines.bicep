@@ -16,7 +16,7 @@ param deploymentUserAssignedIdentityClientId string
 param deploymentVirtualMachineName string
 param diskAccessId string
 param diskEncryptionSetResourceId string
-param diskNamePrefix string
+param diskNameConv string
 param diskSizeGB int
 param diskSku string
 @secure()
@@ -45,7 +45,7 @@ param imagePublisher string
 param imageSku string
 param integrityMonitoring bool
 param location string
-param networkInterfaceNamePrefix string
+param networkInterfaceNameConv string
 param ouPath string
 param resourceGroupDeployment string
 param sessionHostCustomizations array
@@ -170,7 +170,7 @@ resource remoteStorageAccounts 'Microsoft.Storage/storageAccounts@2023-01-01' ex
 }]
 
 resource networkInterface 'Microsoft.Network/networkInterfaces@2020-05-01' = [for i in range(0, sessionHostCount): {
-  name: '${networkInterfaceNamePrefix}${padLeft((i + sessionHostIndex), 3, '0')}'
+  name: replace(networkInterfaceNameConv, '###', padLeft((i + sessionHostIndex), 3, '0'))
   location: location
   tags: union({'cm-resource-parent': hostPoolResourceId}, tags[?'Microsoft.Network/networkInterfaces'] ?? {})
   properties: {
@@ -220,7 +220,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2022-11-01' = [for i 
       imageReference: ImageReference
       osDisk: {
         diskSizeGB: diskSizeGB != 0 ? diskSizeGB : null
-        name: '${diskNamePrefix}${padLeft((i + sessionHostIndex), 3, '0')}'
+        name: replace(diskNameConv, '###', padLeft((i + sessionHostIndex), 3, '0'))
         osType: 'Windows'
         createOption: 'FromImage'
         caching: 'ReadWrite'
@@ -254,7 +254,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2022-11-01' = [for i 
     networkProfile: {
       networkInterfaces: [
         {
-          id: resourceId('Microsoft.Network/networkInterfaces', '${networkInterfaceNamePrefix}${padLeft((i + sessionHostIndex), 3, '0')}')
+          id: networkInterface[i].id
           properties: {
             deleteOption: 'Delete'
           }

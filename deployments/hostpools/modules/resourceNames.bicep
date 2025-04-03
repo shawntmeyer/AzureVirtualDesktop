@@ -55,12 +55,8 @@ var depVirtualMachineNameTemp = replace(
   ''
 )
 var depVirtualMachineName = take('${depVirtualMachineNameTemp}${uniqueString(depVirtualMachineNameTemp)}', 15)
-var depVirtualMachineDiskName = nameConvResTypeAtEnd
-  ? '${depVirtualMachineName}-${resourceAbbreviations.disks}'
-  : '${resourceAbbreviations.disks}-${depVirtualMachineName}'
-var depVirtualMachineNicName = nameConvResTypeAtEnd
-  ? '${depVirtualMachineName}-${resourceAbbreviations.networkInterfaces}'
-  : '${resourceAbbreviations.networkInterfaces}-${depVirtualMachineName}'
+var depVirtualMachineDiskName = '${depVirtualMachineName}-${resourceAbbreviations.disks}'
+var depVirtualMachineNicName = '${depVirtualMachineName}-${resourceAbbreviations.networkInterfaces}'
 
 // Management and Monitoring Resource Names
 var resourceGroupManagement = replace(
@@ -220,12 +216,8 @@ var availabilitySetNamePrefix = nameConvResTypeAtEnd
   ? '${vmNamePrefixWithoutDash}-${resourceAbbreviations.availabilitySets}-'
   : '${resourceAbbreviations.availabilitySets}-${vmNamePrefixWithoutDash}-'
 
-var diskNamePrefix = nameConvResTypeAtEnd
-  ? '${vmNamePrefixWithoutDash}-${resourceAbbreviations.disks}-'
-  : '${resourceAbbreviations.disks}-${vmNamePrefixWithoutDash}-'
-var networkInterfaceNamePrefix = nameConvResTypeAtEnd
-  ? '${vmNamePrefixWithoutDash}-${resourceAbbreviations.networkInterfaces}-'
-  : '${resourceAbbreviations.networkInterfaces}-${vmNamePrefixWithoutDash}-'
+var diskNameConv = '${virtualMachineNamePrefix}###-${resourceAbbreviations.disks}'
+var networkInterfaceNameConv = '${virtualMachineNamePrefix}###-${resourceAbbreviations.networkInterfaces}'
 var diskAccessName = replace(
   replace(
     replace(nameConv_HP_Resources, 'RESOURCETYPE', resourceAbbreviations.diskAccesses),
@@ -318,7 +310,6 @@ output diskEncryptionSetNames object = {
   CustomerManaged: replace(diskEncryptionSetNameConv, 'TOKEN-', 'customer-keys-')
   PlatformAndCustomerManaged: replace(diskEncryptionSetNameConv, 'TOKEN-', 'platform-and-customer-keys-')
 }
-output diskNamePrefix string = diskNamePrefix
 output fslogixFileShareNames object = fslogixfileShareNames
 output functionAppNames object = {
   IncreaseStorageQuota: replace(functionAppNameConv, 'TOKEN-', 'saquota-')
@@ -336,7 +327,6 @@ output locations object = locations
 output logAnalyticsWorkspaceName string = logAnalyticsWorkspaceName
 output netAppAccountName string = netAppAccountName
 output netAppCapacityPoolName string = netAppCapacityPoolName
-output networkInterfaceNamePrefix string = networkInterfaceNamePrefix
 output privateEndpointNameConv string = privateEndpointNameConv
 output privateEndpointNICNameConv string = privateEndpointNICNameConv
 output recoveryServicesVaultNames object = {
@@ -358,4 +348,6 @@ output storageAccountNames object = {
 }
 output userAssignedIdentityNameConv string = userAssignedIdentityNameConv
 output virtualMachineNamePrefix string = virtualMachineNamePrefix
+output virtualMachineDiskNameConv string = diskNameConv
+output virtualMachineNicNameConv string = networkInterfaceNameConv
 output workspaceName string = workspaceName

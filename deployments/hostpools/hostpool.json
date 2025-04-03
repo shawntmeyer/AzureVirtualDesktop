@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.34.44.8038",
-      "templateHash": "8233205793396825984"
+      "templateHash": "15048138220151647871"
     }
   },
   "parameters": {
@@ -1079,7 +1079,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.34.44.8038",
-              "templateHash": "17930992603005562477"
+              "templateHash": "9664254022492843514"
             }
           },
           "parameters": {
@@ -1541,8 +1541,8 @@
             "resourceGroupDeployment": "[replace(replace(replace(variables('nameConv_HP_ResGroups'), 'TOKEN', 'deployment'), 'LOCATION', format('{0}', variables('locations')[parameters('locationVirtualMachines')].abbreviation)), 'RESOURCETYPE', format('{0}', variables('resourceAbbreviations').resourceGroups))]",
             "depVirtualMachineNameTemp": "[replace(replace(replace(replace(variables('nameConv_HP_Resources'), 'RESOURCETYPE', ''), 'LOCATION', variables('locations')[parameters('locationVirtualMachines')].abbreviation), 'TOKEN-', ''), '-', '')]",
             "depVirtualMachineName": "[take(format('{0}{1}', variables('depVirtualMachineNameTemp'), uniqueString(variables('depVirtualMachineNameTemp'))), 15)]",
-            "depVirtualMachineDiskName": "[if(parameters('nameConvResTypeAtEnd'), format('{0}-{1}', variables('depVirtualMachineName'), variables('resourceAbbreviations').disks), format('{0}-{1}', variables('resourceAbbreviations').disks, variables('depVirtualMachineName')))]",
-            "depVirtualMachineNicName": "[if(parameters('nameConvResTypeAtEnd'), format('{0}-{1}', variables('depVirtualMachineName'), variables('resourceAbbreviations').networkInterfaces), format('{0}-{1}', variables('resourceAbbreviations').networkInterfaces, variables('depVirtualMachineName')))]",
+            "depVirtualMachineDiskName": "[format('{0}-{1}', variables('depVirtualMachineName'), variables('resourceAbbreviations').disks)]",
+            "depVirtualMachineNicName": "[format('{0}-{1}', variables('depVirtualMachineName'), variables('resourceAbbreviations').networkInterfaces)]",
             "resourceGroupManagement": "[replace(replace(replace(variables('nameConv_Shared_ResGroup'), 'TOKEN', 'management'), 'LOCATION', variables('locations')[parameters('locationVirtualMachines')].abbreviation), 'RESOURCETYPE', variables('resourceAbbreviations').resourceGroups)]",
             "uniqueStringManagement": "[uniqueString(subscription().subscriptionId, variables('resourceGroupManagement'))]",
             "appServicePlanName": "[replace(replace(replace(variables('nameConv_Shared_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').appServicePlans), 'LOCATION', variables('locations')[parameters('locationVirtualMachines')].abbreviation), 'TOKEN-', '')]",
@@ -1567,8 +1567,8 @@
             "resourceGroupHosts": "[replace(replace(replace(variables('nameConv_HP_ResGroups'), 'TOKEN', 'hosts'), 'LOCATION', format('{0}', variables('locations')[parameters('locationVirtualMachines')].abbreviation)), 'RESOURCETYPE', format('{0}', variables('resourceAbbreviations').resourceGroups))]",
             "vmNamePrefixWithoutDash": "[toLower(if(equals(last(parameters('virtualMachineNamePrefix')), '-'), take(parameters('virtualMachineNamePrefix'), sub(length(parameters('virtualMachineNamePrefix')), 1)), parameters('virtualMachineNamePrefix')))]",
             "availabilitySetNamePrefix": "[if(parameters('nameConvResTypeAtEnd'), format('{0}-{1}-', variables('vmNamePrefixWithoutDash'), variables('resourceAbbreviations').availabilitySets), format('{0}-{1}-', variables('resourceAbbreviations').availabilitySets, variables('vmNamePrefixWithoutDash')))]",
-            "diskNamePrefix": "[if(parameters('nameConvResTypeAtEnd'), format('{0}-{1}-', variables('vmNamePrefixWithoutDash'), variables('resourceAbbreviations').disks), format('{0}-{1}-', variables('resourceAbbreviations').disks, variables('vmNamePrefixWithoutDash')))]",
-            "networkInterfaceNamePrefix": "[if(parameters('nameConvResTypeAtEnd'), format('{0}-{1}-', variables('vmNamePrefixWithoutDash'), variables('resourceAbbreviations').networkInterfaces), format('{0}-{1}-', variables('resourceAbbreviations').networkInterfaces, variables('vmNamePrefixWithoutDash')))]",
+            "diskNameConv": "[format('{0}###-{1}', parameters('virtualMachineNamePrefix'), variables('resourceAbbreviations').disks)]",
+            "networkInterfaceNameConv": "[format('{0}###-{1}', parameters('virtualMachineNamePrefix'), variables('resourceAbbreviations').networkInterfaces)]",
             "diskAccessName": "[replace(replace(replace(variables('nameConv_HP_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').diskAccesses), 'LOCATION', variables('locations')[parameters('locationVirtualMachines')].abbreviation), 'TOKEN-', '')]",
             "diskEncryptionSetNameConv": "[replace(replace(variables('nameConv_HP_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').diskEncryptionSets), 'LOCATION', variables('locations')[parameters('locationVirtualMachines')].abbreviation)]",
             "keyVaultNameVMs": "[if(parameters('nameConvResTypeAtEnd'), format('vme-{0}-{1}-{2}', take(variables('uniqueStringHosts'), 12), variables('locations')[parameters('locationVirtualMachines')].abbreviation, variables('resourceAbbreviations').keyVaults), format('{0}-vme-{1}-{2}', variables('resourceAbbreviations').keyVaults, take(variables('uniqueStringHosts'), 12), variables('locations')[parameters('locationVirtualMachines')].abbreviation))]",
@@ -1648,10 +1648,6 @@
                 "PlatformAndCustomerManaged": "[replace(variables('diskEncryptionSetNameConv'), 'TOKEN-', 'platform-and-customer-keys-')]"
               }
             },
-            "diskNamePrefix": {
-              "type": "string",
-              "value": "[variables('diskNamePrefix')]"
-            },
             "fslogixFileShareNames": {
               "type": "object",
               "value": "[variables('fslogixfileShareNames')]"
@@ -1695,10 +1691,6 @@
             "netAppCapacityPoolName": {
               "type": "string",
               "value": "[variables('netAppCapacityPoolName')]"
-            },
-            "networkInterfaceNamePrefix": {
-              "type": "string",
-              "value": "[variables('networkInterfaceNamePrefix')]"
             },
             "privateEndpointNameConv": {
               "type": "string",
@@ -1759,6 +1751,14 @@
             "virtualMachineNamePrefix": {
               "type": "string",
               "value": "[parameters('virtualMachineNamePrefix')]"
+            },
+            "virtualMachineDiskNameConv": {
+              "type": "string",
+              "value": "[variables('diskNameConv')]"
+            },
+            "virtualMachineNicNameConv": {
+              "type": "string",
+              "value": "[variables('networkInterfaceNameConv')]"
             },
             "workspaceName": {
               "type": "string",
@@ -13767,8 +13767,8 @@
           "diskEncryptionSetNames": {
             "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.diskEncryptionSetNames.value]"
           },
-          "diskNamePrefix": {
-            "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.diskNamePrefix.value]"
+          "diskNameConv": {
+            "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.virtualMachineDiskNameConv.value]"
           },
           "diskSizeGB": {
             "value": "[parameters('diskSizeGB')]"
@@ -13882,8 +13882,8 @@
           "privateEndpointSubnetResourceId": {
             "value": "[parameters('hostPoolResourcesPrivateEndpointSubnetResourceId')]"
           },
-          "networkInterfaceNamePrefix": {
-            "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.networkInterfaceNamePrefix.value]"
+          "networkInterfaceNameConv": {
+            "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.virtualMachineNicNameConv.value]"
           },
           "recoveryServices": "[if(equals(parameters('deploymentType'), 'Complete'), if(contains(parameters('hostPoolType'), 'Personal'), createObject('value', parameters('recoveryServices')), createObject('value', false())), createObject('value', parameters('recoveryServices')))]",
           "recoveryServicesVaultName": {
@@ -13950,7 +13950,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.34.44.8038",
-              "templateHash": "13525371679744437001"
+              "templateHash": "6016422406999872399"
             }
           },
           "parameters": {
@@ -14038,7 +14038,7 @@
             "diskAccessName": {
               "type": "string"
             },
-            "diskNamePrefix": {
+            "diskNameConv": {
               "type": "string"
             },
             "diskSizeGB": {
@@ -14155,7 +14155,7 @@
             "enableMonitoring": {
               "type": "bool"
             },
-            "networkInterfaceNamePrefix": {
+            "networkInterfaceNameConv": {
               "type": "string"
             },
             "ouPath": {
@@ -17190,10 +17190,16 @@
                   "dedicatedHostResourceId": {
                     "value": "[parameters('dedicatedHostResourceId')]"
                   },
+                  "deploymentUserAssignedIdentityClientId": {
+                    "value": "[parameters('deploymentUserAssignedIdentityClientId')]"
+                  },
+                  "deploymentVirtualMachineName": {
+                    "value": "[parameters('deploymentVirtualMachineName')]"
+                  },
                   "diskAccessId": "[if(equals(parameters('deploymentType'), 'Complete'), if(parameters('deployDiskAccessResource'), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupHosts')), 'Microsoft.Resources/deployments', format('DiskAccess_{0}', parameters('timeStamp'))), '2022-09-01').outputs.resourceId.value), createObject('value', '')), createObject('value', parameters('existingDiskAccessResourceId')))]",
                   "diskEncryptionSetResourceId": "[if(and(equals(parameters('deploymentType'), 'Complete'), or(not(equals(parameters('keyManagementDisks'), 'PlatformManaged')), parameters('confidentialVMOSDiskEncryption'))), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupHosts')), 'Microsoft.Resources/deployments', format('DiskEncryption_{0}', parameters('timeStamp'))), '2022-09-01').outputs.diskEncryptionSetResourceId.value), if(not(empty(parameters('existingDiskEncryptionSetResourceId'))), createObject('value', parameters('existingDiskEncryptionSetResourceId')), createObject('value', '')))]",
-                  "diskNamePrefix": {
-                    "value": "[parameters('diskNamePrefix')]"
+                  "diskNameConv": {
+                    "value": "[parameters('diskNameConv')]"
                   },
                   "diskSizeGB": {
                     "value": "[parameters('diskSizeGB')]"
@@ -17209,12 +17215,6 @@
                   },
                   "domainName": {
                     "value": "[parameters('domainName')]"
-                  },
-                  "deploymentUserAssignedIdentityClientId": {
-                    "value": "[parameters('deploymentUserAssignedIdentityClientId')]"
-                  },
-                  "deploymentVirtualMachineName": {
-                    "value": "[parameters('deploymentVirtualMachineName')]"
                   },
                   "drainMode": {
                     "value": "[parameters('drainMode')]"
@@ -17289,8 +17289,8 @@
                   "location": {
                     "value": "[parameters('location')]"
                   },
-                  "networkInterfaceNamePrefix": {
-                    "value": "[parameters('networkInterfaceNamePrefix')]"
+                  "networkInterfaceNameConv": {
+                    "value": "[parameters('networkInterfaceNameConv')]"
                   },
                   "ouPath": {
                     "value": "[parameters('ouPath')]"
@@ -17356,7 +17356,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.34.44.8038",
-                      "templateHash": "14697830283907203817"
+                      "templateHash": "6130166695347186444"
                     }
                   },
                   "parameters": {
@@ -17414,7 +17414,7 @@
                     "diskEncryptionSetResourceId": {
                       "type": "string"
                     },
-                    "diskNamePrefix": {
+                    "diskNameConv": {
                       "type": "string"
                     },
                     "diskSizeGB": {
@@ -17495,7 +17495,7 @@
                     "location": {
                       "type": "string"
                     },
-                    "networkInterfaceNamePrefix": {
+                    "networkInterfaceNameConv": {
                       "type": "string"
                     },
                     "ouPath": {
@@ -17646,7 +17646,7 @@
                       },
                       "type": "Microsoft.Network/networkInterfaces",
                       "apiVersion": "2020-05-01",
-                      "name": "[format('{0}{1}', parameters('networkInterfaceNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[copyIndex()], parameters('sessionHostIndex')), 3, '0'))]",
+                      "name": "[replace(parameters('networkInterfaceNameConv'), '###', padLeft(add(range(0, parameters('sessionHostCount'))[copyIndex()], parameters('sessionHostIndex')), 3, '0'))]",
                       "location": "[parameters('location')]",
                       "tags": "[union(createObject('cm-resource-parent', parameters('hostPoolResourceId')), coalesce(tryGet(parameters('tags'), 'Microsoft.Network/networkInterfaces'), createObject()))]",
                       "properties": {
@@ -17693,7 +17693,7 @@
                           "imageReference": "[variables('ImageReference')]",
                           "osDisk": {
                             "diskSizeGB": "[if(not(equals(parameters('diskSizeGB'), 0)), parameters('diskSizeGB'), null())]",
-                            "name": "[format('{0}{1}', parameters('diskNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[copyIndex()], parameters('sessionHostIndex')), 3, '0'))]",
+                            "name": "[replace(parameters('diskNameConv'), '###', padLeft(add(range(0, parameters('sessionHostCount'))[copyIndex()], parameters('sessionHostIndex')), 3, '0'))]",
                             "osType": "Windows",
                             "createOption": "FromImage",
                             "caching": "ReadWrite",
@@ -17720,7 +17720,7 @@
                         "networkProfile": {
                           "networkInterfaces": [
                             {
-                              "id": "[resourceId('Microsoft.Network/networkInterfaces', format('{0}{1}', parameters('networkInterfaceNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[copyIndex()], parameters('sessionHostIndex')), 3, '0')))]",
+                              "id": "[resourceId('Microsoft.Network/networkInterfaces', replace(parameters('networkInterfaceNameConv'), '###', padLeft(add(range(0, parameters('sessionHostCount'))[range(0, parameters('sessionHostCount'))[copyIndex()]], parameters('sessionHostIndex')), 3, '0')))]",
                               "properties": {
                                 "deleteOption": "Delete"
                               }

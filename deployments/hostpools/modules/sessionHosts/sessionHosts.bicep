@@ -30,7 +30,7 @@ param domainJoinUserPassword string
 param domainJoinUserPrincipalName string
 param diskEncryptionSetNames object
 param diskAccessName string
-param diskNamePrefix string
+param diskNameConv string
 param diskSizeGB int
 param diskSku string
 param divisionRemainderValue int
@@ -69,7 +69,7 @@ param privateEndpointNameConv string
 param privateEndpointNICNameConv string
 param privateEndpointSubnetResourceId string
 param enableMonitoring bool
-param networkInterfaceNamePrefix string
+param networkInterfaceNameConv string
 param ouPath string
 param pooledHostPool bool
 param recoveryServices bool
@@ -256,16 +256,16 @@ module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sess
     dedicatedHostGroupResourceId: dedicatedHostGroupResourceId
     dedicatedHostGroupZones: dedicatedHostGroupZones
     dedicatedHostResourceId: dedicatedHostResourceId
+    deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
+    deploymentVirtualMachineName: deploymentVirtualMachineName
     diskAccessId: deploymentType == 'Complete' ? deployDiskAccessResource ? diskAccessResource.outputs.resourceId : '' : existingDiskAccessResourceId
     diskEncryptionSetResourceId: ( deploymentType == 'Complete' && (keyManagementDisks != 'PlatformManaged' || confidentialVMOSDiskEncryption )) ? diskEncryption.outputs.diskEncryptionSetResourceId : !empty(existingDiskEncryptionSetResourceId) ? existingDiskEncryptionSetResourceId : ''
-    diskNamePrefix: diskNamePrefix
+    diskNameConv: diskNameConv
     diskSizeGB: diskSizeGB
     diskSku: diskSku
     domainJoinUserPassword: domainJoinUserPassword
     domainJoinUserPrincipalName: domainJoinUserPrincipalName
     domainName: domainName
-    deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
-    deploymentVirtualMachineName: deploymentVirtualMachineName
     drainMode: drainMode
     enableAcceleratedNetworking: enableAcceleratedNetworking
     enableMonitoring: enableMonitoring
@@ -287,7 +287,7 @@ module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sess
     imageSku: imageSku
     integrityMonitoring: integrityMonitoring
     location: location
-    networkInterfaceNamePrefix: networkInterfaceNamePrefix
+    networkInterfaceNameConv: networkInterfaceNameConv
     ouPath: ouPath
     resourceGroupDeployment: resourceGroupDeployment
     sessionHostCustomizations: sessionHostCustomizations

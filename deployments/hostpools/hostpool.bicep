@@ -1052,7 +1052,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
       : ''
     diskAccessName: resourceNames.outputs.diskAccessName
     diskEncryptionSetNames: resourceNames.outputs.diskEncryptionSetNames
-    diskNamePrefix: resourceNames.outputs.diskNamePrefix
+    diskNameConv: resourceNames.outputs.virtualMachineDiskNameConv
     diskSizeGB: diskSizeGB
     diskSku: diskSku
     divisionRemainderValue: logic.outputs.divisionRemainderValue
@@ -1111,7 +1111,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     privateEndpointNameConv: resourceNames.outputs.privateEndpointNameConv
     privateEndpointNICNameConv: resourceNames.outputs.privateEndpointNICNameConv
     privateEndpointSubnetResourceId: hostPoolResourcesPrivateEndpointSubnetResourceId
-    networkInterfaceNamePrefix: resourceNames.outputs.networkInterfaceNamePrefix
+    networkInterfaceNameConv: resourceNames.outputs.virtualMachineNicNameConv
     recoveryServices: deploymentType == 'Complete'
       ? contains(hostPoolType, 'Personal') ? recoveryServices : false
       : recoveryServices
