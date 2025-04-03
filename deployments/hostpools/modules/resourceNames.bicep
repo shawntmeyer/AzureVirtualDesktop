@@ -55,7 +55,7 @@ var depVirtualMachineNameTemp = replace(
   ''
 )
 var depVirtualMachineName = take('${depVirtualMachineNameTemp}${uniqueString(depVirtualMachineNameTemp)}', 15)
-var depVirtualMachineDiskName = '${depVirtualMachineName}-${resourceAbbreviations.disks}'
+var depVirtualMachineDiskName = '${depVirtualMachineName}-${resourceAbbreviations.osdisks}'
 var depVirtualMachineNicName = '${depVirtualMachineName}-${resourceAbbreviations.networkInterfaces}'
 
 // Management and Monitoring Resource Names
@@ -215,9 +215,9 @@ var vmNamePrefixWithoutDash = toLower(last(virtualMachineNamePrefix) == '-'
 var availabilitySetNamePrefix = nameConvResTypeAtEnd
   ? '${vmNamePrefixWithoutDash}-${resourceAbbreviations.availabilitySets}-'
   : '${resourceAbbreviations.availabilitySets}-${vmNamePrefixWithoutDash}-'
-
-var diskNameConv = '${virtualMachineNamePrefix}###-${resourceAbbreviations.disks}'
-var networkInterfaceNameConv = '${virtualMachineNamePrefix}###-${resourceAbbreviations.networkInterfaces}'
+var virtualMachineNameConv = nameConvResTypeAtEnd ? '${virtualMachineNamePrefix}###-${resourceAbbreviations.virtualMachines}' : '${resourceAbbreviations.virtualMachines}-${virtualMachineNamePrefix}###'
+var diskNameConv = nameConvResTypeAtEnd ? '${virtualMachineNamePrefix}###-${resourceAbbreviations.osdisks}' : '${resourceAbbreviations.osdisks}-${virtualMachineNamePrefix}###'
+var networkInterfaceNameConv = nameConvResTypeAtEnd ? '${virtualMachineNamePrefix}###-${resourceAbbreviations.networkInterfaces}' : '${resourceAbbreviations.networkInterfaces}-${virtualMachineNamePrefix}###'
 var diskAccessName = replace(
   replace(
     replace(nameConv_HP_Resources, 'RESOURCETYPE', resourceAbbreviations.diskAccesses),
@@ -347,7 +347,7 @@ output storageAccountNames object = {
   SessionHostReplacement: sessionHostReplacerFAStorageAccountName
 }
 output userAssignedIdentityNameConv string = userAssignedIdentityNameConv
-output virtualMachineNamePrefix string = virtualMachineNamePrefix
+output virtualMachineNameConv string = virtualMachineNameConv
 output virtualMachineDiskNameConv string = diskNameConv
 output virtualMachineNicNameConv string = networkInterfaceNameConv
 output workspaceName string = workspaceName

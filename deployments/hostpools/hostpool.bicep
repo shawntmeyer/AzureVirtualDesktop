@@ -678,6 +678,12 @@ var hostPoolVmTemplate = {
   subnetId: virtualMachineSubnetResourceId
   availability: availability == 'availabilityZones' ? 'Availability Zones' : availability == 'availabilitySets' ? 'Availability Sets' : 'No infrastructure redundancy required'
   vmInfrastructureType: 'Cloud'
+  nameConvResTypeAtEnd: nameConvResTypeAtEnd
+}
+
+resource existingHostPool 'Microsoft.DesktopVirtualization/hostPools@2024-04-03' existing = if(!empty(existingHostPoolResourceId)) {
+  name: last(split(existingHostPoolResourceId, '/'))
+  scope: resourceGroup(split(existingHostPoolResourceId, '/')[2], split(existingHostPoolResourceId, '/')[4])
 }
 
 // Existing Session Host Virtual Network location
@@ -711,7 +717,7 @@ module resourceNames 'modules/resourceNames.bicep' = {
     locationControlPlane: locationControlPlane
     locationGlobalFeed: locationGlobalFeed
     locationVirtualMachines: locationVirtualMachines
-    nameConvResTypeAtEnd: nameConvResTypeAtEnd
+    nameConvResTypeAtEnd: deploymentType == 'Complete' ? nameConvResTypeAtEnd : bool(existingHostPool.tags.?nameConvResTypeAtEnd) ?? false
     virtualMachineNamePrefix: virtualMachineNamePrefix
     existingFeedWorkspaceResourceId: existingFeedWorkspaceResourceId
   }
@@ -1052,7 +1058,6 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
       : ''
     diskAccessName: resourceNames.outputs.diskAccessName
     diskEncryptionSetNames: resourceNames.outputs.diskEncryptionSetNames
-    diskNameConv: resourceNames.outputs.virtualMachineDiskNameConv
     diskSizeGB: diskSizeGB
     diskSku: diskSku
     divisionRemainderValue: logic.outputs.divisionRemainderValue
@@ -1105,6 +1110,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
       : ''
     location: vmVirtualNetwork.location
     maxResourcesPerTemplateDeployment: logic.outputs.maxResourcesPerTemplateDeployment
+    osDiskNameConv: resourceNames.outputs.virtualMachineDiskNameConv
     ouPath: vmOUPath
     pooledHostPool: logic.outputs.pooledHostPool
     privateEndpoint: deployPrivateEndpoints
@@ -1139,7 +1145,8 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     virtualMachineAdminUserName: !empty(virtualMachineAdminUserName)
       ? virtualMachineAdminUserName
       : kvCredentials.getSecret('VirtualMachineAdminUserName')
-    virtualMachineNamePrefix: resourceNames.outputs.virtualMachineNamePrefix
+    virtualMachineNameConv: resourceNames.outputs.virtualMachineNameConv
+    virtualMachineNamePrefix: virtualMachineNamePrefix
     virtualMachineSize: virtualMachineSize
     vmInsightsDataCollectionRulesResourceId: enableMonitoring
       ? deploymentType == 'Complete'

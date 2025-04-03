@@ -16,7 +16,6 @@ param deploymentUserAssignedIdentityClientId string
 param deploymentVirtualMachineName string
 param diskAccessId string
 param diskEncryptionSetResourceId string
-param diskNameConv string
 param diskSizeGB int
 param diskSku string
 @secure()
@@ -46,6 +45,7 @@ param imageSku string
 param integrityMonitoring bool
 param location string
 param networkInterfaceNameConv string
+param osDiskNameConv string
 param ouPath string
 param resourceGroupDeployment string
 param sessionHostCustomizations array
@@ -64,6 +64,7 @@ param useAgentDownloadEndpoint bool
 param virtualMachineAdminPassword string
 @secure()
 param virtualMachineAdminUserName string
+param virtualMachineNameConv string
 param virtualMachineNamePrefix string
 param virtualMachineSize string
 param vmInsightsDataCollectionRulesResourceId string
@@ -193,7 +194,7 @@ resource networkInterface 'Microsoft.Network/networkInterfaces@2020-05-01' = [fo
 }]
 
 resource virtualMachine 'Microsoft.Compute/virtualMachines@2022-11-01' = [for i in range(0, sessionHostCount): {
-  name: '${virtualMachineNamePrefix}${padLeft((i + sessionHostIndex), 3, '0')}'
+  name: replace(virtualMachineNameConv, '###', padLeft((i + sessionHostIndex), 3, '0'))
   location: location
   tags: union({'cm-resource-parent': hostPoolResourceId}, tags[?'Microsoft.Compute/virtualMachines'] ?? {})
   zones: !empty(dedicatedHostResourceId) || !empty(dedicatedHostGroupResourceId) ? dedicatedHostGroupZones : availability == 'availabilityZones' && !empty(availabilityZones) ? [
@@ -220,7 +221,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2022-11-01' = [for i 
       imageReference: ImageReference
       osDisk: {
         diskSizeGB: diskSizeGB != 0 ? diskSizeGB : null
-        name: replace(diskNameConv, '###', padLeft((i + sessionHostIndex), 3, '0'))
+        name: replace(osDiskNameConv, '###', padLeft((i + sessionHostIndex), 3, '0'))
         osType: 'Windows'
         createOption: 'FromImage'
         caching: 'ReadWrite'

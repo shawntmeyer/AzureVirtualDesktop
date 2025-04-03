@@ -30,7 +30,6 @@ param domainJoinUserPassword string
 param domainJoinUserPrincipalName string
 param diskEncryptionSetNames object
 param diskAccessName string
-param diskNameConv string
 param diskSizeGB int
 param diskSku string
 param divisionRemainderValue int
@@ -70,6 +69,7 @@ param privateEndpointNICNameConv string
 param privateEndpointSubnetResourceId string
 param enableMonitoring bool
 param networkInterfaceNameConv string
+param osDiskNameConv string
 param ouPath string
 param pooledHostPool bool
 param recoveryServices bool
@@ -89,6 +89,7 @@ param tags object
 param timeStamp string
 param timeZone string
 param useAgentDownloadEndpoint bool
+param virtualMachineNameConv string
 param virtualMachineNamePrefix string
 param virtualMachineSize string
 @secure()
@@ -260,7 +261,6 @@ module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sess
     deploymentVirtualMachineName: deploymentVirtualMachineName
     diskAccessId: deploymentType == 'Complete' ? deployDiskAccessResource ? diskAccessResource.outputs.resourceId : '' : existingDiskAccessResourceId
     diskEncryptionSetResourceId: ( deploymentType == 'Complete' && (keyManagementDisks != 'PlatformManaged' || confidentialVMOSDiskEncryption )) ? diskEncryption.outputs.diskEncryptionSetResourceId : !empty(existingDiskEncryptionSetResourceId) ? existingDiskEncryptionSetResourceId : ''
-    diskNameConv: diskNameConv
     diskSizeGB: diskSizeGB
     diskSku: diskSku
     domainJoinUserPassword: domainJoinUserPassword
@@ -288,6 +288,7 @@ module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sess
     integrityMonitoring: integrityMonitoring
     location: location
     networkInterfaceNameConv: networkInterfaceNameConv
+    osDiskNameConv: osDiskNameConv
     ouPath: ouPath
     resourceGroupDeployment: resourceGroupDeployment
     sessionHostCustomizations: sessionHostCustomizations
@@ -304,6 +305,7 @@ module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sess
     useAgentDownloadEndpoint: useAgentDownloadEndpoint
     virtualMachineAdminPassword: virtualMachineAdminPassword
     virtualMachineAdminUserName: virtualMachineAdminUserName
+    virtualMachineNameConv: virtualMachineNameConv
     virtualMachineNamePrefix: virtualMachineNamePrefix
     virtualMachineSize: virtualMachineSize
     vmInsightsDataCollectionRulesResourceId: vmInsightsDataCollectionRulesResourceId 

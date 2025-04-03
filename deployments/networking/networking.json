@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.34.44.8038",
-      "templateHash": "9104201773096118866"
+      "templateHash": "17618076645788308372"
     }
   },
   "parameters": {
@@ -711,7 +711,6 @@
       "desktopApplicationGroups": "vddag",
       "diskAccesses": "da",
       "remoteApplicationGroups": "vdrag",
-      "disks": "disk",
       "diskEncryptionSets": "des",
       "functionApps": "fa",
       "hostPools": "vdpool",
@@ -721,6 +720,7 @@
       "netAppAccounts": "naa",
       "netAppCapacityPools": "nacp",
       "networkInterfaces": "nic",
+      "osdisks": "osdisk",
       "privateEndpoints": "pe",
       "privateLinkScopes": "pls",
       "publicIPAddresses": "pip",
