@@ -667,5 +667,5 @@ $driveLetter = $env:SystemDrive.Substring(0,1)
 $size = Get-PartitionSupportedSize -DriveLetter $driveLetter
 Resize-Partition -DriveLetter $driveLetter -Size $size.SizeMax
 Write-Log -message "OS Disk Resized"
-
+Clear-EventLog "Windows PowerShell" -ErrorAction SilentlyContinue
 Write-Log -message "Done"
