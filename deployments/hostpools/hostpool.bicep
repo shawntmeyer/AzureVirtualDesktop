@@ -854,12 +854,14 @@ module management 'modules/management/management.bicep' = if (deploymentType == 
     dataCollectionEndpointName: resourceNames.outputs.dataCollectionEndpointName
     enableMonitoring: enableMonitoring
     enableQuotaManagement: deployIncreaseQuota
+    encryptionKeysKeyVaultName: resourceNames.outputs.keyVaultNames.EncryptionKeys
     domainJoinUserPassword: domainJoinUserPassword
     domainJoinUserPrincipalName: domainJoinUserPrincipalName
+    deployEncryptionKeysKeyVault: contains(keyManagementDisks, 'Customer') || contains(keyManagementStorageAccounts, 'Customer') 
     deploySecretsKeyVault: deploySecretsKeyVault
     keyVaultEnablePurgeProtection: secretsKeyVaultEnablePurgeProtection
     keyVaultEnableSoftDelete: secretsKeyVaultEnableSoftDelete
-    keyVaultName: resourceNames.outputs.keyVaultNames.VMSecrets
+    secretsKeyVaultName: resourceNames.outputs.keyVaultNames.Secrets
     keyVaultRetentionInDays: keyVaultRetentionInDays
     location: locationVirtualMachines
     logAnalyticsWorkspaceName: resourceNames.outputs.logAnalyticsWorkspaceName
@@ -1076,6 +1078,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     enableAcceleratedNetworking: enableAcceleratedNetworking
     enableMonitoring: enableMonitoring
     encryptionAtHost: encryptionAtHost
+    encryptionKeysKeyVaultName: resourceNames.outputs.keyVaultNames.EncryptionKeys
     existingDiskAccessResourceId: existingDiskAccessResourceId
     existingDiskEncryptionSetResourceId: existingDiskEncryptionSetResourceId
     existingRecoveryServicesVaultResourceId: existingRecoveryServicesVaultResourceId
@@ -1103,7 +1106,6 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     integrityMonitoring: integrityMonitoring
     keyExpirationInDays: keyExpirationInDays
     keyManagementDisks: keyManagementDisks
-    keyVaultNames: resourceNames.outputs.keyVaultNames
     keyVaultRetentionInDays: keyVaultRetentionInDays
     logAnalyticsWorkspaceResourceId: enableMonitoring && deploymentType == 'Complete'
       ? management.outputs.logAnalyticsWorkspaceResourceId
@@ -1126,6 +1128,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
       ? resourceNames.outputs.resourceGroupHosts
       : existingHostsResourceGroupName
     resourceGroupDeployment: resourceNames.outputs.resourceGroupDeployment
+    resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
     securityDataCollectionRulesResourceId: securityDataCollectionRulesResourceId
     securityType: securityType
     secureBootEnabled: secureBootEnabled

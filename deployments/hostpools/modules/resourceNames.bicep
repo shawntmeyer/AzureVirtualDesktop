@@ -81,6 +81,7 @@ var appServicePlanName = replace(
 
 // key vaults must be named with a length of 3 - 24 characters and must be globally unique.
 var keyVaultNameSecrets = nameConvResTypeAtEnd ? 'sec-${take(uniqueStringManagement, 12)}-${locations[locationVirtualMachines].abbreviation}-${resourceAbbreviations.keyVaults}' : '${resourceAbbreviations.keyVaults}-sec-${take(uniqueStringManagement,12)}-${locations[locationVirtualMachines].abbreviation}'
+var keyVaultNameEncryption = nameConvResTypeAtEnd ? 'enc-${take(uniqueStringManagement, 12)}-${locations[locationVirtualMachines].abbreviation}-${resourceAbbreviations.keyVaults}' : '${resourceAbbreviations.keyVaults}-enc-${take(uniqueStringManagement,12)}-${locations[locationVirtualMachines].abbreviation}'
 
 var dataCollectionEndpointName = replace(
   replace(
@@ -233,9 +234,6 @@ var diskEncryptionSetNameConv = replace(
   'LOCATION',
   locations[locationVirtualMachines].abbreviation
 )
-// Key Vault Names must be unique across the entire Azure Cloud
-var keyVaultNameVMs = nameConvResTypeAtEnd ? 'vme-${take(uniqueStringHosts, 12)}-${locations[locationVirtualMachines].abbreviation}-${resourceAbbreviations.keyVaults}' : '${resourceAbbreviations.keyVaults}-vme-${take(uniqueStringHosts, 12)}-${locations[locationVirtualMachines].abbreviation}'
-//var keyVaultNameSHR = nameConvResTypeAtEnd ? 'shr-${take(uniqueStringHosts, 12)}-${locations[locationVirtualMachines].abbreviation}-${resourceAbbreviations.keyVaults}' : '${resourceAbbreviations.keyVaults}-shr-${take(uniqueStringHosts, 12)}-${locations[locationVirtualMachines].abbreviation}'
 
 // Storage Resources
 var resourceGroupStorage = replace(
@@ -268,13 +266,10 @@ var netAppCapacityPoolName = replace(
 
 // App Attach and FSLogix Storage Account Naming Convention (max 15 characters for domain join)
 var appAttachStorageAccountName = take('appattach${uniqueStringManagement}', 15)
-var keyVaultNameAppAttach = nameConvResTypeAtEnd ? '${appAttachStorageAccountName}-${locations[locationVirtualMachines].abbreviation}-${resourceAbbreviations.keyVaults}' : '${resourceAbbreviations.keyVaults}-${appAttachStorageAccountName}-${locations[locationVirtualMachines].abbreviation}'
 var uniqueStringStorage = uniqueString(subscription().subscriptionId, resourceGroupStorage)
 var fslogixStorageAccountNamePrefix = empty(fslogixStorageCustomPrefix) ? take('fslogix${uniqueStringStorage}', 13) : toLower(fslogixStorageCustomPrefix)
-
 var increaseQuotaFAStorageAccountName = take('saquota${uniqueStringStorage}', 13)
 var sessionHostReplacerFAStorageAccountName = 'shreplacer${uniqueStringHosts}'
-var keyVaultNameProfileStorage = nameConvResTypeAtEnd ? '${take('fslogix${uniqueStringStorage}', 13)}-${locations[locationVirtualMachines].abbreviation}-${resourceAbbreviations.keyVaults}' : '${resourceAbbreviations.keyVaults}-${take('fslogix${uniqueStringStorage}', 13)}-${locations[locationVirtualMachines].abbreviation}'
 
 var fslogixfileShareNames = {
   CloudCacheProfileContainer: [
@@ -318,10 +313,8 @@ output functionAppNames object = {
 output globalFeedWorkspaceName string = globalFeedWorkspaceName
 output hostPoolName string = hostPoolName
 output keyVaultNames object = {
-  AppAttachEncryptionKeys: keyVaultNameAppAttach
-  FSLogixEncryptionKeys: keyVaultNameProfileStorage
-  VMEncryptionKeys: keyVaultNameVMs
-  VMSecrets: keyVaultNameSecrets
+  EncryptionKeys: keyVaultNameEncryption
+  Secrets: keyVaultNameSecrets
 }
 output locations object = locations
 output logAnalyticsWorkspaceName string = logAnalyticsWorkspaceName
