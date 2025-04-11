@@ -5,16 +5,10 @@ param diskEncryptionSetNames object
 param hostPoolResourceId string
 param keyExpirationInDays int = 180
 param keyManagementDisks string
-param keyVaultNames object
-param keyVaultRetentionInDays int
-param azureKeyVaultPrivateDnsZoneResourceId string
-param logAnalyticsWorkspaceResourceId string
+param keyVaultName string
 param deploymentVirtualMachineName string
-param privateEndpoint bool
-param privateEndpointNameConv string
-param privateEndpointNICNameConv string
-param privateEndpointSubnetResourceId string
 param resourceGroupDeployment string
+param resourceGroupManagement string
 param tags object
 param timeStamp string
 
@@ -26,76 +20,45 @@ var diskEncryptionSetEncryptionType = confidentialVMOSDiskEncryption
       ? 'EncryptionAtRestWithCustomerKey'
       : 'EncryptionAtRestWithPlatformAndCustomerKeys')
 
-module KeyVault '../../../../sharedModules/resources/key-vault/vault/main.bicep' = {
-  name: 'Encryption_KeyVault_${timeStamp}'
+resource keyVault 'Microsoft.KeyVault/vaults@2023-02-01' existing = if(!confidentialVMOSDiskEncryption) {
+  name: keyVaultName
+  scope: resourceGroup(resourceGroupManagement)
+}
+
+module keys '../../../../sharedModules/resources/key-vault/vault/key/main.bicep' = if(!confidentialVMOSDiskEncryption) {
+  name: 'Encryption_Key_${timeStamp}'
+  scope: resourceGroup(resourceGroupManagement)
   params: {
-    diagnosticWorkspaceId: logAnalyticsWorkspaceResourceId
-    enableVaultForDeployment: false
-    enableVaultForDiskEncryption: true
-    enableVaultForTemplateDeployment: false
-    enablePurgeProtection: true
-    enableRbacAuthorization: true
-    enableSoftDelete: true
-    name: keyVaultNames.VMEncryptionKeys
-    keys: confidentialVMOSDiskEncryption ? null : [
-      {
-        attributesEnabled: true
-        attributesExportable: false
-        name: vmEncryptionKeyName
-        keySize: 4096
-        kty: contains(keyManagementDisks, 'HSM') ? 'RSA-HSM' : 'RSA'
-        rotationPolicy: {
-          attributes: {
-            expiryTime: 'P${string(keyExpirationInDays)}D'
-          }
-          lifetimeActions: [
-            {
-              action: {
-                type: 'Notify'
-              }
-              trigger: {
-                timeBeforeExpiry: 'P10D'
-              }
-            }
-            {
-              action: {
-                type: 'Rotate'
-              }
-              trigger: {
-                timeAfterCreate: 'P${string(keyExpirationInDays - 7)}D'
-              }
-            }
-          ]
-        }
+    attributesEnabled: true
+    attributesExportable: false
+    keySize: 4096
+    keyVaultName: keyVaultName
+    kty: contains(keyManagementDisks, 'HSM') ? 'RSA-HSM' : 'RSA'
+    name: vmEncryptionKeyName
+    rotationPolicy: {
+      attributes: {
+        expiryTime: 'P${string(keyExpirationInDays)}D'
       }
-    ]
-    privateEndpoints: privateEndpoint && !empty(privateEndpointSubnetResourceId)
-      ? [
-          {
-            customNetworkInterfaceName: replace(
-              replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'vault'), 'RESOURCE', keyVaultNames.VMEncryptionKeys),
-              'VNETID',
-              '${split(privateEndpointSubnetResourceId, '/')[8]}'
-            )
-            name: replace(
-              replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'vault'), 'RESOURCE', keyVaultNames.VMEncryptionKeys),
-              'VNETID',
-              '${split(privateEndpointSubnetResourceId, '/')[8]}'
-            )
-            privateDnsZoneGroup: empty(azureKeyVaultPrivateDnsZoneResourceId) ? null : {
-              privateDNSResourceIds: [
-                azureKeyVaultPrivateDnsZoneResourceId
-              ]
-            }
-            service: 'vault'
-            subnetResourceId: privateEndpointSubnetResourceId
-            tags: tags[?'Microsoft.Network/privateEndpoints'] ?? {}
+      lifetimeActions: [
+        {
+          action: {
+            type: 'Notify'
           }
-        ]
-      : null      
-    softDeleteRetentionInDays: keyVaultRetentionInDays
-    tags: union({'cm-resource-parent':hostPoolResourceId}, tags[?'Microsoft.KeyVault/vaults'] ?? {})
-    vaultSku: confidentialVMOSDiskEncryption || contains(keyManagementDisks, 'HSM') ? 'premium' : 'standard'
+          trigger: {
+            timeBeforeExpiry: 'P10D'
+          }
+        }
+        {
+          action: {
+            type: 'Rotate'
+          }
+          trigger: {
+            timeAfterCreate: 'P${string(keyExpirationInDays - 7)}D'
+          }
+        }
+      ]
+    }
+    tags: {'cm-resource-parent': hostPoolResourceId}
   }
 }
 
@@ -119,7 +82,7 @@ module set_confidentialVM_key_disks '../../../../sharedModules/resources/compute
       }
       {
         name: 'VaultUri'
-        value: KeyVault.outputs.uri
+        value: keyVault.properties.vaultUri
       }
     ]
     script: loadTextContent('../../../../../.common/scripts/Set-ConfidentialVMOSDiskEncryptionKey.ps1')
@@ -153,7 +116,7 @@ module diskEncryptionSet '../../../../sharedModules/resources/compute/disk-encry
     name: confidentialVMOSDiskEncryption ? diskEncryptionSetNames.ConfidentialVMs : (diskEncryptionSetEncryptionType == 'EncryptionAtRestWithCustomerKey' ? diskEncryptionSetNames.CustomerManaged : diskEncryptionSetNames.PlatformAndCustomerManaged)
     encryptionType: diskEncryptionSetEncryptionType
     keyName: confidentialVMOSDiskEncryption ? confidentialVMEncryptionKeyName : vmEncryptionKeyName
-    keyVaultResourceId: KeyVault.outputs.resourceId
+    keyVaultResourceId: keyVault.id
     systemAssignedIdentity: true
     tags: union({'cm-resource-parent': hostPoolResourceId}, tags[?'Microsoft.Compute/diskEncryptionSets'] ?? {})
   }

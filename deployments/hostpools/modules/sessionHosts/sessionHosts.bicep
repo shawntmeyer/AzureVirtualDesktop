@@ -11,7 +11,6 @@ param availabilityZones array
 param avdInsightsDataCollectionRulesResourceId string
 param azureBackupPrivateDnsZoneResourceId string
 param azureBlobPrivateDnsZoneResourceId string
-param azureKeyVaultPrivateDnsZoneResourceId string
 param azureQueuePrivateDnsZoneResourceId string
 param confidentialVMOrchestratorObjectId string
 param confidentialVMOSDiskEncryption bool
@@ -37,6 +36,7 @@ param domainName string
 param drainMode bool
 param enableAcceleratedNetworking bool
 param encryptionAtHost bool
+param encryptionKeysKeyVaultName string
 param existingDiskAccessResourceId string
 param existingDiskEncryptionSetResourceId string
 param existingRecoveryServicesVaultResourceId string
@@ -58,8 +58,6 @@ param imageSku string
 param integrityMonitoring bool
 param keyExpirationInDays int
 param keyManagementDisks string
-param keyVaultNames object
-param keyVaultRetentionInDays int
 param location string
 param logAnalyticsWorkspaceResourceId string
 param maxResourcesPerTemplateDeployment int
@@ -76,6 +74,7 @@ param recoveryServices bool
 param recoveryServicesVaultName string
 param resourceGroupDeployment string
 param resourceGroupHosts string
+param resourceGroupManagement string
 param secureBootEnabled bool
 param securityDataCollectionRulesResourceId string
 param securityType string
@@ -177,6 +176,8 @@ module diskAccessPolicy 'modules/diskNetworkAccessPolicy.bicep' = if (deployDisk
   }
 }
 
+
+
 module diskEncryption 'modules/diskEncryption.bicep' =  if (deploymentType == 'Complete' && (keyManagementDisks != 'PlatformManaged' || confidentialVMOSDiskEncryption)) {
   name: 'DiskEncryption_${timeStamp}'
   scope: resourceGroup(resourceGroupHosts)
@@ -189,15 +190,9 @@ module diskEncryption 'modules/diskEncryption.bicep' =  if (deploymentType == 'C
     hostPoolResourceId: hostPoolResourceId
     keyExpirationInDays: keyExpirationInDays
     keyManagementDisks: keyManagementDisks
-    keyVaultNames: keyVaultNames
-    keyVaultRetentionInDays: keyVaultRetentionInDays
-    azureKeyVaultPrivateDnsZoneResourceId: azureKeyVaultPrivateDnsZoneResourceId
-    logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
-    privateEndpoint: privateEndpoint
-    privateEndpointNameConv: privateEndpointNameConv
-    privateEndpointNICNameConv: privateEndpointNICNameConv
-    privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
+    keyVaultName: encryptionKeysKeyVaultName
     resourceGroupDeployment: resourceGroupDeployment
+    resourceGroupManagement: resourceGroupManagement
     tags: tags
     timeStamp: timeStamp
   }

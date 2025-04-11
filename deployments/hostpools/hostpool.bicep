@@ -1106,7 +1106,6 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     integrityMonitoring: integrityMonitoring
     keyExpirationInDays: keyExpirationInDays
     keyManagementDisks: keyManagementDisks
-    keyVaultRetentionInDays: keyVaultRetentionInDays
     logAnalyticsWorkspaceResourceId: enableMonitoring && deploymentType == 'Complete'
       ? management.outputs.logAnalyticsWorkspaceResourceId
       : ''
