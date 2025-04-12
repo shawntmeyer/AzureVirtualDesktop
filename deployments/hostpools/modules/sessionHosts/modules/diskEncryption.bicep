@@ -1,40 +1,37 @@
 param confidentialVMOSDiskEncryption bool
 param confidentialVMOrchestratorObjectId string
 param deploymentUserAssignedIdentityClientId string
+param keyName string
 param diskEncryptionSetNames object
 param hostPoolResourceId string
 param keyExpirationInDays int = 180
 param keyManagementDisks string
-param keyVaultName string
+param keyVaultResourceId string
+param keyVaultUri string
 param deploymentVirtualMachineName string
 param resourceGroupDeployment string
-param resourceGroupManagement string
 param tags object
 param timeStamp string
 
-var confidentialVMEncryptionKeyName = 'ConfidentialVMOSDiskEncryptionKey'
-var vmEncryptionKeyName = 'VMOSDiskEncryptionKey'
+var keyVaultName = last(split(keyVaultResourceId, '/'))
+var keyVaultResourceGroup = split(keyVaultResourceId, '/')[4]
+
 var diskEncryptionSetEncryptionType = confidentialVMOSDiskEncryption
   ? 'ConfidentialVmEncryptedWithCustomerKey'
   : (!contains(keyManagementDisks, 'Platform')
       ? 'EncryptionAtRestWithCustomerKey'
       : 'EncryptionAtRestWithPlatformAndCustomerKeys')
 
-resource keyVault 'Microsoft.KeyVault/vaults@2023-02-01' existing = if(!confidentialVMOSDiskEncryption) {
-  name: keyVaultName
-  scope: resourceGroup(resourceGroupManagement)
-}
-
-module keys '../../../../sharedModules/resources/key-vault/vault/key/main.bicep' = if(!confidentialVMOSDiskEncryption) {
+module key '../../../../sharedModules/resources/key-vault/vault/key/main.bicep' = if(!confidentialVMOSDiskEncryption) {
   name: 'Encryption_Key_${timeStamp}'
-  scope: resourceGroup(resourceGroupManagement)
+  scope: resourceGroup(keyVaultResourceGroup)
   params: {
     attributesEnabled: true
     attributesExportable: false
     keySize: 4096
     keyVaultName: keyVaultName
     kty: contains(keyManagementDisks, 'HSM') ? 'RSA-HSM' : 'RSA'
-    name: vmEncryptionKeyName
+    name: keyName
     rotationPolicy: {
       attributes: {
         expiryTime: 'P${string(keyExpirationInDays)}D'
@@ -70,11 +67,11 @@ module set_confidentialVM_key_disks '../../../../sharedModules/resources/compute
     parameters: [
       {
         name: 'KeyName'
-        value: confidentialVMEncryptionKeyName
+        value: keyName
       }
       {
         name: 'Tags'
-        value: string(tags[?'Microsoft.KeyVault/vaults/keys'] ?? {})
+        value: string({'cm-resource-parent': hostPoolResourceId})
       }
       {
         name: 'UserAssignedIdentityClientId'
@@ -82,7 +79,7 @@ module set_confidentialVM_key_disks '../../../../sharedModules/resources/compute
       }
       {
         name: 'VaultUri'
-        value: keyVault.properties.vaultUri
+        value: keyVaultUri
       }
     ]
     script: loadTextContent('../../../../../.common/scripts/Set-ConfidentialVMOSDiskEncryptionKey.ps1')
@@ -91,21 +88,27 @@ module set_confidentialVM_key_disks '../../../../sharedModules/resources/compute
   }
 }
 
-module roleAssignment_ConfVMOrchestrator_EncryptUser '../../../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = if (confidentialVMOSDiskEncryption) {
+module roleAssignment_ConfVMOrchestrator_EncryptUser '../../management/modules/key_RBAC.bicep' = if (confidentialVMOSDiskEncryption) {
   name: 'RoleAssignment_ConfVMOrchestrator_EncryptUser_${timeStamp}'
+  scope: resourceGroup(keyVaultResourceGroup)
   params: {
+    keyName: keyName
+    keyVaultName: keyVaultName
     principalId: confidentialVMOrchestratorObjectId
     principalType: 'ServicePrincipal'
     roleDefinitionId: 'e147488a-f6f5-4113-8e2d-b22465e65bf6' // Key Vault Crypto Service Encryption User
   }
 }
 
-module roleAssignment_ConfVMOrchestrator_ReleaseUser '../../../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = if (confidentialVMOSDiskEncryption) {
+module roleAssignment_ConfVMOrchestrator_ReleaseUser '../../management/modules/key_RBAC.bicep' = if (confidentialVMOSDiskEncryption) {
   name: 'RoleAssignment_ConfVMOrchestrator_ReleaseUser_${timeStamp}'
+  scope: resourceGroup(keyVaultResourceGroup)
   params: {
+    keyName: keyName
+    keyVaultName: keyVaultName
     principalId: confidentialVMOrchestratorObjectId
     principalType: 'ServicePrincipal'
-    roleDefinitionId: '08bbd89e-9f13-488c-ac41-acfcb10c90ab' // Key Vault Crypto Service Release User
+    roleDefinitionId: '08bbd89e-9f13-488c-ac41-acfcb10c90ab' // Key Vault Crypto Service Release User 
   }
 }
 
@@ -113,23 +116,25 @@ module diskEncryptionSet '../../../../sharedModules/resources/compute/disk-encry
   name: 'DiskEncryptionSet_${timeStamp}'
   params: {
     rotationToLatestKeyVersionEnabled: confidentialVMOSDiskEncryption ? false : true
-    name: confidentialVMOSDiskEncryption ? diskEncryptionSetNames.ConfidentialVMs : (diskEncryptionSetEncryptionType == 'EncryptionAtRestWithCustomerKey' ? diskEncryptionSetNames.CustomerManaged : diskEncryptionSetNames.PlatformAndCustomerManaged)
+    name: confidentialVMOSDiskEncryption ? diskEncryptionSetNames.confidentialVMs : (diskEncryptionSetEncryptionType == 'EncryptionAtRestWithCustomerKey' ? diskEncryptionSetNames.customerManaged : diskEncryptionSetNames.platformAndCustomerManaged)
     encryptionType: diskEncryptionSetEncryptionType
-    keyName: confidentialVMOSDiskEncryption ? confidentialVMEncryptionKeyName : vmEncryptionKeyName
-    keyVaultResourceId: keyVault.id
+    keyName: key.outputs.name
+    keyVaultResourceId: keyVaultResourceId
     systemAssignedIdentity: true
     tags: union({'cm-resource-parent': hostPoolResourceId}, tags[?'Microsoft.Compute/diskEncryptionSets'] ?? {})
   }
 }
 
-module roleAssignment_DiskEncryptionSet_EncryptUser '../../../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = {
+module roleAssignment_DiskEncryptionSet_EncryptUser '../../management/modules/key_RBAC.bicep' = {
   name: 'RoleAssignment_DiskEncryptionSet_EncryptUser_${timeStamp}'
+  scope: resourceGroup(keyVaultResourceGroup)
   params: {
+    keyName: keyName
+    keyVaultName: keyVaultName
     principalId: diskEncryptionSet.outputs.principalId
     principalType: 'ServicePrincipal'
-    roleDefinitionId: 'e147488a-f6f5-4113-8e2d-b22465e65bf6' // Key Vault Crypto Service Encryption User
+    roleDefinitionId: 'e147488a-f6f5-4113-8e2d-b22465e65bf6' // Key Vault Crypto Service Encryption User 
   }
 }
 
 output diskEncryptionSetResourceId string = diskEncryptionSet.outputs.resourceId
-output diskEncryptionSetRoleAssignmentId string = roleAssignment_DiskEncryptionSet_EncryptUser.outputs.resourceId

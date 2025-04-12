@@ -222,3 +222,5 @@ output logAnalyticsWorkspaceResourceId string = enableMonitoring ? logAnalyticsW
 output vmInsightsDataCollectionRulesResourceId string = enableMonitoring
   ? vmInsightsDataCollectionRules.outputs.dataCollectionRulesId
   : ''
+output encryptionKeyVaultResourceId string = deployEncryptionKeysKeyVault ? encryptionKeyVault.outputs.resourceId : ''
+output encryptionKeyVaultUri string = deployEncryptionKeysKeyVault ? encryptionKeyVault.outputs.uri : ''

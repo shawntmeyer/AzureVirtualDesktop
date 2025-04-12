@@ -15,6 +15,7 @@ var resourceAbbreviations = loadJsonContent('../../../.common/data/resourceAbbre
 
 var hpBaseName = empty(index) ? identifier : '${identifier}-${index}'
 var hpResPrfx = nameConvResTypeAtEnd ? hpBaseName : 'RESOURCETYPE-${hpBaseName}'
+
 var nameConvSuffix = nameConvResTypeAtEnd ? 'LOCATION-RESOURCETYPE' : 'LOCATION'
 
 // Management, Monitoring, and Control Plane Resource Naming Conventions
@@ -68,7 +69,7 @@ var resourceGroupManagement = replace(
   'RESOURCETYPE',
   resourceAbbreviations.resourceGroups
 )
-var uniqueStringManagement = uniqueString(subscription().subscriptionId, resourceGroupManagement) 
+var uniqueStringManagement = uniqueString(subscription().subscriptionId, resourceGroupManagement)
 var appServicePlanName = replace(
   replace(
     replace(nameConv_Shared_Resources, 'RESOURCETYPE', resourceAbbreviations.appServicePlans),
@@ -80,8 +81,12 @@ var appServicePlanName = replace(
 )
 
 // key vaults must be named with a length of 3 - 24 characters and must be globally unique.
-var keyVaultNameSecrets = nameConvResTypeAtEnd ? 'sec-${take(uniqueStringManagement, 12)}-${locations[locationVirtualMachines].abbreviation}-${resourceAbbreviations.keyVaults}' : '${resourceAbbreviations.keyVaults}-sec-${take(uniqueStringManagement,12)}-${locations[locationVirtualMachines].abbreviation}'
-var keyVaultNameEncryption = nameConvResTypeAtEnd ? 'enc-${take(uniqueStringManagement, 12)}-${locations[locationVirtualMachines].abbreviation}-${resourceAbbreviations.keyVaults}' : '${resourceAbbreviations.keyVaults}-enc-${take(uniqueStringManagement,12)}-${locations[locationVirtualMachines].abbreviation}'
+var keyVaultNameSecrets = nameConvResTypeAtEnd
+  ? 'sec-${take(uniqueStringManagement, 12)}-${locations[locationVirtualMachines].abbreviation}-${resourceAbbreviations.keyVaults}'
+  : '${resourceAbbreviations.keyVaults}-sec-${take(uniqueStringManagement,12)}-${locations[locationVirtualMachines].abbreviation}'
+var keyVaultNameEncryption = nameConvResTypeAtEnd
+  ? 'enc-${take(uniqueStringManagement, 12)}-${locations[locationVirtualMachines].abbreviation}-${resourceAbbreviations.keyVaults}'
+  : '${resourceAbbreviations.keyVaults}-enc-${take(uniqueStringManagement,12)}-${locations[locationVirtualMachines].abbreviation}'
 
 var dataCollectionEndpointName = replace(
   replace(
@@ -216,9 +221,15 @@ var vmNamePrefixWithoutDash = toLower(last(virtualMachineNamePrefix) == '-'
 var availabilitySetNamePrefix = nameConvResTypeAtEnd
   ? '${vmNamePrefixWithoutDash}-${resourceAbbreviations.availabilitySets}-'
   : '${resourceAbbreviations.availabilitySets}-${vmNamePrefixWithoutDash}-'
-var virtualMachineNameConv = nameConvResTypeAtEnd ? '${virtualMachineNamePrefix}###-${resourceAbbreviations.virtualMachines}' : '${resourceAbbreviations.virtualMachines}-${virtualMachineNamePrefix}###'
-var diskNameConv = nameConvResTypeAtEnd ? '${virtualMachineNamePrefix}###-${resourceAbbreviations.osdisks}' : '${resourceAbbreviations.osdisks}-${virtualMachineNamePrefix}###'
-var networkInterfaceNameConv = nameConvResTypeAtEnd ? '${virtualMachineNamePrefix}###-${resourceAbbreviations.networkInterfaces}' : '${resourceAbbreviations.networkInterfaces}-${virtualMachineNamePrefix}###'
+var virtualMachineNameConv = nameConvResTypeAtEnd
+  ? '${virtualMachineNamePrefix}###-${resourceAbbreviations.virtualMachines}'
+  : '${resourceAbbreviations.virtualMachines}-${virtualMachineNamePrefix}###'
+var diskNameConv = nameConvResTypeAtEnd
+  ? '${virtualMachineNamePrefix}###-${resourceAbbreviations.osdisks}'
+  : '${resourceAbbreviations.osdisks}-${virtualMachineNamePrefix}###'
+var networkInterfaceNameConv = nameConvResTypeAtEnd
+  ? '${virtualMachineNamePrefix}###-${resourceAbbreviations.networkInterfaces}'
+  : '${resourceAbbreviations.networkInterfaces}-${virtualMachineNamePrefix}###'
 var diskAccessName = replace(
   replace(
     replace(nameConv_HP_Resources, 'RESOURCETYPE', resourceAbbreviations.diskAccesses),
@@ -265,9 +276,11 @@ var netAppCapacityPoolName = replace(
 )
 
 // App Attach and FSLogix Storage Account Naming Convention (max 15 characters for domain join)
-var appAttachStorageAccountName = take('appattach${uniqueStringManagement}', 15)
+var appAttachStorageAccountName = take('appAttach${uniqueStringManagement}', 15)
 var uniqueStringStorage = uniqueString(subscription().subscriptionId, resourceGroupStorage)
-var fslogixStorageAccountNamePrefix = empty(fslogixStorageCustomPrefix) ? take('fslogix${uniqueStringStorage}', 13) : toLower(fslogixStorageCustomPrefix)
+var fslogixStorageAccountNamePrefix = empty(fslogixStorageCustomPrefix)
+  ? take('fslogix${uniqueStringStorage}', 13)
+  : toLower(fslogixStorageCustomPrefix)
 var increaseQuotaFAStorageAccountName = take('saquota${uniqueStringStorage}', 13)
 var sessionHostReplacerFAStorageAccountName = 'shreplacer${uniqueStringHosts}'
 
@@ -289,8 +302,8 @@ var fslogixfileShareNames = {
 }
 
 output appInsightsNames object = {
-  IncreaseStorageQuota: replace(appInsightsNameConv, 'TOKEN-', 'saquota-')
-  SessionHostReplacement: replace(appInsightsNameConv, 'TOKEN-', 'shreplacer-')
+  increaseStorageQuota: replace(appInsightsNameConv, 'TOKEN-', 'saquota-')
+  sessionHostReplacement: replace(appInsightsNameConv, 'TOKEN-', 'shreplacer-')
 }
 output appServicePlanName string = appServicePlanName
 output availabilitySetNamePrefix string = availabilitySetNamePrefix
@@ -301,20 +314,27 @@ output depVirtualMachineDiskName string = depVirtualMachineDiskName
 output desktopApplicationGroupName string = desktopApplicationGroupName
 output diskAccessName string = diskAccessName
 output diskEncryptionSetNames object = {
-  ConfidentialVMs: replace(diskEncryptionSetNameConv, 'TOKEN-', 'confvm-customer-keys-')
-  CustomerManaged: replace(diskEncryptionSetNameConv, 'TOKEN-', 'customer-keys-')
-  PlatformAndCustomerManaged: replace(diskEncryptionSetNameConv, 'TOKEN-', 'platform-and-customer-keys-')
+  confidentialVMs: replace(diskEncryptionSetNameConv, 'TOKEN-', 'confvm-customer-keys-')
+  customerManaged: replace(diskEncryptionSetNameConv, 'TOKEN-', 'customer-keys-')
+  platformAndCustomerManaged: replace(diskEncryptionSetNameConv, 'TOKEN-', 'platform-and-customer-keys-')
 }
 output fslogixFileShareNames object = fslogixfileShareNames
 output functionAppNames object = {
-  IncreaseStorageQuota: replace(functionAppNameConv, 'TOKEN-', 'saquota-')
-  SessionHostReplacement: replace(functionAppNameConv, 'TOKEN-', 'shreplacer-')
+  increaseStorageQuota: replace(functionAppNameConv, 'TOKEN-', 'saquota-')
+  sessionHostReplacement: replace(functionAppNameConv, 'TOKEN-', 'shreplacer-')
 }
 output globalFeedWorkspaceName string = globalFeedWorkspaceName
 output hostPoolName string = hostPoolName
 output keyVaultNames object = {
-  EncryptionKeys: keyVaultNameEncryption
-  Secrets: keyVaultNameSecrets
+  encryptionKeys: keyVaultNameEncryption
+  secrets: keyVaultNameSecrets
+}
+output encryptionKeyNames object = {
+  appAttach: 'encryption-key-appattach-${appAttachStorageAccountName}'
+  fslogix: '${hpBaseName}-encryption-key-fslogix-${fslogixStorageAccountNamePrefix}##'
+  increaseStorageQuota: '${hpBaseName}-encryption-key-increase-storage-quota-${increaseQuotaFAStorageAccountName}'
+  sessionHostReplacement: '${hpBaseName}-encryption-key-session-host-replacement-${sessionHostReplacerFAStorageAccountName}'
+  virtualMachines: '${hpBaseName}-encryption-key-virtual-machines'
 }
 output locations object = locations
 output logAnalyticsWorkspaceName string = logAnalyticsWorkspaceName
@@ -323,8 +343,8 @@ output netAppCapacityPoolName string = netAppCapacityPoolName
 output privateEndpointNameConv string = privateEndpointNameConv
 output privateEndpointNICNameConv string = privateEndpointNICNameConv
 output recoveryServicesVaultNames object = {
-  FSLogixStorage: replace(recoveryServicesVaultsNameConv, 'TOKEN-', 'fslogix-storage-')
-  VirtualMachines: replace(recoveryServicesVaultsNameConv, 'TOKEN-', 'virtual-machines-')
+  fslogixStorage: replace(recoveryServicesVaultsNameConv, 'TOKEN-', 'fslogix-storage-')
+  virtualMachines: replace(recoveryServicesVaultsNameConv, 'TOKEN-', 'virtual-machines-')
 }
 output resourceGroupControlPlane string = resourceGroupControlPlane
 output resourceGroupGlobalFeed string = globalFeedResourceGroupName
@@ -334,10 +354,10 @@ output resourceGroupManagement string = resourceGroupManagement
 output resourceGroupStorage string = resourceGroupStorage
 output scalingPlanName string = scalingPlanName
 output storageAccountNames object = {
-  AppAttach: appAttachStorageAccountName
-  FSLogix: fslogixStorageAccountNamePrefix
-  IncreaseStorageQuota: increaseQuotaFAStorageAccountName
-  SessionHostReplacement: sessionHostReplacerFAStorageAccountName
+  appAttach: appAttachStorageAccountName
+  fslogix: fslogixStorageAccountNamePrefix
+  increaseStorageQuota: increaseQuotaFAStorageAccountName
+  sessionHostReplacement: sessionHostReplacerFAStorageAccountName
 }
 output userAssignedIdentityNameConv string = userAssignedIdentityNameConv
 output virtualMachineNameConv string = virtualMachineNameConv
