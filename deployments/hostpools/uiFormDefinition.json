@@ -3571,7 +3571,7 @@
 										"allowedValues": "[map(filter(steps('zeroTrust').privateEndpoints.privateDNSZonesApi.value, (zone) => contains(zone.name, 'privatelink.vaultcore.')), (zone) => parse(concat('{\"label\":\"', zone.name, '\",\"description\":\"Resource group: ', first(skip(split(zone.id, '/'), 4)), '\",\"value\":\"', zone.id, '\"}')))]",
 										"required": true
 									},
-									"visible": "[and(steps('zeroTrust').privateEndpoints.deployPrivateEndpoints, steps('zeroTrust').privateEndpoints.enablePrivateDNSIntegration, or(steps('management').keyVaults.deploySecretsKeyVault, steps('hosts').diskEncryption.confidentialVMOSDiskEncryption, contains(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), contains(steps('userProfiles').azureFiles.keyManagement, 'CustomerManaged')))]"
+									"visible": "[and(steps('zeroTrust').privateEndpoints.deployPrivateEndpoints, steps('zeroTrust').privateEndpoints.enablePrivateDNSIntegration, or(steps('management').keyVaults.deploySecretsKeyVault, contains(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), contains(steps('userProfiles').azureFiles.keyManagement, 'CustomerManaged')))]"
 								},
 								{
 									"name": "azureQueuePrivateDnsZone",

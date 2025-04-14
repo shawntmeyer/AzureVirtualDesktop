@@ -177,7 +177,7 @@ module diskAccessPolicy 'modules/diskNetworkAccessPolicy.bicep' = if (deployDisk
   }
 }
 
-module diskEncryption 'modules/customerManagedKeys.bicep' =  if (deploymentType == 'Complete' && keyManagementDisks != 'PlatformManaged') {
+module customerManagedKeys 'modules/customerManagedKeys.bicep' =  if (deploymentType == 'Complete' && keyManagementDisks != 'PlatformManaged') {
   name: 'DiskEncryption_${timeStamp}'
   scope: resourceGroup(resourceGroupHosts)
   params: {    
@@ -255,7 +255,7 @@ module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sess
     deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
     deploymentVirtualMachineName: deploymentVirtualMachineName
     diskAccessId: deploymentType == 'Complete' ? deployDiskAccessResource ? diskAccessResource.outputs.resourceId : '' : existingDiskAccessResourceId
-    diskEncryptionSetResourceId: ( deploymentType == 'Complete' && (keyManagementDisks != 'PlatformManaged' || confidentialVMOSDiskEncryption )) ? diskEncryption.outputs.diskEncryptionSetResourceId : !empty(existingDiskEncryptionSetResourceId) ? existingDiskEncryptionSetResourceId : ''
+    diskEncryptionSetResourceId: ( deploymentType == 'Complete' && keyManagementDisks != 'PlatformManaged' ) ? customerManagedKeys.outputs.diskEncryptionSetResourceId : !empty(existingDiskEncryptionSetResourceId) ? existingDiskEncryptionSetResourceId : ''
     diskSizeGB: diskSizeGB
     diskSku: diskSku
     domainJoinUserPassword: domainJoinUserPassword

@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.34.44.8038",
-      "templateHash": "16417244040901309150"
+      "templateHash": "10373709225842377620"
     }
   },
   "parameters": {
@@ -14107,7 +14107,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.34.44.8038",
-              "templateHash": "1471790591944619781"
+              "templateHash": "11686740182208367426"
             }
           },
           "parameters": {
@@ -16471,7 +16471,7 @@
                     "value": "[parameters('deploymentVirtualMachineName')]"
                   },
                   "diskAccessId": "[if(equals(parameters('deploymentType'), 'Complete'), if(parameters('deployDiskAccessResource'), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupHosts')), 'Microsoft.Resources/deployments', format('DiskAccess_{0}', parameters('timeStamp'))), '2022-09-01').outputs.resourceId.value), createObject('value', '')), createObject('value', parameters('existingDiskAccessResourceId')))]",
-                  "diskEncryptionSetResourceId": "[if(and(equals(parameters('deploymentType'), 'Complete'), or(not(equals(parameters('keyManagementDisks'), 'PlatformManaged')), parameters('confidentialVMOSDiskEncryption'))), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupHosts')), 'Microsoft.Resources/deployments', format('DiskEncryption_{0}', parameters('timeStamp'))), '2022-09-01').outputs.diskEncryptionSetResourceId.value), if(not(empty(parameters('existingDiskEncryptionSetResourceId'))), createObject('value', parameters('existingDiskEncryptionSetResourceId')), createObject('value', '')))]",
+                  "diskEncryptionSetResourceId": "[if(and(equals(parameters('deploymentType'), 'Complete'), not(equals(parameters('keyManagementDisks'), 'PlatformManaged'))), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupHosts')), 'Microsoft.Resources/deployments', format('DiskEncryption_{0}', parameters('timeStamp'))), '2022-09-01').outputs.diskEncryptionSetResourceId.value), if(not(empty(parameters('existingDiskEncryptionSetResourceId'))), createObject('value', parameters('existingDiskEncryptionSetResourceId')), createObject('value', '')))]",
                   "diskSizeGB": {
                     "value": "[parameters('diskSizeGB')]"
                   },
@@ -17953,8 +17953,8 @@
               "dependsOn": [
                 "[subscriptionResourceId('Microsoft.Resources/deployments', format('ArtifactsUserAssignedIdentity_{0}', parameters('timeStamp')))]",
                 "availabilitySets",
-                "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupHosts')), 'Microsoft.Resources/deployments', format('DiskAccess_{0}', parameters('timeStamp')))]",
                 "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupHosts')), 'Microsoft.Resources/deployments', format('DiskEncryption_{0}', parameters('timeStamp')))]",
+                "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupHosts')), 'Microsoft.Resources/deployments', format('DiskAccess_{0}', parameters('timeStamp')))]",
                 "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, split(parameters('hostPoolResourceId'), '/')[4]), 'Microsoft.Resources/deployments', format('HostPoolRegistrationTokenUpdate_{0}', parameters('timeStamp')))]",
                 "localNetAppVolumes",
                 "remoteNetAppVolumes"
