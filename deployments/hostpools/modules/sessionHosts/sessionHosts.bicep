@@ -11,7 +11,6 @@ param availabilityZones array
 param avdInsightsDataCollectionRulesResourceId string
 param azureBackupPrivateDnsZoneResourceId string
 param azureBlobPrivateDnsZoneResourceId string
-param azureKeyVaultPrivateDnsZoneResourceId string
 param azureQueuePrivateDnsZoneResourceId string
 param confidentialVMOrchestratorObjectId string
 param confidentialVMOSDiskEncryption bool
@@ -37,6 +36,9 @@ param domainName string
 param drainMode bool
 param enableAcceleratedNetworking bool
 param encryptionAtHost bool
+param encryptionKeyName string
+param encryptionKeyVaultResourceId string
+param encryptionKeyVaultUri string
 param existingDiskAccessResourceId string
 param existingDiskEncryptionSetResourceId string
 param existingRecoveryServicesVaultResourceId string
@@ -58,8 +60,6 @@ param imageSku string
 param integrityMonitoring bool
 param keyExpirationInDays int
 param keyManagementDisks string
-param keyVaultNames object
-param keyVaultRetentionInDays int
 param location string
 param logAnalyticsWorkspaceResourceId string
 param maxResourcesPerTemplateDeployment int
@@ -189,14 +189,9 @@ module diskEncryption 'modules/diskEncryption.bicep' =  if (deploymentType == 'C
     hostPoolResourceId: hostPoolResourceId
     keyExpirationInDays: keyExpirationInDays
     keyManagementDisks: keyManagementDisks
-    keyVaultNames: keyVaultNames
-    keyVaultRetentionInDays: keyVaultRetentionInDays
-    azureKeyVaultPrivateDnsZoneResourceId: azureKeyVaultPrivateDnsZoneResourceId
-    logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
-    privateEndpoint: privateEndpoint
-    privateEndpointNameConv: privateEndpointNameConv
-    privateEndpointNICNameConv: privateEndpointNICNameConv
-    privateEndpointSubnetResourceId: privateEndpointSubnetResourceId
+    keyName: encryptionKeyName
+    keyVaultResourceId: encryptionKeyVaultResourceId
+    keyVaultUri: encryptionKeyVaultUri
     resourceGroupDeployment: resourceGroupDeployment
     tags: tags
     timeStamp: timeStamp
