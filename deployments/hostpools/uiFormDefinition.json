@@ -1220,7 +1220,7 @@
 									"name": "virtualMachineNamePrefix",
 									"type": "Microsoft.Common.TextBox",
 									"label": "Virtual Machine Name Prefix",
-									"defaultValue": "[if(or(equals(steps('basics').deploymentType, 'Complete'), empty(steps('basics').hostPoolApi.tags.vmNamePrefix)), concat('avd', steps('basics').naming.identifier, if(empty(steps('basics').naming.index), '', concat('-', steps('basics').naming.index))), steps('basics').hostPoolApi.tags.vmNamePrefix)]",
+									"defaultValue": "[if(or(equals(steps('basics').deploymentType, 'Complete'), empty(steps('basics').hostPoolApi.tags.vmNamePrefix)), toLower(concat('avd', steps('basics').naming.identifier, if(empty(steps('basics').naming.index), '', concat('-', steps('basics').naming.index)))), steps('basics').hostPoolApi.tags.vmNamePrefix)]",
 									"toolTip": "Provide a Virtual Machine name prefix consisting of alphanumeric and dashes up to 12 characters long. A three character numeric suffix will be appended to the name padded with zeros (0).",
 									"constraints": {
 										"required": true,
@@ -3330,7 +3330,7 @@
 								{
 									"name": "privateEndpointVnetsSubscription",
 									"type": "Microsoft.Common.DropDown",
-									"label": "Private Endpoint Subnets Subscription",
+									"label": "Subnets Subscription",
 									"placeholder": "",
 									"defaultValue": "[steps('basics').scope.subscription.displayName]",
 									"toolTip": "",
@@ -3354,7 +3354,7 @@
 									"type": "Microsoft.Common.TextBlock",
 									"visible": "[and(or(steps('management').keyVaults.deploySecretsKeyVault, steps('management').automation.deployIncreaseQuota), steps('zeroTrust').privateEndpoints.deployPrivateEndpoints)]",
 									"options": {
-										"text": "<i>Shared Management Resources</i>"
+										"text": "<i>Shared Management Resources (i.e., Key Vaults, Function Apps, etc.)</i>"
 									}
 								},
 								{
@@ -3393,7 +3393,7 @@
 									"name": "functionAppOutboundSubnet",
 									"type": "Microsoft.Common.DropDown",
 									"label": "Function App Outbound subnet",
-									"toolTip": "Select an existing subnet for function App Outbound access.",
+									"toolTip": "Select an existing subnet for function App Outbound access. This subnet must have a delegation for Microsoft.Web/serverFarms.",
 									"constraints": {
 										"required": true,
 										"allowedValues": "[map(filter(steps('zeroTrust').privateEndpoints.managementSubnetsApi.value, (snet) => equals(first(map(snet.properties.delegations, (del) => del.properties.serviceName)), 'Microsoft.Web/serverFarms')), (snet) => parse(concat('{\"label\":\"', snet.name, '\",\"value\":\"', snet.id, '\"}')))]"
@@ -3405,7 +3405,7 @@
 									"type": "Microsoft.Common.TextBlock",
 									"visible": "[steps('zeroTrust').privateEndpoints.deployPrivateEndpoints]",
 									"options": {
-										"text": "<i>Hostpool Resources</i>"
+										"text": "<i>Hostpool Resources (i.e., FSLogix storage accounts)</i>"
 									}
 								},
 								{

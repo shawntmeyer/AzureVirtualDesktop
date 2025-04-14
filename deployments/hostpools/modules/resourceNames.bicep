@@ -81,12 +81,24 @@ var appServicePlanName = replace(
 )
 
 // key vaults must be named with a length of 3 - 24 characters and must be globally unique.
-var keyVaultNameSecrets = nameConvResTypeAtEnd
-  ? 'sec-${take(uniqueStringManagement, 12)}-${locations[locationVirtualMachines].abbreviation}-${resourceAbbreviations.keyVaults}'
-  : '${resourceAbbreviations.keyVaults}-sec-${take(uniqueStringManagement,12)}-${locations[locationVirtualMachines].abbreviation}'
-var keyVaultNameEncryption = nameConvResTypeAtEnd
-  ? 'enc-${take(uniqueStringManagement, 12)}-${locations[locationVirtualMachines].abbreviation}-${resourceAbbreviations.keyVaults}'
-  : '${resourceAbbreviations.keyVaults}-enc-${take(uniqueStringManagement,12)}-${locations[locationVirtualMachines].abbreviation}'
+var keyVaultNameSecrets = replace(
+  replace(
+    replace(nameConv_Shared_Resources, 'TOKEN', 'sec-${take(uniqueStringManagement, 8)}'),
+    'LOCATION',
+    locations[locationVirtualMachines].abbreviation
+  ),
+  'RESOURCETYPE',
+  resourceAbbreviations.keyVaults
+)
+var keyVaultNameEncryption = replace(
+  replace(
+    replace(nameConv_Shared_Resources, 'TOKEN', 'enc-${take(uniqueStringManagement, 8)}'),
+    'LOCATION',
+    locations[locationVirtualMachines].abbreviation
+  ),
+  'RESOURCETYPE',
+  resourceAbbreviations.keyVaults
+)
 
 var dataCollectionEndpointName = replace(
   replace(
@@ -276,7 +288,7 @@ var netAppCapacityPoolName = replace(
 )
 
 // App Attach and FSLogix Storage Account Naming Convention (max 15 characters for domain join)
-var appAttachStorageAccountName = take('appAttach${uniqueStringManagement}', 15)
+var appAttachStorageAccountName = take('appattach${uniqueStringManagement}', 15)
 var uniqueStringStorage = uniqueString(subscription().subscriptionId, resourceGroupStorage)
 var fslogixStorageAccountNamePrefix = empty(fslogixStorageCustomPrefix)
   ? take('fslogix${uniqueStringStorage}', 13)
