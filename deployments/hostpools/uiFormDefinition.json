@@ -1649,15 +1649,46 @@
 									}
 								},
 								{
-									"name": "confDiskEncryptionPrincipal",
-									"type": "Microsoft.Common.TextBox",
-									"label": "Confidential VM Orchestrator (Object Id)",
-									"toolTip": "Enter the Object Id of the 'Confidential VM Orchestrator' Service Principal",
-									"constraints": {
-										"required": true,
-										"regex": "^(?!\\d+$)\\w{8}-\\w{4}-\\w{4}-\\w{4}-\\w{12}$",
-										"validationMessage": "A proper GUID must be provided."
+									"name": "confDiskEncryptionServicePrincipalPickerBlade",
+									"type": "Microsoft.Solutions.BladeInvokeControl",									
+									"openBladeStatus": "[steps('hosts').diskEncryption.confDiskEncryptionPrincipalSelector.changing]",
+									"bladeReference": {
+										"name": "ObjectPickerBlade",
+										"extension": "Microsoft_AAD_IAM",
+										"parameters": {
+											"queries": 4,
+											"bladeSubtitle": "Confidential VM Orchestrator Service Principal",
+											"additionalQueriesOnSearch": 0,
+											"advancedQueryOptions": {},
+											"selectionMaximum": 1,
+											"selectionMinimum": 1,
+											"bladeTitle": "Select the Service Principal",
+											"informationHeader": {
+												"informationText": "Select the 'Confidential VM Orchestrator' Service Principal."
+											},
+											"searchBoxLabel": "Enter 'Confidential VM Orchestrator' into the search box",
+											"searchBoxPlaceHolderText": "",
+											"searchGridNoRowsMessage": "No Service Principals found",
+											"selectButtonText": "Select Service Principal",
+											"selectedGridLabel": "Selected Service Principal",
+											"selectedGridNoRowsMessage": "You must select the 'Confidential VM Orchestrator' Service Principal."
+										}
 									},
+									"transforms": {
+										"selection": "selectedObjects|[*].{displayName:displayName,id:id}"
+									}
+								},
+								{
+									"name": "confDiskEncryptionServicePrincipalSelector",
+									"type": "Microsoft.Common.Selector",
+									"label": "Select the <b>Confidential VM Orchestrator</b> Service Principal",
+									"keyPath": "displayName",
+									"value": "[steps('hosts').diskEncryption.confDiskEncryptionServicePrincipalPickerBlade.transformed.selection]",
+									"barColor": "[if(empty(steps('hosts').diskEncryption.confDiskEncryptionServicePrincipalPickerBlade), '#FF0000', '#7fba00')]",
+									"constraints": {
+										"required": true
+									},
+									"link": "[if(empty(steps('hosts').diskEncryption.confDiskEncryptionServicePrincipalPickerBlade), 'Select Service Principal', first(map(steps('hosts').diskEncryption.confDiskEncryptionServicePrincipalPickerBlade.transformed.selection, (sp) => sp.displayName)))]",
 									"visible": "[and(equals(steps('basics').deploymentType, 'Complete'), steps('hosts').diskEncryption.confidentialVMOSDiskEncryption, equals(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), empty(first(steps('hosts').diskEncryption.confDiskEncryptionPrincipalApi.value)))]"
 								}
 							]
@@ -3367,7 +3398,7 @@
 										"allowedValues": "[map(filter(steps('zeroTrust').privateEndpoints.privateEndpointVirtualNetworksApi.value, (vnet) => equals(vnet.location, steps('basics').scope.location.name)), (vnet) => parse(concat('{\"label\":\"', vnet.name, '\",\"description\":\"Location: ', vnet.location, ' Resource Group: ', first(skip(split(vnet.id, '/'), 4)), '\",\"value\":\"', vnet.id, '\"}')))]",
 										"required": true
 									},
-									"visible": "[and(or(steps('management').keyVaults.deploySecretsKeyVault, steps('management').automation.deployIncreaseQuota), steps('zeroTrust').privateEndpoints.deployPrivateEndpoints)]"
+									"visible": "[and(or(steps('management').keyVaults.deploySecretsKeyVault, contains(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), contains(steps('userProfiles').azureFiles.keyManagement, 'CustomerManaged'), steps('management').automation.deployIncreaseQuota), steps('zeroTrust').privateEndpoints.deployPrivateEndpoints)]"
 								},
 								{
 									"name": "managementSubnetsApi",
@@ -4135,7 +4166,7 @@
 				"existingDiskEncryptionSetResourceId": "[if(and(equals(steps('basics').deploymentType, 'SessionHostsOnly'), steps('hosts').diskEncryption.selectDiskEncryptionSet), steps('hosts').diskEncryption.existingDiskEncryptionSet, '')]",
 				"keyManagementDisks": "[if(equals(steps('basics').deploymentType, 'Complete'), steps('hosts').diskEncryption.keyManagement, 'PlatformManaged')]",
 				"confidentialVMOSDiskEncryption": "[if(equals(steps('basics').deploymentType, 'Complete'), steps('hosts').diskEncryption.confidentialVMOSDiskEncryption, false)]",
-				"confidentialVMOrchestratorObjectId": "[if(and(equals(steps('basics').deploymentType, 'Complete'), steps('hosts').diskEncryption.confidentialVMOSDiskEncryption, equals(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged')), if(empty(first(steps('hosts').diskEncryption.confDiskEncryptionPrincipalApi.value)), steps('hosts').diskEncryption.confDiskEncryptionPrincipal, first(steps('hosts').diskEncryption.confDiskEncryptionPrincipalApi.transformed.objectId)), '')]",
+				"confidentialVMOrchestratorObjectId": "[if(and(equals(steps('basics').deploymentType, 'Complete'), steps('hosts').diskEncryption.confidentialVMOSDiskEncryption, equals(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged')), if(empty(first(steps('hosts').diskEncryption.confDiskEncryptionPrincipalApi.value)), first(map(steps('hosts').diskEncryption.confDiskEncryptionServicePrincipalPickerBlade.transformed.selection, (sp) => sp.id)), first(steps('hosts').diskEncryption.confDiskEncryptionPrincipalApi.transformed.objectId)), '')]",
 				"dedicatedHostGroupResourceId": "[if(steps('hosts').dedicatedHosts.deployToDedicatedHosts, steps('hosts').dedicatedHosts.dedicatedHostGroup, '')]",
 				"dedicatedHostResourceId": "[if(steps('hosts').dedicatedHosts.deployToDedicatedHosts, steps('hosts').dedicatedHosts.dedicatedHost, '')]",
 				"availability": "[if(equals(steps('hosts').dedicatedHosts.deployToDedicatedHosts, false), steps('hosts').availability.availability, 'none')]",

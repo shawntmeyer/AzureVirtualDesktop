@@ -177,7 +177,7 @@ module diskAccessPolicy 'modules/diskNetworkAccessPolicy.bicep' = if (deployDisk
   }
 }
 
-module diskEncryption 'modules/diskEncryption.bicep' =  if (deploymentType == 'Complete' && (keyManagementDisks != 'PlatformManaged' || confidentialVMOSDiskEncryption)) {
+module diskEncryption 'modules/customerManagedKeys.bicep' =  if (deploymentType == 'Complete' && keyManagementDisks != 'PlatformManaged') {
   name: 'DiskEncryption_${timeStamp}'
   scope: resourceGroup(resourceGroupHosts)
   params: {    

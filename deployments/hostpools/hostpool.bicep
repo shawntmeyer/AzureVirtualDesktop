@@ -970,8 +970,8 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (deploymentType == 'Complete
     fslogixAdminGroups: fslogixAdminGroups
     fslogixFileShares: logic.outputs.fslogixFileShareNames
     fslogixShardOptions: fslogixShardOptions
-    encryptionKeyVaultResourceId: management.outputs.encryptionKeyVaultResourceId
-    encryptionKeyVaultUri: management.outputs.encryptionKeyVaultUri
+    encryptionKeyVaultResourceId: deploymentType == 'Complete' ? management.outputs.encryptionKeyVaultResourceId : ''
+    encryptionKeyVaultUri: deploymentType == 'Complete' ? management.outputs.encryptionKeyVaultUri : ''
     fslogixEncryptionKeyNameConv: resourceNames.outputs.encryptionKeyNames.fslogix
     fslogixUserGroups: logic.outputs.fslogixUserGroups
     hostPoolResourceId: deploymentType == 'Complete'

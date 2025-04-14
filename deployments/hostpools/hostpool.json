@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.34.44.8038",
-      "templateHash": "13663624617368086316"
+      "templateHash": "16417244040901309150"
     }
   },
   "parameters": {
@@ -8350,12 +8350,8 @@
           "fslogixShardOptions": {
             "value": "[parameters('fslogixShardOptions')]"
           },
-          "encryptionKeyVaultResourceId": {
-            "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Management_{0}', parameters('timeStamp'))), '2022-09-01').outputs.encryptionKeyVaultResourceId.value]"
-          },
-          "encryptionKeyVaultUri": {
-            "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Management_{0}', parameters('timeStamp'))), '2022-09-01').outputs.encryptionKeyVaultUri.value]"
-          },
+          "encryptionKeyVaultResourceId": "[if(equals(parameters('deploymentType'), 'Complete'), createObject('value', reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Management_{0}', parameters('timeStamp'))), '2022-09-01').outputs.encryptionKeyVaultResourceId.value), createObject('value', ''))]",
+          "encryptionKeyVaultUri": "[if(equals(parameters('deploymentType'), 'Complete'), createObject('value', reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Management_{0}', parameters('timeStamp'))), '2022-09-01').outputs.encryptionKeyVaultUri.value), createObject('value', ''))]",
           "fslogixEncryptionKeyNameConv": {
             "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.encryptionKeyNames.value.fslogix]"
           },
@@ -14111,7 +14107,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.34.44.8038",
-              "templateHash": "4026990886972449912"
+              "templateHash": "1471790591944619781"
             }
           },
           "parameters": {
@@ -15035,7 +15031,7 @@
               ]
             },
             {
-              "condition": "[and(equals(parameters('deploymentType'), 'Complete'), or(not(equals(parameters('keyManagementDisks'), 'PlatformManaged')), parameters('confidentialVMOSDiskEncryption')))]",
+              "condition": "[and(equals(parameters('deploymentType'), 'Complete'), not(equals(parameters('keyManagementDisks'), 'PlatformManaged')))]",
               "type": "Microsoft.Resources/deployments",
               "apiVersion": "2022-09-01",
               "name": "[format('DiskEncryption_{0}', parameters('timeStamp'))]",
