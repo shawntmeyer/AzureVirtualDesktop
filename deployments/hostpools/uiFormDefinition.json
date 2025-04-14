@@ -1651,7 +1651,7 @@
 								{
 									"name": "confDiskEncryptionServicePrincipalPickerBlade",
 									"type": "Microsoft.Solutions.BladeInvokeControl",									
-									"openBladeStatus": "[steps('hosts').diskEncryption.confDiskEncryptionPrincipalSelector.changing]",
+									"openBladeStatus": "[steps('hosts').diskEncryption.confDiskEncryptionServicePrincipalSelector.changing]",
 									"bladeReference": {
 										"name": "ObjectPickerBlade",
 										"extension": "Microsoft_AAD_IAM",
@@ -3398,7 +3398,7 @@
 										"allowedValues": "[map(filter(steps('zeroTrust').privateEndpoints.privateEndpointVirtualNetworksApi.value, (vnet) => equals(vnet.location, steps('basics').scope.location.name)), (vnet) => parse(concat('{\"label\":\"', vnet.name, '\",\"description\":\"Location: ', vnet.location, ' Resource Group: ', first(skip(split(vnet.id, '/'), 4)), '\",\"value\":\"', vnet.id, '\"}')))]",
 										"required": true
 									},
-									"visible": "[and(or(steps('management').keyVaults.deploySecretsKeyVault, contains(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), contains(steps('userProfiles').azureFiles.keyManagement, 'CustomerManaged'), steps('management').automation.deployIncreaseQuota), steps('zeroTrust').privateEndpoints.deployPrivateEndpoints)]"
+									"visible": "[and(or(contains(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), contains(steps('userProfiles').azureFiles.keyManagement, 'CustomerManaged'), steps('management').keyVaults.deploySecretsKeyVault, steps('management').automation.deployIncreaseQuota), steps('zeroTrust').privateEndpoints.deployPrivateEndpoints)]"
 								},
 								{
 									"name": "managementSubnetsApi",
@@ -3418,7 +3418,7 @@
 										"allowedValues": "[map(filter(steps('zeroTrust').privateEndpoints.managementSubnetsApi.value, (snet) => empty(snet.properties.delegations)), (snet) => parse(concat('{\"label\":\"', snet.name, '\",\"value\":\"', snet.id, '\"}')))]",
 										"required": true
 									},									
-									"visible": "[and(or(steps('hosts').diskEncryption.confidentialVMOSDiskEncryption, contains(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), contains(steps('userProfiles').azureFiles.keyManagement, 'CustomerManaged'), steps('management').keyVaults.deploySecretsKeyVault), steps('zeroTrust').privateEndpoints.deployPrivateEndpoints)]"
+									"visible": "[and(or(contains(steps('hosts').diskEncryption.keyManagement, 'CustomerManaged'), contains(steps('userProfiles').azureFiles.keyManagement, 'CustomerManaged'), steps('management').keyVaults.deploySecretsKeyVault), steps('zeroTrust').privateEndpoints.deployPrivateEndpoints)]"
 								},
 								{
 									"name": "functionAppOutboundSubnet",
