@@ -74,7 +74,7 @@ var roleAssignmentsHosts = union(
       subscription: subscription().subscriptionId
     }
   ],
-  confidentialVMOSDiskEncryption && contains(keyManagementDisks, 'customerManaged')
+  confidentialVMOSDiskEncryption && contains(keyManagementDisks, 'CustomerManaged')
     ? [
         {
           roleDefinitionId: roleDefinitions.KeyVaultCryptoOfficer // (Purpose: Retrieve the customer managed keys from the key vault for idempotent deployment)

@@ -1516,19 +1516,7 @@
 											"uri": "http://go.microsoft.com/fwlink/?LinkId=2133517"
 										}
 									}
-								},
-								{
-									"name": "confidentialVMEncryptionTextBlock",
-									"type": "Microsoft.Common.TextBlock",
-									"visible": "[equals(steps('hosts').security.securityType, 'ConfidentialVM')]",
-									"options": {
-										"text": "<ul><li><b>Confidential disk encryption</b> binds disk encryption keys to the virtual machine's TPM and makes the protected disk content accessible only to the VM. The TPM and VM guest state is always encrypted in attested code using keys released by a secure protocol that bypasses the hypervisor and host operating system. Currently only available for the OS disk. Encryption at host may be used for other disks on a Confidential VM in addition to Confidential Disk Encryption.</li></ul>",
-										"link": {
-											"label": "Learn more",
-											"uri": "http://go.microsoft.com/fwlink/?LinkId=2133517"
-										}
-									}
-								},
+								},								
 								{
 									"name": "encryptionAtHost",
 									"type": "Microsoft.Common.CheckBox",
@@ -1545,6 +1533,18 @@
 										"style": "Error",
 										"text": "The 'Encryption At Host' feature is not registered in your subscription. Follow the guidance at this link to enable the feature and restart the deployment.",
 										"uri": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-enable-host-based-encryption-portal?tabs=azure-powershell"
+									}
+								},
+								{
+									"name": "confidentialVMEncryptionTextBlock",
+									"type": "Microsoft.Common.TextBlock",
+									"visible": "[equals(steps('hosts').security.securityType, 'ConfidentialVM')]",
+									"options": {
+										"text": "<ul><li><b>Confidential disk encryption</b> binds disk encryption keys to the virtual machine's TPM and makes the protected disk content accessible only to the VM. The TPM and VM guest state is always encrypted in attested code using keys released by a secure protocol that bypasses the hypervisor and host operating system. Currently only available for the OS disk. Encryption at host may be used for other disks on a Confidential VM in addition to Confidential Disk Encryption.</li></ul>",
+										"link": {
+											"label": "Learn more",
+											"uri": "https://learn.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview#confidential-os-disk-encryption"
+										}
 									}
 								},
 								{
@@ -1623,7 +1623,7 @@
 									"defaultValue": "Platform-Managed Keys",
 									"toolTip": "Platform-managed keys are key encryption keys that are generated, stored, and managed entirely by Azure. Choose Platform Managed for the best balance of security and ease of use. Customer-managed keys are key encryption keys that are generated, stored, and managed by you, the customer, in your Azure Key Vault. Choose Customer Managed if you need to meet specific compliance requirements. Platform-Managed and Customer-Managed Keys provide double encryption with an infrastructure encryption layer using platform-managed keys and a disk encryption layer using customer-managed keys.",
 									"constraints": {
-										"allowedValues": "[if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), parse('[{\"label\":\"Platform-Managed Keys\",\"value\":\"PlatformManaged\"},{\"label\":\"Customer-Managed Keys protected by HSM\",\"value\":\"CustomerManaged\"}]'), parse('[{\"label\":\"Platform-Managed Keys\",\"value\":\"PlatformManaged\"},{\"label\":\"Customer-Managed Keys\",\"value\":\"CustomerManaged\"},{\"label\":\"Customer-Managed Keys protected by HSM\",\"value\":\"CustomerManagedHSM\"},{\"label\":\"Platform-Managed and Customer-Managed Keys\",\"value\":\"PlatformManagedAndCustomerManaged\"},{\"label\":\"Platform-Managed and Customer-Managed Keys protected by HSM\",\"value\":\"PlatformManagedAndCustomerManagedHSM\"}]'))]"
+										"allowedValues": "[if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), parse('[{\"label\":\"Platform-Managed Keys\",\"value\":\"PlatformManaged\"},{\"label\":\"Customer-Managed Keys protected by HSM\",\"value\":\"CustomerManagedHSM\"}]'), parse('[{\"label\":\"Platform-Managed Keys\",\"value\":\"PlatformManaged\"},{\"label\":\"Customer-Managed Keys\",\"value\":\"CustomerManaged\"},{\"label\":\"Customer-Managed Keys protected by HSM\",\"value\":\"CustomerManagedHSM\"},{\"label\":\"Platform-Managed and Customer-Managed Keys\",\"value\":\"PlatformManagedAndCustomerManaged\"},{\"label\":\"Platform-Managed and Customer-Managed Keys protected by HSM\",\"value\":\"PlatformManagedAndCustomerManagedHSM\"}]'))]"
 									},
 									"visible": "[equals(steps('basics').deploymentType, 'Complete')]"
 								},

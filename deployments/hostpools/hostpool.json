@@ -351,7 +351,7 @@
       "defaultValue": "PlatformManaged",
       "allowedValues": [
         "PlatformManaged",
-        "customerManaged",
+        "CustomerManaged",
         "CustomerManagedHSM",
         "PlatformManagedAndCustomerManaged",
         "PlatformManagedAndCustomerManagedHSM"
@@ -733,7 +733,7 @@
       "defaultValue": "MicrosoftManaged",
       "allowedValues": [
         "MicrosoftManaged",
-        "customerManaged",
+        "CustomerManaged",
         "CustomerManagedHSM"
       ],
       "metadata": {
@@ -2468,7 +2468,7 @@
                 "subscription": "[subscription().subscriptionId]"
               }
             ],
-            "roleAssignmentsHosts": "[union(createArray(createObject('roleDefinitionId', parameters('roleDefinitions').VirtualMachineContributor, 'depName', 'Hosts-VMCont', 'resourceGroup', parameters('resourceGroupHosts'), 'subscription', subscription().subscriptionId), createObject('roleDefinitionId', parameters('roleDefinitions').RoleBasedAccessControlAdministrator, 'depName', 'Hosts-RBACAdmin', 'resourceGroup', parameters('resourceGroupHosts'), 'subscription', subscription().subscriptionId)), if(and(parameters('confidentialVMOSDiskEncryption'), contains(parameters('keyManagementDisks'), 'customerManaged')), createArray(createObject('roleDefinitionId', parameters('roleDefinitions').KeyVaultCryptoOfficer, 'depName', 'Hosts-KVCryptoOff', 'resourceGroup', parameters('resourceGroupHosts'), 'subscription', subscription().subscriptionId)), createArray()))]",
+            "roleAssignmentsHosts": "[union(createArray(createObject('roleDefinitionId', parameters('roleDefinitions').VirtualMachineContributor, 'depName', 'Hosts-VMCont', 'resourceGroup', parameters('resourceGroupHosts'), 'subscription', subscription().subscriptionId), createObject('roleDefinitionId', parameters('roleDefinitions').RoleBasedAccessControlAdministrator, 'depName', 'Hosts-RBACAdmin', 'resourceGroup', parameters('resourceGroupHosts'), 'subscription', subscription().subscriptionId)), if(and(parameters('confidentialVMOSDiskEncryption'), contains(parameters('keyManagementDisks'), 'CustomerManaged')), createArray(createObject('roleDefinitionId', parameters('roleDefinitions').KeyVaultCryptoOfficer, 'depName', 'Hosts-KVCryptoOff', 'resourceGroup', parameters('resourceGroupHosts'), 'subscription', subscription().subscriptionId)), createArray()))]",
             "roleAssignmentsDeployment": [
               {
                 "roleDefinitionId": "[parameters('roleDefinitions').Contributor]",
@@ -5985,7 +5985,7 @@
               },
               "encryptionAtHost": "[parameters('encryptionAtHost')]",
               "acceleratedNetworking": "[parameters('enableAcceleratedNetworking')]",
-              "diskEncryptionSetName": "[if(parameters('confidentialVMOSDiskEncryption'), reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.diskEncryptionSetNames.value.confidentialVMs, if(startsWith(parameters('keyManagementDisks'), 'customerManaged'), reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.diskEncryptionSetNames.value.customerManaged, if(contains(parameters('keyManagementDisks'), 'PlatformManagedAndCustomerManaged'), reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.diskEncryptionSetNames.value.platformAndCustomerManaged, null())))]",
+              "diskEncryptionSetName": "[if(parameters('confidentialVMOSDiskEncryption'), reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.diskEncryptionSetNames.value.confidentialVMs, if(startsWith(parameters('keyManagementDisks'), 'CustomerManaged'), reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.diskEncryptionSetNames.value.customerManaged, if(contains(parameters('keyManagementDisks'), 'PlatformManagedAndCustomerManaged'), reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.diskEncryptionSetNames.value.platformAndCustomerManaged, null())))]",
               "hibernate": "[parameters('hibernationEnabled')]",
               "securityType": "[parameters('securityType')]",
               "secureBoot": "[parameters('secureBootEnabled')]",

@@ -200,7 +200,7 @@ param encryptionAtHost bool = true
 
 @allowed([
   'PlatformManaged'
-  'customerManaged'
+  'CustomerManaged'
   'CustomerManagedHSM'
   'PlatformManagedAndCustomerManaged'
   'PlatformManagedAndCustomerManagedHSM'
@@ -464,7 +464,7 @@ param fslogixStorageIndex int = 1
 
 @allowed([
   'MicrosoftManaged'
-  'customerManaged'
+  'CustomerManaged'
   'CustomerManagedHSM'
 ])
 @description('Optional. The type of key management used for the Azure Files storage account encryption.')
@@ -662,7 +662,7 @@ var hostPoolVmTemplate = {
   acceleratedNetworking: enableAcceleratedNetworking
   diskEncryptionSetName: confidentialVMOSDiskEncryption
     ? resourceNames.outputs.diskEncryptionSetNames.confidentialVMs
-    : startsWith(keyManagementDisks, 'customerManaged')
+    : startsWith(keyManagementDisks, 'CustomerManaged')
         ? resourceNames.outputs.diskEncryptionSetNames.customerManaged
         : contains(keyManagementDisks, 'PlatformManagedAndCustomerManaged')
             ? resourceNames.outputs.diskEncryptionSetNames.platformAndCustomerManaged
