@@ -819,6 +819,7 @@ module deploymentPrereqs 'modules/deployment/deployment.bicep' = if (deploymentT
     resourceGroupControlPlane: resourceNames.outputs.resourceGroupControlPlane
     resourceGroupDeployment: resourceNames.outputs.resourceGroupDeployment
     resourceGroupHosts: resourceNames.outputs.resourceGroupHosts
+    resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
     resourceGroupStorage: resourceNames.outputs.resourceGroupStorage
     roleDefinitions: logic.outputs.roleDefinitions
     startVmOnConnect: startVmOnConnect
@@ -1077,7 +1078,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     enableAcceleratedNetworking: enableAcceleratedNetworking
     enableMonitoring: enableMonitoring
     encryptionAtHost: encryptionAtHost
-    encryptionKeyName: resourceNames.outputs.encryptionKeyNames.virtualMachines
+    encryptionKeyName: confidentialVMOSDiskEncryption ? resourceNames.outputs.encryptionKeyNames.confidentialVMs : resourceNames.outputs.encryptionKeyNames.virtualMachines
     encryptionKeyVaultResourceId: management.outputs.encryptionKeyVaultResourceId
     encryptionKeyVaultUri: management.outputs.encryptionKeyVaultUri
     existingDiskAccessResourceId: existingDiskAccessResourceId

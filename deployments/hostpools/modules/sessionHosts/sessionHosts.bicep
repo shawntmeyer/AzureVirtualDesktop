@@ -178,7 +178,7 @@ module diskAccessPolicy 'modules/diskNetworkAccessPolicy.bicep' = if (deployDisk
 }
 
 module customerManagedKeys 'modules/customerManagedKeys.bicep' =  if (deploymentType == 'Complete' && keyManagementDisks != 'PlatformManaged') {
-  name: 'DiskEncryption_${timeStamp}'
+  name: 'Customer_Managed_Keys_${timeStamp}'
   scope: resourceGroup(resourceGroupHosts)
   params: {    
     confidentialVMOrchestratorObjectId: confidentialVMOrchestratorObjectId
@@ -220,14 +220,14 @@ module availabilitySets '../../../sharedModules/resources/compute/availability-s
 }]
 
 module localNetAppVolumes 'modules/getNetAppVolumeSmbServerFqdn.bicep' = [for i in range(0, length(sortedLocalNetAppResourceIds)): if(!empty(sortedLocalNetAppResourceIds)) {
-  name: 'localNetAppVolumes-${i}-${timeStamp}'
+  name: 'LocalNetAppVolumes-${i}-${timeStamp}'
   params: {
     netAppVolumeResourceId: sortedLocalNetAppResourceIds[i]
   }
 }]
 
 module remoteNetAppVolumes 'modules/getNetAppVolumeSmbServerFqdn.bicep' = [for i in range(0, length(sortedRemoteNetAppResourceIds)) : if(!empty(sortedRemoteNetAppResourceIds)) {
-  name: 'remoteNetAppVolumes-${i}-${timeStamp}'
+  name: 'RemoteNetAppVolumes-${i}-${timeStamp}'
   params: {
     netAppVolumeResourceId: sortedRemoteNetAppResourceIds[i]
   }
