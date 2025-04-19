@@ -81,7 +81,7 @@
 						},
 						{
 							"name": "timeZone",
-							"type": "Microsoft.Solutions.DropDown",
+							"type": "Microsoft.Common.DropDown",
 							"label": "Virtual Machines Time Zone",
 							"toolTip": "Select the time zone for the virtual machines.",
 							"defaultValue": "Eastern Standard Time",
