@@ -130,7 +130,9 @@ param tags object = {}
 param timeStamp string = utcNow('yyyyMMddhhmmss')
 
 var createPrivateDNSZones = createAzureBackupZone || createAzureBlobZone || createAzureFilesZone || createAzureQueueZone || createAzureTableZone || createAzureKeyVaultZone || createAvdFeedZone || createAvdGlobalFeedZone || createAzureWebAppZone
-var locations = (loadJsonContent('../../.common/data/locations.json'))[environment().name]
+var locations = startsWith(environment().name, 'US') ? null : (loadJsonContent('../../.common/data/locations.json'))[environment().name]
+var locationAbbreviation = startsWith(environment().name, 'US') ? substring(location, 5, length(location) - 5) : locations[location].abbreviation
+var recoveryServicesGeo = startsWith(environment().name, 'US') ? contains(environment().name, 'N') ? 'ex${substring(location, 0, 1)}' : 'rx${substring(location, 0, 1)}' : locations[location].recoveryServicesGeo
 var resourceAbbreviations = loadJsonContent('../../.common/data/resourceAbbreviations.json')
 var nameConvSuffix = nameConvResTypeAtEnd ? 'LOCATION-RESOURCETYPE' : 'LOCATION'
 
@@ -141,7 +143,7 @@ var natGatewayName = replace(
   replace(
     replace(nameConv_Shared_Resources, 'RESOURCETYPE', resourceAbbreviations.natGateways),
     'LOCATION',
-    locations[location].abbreviation
+    locationAbbreviation
   ),
   'TOKEN-',
   ''
@@ -150,7 +152,7 @@ var publicIPName = replace(
   replace(
     replace(nameConv_Shared_Resources, 'RESOURCETYPE', resourceAbbreviations.publicIPAddresses),
     'LOCATION',
-    locations[location].abbreviation
+    locationAbbreviation
   ),
   'TOKEN-',
   ''
@@ -159,7 +161,7 @@ var routeTableName = replace(
   replace(
     replace(nameConv_Shared_Resources, 'RESOURCETYPE', resourceAbbreviations.routeTables),
     'LOCATION',
-    locations[location].abbreviation
+    locationAbbreviation
   ),
   'TOKEN-',
   ''
@@ -206,22 +208,8 @@ var privateDnsZoneSuffixes_Backup = {
   USNat: cloudSuffix
   USSec: cloudSuffix
 }
-/*
-var privateDnsZoneSuffixes_AzureAutomation = {
-  AzureCloud: 'net'
-  AzureUSGovernment: 'us'
-  USNat: cloudSuffix
-  USSec: cloudSuffix
-}
 
-var privateDnsZoneSuffixes_Monitor = {
-  AzureCloud: 'com'
-  AzureUSGovernment: 'us'
-  USNat: cloudSuffix
-  USSec: cloudSuffix
-}
-*/
-var backupPrivateDnsZone = createAzureBackupZone ? 'privatelink.${locations[location].recoveryServicesGeo}.backup.windowsazure.${privateDnsZoneSuffixes_Backup[environment().name]}' : ''
+var backupPrivateDnsZone = createAzureBackupZone ? 'privatelink.${recoveryServicesGeo}.backup.windowsazure.${privateDnsZoneSuffixes_Backup[environment().name]}' : ''
 var blobPrivateDnsZone = createAzureBlobZone ? 'privatelink.blob.${environment().suffixes.storage}' : ''
 var filesPrivateDnsZone = createAzureFilesZone ? 'privatelink.file.${environment().suffixes.storage}' : ''
 var queuePrivateDnsZone = createAzureQueueZone ? 'privatelink.queue.${environment().suffixes.storage}' : ''
