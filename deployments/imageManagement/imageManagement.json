@@ -4,8 +4,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.33.93.31351",
-      "templateHash": "4630929051221856394"
+      "version": "0.34.44.8038",
+      "templateHash": "17196419422134390071"
     }
   },
   "parameters": {
@@ -142,386 +142,224 @@
   },
   "variables": {
     "$fxv#0": {
-      "AzureChina": {
-        "chinaeast": {
-          "abbreviation": "cne",
-          "recoveryServicesGeo": "sha",
-          "timeDifference": "+8:00",
-          "timeZone": "China Standard Time"
-        },
-        "chinaeast2": {
-          "abbreviation": "cne2",
-          "recoveryServicesGeo": "sha2",
-          "timeDifference": "+8:00",
-          "timeZone": "China Standard Time"
-        },
-        "chinanorth": {
-          "abbreviation": "cnn",
-          "recoveryServicesGeo": "bjb",
-          "timeDifference": "+8:00",
-          "timeZone": "China Standard Time"
-        },
-        "chinanorth2": {
-          "abbreviation": "cnn2",
-          "recoveryServicesGeo": "bjb2",
-          "timeDifference": "+8:00",
-          "timeZone": "China Standard Time"
-        }
-      },
       "AzureCloud": {
         "australiacentral": {
           "abbreviation": "auc",
-          "recoveryServicesGeo": "acl",
-          "timeDifference": "+10:00",
-          "timeZone": "AUS Eastern Standard Time"
+          "recoveryServicesGeo": "acl"
         },
         "australiacentral2": {
           "abbreviation": "auc2",
-          "recoveryServicesGeo": "acl2",
-          "timeDifference": "+10:00",
-          "timeZone": "AUS Eastern Standard Time"
+          "recoveryServicesGeo": "acl2"
         },
         "australiaeast": {
           "abbreviation": "aue",
-          "recoveryServicesGeo": "ae",
-          "timeDifference": "+10:00",
-          "timeZone": "AUS Eastern Standard Time"
+          "recoveryServicesGeo": "ae"
         },
         "australiasoutheast": {
           "abbreviation": "ause",
-          "recoveryServicesGeo": "ase",
-          "timeDifference": "+10:00",
-          "timeZone": "AUS Eastern Standard Time"
+          "recoveryServicesGeo": "ase"
         },
         "brazilsouth": {
           "abbreviation": "brs",
-          "recoveryServicesGeo": "brs",
-          "timeDifference": "-3:00",
-          "timeZone": "E. South America Standard Time"
+          "recoveryServicesGeo": "brs"
         },
         "brazilsoutheast": {
           "abbreviation": "brse",
-          "recoveryServicesGeo": "bse",
-          "timeDifference": "-3:00",
-          "timeZone": "E. South America Standard Time"
+          "recoveryServicesGeo": "bse"
         },
         "canadacentral": {
           "abbreviation": "cac",
-          "recoveryServicesGeo": "cnc",
-          "timeDifference": "-5:00",
-          "timeZone": "Eastern Standard Time"
+          "recoveryServicesGeo": "cnc"
         },
         "canadaeast": {
           "abbreviation": "cae",
-          "recoveryServicesGeo": "cne",
-          "timeDifference": "-5:00",
-          "timeZone": "Eastern Standard Time"
+          "recoveryServicesGeo": "cne"
         },
         "centralindia": {
           "abbreviation": "inc",
-          "recoveryServicesGeo": "inc",
-          "timeDifference": "+5:30",
-          "timeZone": "India Standard Time"
+          "recoveryServicesGeo": "inc"
         },
         "centralus": {
           "abbreviation": "usc",
-          "recoveryServicesGeo": "cus",
-          "timeDifference": "-6:00",
-          "timeZone": "Central Standard Time"
+          "recoveryServicesGeo": "cus"
         },
         "eastasia": {
           "abbreviation": "ase",
-          "recoveryServicesGeo": "ea",
-          "timeDifference": "+8:00",
-          "timeZone": "China Standard Time"
+          "recoveryServicesGeo": "ea"
         },
         "eastus": {
           "abbreviation": "use",
-          "recoveryServicesGeo": "eus",
-          "timeDifference": "-5:00",
-          "timeZone": "Eastern Standard Time"
+          "recoveryServicesGeo": "eus"
         },
         "eastus2": {
           "abbreviation": "use2",
-          "recoveryServicesGeo": "eus2",
-          "timeDifference": "-5:00",
-          "timeZone": "Eastern Standard Time"
+          "recoveryServicesGeo": "eus2"
         },
         "francecentral": {
           "abbreviation": "frc",
-          "recoveryServicesGeo": "frc",
-          "timeDifference": "+1:00",
-          "timeZone": "Central Europe Standard Time"
+          "recoveryServicesGeo": "frc"
         },
         "francesouth": {
           "abbreviation": "frs",
-          "recoveryServicesGeo": "frs",
-          "timeDifference": "+1:00",
-          "timeZone": "Central Europe Standard Time"
+          "recoveryServicesGeo": "frs"
         },
         "germanynorth": {
           "abbreviation": "den",
-          "recoveryServicesGeo": "gn",
-          "timeDifference": "+1:00",
-          "timeZone": "Central Europe Standard Time"
+          "recoveryServicesGeo": "gn"
         },
         "germanywestcentral": {
           "abbreviation": "dewc",
-          "recoveryServicesGeo": "gwc",
-          "timeDifference": "+1:00",
-          "timeZone": "Central Europe Standard Time"
+          "recoveryServicesGeo": "gwc"
         },
         "israelcentral": {
           "abbreviation": "ilc",
-          "recoveryServicesGeo": "ilc",
-          "timeDifference": "+2:00",
-          "timeZone": "Israel Standard Time"
+          "recoveryServicesGeo": "ilc"
         },
         "italynorth": {
           "abbreviation": "itn",
-          "recoveryServicesGeo": "itn",
-          "timeDifference": "+1:00",
-          "timeZone": "Central Europe Standard Time"
+          "recoveryServicesGeo": "itn"
         },
         "japaneast": {
           "abbreviation": "jpe",
-          "recoveryServicesGeo": "jpe",
-          "timeDifference": "+9:00",
-          "timeZone": "Tokyo Standard Time"
+          "recoveryServicesGeo": "jpe"
         },
         "japanwest": {
           "abbreviation": "jpw",
-          "recoveryServicesGeo": "jpw",
-          "timeDifference": "+9:00",
-          "timeZone": "Tokyo Standard Time"
+          "recoveryServicesGeo": "jpw"
         },
         "jioindiacentral": {
           "abbreviation": "injc",
-          "recoveryServicesGeo": "jic",
-          "timeDifference": "+5:30",
-          "timeZone": "India Standard Time"
+          "recoveryServicesGeo": "jic"
         },
         "jioindiawest": {
           "abbreviation": "injw",
-          "recoveryServicesGeo": "jiw",
-          "timeDifference": "+5:30",
-          "timeZone": "India Standard Time"
+          "recoveryServicesGeo": "jiw"
         },
         "koreacentral": {
           "abbreviation": "krc",
-          "recoveryServicesGeo": "krc",
-          "timeDifference": "+9:00",
-          "timeZone": "Korea Standard Time"
+          "recoveryServicesGeo": "krc"
         },
         "koreasouth": {
           "abbreviation": "krs",
-          "recoveryServicesGeo": "krs",
-          "timeDifference": "+9:00",
-          "timeZone": "Korea Standard Time"
+          "recoveryServicesGeo": "krs"
         },
         "northcentralus": {
           "abbreviation": "usnc",
-          "recoveryServicesGeo": "ncus",
-          "timeDifference": "-6:00",
-          "timeZone": "Central Standard Time"
+          "recoveryServicesGeo": "ncus"
         },
         "northeurope": {
           "abbreviation": "eun",
-          "recoveryServicesGeo": "ne",
-          "timeDifference": "0:00",
-          "timeZone": "GMT Standard Time"
+          "recoveryServicesGeo": "ne"
         },
         "norwayeast": {
           "abbreviation": "noe",
-          "recoveryServicesGeo": "nwe",
-          "timeDifference": "+1:00",
-          "timeZone": "Central Europe Standard Time"
+          "recoveryServicesGeo": "nwe"
         },
         "norwaywest": {
           "abbreviation": "now",
-          "recoveryServicesGeo": "nww",
-          "timeDifference": "+1:00",
-          "timeZone": "Central Europe Standard Time"
+          "recoveryServicesGeo": "nww"
         },
         "polandcentral": {
           "abbreviation": "plc",
-          "recoveryServicesGeo": "plc",
-          "timeDifference": "+1:00",
-          "timeZone": "Central Europe Standard Time"
+          "recoveryServicesGeo": "plc"
         },
         "qatarcentral": {
           "abbreviation": "qac",
-          "recoveryServicesGeo": "qac",
-          "timeDifference": "+3:00",
-          "timeZone": "Arabian Standard Time"
+          "recoveryServicesGeo": "qac"
         },
         "southafricanorth": {
           "abbreviation": "zan",
-          "recoveryServicesGeo": "san",
-          "timeDifference": "+2:00",
-          "timeZone": "South Africa Standard Time"
+          "recoveryServicesGeo": "san"
         },
         "southafricawest": {
           "abbreviation": "zaw",
-          "recoveryServicesGeo": "saw",
-          "timeDifference": "+2:00",
-          "timeZone": "South Africa Standard Time"
+          "recoveryServicesGeo": "saw"
         },
         "southcentralus": {
           "abbreviation": "ussc",
-          "recoveryServicesGeo": "scus",
-          "timeDifference": "-6:00",
-          "timeZone": "Central Standard Time"
+          "recoveryServicesGeo": "scus"
         },
         "southeastasia": {
           "abbreviation": "asse",
-          "recoveryServicesGeo": "sea",
-          "timeDifference": "+8:00",
-          "timeZone": "Singapore Standard Time"
+          "recoveryServicesGeo": "sea"
         },
         "southindia": {
           "abbreviation": "ins",
-          "recoveryServicesGeo": "ins",
-          "timeDifference": "+5:30",
-          "timeZone": "India Standard Time"
+          "recoveryServicesGeo": "ins"
         },
         "swedencentral": {
           "abbreviation": "sec",
-          "recoveryServicesGeo": "sdc",
-          "timeDifference": "+1:00",
-          "timeZone": "Central Europe Standard Time"
+          "recoveryServicesGeo": "sdc"
         },
         "switzerlandnorth": {
           "abbreviation": "chn",
-          "recoveryServicesGeo": "szn",
-          "timeDifference": "+1:00",
-          "timeZone": "Central Europe Standard Time"
+          "recoveryServicesGeo": "szn"
         },
         "switzerlandwest": {
           "abbreviation": "chw",
-          "recoveryServicesGeo": "szw",
-          "timeDifference": "+1:00",
-          "timeZone": "Central Europe Standard Time"
+          "recoveryServicesGeo": "szw"
         },
         "uaecentral": {
           "abbreviation": "aec",
-          "recoveryServicesGeo": "uac",
-          "timeDifference": "+3:00",
-          "timeZone": "Arabian Standard Time"
+          "recoveryServicesGeo": "uac"
         },
         "uaenorth": {
           "abbreviation": "aen",
-          "recoveryServicesGeo": "uan",
-          "timeDifference": "+3:00",
-          "timeZone": "Arabian Standard Time"
+          "recoveryServicesGeo": "uan"
         },
         "uksouth": {
           "abbreviation": "uks",
-          "recoveryServicesGeo": "uks",
-          "timeDifference": "0:00",
-          "timeZone": "GMT Standard Time"
+          "recoveryServicesGeo": "uks"
         },
         "ukwest": {
           "abbreviation": "ukw",
-          "recoveryServicesGeo": "ukw",
-          "timeDifference": "0:00",
-          "timeZone": "GMT Standard Time"
+          "recoveryServicesGeo": "ukw"
         },
         "westcentralus": {
           "abbreviation": "uswc",
-          "recoveryServicesGeo": "wcus",
-          "timeDifference": "-7:00",
-          "timeZone": "Mountain Standard Time"
+          "recoveryServicesGeo": "wcus"
         },
         "westeurope": {
           "abbreviation": "euw",
-          "recoveryServicesGeo": "we",
-          "timeDifference": "+1:00",
-          "timeZone": "Central Europe Standard Time"
+          "recoveryServicesGeo": "we"
         },
         "westindia": {
           "abbreviation": "inw",
-          "recoveryServicesGeo": "inw",
-          "timeDifference": "+5:30",
-          "timeZone": "India Standard Time"
+          "recoveryServicesGeo": "inw"
         },
         "westus": {
           "abbreviation": "usw",
-          "recoveryServicesGeo": "wus",
-          "timeDifference": "-8:00",
-          "timeZone": "Pacific Standard Time"
+          "recoveryServicesGeo": "wus"
         },
         "westus2": {
           "abbreviation": "usw2",
-          "recoveryServicesGeo": "wus2",
-          "timeDifference": "-8:00",
-          "timeZone": "Pacific Standard Time"
+          "recoveryServicesGeo": "wus2"
         },
         "westus3": {
           "abbreviation": "usw3",
-          "recoveryServicesGeo": "wus3",
-          "timeDifference": "-7:00",
-          "timeZone": "Mountain Standard Time"
+          "recoveryServicesGeo": "wus3"
         }
       },
       "AzureUSGovernment": {
         "usdodcentral": {
           "abbreviation": "dodc",
-          "recoveryServicesGeo": "udc",
-          "timeDifference": "-6:00",
-          "timeZone": "Central Standard Time"
+          "recoveryServicesGeo": "udc"
         },
         "usdodeast": {
           "abbreviation": "dode",
-          "recoveryServicesGeo": "ude",
-          "timeDifference": "-5:00",
-          "timeZone": "Eastern Standard Time"
+          "recoveryServicesGeo": "ude"
         },
         "usgovarizona": {
           "abbreviation": "az",
-          "recoveryServicesGeo": "uga",
-          "timeDifference": "-7:00",
-          "timeZone": "Mountain Standard Time"
+          "recoveryServicesGeo": "uga"
         },
         "usgovtexas": {
           "abbreviation": "tx",
-          "recoveryServicesGeo": "ugt",
-          "timeDifference": "-6:00",
-          "timeZone": "Central Standard Time"
+          "recoveryServicesGeo": "ugt"
         },
         "usgovvirginia": {
           "abbreviation": "va",
-          "recoveryServicesGeo": "ugv",
-          "timeDifference": "-5:00",
-          "timeZone": "Eastern Standard Time"
-        }
-      },
-      "USNat": {
-        "usnateast": {
-          "abbreviation": "east",
-          "recoveryServicesGeo": "exe",
-          "timeDifference": "-5:00",
-          "timeZone": "Eastern Standard Time"
-        },
-        "usnatwest": {
-          "abbreviation": "west",
-          "recoveryServicesGeo": "exw",
-          "timeDifference": "-8:00",
-          "timeZone": "Pacific Standard Time"
-        }
-      },
-      "USSec": {
-        "usseceast": {
-          "abbreviation": "east",
-          "recoveryServicesGeo": "rxe",
-          "timeDifference": "-5:00",
-          "timeZone": "Eastern Standard Time"
-        },
-        "ussecwest": {
-          "abbreviation": "west",
-          "recoveryServicesGeo": "rxw",
-          "timeDifference": "-8:00",
-          "timeZone": "Pacific Standard Time"
+          "recoveryServicesGeo": "ugv"
         }
       }
     },
@@ -535,7 +373,6 @@
       "desktopApplicationGroups": "vddag",
       "diskAccesses": "da",
       "remoteApplicationGroups": "vdrag",
-      "disks": "disk",
       "diskEncryptionSets": "des",
       "functionApps": "fa",
       "hostPools": "vdpool",
@@ -545,6 +382,7 @@
       "netAppAccounts": "naa",
       "netAppCapacityPools": "nacp",
       "networkInterfaces": "nic",
+      "osdisks": "osdisk",
       "privateEndpoints": "pe",
       "privateLinkScopes": "pls",
       "publicIPAddresses": "pip",
@@ -573,6 +411,7 @@
     "vnetName": "[if(not(empty(parameters('privateEndpointSubnetResourceId'))), split(parameters('privateEndpointSubnetResourceId'), '/')[8], '')]",
     "privateEndpointNameConv": "[replace(format('{0}', if(parameters('nameConvResTypeAtEnd'), format('RESOURCE-SUBRESOURCE-{0}-RESOURCETYPE', variables('vnetName')), format('RESOURCETYPE-RESOURCE-SUBRESOURCE-{0}', variables('vnetName')))), 'RESOURCETYPE', variables('resourceAbbreviations').privateEndpoints)]",
     "privateEndpointName": "[replace(replace(variables('privateEndpointNameConv'), 'SUBRESOURCE', 'blob'), 'RESOURCE', variables('storageName'))]",
+    "customNetworkInterfaceName": "[if(parameters('nameConvResTypeAtEnd'), format('{0}-{1}', variables('privateEndpointName'), variables('resourceAbbreviations').networkInterfaces), format('{0}-{1}', variables('resourceAbbreviations').networkInterfaces, variables('privateEndpointName')))]",
     "storageName": "[take(format('{0}imageassets{1}{2}', variables('resourceAbbreviations').storageAccounts, variables('locations')[parameters('location')].abbreviation, uniqueString(subscription().subscriptionId, variables('resourceGroupName'))), 24)]",
     "storageKind": "StorageV2"
   },
@@ -614,6 +453,9 @@
           },
           "computeGalleryName": {
             "value": "[variables('galleryName')]"
+          },
+          "customNetworkInterfaceName": {
+            "value": "[variables('customNetworkInterfaceName')]"
           },
           "storageAccountName": {
             "value": "[variables('storageName')]"
@@ -662,8 +504,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.33.93.31351",
-              "templateHash": "2942783496077332732"
+              "version": "0.34.44.8038",
+              "templateHash": "2583817799858683985"
             }
           },
           "parameters": {
@@ -760,6 +602,13 @@
                 "description": "Optional. The Private Endpoint name to create for Blob Storage."
               }
             },
+            "customNetworkInterfaceName": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional. The name of the custom network interface to create for the Private Endpoint."
+              }
+            },
             "storageAllowSharedKeyAccess": {
               "type": "bool",
               "metadata": {
@@ -854,6 +703,7 @@
               "properties": {
                 "accessTier": "[parameters('storageAccessTier')]",
                 "allowBlobPublicAccess": false,
+                "allowCrossTenantReplication": false,
                 "allowSharedKeyAccess": "[parameters('storageAllowSharedKeyAccess')]",
                 "minimumTlsVersion": "TLS1_2",
                 "networkAcls": "[if(or(not(empty(variables('ipRules'))), not(empty(parameters('storageServiceEndpointSubnetResourceIds')))), createObject('bypass', 'AzureServices', 'virtualNetworkRules', variables('virtualNetworkRules'), 'ipRules', variables('ipRules'), 'defaultAction', 'Deny'), null())]",
@@ -916,11 +766,12 @@
             {
               "condition": "[not(empty(parameters('privateEndpointSubnetResourceId')))]",
               "type": "Microsoft.Network/privateEndpoints",
-              "apiVersion": "2020-05-01",
+              "apiVersion": "2024-03-01",
               "name": "[parameters('privateEndpointName')]",
               "location": "[parameters('location')]",
               "tags": "[coalesce(tryGet(parameters('tags'), 'Microsoft.Network/privateEndpoints'), createObject())]",
               "properties": {
+                "customNetworkInterfaceName": "[if(empty(parameters('customNetworkInterfaceName')), null(), parameters('customNetworkInterfaceName'))]",
                 "subnet": {
                   "id": "[parameters('privateEndpointSubnetResourceId')]"
                 },
@@ -1054,12 +905,9 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.33.93.31351",
-              "templateHash": "2039503176102821969"
-            },
-            "name": "Azure Compute Galleries",
-            "description": "This module deploys an Azure Compute Gallery (formerly known as Shared Image Gallery).",
-            "owner": "Azure/module-maintainers"
+              "version": "0.34.44.8038",
+              "templateHash": "10800912244592346042"
+            }
           },
           "parameters": {
             "name": {
@@ -1083,20 +931,6 @@
                 "description": "Optional. Description of the Azure Shared Image Gallery."
               }
             },
-            "applications": {
-              "type": "array",
-              "defaultValue": [],
-              "metadata": {
-                "description": "Optional. Applications to create."
-              }
-            },
-            "images": {
-              "type": "array",
-              "defaultValue": [],
-              "metadata": {
-                "description": "Optional. Images to create."
-              }
-            },
             "tags": {
               "type": "object",
               "defaultValue": {},
@@ -1116,561 +950,6 @@
                 "description": "[parameters('description')]",
                 "identifier": {}
               }
-            },
-            {
-              "copy": {
-                "name": "galleries_applications",
-                "count": "[length(parameters('applications'))]"
-              },
-              "type": "Microsoft.Resources/deployments",
-              "apiVersion": "2022-09-01",
-              "name": "[format('{0}-Gallery-Application-{1}', uniqueString(deployment().name, parameters('location')), copyIndex())]",
-              "properties": {
-                "expressionEvaluationOptions": {
-                  "scope": "inner"
-                },
-                "mode": "Incremental",
-                "parameters": {
-                  "location": {
-                    "value": "[parameters('location')]"
-                  },
-                  "name": {
-                    "value": "[parameters('applications')[copyIndex()].name]"
-                  },
-                  "galleryName": {
-                    "value": "[parameters('name')]"
-                  },
-                  "supportedOSType": "[if(contains(parameters('applications')[copyIndex()], 'supportOSType'), createObject('value', parameters('applications')[copyIndex()].supportedOSType), createObject('value', 'Windows'))]",
-                  "description": "[if(contains(parameters('applications')[copyIndex()], 'description'), createObject('value', parameters('applications')[copyIndex()].description), createObject('value', ''))]",
-                  "eula": "[if(contains(parameters('applications')[copyIndex()], 'eula'), createObject('value', parameters('applications')[copyIndex()].eula), createObject('value', ''))]",
-                  "privacyStatementUri": "[if(contains(parameters('applications')[copyIndex()], 'privacyStatementUri'), createObject('value', parameters('applications')[copyIndex()].privacyStatementUri), createObject('value', ''))]",
-                  "releaseNoteUri": "[if(contains(parameters('applications')[copyIndex()], 'releaseNoteUri'), createObject('value', parameters('applications')[copyIndex()].releaseNoteUri), createObject('value', ''))]",
-                  "endOfLifeDate": "[if(contains(parameters('applications')[copyIndex()], 'endOfLifeDate'), createObject('value', parameters('applications')[copyIndex()].endOfLifeDate), createObject('value', ''))]",
-                  "customActions": "[if(contains(parameters('applications')[copyIndex()], 'customActions'), createObject('value', parameters('applications')[copyIndex()].customActions), createObject('value', createArray()))]",
-                  "tags": "[if(contains(parameters('applications')[copyIndex()], 'tags'), createObject('value', parameters('applications')[copyIndex()].tags), createObject('value', createObject()))]"
-                },
-                "template": {
-                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-                  "contentVersion": "1.0.0.0",
-                  "metadata": {
-                    "_generator": {
-                      "name": "bicep",
-                      "version": "0.33.93.31351",
-                      "templateHash": "6733369195613077379"
-                    },
-                    "name": "Compute Galleries Applications",
-                    "description": "This module deploys an Azure Compute Gallery Application.",
-                    "owner": "Azure/module-maintainers"
-                  },
-                  "parameters": {
-                    "name": {
-                      "type": "string",
-                      "metadata": {
-                        "description": "Required. Name of the application definition."
-                      }
-                    },
-                    "location": {
-                      "type": "string",
-                      "defaultValue": "[resourceGroup().location]",
-                      "metadata": {
-                        "description": "Optional. Location for all resources."
-                      }
-                    },
-                    "galleryName": {
-                      "type": "string",
-                      "minLength": 1,
-                      "metadata": {
-                        "description": "Conditional. The name of the parent Azure Compute Gallery. Required if the template is used in a standalone deployment."
-                      }
-                    },
-                    "description": {
-                      "type": "string",
-                      "defaultValue": "",
-                      "metadata": {
-                        "description": "Optional. The description of this gallery Application Definition resource. This property is updatable."
-                      }
-                    },
-                    "eula": {
-                      "type": "string",
-                      "defaultValue": "",
-                      "metadata": {
-                        "description": "Optional. The Eula agreement for the gallery Application Definition. Has to be a valid URL."
-                      }
-                    },
-                    "privacyStatementUri": {
-                      "type": "string",
-                      "defaultValue": "",
-                      "metadata": {
-                        "description": "Optional. The privacy statement uri. Has to be a valid URL."
-                      }
-                    },
-                    "releaseNoteUri": {
-                      "type": "string",
-                      "defaultValue": "",
-                      "metadata": {
-                        "description": "Optional. The release note uri. Has to be a valid URL."
-                      }
-                    },
-                    "supportedOSType": {
-                      "type": "string",
-                      "defaultValue": "Windows",
-                      "allowedValues": [
-                        "Windows",
-                        "Linux"
-                      ],
-                      "metadata": {
-                        "description": "Optional. This property allows you to specify the supported type of the OS that application is built for."
-                      }
-                    },
-                    "endOfLifeDate": {
-                      "type": "string",
-                      "defaultValue": "",
-                      "metadata": {
-                        "description": "Optional. The end of life date of the gallery Image Definition. This property can be used for decommissioning purposes. This property is updatable. Allowed format: 2020-01-10T23:00:00.000Z."
-                      }
-                    },
-                    "tags": {
-                      "type": "object",
-                      "defaultValue": {},
-                      "metadata": {
-                        "description": "Optional. Tags for all resources."
-                      }
-                    },
-                    "customActions": {
-                      "type": "array",
-                      "defaultValue": [],
-                      "metadata": {
-                        "description": "Optional. A list of custom actions that can be performed with all of the Gallery Application Versions within this Gallery Application."
-                      }
-                    }
-                  },
-                  "resources": [
-                    {
-                      "type": "Microsoft.Compute/galleries/applications",
-                      "apiVersion": "2022-03-03",
-                      "name": "[format('{0}/{1}', parameters('galleryName'), parameters('name'))]",
-                      "location": "[parameters('location')]",
-                      "tags": "[parameters('tags')]",
-                      "properties": {
-                        "customActions": "[if(not(empty(parameters('customActions'))), parameters('customActions'), null())]",
-                        "description": "[parameters('description')]",
-                        "endOfLifeDate": "[parameters('endOfLifeDate')]",
-                        "eula": "[parameters('eula')]",
-                        "privacyStatementUri": "[parameters('privacyStatementUri')]",
-                        "releaseNoteUri": "[parameters('releaseNoteUri')]",
-                        "supportedOSType": "[parameters('supportedOSType')]"
-                      }
-                    }
-                  ],
-                  "outputs": {
-                    "resourceGroupName": {
-                      "type": "string",
-                      "metadata": {
-                        "description": "The resource group the image was deployed into."
-                      },
-                      "value": "[resourceGroup().name]"
-                    },
-                    "resourceId": {
-                      "type": "string",
-                      "metadata": {
-                        "description": "The resource ID of the image."
-                      },
-                      "value": "[resourceId('Microsoft.Compute/galleries/applications', parameters('galleryName'), parameters('name'))]"
-                    },
-                    "name": {
-                      "type": "string",
-                      "metadata": {
-                        "description": "The name of the image."
-                      },
-                      "value": "[parameters('name')]"
-                    },
-                    "location": {
-                      "type": "string",
-                      "metadata": {
-                        "description": "The location the resource was deployed into."
-                      },
-                      "value": "[reference(resourceId('Microsoft.Compute/galleries/applications', parameters('galleryName'), parameters('name')), '2022-03-03', 'full').location]"
-                    }
-                  }
-                }
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.Compute/galleries', parameters('name'))]"
-              ]
-            },
-            {
-              "copy": {
-                "name": "galleries_images",
-                "count": "[length(parameters('images'))]"
-              },
-              "type": "Microsoft.Resources/deployments",
-              "apiVersion": "2022-09-01",
-              "name": "[format('{0}-Gallery-Image-{1}', uniqueString(deployment().name, parameters('location')), copyIndex())]",
-              "properties": {
-                "expressionEvaluationOptions": {
-                  "scope": "inner"
-                },
-                "mode": "Incremental",
-                "parameters": {
-                  "location": {
-                    "value": "[parameters('location')]"
-                  },
-                  "name": {
-                    "value": "[parameters('images')[copyIndex()].name]"
-                  },
-                  "galleryName": {
-                    "value": "[parameters('name')]"
-                  },
-                  "osType": "[if(contains(parameters('images')[copyIndex()], 'osType'), createObject('value', parameters('images')[copyIndex()].osType), createObject('value', 'Windows'))]",
-                  "osState": "[if(contains(parameters('images')[copyIndex()], 'osState'), createObject('value', parameters('images')[copyIndex()].osState), createObject('value', 'Generalized'))]",
-                  "publisher": "[if(contains(parameters('images')[copyIndex()], 'publisher'), createObject('value', parameters('images')[copyIndex()].publisher), createObject('value', 'MicrosoftWindowsServer'))]",
-                  "offer": "[if(contains(parameters('images')[copyIndex()], 'offer'), createObject('value', parameters('images')[copyIndex()].offer), createObject('value', 'WindowsServer'))]",
-                  "sku": "[if(contains(parameters('images')[copyIndex()], 'sku'), createObject('value', parameters('images')[copyIndex()].sku), createObject('value', '2019-Datacenter'))]",
-                  "minRecommendedvCPUs": "[if(contains(parameters('images')[copyIndex()], 'minRecommendedvCPUs'), createObject('value', parameters('images')[copyIndex()].minRecommendedvCPUs), createObject('value', 1))]",
-                  "maxRecommendedvCPUs": "[if(contains(parameters('images')[copyIndex()], 'maxRecommendedvCPUs'), createObject('value', parameters('images')[copyIndex()].maxRecommendedvCPUs), createObject('value', 4))]",
-                  "minRecommendedMemory": "[if(contains(parameters('images')[copyIndex()], 'minRecommendedMemory'), createObject('value', parameters('images')[copyIndex()].minRecommendedMemory), createObject('value', 4))]",
-                  "maxRecommendedMemory": "[if(contains(parameters('images')[copyIndex()], 'maxRecommendedMemory'), createObject('value', parameters('images')[copyIndex()].maxRecommendedMemory), createObject('value', 16))]",
-                  "hyperVGeneration": "[if(contains(parameters('images')[copyIndex()], 'hyperVGeneration'), createObject('value', parameters('images')[copyIndex()].hyperVGeneration), createObject('value', 'V1'))]",
-                  "securityType": "[if(contains(parameters('images')[copyIndex()], 'securityType'), createObject('value', parameters('images')[copyIndex()].securityType), createObject('value', 'Standard'))]",
-                  "description": "[if(contains(parameters('images')[copyIndex()], 'description'), createObject('value', parameters('images')[copyIndex()].description), createObject('value', ''))]",
-                  "eula": "[if(contains(parameters('images')[copyIndex()], 'eula'), createObject('value', parameters('images')[copyIndex()].eula), createObject('value', ''))]",
-                  "privacyStatementUri": "[if(contains(parameters('images')[copyIndex()], 'privacyStatementUri'), createObject('value', parameters('images')[copyIndex()].privacyStatementUri), createObject('value', ''))]",
-                  "releaseNoteUri": "[if(contains(parameters('images')[copyIndex()], 'releaseNoteUri'), createObject('value', parameters('images')[copyIndex()].releaseNoteUri), createObject('value', ''))]",
-                  "productName": "[if(contains(parameters('images')[copyIndex()], 'productName'), createObject('value', parameters('images')[copyIndex()].productName), createObject('value', ''))]",
-                  "planName": "[if(contains(parameters('images')[copyIndex()], 'planName'), createObject('value', parameters('images')[copyIndex()].planName), createObject('value', ''))]",
-                  "planPublisherName": "[if(contains(parameters('images')[copyIndex()], 'planPublisherName'), createObject('value', parameters('images')[copyIndex()].planPublisherName), createObject('value', ''))]",
-                  "endOfLife": "[if(contains(parameters('images')[copyIndex()], 'endOfLife'), createObject('value', parameters('images')[copyIndex()].endOfLife), createObject('value', ''))]",
-                  "excludedDiskTypes": "[if(contains(parameters('images')[copyIndex()], 'excludedDiskTypes'), createObject('value', parameters('images')[copyIndex()].excludedDiskTypes), createObject('value', createArray()))]",
-                  "tags": "[if(contains(parameters('images')[copyIndex()], 'tags'), createObject('value', parameters('images')[copyIndex()].tags), createObject('value', createObject()))]"
-                },
-                "template": {
-                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-                  "contentVersion": "1.0.0.0",
-                  "metadata": {
-                    "_generator": {
-                      "name": "bicep",
-                      "version": "0.33.93.31351",
-                      "templateHash": "13078416586510542741"
-                    },
-                    "name": "Compute Galleries Image Definitions",
-                    "description": "This module deploys an Azure Compute Gallery Image Definition.",
-                    "owner": "Azure/module-maintainers"
-                  },
-                  "parameters": {
-                    "name": {
-                      "type": "string",
-                      "metadata": {
-                        "description": "Required. Name of the image definition."
-                      }
-                    },
-                    "location": {
-                      "type": "string",
-                      "defaultValue": "[resourceGroup().location]",
-                      "metadata": {
-                        "description": "Optional. Location for all resources."
-                      }
-                    },
-                    "galleryName": {
-                      "type": "string",
-                      "minLength": 1,
-                      "metadata": {
-                        "description": "Conditional. The name of the parent Azure Shared Image Gallery. Required if the template is used in a standalone deployment."
-                      }
-                    },
-                    "architecture": {
-                      "type": "string",
-                      "defaultValue": "x64",
-                      "allowedValues": [
-                        "x64",
-                        "Arm64"
-                      ],
-                      "metadata": {
-                        "description": "Optional. The OS architecture of the image to be created. V1 images do not support Arm64."
-                      }
-                    },
-                    "osType": {
-                      "type": "string",
-                      "defaultValue": "Windows",
-                      "allowedValues": [
-                        "Windows",
-                        "Linux"
-                      ],
-                      "metadata": {
-                        "description": "Optional. OS type of the image to be created."
-                      }
-                    },
-                    "osState": {
-                      "type": "string",
-                      "defaultValue": "Generalized",
-                      "allowedValues": [
-                        "Generalized",
-                        "Specialized"
-                      ],
-                      "metadata": {
-                        "description": "Optional. This property allows the user to specify whether the virtual machines created under this image are 'Generalized' or 'Specialized'."
-                      }
-                    },
-                    "publisher": {
-                      "type": "string",
-                      "defaultValue": "MicrosoftWindowsServer",
-                      "metadata": {
-                        "description": "Optional. The name of the gallery Image Definition publisher."
-                      }
-                    },
-                    "offer": {
-                      "type": "string",
-                      "defaultValue": "WindowsServer",
-                      "metadata": {
-                        "description": "Optional. The name of the gallery Image Definition offer."
-                      }
-                    },
-                    "sku": {
-                      "type": "string",
-                      "defaultValue": "2019-Datacenter",
-                      "metadata": {
-                        "description": "Optional. The name of the gallery Image Definition SKU."
-                      }
-                    },
-                    "minRecommendedvCPUs": {
-                      "type": "int",
-                      "defaultValue": 1,
-                      "minValue": 1,
-                      "maxValue": 128,
-                      "metadata": {
-                        "description": "Optional. The minimum number of the CPU cores recommended for this image."
-                      }
-                    },
-                    "maxRecommendedvCPUs": {
-                      "type": "int",
-                      "defaultValue": 4,
-                      "minValue": 1,
-                      "maxValue": 128,
-                      "metadata": {
-                        "description": "Optional. The maximum number of the CPU cores recommended for this image."
-                      }
-                    },
-                    "minRecommendedMemory": {
-                      "type": "int",
-                      "defaultValue": 4,
-                      "minValue": 1,
-                      "maxValue": 4000,
-                      "metadata": {
-                        "description": "Optional. The minimum amount of RAM in GB recommended for this image."
-                      }
-                    },
-                    "maxRecommendedMemory": {
-                      "type": "int",
-                      "defaultValue": 16,
-                      "minValue": 1,
-                      "maxValue": 4000,
-                      "metadata": {
-                        "description": "Optional. The maximum amount of RAM in GB recommended for this image."
-                      }
-                    },
-                    "hyperVGeneration": {
-                      "type": "string",
-                      "defaultValue": "V2",
-                      "allowedValues": [
-                        "V1",
-                        "V2"
-                      ],
-                      "metadata": {
-                        "description": "Optional. The hypervisor generation of the Virtual Machine."
-                      }
-                    },
-                    "securityType": {
-                      "type": "string",
-                      "defaultValue": "Standard",
-                      "allowedValues": [
-                        "Standard",
-                        "TrustedLaunch",
-                        "TrustedLaunchSupported",
-                        "ConfidentialVM",
-                        "ConfidentialVMSupported",
-                        "TrustedLaunchAndConfidentialVMSupported"
-                      ],
-                      "metadata": {
-                        "description": "Optional. The security type of the image. Requires a hyperVGeneration V2."
-                      }
-                    },
-                    "isHibernateSupported": {
-                      "type": "bool",
-                      "defaultValue": false,
-                      "metadata": {
-                        "description": "Optional. The image will support hibernation."
-                      }
-                    },
-                    "isAcceleratedNetworkSupported": {
-                      "type": "bool",
-                      "defaultValue": false,
-                      "metadata": {
-                        "description": "Optional. The image supports accelerated networking.</p>Accelerated networking enables single root I/O virtualization (SR-IOV) to a VM, greatly improving its networking performance.</p>This high-performance path bypasses the host from the data path, which reduces latency, jitter, and CPU utilization for the most demanding network workloads on supported VM types."
-                      }
-                    },
-                    "isHigherStoragePerformanceSupported": {
-                      "type": "bool",
-                      "defaultValue": false,
-                      "metadata": {
-                        "description": "Optional. The image supports Higher Storage Performance with NVMe."
-                      }
-                    },
-                    "description": {
-                      "type": "string",
-                      "defaultValue": "",
-                      "metadata": {
-                        "description": "Optional. The description of this gallery Image Definition resource. This property is updatable."
-                      }
-                    },
-                    "eula": {
-                      "type": "string",
-                      "defaultValue": "",
-                      "metadata": {
-                        "description": "Optional. The Eula agreement for the gallery Image Definition. Has to be a valid URL."
-                      }
-                    },
-                    "privacyStatementUri": {
-                      "type": "string",
-                      "defaultValue": "",
-                      "metadata": {
-                        "description": "Optional. The privacy statement uri. Has to be a valid URL."
-                      }
-                    },
-                    "releaseNoteUri": {
-                      "type": "string",
-                      "defaultValue": "",
-                      "metadata": {
-                        "description": "Optional. The release note uri. Has to be a valid URL."
-                      }
-                    },
-                    "productName": {
-                      "type": "string",
-                      "defaultValue": "",
-                      "metadata": {
-                        "description": "Optional. The product ID."
-                      }
-                    },
-                    "planName": {
-                      "type": "string",
-                      "defaultValue": "",
-                      "metadata": {
-                        "description": "Optional. The plan ID."
-                      }
-                    },
-                    "planPublisherName": {
-                      "type": "string",
-                      "defaultValue": "",
-                      "metadata": {
-                        "description": "Optional. The publisher ID."
-                      }
-                    },
-                    "endOfLife": {
-                      "type": "string",
-                      "defaultValue": "",
-                      "metadata": {
-                        "description": "Optional. The end of life date of the gallery Image Definition. This property can be used for decommissioning purposes. This property is updatable. Allowed format: 2020-01-10T23:00:00.000Z."
-                      }
-                    },
-                    "excludedDiskTypes": {
-                      "type": "array",
-                      "defaultValue": [],
-                      "metadata": {
-                        "description": "Optional. List of the excluded disk types. E.g. Standard_LRS."
-                      }
-                    },
-                    "tags": {
-                      "type": "object",
-                      "defaultValue": {},
-                      "metadata": {
-                        "description": "Optional. Tags for all resources."
-                      }
-                    }
-                  },
-                  "variables": {
-                    "hibernateSupported": "[if(parameters('isHibernateSupported'), 'true', 'false')]",
-                    "acceleratedNetworkSupported": "[if(parameters('isAcceleratedNetworkSupported'), 'true', 'false')]",
-                    "diskControllerTypes": "[if(parameters('isHigherStoragePerformanceSupported'), createArray(createObject('name', 'DiskControllerTypes', 'value', 'SCSI, NVMe')), createArray())]",
-                    "gaFeatures": "[if(not(equals(parameters('securityType'), 'Standard')), createArray(createObject('name', 'SecurityType', 'value', parameters('securityType')), createObject('name', 'IsAcceleratedNetworkSupported', 'value', variables('acceleratedNetworkSupported')), createObject('name', 'IsHibernateSupported', 'value', variables('hibernateSupported'))), createArray(createObject('name', 'IsAcceleratedNetworkSupported', 'value', variables('acceleratedNetworkSupported')), createObject('name', 'IsHibernateSupported', 'value', variables('hibernateSupported'))))]",
-                    "features": "[if(not(empty(variables('diskControllerTypes'))), union(variables('gaFeatures'), variables('diskControllerTypes')), variables('gaFeatures'))]"
-                  },
-                  "resources": [
-                    {
-                      "type": "Microsoft.Compute/galleries/images",
-                      "apiVersion": "2022-03-03",
-                      "name": "[format('{0}/{1}', parameters('galleryName'), parameters('name'))]",
-                      "location": "[parameters('location')]",
-                      "properties": {
-                        "architecture": "[if(and(equals(parameters('architecture'), 'x64'), equals(parameters('hyperVGeneration'), 'V2')), parameters('architecture'), null())]",
-                        "osType": "[parameters('osType')]",
-                        "osState": "[parameters('osState')]",
-                        "identifier": {
-                          "publisher": "[parameters('publisher')]",
-                          "offer": "[parameters('offer')]",
-                          "sku": "[parameters('sku')]"
-                        },
-                        "recommended": {
-                          "vCPUs": {
-                            "min": "[parameters('minRecommendedvCPUs')]",
-                            "max": "[parameters('maxRecommendedvCPUs')]"
-                          },
-                          "memory": {
-                            "min": "[parameters('minRecommendedMemory')]",
-                            "max": "[parameters('maxRecommendedMemory')]"
-                          }
-                        },
-                        "hyperVGeneration": "[parameters('hyperVGeneration')]",
-                        "features": "[variables('features')]",
-                        "description": "[parameters('description')]",
-                        "eula": "[if(not(empty(parameters('eula'))), parameters('eula'), null())]",
-                        "privacyStatementUri": "[parameters('privacyStatementUri')]",
-                        "releaseNoteUri": "[parameters('releaseNoteUri')]",
-                        "purchasePlan": {
-                          "product": "[if(not(empty(parameters('productName'))), parameters('productName'), null())]",
-                          "name": "[if(not(empty(parameters('planName'))), parameters('planName'), null())]",
-                          "publisher": "[if(not(empty(parameters('planPublisherName'))), parameters('planPublisherName'), null())]"
-                        },
-                        "endOfLifeDate": "[parameters('endOfLife')]",
-                        "disallowed": {
-                          "diskTypes": "[parameters('excludedDiskTypes')]"
-                        }
-                      },
-                      "tags": "[parameters('tags')]"
-                    }
-                  ],
-                  "outputs": {
-                    "resourceGroupName": {
-                      "type": "string",
-                      "metadata": {
-                        "description": "The resource group the image was deployed into."
-                      },
-                      "value": "[resourceGroup().name]"
-                    },
-                    "resourceId": {
-                      "type": "string",
-                      "metadata": {
-                        "description": "The resource ID of the image."
-                      },
-                      "value": "[resourceId('Microsoft.Compute/galleries/images', parameters('galleryName'), parameters('name'))]"
-                    },
-                    "name": {
-                      "type": "string",
-                      "metadata": {
-                        "description": "The name of the image."
-                      },
-                      "value": "[parameters('name')]"
-                    },
-                    "location": {
-                      "type": "string",
-                      "metadata": {
-                        "description": "The location the resource was deployed into."
-                      },
-                      "value": "[reference(resourceId('Microsoft.Compute/galleries/images', parameters('galleryName'), parameters('name')), '2022-03-03', 'full').location]"
-                    }
-                  }
-                }
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.Compute/galleries', parameters('name'))]"
-              ]
             }
           ],
           "outputs": {

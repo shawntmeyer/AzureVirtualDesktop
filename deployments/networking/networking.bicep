@@ -130,9 +130,15 @@ param tags object = {}
 param timeStamp string = utcNow('yyyyMMddhhmmss')
 
 var createPrivateDNSZones = createAzureBackupZone || createAzureBlobZone || createAzureFilesZone || createAzureQueueZone || createAzureTableZone || createAzureKeyVaultZone || createAvdFeedZone || createAvdGlobalFeedZone || createAzureWebAppZone
-var locations = startsWith(environment().name, 'US') ? null : (loadJsonContent('../../.common/data/locations.json'))[environment().name]
-var locationAbbreviation = startsWith(environment().name, 'US') ? substring(location, 5, length(location) - 5) : locations[location].abbreviation
-var recoveryServicesGeo = startsWith(environment().name, 'US') ? contains(environment().name, 'N') ? 'ex${substring(location, 0, 1)}' : 'rx${substring(location, 0, 1)}' : locations[location].recoveryServicesGeo
+var locations = startsWith(environment().name, 'US')
+  ? null
+  : (loadJsonContent('../../.common/data/locations.json'))[environment().name]
+var locationAbbreviation = startsWith(environment().name, 'US')
+  ? substring(location, 5, length(location) - 5)
+  : locations[location].abbreviation
+var recoveryServicesGeo = startsWith(environment().name, 'US')
+  ? contains(environment().name, 'N') ? 'ex${substring(locationAbbreviation, 0, 1)}' : 'rx${substring(locationAbbreviation, 0, 1)}'
+  : locations[location].recoveryServicesGeo
 var resourceAbbreviations = loadJsonContent('../../.common/data/resourceAbbreviations.json')
 var nameConvSuffix = nameConvResTypeAtEnd ? 'LOCATION-RESOURCETYPE' : 'LOCATION'
 
@@ -168,15 +174,7 @@ var routeTableName = replace(
 )
 
 var cloudSuffix = replace(
-  replace(
-    replace(
-      environment().resourceManager,
-      'https://management.azure.',
-      ''
-    ),
-    'https://management.',
-    ''
-  ),
+  replace(replace(environment().resourceManager, 'https://management.azure.', ''), 'https://management.', ''),
   '/',
   ''
 )
@@ -184,40 +182,50 @@ var cloudSuffix = replace(
 var privateDnsZones_AzureVirtualDesktop = {
   AzureCloud: 'privatelink.wvd.microsoft.com'
   AzureUSGovernment: 'privatelink.wvd.azure.us'
-  USNat: 'privatelink.wvd.${cloudSuffix}'
-  USSec: 'privatelink.wvd.${cloudSuffix}'
 }
 
 var privateDnsZones_AzureVirtualDesktopGlobalFeed = {
   AzureCloud: 'privatelink-global.wvd.microsoft.com'
   AzureUSGovernment: 'privatelink-global.wvd.azure.us'
-  USNat: 'privatelink.wvd.${cloudSuffix}'
-  USSec: 'privatelink.wvd.${cloudSuffix}'
 }
 
 var privateDnsZoneSuffixes_AzureWebApps = {
   AzureCloud: 'net'
   AzureUSGovernment: 'us'
-  USNat: cloudSuffix
-  USSec: cloudSuffix
 }
 
 var privateDnsZoneSuffixes_Backup = {
   AzureCloud: 'com'
   AzureUSGovernment: 'us'
-  USNat: cloudSuffix
-  USSec: cloudSuffix
 }
 
-var backupPrivateDnsZone = createAzureBackupZone ? 'privatelink.${recoveryServicesGeo}.backup.windowsazure.${privateDnsZoneSuffixes_Backup[environment().name]}' : ''
+var backupPrivateDnsZone = createAzureBackupZone
+  ? startsWith(environment().name, 'US')
+      ? 'privatelink.${recoveryServicesGeo}.backup.windowsazure.${cloudSuffix}'
+      : 'privatelink.${recoveryServicesGeo}.backup.windowsazure.${privateDnsZoneSuffixes_Backup[environment().name]}'
+  : ''
 var blobPrivateDnsZone = createAzureBlobZone ? 'privatelink.blob.${environment().suffixes.storage}' : ''
 var filesPrivateDnsZone = createAzureFilesZone ? 'privatelink.file.${environment().suffixes.storage}' : ''
 var queuePrivateDnsZone = createAzureQueueZone ? 'privatelink.queue.${environment().suffixes.storage}' : ''
 var tablePrivateDnsZone = createAzureTableZone ? 'privatelink.table.${environment().suffixes.storage}' : ''
-var keyVaultPrivateDnsZone = createAzureKeyVaultZone ? 'privatelink${replace(environment().suffixes.keyvaultDns, 'vault', 'vaultcore')}' : ''
-var avdFeedPrivateDnsZone = createAvdFeedZone ? privateDnsZones_AzureVirtualDesktop[environment().name] : ''
-var avdGlobalFeedPrivateDnsZone = createAvdGlobalFeedZone ? privateDnsZones_AzureVirtualDesktopGlobalFeed[environment().name] : ''
-var webAppPrivateDnsZone = createAzureWebAppZone ? 'privatelink.azurewebsites.${privateDnsZoneSuffixes_AzureWebApps[environment().name]}' : ''
+var keyVaultPrivateDnsZone = createAzureKeyVaultZone
+  ? 'privatelink${replace(environment().suffixes.keyvaultDns, 'vault', 'vaultcore')}'
+  : ''
+var avdFeedPrivateDnsZone = createAvdFeedZone
+  ? startsWith(environment().name, 'US')
+      ? 'privatelink.wvd.${cloudSuffix}'
+      : privateDnsZones_AzureVirtualDesktop[environment().name]
+  : ''
+var avdGlobalFeedPrivateDnsZone = createAvdGlobalFeedZone
+  ? startsWith(environment().name, 'US')
+      ? 'privatelink.wvd.${cloudSuffix}'
+      : privateDnsZones_AzureVirtualDesktopGlobalFeed[environment().name]
+  : ''
+var webAppPrivateDnsZone = createAzureWebAppZone
+  ? startsWith(environment().name, 'US')
+      ? 'privatelink.azurewebsites.${cloudSuffix}'
+      : 'privatelink.azurewebsites.${privateDnsZoneSuffixes_AzureWebApps[environment().name]}'
+  : ''
 
 var privateDnsZones = [
   backupPrivateDnsZone
