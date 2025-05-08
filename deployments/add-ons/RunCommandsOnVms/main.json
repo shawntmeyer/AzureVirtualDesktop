@@ -5,12 +5,13 @@
     "_generator": {
       "name": "bicep",
       "version": "0.35.1.17967",
-      "templateHash": "16051831137296500747"
+      "templateHash": "10642403944999677991"
     }
   },
   "parameters": {
     "location": {
       "type": "string",
+      "defaultValue": "[deployment().location]",
       "metadata": {
         "description": "The location of the virtual machines where the run commands will be executed."
       }

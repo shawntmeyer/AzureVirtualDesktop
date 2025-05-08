@@ -1,7 +1,7 @@
 targetScope = 'subscription'
 
 @description('The location of the virtual machines where the run commands will be executed.')
-param location string
+param location string = deployment().location
 
 @description('Required. The name of the resource group in which to deploy the resources.')
 param resourceGroupName string
