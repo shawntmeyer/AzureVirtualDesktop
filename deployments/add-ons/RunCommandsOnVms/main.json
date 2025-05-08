@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.35.1.17967",
-      "templateHash": "10642403944999677991"
+      "templateHash": "10697578194608772212"
     }
   },
   "parameters": {
@@ -100,9 +100,9 @@
     },
     "timeoutInSeconds": {
       "type": "int",
-      "defaultValue": -1,
+      "defaultValue": 5400,
       "metadata": {
-        "description": "Optional. The timeout in seconds for the script execution. Default is -1 (no timeout)."
+        "description": "Optional. The timeout in seconds for the script execution. Default is 5400 (90 minutes)."
       }
     },
     "parameters": {
