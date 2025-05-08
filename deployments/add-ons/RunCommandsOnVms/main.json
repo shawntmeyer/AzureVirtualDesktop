@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.35.1.17967",
-      "templateHash": "10697578194608772212"
+      "templateHash": "2207856557508602354"
     }
   },
   "parameters": {
@@ -326,7 +326,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.35.1.17967",
-              "templateHash": "4397283146258426242"
+              "templateHash": "5834266827291575130"
             }
           },
           "parameters": {
@@ -388,7 +388,7 @@
                   "script": "[if(empty(parameters('scriptContent')), null(), parameters('scriptContent'))]",
                   "scriptUriManagedIdentity": "[if(empty(parameters('scriptsUserAssignedIdentityClientId')), null(), createObject('clientId', parameters('scriptsUserAssignedIdentityClientId')))]"
                 },
-                "timeoutInSeconds": "[if(equals(parameters('timeoutInSeconds'), -1), null(), parameters('timeoutInSeconds'))]",
+                "timeoutInSeconds": "[if(equals(parameters('timeoutInSeconds'), 5400), null(), parameters('timeoutInSeconds'))]",
                 "treatFailureAsDeploymentFailure": true
               }
             }

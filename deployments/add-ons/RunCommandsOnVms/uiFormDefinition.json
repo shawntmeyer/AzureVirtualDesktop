@@ -504,14 +504,13 @@
 				"scriptsUserAssignedIdentityResourceId": "[if(equals(steps('scripts').multipleScripts, false), if(equals(steps('scripts').single.source, 'blob'), steps('scripts').single.userAssignedIdentity.id, ''), if(steps('scripts').multiple.runFromStorage, steps('scripts').multiple.userAssignedIdentity.id, ''))]",
 				"parameters": "[if(and(equals(steps('scripts').multipleScripts, false), steps('scripts').single.defineParameters), steps('scripts').single.parameters, parse('[]'))]",
 				"protectedParameter": "[if(and(equals(steps('scripts').multipleScripts, false), steps('scripts').single.defineProtectedParameter), first(steps('scripts').single.protectedParameter), parse('{}'))]",
-				"scriptTimeout": "[if(and(equals(steps('scripts').multipleScripts, false), not(empty(steps('scripts').single.timeout))), steps('scripts').single.timeout, -1)]",
 				"scriptsStorageAccountName": "[if(and(equals(steps('scripts').multipleScripts, true), steps('scripts').multiple.runFromStorage), steps('scripts').multiple.storageAccount.name, '')]",
 				"scriptsContainerName": "[if(and(equals(steps('scripts').multipleScripts, true), steps('scripts').multiple.runFromStorage), steps('scripts').multiple.container, '')]",
 				"scripts": "[if(equals(steps('scripts').multipleScripts, true), steps('scripts').multiple.scripts, parse('[]'))]",
 				"logsStorageAccountName": "[if(steps('scripts').logging.enable, steps('scripts').logging.storageAccount.name, '')]",
 				"logsContainerName": "[if(steps('scripts').logging.enable, steps('scripts').logging.container, '')]",
 				"logsUserAssignedIdentityResourceId": "[if(steps('scripts').logging.enable, steps('scripts').logging.userAssignedIdentity.id,'')]",
-				"timeoutInSeconds": "[if(equals(steps('scripts').multipleScripts, false), steps('scripts').logging.timeout, 5400)]"
+				"timeoutInSeconds": "[if(equals(steps('scripts').multipleScripts, false), steps('scripts').single.timeout, 5400)]"
 			},
 			"kind": "Subscription",
 			"location": "[steps('basics').scope.location.name]",
