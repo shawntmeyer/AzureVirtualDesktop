@@ -17,6 +17,11 @@ var arrname7 = split(name7, '-')
 var arrname8 = split(name8, '-')
 var arrnameempty = split(nameempty, '-')
 
+var arrayEmpty = []
+var arrayElement = [
+  'firstelement'
+]
+
 output arrname array = arrname
 output lengtharrname int = length(arrname)
 output arrname2 array = arrname2
@@ -36,3 +41,4 @@ output lengtharrname8 int = length(arrname8)
 output arrnameempty array = arrnameempty
 output lengtharrnameempty int = length(arrnameempty)
 output last string = last(arrnameempty)
+output outputarray array = union(arrayEmpty, arrayElement)

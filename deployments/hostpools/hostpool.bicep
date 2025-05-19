@@ -647,7 +647,7 @@ var resGroupControlPlane = deployControlPlaneRG ? [resourceNames.outputs.resourc
 var resGroupGlobalFeed = avdPrivateLinkPrivateRoutes == 'All' && !empty(globalFeedPrivateEndpointSubnetResourceId) ? [resourceNames.outputs.resourceGroupGlobalFeed] : []
 var resGroupStorage = deployFSLogixStorage ? [resourceNames.outputs.resourceGroupStorage] : []
 var resGroupHosts = deploymentType == 'Complete' ? [resourceNames.outputs.resourceGroupHosts] : []
-var rgNames = union(
+var resourceGroupsToCreate = union(
   resGroupDeployment,
   resGroupManagement,
   resGroupControlPlane,
@@ -655,7 +655,6 @@ var rgNames = union(
   resGroupStorage,
   resGroupHosts
 )
-var resourceGroupNames = union(rgNames, rgNames)
 
 var fslogixFileShareNames = resourceNames.outputs.fslogixFileShareNames[fslogixContainerType]
 var fslogixNTFSGroups = empty(fslogixUserGroups) ? appGroupSecurityGroups : fslogixUserGroups
@@ -846,11 +845,11 @@ module rgs 'modules/resourceGroups.bicep' = [
   for i in range(0, resourceGroupsCount): {
     name: 'ResourceGroup_${i}_${timeStamp}'
     params: {
-      location: contains(resourceGroupNames[i], 'control-plane')
+      location: contains(resourceGroupsToCreate[i], 'control-plane')
         ? locationControlPlane
-        : (contains(resourceGroupNames[i], 'global-feed') ? locationGlobalFeed : locationVirtualMachines)
-      resourceGroupName: resourceGroupNames[i]
-      tags: contains(resourceGroupNames[i], 'storage') || contains(resourceGroupNames[i], 'hosts')
+        : (contains(resourceGroupsToCreate[i], 'global-feed') ? locationGlobalFeed : locationVirtualMachines)
+      resourceGroupName: resourceGroupsToCreate[i]
+      tags: contains(resourceGroupsToCreate[i], 'storage') || contains(resourceGroupsToCreate[i], 'hosts')
         ? union(tags[?'Microsoft.Resources/resourceGroups'] ?? {}, {
             'cm-resource-parent': '${subscription().id}/resourceGroups/${resourceNames.outputs.resourceGroupControlPlane}/providers/Microsoft.DesktopVirtualization/hostpools/${resourceNames.outputs.hostPoolName}'
           })

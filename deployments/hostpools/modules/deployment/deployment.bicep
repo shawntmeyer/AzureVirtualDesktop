@@ -101,7 +101,7 @@ var roleAssignmentsManagement = deploymentType == 'Complete' && confidentialVMOS
     ]
   : []
 
-var roleAssignmentStorage = deploymentType == 'Complete' && fslogix && contains(identitySolution, 'DomainServices')
+var roleAssignmentsStorage = deploymentType == 'Complete' && fslogix && contains(identitySolution, 'DomainServices')
   ? [
       {
         roleDefinitionId: roleDefinitions.StorageAccountContributor // (Purpose: domain join storage account & set NTFS permissions on the file share)
@@ -123,7 +123,7 @@ var roleAssignments = union(
   roleAssignmentsDeployment,
   roleAssignmentsHosts,
   roleAssignmentsManagement,
-  roleAssignmentStorage
+  roleAssignmentsStorage
 )
 
 module deploymentUserAssignedIdentity '../../../sharedModules/resources/managed-identity/user-assigned-identity/main.bicep' = {
