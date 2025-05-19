@@ -826,6 +826,8 @@ resource kvCredentials 'Microsoft.KeyVault/vaults@2023-07-01' existing = if (!em
 module resourceNames 'modules/resourceNames.bicep' = {
   name: 'ResourceNames_${timeStamp}'
   params: {
+    existingFeedWorkspaceResourceId: existingFeedWorkspaceResourceId
+    existingHostPoolResourceId: existingHostPoolResourceId
     fslogixStorageCustomPrefix: fslogixStorageCustomPrefix
     identifier: identifier
     index: index
@@ -836,7 +838,6 @@ module resourceNames 'modules/resourceNames.bicep' = {
       ? nameConvResTypeAtEnd
       : bool(existingHostPool.tags.?nameConvResTypeAtEnd) ?? false
     virtualMachineNamePrefix: virtualMachineNamePrefix
-    existingFeedWorkspaceResourceId: existingFeedWorkspaceResourceId
   }
 }
 
@@ -871,6 +872,7 @@ module deploymentPrereqs 'modules/deployment/deployment.bicep' = if (createDeplo
   name: 'Deployment_Prereqs_${timeStamp}'
   params: {
     confidentialVMOSDiskEncryption: confidentialVMOSDiskEncryption
+    deploymentType: deploymentType
     deploymentVmSize: deploymentVmSize
     diskSku: diskSku
     domainJoinUserPassword: contains(identitySolution, 'DomainServices') ? !empty(domainJoinUserPassword) ? domainJoinUserPassword : !empty(credentialsKeyVaultResourceId) ? kvCredentials.getSecret('DomainJoinUserPassword') : '' : ''
@@ -883,9 +885,9 @@ module deploymentPrereqs 'modules/deployment/deployment.bicep' = if (createDeplo
     keyManagementDisks: keyManagementDisks
     locationVirtualMachines: locationVirtualMachines
     ouPath: vmOUPath
-    resourceGroupControlPlane: resourceNames.outputs.resourceGroupControlPlane
+    resourceGroupControlPlane: deploymentType == 'Complete' ? resourceNames.outputs.resourceGroupControlPlane : split(existingHostPoolResourceId, '/')[4]
     resourceGroupDeployment: resourceNames.outputs.resourceGroupDeployment
-    resourceGroupHosts: resourceNames.outputs.resourceGroupHosts
+    resourceGroupHosts: deploymentType == 'Complete' ? resourceNames.outputs.resourceGroupHosts : existingHostsResourceGroupName
     resourceGroupManagement: resourceNames.outputs.resourceGroupManagement
     resourceGroupStorage: resourceNames.outputs.resourceGroupStorage
     tags: tags
