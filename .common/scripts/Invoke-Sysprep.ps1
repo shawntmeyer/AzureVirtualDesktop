@@ -20,7 +20,7 @@ if (Test-Path -Path $File) {
 }
 
 Write-Output '>>> Sysprepping VM ...'
-Start-Process -FilePath "C:\Windows\System32\Sysprep\Sysprep.exe" -ArgumentList "/generalize /oobe /quiet /quit /mode:vm" -Wait
+Start-Process -FilePath "C:\Windows\System32\Sysprep\Sysprep.exe" -ArgumentList "/generalize /oobe /quit /mode:vm" -Wait
 while ($true) {
     $imageState = (Get-ItemProperty HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Setup\State).ImageState
     Write-Output $imageState
