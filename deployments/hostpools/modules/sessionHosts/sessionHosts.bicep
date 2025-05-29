@@ -34,7 +34,6 @@ param diskSizeGB int
 param diskSku string
 param divisionRemainderValue int
 param domainName string
-param drainMode bool
 param enableAcceleratedNetworking bool
 param encryptionAtHost bool
 param encryptionKeyName string
@@ -259,15 +258,12 @@ module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sess
     availabilityZones: availabilityZones
     availabilitySetNamePrefix: availabilitySetNamePrefix
     avdInsightsDataCollectionRulesResourceId: avdInsightsDataCollectionRulesResourceId
-    batchCount: i
     confidentialVMOSDiskEncryptionType: confidentialVMOSDiskEncryptionType
     customImageResourceId: customImageResourceId
     dataCollectionEndpointResourceId: dataCollectionEndpointResourceId
     dedicatedHostGroupResourceId: dedicatedHostGroupResourceId
     dedicatedHostGroupZones: dedicatedHostGroupZones
     dedicatedHostResourceId: dedicatedHostResourceId
-    deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
-    deploymentVirtualMachineName: deploymentVirtualMachineName
     diskAccessId: deploymentType == 'Complete' ? deployDiskAccessResource ? diskAccessResource.outputs.resourceId : '' : existingDiskAccessResourceId
     diskEncryptionSetResourceId: ( deploymentType == 'Complete' && keyManagementDisks != 'PlatformManaged' ) ? customerManagedKeys.outputs.diskEncryptionSetResourceId : !empty(existingDiskEncryptionSetResourceId) ? existingDiskEncryptionSetResourceId : ''
     diskSizeGB: diskSizeGB
@@ -275,7 +271,6 @@ module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sess
     domainJoinUserPassword: domainJoinUserPassword
     domainJoinUserPrincipalName: domainJoinUserPrincipalName
     domainName: domainName
-    drainMode: drainMode
     enableAcceleratedNetworking: enableAcceleratedNetworking
     enableMonitoring: enableMonitoring
     encryptionAtHost: encryptionAtHost
@@ -299,7 +294,6 @@ module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sess
     networkInterfaceNameConv: networkInterfaceNameConv
     osDiskNameConv: osDiskNameConv
     ouPath: ouPath
-    resourceGroupDeployment: resourceGroupDeployment
     sessionHostCustomizations: sessionHostCustomizations
     securityDataCollectionRulesResourceId: securityDataCollectionRulesResourceId
     secureBootEnabled: secureBootEnabled
