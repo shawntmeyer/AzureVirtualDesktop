@@ -13,15 +13,14 @@ ForEach ($Service in $Services) {
         }
     }
 }
-$Files = "$env:SystemRoot\System32\sysprep\unattend.xml", "$env:SystemRoot\Panther\Unattend.xml"
-ForEach ($file in $Files) {
-    if (Test-Path -Path $File) {
-        Write-Output ">>> Removing $file"
-        Remove-Item $file -Force
-    }
+$File = "$env:SystemRoot\System32\sysprep\unattend.xml"
+if (Test-Path -Path $File) {
+    Write-Output ">>> Removing $file"
+    Remove-Item $file -Force
 }
+
 Write-Output '>>> Sysprepping VM ...'
-Start-Process -FilePath "C:\Windows\System32\Sysprep\Sysprep.exe" -ArgumentList "/generalize /oobe /quit /mode:vm" -Wait
+Start-Process -FilePath "C:\Windows\System32\Sysprep\Sysprep.exe" -ArgumentList "/generalize /oobe /quiet /quit /mode:vm" -Wait
 while ($true) {
     $imageState = (Get-ItemProperty HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Setup\State).ImageState
     Write-Output $imageState
