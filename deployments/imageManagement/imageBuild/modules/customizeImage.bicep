@@ -707,6 +707,22 @@ resource cleanup 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
   ]
 }
 
+resource disablePrivacyExperience 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
+  name: 'disablePrivacyExperience'
+  location: location
+  parent: imageVm
+  properties: {
+    asyncExecution: true    
+    source: {
+      script: loadTextContent('../../../../.common/scripts/Disable-PrivacyExperience.ps1')
+    }
+    treatFailureAsDeploymentFailure: true
+  }
+  dependsOn: [
+    cleanup
+  ]
+}
+
 resource sysprep 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
   name: 'sysprep'
   location: location
