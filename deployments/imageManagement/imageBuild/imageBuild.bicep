@@ -758,6 +758,8 @@ module customizeImage 'modules/customizeImage.bicep' = {
   name: '${depPrefix}Customize-Image-${timeStamp}'
   scope: resourceGroup(imageBuildResourceGroupName)
   params: {
+    adminPw: adminPw
+    adminUserName: adminUserName
     cloud: cloud
     appsToRemove: appsToRemove
     location: computeLocation

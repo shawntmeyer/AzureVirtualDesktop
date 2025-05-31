@@ -1,5 +1,9 @@
 targetScope = 'resourceGroup'
 
+@secure()
+param adminPw string
+@secure()
+param adminUserName string
 param appsToRemove array
 param cloud string
 param downloads object
@@ -84,6 +88,11 @@ var restartVMParameters = [
 #disable-next-line BCP329
 var envSuffix = substring(environment().suffixes.storage, 5, length(environment().suffixes.storage) - 5)
 
+var perform1stRestart = !empty(customizations)
+var perform2ndRestart = installFsLogix || !empty(office365AppsToInstall) || installOneDrive || installTeams
+var perform3rdRestart = installUpdates
+var perform4thRestart = installVirtualDesktopOptimizationTool
+
 resource imageVm 'Microsoft.Compute/virtualMachines@2022-11-01' existing = {
   name: imageVmName
 }
@@ -109,7 +118,7 @@ resource createBuildDir 'Microsoft.Compute/virtualMachines/runCommands@2023-03-0
           [string]$BuildDir
         )
         New-Item -Path $BuildDir -ItemType Directory -Force | Out-Null
-  '''
+      '''
     }
     treatFailureAsDeploymentFailure: true
   }
@@ -199,7 +208,7 @@ resource applications 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01'
   }
 ]
 
-resource firstImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
+resource firstImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (!empty(customizations)) {
   name: 'restart-vm-1'
   location: location
   parent: orchestrationVm
@@ -258,6 +267,9 @@ resource fslogix 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = if
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
+    createBuildDir
+    removeAppxPackages
+    applications
     firstImageVmRestart
   ]
 }
@@ -310,8 +322,11 @@ resource office 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if 
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
-    fslogix
+    createBuildDir
+    removeAppxPackages
+    applications
     firstImageVmRestart
+    fslogix
   ]
 }
 
@@ -355,6 +370,9 @@ resource onedrive 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = i
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
+    createBuildDir
+    removeAppxPackages
+    applications
     firstImageVmRestart
     fslogix
     office
@@ -456,6 +474,9 @@ resource teams 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
+    createBuildDir
+    removeAppxPackages
+    applications
     firstImageVmRestart
     fslogix
     office
@@ -463,8 +484,8 @@ resource teams 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (
   ]
 }
 
-resource secondImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (installFsLogix || !empty(office365AppsToInstall) || installOneDrive || installTeams) {
-  name: 'restart-vm-2'
+resource secondImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (perform2ndRestart) {
+  name: perform1stRestart ? 'restart-vm-2' : 'restart-vm-1'
   location: location
   parent: orchestrationVm
   properties: {
@@ -476,6 +497,10 @@ resource secondImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@202
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
+    createBuildDir
+    removeAppxPackages
+    applications
+    firstImageVmRestart
     fslogix
     office
     onedrive
@@ -528,12 +553,22 @@ resource microsoftUpdates 'Microsoft.Compute/virtualMachines/runCommands@2023-03
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
+    createBuildDir
+    removeAppxPackages
+    applications
+    firstImageVmRestart
+    fslogix
+    office
+    onedrive
+    teams
     secondImageVmRestart
   ]
 }
 
-resource thirdImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (installUpdates) {
-  name: 'restart-vm-3'
+resource thirdImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (perform3rdRestart) {
+  name: perform1stRestart && perform2ndRestart
+    ? 'restart-vm-3'
+    : perform1stRestart || perform2ndRestart ? 'restart-vm-2' : 'restart-vm-1'
   location: location
   parent: orchestrationVm
   properties: {
@@ -545,6 +580,15 @@ resource thirdImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
+    createBuildDir
+    removeAppxPackages
+    applications
+    firstImageVmRestart
+    fslogix
+    office
+    onedrive
+    teams
+    secondImageVmRestart
     microsoftUpdates
   ]
 }
@@ -588,12 +632,28 @@ resource vdot 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (i
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
+    createBuildDir
+    removeAppxPackages
+    applications
+    firstImageVmRestart
+    fslogix
+    office
+    onedrive
+    teams
+    secondImageVmRestart
+    microsoftUpdates
     thirdImageVmRestart
   ]
 }
 
-resource fourthImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (installVirtualDesktopOptimizationTool) {
-  name: 'restart-vm-4'
+resource fourthImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (perform4thRestart) {
+  name: perform1stRestart
+    ? perform2ndRestart && perform3rdRestart
+        ? 'restart-vm-4'
+        : perform2ndRestart || perform3rdRestart ? 'restart-vm-3' : 'restart-vm-2'
+    : perform2ndRestart && perform3rdRestart
+        ? 'restart-vm-3'
+        : perform2ndRestart || perform3rdRestart ? 'restart-vm-2' : 'restart-vm-1'
   location: location
   parent: orchestrationVm
   properties: {
@@ -605,6 +665,16 @@ resource fourthImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@202
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
+    createBuildDir
+    removeAppxPackages
+    applications
+    firstImageVmRestart
+    fslogix
+    office
+    onedrive
+    teams
+    secondImageVmRestart
+    microsoftUpdates
     vdot
   ]
 }
@@ -653,73 +723,92 @@ resource vdiApplications 'Microsoft.Compute/virtualMachines/runCommands@2023-03-
       treatFailureAsDeploymentFailure: true
     }
     dependsOn: [
+      createBuildDir
+      removeAppxPackages
+      applications
       firstImageVmRestart
+      fslogix
+      office
+      onedrive
+      teams
       secondImageVmRestart
+      microsoftUpdates
       thirdImageVmRestart
+      vdot
       fourthImageVmRestart
     ]
   }
 ]
 
-resource cleanup 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
-  name: 'cleanup-Image'
+resource cleanupPublicDesktop 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (cleanupDesktop) {
+  name: 'clean-PublicDesktop'
   location: location
   parent: imageVm
   properties: {
-    asyncExecution: true    
-    errorBlobManagedIdentity: empty(logBlobContainerUri)
-      ? null
-      : {
-          clientId: userAssignedIdentityClientId
-        }
-    errorBlobUri: empty(logBlobContainerUri)
-      ? null
-      : '${logBlobContainerUri}${imageVmName}-DiskCleanup-error-${timeStamp}.log'
-    outputBlobManagedIdentity: empty(logBlobContainerUri)
-      ? null
-      : {
-          clientId: userAssignedIdentityClientId
-        }
-    outputBlobUri: empty(logBlobContainerUri)
-      ? null
-      : '${logBlobContainerUri}${imageVmName}-DiskCleanup-output-${timeStamp}.log'
-    parameters: [
-      {
-        name: 'BuildDir'
-        value: buildDir
-      }
-      {
-        name: 'CleanupDesktop'
-        value: string(cleanupDesktop)
-      }
-    ]
+    asyncExecution: true
     source: {
-      script: loadTextContent('../../../../.common/scripts/Invoke-DiskCleanup.ps1')
+      script: '''
+        Get-ChildItem -Path [Environment]::GetFolderPath('CommonDesktopDirectory') -Force -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+      '''
     }
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
+    createBuildDir
+    removeAppxPackages
+    applications
     firstImageVmRestart
+    fslogix
+    office
+    onedrive
+    teams
     secondImageVmRestart
+    microsoftUpdates
     thirdImageVmRestart
+    vdot
     fourthImageVmRestart
     vdiApplications
   ]
 }
 
-resource disablePrivacyExperience 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
-  name: 'disablePrivacyExperience'
+resource removeBuildDir 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
+  name: 'remove-BuildDir'
   location: location
   parent: imageVm
   properties: {
-    asyncExecution: true    
+    asyncExecution: true
+    parameters: [
+      {
+        name: 'BuildDir'
+        value: buildDir
+      }
+    ]
     source: {
-      script: loadTextContent('../../../../.common/scripts/Disable-PrivacyExperience.ps1')
+      script: '''
+        param(
+          [string]$BuildDir
+        )
+        Remove-Item -Path $BuildDir -Recurse -Force -ErrorAction SilentlyContinue
+      '''
     }
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
-    cleanup
+    createBuildDir
+    removeAppxPackages
+    applications
+    firstImageVmRestart
+    fslogix
+    office
+    onedrive
+    teams
+    secondImageVmRestart
+    microsoftUpdates
+    thirdImageVmRestart
+    vdot
+    fourthImageVmRestart
+    vdiApplications
+    cleanupPublicDesktop
   ]
 }
 
@@ -761,12 +850,37 @@ resource sysprep 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
             value: userAssignedIdentityClientId
           }
         ]
+    protectedParameters: [
+      {
+        name: 'AdminUserPw'
+        value: adminPw
+      }
+      {
+        name: 'AdminUserName'
+        value: adminUserName
+      }
+    ]
     source: {
       script: loadTextContent('../../../../.common/scripts/Invoke-Sysprep.ps1')
     }
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
-    cleanup
+    createBuildDir
+    removeAppxPackages
+    applications
+    firstImageVmRestart
+    fslogix
+    office
+    onedrive
+    teams
+    secondImageVmRestart
+    microsoftUpdates
+    thirdImageVmRestart
+    vdot
+    fourthImageVmRestart
+    vdiApplications
+    cleanupPublicDesktop
+    removeBuildDir
   ]
 }
