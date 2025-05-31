@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.36.1.42791",
-      "templateHash": "9994918006020041413"
+      "templateHash": "7094417420467707529"
     },
     "name": "Zero Trust Architecture Custom Windows Image Builder",
     "description": "This solution allows you to create a custom image much like Azure VM Image Builder, but utilizes zero trust architecture and does not require that service.",
@@ -1162,7 +1162,7 @@
     "galleryImageDefinitionOffer": "[if(not(empty(parameters('imageDefinitionOffer'))), replace(parameters('imageDefinitionOffer'), ' ', ''), parameters('mpOffer'))]",
     "galleryImageDefinitionPublisher": "[if(not(empty(parameters('imageDefinitionPublisher'))), replace(parameters('imageDefinitionPublisher'), ' ', ''), parameters('mpPublisher'))]",
     "galleryImageDefinitionSku": "[if(not(empty(parameters('imageDefinitionSku'))), replace(parameters('imageDefinitionSku'), ' ', ''), parameters('mpSku'))]",
-    "autoImageVersionName": "[format('{0}.{1}.{2}', substring(parameters('timeStamp'), 2, 2), substring(parameters('timeStamp'), 4, 4), substring(parameters('timeStamp'), 9, 4))]",
+    "autoImageVersionName": "[format('{0}.{1}.{2}', substring(parameters('timeStamp'), 0, 4), substring(parameters('timeStamp'), 4, 4), substring(parameters('timeStamp'), 9, 4))]",
     "imageVersionName": "[if(and(and(not(equals(parameters('imageMajorVersion'), -1)), not(equals(parameters('imageMajorVersion'), -1))), not(equals(parameters('imagePatch'), -1))), format('{0}.{1}.{2}', parameters('imageMajorVersion'), parameters('imageMinorVersion'), parameters('imagePatch')), variables('autoImageVersionName'))]",
     "imageVersionEndOfLifeDate": "[if(greater(parameters('imageVersionEOLinDays'), 0), dateTimeAdd(parameters('timeStamp'), format('P{0}D', parameters('imageVersionEOLinDays'))), '')]",
     "imageVmName": "[take(format('{0}vmimg-{1}', variables('depPrefix'), uniqueString(parameters('timeStamp'))), 15)]",
