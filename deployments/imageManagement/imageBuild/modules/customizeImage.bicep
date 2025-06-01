@@ -28,9 +28,12 @@ param userAssignedIdentityClientId string
 param vdiCustomizations array
 param wsusServer string
 
-var buildDir = 'c:\\BuildDir'
-
 var apiVersion = startsWith(cloud, 'usn') ? '2017-08-01' : '2018-02-01'
+
+#disable-next-line BCP329
+var envSuffix = substring(environment().suffixes.storage, 5, length(environment().suffixes.storage) - 5)
+
+var buildDir = 'c:\\BuildDir'
 
 var customizers = [
   for customization in customizations: {
@@ -51,6 +54,8 @@ var vdiCustomizers = [
     arguments: customization.?arguments ?? ''
   }
 ]
+
+var useBuildDir = !empty(customizations) || installFsLogix || !empty(office365AppsToInstall) || installOneDrive || installTeams || installVirtualDesktopOptimizationTool || !empty(vdiCustomizations)
 
 var commonScriptParams = [
   {
@@ -85,13 +90,55 @@ var restartVMParameters = [
     value: imageVm.id
   }
 ]
-#disable-next-line BCP329
-var envSuffix = substring(environment().suffixes.storage, 5, length(environment().suffixes.storage) - 5)
 
-var perform1stRestart = !empty(customizations)
-var perform2ndRestart = installFsLogix || !empty(office365AppsToInstall) || installOneDrive || installTeams
-var perform3rdRestart = installUpdates
-var perform4thRestart = installVirtualDesktopOptimizationTool
+var teamsUris = !startsWith(cloud, 'us')
+  ? downloadLatestMicrosoftContent || empty(artifactsContainerUri)
+      ? [
+          downloads.TeamsBootstrapper.DownloadUrl
+          downloads.Teams64BitMSIX.DownloadUrl
+          downloads.WebView2RunTime.DownloadUrl
+          downloads.VisualStudioRedistributables.DownloadUrl
+          downloads.RemoteDesktopWebRTCRedirectorService.DownloadUrl
+        ]
+      : [
+          '${artifactsContainerUri}/${downloads.TeamsBootstrapper.DestinationFileName}'
+          '${artifactsContainerUri}/${downloads.Teams64BitMSIX.DestinationFileName}'
+          '${artifactsContainerUri}/${downloads.WebView2RunTime.DestinationFileName}'
+          '${artifactsContainerUri}/${downloads.VisualStudioRedistributables.DestinationFileName}'
+          '${artifactsContainerUri}/${downloads.RemoteDesktopWebRTCRedirectorService.DestinationFileName}'
+        ]
+  : empty(artifactsContainerUri)
+      ? [
+          replace(downloads.TeamsBootstrapper.DownloadUrl, 'ENVSUFFIX', envSuffix)
+          replace(downloads.Teams64BitMSIX.DownloadUrl, 'ENVSUFFIX', envSuffix)
+        ]
+      : downloadLatestMicrosoftContent
+          ? [
+              replace(downloads.TeamsBootstrapper.DownloadUrl, 'ENVSUFFIX', envSuffix)
+              replace(downloads.Teams64BitMSIX.DownloadUrl, 'ENVSUFFIX', envSuffix)
+              '${artifactsContainerUri}/${downloads.WebView2RunTime.DestinationFileName}'
+              '${artifactsContainerUri}/${downloads.VisualStudioRedistributables.DestinationFileName}'
+              '${artifactsContainerUri}/${downloads.RemoteDesktopWebRTCRedirectorService.DestinationFileName}'
+            ]
+          : [
+              '${artifactsContainerUri}/${downloads.TeamsBootstrapper.DestinationFileName}'
+              '${artifactsContainerUri}/${downloads.Teams64BitMSIX.DestinationFileName}'
+              '${artifactsContainerUri}/${downloads.WebView2RunTime.DestinationFileName}'
+              '${artifactsContainerUri}/${downloads.VisualStudioRedistributables.DestinationFileName}'
+              '${artifactsContainerUri}/${downloads.RemoteDesktopWebRTCRedirectorService.DestinationFileName}'
+            ]
+var teamsDestFileNames = length(teamsUris) == 2
+  ? [
+      downloads.TeamsBootstrapper.DestinationFileName
+      downloads.Teams64BitMSIX.DestinationFileName
+    ]
+  : [
+      downloads.TeamsBootstrapper.DestinationFileName
+      downloads.Teams64BitMSIX.DestinationFileName
+      downloads.WebView2RunTime.DestinationFileName
+      downloads.VisualStudioRedistributables.DestinationFileName
+      downloads.RemoteDesktopWebRTCRedirectorService.DestinationFileName
+    ]
 
 resource imageVm 'Microsoft.Compute/virtualMachines@2022-11-01' existing = {
   name: imageVmName
@@ -101,7 +148,7 @@ resource orchestrationVm 'Microsoft.Compute/virtualMachines@2022-03-01' existing
   name: orchestrationVmName
 }
 
-resource createBuildDir 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
+resource createBuildDir 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (useBuildDir) {
   name: 'create-BuildDir'
   location: location
   parent: imageVm
@@ -158,75 +205,6 @@ resource removeAppxPackages 'Microsoft.Compute/virtualMachines/runCommands@2024-
   }
 }
 
-@batchSize(1)
-resource applications 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = [
-  for customizer in customizers: {
-    name: customizer.name
-    location: location
-    parent: imageVm
-    properties: {
-      asyncExecution: false
-      errorBlobManagedIdentity: empty(logBlobContainerUri)
-        ? null
-        : {
-            clientId: userAssignedIdentityClientId
-          }
-      errorBlobUri: empty(logBlobContainerUri)
-        ? null
-        : '${logBlobContainerUri}${imageVmName}-${customizer.name}-error-${timeStamp}.log'
-      outputBlobManagedIdentity: empty(logBlobContainerUri)
-        ? null
-        : {
-            clientId: userAssignedIdentityClientId
-          }
-      outputBlobUri: empty(logBlobContainerUri)
-        ? null
-        : '${logBlobContainerUri}${imageVmName}-${customizer.name}-output-${timeStamp}.log'
-      parameters: union(commonScriptParams, [
-        {
-          name: 'Uri'
-          value: customizer.uri
-        }
-        {
-          name: 'Name'
-          value: customizer.name
-        }
-        {
-          name: 'Arguments'
-          value: customizer.arguments
-        }
-      ])
-      source: {
-        script: loadTextContent('../../../../.common/scripts/Invoke-Customization.ps1')
-      }
-      treatFailureAsDeploymentFailure: true
-    }
-    dependsOn: [
-      createBuildDir
-      removeAppxPackages
-    ]
-  }
-]
-
-resource firstImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (!empty(customizations)) {
-  name: 'restart-vm-1'
-  location: location
-  parent: orchestrationVm
-  properties: {
-    asyncExecution: false
-    parameters: restartVMParameters
-    source: {
-      script: loadTextContent('../../../../.common/scripts/Restart-Vm.ps1')
-    }
-    treatFailureAsDeploymentFailure: true
-  }
-  dependsOn: [
-    createBuildDir
-    removeAppxPackages
-    applications
-  ]
-}
-
 resource fslogix 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = if (installFsLogix) {
   name: 'fslogix'
   location: location
@@ -269,8 +247,6 @@ resource fslogix 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = if
   dependsOn: [
     createBuildDir
     removeAppxPackages
-    applications
-    firstImageVmRestart
   ]
 }
 
@@ -324,8 +300,6 @@ resource office 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if 
   dependsOn: [
     createBuildDir
     removeAppxPackages
-    applications
-    firstImageVmRestart
     fslogix
   ]
 }
@@ -372,61 +346,10 @@ resource onedrive 'Microsoft.Compute/virtualMachines/runCommands@2023-07-01' = i
   dependsOn: [
     createBuildDir
     removeAppxPackages
-    applications
-    firstImageVmRestart
     fslogix
     office
   ]
 }
-
-var teamsUris = !startsWith(cloud, 'us')
-  ? downloadLatestMicrosoftContent || empty(artifactsContainerUri)
-      ? [
-          downloads.TeamsBootstrapper.DownloadUrl
-          downloads.Teams64BitMSIX.DownloadUrl
-          downloads.WebView2RunTime.DownloadUrl
-          downloads.VisualStudioRedistributables.DownloadUrl
-          downloads.RemoteDesktopWebRTCRedirectorService.DownloadUrl
-        ]
-      : [
-          '${artifactsContainerUri}/${downloads.TeamsBootstrapper.DestinationFileName}'
-          '${artifactsContainerUri}/${downloads.Teams64BitMSIX.DestinationFileName}'
-          '${artifactsContainerUri}/${downloads.WebView2RunTime.DestinationFileName}'
-          '${artifactsContainerUri}/${downloads.VisualStudioRedistributables.DestinationFileName}'
-          '${artifactsContainerUri}/${downloads.RemoteDesktopWebRTCRedirectorService.DestinationFileName}'
-        ]
-  : empty(artifactsContainerUri)
-      ? [
-          replace(downloads.TeamsBootstrapper.DownloadUrl, 'ENVSUFFIX', envSuffix)
-          replace(downloads.Teams64BitMSIX.DownloadUrl, 'ENVSUFFIX', envSuffix)
-        ]
-      : downloadLatestMicrosoftContent
-          ? [
-              replace(downloads.TeamsBootstrapper.DownloadUrl, 'ENVSUFFIX', envSuffix)
-              replace(downloads.Teams64BitMSIX.DownloadUrl, 'ENVSUFFIX', envSuffix)
-              '${artifactsContainerUri}/${downloads.WebView2RunTime.DestinationFileName}'
-              '${artifactsContainerUri}/${downloads.VisualStudioRedistributables.DestinationFileName}'
-              '${artifactsContainerUri}/${downloads.RemoteDesktopWebRTCRedirectorService.DestinationFileName}'
-            ]
-          : [
-              '${artifactsContainerUri}/${downloads.TeamsBootstrapper.DestinationFileName}'
-              '${artifactsContainerUri}/${downloads.Teams64BitMSIX.DestinationFileName}'
-              '${artifactsContainerUri}/${downloads.WebView2RunTime.DestinationFileName}'
-              '${artifactsContainerUri}/${downloads.VisualStudioRedistributables.DestinationFileName}'
-              '${artifactsContainerUri}/${downloads.RemoteDesktopWebRTCRedirectorService.DestinationFileName}'
-            ]
-var teamsDestFileNames = length(teamsUris) == 2
-  ? [
-      downloads.TeamsBootstrapper.DestinationFileName
-      downloads.Teams64BitMSIX.DestinationFileName
-    ]
-  : [
-      downloads.TeamsBootstrapper.DestinationFileName
-      downloads.Teams64BitMSIX.DestinationFileName
-      downloads.WebView2RunTime.DestinationFileName
-      downloads.VisualStudioRedistributables.DestinationFileName
-      downloads.RemoteDesktopWebRTCRedirectorService.DestinationFileName
-    ]
 
 resource teams 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (installTeams) {
   name: 'teams'
@@ -476,16 +399,57 @@ resource teams 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (
   dependsOn: [
     createBuildDir
     removeAppxPackages
-    applications
-    firstImageVmRestart
     fslogix
     office
     onedrive
   ]
 }
 
-resource secondImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (perform2ndRestart) {
-  name: perform1stRestart ? 'restart-vm-2' : 'restart-vm-1'
+resource removeRunCommandsMicrosoftSoftware 'Microsoft.Compute/virtualMachines/runCommands@2023-09-01' = if (length(customizations) > 13) {
+  parent: orchestrationVm
+  name: 'remove-microsoft-software-runCommands'
+  location: location
+  properties: {
+    asyncExecution: true
+    parameters: [
+      {
+        name: 'ResourceManagerUri'
+        value: environment().resourceManager
+      }
+      {
+        name: 'SubscriptionId'
+        value: subscription().subscriptionId
+      }
+      {
+        name: 'UserAssignedIdentityClientId'
+        value: userAssignedIdentityClientId
+      }
+      {
+        name: 'VirtualMachineNames'
+        value: string([imageVmName])
+      }
+      {
+        name: 'virtualMachinesResourceGroup'
+        value: resourceGroup().name
+      }
+    ]
+    source: {
+      script: loadTextContent('../../../../.common/scripts/Remove-RunCommands.ps1')
+    }
+    treatFailureAsDeploymentFailure: true
+  }
+  dependsOn: [
+    createBuildDir
+    removeAppxPackages
+    fslogix
+    onedrive
+    office
+    teams
+  ]
+}
+
+resource restartMicrosoftSoftware 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (!empty(appsToRemove) || installFsLogix || !empty(office365AppsToInstall) || installOneDrive || installTeams) {
+  name: 'restart-post-microsoft-software'
   location: location
   parent: orchestrationVm
   properties: {
@@ -499,12 +463,117 @@ resource secondImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@202
   dependsOn: [
     createBuildDir
     removeAppxPackages
-    applications
-    firstImageVmRestart
     fslogix
     office
     onedrive
     teams
+    removeRunCommandsMicrosoftSoftware
+  ]
+}
+
+@batchSize(1)
+resource applications 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = [
+  for customizer in customizers: {
+    name: customizer.name
+    location: location
+    parent: imageVm
+    properties: {
+      asyncExecution: false
+      errorBlobManagedIdentity: empty(logBlobContainerUri)
+        ? null
+        : {
+            clientId: userAssignedIdentityClientId
+          }
+      errorBlobUri: empty(logBlobContainerUri)
+        ? null
+        : '${logBlobContainerUri}${imageVmName}-${customizer.name}-error-${timeStamp}.log'
+      outputBlobManagedIdentity: empty(logBlobContainerUri)
+        ? null
+        : {
+            clientId: userAssignedIdentityClientId
+          }
+      outputBlobUri: empty(logBlobContainerUri)
+        ? null
+        : '${logBlobContainerUri}${imageVmName}-${customizer.name}-output-${timeStamp}.log'
+      parameters: union(commonScriptParams, [
+        {
+          name: 'Uri'
+          value: customizer.uri
+        }
+        {
+          name: 'Name'
+          value: customizer.name
+        }
+        {
+          name: 'Arguments'
+          value: customizer.arguments
+        }
+      ])
+      source: {
+        script: loadTextContent('../../../../.common/scripts/Invoke-Customization.ps1')
+      }
+      treatFailureAsDeploymentFailure: true
+    }
+    dependsOn: [
+      createBuildDir
+      restartMicrosoftSoftware
+    ]
+  }
+]
+
+resource removeRunCommandsCustomizations 'Microsoft.Compute/virtualMachines/runCommands@2023-09-01' = if (length(customizations) > 18) {
+  parent: orchestrationVm
+  name: 'remove-custom-software-runCommands'
+  location: location
+  properties: {
+    asyncExecution: true
+    parameters: [
+      {
+        name: 'ResourceManagerUri'
+        value: environment().resourceManager
+      }
+      {
+        name: 'SubscriptionId'
+        value: subscription().subscriptionId
+      }
+      {
+        name: 'UserAssignedIdentityClientId'
+        value: userAssignedIdentityClientId
+      }
+      {
+        name: 'VirtualMachineNames'
+        value: string([imageVmName])
+      }
+      {
+        name: 'virtualMachinesResourceGroup'
+        value: resourceGroup().name
+      }
+    ]
+    source: {
+      script: loadTextContent('../../../../.common/scripts/Remove-RunCommands.ps1')
+    }
+    treatFailureAsDeploymentFailure: true
+  }
+  dependsOn: [
+    applications
+  ]
+}
+
+resource restartCustomizations 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (!empty(customizations)) {
+  name: 'restart-post-customizations'
+  location: location
+  parent: orchestrationVm
+  properties: {
+    asyncExecution: false
+    parameters: restartVMParameters
+    source: {
+      script: loadTextContent('../../../../.common/scripts/Restart-Vm.ps1')
+    }
+    treatFailureAsDeploymentFailure: true
+  }
+  dependsOn: [
+    applications
+    removeRunCommandsCustomizations
   ]
 }
 
@@ -553,22 +622,13 @@ resource microsoftUpdates 'Microsoft.Compute/virtualMachines/runCommands@2023-03
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
-    createBuildDir
-    removeAppxPackages
-    applications
-    firstImageVmRestart
-    fslogix
-    office
-    onedrive
-    teams
-    secondImageVmRestart
+    restartMicrosoftSoftware
+    restartCustomizations
   ]
 }
 
-resource thirdImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (perform3rdRestart) {
-  name: perform1stRestart && perform2ndRestart
-    ? 'restart-vm-3'
-    : perform1stRestart || perform2ndRestart ? 'restart-vm-2' : 'restart-vm-1'
+resource restartUpdates 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (installUpdates) {
+  name: 'restart-post-updates'
   location: location
   parent: orchestrationVm
   properties: {
@@ -580,15 +640,6 @@ resource thirdImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
-    createBuildDir
-    removeAppxPackages
-    applications
-    firstImageVmRestart
-    fslogix
-    office
-    onedrive
-    teams
-    secondImageVmRestart
     microsoftUpdates
   ]
 }
@@ -633,27 +684,14 @@ resource vdot 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (i
   }
   dependsOn: [
     createBuildDir
-    removeAppxPackages
-    applications
-    firstImageVmRestart
-    fslogix
-    office
-    onedrive
-    teams
-    secondImageVmRestart
-    microsoftUpdates
-    thirdImageVmRestart
+    restartMicrosoftSoftware
+    restartCustomizations
+    restartUpdates
   ]
 }
 
-resource fourthImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (perform4thRestart) {
-  name: perform1stRestart
-    ? perform2ndRestart && perform3rdRestart
-        ? 'restart-vm-4'
-        : perform2ndRestart || perform3rdRestart ? 'restart-vm-3' : 'restart-vm-2'
-    : perform2ndRestart && perform3rdRestart
-        ? 'restart-vm-3'
-        : perform2ndRestart || perform3rdRestart ? 'restart-vm-2' : 'restart-vm-1'
+resource restartVDOT 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (installVirtualDesktopOptimizationTool) {
+  name: 'restart-post-vdot'
   location: location
   parent: orchestrationVm
   properties: {
@@ -665,16 +703,6 @@ resource fourthImageVmRestart 'Microsoft.Compute/virtualMachines/runCommands@202
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
-    createBuildDir
-    removeAppxPackages
-    applications
-    firstImageVmRestart
-    fslogix
-    office
-    onedrive
-    teams
-    secondImageVmRestart
-    microsoftUpdates
     vdot
   ]
 }
@@ -724,18 +752,10 @@ resource vdiApplications 'Microsoft.Compute/virtualMachines/runCommands@2023-03-
     }
     dependsOn: [
       createBuildDir
-      removeAppxPackages
-      applications
-      firstImageVmRestart
-      fslogix
-      office
-      onedrive
-      teams
-      secondImageVmRestart
-      microsoftUpdates
-      thirdImageVmRestart
-      vdot
-      fourthImageVmRestart
+      restartMicrosoftSoftware
+      restartCustomizations
+      restartUpdates
+      restartVDOT
     ]
   }
 ]
@@ -755,23 +775,15 @@ resource cleanupPublicDesktop 'Microsoft.Compute/virtualMachines/runCommands@202
   }
   dependsOn: [
     createBuildDir
-    removeAppxPackages
-    applications
-    firstImageVmRestart
-    fslogix
-    office
-    onedrive
-    teams
-    secondImageVmRestart
-    microsoftUpdates
-    thirdImageVmRestart
-    vdot
-    fourthImageVmRestart
+    restartMicrosoftSoftware
+    restartCustomizations
+    restartUpdates
+    restartVDOT
     vdiApplications
   ]
 }
 
-resource removeBuildDir 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
+resource removeBuildDir 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (useBuildDir) {
   name: 'remove-BuildDir'
   location: location
   parent: imageVm
@@ -795,20 +807,11 @@ resource removeBuildDir 'Microsoft.Compute/virtualMachines/runCommands@2023-03-0
   }
   dependsOn: [
     createBuildDir
-    removeAppxPackages
-    applications
-    firstImageVmRestart
-    fslogix
-    office
-    onedrive
-    teams
-    secondImageVmRestart
-    microsoftUpdates
-    thirdImageVmRestart
-    vdot
-    fourthImageVmRestart
+    restartMicrosoftSoftware
+    restartCustomizations
+    restartUpdates
+    restartVDOT
     vdiApplications
-    cleanupPublicDesktop
   ]
 }
 
@@ -866,19 +869,10 @@ resource sysprep 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
     treatFailureAsDeploymentFailure: true
   }
   dependsOn: [
-    createBuildDir
-    removeAppxPackages
-    applications
-    firstImageVmRestart
-    fslogix
-    office
-    onedrive
-    teams
-    secondImageVmRestart
-    microsoftUpdates
-    thirdImageVmRestart
-    vdot
-    fourthImageVmRestart
+    restartMicrosoftSoftware
+    restartCustomizations
+    restartUpdates
+    restartVDOT
     vdiApplications
     cleanupPublicDesktop
     removeBuildDir

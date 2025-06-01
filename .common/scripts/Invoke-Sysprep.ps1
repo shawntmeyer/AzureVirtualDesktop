@@ -49,15 +49,18 @@ $TaskDescription = "Runs Sysprep with OOBE, Generalize, and VM Mode as Administr
 # Define the action to execute Sysprep
 $Action = New-ScheduledTaskAction -Execute "C:\Windows\System32\Sysprep\sysprep.exe" -Argument "/oobe /generalize /quit /mode:vm"
 # Create the task trigger (run once, immediately)
-$Trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddSeconds(30)
+$Trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddSeconds(20)
 # Register the scheduled task
 Register-ScheduledTask -TaskName $TaskName -Description $TaskDescription -Action $Action -User $AdminUserName -Password $AdminUserPw -Trigger $Trigger -RunLevel Highest -Force
-
+Do {
+    Start-Sleep -Seconds 5
+} Until (Get-Process | Where-Object { $_.Name -eq 'sysprep' })
+Write-Message -Message "Sysprep started."
 while ($true) {
-    Write-Message -Message "Waiting for Sysprep to complete"
     $imageState = (Get-ItemProperty HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Setup\State).ImageState
     Write-Message -Message "Current Image State: $imageState"
     if ($imageState -eq 'IMAGE_STATE_GENERALIZE_RESEAL_TO_OOBE') { break }
+    Write-Message -Message "Waiting for Sysprep to complete"
     Start-Sleep -s 5
 }
 
