@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.36.1.42791",
-      "templateHash": "9806981910029536282"
+      "templateHash": "14000416252199371160"
     },
     "name": "Zero Trust Architecture Custom Windows Image Builder",
     "description": "This solution allows you to create a custom image much like Azure VM Image Builder, but utilizes zero trust architecture and does not require that service.",
@@ -11818,7 +11818,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.36.1.42791",
-              "templateHash": "17152927264144788305"
+              "templateHash": "14998462383027801822"
             }
           },
           "parameters": {
@@ -12118,7 +12118,7 @@
               ]
             },
             {
-              "condition": "[greater(length(parameters('customizations')), 13)]",
+              "condition": "[greater(add(length(parameters('customizations')), length(parameters('vdiCustomizations'))), 13)]",
               "type": "Microsoft.Compute/virtualMachines/runCommands",
               "apiVersion": "2023-09-01",
               "name": "[format('{0}/{1}', parameters('orchestrationVmName'), 'remove-microsoft-software-runCommands')]",
@@ -12214,7 +12214,7 @@
               ]
             },
             {
-              "condition": "[greater(length(parameters('customizations')), 18)]",
+              "condition": "[greater(add(length(parameters('customizations')), length(parameters('vdiCustomizations'))), 18)]",
               "type": "Microsoft.Compute/virtualMachines/runCommands",
               "apiVersion": "2023-09-01",
               "name": "[format('{0}/{1}', parameters('orchestrationVmName'), 'remove-custom-software-runCommands')]",

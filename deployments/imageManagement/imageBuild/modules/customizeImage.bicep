@@ -405,7 +405,7 @@ resource teams 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = if (
   ]
 }
 
-resource removeRunCommandsMicrosoftSoftware 'Microsoft.Compute/virtualMachines/runCommands@2023-09-01' = if (length(customizations) > 13) {
+resource removeRunCommandsMicrosoftSoftware 'Microsoft.Compute/virtualMachines/runCommands@2023-09-01' = if (length(customizations) + length(vdiCustomizations) > 13) {
   parent: orchestrationVm
   name: 'remove-microsoft-software-runCommands'
   location: location
@@ -521,7 +521,7 @@ resource applications 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01'
   }
 ]
 
-resource removeRunCommandsCustomizations 'Microsoft.Compute/virtualMachines/runCommands@2023-09-01' = if (length(customizations) > 18) {
+resource removeRunCommandsCustomizations 'Microsoft.Compute/virtualMachines/runCommands@2023-09-01' = if (length(customizations) + length(vdiCustomizations) > 18) {
   parent: orchestrationVm
   name: 'remove-custom-software-runCommands'
   location: location
