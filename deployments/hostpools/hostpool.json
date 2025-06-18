@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.36.1.42791",
-      "templateHash": "11652929136485148349"
+      "templateHash": "10637807317346082531"
     }
   },
   "parameters": {
@@ -7864,7 +7864,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.36.1.42791",
-              "templateHash": "3478444269884832232"
+              "templateHash": "14045362553127969792"
             }
           },
           "parameters": {
@@ -9354,7 +9354,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.36.1.42791",
-                      "templateHash": "13401485257221772012"
+                      "templateHash": "16630716980650913180"
                     }
                   },
                   "parameters": {
@@ -10441,7 +10441,7 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.36.1.42791",
-                              "templateHash": "14178901606601670629"
+                              "templateHash": "9789350740357542243"
                             }
                           },
                           "parameters": {
@@ -10589,10 +10589,10 @@
                             "diagnosticMetricsToEnable": {
                               "type": "array",
                               "defaultValue": [
-                                "Health"
+                                "AllMetrics"
                               ],
                               "allowedValues": [
-                                "Health"
+                                "AllMetrics"
                               ],
                               "metadata": {
                                 "description": "Optional. The name of metrics that will be streamed."
@@ -13519,7 +13519,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.36.1.42791",
-              "templateHash": "7711169296604034247"
+              "templateHash": "12273460025738825898"
             }
           },
           "parameters": {
@@ -17221,7 +17221,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.36.1.42791",
-                      "templateHash": "14178901606601670629"
+                      "templateHash": "9789350740357542243"
                     }
                   },
                   "parameters": {
@@ -17369,10 +17369,10 @@
                     "diagnosticMetricsToEnable": {
                       "type": "array",
                       "defaultValue": [
-                        "Health"
+                        "AllMetrics"
                       ],
                       "allowedValues": [
-                        "Health"
+                        "AllMetrics"
                       ],
                       "metadata": {
                         "description": "Optional. The name of metrics that will be streamed."
