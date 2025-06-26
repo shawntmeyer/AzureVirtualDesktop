@@ -374,7 +374,7 @@ output netAppCapacityPoolName string = netAppCapacityPoolName
 output privateEndpointNameConv string = privateEndpointNameConv
 output privateEndpointNICNameConv string = privateEndpointNICNameConv
 output recoveryServicesVaultNames object = {
-  fslogixStorage: replace(recoveryServicesVaultsNameConv, 'TOKEN-', 'fslogix-storage-')
+  fslogixStorage: replace(recoveryServicesVaultsNameConv, 'TOKEN-', 'fslogix-')
   virtualMachines: replace(recoveryServicesVaultsNameConv, 'TOKEN-', 'virtual-machines-')
 }
 output resourceGroupControlPlane string = resourceGroupControlPlane

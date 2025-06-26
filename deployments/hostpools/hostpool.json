@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.36.1.42791",
-      "templateHash": "10637807317346082531"
+      "templateHash": "7781044671550059709"
     }
   },
   "parameters": {
@@ -1092,7 +1092,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.36.1.42791",
-              "templateHash": "8555433272929561916"
+              "templateHash": "588620579465182193"
             }
           },
           "parameters": {
@@ -1573,7 +1573,7 @@
             "recoveryServicesVaultNames": {
               "type": "object",
               "value": {
-                "fslogixStorage": "[replace(variables('recoveryServicesVaultsNameConv'), 'TOKEN-', 'fslogix-storage-')]",
+                "fslogixStorage": "[replace(variables('recoveryServicesVaultsNameConv'), 'TOKEN-', 'fslogix-')]",
                 "virtualMachines": "[replace(variables('recoveryServicesVaultsNameConv'), 'TOKEN-', 'virtual-machines-')]"
               }
             },
