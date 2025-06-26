@@ -375,7 +375,7 @@ output privateEndpointNameConv string = privateEndpointNameConv
 output privateEndpointNICNameConv string = privateEndpointNICNameConv
 output recoveryServicesVaultNames object = {
   fslogixStorage: replace(recoveryServicesVaultsNameConv, 'TOKEN-', 'fslogix-')
-  virtualMachines: replace(recoveryServicesVaultsNameConv, 'TOKEN-', 'virtual-machines-')
+  virtualMachines: replace(recoveryServicesVaultsNameConv, 'TOKEN-', 'vms-')
 }
 output resourceGroupControlPlane string = resourceGroupControlPlane
 output resourceGroupGlobalFeed string = globalFeedResourceGroupName
