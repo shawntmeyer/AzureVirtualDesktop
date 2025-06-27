@@ -55,11 +55,11 @@ param timeStamp string = utcNow('yyyyMMddHHmm')
 
 var logsContainerUri = empty(logsContainerName) || empty(logsStorageAccountName)
   ? ''
-  : 'https://${logsStorageAccountName}.blob.${environment().suffixes.storage}/${logsContainerName}/'
+  : 'https://${logsStorageAccountName}.blob.${environment().suffixes.storage}/${logsContainerName}'
 
 var scriptsContainerUri = empty(scriptsContainerName) || empty(scriptsStorageAccountName)
   ? ''
-  : 'https://${scriptsStorageAccountName}.blob.${environment().suffixes.storage}/${scriptsContainerName}/'
+  : 'https://${scriptsStorageAccountName}.blob.${environment().suffixes.storage}/${scriptsContainerName}'
 
 var multipleScripts = [
   for script in scripts: {
