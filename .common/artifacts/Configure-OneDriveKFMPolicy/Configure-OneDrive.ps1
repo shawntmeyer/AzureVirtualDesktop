@@ -112,7 +112,7 @@ Function Update-LocalGPOTextFile {
         [switch]$Delete,
         [Parameter(Mandatory = $false, ParameterSetName = 'DeleteAllValues')]
         [switch]$DeleteAllValues,
-        [string]$outputDir = "$TempDir\LGPO",
+        [string]$outputDir = "$Script:TempDir\LGPO",
         [string]$outfileprefix = $AppName
     )
     Begin {
@@ -169,7 +169,7 @@ Function Update-LocalGPOTextFile {
 Function Invoke-LGPO {
     [CmdletBinding()]
     Param (
-        [string]$InputDir = "$TempDir\LGPO",
+        [string]$InputDir = "$Script:TempDir\LGPO",
         [string]$SearchTerm
     )
     Begin {
@@ -243,9 +243,10 @@ function New-Log {
 #region Initialization
 [string]$AppName = 'OneDrive'
 [string]$Script:Name = "Configure-OneDrivePolicy"
-[string]$TempDir = Join-Path -Path $env:Temp -ChildPath $ScriptName
-$null = New-Item -Path $TempDir -ItemType Directory -Force
-New-Log (Join-Path -Path $Env:SystemRoot -ChildPath 'Logs')
+[string]$Script:TempDir = Join-Path -Path $env:Temp -ChildPath $ScriptName
+[string]$LGPO = "$env:SystemRoot\System32\lgpo.exe"
+$null = New-Item -Path $Script:TempDir -ItemType Directory -Force
+New-Log -Path (Join-Path -Path $Env:SystemRoot -ChildPath 'Logs')
 $ErrorActionPreference = 'Stop'
 Write-Log -category Info -message "Starting '$PSCommandPath'."
 #endregion
@@ -256,6 +257,7 @@ $InstallDir = "${env:ProgramFiles(x86)}\Microsoft OneDrive"
 $OnedriveVersion = (Get-ItemProperty -Path "$installDir\onedrive.exe").VersionInfo.ProductVersion
 
 If (Test-Path -Path "$installDir\$onedriveversion") {
+    Write-Log -Message "Found OneDrive version folder '$OnedriveVersion' in '$InstallDir'."
     $null = Get-ChildItem -Path "$installDir\$onedriveversion" -File -Recurse -Filter '*.admx' | ForEach-Object { Copy-Item -Path $_.FullName -Destination "$env:WINDIR\PolicyDefinitions\" -Force }
     $ADML = (get-childitem "$InstallDir\$OneDriveVersion" -file -filter '*.adml' -recurse | Where-object { $_.Directory -like '*adm' })
     If ($null -ne $ADML) {
@@ -268,33 +270,23 @@ If (Test-Path -Path "$installDir\$onedriveversion") {
     }    
 }
 
-Write-Log -message "Checking for lgpo.exe in '$env:SystemRoot\system32'."
+Write-Log -message "Checking for 'lgpo.exe' in '$env:SystemRoot\system32'."
 
-If (-not(Test-Path -Path "$env:SystemRoot\System32\Lgpo.exe")) {
+If (-not(Test-Path -Path $LGPO)) {
+    Write-Log -category Info -message "'lgpo.exe' not found in '$env:SystemRoot\system32'."
     $LGPOZip = Join-Path -Path $PSScriptRoot -ChildPath 'LGPO.zip'
-    If (Test-Path -Path $LGPOZip) {
-        Write-Log -Message "Expanding '$LGPOZip' to '$Script:TempDir'."
-        Expand-Archive -path $LGPOZip -DestinationPath $Script:TempDir -force
-        $algpoexe = Get-ChildItem -Path $Script:TempDir -filter 'lgpo.exe' -recurse
-        If ($algpoexe.count -gt 0) {
-            $fileLGPO = $algpoexe[0].FullName
-            Write-Log -Message "Copying '$fileLGPO' to '$env:SystemRoot\system32'."
-            Copy-Item -Path $fileLGPO -Destination "$env:SystemRoot\System32" -force        
-        }
-    } Else {
-        $urlLGPO = 'https://download.microsoft.com/download/8/5/C/85C25433-A1B0-4FFA-9429-7E023E7DA8D8/LGPO.zip'
-        $LGPOZip = Get-InternetFile -Url $urlLGPO -OutputDirectory $Script:TempDir -Verbose
-        $outputDir = Join-Path $Script:TempDir -ChildPath 'LGPO'
-        Expand-Archive -Path $LGPOZip -DestinationPath $outputDir
-        Remove-Item $LGPOZip -Force
-        $fileLGPO = (Get-ChildItem -Path $outputDir -file -Filter 'lgpo.exe' -Recurse)[0].FullName
-        Write-Log -Message "Copying `"$fileLGPO`" to System32"
-        Copy-Item -Path $fileLGPO -Destination "$env:SystemRoot\System32" -Force
-        Remove-Item -Path $outputDir -Recurse -Force
+    If (-not(Test-Path -Path $LGPOZip)) {
+        Write-Log -category Info -Message "Downloading LGPO tool."
+        $LGPOZip = Get-InternetFile -Url 'https://download.microsoft.com/download/8/5/C/85C25433-A1B0-4FFA-9429-7E023E7DA8D8/LGPO.zip' -OutputDirectory $Script:TempDir -Verbose    
     }
+    Write-Log -Category Info -Message "Expanding '$LGPOZip' to '$Script:TempDir'."
+    Expand-Archive -Path $LGPOZip -DestinationPath $Script:TempDir -Force
+    $fileLGPO = (Get-ChildItem -Path $Script:TempDir -Filter 'lgpo.exe' -Recurse)[0].FullName
+    Write-Log -Message "Copying '$fileLGPO' to '$env:SystemRoot\system32'."
+    Copy-Item -Path $fileLGPO -Destination "$env:SystemRoot\System32" -Force
 }
 
-If (Test-Path -Path "$env:SystemRoot\System32\Lgpo.exe") {
+If (Test-Path -Path $LGPO) {
     Write-Log -message "Now Configuring OneDrive Group Policy."
     If ($TenantID -and $TenantID -ne '') {
         Write-Log -Message "Now Configuring OneDrive to automatically sign-in with logged on user credentials."
@@ -313,4 +305,4 @@ Else {
     Exit 2
 }
 
-Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path $Script:TempDir -Recurse -Force -ErrorAction SilentlyContinue

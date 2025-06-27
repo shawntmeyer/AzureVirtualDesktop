@@ -36,8 +36,8 @@ Function Get-InternetFile {
             Else {
                 Write-Log -Message "${CmdletName}: Url does not contain file name. Trying 'Location' Response Header."
                 $request = [System.Net.WebRequest]::Create($url)
-                $request.AllowAutoRedirect=$false
-                $response=$request.GetResponse()
+                $request.AllowAutoRedirect = $false
+                $response = $request.GetResponse()
                 $Location = $response.GetResponseHeader("Location")
                 If ($Location) {
                     $OutputFileName = [System.IO.Path]::GetFileName($Location)
@@ -48,7 +48,7 @@ Function Get-InternetFile {
                     $result = Invoke-WebRequest -Method GET -Uri $Url -UseBasicParsing
                     $contentDisposition = $result.Headers.'Content-Disposition'
                     If ($contentDisposition) {
-                        $OutputFileName = $contentDisposition.Split("=")[1].Replace("`"","")
+                        $OutputFileName = $contentDisposition.Split("=")[1].Replace("`"", "")
                         Write-Log -Message "${CmdletName}: File Name from 'Content-Disposition' Response Header is '$OutputFileName'."
                     }
                 }
@@ -111,7 +111,7 @@ Function Update-LocalGPOTextFile {
         [switch]$Delete,
         [Parameter(Mandatory = $false, ParameterSetName = 'DeleteAllValues')]
         [switch]$DeleteAllValues,
-        [string]$outputDir = "$TempDir\LGPO",
+        [string]$outputDir = "$Script:TempDir\LGPO",
         [string]$outfileprefix = $AppName
     )
     Begin {
@@ -168,7 +168,7 @@ Function Update-LocalGPOTextFile {
 Function Invoke-LGPO {
     [CmdletBinding()]
     Param (
-        [string]$InputDir = "$TempDir\LGPO",
+        [string]$InputDir = "$Script:TempDir\LGPO",
         [string]$SearchTerm
     )
     Begin {
@@ -241,42 +241,34 @@ function New-Log {
 #region Initialization
 [int]$MaxIdleTime = $MaxIdleTime
 [int]$MaxDisconnectTime = $MaxDisconnectTime
+[string]$LGPO = "$env:SystemRoot\System32\lgpo.exe"
 [string]$AppName = 'RDServicesPolicy'
 [string]$Script:Name = "Configure-RemoteDesktopServicesPolicy"
-[string]$TempDir = Join-Path -Path $env:Temp -ChildPath $ScriptName
-$Null = New-Item $TempDir -ItemType Directory -Force
-New-Log (Join-Path -Path $env:SystemRoot -ChildPath 'Logs')
+[string]$Script:TempDir = Join-Path -Path $env:Temp -ChildPath $ScriptName
+$Null = New-Item $Script:TempDir -ItemType Directory -Force
+New-Log -Path (Join-Path -Path $env:SystemRoot -ChildPath 'Logs')
+
 $ErrorActionPreference = 'Stop'
 Write-Log -category Info -message "Starting '$PSCommandPath'."
 #endregion
 
-Write-Log -message "Checking for lgpo.exe in '$env:SystemRoot\system32'."
+Write-Log -message "Checking for 'lgpo.exe' in '$env:SystemRoot\system32'."
 
-If (-not(Test-Path -Path "$env:SystemRoot\System32\Lgpo.exe")) {
+If (-not(Test-Path -Path $LGPO)) {
+    Write-Log -category Info -message "'lgpo.exe' not found in '$env:SystemRoot\system32'."
     $LGPOZip = Join-Path -Path $PSScriptRoot -ChildPath 'LGPO.zip'
-    If (Test-Path -Path $LGPOZip) {
-        Write-Log -Message "Expanding '$LGPOZip' to '$Script:TempDir'."
-        Expand-Archive -path $LGPOZip -DestinationPath $Script:TempDir -force
-        $algpoexe = Get-ChildItem -Path $Script:TempDir -filter 'lgpo.exe' -recurse
-        If ($algpoexe.count -gt 0) {
-            $fileLGPO = $algpoexe[0].FullName
-            Write-Log -Message "Copying '$fileLGPO' to '$env:SystemRoot\system32'."
-            Copy-Item -Path $fileLGPO -Destination "$env:SystemRoot\System32" -force        
-        }
-    } Else {
-        $urlLGPO = 'https://download.microsoft.com/download/8/5/C/85C25433-A1B0-4FFA-9429-7E023E7DA8D8/LGPO.zip'
-        $LGPOZip = Get-InternetFile -Url $urlLGPO -OutputDirectory $Script:TempDir -Verbose
-        $outputDir = Join-Path $Script:TempDir -ChildPath 'LGPO'
-        Expand-Archive -Path $LGPOZip -DestinationPath $outputDir
-        Remove-Item $LGPOZip -Force
-        $fileLGPO = (Get-ChildItem -Path $outputDir -file -Filter 'lgpo.exe' -Recurse)[0].FullName
-        Write-Log -Message "Copying `"$fileLGPO`" to System32"
-        Copy-Item -Path $fileLGPO -Destination "$env:SystemRoot\System32" -Force
-        Remove-Item -Path $outputDir -Recurse -Force
+    If (-not(Test-Path -Path $LGPOZip)) {
+        Write-Log -category Info -Message "Downloading LGPO tool."
+        $LGPOZip = Get-InternetFile -Url 'https://download.microsoft.com/download/8/5/C/85C25433-A1B0-4FFA-9429-7E023E7DA8D8/LGPO.zip' -OutputDirectory $Script:TempDir -Verbose    
     }
+    Write-Log -Category Info -Message "Expanding '$LGPOZip' to '$Script:TempDir'."
+    Expand-Archive -Path $LGPOZip -DestinationPath $Script:TempDir -Force
+    $fileLGPO = (Get-ChildItem -Path $Script:TempDir -Filter 'lgpo.exe' -Recurse)[0].FullName
+    Write-Log -Message "Copying '$fileLGPO' to '$env:SystemRoot\system32'."
+    Copy-Item -Path $fileLGPO -Destination "$env:SystemRoot\System32" -Force
 }
 
-If (Test-Path -Path "$env:SystemRoot\System32\Lgpo.exe") {
+If (Test-Path -Path $LGPO) {
     Write-Log -category Info -message "Now Configuring Remote Desktop Services Timeout Settings."
     Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Windows NT\Terminal Services' -RegistryValue 'MaxDisconnectionTime' -RegistryType 'DWORD' -RegistryData $MaxDisconnectTime -outfileprefix $appName -Verbose
     Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Windows NT\Terminal Services' -RegistryValue 'MaxIdleTime' -RegistryType 'DWORD' -RegistryData $MaxIdleTime -outfileprefix $appName -Verbose
@@ -290,4 +282,4 @@ Else {
     Exit 2
 }
 
-Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path $Script:TempDir -Recurse -Force -ErrorAction SilentlyContinue

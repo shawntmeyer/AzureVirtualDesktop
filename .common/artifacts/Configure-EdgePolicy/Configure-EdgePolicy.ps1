@@ -311,19 +311,19 @@ function Write-Log {
 #region Initialization
 [String]$AppName = 'Edge'
 [string]$Script:Name = "Configure-EdgePolicy"
-[string]$TempDir = Join-Path -Path $env:Temp -ChildPath $ScriptName
-$null = New-Item -Path $TempDir -ItemType Directory -Force
+[string]$Script:TempDir= Join-Path -Path $env:Temp -ChildPath $Script:Name
+$null = New-Item -Path $Script:TempDir -ItemType Directory -Force
 [array]$SmartScreenAllowListDomains = $SmartScreenAllowListDomains.Replace('\"', '"').Replace('\[', '[').Replace('\]', ']') | ConvertFrom-Json
 [array]$PopupsAllowedForUrls = $PopupsAllowedForUrls.Replace('\"', '"').Replace('\[', '[').Replace('\]', ']') | ConvertFrom-Json
-New-Log (Join-Path -Path $env:SystemRoot -ChildPath 'Logs')
+New-Log -Path (Join-Path -Path $env:SystemRoot -ChildPath 'Logs')
 $ErrorActionPreference = 'Stop'
-$APIUrl = "https://edgeupdates.microsoft.com/api/products?view=enterprise"
 Write-Log -category Info -message "Starting '$PSCommandPath'."
 #endregion
 
 Write-Log -category Info -message "Running Script to Configure Microsoft Edge Policies."
 $EdgeTemplatesCab = (Get-ChildItem -Path $PSScriptRoot -Filter '*.cab').FullName
 If ($EdgeTemplatesCab.Count -eq 0) {
+    $APIUrl = "https://edgeupdates.microsoft.com/api/products?view=enterprise"
     $EdgeUpdatesJSON = Invoke-WebRequest -Uri $APIUrl -UseBasicParsing
     $content = $EdgeUpdatesJSON.content | ConvertFrom-Json      
     $Edgereleases = ($content | Where-Object {$_.Product -eq 'Stable'}).releases
@@ -339,15 +339,15 @@ If ($EdgeTemplatesCab.Count -eq 0) {
         Write-Log -category Warning -message "Unable to get download Url for Edge Policy Templates."
     } Else {
         Write-Log -category Info -message "Getting download Urls for latest Edge browser and policy templates from '$APIUrl'."
-        $EdgeTemplatesCab = Get-InternetFile -Url $EdgeTemplatesUrl -OutputDirectory $TempDir -Verbose
+        $EdgeTemplatesCab = Get-InternetFile -Url $EdgeTemplatesUrl -OutputDirectory $Script:TempDir -Verbose
     }
 }
 If ($null -ne $EdgeTemplatesCab) {
-    $TemplatesDir = Join-Path -Path $TempDir -ChildPath 'Templates'
+    $TemplatesDir = Join-Path -Path $Script:TempDir -ChildPath 'Templates'
     New-Item -Path $TemplatesDir -ItemType Directory -Force | out-null
     Write-Log -category Info -message "Expanding `"$EdgeTemplatesCab`" into `"$TemplatesDir`"."
     & cmd /c extrac32 /Y /E $EdgeTemplatesCab /L "$TemplatesDir"
-    $EdgeTemplatesZip = Get-ChildItem -Path "$TemplatesDir" -Filter '*.zip' -File -Recurse
+    $EdgeTemplatesZip = Get-ChildItem -Path "$TemplatesDir" -Filter '*.zip' -Recurse
     $EdgeTemplatesZip = $EdgeTemplatesZip[0].FullName
     Expand-Archive -Path $EdgeTemplatesZip -DestinationPath "$TemplatesDir" -force
     Write-Log -category Info -message "Copy ADMX and ADML files to PolicyDefinition Folders."
@@ -358,27 +358,17 @@ If ($null -ne $EdgeTemplatesCab) {
 Write-Log -message "Checking for lgpo.exe in '$env:SystemRoot\system32'."
 
 If (-not(Test-Path -Path "$env:SystemRoot\System32\Lgpo.exe")) {
+    Write-Log -category Info -message "'lgpo.exe' not found in '$env:SystemRoot\system32'."
     $LGPOZip = Join-Path -Path $PSScriptRoot -ChildPath 'LGPO.zip'
-    If (Test-Path -Path $LGPOZip) {
-        Write-Log -Message "Expanding '$LGPOZip' to '$Script:TempDir'."
-        Expand-Archive -path $LGPOZip -DestinationPath $Script:TempDir -force
-        $algpoexe = Get-ChildItem -Path $Script:TempDir -filter 'lgpo.exe' -recurse
-        If ($algpoexe.count -gt 0) {
-            $fileLGPO = $algpoexe[0].FullName
-            Write-Log -Message "Copying '$fileLGPO' to '$env:SystemRoot\system32'."
-            Copy-Item -Path $fileLGPO -Destination "$env:SystemRoot\System32" -force        
-        }
-    } Else {
-        $urlLGPO = 'https://download.microsoft.com/download/8/5/C/85C25433-A1B0-4FFA-9429-7E023E7DA8D8/LGPO.zip'
-        $LGPOZip = Get-InternetFile -Url $urlLGPO -OutputDirectory $Script:TempDir -Verbose
-        $outputDir = Join-Path $Script:TempDir -ChildPath 'LGPO'
-        Expand-Archive -Path $LGPOZip -DestinationPath $outputDir
-        Remove-Item $LGPOZip -Force
-        $fileLGPO = (Get-ChildItem -Path $outputDir -file -Filter 'lgpo.exe' -Recurse)[0].FullName
-        Write-Log -Message "Copying `"$fileLGPO`" to System32"
-        Copy-Item -Path $fileLGPO -Destination "$env:SystemRoot\System32" -Force
-        Remove-Item -Path $outputDir -Recurse -Force
+    If (-not(Test-Path -Path $LGPOZip)) {
+        Write-Log -category Info -Message "Downloading LGPO tool."
+        $LGPOZip = Get-InternetFile -Url 'https://download.microsoft.com/download/8/5/C/85C25433-A1B0-4FFA-9429-7E023E7DA8D8/LGPO.zip' -OutputDirectory $Script:TempDir -Verbose    
     }
+    Write-Log -Category Info -Message "Expanding '$LGPOZip' to '$Script:TempDir'."
+    Expand-Archive -Path $LGPOZip -DestinationPath $Script:TempDir -Force
+    $fileLGPO = (Get-ChildItem -Path $Script:TempDir -Filter 'lgpo.exe' -Recurse)[0].FullName
+    Write-Log -Message "Copying '$fileLGPO' to '$env:SystemRoot\system32'."
+    Copy-Item -Path $fileLGPO -Destination "$env:SystemRoot\System32" -Force
 }
 
 If (Test-Path -Path "$env:SystemRoot\System32\Lgpo.exe") {
@@ -417,4 +407,4 @@ Else {
     Exit 2
 }
 
-Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path $Script:TempDir -Recurse -Force -ErrorAction SilentlyContinue

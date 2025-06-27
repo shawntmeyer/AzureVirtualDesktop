@@ -110,7 +110,7 @@ Function Update-LocalGPOTextFile {
         [switch]$Delete,
         [Parameter(Mandatory = $false, ParameterSetName = 'DeleteAllValues')]
         [switch]$DeleteAllValues,
-        [string]$outputDir = "$TempDir\LGPO",
+        [string]$outputDir = "$Script:TempDir\LGPO",
         [string]$outfileprefix = $AppName
     )
     Begin {
@@ -167,7 +167,7 @@ Function Update-LocalGPOTextFile {
 Function Invoke-LGPO {
     [CmdletBinding()]
     Param (
-        [string]$InputDir = "$TempDir\LGPO",
+        [string]$InputDir = "$Script:TempDir\LGPO",
         [string]$SearchTerm
     )
     Begin {
@@ -242,42 +242,33 @@ function New-Log {
 [int]$DeferQualityUpdatesPeriodInDays = $DeferQualityUpdatesPeriodInDays
 [string]$AppName = 'WindowsUpdatePolicy'
 [string]$Script:Name = "Configure-WindowsUpdatePolicy"
-[string]$TempDir = Join-Path -Path $env:Temp -ChildPath $ScriptName
-$null = New-Item -Path $TempDir -ItemType Directory -Force
-New-Log (Join-Path -Path $TempDir -ChildPath 'Logs')
+[string]$Script:TempDir = Join-Path -Path $env:Temp -ChildPath $ScriptName
+[string]$LGPO = "$env:SystemRoot\System32\lgpo.exe"
+$null = New-Item -Path $Script:TempDir -ItemType Directory -Force
+New-Log -Path (Join-Path -Path $env:SystemRoot -ChildPath 'Logs')
 $ErrorActionPreference = 'Stop'
 Write-Log -category Info -message "Starting '$PSCommandPath'."
 #endregion
 
-Write-Log -message "Checking for lgpo.exe in '$env:SystemRoot\system32'."
+Write-Log -message "Checking for 'lgpo.exe' in '$env:SystemRoot\system32'."
 
-If (-not(Test-Path -Path "$env:SystemRoot\System32\Lgpo.exe")) {
+If (-not(Test-Path -Path $LGPO)) {
+    Write-Log -category Info -message "'lgpo.exe' not found in '$env:SystemRoot\system32'."
     $LGPOZip = Join-Path -Path $PSScriptRoot -ChildPath 'LGPO.zip'
-    If (Test-Path -Path $LGPOZip) {
-        Write-Log -Message "Expanding '$LGPOZip' to '$Script:TempDir'."
-        Expand-Archive -path $LGPOZip -DestinationPath $Script:TempDir -force
-        $algpoexe = Get-ChildItem -Path $Script:TempDir -filter 'lgpo.exe' -recurse
-        If ($algpoexe.count -gt 0) {
-            $fileLGPO = $algpoexe[0].FullName
-            Write-Log -Message "Copying '$fileLGPO' to '$env:SystemRoot\system32'."
-            Copy-Item -Path $fileLGPO -Destination "$env:SystemRoot\System32" -force        
-        }
-    } Else {
-        $urlLGPO = 'https://download.microsoft.com/download/8/5/C/85C25433-A1B0-4FFA-9429-7E023E7DA8D8/LGPO.zip'
-        $LGPOZip = Get-InternetFile -Url $urlLGPO -OutputDirectory $Script:TempDir -Verbose
-        $outputDir = Join-Path $Script:TempDir -ChildPath 'LGPO'
-        Expand-Archive -Path $LGPOZip -DestinationPath $outputDir
-        Remove-Item $LGPOZip -Force
-        $fileLGPO = (Get-ChildItem -Path $outputDir -file -Filter 'lgpo.exe' -Recurse)[0].FullName
-        Write-Log -Message "Copying `"$fileLGPO`" to System32"
-        Copy-Item -Path $fileLGPO -Destination "$env:SystemRoot\System32" -Force
-        Remove-Item -Path $outputDir -Recurse -Force
+    If (-not(Test-Path -Path $LGPOZip)) {
+        Write-Log -category Info -Message "Downloading LGPO tool."
+        $LGPOZip = Get-InternetFile -Url 'https://download.microsoft.com/download/8/5/C/85C25433-A1B0-4FFA-9429-7E023E7DA8D8/LGPO.zip' -OutputDirectory $Script:TempDir -Verbose    
     }
+    Write-Log -Category Info -Message "Expanding '$LGPOZip' to '$Script:TempDir'."
+    Expand-Archive -Path $LGPOZip -DestinationPath $Script:TempDir -Force
+    $fileLGPO = (Get-ChildItem -Path $Script:TempDir -Filter 'lgpo.exe' -Recurse)[0].FullName
+    Write-Log -Message "Copying '$fileLGPO' to '$env:SystemRoot\system32'."
+    Copy-Item -Path $fileLGPO -Destination "$env:SystemRoot\System32" -Force
 }
 
-If (Test-Path -Path "$env:SystemRoot\System32\Lgpo.exe") {
-    $regKey = "Software\Policies\Microsoft\Windows\WindowsUpdate"
+If (Test-Path -Path $LGPO) {
 
+    $regKey = "Software\Policies\Microsoft\Windows\WindowsUpdate"
     Write-Log -category info -message "Now Configuring Windows Update Settings."
     Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'DeferQualityUpdates' -RegistryType 'DWORD' -RegistryData 1 -outfileprefix $appName -Verbose
     Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'DeferQualityUpdatesPeriodInDays' -RegistryType 'DWORD' -RegistryData 4 -outfileprefix $appName -Verbose
@@ -298,7 +289,6 @@ If (Test-Path -Path "$env:SystemRoot\System32\Lgpo.exe") {
     Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ScheduledInstallDay' -RegistryType 'DWORD' -RegistryData 0 -outfileprefix $appName -Verbose
     Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ScheduledInstallTime' -RegistryType 'DWORD' -RegistryData 24 -outfileprefix $appName -Verbose
     Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ScheduledInstallEveryWeek' -RegistryType 'DWORD' -RegistryData 1 -outfileprefix $appName -Verbose
-
     Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ScheduleInstallFirstWeek' -Delete -outfileprefix $appName -Verbose
     Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ScheduleInstallSecondWeek' -Delete -outfileprefix $appName -Verbose
     Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ScheduleInstallThirdWeek' -Delete -outfileprefix $appName -Verbose
@@ -314,4 +304,4 @@ Else {
     Exit 2
 }
 
-Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path $Script:TempDir -Recurse -Force -ErrorAction SilentlyContinue

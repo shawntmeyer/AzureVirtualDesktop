@@ -49,8 +49,8 @@ Function Get-InternetFile {
             Else {
                 Write-Log -Message "${CmdletName}: Url does not contain file name. Trying 'Location' Response Header."
                 $request = [System.Net.WebRequest]::Create($url)
-                $request.AllowAutoRedirect=$false
-                $response=$request.GetResponse()
+                $request.AllowAutoRedirect = $false
+                $response = $request.GetResponse()
                 $Location = $response.GetResponseHeader("Location")
                 If ($Location) {
                     $OutputFileName = [System.IO.Path]::GetFileName($Location)
@@ -61,7 +61,7 @@ Function Get-InternetFile {
                     $result = Invoke-WebRequest -Method GET -Uri $Url -UseBasicParsing
                     $contentDisposition = $result.Headers.'Content-Disposition'
                     If ($contentDisposition) {
-                        $OutputFileName = $contentDisposition.Split("=")[1].Replace("`"","")
+                        $OutputFileName = $contentDisposition.Split("=")[1].Replace("`"", "")
                         Write-Log -Message "${CmdletName}: File Name from 'Content-Disposition' Response Header is '$OutputFileName'."
                     }
                 }
@@ -218,7 +218,7 @@ Function Update-LocalGPOTextFile {
         [switch]$Delete,
         [Parameter(Mandatory = $false, ParameterSetName = 'DeleteAllValues')]
         [switch]$DeleteAllValues,
-        [string]$outputDir = "$TempDir\LGPO",
+        [string]$outputDir = "$Script:TempDir\LGPO",
         [string]$outfileprefix = $AppName
     )
     Begin {
@@ -275,7 +275,7 @@ Function Update-LocalGPOTextFile {
 Function Invoke-LGPO {
     [CmdletBinding()]
     Param (
-        [string]$InputDir = "$TempDir\LGPO",
+        [string]$InputDir = "$Script:TempDir\LGPO",
         [string]$SearchTerm
     )
     Begin {
@@ -378,8 +378,8 @@ function New-Log {
 #region Initialization
 [string]$AppName = 'Office365'
 [string]$Script:Name = "Configure-Office365Policy"
-[string]$TempDir = Join-Path -Path $env:Temp -ChildPath $Script:Name
-$null = New-Item -Path $TempDir -ItemType Directory -Force
+[string]$Script:TempDir = Join-Path -Path $env:Temp -ChildPath $Script:Name
+$null = New-Item -Path $Script:TempDir -ItemType Directory -Force
 New-Log (Join-Path -Path $env:SystemRoot -ChildPath 'Logs')
 $ErrorActionPreference = 'Stop'
 Write-Log -category Info -message "Starting '$PSCommandPath'."
@@ -393,44 +393,32 @@ If (-not $O365TemplatesExe) {
     $SearchString = "admintemplates_x64*.exe"
     Write-Log -Category Info -message "Downloading Office 365 Templates from '$WebsiteUrl'."
     $O365TemplatesDownloadUrl = Get-InternetUrl -WebSiteUrl $WebsiteUrl -SearchString $SearchString
-    $O365TemplatesExe = Get-InternetFile -Url $O365TemplatesDownloadUrl -OutputDirectory $TempDir
+    $O365TemplatesExe = Get-InternetFile -Url $O365TemplatesDownloadUrl -OutputDirectory $Script:TempDir
 }
-If ($null -ne $O365TemplatesExe) {
-    $DirTemplates = Join-Path -Path $TempDir -ChildPath 'Office365Templates'
-    $null = New-Item -Path $DirTemplates -ItemType Directory
-    $null = Start-Process -FilePath $O365TemplatesExe -ArgumentList "/extract:$DirTemplates /quiet" -Wait -PassThru
-    Write-Log -message "Copying ADMX and ADML files to PolicyDefinitions folder."
-    $null = Get-ChildItem -Path $DirTemplates -File -Recurse -Filter '*.admx' | ForEach-Object { Copy-Item -Path $_.FullName -Destination "$env:WINDIR\PolicyDefinitions\" -Force }
-    $null = Get-ChildItem -Path $DirTemplates -Directory -Recurse | Where-Object { $_.Name -eq 'en-us' } | Get-ChildItem -File -recurse -filter '*.adml' | ForEach-Object { Copy-Item -Path $_.FullName -Destination "$env:WINDIR\PolicyDefinitions\en-us\" -Force }
-}
+$DirTemplates = Join-Path -Path $Script:TempDir -ChildPath 'Office365Templates'
+$null = New-Item -Path $DirTemplates -ItemType Directory
+$null = Start-Process -FilePath $O365TemplatesExe -ArgumentList "/extract:$DirTemplates /quiet" -Wait -PassThru
+Write-Log -message "Copying ADMX and ADML files to PolicyDefinitions folder."
+$null = Get-ChildItem -Path $DirTemplates -File -Recurse -Filter '*.admx' | ForEach-Object { Copy-Item -Path $_.FullName -Destination "$env:WINDIR\PolicyDefinitions\" -Force }
+$null = Get-ChildItem -Path $DirTemplates -Directory -Recurse | Where-Object { $_.Name -eq 'en-us' } | Get-ChildItem -File -recurse -filter '*.adml' | ForEach-Object { Copy-Item -Path $_.FullName -Destination "$env:WINDIR\PolicyDefinitions\en-us\" -Force }
 
-Write-Log -message "Checking for lgpo.exe in '$env:SystemRoot\system32'."
+Write-Log -message "Checking for 'lgpo.exe' in '$env:SystemRoot\system32'."
 
-If (-not(Test-Path -Path "$env:SystemRoot\System32\Lgpo.exe")) {
+If (-not(Test-Path -Path "$env:SystemRoot\System32\lgpo.exe")) {
+    Write-Log -category Info -message "'lgpo.exe' not found in '$env:SystemRoot\system32'."
     $LGPOZip = Join-Path -Path $PSScriptRoot -ChildPath 'LGPO.zip'
-    If (Test-Path -Path $LGPOZip) {
-        Write-Log -Message "Expanding '$LGPOZip' to '$Script:TempDir'."
-        Expand-Archive -path $LGPOZip -DestinationPath $Script:TempDir -force
-        $algpoexe = Get-ChildItem -Path $Script:TempDir -filter 'lgpo.exe' -recurse
-        If ($algpoexe.count -gt 0) {
-            $fileLGPO = $algpoexe[0].FullName
-            Write-Log -Message "Copying '$fileLGPO' to '$env:SystemRoot\system32'."
-            Copy-Item -Path $fileLGPO -Destination "$env:SystemRoot\System32" -force        
-        }
-    } Else {
-        $urlLGPO = 'https://download.microsoft.com/download/8/5/C/85C25433-A1B0-4FFA-9429-7E023E7DA8D8/LGPO.zip'
-        $LGPOZip = Get-InternetFile -Url $urlLGPO -OutputDirectory $Script:TempDir -Verbose
-        $outputDir = Join-Path $Script:TempDir -ChildPath 'LGPO'
-        Expand-Archive -Path $LGPOZip -DestinationPath $outputDir
-        Remove-Item $LGPOZip -Force
-        $fileLGPO = (Get-ChildItem -Path $outputDir -file -Filter 'lgpo.exe' -Recurse)[0].FullName
-        Write-Log -Message "Copying `"$fileLGPO`" to System32"
-        Copy-Item -Path $fileLGPO -Destination "$env:SystemRoot\System32" -Force
-        Remove-Item -Path $outputDir -Recurse -Force
+    If (-not(Test-Path -Path $LGPOZip)) {
+        Write-Log -category Info -Message "Downloading LGPO tool."
+        $LGPOZip = Get-InternetFile -Url 'https://download.microsoft.com/download/8/5/C/85C25433-A1B0-4FFA-9429-7E023E7DA8D8/LGPO.zip' -OutputDirectory $Script:TempDir -Verbose    
     }
+    Write-Log -Category Info -Message "Expanding '$LGPOZip' to '$Script:TempDir'."
+    Expand-Archive -Path $LGPOZip -DestinationPath $Script:TempDir -Force
+    $fileLGPO = (Get-ChildItem -Path $Script:TempDir -Filter 'lgpo.exe' -Recurse)[0].FullName
+    Write-Log -Message "Copying '$fileLGPO' to '$env:SystemRoot\system32'."
+    Copy-Item -Path $fileLGPO -Destination "$env:SystemRoot\System32" -Force
 }
 
-If (Test-Path -Path "$env:SystemRoot\System32\Lgpo.exe") {
+If (Test-Path -Path "$env:SystemRoot\System32\lgpo.exe") {
     Write-Log -category Info -message "Now Configuring Office 365 Group Policy."
     Write-Log -Message "Update User LGPO registry text file."
     # Turn off insider notifications
@@ -516,4 +504,4 @@ Else {
     Exit 2
 }
 
-Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path $Script:TempDir -Recurse -Force -ErrorAction SilentlyContinue
