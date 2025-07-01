@@ -32,7 +32,9 @@ resource runCommand 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' =
       : {
           clientId: logsUserAssignedIdentityClientId
         }
-    outputBlobUri: empty(logsContainerUri) ? null : '${logsContainerUri}/${vm}-${runCommandName}-output-${timeStamp}.log'
+    outputBlobUri: empty(logsContainerUri)
+      ? null
+      : '${logsContainerUri}/${vm}-${runCommandName}-output-${timeStamp}.log'
     parameters: empty(parameters) ? null : parameters
     protectedParameters: !empty(protectedParameter) ? [protectedParameter] : null
     source: {
