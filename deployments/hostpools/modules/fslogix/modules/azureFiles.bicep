@@ -351,7 +351,7 @@ module recoveryServicesVault '../../../../sharedModules/resources/recovery-servi
           {
             customNetworkInterfaceName: replace(
               replace(
-                replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'AzureBackup'),
+                replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'azurebackup'),
                 'RESOURCE',
                 recoveryServicesVaultName
               ),
@@ -360,7 +360,7 @@ module recoveryServicesVault '../../../../sharedModules/resources/recovery-servi
             )
             name: replace(
               replace(
-                replace(privateEndpointNameConv, 'SUBRESOURCE', 'AzureBackup'),
+                replace(privateEndpointNameConv, 'SUBRESOURCE', 'azurebackup'),
                 'RESOURCE',
                 recoveryServicesVaultName
               ),
