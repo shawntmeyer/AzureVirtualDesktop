@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.36.177.2456",
-      "templateHash": "2925805358034486030"
+      "templateHash": "12276383884196282542"
     }
   },
   "parameters": {
@@ -1092,7 +1092,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.36.177.2456",
-              "templateHash": "4614006863778926403"
+              "templateHash": "13659792567497793504"
             }
           },
           "parameters": {
@@ -1407,10 +1407,10 @@
             "depVirtualMachineDiskName": "[format('{0}-{1}', variables('depVirtualMachineName'), variables('resourceAbbreviations').osdisks)]",
             "depVirtualMachineNicName": "[format('{0}-{1}', variables('depVirtualMachineName'), variables('resourceAbbreviations').networkInterfaces)]",
             "resourceGroupManagement": "[replace(replace(replace(variables('nameConv_Shared_ResGroup'), 'TOKEN', 'management'), 'LOCATION', variables('locationVirtualMachinesAbbreviation')), 'RESOURCETYPE', variables('resourceAbbreviations').resourceGroups)]",
-            "uniqueStringManagement": "[uniqueString(subscription().subscriptionId, variables('resourceGroupManagement'))]",
+            "uniqueStringManagement": "[take(uniqueString(subscription().subscriptionId, variables('resourceGroupManagement')), 6)]",
             "appServicePlanName": "[replace(replace(replace(variables('nameConv_Shared_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').appServicePlans), 'LOCATION', variables('locationVirtualMachinesAbbreviation')), 'TOKEN-', '')]",
-            "keyVaultNameSecrets": "[replace(replace(replace(variables('nameConv_Shared_Resources'), 'TOKEN', format('sec-{0}', take(variables('uniqueStringManagement'), 8))), 'LOCATION', variables('locationVirtualMachinesAbbreviation')), 'RESOURCETYPE', variables('resourceAbbreviations').keyVaults)]",
-            "keyVaultNameEncryption": "[replace(replace(replace(variables('nameConv_Shared_Resources'), 'TOKEN', format('enc-{0}', take(variables('uniqueStringManagement'), 8))), 'LOCATION', variables('locationVirtualMachinesAbbreviation')), 'RESOURCETYPE', variables('resourceAbbreviations').keyVaults)]",
+            "keyVaultNameSecrets": "[replace(replace(replace(variables('nameConv_Shared_Resources'), 'TOKEN', format('sec-{0}', variables('uniqueStringManagement'))), 'LOCATION', variables('locationVirtualMachinesAbbreviation')), 'RESOURCETYPE', variables('resourceAbbreviations').keyVaults)]",
+            "keyVaultNameEncryption": "[replace(replace(replace(variables('nameConv_Shared_Resources'), 'TOKEN', format('enc-{0}', variables('uniqueStringManagement'))), 'LOCATION', variables('locationVirtualMachinesAbbreviation')), 'RESOURCETYPE', variables('resourceAbbreviations').keyVaults)]",
             "dataCollectionEndpointName": "[replace(replace(replace(variables('nameConv_Shared_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').dataCollectionEndpoints), 'LOCATION', variables('locationVirtualMachinesAbbreviation')), 'TOKEN-', '')]",
             "logAnalyticsWorkspaceName": "[replace(replace(replace(variables('nameConv_Shared_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').logAnalyticsWorkspaces), 'LOCATION', variables('locationVirtualMachinesAbbreviation')), 'TOKEN-', '')]",
             "globalFeedResourceGroupName": "[if(not(empty(parameters('locationGlobalFeed'))), replace(replace(if(variables('nameConvReversed'), format('avd-global-feed-{0}', variables('nameConvSuffix')), format('RESOURCETYPE-avd-global-feed-{0}', variables('nameConvSuffix'))), 'LOCATION', variables('locationControlPlaneAbbreviation')), 'RESOURCETYPE', format('{0}', variables('resourceAbbreviations').resourceGroups)), '')]",
@@ -1420,7 +1420,7 @@
             "desktopApplicationGroupName": "[replace(replace(replace(variables('nameConv_HP_Resources'), 'TOKEN-', ''), 'RESOURCETYPE', variables('resourceAbbreviations').desktopApplicationGroups), 'LOCATION', variables('locationControlPlaneAbbreviation'))]",
             "hostPoolName": "[replace(replace(replace(variables('nameConv_HP_Resources'), 'TOKEN-', ''), 'RESOURCETYPE', variables('resourceAbbreviations').hostPools), 'LOCATION', variables('locationControlPlaneAbbreviation'))]",
             "scalingPlanName": "[replace(replace(replace(variables('nameConv_HP_Resources'), 'TOKEN-', ''), 'RESOURCETYPE', variables('resourceAbbreviations').scalingPlans), 'LOCATION', variables('locationControlPlaneAbbreviation'))]",
-            "uniqueStringHosts": "[uniqueString(subscription().subscriptionId, variables('resourceGroupHosts'))]",
+            "uniqueStringHosts": "[take(uniqueString(subscription().subscriptionId, variables('resourceGroupHosts')), 6)]",
             "appInsightsNameConv": "[replace(replace(variables('nameConv_HP_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').applicationInsights), 'LOCATION', variables('locationVirtualMachinesAbbreviation'))]",
             "functionAppNameConv": "[replace(replace(variables('nameConv_HP_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').functionApps), 'LOCATION', variables('locationVirtualMachinesAbbreviation'))]",
             "privateEndpointNameConv": "[replace(if(variables('nameConvReversed'), 'RESOURCE-SUBRESOURCE-VNETID-RESOURCETYPE', 'RESOURCETYPE-RESOURCE-SUBRESOURCE-VNETID'), 'RESOURCETYPE', variables('resourceAbbreviations').privateEndpoints)]",
@@ -1440,9 +1440,9 @@
             "netAppAccountName": "[replace(replace(replace(variables('nameConv_HP_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').netAppAccounts), 'LOCATION', variables('locationVirtualMachinesAbbreviation')), 'TOKEN-', '')]",
             "netAppCapacityPoolName": "[replace(replace(replace(variables('nameConv_HP_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').netAppCapacityPools), 'LOCATION', variables('locationVirtualMachinesAbbreviation')), 'TOKEN-', '')]",
             "appAttachStorageAccountName": "[take(format('appattach{0}', variables('uniqueStringManagement')), 15)]",
-            "uniqueStringStorage": "[uniqueString(subscription().subscriptionId, variables('resourceGroupStorage'))]",
-            "fslogixStorageAccountNamePrefix": "[if(empty(parameters('fslogixStorageCustomPrefix')), take(format('fslogix{0}', variables('uniqueStringStorage')), 13), toLower(parameters('fslogixStorageCustomPrefix')))]",
-            "increaseQuotaFAStorageAccountName": "[take(format('saquota{0}', variables('uniqueStringStorage')), 13)]",
+            "uniqueStringStorage": "[take(uniqueString(subscription().subscriptionId, variables('resourceGroupStorage')), 6)]",
+            "fslogixStorageAccountNamePrefix": "[if(empty(parameters('fslogixStorageCustomPrefix')), format('fslogix{0}', variables('uniqueStringStorage')), toLower(parameters('fslogixStorageCustomPrefix')))]",
+            "increaseQuotaFAStorageAccountName": "[format('saquota{0}', variables('uniqueStringStorage'))]",
             "sessionHostReplacerFAStorageAccountName": "[format('shreplacer{0}', variables('uniqueStringHosts'))]",
             "fslogixfileShareNames": {
               "CloudCacheProfileContainer": [
