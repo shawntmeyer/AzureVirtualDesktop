@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.36.177.2456",
-      "templateHash": "11573659563565920358"
+      "templateHash": "2925805358034486030"
     }
   },
   "parameters": {
@@ -2656,7 +2656,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.36.177.2456",
-              "templateHash": "5041674711722771510"
+              "templateHash": "16128582500664740329"
             }
           },
           "parameters": {
@@ -5168,7 +5168,7 @@
                     "value": "[parameters('appServicePlanName')]"
                   },
                   "planPricing": {
-                    "value": "PremiumV3_P0v3"
+                    "value": "PremiumV3_P1v3"
                   },
                   "tags": {
                     "value": "[coalesce(tryGet(parameters('tags'), 'Microsoft.Web/serverfarms'), createObject())]"

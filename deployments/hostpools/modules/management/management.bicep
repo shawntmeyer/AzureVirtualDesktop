@@ -207,7 +207,7 @@ module hostingPlan 'modules/functionAppHostingPlan.bicep' = if (enableQuotaManag
     logAnalyticsWorkspaceId: enableMonitoring ? logAnalyticsWorkspace.outputs.resourceId : ''
     location: location
     name: appServicePlanName
-    planPricing: 'PremiumV3_P0v3'
+    planPricing: 'PremiumV3_P1v3'
     tags: tags[?'Microsoft.Web/serverfarms'] ?? {}
     zoneRedundant: zoneRedundant
   }
