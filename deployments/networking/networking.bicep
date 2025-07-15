@@ -148,6 +148,7 @@ var nameConv_Shared_Resources = nameConvResTypeAtEnd ? 'avd-TOKEN-${nameConvSuff
 var natGatewayName = replace(replace(replace(nameConv_Shared_Resources, 'RESOURCETYPE', resourceAbbreviations.natGateways), 'LOCATION', locationAbbreviation), 'TOKEN-', '')
 var publicIPName = replace(replace(replace(nameConv_Shared_Resources, 'RESOURCETYPE', resourceAbbreviations.publicIPAddresses), 'LOCATION', locationAbbreviation), 'TOKEN-', '')
 var routeTableName = replace(replace(replace(nameConv_Shared_Resources, 'RESOURCETYPE', resourceAbbreviations.routeTables), 'LOCATION', locationAbbreviation), 'TOKEN-',  '')
+var nsgName = replace(replace(replace(nameConv_Shared_Resources, 'RESOURCETYPE', resourceAbbreviations.networkSecurityGroups), 'LOCATION', locationAbbreviation), 'TOKEN-', '')
 
 var privateDnsZones_AzureVirtualDesktop = {
   AzureCloud: 'privatelink.wvd.microsoft.com'
@@ -246,7 +247,7 @@ module privateDNSZonesResources 'modules/privateDNS-sub-module.bicep' = if (crea
     privateDnsZonesToCreate: filter(dedupedPrivateDnsZones, (zone) => !empty(zone))
     privateDnsZonesVnetId: !empty(privateDnsZonesVnetId)
       ? privateDnsZonesVnetId
-      : (linkPrivateDnsZonesToNewVnet ? vnetResources.outputs.vNetResourceId : '')
+      : (linkPrivateDnsZonesToNewVnet ? vnetResources!.outputs.vNetResourceId : '')
     tags: tags
     timeStamp: timeStamp
   }
