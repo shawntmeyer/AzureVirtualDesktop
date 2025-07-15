@@ -53,6 +53,9 @@ param hubVnetResourceId string = ''
 @description('Optional. Determines if a virtual network gateway is present on the hub virtual network.')
 param virtualNetworkGatewayOnHub bool = false
 
+@description('Optional. The resource Id of an existing log analytics workspace to which to send nsg diagnostic logs.')
+param logAnalyticsWorkspaceResourceId string = ''
+
 @description('Optional. The subscription id of the subscription to where the private DNS zones should be deployed.')
 param privateDNSZonesSubscriptionId string = subscription().subscriptionId
 
@@ -221,7 +224,9 @@ module vnetResources 'modules/vnet-sub-module.bicep' = if (deployVnet) {
     hubVnetResourceGroup: !empty(hubVnetResourceId) ? split(hubVnetResourceId, '/')[4] : ''
     hubVnetSubscriptionId: !empty(hubVnetResourceId) ? split(hubVnetResourceId, '/')[2] : ''
     location: location
+    logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
     natGatewayName: natGatewayName
+    nsgName: nsgName
     nvaIPAddress: !empty(nvaIPAddress) ? nvaIPAddress : ''
     privateEndpointsSubnet: !empty(privateEndpointsSubnet) ? privateEndpointsSubnet : {}
     publicIPName: publicIPName

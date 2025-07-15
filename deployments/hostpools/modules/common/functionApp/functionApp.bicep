@@ -317,7 +317,7 @@ resource functionApp 'Microsoft.Web/sites@2023-01-01' = {
       }
       ftpsState: 'Disabled'
       netFrameworkVersion: 'v6.0'
-      powerShellVersion: '7.2'
+      powerShellVersion: '7.4'
       publicNetworkAccess: privateEndpoint ? 'Disabled' : 'Enabled'
       use32BitWorkerProcess: false
     }
