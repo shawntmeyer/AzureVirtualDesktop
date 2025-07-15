@@ -27,10 +27,14 @@ param tags object
 param timeStamp string
 
 var cloudSuffix = replace(replace(environment().resourceManager, 'https://management.', ''), '/', '')
-
+// ensure that private endpoint name and nic name are not longer than 80
 var privateEndpointVnetName = !empty(privateEndpointSubnetResourceId) && privateEndpoint
   ? split(privateEndpointSubnetResourceId, '/')[8]
   : ''
+
+var peVnetId = length(privateEndpointVnetName) < 37
+  ? privateEndpointVnetName
+  : uniqueString(privateEndpointVnetName)
 
 var azureStoragePrivateDnsZoneResourceIds = [
   azureBlobPrivateDnsZoneResourceId
@@ -133,21 +137,21 @@ resource privateEndpoints_storage 'Microsoft.Network/privateEndpoints@2023-04-01
     name: replace(
       replace(replace(privateEndpointNameConv, 'SUBRESOURCE', subResource), 'RESOURCE', storageAccountName),
       'VNETID',
-      privateEndpointVnetName
+      peVnetId
     )
     location: location
     properties: {
       customNetworkInterfaceName: replace(
         replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', subResource), 'RESOURCE', storageAccountName),
         'VNETID',
-        privateEndpointVnetName
+        peVnetId
       )
       privateLinkServiceConnections: [
         {
           name: replace(
             replace(replace(privateEndpointNameConv, 'SUBRESOURCE', subResource), 'RESOURCE', storageAccountName),
             'VNETID',
-            privateEndpointVnetName
+            peVnetId
           )
           properties: {
             privateLinkServiceId: storageAccount.id
@@ -331,21 +335,21 @@ resource privateEndpoint_functionApp 'Microsoft.Network/privateEndpoints@2023-04
   name: replace(
     replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'sites'), 'RESOURCE', functionApp.name),
     'VNETID',
-    privateEndpointVnetName
+    peVnetId
   )
   location: location
   properties: {
     customNetworkInterfaceName: replace(
       replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'sites'), 'RESOURCE', functionApp.name),
       'VNETID',
-      privateEndpointVnetName
+      peVnetId
     )
     privateLinkServiceConnections: [
       {
         name: replace(
           replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'sites'), 'RESOURCE', functionApp.name),
           'VNETID',
-          privateEndpointVnetName
+          peVnetId
         )
         properties: {
           privateLinkServiceId: functionApp.id

@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.36.177.2456",
-      "templateHash": "12276383884196282542"
+      "templateHash": "10956128878990956666"
     }
   },
   "parameters": {
@@ -2656,7 +2656,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.36.177.2456",
-              "templateHash": "16128582500664740329"
+              "templateHash": "862567633721039698"
             }
           },
           "parameters": {
@@ -2749,6 +2749,8 @@
             }
           },
           "variables": {
+            "privateEndpointVnetName": "[if(and(not(empty(parameters('privateEndpointSubnetResourceId'))), parameters('privateEndpoint')), split(parameters('privateEndpointSubnetResourceId'), '/')[8], '')]",
+            "privateEndpointVnetId": "[if(less(length(variables('privateEndpointVnetName')), 37), variables('privateEndpointVnetName'), uniqueString(variables('privateEndpointVnetName')))]",
             "secretList": "[union(if(not(empty(parameters('domainJoinUserPassword'))), createArray(createObject('name', 'DomainJoinUserPassword', 'value', parameters('domainJoinUserPassword'))), createArray()), if(not(empty(parameters('domainJoinUserPrincipalName'))), createArray(createObject('name', 'DomainJoinUserPrincipalName', 'value', parameters('domainJoinUserPrincipalName'))), createArray()), if(not(empty(parameters('virtualMachineAdminPassword'))), createArray(createObject('name', 'VirtualMachineAdminPassword', 'value', parameters('virtualMachineAdminPassword'))), createArray()), if(not(empty(parameters('virtualMachineAdminUserName'))), createArray(createObject('name', 'VirtualMachineAdminUserName', 'value', parameters('virtualMachineAdminUserName'))), createArray()))]"
           },
           "resources": [
@@ -2786,7 +2788,7 @@
                   "enableVaultForTemplateDeployment": {
                     "value": true
                   },
-                  "privateEndpoints": "[if(and(parameters('privateEndpoint'), not(empty(parameters('privateEndpointSubnetResourceId')))), createObject('value', createArray(createObject('customNetworkInterfaceName', replace(replace(replace(parameters('privateEndpointNICNameConv'), 'SUBRESOURCE', 'vault'), 'RESOURCE', parameters('secretsKeyVaultName')), 'VNETID', format('{0}', split(parameters('privateEndpointSubnetResourceId'), '/')[8])), 'name', replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', 'vault'), 'RESOURCE', parameters('secretsKeyVaultName')), 'VNETID', format('{0}', split(parameters('privateEndpointSubnetResourceId'), '/')[8])), 'privateDnsZoneGroup', if(empty(parameters('azureKeyVaultPrivateDnsZoneResourceId')), null(), createObject('privateDNSResourceIds', createArray(parameters('azureKeyVaultPrivateDnsZoneResourceId')))), 'service', 'vault', 'subnetResourceId', parameters('privateEndpointSubnetResourceId'), 'tags', coalesce(tryGet(parameters('tags'), 'Microsoft.Network/privateEndpoints'), createObject())))), createObject('value', null()))]",
+                  "privateEndpoints": "[if(and(parameters('privateEndpoint'), not(empty(parameters('privateEndpointSubnetResourceId')))), createObject('value', createArray(createObject('customNetworkInterfaceName', replace(replace(replace(parameters('privateEndpointNICNameConv'), 'SUBRESOURCE', 'vault'), 'RESOURCE', parameters('secretsKeyVaultName')), 'VNETID', variables('privateEndpointVnetId')), 'name', replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', 'vault'), 'RESOURCE', parameters('secretsKeyVaultName')), 'VNETID', variables('privateEndpointVnetId')), 'privateDnsZoneGroup', if(empty(parameters('azureKeyVaultPrivateDnsZoneResourceId')), null(), createObject('privateDNSResourceIds', createArray(parameters('azureKeyVaultPrivateDnsZoneResourceId')))), 'service', 'vault', 'subnetResourceId', parameters('privateEndpointSubnetResourceId'), 'tags', coalesce(tryGet(parameters('tags'), 'Microsoft.Network/privateEndpoints'), createObject())))), createObject('value', null()))]",
                   "secrets": {
                     "value": {
                       "secureList": "[variables('secretList')]"
@@ -3718,7 +3720,7 @@
                   "enableVaultForTemplateDeployment": {
                     "value": false
                   },
-                  "privateEndpoints": "[if(and(parameters('privateEndpoint'), not(empty(parameters('privateEndpointSubnetResourceId')))), createObject('value', createArray(createObject('customNetworkInterfaceName', replace(replace(replace(parameters('privateEndpointNICNameConv'), 'SUBRESOURCE', 'vault'), 'RESOURCE', parameters('encryptionKeysKeyVaultName')), 'VNETID', format('{0}', split(parameters('privateEndpointSubnetResourceId'), '/')[8])), 'name', replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', 'vault'), 'RESOURCE', parameters('encryptionKeysKeyVaultName')), 'VNETID', format('{0}', split(parameters('privateEndpointSubnetResourceId'), '/')[8])), 'privateDnsZoneGroup', if(empty(parameters('azureKeyVaultPrivateDnsZoneResourceId')), null(), createObject('privateDNSResourceIds', createArray(parameters('azureKeyVaultPrivateDnsZoneResourceId')))), 'service', 'vault', 'subnetResourceId', parameters('privateEndpointSubnetResourceId'), 'tags', coalesce(tryGet(parameters('tags'), 'Microsoft.Network/privateEndpoints'), createObject())))), createObject('value', null()))]",
+                  "privateEndpoints": "[if(and(parameters('privateEndpoint'), not(empty(parameters('privateEndpointSubnetResourceId')))), createObject('value', createArray(createObject('customNetworkInterfaceName', replace(replace(replace(parameters('privateEndpointNICNameConv'), 'SUBRESOURCE', 'vault'), 'RESOURCE', parameters('encryptionKeysKeyVaultName')), 'VNETID', variables('privateEndpointVnetId')), 'name', replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', 'vault'), 'RESOURCE', parameters('encryptionKeysKeyVaultName')), 'VNETID', variables('privateEndpointVnetId')), 'privateDnsZoneGroup', if(empty(parameters('azureKeyVaultPrivateDnsZoneResourceId')), null(), createObject('privateDNSResourceIds', createArray(parameters('azureKeyVaultPrivateDnsZoneResourceId')))), 'service', 'vault', 'subnetResourceId', parameters('privateEndpointSubnetResourceId'), 'tags', coalesce(tryGet(parameters('tags'), 'Microsoft.Network/privateEndpoints'), createObject())))), createObject('value', null()))]",
                   "tags": {
                     "value": "[coalesce(tryGet(parameters('tags'), 'Microsoft.KeyVault/vaults'), createObject())]"
                   },
@@ -5472,7 +5474,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.36.177.2456",
-              "templateHash": "2946194901926796174"
+              "templateHash": "3437830203311460192"
             }
           },
           "parameters": {
@@ -5604,12 +5606,18 @@
             }
           },
           "variables": {
-            "feedPrivateEndpointName": "[if(and(or(not(equals(parameters('avdPrivateLinkPrivateRoutes'), 'None')), not(equals(parameters('avdPrivateLinkPrivateRoutes'), 'HostPool'))), not(empty(parameters('workspaceFeedPrivateEndpointSubnetResourceId')))), replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', 'feed'), 'RESOURCE', parameters('workspaceName')), 'VNETID', format('{0}', split(parameters('workspaceFeedPrivateEndpointSubnetResourceId'), '/')[8])), 'feedPrivateEndpointName')]",
-            "feedPrivateEndpointNICName": "[if(and(or(not(equals(parameters('avdPrivateLinkPrivateRoutes'), 'None')), not(equals(parameters('avdPrivateLinkPrivateRoutes'), 'HostPool'))), not(empty(parameters('workspaceFeedPrivateEndpointSubnetResourceId')))), replace(replace(replace(parameters('privateEndpointNICNameConv'), 'SUBRESOURCE', 'feed'), 'RESOURCE', parameters('workspaceName')), 'VNETID', format('{0}', split(parameters('workspaceFeedPrivateEndpointSubnetResourceId'), '/')[8])), 'feedPrivateEndpointName')]",
-            "globalFeedPrivateEndpointName": "[if(and(equals(parameters('avdPrivateLinkPrivateRoutes'), 'All'), not(empty(parameters('globalFeedPrivateEndpointSubnetResourceId')))), replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', 'global'), 'RESOURCE', parameters('workspaceName')), 'VNETID', format('{0}', split(parameters('globalFeedPrivateEndpointSubnetResourceId'), '/')[8])), 'globalFeedPrivateEndpointName')]",
-            "globalFeedPrivateEndpointNICName": "[if(and(equals(parameters('avdPrivateLinkPrivateRoutes'), 'All'), not(empty(parameters('globalFeedPrivateEndpointSubnetResourceId')))), replace(replace(replace(parameters('privateEndpointNICNameConv'), 'SUBRESOURCE', 'global'), 'RESOURCE', parameters('workspaceName')), 'VNETID', format('{0}', split(parameters('globalFeedPrivateEndpointSubnetResourceId'), '/')[8])), 'globalFeedPrivateEndpointName')]",
-            "hostPoolPrivateEndpointName": "[if(and(not(equals(parameters('avdPrivateLinkPrivateRoutes'), 'None')), not(empty(parameters('hostPoolPrivateEndpointSubnetResourceId')))), replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', 'connection'), 'RESOURCE', parameters('hostPoolName')), 'VNETID', format('{0}', split(parameters('hostPoolPrivateEndpointSubnetResourceId'), '/')[8])), 'hostPoolPrivateEndpointName')]",
-            "hostPoolPrivateEndpointNICName": "[if(and(not(equals(parameters('avdPrivateLinkPrivateRoutes'), 'None')), not(empty(parameters('hostPoolPrivateEndpointSubnetResourceId')))), replace(replace(replace(parameters('privateEndpointNICNameConv'), 'SUBRESOURCE', 'connection'), 'RESOURCE', parameters('hostPoolName')), 'VNETID', format('{0}', split(parameters('hostPoolPrivateEndpointSubnetResourceId'), '/')[8])), 'hostPoolPrivateEndpointName')]"
+            "globalFeedVnetName": "[if(not(empty(parameters('globalFeedPrivateEndpointSubnetResourceId'))), split(parameters('globalFeedPrivateEndpointSubnetResourceId'), '/')[8], '')]",
+            "globalFeedVnetId": "[if(less(length(variables('globalFeedVnetName')), 37), variables('globalFeedVnetName'), uniqueString(variables('globalFeedVnetName')))]",
+            "workspaceFeedVnetName": "[if(not(empty(parameters('workspaceFeedPrivateEndpointSubnetResourceId'))), split(parameters('workspaceFeedPrivateEndpointSubnetResourceId'), '/')[8], '')]",
+            "workspaceFeedVnetId": "[if(less(length(variables('workspaceFeedVnetName')), 37), variables('workspaceFeedVnetName'), uniqueString(variables('workspaceFeedVnetName')))]",
+            "hostPoolVnetName": "[if(not(empty(parameters('hostPoolPrivateEndpointSubnetResourceId'))), split(parameters('hostPoolPrivateEndpointSubnetResourceId'), '/')[8], '')]",
+            "hostPoolVnetId": "[if(less(length(variables('hostPoolVnetName')), 37), variables('hostPoolVnetName'), uniqueString(variables('hostPoolVnetName')))]",
+            "feedPrivateEndpointName": "[replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', 'feed'), 'RESOURCE', parameters('workspaceName')), 'VNETID', variables('workspaceFeedVnetId'))]",
+            "feedPrivateEndpointNICName": "[replace(replace(replace(parameters('privateEndpointNICNameConv'), 'SUBRESOURCE', 'feed'), 'RESOURCE', parameters('workspaceName')), 'VNETID', variables('workspaceFeedVnetId'))]",
+            "globalFeedPrivateEndpointName": "[replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', 'global'), 'RESOURCE', parameters('workspaceName')), 'VNETID', variables('globalFeedVnetId'))]",
+            "globalFeedPrivateEndpointNICName": "[replace(replace(replace(parameters('privateEndpointNICNameConv'), 'SUBRESOURCE', 'global'), 'RESOURCE', parameters('workspaceName')), 'VNETID', variables('globalFeedVnetId'))]",
+            "hostPoolPrivateEndpointName": "[replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', 'connection'), 'RESOURCE', parameters('hostPoolName')), 'VNETID', variables('hostPoolVnetId'))]",
+            "hostPoolPrivateEndpointNICName": "[replace(replace(replace(parameters('privateEndpointNICNameConv'), 'SUBRESOURCE', 'connection'), 'RESOURCE', parameters('hostPoolName')), 'VNETID', variables('hostPoolVnetId'))]"
           },
           "resources": [
             {
@@ -7865,7 +7873,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.36.177.2456",
-              "templateHash": "73561040372681057"
+              "templateHash": "3156271302710166590"
             }
           },
           "parameters": {
@@ -9355,7 +9363,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.36.177.2456",
-                      "templateHash": "16549135601404066897"
+                      "templateHash": "8080437933954211943"
                     }
                   },
                   "parameters": {
@@ -9519,6 +9527,7 @@
                     "$fxv#2": "# Authentication is provided in the script",
                     "adminRoleDefinitionId": "a7264617-510b-434b-a828-9731dc254ea7",
                     "privateEndpointVnetName": "[if(and(not(empty(parameters('privateEndpointSubnetResourceId'))), parameters('privateEndpoint')), split(parameters('privateEndpointSubnetResourceId'), '/')[8], '')]",
+                    "privateEndpointVnetId": "[if(less(length(variables('privateEndpointVnetName')), 37), variables('privateEndpointVnetName'), uniqueString(variables('privateEndpointVnetName')))]",
                     "smbMultiChannel": {
                       "multichannel": {
                         "enabled": true
@@ -9825,7 +9834,7 @@
                         "mode": "Incremental",
                         "parameters": {
                           "customNetworkInterfaceName": {
-                            "value": "[replace(replace(replace(parameters('privateEndpointNICNameConv'), 'SUBRESOURCE', 'file'), 'RESOURCE', format('{0}', format('{0}{1}', parameters('storageAccountNamePrefix'), string(padLeft(add(range(0, parameters('storageCount'))[range(0, parameters('storageCount'))[copyIndex()]], parameters('storageIndex')), 2, '0'))))), 'VNETID', variables('privateEndpointVnetName'))]"
+                            "value": "[replace(replace(replace(parameters('privateEndpointNICNameConv'), 'SUBRESOURCE', 'file'), 'RESOURCE', format('{0}', format('{0}{1}', parameters('storageAccountNamePrefix'), string(padLeft(add(range(0, parameters('storageCount'))[range(0, parameters('storageCount'))[copyIndex()]], parameters('storageIndex')), 2, '0'))))), 'VNETID', variables('privateEndpointVnetId'))]"
                           },
                           "groupIds": {
                             "value": [
@@ -9834,7 +9843,7 @@
                           },
                           "location": "[if(not(empty(parameters('privateEndpointLocation'))), createObject('value', parameters('privateEndpointLocation')), createObject('value', parameters('location')))]",
                           "name": {
-                            "value": "[replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', 'file'), 'RESOURCE', format('{0}', format('{0}{1}', parameters('storageAccountNamePrefix'), string(padLeft(add(range(0, parameters('storageCount'))[range(0, parameters('storageCount'))[copyIndex()]], parameters('storageIndex')), 2, '0'))))), 'VNETID', variables('privateEndpointVnetName'))]"
+                            "value": "[replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', 'file'), 'RESOURCE', format('{0}', format('{0}{1}', parameters('storageAccountNamePrefix'), string(padLeft(add(range(0, parameters('storageCount'))[range(0, parameters('storageCount'))[copyIndex()]], parameters('storageIndex')), 2, '0'))))), 'VNETID', variables('privateEndpointVnetId'))]"
                           },
                           "privateDnsZoneGroup": "[if(empty(parameters('azureFilePrivateDnsZoneResourceId')), createObject('value', null()), createObject('value', createObject('privateDNSResourceIds', createArray(parameters('azureFilePrivateDnsZoneResourceId')))))]",
                           "serviceResourceId": {
@@ -12495,7 +12504,7 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.36.177.2456",
-                              "templateHash": "14096742929977362619"
+                              "templateHash": "15597113496207272196"
                             }
                           },
                           "parameters": {
@@ -12585,6 +12594,7 @@
                           "variables": {
                             "cloudSuffix": "[replace(replace(environment().resourceManager, 'https://management.', ''), '/', '')]",
                             "privateEndpointVnetName": "[if(and(not(empty(parameters('privateEndpointSubnetResourceId'))), parameters('privateEndpoint')), split(parameters('privateEndpointSubnetResourceId'), '/')[8], '')]",
+                            "peVnetId": "[if(less(length(variables('privateEndpointVnetName')), 37), variables('privateEndpointVnetName'), uniqueString(variables('privateEndpointVnetName')))]",
                             "azureStoragePrivateDnsZoneResourceIds": [
                               "[parameters('azureBlobPrivateDnsZoneResourceId')]",
                               "[parameters('azureFilePrivateDnsZoneResourceId')]",
@@ -12677,13 +12687,13 @@
                               "condition": "[parameters('privateEndpoint')]",
                               "type": "Microsoft.Network/privateEndpoints",
                               "apiVersion": "2023-04-01",
-                              "name": "[replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', variables('storageSubResources')[copyIndex()]), 'RESOURCE', parameters('storageAccountName')), 'VNETID', variables('privateEndpointVnetName'))]",
+                              "name": "[replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', variables('storageSubResources')[copyIndex()]), 'RESOURCE', parameters('storageAccountName')), 'VNETID', variables('peVnetId'))]",
                               "location": "[parameters('location')]",
                               "properties": {
-                                "customNetworkInterfaceName": "[replace(replace(replace(parameters('privateEndpointNICNameConv'), 'SUBRESOURCE', variables('storageSubResources')[copyIndex()]), 'RESOURCE', parameters('storageAccountName')), 'VNETID', variables('privateEndpointVnetName'))]",
+                                "customNetworkInterfaceName": "[replace(replace(replace(parameters('privateEndpointNICNameConv'), 'SUBRESOURCE', variables('storageSubResources')[copyIndex()]), 'RESOURCE', parameters('storageAccountName')), 'VNETID', variables('peVnetId'))]",
                                 "privateLinkServiceConnections": [
                                   {
-                                    "name": "[replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', variables('storageSubResources')[copyIndex()]), 'RESOURCE', parameters('storageAccountName')), 'VNETID', variables('privateEndpointVnetName'))]",
+                                    "name": "[replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', variables('storageSubResources')[copyIndex()]), 'RESOURCE', parameters('storageAccountName')), 'VNETID', variables('peVnetId'))]",
                                     "properties": {
                                       "privateLinkServiceId": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]",
                                       "groupIds": [
@@ -12709,7 +12719,7 @@
                               "condition": "[and(parameters('privateEndpoint'), not(empty(variables('azureStoragePrivateDnsZoneResourceIds')[range(0, sub(length(variables('azureStoragePrivateDnsZoneResourceIds')), 1))[copyIndex()]])))]",
                               "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
                               "apiVersion": "2021-08-01",
-                              "name": "[format('{0}/{1}', replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', variables('storageSubResources')[range(0, sub(length(variables('azureStoragePrivateDnsZoneResourceIds')), 1))[copyIndex()]]), 'RESOURCE', parameters('storageAccountName')), 'VNETID', variables('privateEndpointVnetName')), parameters('storageAccountName'))]",
+                              "name": "[format('{0}/{1}', replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', variables('storageSubResources')[range(0, sub(length(variables('azureStoragePrivateDnsZoneResourceIds')), 1))[copyIndex()]]), 'RESOURCE', parameters('storageAccountName')), 'VNETID', variables('peVnetId')), parameters('storageAccountName'))]",
                               "properties": {
                                 "privateDnsZoneConfigs": [
                                   {
@@ -12721,7 +12731,7 @@
                                 ]
                               },
                               "dependsOn": [
-                                "[resourceId('Microsoft.Network/privateEndpoints', replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', variables('storageSubResources')[range(0, sub(length(variables('azureStoragePrivateDnsZoneResourceIds')), 1))[copyIndex()]]), 'RESOURCE', parameters('storageAccountName')), 'VNETID', variables('privateEndpointVnetName')))]",
+                                "[resourceId('Microsoft.Network/privateEndpoints', replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', variables('storageSubResources')[range(0, sub(length(variables('azureStoragePrivateDnsZoneResourceIds')), 1))[copyIndex()]]), 'RESOURCE', parameters('storageAccountName')), 'VNETID', variables('peVnetId')))]",
                                 "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
                               ]
                             },
@@ -12809,13 +12819,13 @@
                               "condition": "[parameters('privateEndpoint')]",
                               "type": "Microsoft.Network/privateEndpoints",
                               "apiVersion": "2023-04-01",
-                              "name": "[replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', 'sites'), 'RESOURCE', parameters('functionAppName')), 'VNETID', variables('privateEndpointVnetName'))]",
+                              "name": "[replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', 'sites'), 'RESOURCE', parameters('functionAppName')), 'VNETID', variables('peVnetId'))]",
                               "location": "[parameters('location')]",
                               "properties": {
-                                "customNetworkInterfaceName": "[replace(replace(replace(parameters('privateEndpointNICNameConv'), 'SUBRESOURCE', 'sites'), 'RESOURCE', parameters('functionAppName')), 'VNETID', variables('privateEndpointVnetName'))]",
+                                "customNetworkInterfaceName": "[replace(replace(replace(parameters('privateEndpointNICNameConv'), 'SUBRESOURCE', 'sites'), 'RESOURCE', parameters('functionAppName')), 'VNETID', variables('peVnetId'))]",
                                 "privateLinkServiceConnections": [
                                   {
-                                    "name": "[replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', 'sites'), 'RESOURCE', parameters('functionAppName')), 'VNETID', variables('privateEndpointVnetName'))]",
+                                    "name": "[replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', 'sites'), 'RESOURCE', parameters('functionAppName')), 'VNETID', variables('peVnetId'))]",
                                     "properties": {
                                       "privateLinkServiceId": "[resourceId('Microsoft.Web/sites', parameters('functionAppName'))]",
                                       "groupIds": [
@@ -12837,7 +12847,7 @@
                               "condition": "[and(parameters('privateEndpoint'), not(empty(parameters('azureFunctionAppPrivateDnsZoneResourceId'))))]",
                               "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
                               "apiVersion": "2021-08-01",
-                              "name": "[format('{0}/{1}', replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', 'sites'), 'RESOURCE', parameters('functionAppName')), 'VNETID', variables('privateEndpointVnetName')), 'default')]",
+                              "name": "[format('{0}/{1}', replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', 'sites'), 'RESOURCE', parameters('functionAppName')), 'VNETID', variables('peVnetId')), 'default')]",
                               "properties": {
                                 "privateDnsZoneConfigs": [
                                   {
@@ -12849,7 +12859,7 @@
                                 ]
                               },
                               "dependsOn": [
-                                "[resourceId('Microsoft.Network/privateEndpoints', replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', 'sites'), 'RESOURCE', parameters('functionAppName')), 'VNETID', variables('privateEndpointVnetName')))]"
+                                "[resourceId('Microsoft.Network/privateEndpoints', replace(replace(replace(parameters('privateEndpointNameConv'), 'SUBRESOURCE', 'sites'), 'RESOURCE', parameters('functionAppName')), 'VNETID', variables('peVnetId')))]"
                               ]
                             },
                             {
