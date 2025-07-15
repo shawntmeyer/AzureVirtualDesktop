@@ -332,8 +332,8 @@ var fslogixfileShareNames = {
 }
 
 output appInsightsNames object = {
-  increaseStorageQuota: replace(appInsightsNameConv, 'TOKEN-', 'saquota-')
-  sessionHostReplacement: replace(appInsightsNameConv, 'TOKEN-', 'shreplacer-')
+  increaseStorageQuota: replace(appInsightsNameConv, 'TOKEN-', 'saquota-${uniqueStringStorage}-')
+  sessionHostReplacement: replace(appInsightsNameConv, 'TOKEN-', 'shreplacer-${uniqueStringHosts}-')
 }
 output appServicePlanName string = appServicePlanName
 output availabilitySetNamePrefix string = availabilitySetNamePrefix
@@ -350,8 +350,8 @@ output diskEncryptionSetNames object = {
 }
 output fslogixFileShareNames object = fslogixfileShareNames
 output functionAppNames object = {
-  increaseStorageQuota: replace(functionAppNameConv, 'TOKEN-', 'saquota-')
-  sessionHostReplacement: replace(functionAppNameConv, 'TOKEN-', 'shreplacer-')
+  increaseStorageQuota: replace(functionAppNameConv, 'TOKEN-', 'saquota-${uniqueStringStorage}-')
+  sessionHostReplacement: replace(functionAppNameConv, 'TOKEN-', 'shreplacer-${uniqueStringHosts}-')
 }
 output globalFeedWorkspaceName string = globalFeedWorkspaceName
 output hostPoolName string = hostPoolName

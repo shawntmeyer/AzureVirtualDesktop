@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.36.177.2456",
-      "templateHash": "9909891335395429690"
+      "templateHash": "11573659563565920358"
     }
   },
   "parameters": {
@@ -1092,7 +1092,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.36.177.2456",
-              "templateHash": "6885079591770492758"
+              "templateHash": "4614006863778926403"
             }
           },
           "parameters": {
@@ -1466,8 +1466,8 @@
             "appInsightsNames": {
               "type": "object",
               "value": {
-                "increaseStorageQuota": "[replace(variables('appInsightsNameConv'), 'TOKEN-', 'saquota-')]",
-                "sessionHostReplacement": "[replace(variables('appInsightsNameConv'), 'TOKEN-', 'shreplacer-')]"
+                "increaseStorageQuota": "[replace(variables('appInsightsNameConv'), 'TOKEN-', format('saquota-{0}-', variables('uniqueStringStorage')))]",
+                "sessionHostReplacement": "[replace(variables('appInsightsNameConv'), 'TOKEN-', format('shreplacer-{0}-', variables('uniqueStringHosts')))]"
               }
             },
             "appServicePlanName": {
@@ -1517,8 +1517,8 @@
             "functionAppNames": {
               "type": "object",
               "value": {
-                "increaseStorageQuota": "[replace(variables('functionAppNameConv'), 'TOKEN-', 'saquota-')]",
-                "sessionHostReplacement": "[replace(variables('functionAppNameConv'), 'TOKEN-', 'shreplacer-')]"
+                "increaseStorageQuota": "[replace(variables('functionAppNameConv'), 'TOKEN-', format('saquota-{0}-', variables('uniqueStringStorage')))]",
+                "sessionHostReplacement": "[replace(variables('functionAppNameConv'), 'TOKEN-', format('shreplacer-{0}-', variables('uniqueStringHosts')))]"
               }
             },
             "globalFeedWorkspaceName": {
