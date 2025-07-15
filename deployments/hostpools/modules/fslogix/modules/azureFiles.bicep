@@ -442,11 +442,11 @@ module increaseQuotaFunction '../../common/functionApp/function.bicep' = if (sto
   name: 'IncreaseQuotaFunction_${timeStamp}'
   params: {
     files: {
-      'requirements.psd1': loadTextContent('../../../../../.common/scripts//auto-increase-file-share/requirements.psd1')
-      'run.ps1': loadTextContent('../../../../../.common/scripts//auto-increase-file-share/run.ps1')
-      '../profile.ps1': loadTextContent('../../../../../.common/scripts//auto-increase-file-share/profile.ps1')
+      'requirements.psd1': loadTextContent('../../../../../.common/scripts/auto-increase-file-share/requirements.psd1')
+      'run.ps1': loadTextContent('../../../../../.common/scripts/auto-increase-file-share/run.ps1')
+      '../profile.ps1': loadTextContent('../../../../../.common/scripts/auto-increase-file-share/profile.ps1')
     }
-    functionAppName: increaseQuotaFunctionApp.outputs.functionAppName
+    functionAppName: increaseQuotaFunctionApp!.outputs.functionAppName
     functionName: 'auto-increase-file-share-quota'
     schedule: '0 */15 * * * *'
   }

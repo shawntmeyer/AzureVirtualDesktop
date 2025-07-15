@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.36.177.2456",
-      "templateHash": "4775500952390143815"
+      "templateHash": "9909891335395429690"
     }
   },
   "parameters": {
@@ -7865,7 +7865,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.36.177.2456",
-              "templateHash": "8197321410501206588"
+              "templateHash": "73561040372681057"
             }
           },
           "parameters": {
@@ -9355,7 +9355,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.36.177.2456",
-                      "templateHash": "2571917002218177988"
+                      "templateHash": "16549135601404066897"
                     }
                   },
                   "parameters": {
@@ -12495,7 +12495,7 @@
                             "_generator": {
                               "name": "bicep",
                               "version": "0.36.177.2456",
-                              "templateHash": "16865670739402926601"
+                              "templateHash": "14096742929977362619"
                             }
                           },
                           "parameters": {
@@ -12792,7 +12792,7 @@
                                   },
                                   "ftpsState": "Disabled",
                                   "netFrameworkVersion": "v6.0",
-                                  "powerShellVersion": "7.2",
+                                  "powerShellVersion": "7.4",
                                   "publicNetworkAccess": "[if(parameters('privateEndpoint'), 'Disabled', 'Enabled')]",
                                   "use32BitWorkerProcess": false
                                 },
