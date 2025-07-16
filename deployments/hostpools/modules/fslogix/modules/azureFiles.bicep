@@ -36,7 +36,7 @@ param privateEndpointSubnetResourceId string
 param privateLinkScopeResourceId string
 param recoveryServices bool
 param recoveryServicesVaultName string
-param resourceGroupDeployment string
+param deploymentResourceGroupName string
 param resourceGroupStorage string
 param serverFarmId string
 param shardingOptions string
@@ -282,7 +282,7 @@ resource storageAccounts_file_diagnosticSettings 'Microsoft.Insights/diagnosticS
 
 module SetNTFSPermissions 'domainJoinSetNTFSPermissions.bicep' = if (contains(identitySolution, 'DomainServices')) {
   name: 'Set-NTFSPermissions_${timeStamp}'
-  scope: resourceGroup(resourceGroupDeployment)
+  scope: resourceGroup(deploymentResourceGroupName)
   params: {
     adminGroupNames: map(shareAdminGroups, group => group.displayName)
     domainJoinUserPrincipalName: domainJoinUserPrincipalName

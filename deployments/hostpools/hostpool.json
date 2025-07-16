@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.36.177.2456",
-      "templateHash": "10956128878990956666"
+      "templateHash": "6414764036293262099"
     }
   },
   "parameters": {
@@ -1032,7 +1032,7 @@
     "beginAvSetRange": "[div(parameters('sessionHostIndex'), variables('maxAvSetMembers'))]",
     "endAvSetRange": "[div(add(parameters('sessionHostCount'), parameters('sessionHostIndex')), variables('maxAvSetMembers'))]",
     "availabilitySetsCount": "[length(range(variables('beginAvSetRange'), add(sub(variables('endAvSetRange'), variables('beginAvSetRange')), 1)))]",
-    "createDeploymentVm": "[or(or(and(equals(parameters('deploymentType'), 'Complete'), or(parameters('confidentialVMOSDiskEncryption'), not(empty(parameters('desktopFriendlyName'))))), contains(parameters('identitySolution'), 'DomainServices')), contains(parameters('fslogixStorageService'), 'AzureNetApp'))]",
+    "createDeploymentVm": "[and(equals(parameters('deploymentType'), 'Complete'), or(or(or(or(contains(parameters('keyManagementStorageAccounts'), 'CustomerManaged'), parameters('confidentialVMOSDiskEncryption')), not(empty(parameters('desktopFriendlyName')))), contains(parameters('identitySolution'), 'DomainServices')), contains(parameters('fslogixStorageService'), 'AzureNetApp')))]",
     "deployControlPlaneRG": "[and(equals(parameters('deploymentType'), 'Complete'), empty(parameters('existingFeedWorkspaceResourceId')))]",
     "resourceGroupsCount": "[add(add(add(add(if(variables('createDeploymentVm'), 1, 0), if(equals(parameters('deploymentType'), 'Complete'), 2, 0)), if(variables('deployControlPlaneRG'), 1, 0)), if(and(equals(parameters('avdPrivateLinkPrivateRoutes'), 'All'), not(empty(parameters('globalFeedPrivateEndpointSubnetResourceId')))), 1, 0)), if(parameters('deployFSLogixStorage'), 1, 0))]",
     "fslogixNTFSGroups": "[if(empty(parameters('fslogixUserGroups')), parameters('appGroupSecurityGroups'), parameters('fslogixUserGroups'))]",
@@ -1785,6 +1785,9 @@
           "deploymentVmSize": {
             "value": "[parameters('deploymentVmSize')]"
           },
+          "desktopFriendlyName": {
+            "value": "[parameters('desktopFriendlyName')]"
+          },
           "diskSku": {
             "value": "[parameters('diskSku')]"
           },
@@ -1807,6 +1810,9 @@
           },
           "keyManagementDisks": {
             "value": "[parameters('keyManagementDisks')]"
+          },
+          "keyManagementStorageAccounts": {
+            "value": "[parameters('keyManagementStorageAccounts')]"
           },
           "locationVirtualMachines": {
             "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('virtualMachineSubnetResourceId'), '/')[2], split(parameters('virtualMachineSubnetResourceId'), '/')[4]), 'Microsoft.Network/virtualNetworks', split(parameters('virtualMachineSubnetResourceId'), '/')[8]), '2023-04-01', 'full').location]"
@@ -1856,7 +1862,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.36.177.2456",
-              "templateHash": "11670629935122561591"
+              "templateHash": "1998083576154941231"
             }
           },
           "parameters": {
@@ -1881,6 +1887,9 @@
             "deploymentVmSize": {
               "type": "string"
             },
+            "desktopFriendlyName": {
+              "type": "string"
+            },
             "encryptionAtHost": {
               "type": "bool"
             },
@@ -1894,6 +1903,9 @@
               "type": "string"
             },
             "keyManagementDisks": {
+              "type": "string"
+            },
+            "keyManagementStorageAccounts": {
               "type": "string"
             },
             "locationVirtualMachines": {
@@ -1950,32 +1962,12 @@
             "roleDefinitions": {
               "Contributor": "b24988ac-6180-42a0-ab88-20f7382dd24c",
               "DesktopVirtualizationApplicationGroupContributor": "86240b0e-9422-4c43-887b-b61143f32ba8",
-              "DesktopVirtualizationSessionHostOperator": "2ad6aaab-ead9-4eaa-8ac5-da422f562408",
               "KeyVaultCryptoOfficer": "14b46e9e-c2b7-41b4-b07b-48a6ebf60603",
               "RoleBasedAccessControlAdministrator": "f58310d9-a9f6-439a-9e8d-f62e7b41a168",
               "StorageAccountContributor": "17d1049b-9a84-46fb-8f53-869881c3d3ab",
               "VirtualMachineContributor": "9980e02c-c2be-4d73-94e8-173b1dc7cf3c"
             },
-            "roleAssignmentsControlPlane": [
-              {
-                "roleDefinitionId": "[variables('roleDefinitions').DesktopVirtualizationApplicationGroupContributor]",
-                "depName": "ControlPlane-DVAppGroupCont",
-                "resourceGroup": "[parameters('resourceGroupControlPlane')]",
-                "subscription": "[subscription().subscriptionId]"
-              },
-              {
-                "roleDefinitionId": "[variables('roleDefinitions').DesktopVirtualizationSessionHostOperator]",
-                "depName": "ControlPlane-DVSessionHostOp",
-                "resourceGroup": "[parameters('resourceGroupControlPlane')]",
-                "subscription": "[subscription().subscriptionId]"
-              },
-              {
-                "roleDefinitionId": "[variables('roleDefinitions').RoleBasedAccessControlAdministrator]",
-                "depName": "ControlPlane-RBACAdmin",
-                "resourceGroup": "[parameters('resourceGroupControlPlane')]",
-                "subscription": "[subscription().subscriptionId]"
-              }
-            ],
+            "roleAssignmentsControlPlane": "[if(not(empty(parameters('desktopFriendlyName'))), createArray(createObject('roleDefinitionId', variables('roleDefinitions').DesktopVirtualizationApplicationGroupContributor, 'depName', 'ControlPlane-DVAppGroupCont', 'resourceGroup', parameters('resourceGroupControlPlane'), 'subscription', subscription().subscriptionId), createObject('roleDefinitionId', variables('roleDefinitions').RoleBasedAccessControlAdministrator, 'depName', 'ControlPlane-RBACAdmin', 'resourceGroup', parameters('resourceGroupControlPlane'), 'subscription', subscription().subscriptionId)), createArray())]",
             "roleAssignmentsDeployment": [
               {
                 "roleDefinitionId": "[variables('roleDefinitions').Contributor]",
@@ -1998,8 +1990,10 @@
                 "subscription": "[subscription().subscriptionId]"
               }
             ],
-            "roleAssignmentsManagement": "[if(and(and(equals(parameters('deploymentType'), 'Complete'), parameters('confidentialVMOSDiskEncryption')), equals(parameters('keyManagementDisks'), 'CustomerManagedHSM')), createArray(createObject('roleDefinitionId', variables('roleDefinitions').KeyVaultCryptoOfficer, 'depName', 'Management-KVCryptoOff', 'resourceGroup', parameters('resourceGroupManagement'), 'subscription', subscription().subscriptionId)), createArray())]",
-            "roleAssignmentsStorage": "[if(and(and(equals(parameters('deploymentType'), 'Complete'), parameters('fslogix')), contains(parameters('identitySolution'), 'DomainServices')), createArray(createObject('roleDefinitionId', variables('roleDefinitions').StorageAccountContributor, 'depName', 'Storage-StorageAcctCont', 'resourceGroup', parameters('resourceGroupStorage'), 'subscription', subscription().subscriptionId), createObject('roleDefinitionId', variables('roleDefinitions').RoleBasedAccessControlAdministrator, 'depName', 'Storage-RBACAdmin', 'resourceGroup', parameters('resourceGroupStorage'), 'subscription', subscription().subscriptionId)), createArray())]",
+            "roleAssignmentsManagementConfidentialVMDiskEncryption": "[if(and(parameters('confidentialVMOSDiskEncryption'), equals(parameters('keyManagementDisks'), 'CustomerManagedHSM')), createArray(createObject('roleDefinitionId', variables('roleDefinitions').KeyVaultCryptoOfficer, 'depName', 'Management-KVCryptoOff', 'resourceGroup', parameters('resourceGroupManagement'), 'subscription', subscription().subscriptionId)), createArray())]",
+            "roleAssignmentsManagementRBACAdmin": "[if(or(or(contains(parameters('keyManagementDisks'), 'CustomManaged'), contains(parameters('keyManagementStorageAccounts'), 'CustomerManaged')), not(empty(variables('roleAssignmentsManagementConfidentialVMDiskEncryption')))), createArray(createObject('roleDefinitionId', variables('roleDefinitions').RoleBasedAccessControlAdministrator, 'depName', 'Management-RBACAdmin', 'resourceGroup', parameters('resourceGroupManagement'), 'subscription', subscription().subscriptionId)), createArray())]",
+            "roleAssignmentsManagement": "[union(variables('roleAssignmentsManagementConfidentialVMDiskEncryption'), variables('roleAssignmentsManagementRBACAdmin'))]",
+            "roleAssignmentsStorage": "[if(and(parameters('fslogix'), contains(parameters('identitySolution'), 'DomainServices')), createArray(createObject('roleDefinitionId', variables('roleDefinitions').StorageAccountContributor, 'depName', 'Storage-StorageAcctCont', 'resourceGroup', parameters('resourceGroupStorage'), 'subscription', subscription().subscriptionId), createObject('roleDefinitionId', variables('roleDefinitions').RoleBasedAccessControlAdministrator, 'depName', 'Storage-RBACAdmin', 'resourceGroup', parameters('resourceGroupStorage'), 'subscription', subscription().subscriptionId)), createArray())]",
             "roleAssignments": "[union(variables('roleAssignmentsControlPlane'), variables('roleAssignmentsDeployment'), variables('roleAssignmentsHosts'), variables('roleAssignmentsManagement'), variables('roleAssignmentsStorage'))]"
           },
           "resources": [
@@ -2261,7 +2255,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.36.177.2456",
-                      "templateHash": "12555138556738524290"
+                      "templateHash": "1587638018196754372"
                     }
                   },
                   "parameters": {
@@ -2405,7 +2399,7 @@
                             "vTpmEnabled": true
                           },
                           "securityType": "trustedLaunch",
-                          "encryptionAtHost": "[parameters('encryptionAtHost')]"
+                          "encryptionAtHost": "[if(parameters('encryptionAtHost'), true(), null())]"
                         },
                         "diagnosticsProfile": {
                           "bootDiagnostics": {
@@ -5330,8 +5324,8 @@
           "deployScalingPlan": {
             "value": "[parameters('deployScalingPlan')]"
           },
-          "deploymentUserAssignedIdentityClientId": "[if(and(equals(parameters('deploymentType'), 'Complete'), not(empty(parameters('desktopFriendlyName')))), createObject('value', reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Deployment_Prereqs_{0}', parameters('timeStamp'))), '2022-09-01').outputs.deploymentUserAssignedIdentityClientId.value), createObject('value', ''))]",
-          "deploymentVirtualMachineName": "[if(and(equals(parameters('deploymentType'), 'Complete'), not(empty(parameters('desktopFriendlyName')))), createObject('value', reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Deployment_Prereqs_{0}', parameters('timeStamp'))), '2022-09-01').outputs.virtualMachineName.value), createObject('value', ''))]",
+          "deploymentUserAssignedIdentityClientId": "[if(variables('createDeploymentVm'), createObject('value', reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Deployment_Prereqs_{0}', parameters('timeStamp'))), '2022-09-01').outputs.deploymentUserAssignedIdentityClientId.value), createObject('value', ''))]",
+          "deploymentVirtualMachineName": "[if(variables('createDeploymentVm'), createObject('value', reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Deployment_Prereqs_{0}', parameters('timeStamp'))), '2022-09-01').outputs.virtualMachineName.value), createObject('value', ''))]",
           "desktopApplicationGroupName": {
             "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.desktopApplicationGroupName.value]"
           },
@@ -7737,8 +7731,8 @@
           "azureTablePrivateDnsZoneResourceId": {
             "value": "[parameters('azureTablePrivateDnsZoneResourceId')]"
           },
-          "deploymentUserAssignedIdentityClientId": "[if(and(equals(parameters('deploymentType'), 'Complete'), or(contains(parameters('identitySolution'), 'DomainServices'), contains(parameters('fslogixStorageService'), 'AzureNetApp'))), createObject('value', reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Deployment_Prereqs_{0}', parameters('timeStamp'))), '2022-09-01').outputs.deploymentUserAssignedIdentityClientId.value), createObject('value', ''))]",
-          "deploymentVirtualMachineName": "[if(and(equals(parameters('deploymentType'), 'Complete'), or(contains(parameters('identitySolution'), 'DomainServices'), contains(parameters('fslogixStorageService'), 'AzureNetApp'))), createObject('value', reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Deployment_Prereqs_{0}', parameters('timeStamp'))), '2022-09-01').outputs.virtualMachineName.value), createObject('value', ''))]",
+          "deploymentUserAssignedIdentityClientId": "[if(variables('createDeploymentVm'), createObject('value', reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Deployment_Prereqs_{0}', parameters('timeStamp'))), '2022-09-01').outputs.deploymentUserAssignedIdentityClientId.value), createObject('value', ''))]",
+          "deploymentVirtualMachineName": "[if(variables('createDeploymentVm'), createObject('value', reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Deployment_Prereqs_{0}', parameters('timeStamp'))), '2022-09-01').outputs.virtualMachineName.value), createObject('value', ''))]",
           "domainJoinUserPassword": "[if(contains(parameters('identitySolution'), 'DomainServices'), if(not(empty(parameters('domainJoinUserPassword'))), createObject('value', parameters('domainJoinUserPassword')), if(not(empty(parameters('credentialsKeyVaultResourceId'))), createObject('reference', createObject('keyVault', createObject('id', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('credentialsKeyVaultResourceId'), '/')[2], split(parameters('credentialsKeyVaultResourceId'), '/')[4]), 'Microsoft.KeyVault/vaults', last(split(parameters('credentialsKeyVaultResourceId'), '/')))), 'secretName', 'DomainJoinUserPassword')), createObject('value', ''))), createObject('value', ''))]",
           "domainJoinUserPrincipalName": "[if(contains(parameters('identitySolution'), 'DomainServices'), if(not(empty(parameters('domainJoinUserPrincipalName'))), createObject('value', parameters('domainJoinUserPrincipalName')), if(not(empty(parameters('credentialsKeyVaultResourceId'))), createObject('reference', createObject('keyVault', createObject('id', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('credentialsKeyVaultResourceId'), '/')[2], split(parameters('credentialsKeyVaultResourceId'), '/')[4]), 'Microsoft.KeyVault/vaults', last(split(parameters('credentialsKeyVaultResourceId'), '/')))), 'secretName', 'DomainJoinUserPrincipalName')), createObject('value', ''))), createObject('value', ''))]",
           "domainName": {
@@ -7873,7 +7867,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.36.177.2456",
-              "templateHash": "3156271302710166590"
+              "templateHash": "16520343579283017554"
             }
           },
           "parameters": {
@@ -8065,6 +8059,15 @@
                 },
                 "mode": "Incremental",
                 "parameters": {
+                  "deploymentResourceGroupName": {
+                    "value": "[parameters('resourceGroupDeployment')]"
+                  },
+                  "deploymentVirtualMachineName": {
+                    "value": "[parameters('deploymentVirtualMachineName')]"
+                  },
+                  "deploymentUserAssignedIdentityClientId": {
+                    "value": "[parameters('deploymentUserAssignedIdentityClientId')]"
+                  },
                   "hostPoolResourceId": {
                     "value": "[parameters('hostPoolResourceId')]"
                   },
@@ -8112,10 +8115,19 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.36.177.2456",
-                      "templateHash": "16408463534485377902"
+                      "templateHash": "14114619625145273968"
                     }
                   },
                   "parameters": {
+                    "deploymentVirtualMachineName": {
+                      "type": "string"
+                    },
+                    "deploymentResourceGroupName": {
+                      "type": "string"
+                    },
+                    "deploymentUserAssignedIdentityClientId": {
+                      "type": "string"
+                    },
                     "hostPoolResourceId": {
                       "type": "string"
                     },
@@ -8158,7 +8170,8 @@
                   },
                   "variables": {
                     "keyVaultName": "[last(split(parameters('keyVaultResourceId'), '/'))]",
-                    "keyVaultResourceGroup": "[split(parameters('keyVaultResourceId'), '/')[4]]"
+                    "keyVaultResourceGroup": "[split(parameters('keyVaultResourceId'), '/')[4]]",
+                    "roleKeyVaultCryptoUser": "e147488a-f6f5-4113-8e2d-b22465e65bf6"
                   },
                   "resources": [
                     {
@@ -8176,19 +8189,19 @@
                         },
                         "mode": "Incremental",
                         "parameters": {
-                          "keyVaultName": {
-                            "value": "[variables('keyVaultName')]"
-                          },
-                          "name": {
-                            "value": "[replace(parameters('fslogixEncryptionKeyNameConv'), '##', padLeft(add(range(0, parameters('storageCount'))[copyIndex()], parameters('storageIndex')), 2, '0'))]"
-                          },
                           "attributesExportable": {
                             "value": false
                           },
                           "keySize": {
                             "value": 4096
                           },
+                          "keyVaultName": {
+                            "value": "[variables('keyVaultName')]"
+                          },
                           "kty": "[if(contains(parameters('keyManagementStorageAccounts'), 'HSM'), createObject('value', 'RSA-HSM'), createObject('value', 'RSA'))]",
+                          "name": {
+                            "value": "[replace(parameters('fslogixEncryptionKeyNameConv'), '##', padLeft(add(range(0, parameters('storageCount'))[copyIndex()], parameters('storageIndex')), 2, '0'))]"
+                          },
                           "rotationPolicy": {
                             "value": {
                               "attributes": {
@@ -8329,19 +8342,19 @@
                         },
                         "mode": "Incremental",
                         "parameters": {
-                          "keyVaultName": {
-                            "value": "[variables('keyVaultName')]"
-                          },
-                          "name": {
-                            "value": "[parameters('increaseQuotaEncryptionKeyName')]"
-                          },
                           "attributesExportable": {
                             "value": false
                           },
                           "keySize": {
                             "value": 4096
                           },
+                          "keyVaultName": {
+                            "value": "[variables('keyVaultName')]"
+                          },
                           "kty": "[if(contains(parameters('keyManagementStorageAccounts'), 'HSM'), createObject('value', 'RSA-HSM'), createObject('value', 'RSA'))]",
+                          "name": {
+                            "value": "[parameters('increaseQuotaEncryptionKeyName')]"
+                          },
                           "rotationPolicy": {
                             "value": {
                               "attributes": {
@@ -8571,7 +8584,7 @@
                             "value": "ServicePrincipal"
                           },
                           "roleDefinitionId": {
-                            "value": "e147488a-f6f5-4113-8e2d-b22465e65bf6"
+                            "value": "[variables('roleKeyVaultCryptoUser')]"
                           }
                         },
                         "template": {
@@ -8652,7 +8665,7 @@
                             "value": "ServicePrincipal"
                           },
                           "roleDefinitionId": {
-                            "value": "e147488a-f6f5-4113-8e2d-b22465e65bf6"
+                            "value": "[variables('roleKeyVaultCryptoUser')]"
                           }
                         },
                         "template": {
@@ -8707,6 +8720,128 @@
                         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('keyVaultResourceGroup')), 'Microsoft.Resources/deployments', format('IncreaseQuotaEncryptionKey_{0}', parameters('timeStamp')))]",
                         "[resourceId('Microsoft.Resources/deployments', format('UAI_Encryption_{0}', parameters('timeStamp')))]"
                       ]
+                    },
+                    {
+                      "type": "Microsoft.Resources/deployments",
+                      "apiVersion": "2022-09-01",
+                      "name": "[format('Get_UAI_KeyVault_Key_RoleAssignments_{0}', parameters('timeStamp'))]",
+                      "resourceGroup": "[parameters('deploymentResourceGroupName')]",
+                      "properties": {
+                        "expressionEvaluationOptions": {
+                          "scope": "inner"
+                        },
+                        "mode": "Incremental",
+                        "parameters": {
+                          "location": {
+                            "value": "[parameters('location')]"
+                          },
+                          "principalId": {
+                            "value": "[reference(resourceId('Microsoft.Resources/deployments', format('UAI_Encryption_{0}', parameters('timeStamp'))), '2022-09-01').outputs.principalId.value]"
+                          },
+                          "resourceIds": {
+                            "copy": [
+                              {
+                                "name": "value",
+                                "count": "[length(range(0, parameters('storageCount')))]",
+                                "input": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('keyVaultResourceGroup')), 'Microsoft.Resources/deployments', format('StorageEncryptionKey_{0}_{1}', add(range(0, parameters('storageCount'))[range(0, parameters('storageCount'))[copyIndex('value')]], parameters('storageIndex')), parameters('timeStamp'))), '2022-09-01').outputs.resourceId.value]"
+                              }
+                            ]
+                          },
+                          "roleDefinitionId": {
+                            "value": "[variables('roleKeyVaultCryptoUser')]"
+                          },
+                          "runCommandName": {
+                            "value": "Get-KeyVaultKeyRoleAssignmentsForUserAssignedIdentity"
+                          },
+                          "userAssignedIdentityClientId": {
+                            "value": "[parameters('deploymentUserAssignedIdentityClientId')]"
+                          },
+                          "virtualMachineName": {
+                            "value": "[parameters('deploymentVirtualMachineName')]"
+                          }
+                        },
+                        "template": {
+                          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                          "contentVersion": "1.0.0.0",
+                          "metadata": {
+                            "_generator": {
+                              "name": "bicep",
+                              "version": "0.36.177.2456",
+                              "templateHash": "18282053287239878724"
+                            }
+                          },
+                          "parameters": {
+                            "location": {
+                              "type": "string"
+                            },
+                            "runCommandName": {
+                              "type": "string"
+                            },
+                            "principalId": {
+                              "type": "string"
+                            },
+                            "resourceIds": {
+                              "type": "array"
+                            },
+                            "roleDefinitionId": {
+                              "type": "string"
+                            },
+                            "userAssignedIdentityClientId": {
+                              "type": "string",
+                              "defaultValue": ""
+                            },
+                            "virtualMachineName": {
+                              "type": "string"
+                            }
+                          },
+                          "variables": {
+                            "$fxv#0": "param(\r\n    [Parameter(Mandatory=$true)]\r\n    [string]$ResourceManagerUri,\r\n\r\n    [Parameter(Mandatory=$true)]\r\n    [string[]]$ResourceIds,\r\n\r\n    [Parameter(Mandatory=$true)]\r\n    [string]$UserAssignedIdentityClientId,\r\n\r\n    [Parameter(Mandatory=$true)]\r\n    [string]$PrincipalId,\r\n\r\n    [Parameter(Mandatory=$true)]\r\n    [string]$RoleDefinitionId\r\n)\r\n\r\n$ErrorActionPreference = 'Stop'\r\n$WarningPreference = 'SilentlyContinue'\r\n\r\n[array]$ResIds = $ResourceIds.replace('\\\"', '\"') | ConvertFrom-Json\r\n\r\nTry {\r\n    # Fix the resource manager URI since only AzureCloud contains a trailing slash\r\n    $ResourceManagerUriFixed = if($ResourceManagerUri[-1] -eq '/'){$ResourceManagerUri.Substring(0,$ResourceManagerUri.Length - 1)} else {$ResourceManagerUri}\r\n\r\n    # Get an access token for Azure resources\r\n    $AzureManagementAccessToken = (Invoke-RestMethod -Headers @{Metadata=\"true\"} -Uri $('http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=' + $ResourceManagerUriFixed + '&client_id=' + $UserAssignedIdentityClientId)).access_token\r\n\r\n    # Set header for Azure Management API\r\n    $AzureManagementHeader = @{\r\n        'Content-Type'='application/json'\r\n        'Authorization'='Bearer ' + $AzureManagementAccessToken\r\n    }\r\n\r\n    # Loop through each resource ID to find the role assignment\r\n    Write-Output \"Searching for role assignment for Principal '$PrincipalId' with Role '$RoleDefinitionId' across $($ResIds.Count) resource(s)\"\r\n    \r\n    $StartTime = Get-Date\r\n    $TimeoutSeconds = 180\r\n    $FoundRoleAssignments = @{}\r\n    $Attempt = 1\r\n\r\n    do {\r\n        Write-Output \"Attempt $Attempt - Checking for role assignment across all resources...\"\r\n        \r\n        foreach ($ResourceId in $ResIds) {\r\n            # Skip if we already found the role assignment for this resource\r\n            if ($FoundRoleAssignments.ContainsKey($ResourceId)) {\r\n                continue\r\n            }\r\n            \r\n            Write-Output \"  Checking resource id: $ResourceId\"\r\n            \r\n            # Construct the API URL for role assignments for the specific resource\r\n            $RoleAssignmentsUri = $ResourceManagerUriFixed + $ResourceId + '/providers/Microsoft.Authorization/roleAssignments?api-version=2022-04-01'\r\n            \r\n            try {\r\n                # Query role assignments for the resource\r\n                $RoleAssignments = Invoke-RestMethod -Headers $AzureManagementHeader -Method 'GET' -Uri $RoleAssignmentsUri\r\n\r\n                # Look for the specific role assignment matching both PrincipalId and RoleDefinitionId\r\n                $TargetRoleAssignment = $RoleAssignments.value.properties | Where-Object { \r\n                    $_.principalId -eq $PrincipalId -and \r\n                    $_.roleDefinitionId -eq $RoleDefinitionId \r\n                }\r\n\r\n                if ($TargetRoleAssignment) {\r\n                    $FoundRoleAssignments[$ResourceId] = $TargetRoleAssignment\r\n                    Write-Output \"  Role assignment found on resource id '$ResourceId'\"\r\n                } else {\r\n                    Write-Output \"  Role assignment not found on resource id '$ResourceId'\"\r\n                }\r\n            }\r\n            catch {\r\n                Write-Warning \"  Failed to query role assignments for resource id '$ResourceId': $($_.Exception.Message)\"\r\n                continue\r\n            }\r\n        }\r\n        $ElapsedTime = (Get-Date) - $StartTime\r\n        # Check if we found role assignments for all resources\r\n        $AllResourcesHaveAssignment = $FoundRoleAssignments.Count -eq $ResIds.Count\r\n        \r\n        if ($AllResourcesHaveAssignment) {\r\n            Write-Output \"Role assignment found on all $($ResIds.Count) resources after $($ElapsedTime.TotalSeconds) seconds.\"\r\n            break\r\n        }\r\n\r\n        if ($ElapsedTime.TotalSeconds -ge $TimeoutSeconds) {\r\n            break\r\n        }\r\n\r\n        $MissingCount = $ResIds.Count - $FoundRoleAssignments.Count\r\n        Write-Output \"Role assignment found on $($FoundRoleAssignments.Count)/$($ResIds.Count) resources. Still missing $MissingCount. Waiting 5 seconds before retry...\"\r\n        Start-Sleep -Seconds 5\r\n        $Attempt++\r\n    } while ($ElapsedTime.TotalSeconds -lt $TimeoutSeconds)\r\n\r\n    if ($FoundRoleAssignments.Count -eq 0) {\r\n        $ErrorMessage = \"Role assignment not found on any resources after $TimeoutSeconds seconds. Principal ID: '$PrincipalId', Role Definition ID: '$RoleDefinitionId', Resources checked: $($ResIds -join ', ')\"\r\n        Write-Error $ErrorMessage\r\n        throw $ErrorMessage\r\n    } elseif ($FoundRoleAssignments.Count -lt $ResIds.Count) {\r\n        $MissingResources = $ResIds | Where-Object { -not $FoundRoleAssignments.ContainsKey($_) }\r\n        $ErrorMessage = \"Role assignment not found on all resources after $TimeoutSeconds seconds. Principal ID: '$PrincipalId', Role Definition ID: '$RoleDefinitionId'. Missing on resources: $($MissingResources -join ', ')\"\r\n        Write-Error $ErrorMessage\r\n        throw $ErrorMessage\r\n    }\r\n}\r\ncatch {\r\n    Write-Error \"Error querying role assignments: $($_.Exception.Message)\"\r\n    throw\r\n}\r\n"
+                          },
+                          "resources": [
+                            {
+                              "type": "Microsoft.Compute/virtualMachines/runCommands",
+                              "apiVersion": "2023-03-01",
+                              "name": "[format('{0}/{1}', parameters('virtualMachineName'), parameters('runCommandName'))]",
+                              "location": "[parameters('location')]",
+                              "properties": {
+                                "asyncExecution": false,
+                                "parameters": [
+                                  {
+                                    "name": "ResourceManagerUri",
+                                    "value": "[environment().resourceManager]"
+                                  },
+                                  {
+                                    "name": "ResourceIds",
+                                    "value": "[string(parameters('resourceIds'))]"
+                                  },
+                                  {
+                                    "name": "UserAssignedIdentityClientId",
+                                    "value": "[parameters('userAssignedIdentityClientId')]"
+                                  },
+                                  {
+                                    "name": "PrincipalId",
+                                    "value": "[parameters('principalId')]"
+                                  },
+                                  {
+                                    "name": "RoleDefinitionId",
+                                    "value": "[subscriptionResourceId('microsoft.authorization/roleDefinitions', parameters('roleDefinitionId'))]"
+                                  }
+                                ],
+                                "source": {
+                                  "script": "[variables('$fxv#0')]"
+                                },
+                                "timeoutInSeconds": 180,
+                                "treatFailureAsDeploymentFailure": true
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "dependsOn": [
+                        "fslogixStorageAccountEncryptionKeys",
+                        "roleAssignment_UAI_EncryptionUser_FSLogix",
+                        "[resourceId('Microsoft.Resources/deployments', format('UAI_Encryption_{0}', parameters('timeStamp')))]"
+                      ]
                     }
                   ],
                   "outputs": {
@@ -8714,16 +8849,12 @@
                       "type": "string",
                       "value": "[reference(resourceId('Microsoft.Resources/deployments', format('UAI_Encryption_{0}', parameters('timeStamp'))), '2022-09-01').outputs.resourceId.value]"
                     },
-                    "storageAccountKeyRoleAssignments": {
+                    "encryptionKeys": {
                       "type": "array",
                       "copy": {
                         "count": "[length(range(0, parameters('storageCount')))]",
-                        "input": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('keyVaultResourceGroup')), 'Microsoft.Resources/deployments', format('RA_Encryption_User_FSLogix_{0}-{1}', padLeft(add(range(0, parameters('storageCount'))[range(0, parameters('storageCount'))[copyIndex()]], parameters('storageIndex')), 2, '0'), parameters('timeStamp'))), '2022-09-01').outputs.roleAssignmentId.value]"
+                        "input": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('keyVaultResourceGroup')), 'Microsoft.Resources/deployments', format('StorageEncryptionKey_{0}_{1}', add(range(0, parameters('storageCount'))[range(0, parameters('storageCount'))[copyIndex()]], parameters('storageIndex')), parameters('timeStamp'))), '2022-09-01').outputs.resourceId.value]"
                       }
-                    },
-                    "increaseQuotaKeyRoleAssignmentId": {
-                      "type": "string",
-                      "value": "[if(parameters('increaseQuota'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('keyVaultResourceGroup')), 'Microsoft.Resources/deployments', format('RA_Encryption_User_IncreaseQuota-{0}', parameters('timeStamp'))), '2022-09-01').outputs.roleAssignmentId.value, '')]"
                     }
                   }
                 }
@@ -9237,6 +9368,9 @@
                   "deploymentVirtualMachineName": {
                     "value": "[parameters('deploymentVirtualMachineName')]"
                   },
+                  "deploymentResourceGroupName": {
+                    "value": "[parameters('resourceGroupDeployment')]"
+                  },
                   "domainJoinUserPassword": "[if(contains(parameters('identitySolution'), 'DomainServices'), createObject('value', parameters('domainJoinUserPassword')), createObject('value', ''))]",
                   "domainJoinUserPrincipalName": "[if(contains(parameters('identitySolution'), 'DomainServices'), createObject('value', parameters('domainJoinUserPrincipalName')), createObject('value', ''))]",
                   "encryptionKeyVaultUri": {
@@ -9310,9 +9444,6 @@
                   "recoveryServicesVaultName": {
                     "value": "[parameters('recoveryServicesVaultName')]"
                   },
-                  "resourceGroupDeployment": {
-                    "value": "[parameters('resourceGroupDeployment')]"
-                  },
                   "resourceGroupStorage": {
                     "value": "[parameters('resourceGroupStorage')]"
                   },
@@ -9363,7 +9494,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.36.177.2456",
-                      "templateHash": "8080437933954211943"
+                      "templateHash": "10141476965094419307"
                     }
                   },
                   "parameters": {
@@ -9475,7 +9606,7 @@
                     "recoveryServicesVaultName": {
                       "type": "string"
                     },
-                    "resourceGroupDeployment": {
+                    "deploymentResourceGroupName": {
                       "type": "string"
                     },
                     "resourceGroupStorage": {
@@ -10118,7 +10249,7 @@
                       "type": "Microsoft.Resources/deployments",
                       "apiVersion": "2022-09-01",
                       "name": "[format('Set-NTFSPermissions_{0}', parameters('timeStamp'))]",
-                      "resourceGroup": "[parameters('resourceGroupDeployment')]",
+                      "resourceGroup": "[parameters('deploymentResourceGroupName')]",
                       "properties": {
                         "expressionEvaluationOptions": {
                           "scope": "inner"
@@ -13270,7 +13401,8 @@
         "[subscriptionResourceId('Microsoft.Resources/deployments', format('ControlPlane_{0}', parameters('timeStamp')))]",
         "[subscriptionResourceId('Microsoft.Resources/deployments', format('Deployment_Prereqs_{0}', parameters('timeStamp')))]",
         "[subscriptionResourceId('Microsoft.Resources/deployments', format('Management_{0}', parameters('timeStamp')))]",
-        "[subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp')))]"
+        "[subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp')))]",
+        "rgs"
       ]
     },
     {
@@ -13342,8 +13474,8 @@
           "deploymentType": {
             "value": "[parameters('deploymentType')]"
           },
-          "deploymentUserAssignedIdentityClientId": "[if(and(equals(parameters('deploymentType'), 'Complete'), parameters('confidentialVMOSDiskEncryption')), createObject('value', reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Deployment_Prereqs_{0}', parameters('timeStamp'))), '2022-09-01').outputs.deploymentUserAssignedIdentityClientId.value), createObject('value', ''))]",
-          "deploymentVirtualMachineName": "[if(and(equals(parameters('deploymentType'), 'Complete'), parameters('confidentialVMOSDiskEncryption')), createObject('value', reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Deployment_Prereqs_{0}', parameters('timeStamp'))), '2022-09-01').outputs.virtualMachineName.value), createObject('value', ''))]",
+          "deploymentUserAssignedIdentityClientId": "[if(variables('createDeploymentVm'), createObject('value', reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Deployment_Prereqs_{0}', parameters('timeStamp'))), '2022-09-01').outputs.deploymentUserAssignedIdentityClientId.value), createObject('value', ''))]",
+          "deploymentVirtualMachineName": "[if(variables('createDeploymentVm'), createObject('value', reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Deployment_Prereqs_{0}', parameters('timeStamp'))), '2022-09-01').outputs.virtualMachineName.value), createObject('value', ''))]",
           "diskAccessName": {
             "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.diskAccessName.value]"
           },
@@ -13530,7 +13662,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.36.177.2456",
-              "templateHash": "4533804255268139877"
+              "templateHash": "16114202408685962626"
             }
           },
           "parameters": {
@@ -14601,7 +14733,10 @@
                   "keyVaultUri": {
                     "value": "[parameters('encryptionKeyVaultUri')]"
                   },
-                  "resourceGroupDeployment": {
+                  "location": {
+                    "value": "[parameters('location')]"
+                  },
+                  "deploymentResourceGroupName": {
                     "value": "[parameters('resourceGroupDeployment')]"
                   },
                   "tags": {
@@ -14618,7 +14753,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.36.177.2456",
-                      "templateHash": "16249801378265060252"
+                      "templateHash": "83365186573765832"
                     }
                   },
                   "parameters": {
@@ -14632,6 +14767,9 @@
                       "type": "string"
                     },
                     "keyName": {
+                      "type": "string"
+                    },
+                    "location": {
                       "type": "string"
                     },
                     "diskEncryptionSetNames": {
@@ -14656,7 +14794,7 @@
                     "deploymentVirtualMachineName": {
                       "type": "string"
                     },
-                    "resourceGroupDeployment": {
+                    "deploymentResourceGroupName": {
                       "type": "string"
                     },
                     "tags": {
@@ -14670,6 +14808,8 @@
                     "$fxv#0": "[CmdletBinding()]\r\nparam (\r\n    [string]$KeyName,\r\n    [string]$Tags,\r\n    [string]$UserAssignedIdentityClientId,\r\n    [string]$VaultUri\r\n)\r\n\r\n$ErrorActionPreference = 'Stop'\r\n$WarningPreference = 'SilentlyContinue'\r\n\r\n# Fix the Vault URI since only AzureCloud contains a trailing slash\r\n$VaultUriFixed = if($VaultUri[-1] -eq '/'){$VaultUri.Substring(0,$VaultUri.Length - 1)} else {$VaultUri}\r\n\r\n$PolicyContentJson = @\"\r\n{\"version\":\"1.0.0\",\"anyOf\":[{\"authority\":\"https://sharedeus.eus.attest.azure.net/\",\"allOf\":[{\"claim\":\"x-ms-compliance-status\",\"equals\":\"azure-compliant-cvm\"},{\"anyOf\":[{\"claim\":\"x-ms-attestation-type\",\"equals\":\"tdxvm\"},{\"claim\":\"x-ms-attestation-type\",\"equals\":\"sevsnpvm\"}]}]},{\"authority\":\"https://sharedwus.wus.attest.azure.net/\",\"allOf\":[{\"claim\":\"x-ms-compliance-status\",\"equals\":\"azure-compliant-cvm\"},{\"anyOf\":[{\"claim\":\"x-ms-attestation-type\",\"equals\":\"tdxvm\"},{\"claim\":\"x-ms-attestation-type\",\"equals\":\"sevsnpvm\"}]}]},{\"authority\":\"https://sharedneu.neu.attest.azure.net/\",\"allOf\":[{\"claim\":\"x-ms-compliance-status\",\"equals\":\"azure-compliant-cvm\"},{\"anyOf\":[{\"claim\":\"x-ms-attestation-type\",\"equals\":\"tdxvm\"},{\"claim\":\"x-ms-attestation-type\",\"equals\":\"sevsnpvm\"}]}]},{\"authority\":\"https://sharedweu.weu.attest.azure.net/\",\"allOf\":[{\"claim\":\"x-ms-compliance-status\",\"equals\":\"azure-compliant-cvm\"},{\"anyOf\":[{\"claim\":\"x-ms-attestation-type\",\"equals\":\"tdxvm\"},{\"claim\":\"x-ms-attestation-type\",\"equals\":\"sevsnpvm\"}]}]},{\"authority\":\"https://sharedsasia.sasia.attest.azure.net/\",\"allOf\":[{\"claim\":\"x-ms-compliance-status\",\"equals\":\"azure-compliant-cvm\"},{\"anyOf\":[{\"claim\":\"x-ms-attestation-type\",\"equals\":\"tdxvm\"},{\"claim\":\"x-ms-attestation-type\",\"equals\":\"sevsnpvm\"}]}]},{\"authority\":\"https://sharedeasia.easia.attest.azure.net/\",\"allOf\":[{\"claim\":\"x-ms-compliance-status\",\"equals\":\"azure-compliant-cvm\"},{\"anyOf\":[{\"claim\":\"x-ms-attestation-type\",\"equals\":\"tdxvm\"},{\"claim\":\"x-ms-attestation-type\",\"equals\":\"sevsnpvm\"}]}]},{\"authority\":\"https://sharedjpe.jpe.attest.azure.net/\",\"allOf\":[{\"claim\":\"x-ms-compliance-status\",\"equals\":\"azure-compliant-cvm\"},{\"anyOf\":[{\"claim\":\"x-ms-attestation-type\",\"equals\":\"tdxvm\"},{\"claim\":\"x-ms-attestation-type\",\"equals\":\"sevsnpvm\"}]}]},{\"authority\":\"https://sharedswn.swn.attest.azure.net/\",\"allOf\":[{\"claim\":\"x-ms-compliance-status\",\"equals\":\"azure-compliant-cvm\"},{\"anyOf\":[{\"claim\":\"x-ms-attestation-type\",\"equals\":\"tdxvm\"},{\"claim\":\"x-ms-attestation-type\",\"equals\":\"sevsnpvm\"}]}]},{\"authority\":\"https://shareditn.itn.attest.azure.net/\",\"allOf\":[{\"claim\":\"x-ms-compliance-status\",\"equals\":\"azure-compliant-cvm\"},{\"anyOf\":[{\"claim\":\"x-ms-attestation-type\",\"equals\":\"tdxvm\"},{\"claim\":\"x-ms-attestation-type\",\"equals\":\"sevsnpvm\"}]}]},{\"authority\":\"https://sharedeus2.eus2.attest.azure.net/\",\"allOf\":[{\"claim\":\"x-ms-compliance-status\",\"equals\":\"azure-compliant-cvm\"},{\"anyOf\":[{\"claim\":\"x-ms-attestation-type\",\"equals\":\"tdxvm\"},{\"claim\":\"x-ms-attestation-type\",\"equals\":\"sevsnpvm\"}]}]},{\"authority\":\"https://sharedeus2e.eus2e.attest.azure.net/\",\"allOf\":[{\"claim\":\"x-ms-compliance-status\",\"equals\":\"azure-compliant-cvm\"},{\"anyOf\":[{\"claim\":\"x-ms-attestation-type\",\"equals\":\"tdxvm\"},{\"claim\":\"x-ms-attestation-type\",\"equals\":\"sevsnpvm\"}]}]},{\"authority\":\"https://sharedscus.scus.attest.azure.net/\",\"allOf\":[{\"claim\":\"x-ms-compliance-status\",\"equals\":\"azure-compliant-cvm\"},{\"anyOf\":[{\"claim\":\"x-ms-attestation-type\",\"equals\":\"sevsnpvm\"}]}]},{\"authority\":\"https://sharedcuse.cuse.attest.azure.net/\",\"allOf\":[{\"claim\":\"x-ms-compliance-status\",\"equals\":\"azure-compliant-cvm\"},{\"anyOf\":[{\"claim\":\"x-ms-attestation-type\",\"equals\":\"sevsnpvm\"}]}]},{\"authority\":\"https://sharedcus.cus.attest.azure.net/\",\"allOf\":[{\"claim\":\"x-ms-compliance-status\",\"equals\":\"azure-compliant-cvm\"},{\"anyOf\":[{\"claim\":\"x-ms-attestation-type\",\"equals\":\"tdxvm\"},{\"claim\":\"x-ms-attestation-type\",\"equals\":\"sevsnpvm\"}]}]},{\"authority\":\"https://sharedeau.eau.attest.azure.net/\",\"allOf\":[{\"claim\":\"x-ms-compliance-status\",\"equals\":\"azure-compliant-cvm\"},{\"anyOf\":[{\"claim\":\"x-ms-attestation-type\",\"equals\":\"tdxvm\"},{\"claim\":\"x-ms-attestation-type\",\"equals\":\"sevsnpvm\"}]}]},{\"authority\":\"https://sharedsau.sau.attest.azure.net/\",\"allOf\":[{\"claim\":\"x-ms-compliance-status\",\"equals\":\"azure-compliant-cvm\"},{\"anyOf\":[{\"claim\":\"x-ms-attestation-type\",\"equals\":\"tdxvm\"},{\"claim\":\"x-ms-attestation-type\",\"equals\":\"sevsnpvm\"}]}]},{\"authority\":\"https://sharedcin.cin.attest.azure.net/\",\"allOf\":[{\"claim\":\"x-ms-compliance-status\",\"equals\":\"azure-compliant-cvm\"},{\"anyOf\":[{\"claim\":\"x-ms-attestation-type\",\"equals\":\"sevsnpvm\"}]}]},{\"authority\":\"https://shareduaen.uaen.attest.azure.net/\",\"allOf\":[{\"claim\":\"x-ms-compliance-status\",\"equals\":\"azure-compliant-cvm\"},{\"anyOf\":[{\"claim\":\"x-ms-attestation-type\",\"equals\":\"sevsnpvm\"}]}]},{\"authority\":\"https://shareddewc.dewc.attest.azure.net/\",\"allOf\":[{\"claim\":\"x-ms-compliance-status\",\"equals\":\"azure-compliant-cvm\"},{\"anyOf\":[{\"claim\":\"x-ms-attestation-type\",\"equals\":\"sevsnpvm\"}]}]},{\"authority\":\"https://sharedwus3.wus3.attest.azure.net/\",\"allOf\":[{\"claim\":\"x-ms-compliance-status\",\"equals\":\"azure-compliant-cvm\"},{\"anyOf\":[{\"claim\":\"x-ms-attestation-type\",\"equals\":\"tdxvm\"},{\"claim\":\"x-ms-attestation-type\",\"equals\":\"sevsnpvm\"}]}]}]}\r\n\"@\r\nIf ($Tags -ne '{}') {\r\n    [PSCustomObject]$TagsObject = $Tags | ConvertFrom-Json\r\n}\r\ntry \r\n{\r\n    # Get an access token for Azure resources\r\n    $AzureKeyVaultAccessToken = (Invoke-RestMethod `\r\n        -Headers @{Metadata=\"true\"} `\r\n        -Uri $('http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=' + $VaultUriFixed + '&client_id=' + $UserAssignedIdentityClientId)).access_token\r\n\r\n    # Set header for Azure Management API\r\n    $AzureKeyVaultHeader = @{\r\n        'Content-Type'='application/json'\r\n        'Authorization'='Bearer ' + $AzureKeyVaultAccessToken\r\n    }\r\n\r\n    $Key = (Invoke-RestMethod `\r\n        -Headers $AzureKeyVaultHeader `\r\n        -Method 'GET' `\r\n        -Uri $($VaultUriFixed + '/keys?api-version=7.4')).value | Where-Object { $_.kid -eq \"$VaultUriFixed/keys/$KeyName\" }\r\n        \r\n    If (!$Key) {\r\n        #$PolicyContentJson | ConvertFrom-Json | ConvertTo-Json -Depth 100\r\n        $Release_Policy_Data = [Convert]::ToBase64String([char[]]$PolicyContentJson)\r\n        $Body = (@{\r\n            attributes = @{\r\n                enabled = $true\r\n                exportable = $true\r\n            }\r\n            kty='RSA-HSM'\r\n            key_size=4096\r\n            key_ops=@('encrypt', 'decrypt', 'sign', 'verify', 'wrapKey', 'unwrapKey')\r\n            release_policy=@{\r\n                data=$Release_Policy_Data\r\n            }\r\n        })\r\n        If($TagsObject) {\r\n            $Body.tags = $TagsObject\r\n        }\r\n        $Body = $Body | ConvertTo-Json -Depth 100 -Compress\r\n\r\n        Invoke-RestMethod `\r\n            -Headers $AzureKeyVaultHeader `\r\n            -Method 'POST' `\r\n            -Uri $($VaultUriFixed + '/keys/' + $KeyName + '/create?api-version=7.4') `\r\n            -Body $Body\r\n    }\r\n}\r\ncatch \r\n{\r\n    Write-Error -Message \"Failed to create or retrieve the key from the Key Vault. $_\"\r\n    throw\r\n}",
                     "keyVaultName": "[last(split(parameters('keyVaultResourceId'), '/'))]",
                     "keyVaultResourceGroup": "[split(parameters('keyVaultResourceId'), '/')[4]]",
+                    "roleKeyVaultCryptoUser": "e147488a-f6f5-4113-8e2d-b22465e65bf6",
+                    "roleKeyVaultCryptoReleaseUser": "08bbd89e-9f13-488c-ac41-acfcb10c90ab",
                     "diskEncryptionSetEncryptionType": "[if(parameters('confidentialVMOSDiskEncryption'), 'ConfidentialVmEncryptedWithCustomerKey', if(not(contains(parameters('keyManagementDisks'), 'Platform')), 'EncryptionAtRestWithCustomerKey', 'EncryptionAtRestWithPlatformAndCustomerKeys'))]"
                   },
                   "resources": [
@@ -14834,7 +14974,7 @@
                       "type": "Microsoft.Resources/deployments",
                       "apiVersion": "2022-09-01",
                       "name": "[format('Set_EncryptionKey_ConfidentialVMOSDisk_{0}', parameters('timeStamp'))]",
-                      "resourceGroup": "[parameters('resourceGroupDeployment')]",
+                      "resourceGroup": "[parameters('deploymentResourceGroupName')]",
                       "properties": {
                         "expressionEvaluationOptions": {
                           "scope": "inner"
@@ -15088,7 +15228,7 @@
                             "value": "ServicePrincipal"
                           },
                           "roleDefinitionId": {
-                            "value": "08bbd89e-9f13-488c-ac41-acfcb10c90ab"
+                            "value": "[variables('roleKeyVaultCryptoReleaseUser')]"
                           }
                         },
                         "template": {
@@ -15140,7 +15280,7 @@
                         }
                       },
                       "dependsOn": [
-                        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupDeployment')), 'Microsoft.Resources/deployments', format('Set_EncryptionKey_ConfidentialVMOSDisk_{0}', parameters('timeStamp')))]"
+                        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('deploymentResourceGroupName')), 'Microsoft.Resources/deployments', format('Set_EncryptionKey_ConfidentialVMOSDisk_{0}', parameters('timeStamp')))]"
                       ]
                     },
                     {
@@ -15504,7 +15644,7 @@
                         }
                       },
                       "dependsOn": [
-                        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupDeployment')), 'Microsoft.Resources/deployments', format('Set_EncryptionKey_ConfidentialVMOSDisk_{0}', parameters('timeStamp')))]",
+                        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('deploymentResourceGroupName')), 'Microsoft.Resources/deployments', format('Set_EncryptionKey_ConfidentialVMOSDisk_{0}', parameters('timeStamp')))]",
                         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('keyVaultResourceGroup')), 'Microsoft.Resources/deployments', format('Encryption_Key_{0}', parameters('timeStamp')))]"
                       ]
                     },
@@ -15532,7 +15672,7 @@
                             "value": "ServicePrincipal"
                           },
                           "roleDefinitionId": {
-                            "value": "e147488a-f6f5-4113-8e2d-b22465e65bf6"
+                            "value": "[variables('roleKeyVaultCryptoUser')]"
                           }
                         },
                         "template": {
@@ -15586,20 +15726,246 @@
                       "dependsOn": [
                         "[resourceId('Microsoft.Resources/deployments', format('DiskEncryptionSet_{0}', parameters('timeStamp')))]"
                       ]
+                    },
+                    {
+                      "type": "Microsoft.Resources/deployments",
+                      "apiVersion": "2022-09-01",
+                      "name": "[format('Get_DiskEncryptionSet_Crypto_User_RoleAssignment_{0}', parameters('timeStamp'))]",
+                      "resourceGroup": "[parameters('deploymentResourceGroupName')]",
+                      "properties": {
+                        "expressionEvaluationOptions": {
+                          "scope": "inner"
+                        },
+                        "mode": "Incremental",
+                        "parameters": {
+                          "location": {
+                            "value": "[parameters('location')]"
+                          },
+                          "principalId": {
+                            "value": "[reference(resourceId('Microsoft.Resources/deployments', format('DiskEncryptionSet_{0}', parameters('timeStamp'))), '2022-09-01').outputs.principalId.value]"
+                          },
+                          "resourceIds": {
+                            "value": [
+                              "[format('{0}/keys/{1}', parameters('keyVaultResourceId'), parameters('keyName'))]"
+                            ]
+                          },
+                          "roleDefinitionId": {
+                            "value": "[variables('roleKeyVaultCryptoUser')]"
+                          },
+                          "runCommandName": {
+                            "value": "Get-DiskEncryptionSetCryptoUserRoleAssignment"
+                          },
+                          "userAssignedIdentityClientId": {
+                            "value": "[parameters('deploymentUserAssignedIdentityClientId')]"
+                          },
+                          "virtualMachineName": {
+                            "value": "[parameters('deploymentVirtualMachineName')]"
+                          }
+                        },
+                        "template": {
+                          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                          "contentVersion": "1.0.0.0",
+                          "metadata": {
+                            "_generator": {
+                              "name": "bicep",
+                              "version": "0.36.177.2456",
+                              "templateHash": "18282053287239878724"
+                            }
+                          },
+                          "parameters": {
+                            "location": {
+                              "type": "string"
+                            },
+                            "runCommandName": {
+                              "type": "string"
+                            },
+                            "principalId": {
+                              "type": "string"
+                            },
+                            "resourceIds": {
+                              "type": "array"
+                            },
+                            "roleDefinitionId": {
+                              "type": "string"
+                            },
+                            "userAssignedIdentityClientId": {
+                              "type": "string",
+                              "defaultValue": ""
+                            },
+                            "virtualMachineName": {
+                              "type": "string"
+                            }
+                          },
+                          "variables": {
+                            "$fxv#0": "param(\r\n    [Parameter(Mandatory=$true)]\r\n    [string]$ResourceManagerUri,\r\n\r\n    [Parameter(Mandatory=$true)]\r\n    [string[]]$ResourceIds,\r\n\r\n    [Parameter(Mandatory=$true)]\r\n    [string]$UserAssignedIdentityClientId,\r\n\r\n    [Parameter(Mandatory=$true)]\r\n    [string]$PrincipalId,\r\n\r\n    [Parameter(Mandatory=$true)]\r\n    [string]$RoleDefinitionId\r\n)\r\n\r\n$ErrorActionPreference = 'Stop'\r\n$WarningPreference = 'SilentlyContinue'\r\n\r\n[array]$ResIds = $ResourceIds.replace('\\\"', '\"') | ConvertFrom-Json\r\n\r\nTry {\r\n    # Fix the resource manager URI since only AzureCloud contains a trailing slash\r\n    $ResourceManagerUriFixed = if($ResourceManagerUri[-1] -eq '/'){$ResourceManagerUri.Substring(0,$ResourceManagerUri.Length - 1)} else {$ResourceManagerUri}\r\n\r\n    # Get an access token for Azure resources\r\n    $AzureManagementAccessToken = (Invoke-RestMethod -Headers @{Metadata=\"true\"} -Uri $('http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=' + $ResourceManagerUriFixed + '&client_id=' + $UserAssignedIdentityClientId)).access_token\r\n\r\n    # Set header for Azure Management API\r\n    $AzureManagementHeader = @{\r\n        'Content-Type'='application/json'\r\n        'Authorization'='Bearer ' + $AzureManagementAccessToken\r\n    }\r\n\r\n    # Loop through each resource ID to find the role assignment\r\n    Write-Output \"Searching for role assignment for Principal '$PrincipalId' with Role '$RoleDefinitionId' across $($ResIds.Count) resource(s)\"\r\n    \r\n    $StartTime = Get-Date\r\n    $TimeoutSeconds = 180\r\n    $FoundRoleAssignments = @{}\r\n    $Attempt = 1\r\n\r\n    do {\r\n        Write-Output \"Attempt $Attempt - Checking for role assignment across all resources...\"\r\n        \r\n        foreach ($ResourceId in $ResIds) {\r\n            # Skip if we already found the role assignment for this resource\r\n            if ($FoundRoleAssignments.ContainsKey($ResourceId)) {\r\n                continue\r\n            }\r\n            \r\n            Write-Output \"  Checking resource id: $ResourceId\"\r\n            \r\n            # Construct the API URL for role assignments for the specific resource\r\n            $RoleAssignmentsUri = $ResourceManagerUriFixed + $ResourceId + '/providers/Microsoft.Authorization/roleAssignments?api-version=2022-04-01'\r\n            \r\n            try {\r\n                # Query role assignments for the resource\r\n                $RoleAssignments = Invoke-RestMethod -Headers $AzureManagementHeader -Method 'GET' -Uri $RoleAssignmentsUri\r\n\r\n                # Look for the specific role assignment matching both PrincipalId and RoleDefinitionId\r\n                $TargetRoleAssignment = $RoleAssignments.value.properties | Where-Object { \r\n                    $_.principalId -eq $PrincipalId -and \r\n                    $_.roleDefinitionId -eq $RoleDefinitionId \r\n                }\r\n\r\n                if ($TargetRoleAssignment) {\r\n                    $FoundRoleAssignments[$ResourceId] = $TargetRoleAssignment\r\n                    Write-Output \"  Role assignment found on resource id '$ResourceId'\"\r\n                } else {\r\n                    Write-Output \"  Role assignment not found on resource id '$ResourceId'\"\r\n                }\r\n            }\r\n            catch {\r\n                Write-Warning \"  Failed to query role assignments for resource id '$ResourceId': $($_.Exception.Message)\"\r\n                continue\r\n            }\r\n        }\r\n        $ElapsedTime = (Get-Date) - $StartTime\r\n        # Check if we found role assignments for all resources\r\n        $AllResourcesHaveAssignment = $FoundRoleAssignments.Count -eq $ResIds.Count\r\n        \r\n        if ($AllResourcesHaveAssignment) {\r\n            Write-Output \"Role assignment found on all $($ResIds.Count) resources after $($ElapsedTime.TotalSeconds) seconds.\"\r\n            break\r\n        }\r\n\r\n        if ($ElapsedTime.TotalSeconds -ge $TimeoutSeconds) {\r\n            break\r\n        }\r\n\r\n        $MissingCount = $ResIds.Count - $FoundRoleAssignments.Count\r\n        Write-Output \"Role assignment found on $($FoundRoleAssignments.Count)/$($ResIds.Count) resources. Still missing $MissingCount. Waiting 5 seconds before retry...\"\r\n        Start-Sleep -Seconds 5\r\n        $Attempt++\r\n    } while ($ElapsedTime.TotalSeconds -lt $TimeoutSeconds)\r\n\r\n    if ($FoundRoleAssignments.Count -eq 0) {\r\n        $ErrorMessage = \"Role assignment not found on any resources after $TimeoutSeconds seconds. Principal ID: '$PrincipalId', Role Definition ID: '$RoleDefinitionId', Resources checked: $($ResIds -join ', ')\"\r\n        Write-Error $ErrorMessage\r\n        throw $ErrorMessage\r\n    } elseif ($FoundRoleAssignments.Count -lt $ResIds.Count) {\r\n        $MissingResources = $ResIds | Where-Object { -not $FoundRoleAssignments.ContainsKey($_) }\r\n        $ErrorMessage = \"Role assignment not found on all resources after $TimeoutSeconds seconds. Principal ID: '$PrincipalId', Role Definition ID: '$RoleDefinitionId'. Missing on resources: $($MissingResources -join ', ')\"\r\n        Write-Error $ErrorMessage\r\n        throw $ErrorMessage\r\n    }\r\n}\r\ncatch {\r\n    Write-Error \"Error querying role assignments: $($_.Exception.Message)\"\r\n    throw\r\n}\r\n"
+                          },
+                          "resources": [
+                            {
+                              "type": "Microsoft.Compute/virtualMachines/runCommands",
+                              "apiVersion": "2023-03-01",
+                              "name": "[format('{0}/{1}', parameters('virtualMachineName'), parameters('runCommandName'))]",
+                              "location": "[parameters('location')]",
+                              "properties": {
+                                "asyncExecution": false,
+                                "parameters": [
+                                  {
+                                    "name": "ResourceManagerUri",
+                                    "value": "[environment().resourceManager]"
+                                  },
+                                  {
+                                    "name": "ResourceIds",
+                                    "value": "[string(parameters('resourceIds'))]"
+                                  },
+                                  {
+                                    "name": "UserAssignedIdentityClientId",
+                                    "value": "[parameters('userAssignedIdentityClientId')]"
+                                  },
+                                  {
+                                    "name": "PrincipalId",
+                                    "value": "[parameters('principalId')]"
+                                  },
+                                  {
+                                    "name": "RoleDefinitionId",
+                                    "value": "[subscriptionResourceId('microsoft.authorization/roleDefinitions', parameters('roleDefinitionId'))]"
+                                  }
+                                ],
+                                "source": {
+                                  "script": "[variables('$fxv#0')]"
+                                },
+                                "timeoutInSeconds": 180,
+                                "treatFailureAsDeploymentFailure": true
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.Resources/deployments', format('DiskEncryptionSet_{0}', parameters('timeStamp')))]",
+                        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('keyVaultResourceGroup')), 'Microsoft.Resources/deployments', format('RA_DiskEncryptionSet_CryptoServiceEncryptionUser_{0}', parameters('timeStamp')))]"
+                      ]
+                    },
+                    {
+                      "condition": "[parameters('confidentialVMOSDiskEncryption')]",
+                      "type": "Microsoft.Resources/deployments",
+                      "apiVersion": "2022-09-01",
+                      "name": "[format('Get_DiskEncryptionSet_CryptoReleaseUser_RoleAssignment_{0}', parameters('timeStamp'))]",
+                      "resourceGroup": "[parameters('deploymentResourceGroupName')]",
+                      "properties": {
+                        "expressionEvaluationOptions": {
+                          "scope": "inner"
+                        },
+                        "mode": "Incremental",
+                        "parameters": {
+                          "location": {
+                            "value": "[parameters('location')]"
+                          },
+                          "principalId": {
+                            "value": "[parameters('confidentialVMOrchestratorObjectId')]"
+                          },
+                          "resourceIds": {
+                            "value": [
+                              "[format('{0}/keys/{1}', parameters('keyVaultResourceId'), parameters('keyName'))]"
+                            ]
+                          },
+                          "roleDefinitionId": {
+                            "value": "[variables('roleKeyVaultCryptoReleaseUser')]"
+                          },
+                          "runCommandName": {
+                            "value": "Get-DiskEncryptionSetCryptoReleaseUserRoleAssignment"
+                          },
+                          "userAssignedIdentityClientId": {
+                            "value": "[parameters('deploymentUserAssignedIdentityClientId')]"
+                          },
+                          "virtualMachineName": {
+                            "value": "[parameters('deploymentVirtualMachineName')]"
+                          }
+                        },
+                        "template": {
+                          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                          "contentVersion": "1.0.0.0",
+                          "metadata": {
+                            "_generator": {
+                              "name": "bicep",
+                              "version": "0.36.177.2456",
+                              "templateHash": "18282053287239878724"
+                            }
+                          },
+                          "parameters": {
+                            "location": {
+                              "type": "string"
+                            },
+                            "runCommandName": {
+                              "type": "string"
+                            },
+                            "principalId": {
+                              "type": "string"
+                            },
+                            "resourceIds": {
+                              "type": "array"
+                            },
+                            "roleDefinitionId": {
+                              "type": "string"
+                            },
+                            "userAssignedIdentityClientId": {
+                              "type": "string",
+                              "defaultValue": ""
+                            },
+                            "virtualMachineName": {
+                              "type": "string"
+                            }
+                          },
+                          "variables": {
+                            "$fxv#0": "param(\r\n    [Parameter(Mandatory=$true)]\r\n    [string]$ResourceManagerUri,\r\n\r\n    [Parameter(Mandatory=$true)]\r\n    [string[]]$ResourceIds,\r\n\r\n    [Parameter(Mandatory=$true)]\r\n    [string]$UserAssignedIdentityClientId,\r\n\r\n    [Parameter(Mandatory=$true)]\r\n    [string]$PrincipalId,\r\n\r\n    [Parameter(Mandatory=$true)]\r\n    [string]$RoleDefinitionId\r\n)\r\n\r\n$ErrorActionPreference = 'Stop'\r\n$WarningPreference = 'SilentlyContinue'\r\n\r\n[array]$ResIds = $ResourceIds.replace('\\\"', '\"') | ConvertFrom-Json\r\n\r\nTry {\r\n    # Fix the resource manager URI since only AzureCloud contains a trailing slash\r\n    $ResourceManagerUriFixed = if($ResourceManagerUri[-1] -eq '/'){$ResourceManagerUri.Substring(0,$ResourceManagerUri.Length - 1)} else {$ResourceManagerUri}\r\n\r\n    # Get an access token for Azure resources\r\n    $AzureManagementAccessToken = (Invoke-RestMethod -Headers @{Metadata=\"true\"} -Uri $('http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=' + $ResourceManagerUriFixed + '&client_id=' + $UserAssignedIdentityClientId)).access_token\r\n\r\n    # Set header for Azure Management API\r\n    $AzureManagementHeader = @{\r\n        'Content-Type'='application/json'\r\n        'Authorization'='Bearer ' + $AzureManagementAccessToken\r\n    }\r\n\r\n    # Loop through each resource ID to find the role assignment\r\n    Write-Output \"Searching for role assignment for Principal '$PrincipalId' with Role '$RoleDefinitionId' across $($ResIds.Count) resource(s)\"\r\n    \r\n    $StartTime = Get-Date\r\n    $TimeoutSeconds = 180\r\n    $FoundRoleAssignments = @{}\r\n    $Attempt = 1\r\n\r\n    do {\r\n        Write-Output \"Attempt $Attempt - Checking for role assignment across all resources...\"\r\n        \r\n        foreach ($ResourceId in $ResIds) {\r\n            # Skip if we already found the role assignment for this resource\r\n            if ($FoundRoleAssignments.ContainsKey($ResourceId)) {\r\n                continue\r\n            }\r\n            \r\n            Write-Output \"  Checking resource id: $ResourceId\"\r\n            \r\n            # Construct the API URL for role assignments for the specific resource\r\n            $RoleAssignmentsUri = $ResourceManagerUriFixed + $ResourceId + '/providers/Microsoft.Authorization/roleAssignments?api-version=2022-04-01'\r\n            \r\n            try {\r\n                # Query role assignments for the resource\r\n                $RoleAssignments = Invoke-RestMethod -Headers $AzureManagementHeader -Method 'GET' -Uri $RoleAssignmentsUri\r\n\r\n                # Look for the specific role assignment matching both PrincipalId and RoleDefinitionId\r\n                $TargetRoleAssignment = $RoleAssignments.value.properties | Where-Object { \r\n                    $_.principalId -eq $PrincipalId -and \r\n                    $_.roleDefinitionId -eq $RoleDefinitionId \r\n                }\r\n\r\n                if ($TargetRoleAssignment) {\r\n                    $FoundRoleAssignments[$ResourceId] = $TargetRoleAssignment\r\n                    Write-Output \"  Role assignment found on resource id '$ResourceId'\"\r\n                } else {\r\n                    Write-Output \"  Role assignment not found on resource id '$ResourceId'\"\r\n                }\r\n            }\r\n            catch {\r\n                Write-Warning \"  Failed to query role assignments for resource id '$ResourceId': $($_.Exception.Message)\"\r\n                continue\r\n            }\r\n        }\r\n        $ElapsedTime = (Get-Date) - $StartTime\r\n        # Check if we found role assignments for all resources\r\n        $AllResourcesHaveAssignment = $FoundRoleAssignments.Count -eq $ResIds.Count\r\n        \r\n        if ($AllResourcesHaveAssignment) {\r\n            Write-Output \"Role assignment found on all $($ResIds.Count) resources after $($ElapsedTime.TotalSeconds) seconds.\"\r\n            break\r\n        }\r\n\r\n        if ($ElapsedTime.TotalSeconds -ge $TimeoutSeconds) {\r\n            break\r\n        }\r\n\r\n        $MissingCount = $ResIds.Count - $FoundRoleAssignments.Count\r\n        Write-Output \"Role assignment found on $($FoundRoleAssignments.Count)/$($ResIds.Count) resources. Still missing $MissingCount. Waiting 5 seconds before retry...\"\r\n        Start-Sleep -Seconds 5\r\n        $Attempt++\r\n    } while ($ElapsedTime.TotalSeconds -lt $TimeoutSeconds)\r\n\r\n    if ($FoundRoleAssignments.Count -eq 0) {\r\n        $ErrorMessage = \"Role assignment not found on any resources after $TimeoutSeconds seconds. Principal ID: '$PrincipalId', Role Definition ID: '$RoleDefinitionId', Resources checked: $($ResIds -join ', ')\"\r\n        Write-Error $ErrorMessage\r\n        throw $ErrorMessage\r\n    } elseif ($FoundRoleAssignments.Count -lt $ResIds.Count) {\r\n        $MissingResources = $ResIds | Where-Object { -not $FoundRoleAssignments.ContainsKey($_) }\r\n        $ErrorMessage = \"Role assignment not found on all resources after $TimeoutSeconds seconds. Principal ID: '$PrincipalId', Role Definition ID: '$RoleDefinitionId'. Missing on resources: $($MissingResources -join ', ')\"\r\n        Write-Error $ErrorMessage\r\n        throw $ErrorMessage\r\n    }\r\n}\r\ncatch {\r\n    Write-Error \"Error querying role assignments: $($_.Exception.Message)\"\r\n    throw\r\n}\r\n"
+                          },
+                          "resources": [
+                            {
+                              "type": "Microsoft.Compute/virtualMachines/runCommands",
+                              "apiVersion": "2023-03-01",
+                              "name": "[format('{0}/{1}', parameters('virtualMachineName'), parameters('runCommandName'))]",
+                              "location": "[parameters('location')]",
+                              "properties": {
+                                "asyncExecution": false,
+                                "parameters": [
+                                  {
+                                    "name": "ResourceManagerUri",
+                                    "value": "[environment().resourceManager]"
+                                  },
+                                  {
+                                    "name": "ResourceIds",
+                                    "value": "[string(parameters('resourceIds'))]"
+                                  },
+                                  {
+                                    "name": "UserAssignedIdentityClientId",
+                                    "value": "[parameters('userAssignedIdentityClientId')]"
+                                  },
+                                  {
+                                    "name": "PrincipalId",
+                                    "value": "[parameters('principalId')]"
+                                  },
+                                  {
+                                    "name": "RoleDefinitionId",
+                                    "value": "[subscriptionResourceId('microsoft.authorization/roleDefinitions', parameters('roleDefinitionId'))]"
+                                  }
+                                ],
+                                "source": {
+                                  "script": "[variables('$fxv#0')]"
+                                },
+                                "timeoutInSeconds": 180,
+                                "treatFailureAsDeploymentFailure": true
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "dependsOn": [
+                        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('keyVaultResourceGroup')), 'Microsoft.Resources/deployments', format('RoleAssignment_ConfVMOrchestrator_ReleaseUser_{0}', parameters('timeStamp')))]"
+                      ]
                     }
                   ],
                   "outputs": {
                     "diskEncryptionSetResourceId": {
                       "type": "string",
                       "value": "[reference(resourceId('Microsoft.Resources/deployments', format('DiskEncryptionSet_{0}', parameters('timeStamp'))), '2022-09-01').outputs.resourceId.value]"
-                    },
-                    "diskEncryptionSetRoleAssignmentId": {
-                      "type": "string",
-                      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('keyVaultResourceGroup')), 'Microsoft.Resources/deployments', format('RA_DiskEncryptionSet_CryptoServiceEncryptionUser_{0}', parameters('timeStamp'))), '2022-09-01').outputs.roleAssignmentId.value]"
-                    },
-                    "confidentialVMOrchestratorRoleAssignmentId": {
-                      "type": "string",
-                      "value": "[if(parameters('confidentialVMOSDiskEncryption'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('keyVaultResourceGroup')), 'Microsoft.Resources/deployments', format('RoleAssignment_ConfVMOrchestrator_ReleaseUser_{0}', parameters('timeStamp'))), '2022-09-01').outputs.roleAssignmentId.value, '')]"
                     }
                   }
                 }
@@ -16102,7 +16468,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.36.177.2456",
-                      "templateHash": "16666687264148763762"
+                      "templateHash": "1695468939808366998"
                     }
                   },
                   "parameters": {
@@ -16461,7 +16827,7 @@
                           ]
                         },
                         "securityProfile": {
-                          "encryptionAtHost": "[parameters('encryptionAtHost')]",
+                          "encryptionAtHost": "[if(parameters('encryptionAtHost'), true(), null())]",
                           "securityType": "[if(not(equals(parameters('securityType'), 'Standard')), parameters('securityType'), null())]",
                           "uefiSettings": "[if(not(equals(parameters('securityType'), 'Standard')), createObject('secureBootEnabled', parameters('secureBootEnabled'), 'vTpmEnabled', parameters('vTpmEnabled')), null())]"
                         },
@@ -19689,6 +20055,7 @@
       "dependsOn": [
         "[subscriptionResourceId('Microsoft.Resources/deployments', format('Deployment_Prereqs_{0}', parameters('timeStamp')))]",
         "[subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp')))]",
+        "rgs",
         "[subscriptionResourceId('Microsoft.Resources/deployments', format('SessionHosts_{0}', parameters('timeStamp')))]"
       ]
     }

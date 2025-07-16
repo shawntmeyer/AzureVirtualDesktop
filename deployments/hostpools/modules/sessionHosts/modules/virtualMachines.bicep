@@ -258,7 +258,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2022-11-01' = [for i 
       ]
     }
     securityProfile: {
-      encryptionAtHost: encryptionAtHost
+      encryptionAtHost: encryptionAtHost ? true : null
       securityType: securityType != 'Standard' ? securityType : null
       uefiSettings: securityType != 'Standard' ? {
         secureBootEnabled: secureBootEnabled
