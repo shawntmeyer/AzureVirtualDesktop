@@ -768,7 +768,7 @@ resource cleanupPublicDesktop 'Microsoft.Compute/virtualMachines/runCommands@202
     asyncExecution: true
     source: {
       script: '''
-        Get-ChildItem -Path [Environment]::GetFolderPath('CommonDesktopDirectory') -Force -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+        Remove-Item "$Env:Public\Desktop\*" -Force -ErrorAction SilentlyContinue
       '''
     }
     treatFailureAsDeploymentFailure: true
