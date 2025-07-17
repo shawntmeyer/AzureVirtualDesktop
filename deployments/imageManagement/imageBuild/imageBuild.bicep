@@ -326,14 +326,12 @@ var logContainerUri = collectCustomizationLogs
   : ''
 
 var imageDefinitionFeatures = empty(imageDefinitionResourceId)
-  ? [
-      union(
-        imageDefinitionIsHibernateSupported ? { name: 'IsHibernateSupported', value: 'True' } : {},
-        imageDefinitionIsAcceleratedNetworkSupported ? { name: 'IsAcceleratedNetworkSupported', value: 'True' } : {},
-        imageDefinitionIsHigherStoragePerformanceSupported ? { name: 'DiskControllerTypes', value: 'SCSI, NVMe' } : {},
-        imageDefinitionSecurityType != 'Standard' ? { name: 'SecurityType', value: imageDefinitionSecurityType } : {}
-      )
-    ]
+  ? filter([
+      imageDefinitionIsHibernateSupported ? { name: 'IsHibernateSupported', value: 'True' } : null
+      imageDefinitionIsAcceleratedNetworkSupported ? { name: 'IsAcceleratedNetworkSupported', value: 'True' } : null
+      imageDefinitionIsHigherStoragePerformanceSupported ? { name: 'DiskControllerTypes', value: 'SCSI, NVMe' } : null
+      imageDefinitionSecurityType != 'Standard' ? { name: 'SecurityType', value: imageDefinitionSecurityType } : null
+    ], item => item != null)
   : existingImageDefinition.properties.features
 
 var galleryImageDefinitionHyperVGeneration = endsWith(mpSku, 'g2') || startsWith(mpSku, 'win11') ? 'V2' : 'V1'
