@@ -70,3 +70,5 @@ resource workspace_diagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01
     workspaceId: logAnalyticsWorkspaceResourceId
   }
 }
+
+output resourceId string = workspace.id

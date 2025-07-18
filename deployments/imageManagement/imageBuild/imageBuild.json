@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.36.177.2456",
-      "templateHash": "4686133787470998027"
+      "templateHash": "8129587564813270847"
     },
     "name": "Zero Trust Architecture Custom Windows Image Builder",
     "description": "This solution allows you to create a custom image much like Azure VM Image Builder, but utilizes zero trust architecture and does not require that service.",
@@ -13915,5 +13915,11 @@
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('remoteComputeGalleryResourceId'), '/')[2], split(parameters('remoteComputeGalleryResourceId'), '/')[4]), 'Microsoft.Resources/deployments', format('{0}Remote-Gallery-Image-Definition-{1}', variables('depPrefix'), parameters('timeStamp')))]"
       ]
     }
-  ]
+  ],
+  "outputs": {
+    "imageDefinitionId": {
+      "type": "string",
+      "value": "[if(empty(parameters('imageDefinitionResourceId')), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, split(parameters('computeGalleryResourceId'), '/')[4]), 'Microsoft.Resources/deployments', format('{0}Gallery-Image-Definition-{1}', variables('depPrefix'), parameters('timeStamp'))), '2022-09-01').outputs.resourceId.value, parameters('imageDefinitionResourceId'))]"
+    }
+  }
 }

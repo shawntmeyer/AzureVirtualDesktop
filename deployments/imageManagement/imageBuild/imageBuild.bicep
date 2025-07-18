@@ -902,3 +902,7 @@ module remoteImageVersion '../../sharedModules/resources/compute/gallery/image/v
     tags: tags[?'Microsoft.Compute/galleries/images/versions'] ?? {}
   }
 }
+
+output imageDefinitionId string = empty(imageDefinitionResourceId)
+  ? imageDefinition.outputs.resourceId
+  : imageDefinitionResourceId

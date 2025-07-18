@@ -1185,3 +1185,8 @@ module cleanUp 'modules/cleanUp/cleanUp.bicep' = if (createDeploymentVm) {
     rgs
   ]
 }
+
+output hostPoolResourceId string = deploymentType == 'Complete' ? controlPlane.outputs.hostPoolResourceId : existingHostPoolResourceId
+output workspaceResourceId string = deploymentType == 'Complete' ? ( empty(existingFeedWorkspaceResourceId) ? controlPlane.outputs.workspaceResourceId : existingFeedWorkspaceResourceId ) : ''
+output fslogixLocalStorageAccountResourceIds array = deploymentType == 'Complete' && deployFSLogixStorage ? fslogix.outputs.storageAccountResourceIds : fslogixExistingLocalStorageAccountResourceIds
+output virtualMachineNames array = sessionHosts.outputs.virtualMachineNames

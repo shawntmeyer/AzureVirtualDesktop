@@ -246,3 +246,6 @@ module globalWorkspace 'modules/workspace.bicep' = if (empty(existingGlobalWorks
 }
 
 output hostPoolResourceId string = hostPool.outputs.resourceId
+output workspaceResourceId string = empty(existingFeedWorkspaceResourceId)
+  ? feedWorkspace.outputs.resourceId
+  : existingFeedWorkspaceResourceId

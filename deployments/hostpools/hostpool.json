@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.36.177.2456",
-      "templateHash": "6414764036293262099"
+      "templateHash": "1659667125282056906"
     }
   },
   "parameters": {
@@ -5468,7 +5468,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.36.177.2456",
-              "templateHash": "3437830203311460192"
+              "templateHash": "359237653252180952"
             }
           },
           "parameters": {
@@ -6568,7 +6568,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.36.177.2456",
-                      "templateHash": "249978904457164435"
+                      "templateHash": "4687890687676028010"
                     }
                   },
                   "parameters": {
@@ -6948,7 +6948,13 @@
                         "[resourceId('Microsoft.DesktopVirtualization/workspaces', if(empty(parameters('existingWorkspaceProperties')), parameters('workspaceName'), parameters('existingWorkspaceProperties').name))]"
                       ]
                     }
-                  ]
+                  ],
+                  "outputs": {
+                    "resourceId": {
+                      "type": "string",
+                      "value": "[resourceId('Microsoft.DesktopVirtualization/workspaces', if(empty(parameters('existingWorkspaceProperties')), parameters('workspaceName'), parameters('existingWorkspaceProperties').name))]"
+                    }
+                  }
                 }
               },
               "dependsOn": [
@@ -7291,7 +7297,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.36.177.2456",
-                      "templateHash": "249978904457164435"
+                      "templateHash": "4687890687676028010"
                     }
                   },
                   "parameters": {
@@ -7671,7 +7677,13 @@
                         "[resourceId('Microsoft.DesktopVirtualization/workspaces', if(empty(parameters('existingWorkspaceProperties')), parameters('workspaceName'), parameters('existingWorkspaceProperties').name))]"
                       ]
                     }
-                  ]
+                  ],
+                  "outputs": {
+                    "resourceId": {
+                      "type": "string",
+                      "value": "[resourceId('Microsoft.DesktopVirtualization/workspaces', if(empty(parameters('existingWorkspaceProperties')), parameters('workspaceName'), parameters('existingWorkspaceProperties').name))]"
+                    }
+                  }
                 }
               },
               "dependsOn": [
@@ -7684,6 +7696,10 @@
             "hostPoolResourceId": {
               "type": "string",
               "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupControlPlane')), 'Microsoft.Resources/deployments', format('HostPool_{0}', parameters('timeStamp'))), '2022-09-01').outputs.resourceId.value]"
+            },
+            "workspaceResourceId": {
+              "type": "string",
+              "value": "[if(empty(parameters('existingFeedWorkspaceResourceId')), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupControlPlane')), 'Microsoft.Resources/deployments', format('WorkspaceFeed_{0}', parameters('timeStamp'))), '2022-09-01').outputs.resourceId.value, parameters('existingFeedWorkspaceResourceId'))]"
             }
           }
         }
@@ -20059,5 +20075,23 @@
         "[subscriptionResourceId('Microsoft.Resources/deployments', format('SessionHosts_{0}', parameters('timeStamp')))]"
       ]
     }
-  ]
+  ],
+  "outputs": {
+    "hostPoolResourceId": {
+      "type": "string",
+      "value": "[if(equals(parameters('deploymentType'), 'Complete'), reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ControlPlane_{0}', parameters('timeStamp'))), '2022-09-01').outputs.hostPoolResourceId.value, parameters('existingHostPoolResourceId'))]"
+    },
+    "workspaceResourceId": {
+      "type": "string",
+      "value": "[if(equals(parameters('deploymentType'), 'Complete'), if(empty(parameters('existingFeedWorkspaceResourceId')), reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ControlPlane_{0}', parameters('timeStamp'))), '2022-09-01').outputs.workspaceResourceId.value, parameters('existingFeedWorkspaceResourceId')), '')]"
+    },
+    "fslogixLocalStorageAccountResourceIds": {
+      "type": "array",
+      "value": "[if(and(equals(parameters('deploymentType'), 'Complete'), parameters('deployFSLogixStorage')), reference(subscriptionResourceId('Microsoft.Resources/deployments', format('FSLogix_{0}', parameters('timeStamp'))), '2022-09-01').outputs.storageAccountResourceIds.value, parameters('fslogixExistingLocalStorageAccountResourceIds'))]"
+    },
+    "virtualMachineNames": {
+      "type": "array",
+      "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('SessionHosts_{0}', parameters('timeStamp'))), '2022-09-01').outputs.virtualMachineNames.value]"
+    }
+  }
 }
