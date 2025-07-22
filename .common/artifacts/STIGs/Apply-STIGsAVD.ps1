@@ -549,10 +549,28 @@ ForEach ($folder in $ApplicableFolders.FullName) {
     $GPOFolders += $gpoFolderPath
 }
 ForEach ($gpoFolder in $GPOFolders) {
-    Write-Log -Message "Running 'LGPO.exe /g `"$gpoFolder`"'"
-    $lgpo = Start-Process -FilePath "$env:SystemRoot\System32\lgpo.exe" -ArgumentList "/g `"$gpoFolder`"" -Wait -PassThru
-    Write-Log -Message "'lgpo.exe' exited with code [$($lgpo.ExitCode)]."
+    If ($gpoFolder -like "DoD*Windows $osVersion*") {
+        <# Remove the policies that disable and rename the administrator account.
+            # this should be done via the following code in run commands.
+            
+            # Get the built-in Administrator account (RID 500)
+            $adminAccount = Get-LocalUser | Where-Object { $_.SID -like "*-500" }
+
+            # Rename the Administrator account
+            Rename-LocalUser -Name $adminAccount.Name -NewName $newAdminName
+
+            # Disable the renamed account
+            Disable-LocalUser -Name $newAdminName
+        #>
+        $SecEditFile = (Get-ChildItem -Path $gpoFolder -Recurse -Filter "GptTmpl.inf" | Where-Object { $_.DirectoryName -match "SecEdit" }).FullName
+        $Content = Get-Content $SecEditFile
+        $filteredLines = $Content | Where-Object {-not ($_ -match "^NewAdministratorName") -and -not ($_ -match "^EnableAdminAccount") }
+        Set-Content -Path $SecEditFile -Value $filteredLines
+    }
 }
+Write-Log -Message "Running 'LGPO.exe /g `"$gpoFolder`"'"
+$lgpo = Start-Process -FilePath "$env:SystemRoot\System32\lgpo.exe" -ArgumentList "/g `"$gpoFolder`"" -Wait -PassThru
+Write-Log -Message "'lgpo.exe' exited with code [$($lgpo.ExitCode)]."
 
 Write-Log -Message "Applying AVD Exceptions"
 $OutputFilePrefix = 'AVD-Exceptions'
@@ -562,8 +580,6 @@ Unicode=yes
 [Version]
 signature="$CHICAGO$"
 Revision=1
-[System Access]
-EnableAdminAccount = 1
 [Registry Values]
 MACHINE\SYSTEM\CurrentControlSet\Control\Lsa\Pku2u\AllowOnlineID=4,1
 [Privilege Rights]

@@ -858,10 +858,6 @@ resource sysprep 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' = {
         name: 'AdminUserPw'
         value: adminPw
       }
-      {
-        name: 'AdminUserName'
-        value: adminUserName
-      }
     ]
     source: {
       script: loadTextContent('../../../../.common/scripts/Invoke-Sysprep.ps1')
