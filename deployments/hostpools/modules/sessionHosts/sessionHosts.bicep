@@ -141,11 +141,11 @@ module hostPoolUpdate 'modules/hostPoolUpdate.bicep' = if(deploymentType != 'Com
   name: 'HostPoolRegistrationTokenUpdate_${timeStamp}'
   scope: resourceGroup(split(hostPoolResourceId, '/')[4])
   params: {
-    hostPoolType: deploymentType != 'Complete' ? hostPoolGet.properties.hostPoolType : ''
-    loadBalancerType: deploymentType != 'Complete' ? hostPoolGet.properties.loadBalancerType : ''
-    location: deploymentType != 'Complete' ? hostPoolGet.location : location
+    hostPoolType: deploymentType != 'Complete' ? hostPoolGet!.properties.hostPoolType : ''
+    loadBalancerType: deploymentType != 'Complete' ? hostPoolGet!.properties.loadBalancerType : ''
+    location: deploymentType != 'Complete' ? hostPoolGet!.location : location
     name: deploymentType != 'Complete' ? hostPoolGet.name : ''
-    preferredAppGroupType: deploymentType != 'Complete' ? hostPoolGet.properties.preferredAppGroupType : ''
+    preferredAppGroupType: deploymentType != 'Complete' ? hostPoolGet!.properties.preferredAppGroupType : ''
   } 
 }
 
@@ -184,7 +184,7 @@ module diskAccessResource '../../../sharedModules/resources/compute/disk-access/
 module diskAccessPolicy 'modules/diskNetworkAccessPolicy.bicep' = if (deployDiskAccessPolicy) {
   name: 'ManagedDisks_NetworkAccess_Policy_${timeStamp}'
   params: {
-    diskAccessId: deployDiskAccessResource ? diskAccessResource.outputs.resourceId : ''
+    diskAccessId: deployDiskAccessResource ? diskAccessResource!.outputs.resourceId : ''
     location: location
     resourceGroupName: resourceGroupHosts
   }
@@ -254,7 +254,7 @@ module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sess
   params: {
     artifactsContainerUri: artifactsContainerUri
     artifactsUserAssignedIdentityResourceId: artifactsUserAssignedIdentityResourceId
-    artifactsUserAssignedIdentityClientId: empty(artifactsUserAssignedIdentityResourceId) ? '' : artifactsUserAssignedIdentity.outputs.clientId
+    artifactsUserAssignedIdentityClientId: empty(artifactsUserAssignedIdentityResourceId) ? '' : artifactsUserAssignedIdentity!.outputs.clientId
     availability: availability
     availabilityZones: availabilityZones
     availabilitySetNamePrefix: availabilitySetNamePrefix
@@ -265,8 +265,8 @@ module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sess
     dedicatedHostGroupResourceId: dedicatedHostGroupResourceId
     dedicatedHostGroupZones: dedicatedHostGroupZones
     dedicatedHostResourceId: dedicatedHostResourceId
-    diskAccessId: deploymentType == 'Complete' ? deployDiskAccessResource ? diskAccessResource.outputs.resourceId : '' : existingDiskAccessResourceId
-    diskEncryptionSetResourceId: ( deploymentType == 'Complete' && keyManagementDisks != 'PlatformManaged' ) ? customerManagedKeys.outputs.diskEncryptionSetResourceId : !empty(existingDiskEncryptionSetResourceId) ? existingDiskEncryptionSetResourceId : ''
+    diskAccessId: deploymentType == 'Complete' ? deployDiskAccessResource ? diskAccessResource!.outputs.resourceId : '' : existingDiskAccessResourceId
+    diskEncryptionSetResourceId: ( deploymentType == 'Complete' && keyManagementDisks != 'PlatformManaged' ) ? customerManagedKeys!.outputs.diskEncryptionSetResourceId : !empty(existingDiskEncryptionSetResourceId) ? existingDiskEncryptionSetResourceId : ''
     diskSizeGB: diskSizeGB
     diskSku: diskSku
     domainJoinUserPassword: domainJoinUserPassword
@@ -279,13 +279,13 @@ module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sess
     fslogixContainerType: fslogixContainerType
     fslogixFileShareNames: fslogixFileShareNames
     fslogixOSSGroups: fslogixOSSGroups
-    fslogixLocalNetAppServerFqdns: [for i in range(0, length(sortedLocalNetAppResourceIds)) : localNetAppVolumes[i].outputs.smbServerFqdn]
+    fslogixLocalNetAppServerFqdns: [for i in range(0, length(sortedLocalNetAppResourceIds)) : localNetAppVolumes[i]!.outputs.smbServerFqdn]
     fslogixLocalStorageAccountResourceIds: fslogixLocalStorageAccountResourceIds
-    fslogixRemoteNetAppServerFqdns: [for i in range(0, length(sortedRemoteNetAppResourceIds)) : remoteNetAppVolumes[i].outputs.smbServerFqdn]
+    fslogixRemoteNetAppServerFqdns: [for i in range(0, length(sortedRemoteNetAppResourceIds)) : remoteNetAppVolumes[i]!.outputs.smbServerFqdn]
     fslogixRemoteStorageAccountResourceIds: fslogixRemoteStorageAccountResourceIds    
     fslogixStorageService: fslogixStorageService
     hibernationEnabled: hibernationEnabled
-    hostPoolResourceId: deploymentType == 'Complete' ? hostPoolResourceId : hostPoolUpdate.outputs.resourceId
+    hostPoolResourceId: deploymentType == 'Complete' ? hostPoolResourceId : hostPoolUpdate!.outputs.resourceId
     identitySolution: identitySolution
     imageOffer: imageOffer
     imagePublisher: imagePublisher
@@ -390,8 +390,8 @@ module protectedItems_Vm 'modules/protectedItems.bicep' = [for i in range(1, ses
   scope: resourceGroup(resourceGroupHosts)
   params: {
     location: location
-    PolicyId: deploymentType == 'Complete' ? '${recoveryServicesVault.outputs.resourceId}/backupPolicies/${backupPolicyName}' : '${existingRecoveryServicesVaultResourceId}/backupPolicies/${backupPolicyName}'
-    recoveryServicesVaultName: deploymentType == 'Complete' ? recoveryServicesVault.outputs.name : last(split(existingRecoveryServicesVaultResourceId, '/'))
+    PolicyId: deploymentType == 'Complete' ? '${recoveryServicesVault!.outputs.resourceId}/backupPolicies/${backupPolicyName}' : '${existingRecoveryServicesVaultResourceId}/backupPolicies/${backupPolicyName}'
+    recoveryServicesVaultName: deploymentType == 'Complete' ? recoveryServicesVault!.outputs.name : last(split(existingRecoveryServicesVaultResourceId, '/'))
     sessionHostCount: i == sessionHostBatchCount && divisionRemainderValue > 0 ? divisionRemainderValue : maxResourcesPerTemplateDeployment
     sessionHostIndex: i == 1 ? sessionHostIndex : ((i - 1) * maxResourcesPerTemplateDeployment) + sessionHostIndex
     tags: union({'cm-resource-parent': hostPoolResourceId}, tags[?'Microsoft.recoveryServices/vaults'] ?? {})

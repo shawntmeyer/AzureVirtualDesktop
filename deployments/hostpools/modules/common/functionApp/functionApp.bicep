@@ -306,7 +306,7 @@ resource functionApp 'Microsoft.Web/sites@2023-01-01' = {
           ? [
               {
                 name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-                value: applicationInsights.properties.ConnectionString
+                value: applicationInsights!.properties.ConnectionString
               }
             ]
           : [],

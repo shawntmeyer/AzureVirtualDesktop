@@ -868,7 +868,6 @@ module deploymentPrereqs 'modules/deployment/deployment.bicep' = if (createDeplo
   name: 'Deployment_Prereqs_${timeStamp}'
   params: {
     confidentialVMOSDiskEncryption: confidentialVMOSDiskEncryption
-    deploymentType: deploymentType
     deploymentVmSize: deploymentVmSize
     desktopFriendlyName: desktopFriendlyName
     diskSku: diskSku

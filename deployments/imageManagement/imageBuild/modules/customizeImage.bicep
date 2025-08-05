@@ -2,8 +2,6 @@ targetScope = 'resourceGroup'
 
 @secure()
 param adminPw string
-@secure()
-param adminUserName string
 param appsToRemove array
 param cloud string
 param downloads object

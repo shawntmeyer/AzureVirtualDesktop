@@ -553,11 +553,11 @@ module vm_microsoftMonitoringAgentExtension 'extension/main.bicep' = if (extensi
     autoUpgradeMinorVersion: extensionMonitoringAgentConfig.?autoUpgradeMinorVersion ?? true
     enableAutomaticUpgrade: extensionMonitoringAgentConfig.?enableAutomaticUpgrade ?? false
     settings: {
-      workspaceId: !empty(monitoringWorkspaceId) ? vm_logAnalyticsWorkspace.properties.customerId : ''
+      workspaceId: !empty(monitoringWorkspaceId) ? vm_logAnalyticsWorkspace!.properties.customerId : ''
     }
     tags: extensionMonitoringAgentConfig.?tags ?? {}
     protectedSettings: {
-      workspaceKey: !empty(monitoringWorkspaceId) ? vm_logAnalyticsWorkspace.listKeys().primarySharedKey : ''
+      workspaceKey: !empty(monitoringWorkspaceId) ? vm_logAnalyticsWorkspace!.listKeys().primarySharedKey : ''
     }
   }
 }

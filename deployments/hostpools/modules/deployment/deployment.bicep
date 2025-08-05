@@ -1,7 +1,6 @@
 targetScope = 'subscription'
 
 param confidentialVMOSDiskEncryption bool
-param deploymentType string
 param diskSku string
 @secure()
 param domainJoinUserPassword string

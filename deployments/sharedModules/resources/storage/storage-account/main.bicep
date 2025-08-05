@@ -236,7 +236,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
       requireInfrastructureEncryption: kind != 'Storage' ? requireInfrastructureEncryption : null
       keyvaultproperties: !empty(cMKKeyName) ? {
         keyname: cMKKeyName
-        keyvaulturi: keyVault.properties.vaultUri
+        keyvaulturi: keyVault!.properties.vaultUri
         keyversion: !empty(cMKKeyVersion) ? cMKKeyVersion : null
       } : null
       identity: !empty(cMKKeyName) ? {

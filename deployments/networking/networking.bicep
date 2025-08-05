@@ -258,4 +258,4 @@ module privateDNSZonesResources 'modules/privateDNS-sub-module.bicep' = if (crea
   }
 }
 
-output vnetResourceId string = deployVnet ? vnetResources.outputs.vNetResourceId : ''
+output vnetResourceId string = deployVnet ? vnetResources!.outputs.vNetResourceId : ''

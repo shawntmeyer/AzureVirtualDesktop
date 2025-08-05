@@ -32,7 +32,7 @@ module privateDNSZones 'privateDnsZones.bicep' = if(createPrivateDNSZones) {
 module privateDNSZonesVnetLinks 'privateDnsZonesVnetLinks.bicep' = if(!empty(privateDnsZonesVnetId)) {
   name: 'Private-DNS-Zones-Vnet-Links-${timeStamp}'
   params: {
-    privateDnsZoneResourceIds: createPrivateDNSZones ? union(privateDNSZones.outputs.resourceIds, existingPrivateDnsZoneIds) : existingPrivateDnsZoneIds
+    privateDnsZoneResourceIds: createPrivateDNSZones ? union(privateDNSZones!.outputs.resourceIds, existingPrivateDnsZoneIds) : existingPrivateDnsZoneIds
     vnetId: privateDnsZonesVnetId
     timeStamp: timeStamp
   }

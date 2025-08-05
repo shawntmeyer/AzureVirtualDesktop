@@ -128,7 +128,7 @@ module hostPool 'modules/hostPool.bicep' = {
     enableMonitoring: enableMonitoring
     privateEndpoint: avdPrivateLinkPrivateRoutes != 'None' ? true : false
     privateEndpointLocation: avdPrivateLinkPrivateRoutes != 'None' && !empty(hostPoolPrivateEndpointSubnetResourceId)
-      ? hostPoolPrivateEndpointVnet.outputs.location
+      ? hostPoolPrivateEndpointVnet!.outputs.location
       : ''
     privateEndpointName: hostPoolPrivateEndpointName
     privateEndpointNICName: hostPoolPrivateEndpointNICName
@@ -172,13 +172,13 @@ module feedWorkspace 'modules/workspace.bicep' = {
     enableMonitoring: enableMonitoring
     existingWorkspaceProperties: !empty(existingFeedWorkspaceResourceId)
       ? {
-          applicationGroupReferences: existingFeedWorkspace.properties.applicationGroupReferences
-          friendlyName: existingFeedWorkspace.properties.friendlyName
-          location: existingFeedWorkspace.location
+          applicationGroupReferences: existingFeedWorkspace!.properties.applicationGroupReferences
+          friendlyName: existingFeedWorkspace!.properties.friendlyName
+          location: existingFeedWorkspace!.location
           name: existingFeedWorkspace.name
-          publicNetworkAccess: existingFeedWorkspace.properties.publicNetworkAccess
+          publicNetworkAccess: existingFeedWorkspace!.properties.publicNetworkAccess
           resourceId: existingFeedWorkspaceResourceId
-          tags: existingFeedWorkspace.tags
+          tags: existingFeedWorkspace!.tags
         }
       : {}
     friendlyName: workspaceFriendlyName
@@ -188,7 +188,7 @@ module feedWorkspace 'modules/workspace.bicep' = {
     privateDnsZoneResourceId: avdPrivateDnsZoneResourceId
     privateEndpoint: avdPrivateLinkPrivateRoutes != 'None' || avdPrivateLinkPrivateRoutes != 'HostPool' ? true : false
     privateEndpointLocation: !empty(workspaceFeedPrivateEndpointSubnetResourceId)
-      ? workspaceFeedPrivateEndpointVnet.outputs.location
+      ? workspaceFeedPrivateEndpointVnet!.outputs.location
       : ''
     privateEndpointName: feedPrivateEndpointName
     privateEndpointNICName: feedPrivateEndpointNICName
@@ -230,7 +230,7 @@ module globalWorkspace 'modules/workspace.bicep' = if (empty(existingGlobalWorks
     privateDnsZoneResourceId: globalFeedPrivateDnsZoneResourceId
     privateEndpoint: true
     privateEndpointLocation: !empty(globalFeedPrivateEndpointSubnetResourceId)
-      ? globalFeedPrivateEndpointVnet.outputs.location
+      ? globalFeedPrivateEndpointVnet!.outputs.location
       : ''
     privateEndpointName: globalFeedPrivateEndpointName
     privateEndpointNICName: globalFeedPrivateEndpointNICName

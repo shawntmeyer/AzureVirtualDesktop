@@ -138,7 +138,7 @@ module azureFiles 'modules/azureFiles.bicep' = if (storageSolution == 'AzureFile
     encryptionKeyVaultUri: encryptionKeyVaultUri
     encryptionUserAssignedIdentityResourceId: keyManagementStorageAccounts == 'MicrosoftManaged'
       ? ''
-      : customerManagedKeys.outputs.userAssignedIdentityResourceId
+      : customerManagedKeys!.outputs.userAssignedIdentityResourceId
     fileShares: fslogixFileShares
     fslogixEncryptionKeyNameConv: fslogixEncryptionKeyNameConv
     functionAppDelegatedSubnetResourceId: functionAppDelegatedSubnetResourceId
@@ -182,8 +182,8 @@ module azureFiles 'modules/azureFiles.bicep' = if (storageSolution == 'AzureFile
 }
 
 output netAppVolumeResourceIds array = storageSolution == 'AzureNetAppFiles'
-  ? azureNetAppFiles.outputs.volumeResourceIds
+  ? azureNetAppFiles!.outputs.volumeResourceIds
   : []
 output storageAccountResourceIds array = storageSolution == 'AzureFiles'
-  ? azureFiles.outputs.storageAccountResourceIds
+  ? azureFiles!.outputs.storageAccountResourceIds
   : []

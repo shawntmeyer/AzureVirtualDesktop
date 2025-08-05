@@ -63,7 +63,7 @@ module secretsKeyVault '../../../sharedModules/resources/key-vault/vault/main.bi
   scope: resourceGroup(resourceGroupManagement)
   params: {
     name: secretsKeyVaultName
-    diagnosticWorkspaceId: enableMonitoring ? logAnalyticsWorkspace.outputs.resourceId : ''
+    diagnosticWorkspaceId: enableMonitoring ? logAnalyticsWorkspace!.outputs.resourceId : ''
     enablePurgeProtection: keyVaultEnablePurgeProtection
     enableSoftDelete: keyVaultEnableSoftDelete
     softDeleteRetentionInDays: keyVaultRetentionInDays
@@ -109,7 +109,7 @@ module encryptionKeyVault '../../../sharedModules/resources/key-vault/vault/main
   scope: resourceGroup(resourceGroupManagement)
   params: {
     name: encryptionKeysKeyVaultName
-    diagnosticWorkspaceId: enableMonitoring ? logAnalyticsWorkspace.outputs.resourceId : ''
+    diagnosticWorkspaceId: enableMonitoring ? logAnalyticsWorkspace!.outputs.resourceId : ''
     enablePurgeProtection: true
     enableSoftDelete: true
     softDeleteRetentionInDays: keyVaultRetentionInDays
@@ -164,8 +164,8 @@ module avdInsightsDataCollectionRules 'modules/avdInsightsDataCollectionRules.bi
   name: 'AVDInsights_DataCollectionRule_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
-    dataCollectionEndpointId: dataCollectionEndpoint.outputs.resourceId
-    logAWorkspaceResourceId: enableMonitoring ? logAnalyticsWorkspace.outputs.resourceId : ''
+    dataCollectionEndpointId: enableMonitoring ? dataCollectionEndpoint!.outputs.resourceId : ''
+    logAWorkspaceResourceId: enableMonitoring ? logAnalyticsWorkspace!.outputs.resourceId : ''
     location: location
     tags: tags[?'Microsoft.Insights/dataCollectionRules'] ?? {}
   }
@@ -176,8 +176,8 @@ module vmInsightsDataCollectionRules 'modules/vmInsightsDataCollectionRules.bice
   name: 'VMInsights_DataCollectionRule_${timeStamp}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
-    dataCollectionEndpointId: dataCollectionEndpoint.outputs.resourceId
-    logAWorkspaceResourceId: enableMonitoring ? logAnalyticsWorkspace.outputs.resourceId : ''
+    dataCollectionEndpointId: enableMonitoring ? dataCollectionEndpoint!.outputs.resourceId : ''
+    logAWorkspaceResourceId: enableMonitoring ? logAnalyticsWorkspace!.outputs.resourceId : ''
     location: location
     tags: tags[?'Microsoft.Insights/dataCollectionRules'] ?? {}
   }
@@ -199,8 +199,8 @@ module updatePrivateLinkScope '../common/privateLinkScopes/get-PrivateLinkScope.
   params: {
     privateLinkScopeResourceId: azureMonitorPrivateLinkScopeResourceId
     scopedResourceIds: [
-      logAnalyticsWorkspace.outputs.resourceId
-      dataCollectionEndpoint.outputs.resourceId
+      logAnalyticsWorkspace!.outputs.resourceId
+      dataCollectionEndpoint!.outputs.resourceId
     ]
     timeStamp: timeStamp
   }
@@ -212,7 +212,7 @@ module hostingPlan 'modules/functionAppHostingPlan.bicep' = if (enableQuotaManag
   params: {
     functionAppKind: 'functionApp'
     hostingPlanType: 'FunctionsPremium'
-    logAnalyticsWorkspaceId: enableMonitoring ? logAnalyticsWorkspace.outputs.resourceId : ''
+    logAnalyticsWorkspaceId: enableMonitoring ? logAnalyticsWorkspace!.outputs.resourceId : ''
     location: location
     name: appServicePlanName
     planPricing: 'PremiumV3_P1v3'
@@ -221,14 +221,14 @@ module hostingPlan 'modules/functionAppHostingPlan.bicep' = if (enableQuotaManag
   }
 }
 
-output appServicePlanId string = enableQuotaManagement ? hostingPlan.outputs.hostingPlanId : ''
+output appServicePlanId string = enableQuotaManagement ? hostingPlan!.outputs.hostingPlanId : ''
 output avdInsightsDataCollectionRulesResourceId string = enableMonitoring
-  ? avdInsightsDataCollectionRules.outputs.dataCollectionRulesId
+  ? avdInsightsDataCollectionRules!.outputs.dataCollectionRulesId
   : ''
-output dataCollectionEndpointResourceId string = enableMonitoring ? dataCollectionEndpoint.outputs.resourceId : ''
-output logAnalyticsWorkspaceResourceId string = enableMonitoring ? logAnalyticsWorkspace.outputs.resourceId : ''
+output dataCollectionEndpointResourceId string = enableMonitoring ? dataCollectionEndpoint!.outputs.resourceId : ''
+output logAnalyticsWorkspaceResourceId string = enableMonitoring ? logAnalyticsWorkspace!.outputs.resourceId : ''
 output vmInsightsDataCollectionRulesResourceId string = enableMonitoring
-  ? vmInsightsDataCollectionRules.outputs.dataCollectionRulesId
+  ? vmInsightsDataCollectionRules!.outputs.dataCollectionRulesId
   : ''
-output encryptionKeyVaultResourceId string = deployEncryptionKeysKeyVault ? encryptionKeyVault.outputs.resourceId : ''
-output encryptionKeyVaultUri string = deployEncryptionKeysKeyVault ? encryptionKeyVault.outputs.uri : ''
+output encryptionKeyVaultResourceId string = deployEncryptionKeysKeyVault ? encryptionKeyVault!.outputs.resourceId : ''
+output encryptionKeyVaultUri string = deployEncryptionKeysKeyVault ? encryptionKeyVault!.outputs.uri : ''

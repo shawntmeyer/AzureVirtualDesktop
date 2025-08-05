@@ -46,12 +46,12 @@ module imageVersion '../../../sharedModules/resources/compute/gallery/image/vers
     replicaCount: imageVersionDefaultReplicaCount
     replicationMode: 'Full'
     storageAccountType: imageVersionDefaultStorageAccountType
-    sourceId: contains(imageDefinitionSecurityType, 'Supported') ? managedImage.outputs.resourceId : ''
+    sourceId: contains(imageDefinitionSecurityType, 'Supported') ? managedImage!.outputs.resourceId : ''
     virtualMachineId: !contains(imageDefinitionSecurityType, 'Supported') ? virtualMachineResourceId : ''
     targetRegions: imageVersionReplicationRegions
     tags: tags[?'Microsoft.Compute/galleries/images/versions'] ?? {}
   }
 }
 
-output managedImageId string = contains(imageDefinitionSecurityType, 'Supported') ? managedImage.outputs.resourceId : ''
+output managedImageId string = contains(imageDefinitionSecurityType, 'Supported') ? managedImage!.outputs.resourceId : ''
 output imageVersionId string = imageVersion.outputs.resourceId

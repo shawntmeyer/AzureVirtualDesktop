@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.37.4.10188",
-      "templateHash": "14224760044585506934"
+      "templateHash": "4738994630350956802"
     }
   },
   "parameters": {
@@ -1779,9 +1779,6 @@
           "confidentialVMOSDiskEncryption": {
             "value": "[parameters('confidentialVMOSDiskEncryption')]"
           },
-          "deploymentType": {
-            "value": "[parameters('deploymentType')]"
-          },
           "deploymentVmSize": {
             "value": "[parameters('deploymentVmSize')]"
           },
@@ -1862,15 +1859,12 @@
             "_generator": {
               "name": "bicep",
               "version": "0.37.4.10188",
-              "templateHash": "2171343145800572676"
+              "templateHash": "3213255733394507524"
             }
           },
           "parameters": {
             "confidentialVMOSDiskEncryption": {
               "type": "bool"
-            },
-            "deploymentType": {
-              "type": "string"
             },
             "diskSku": {
               "type": "string"
@@ -2650,7 +2644,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.37.4.10188",
-              "templateHash": "16723553313741120414"
+              "templateHash": "14362725116704612825"
             }
           },
           "parameters": {
@@ -4703,9 +4697,7 @@
                 },
                 "mode": "Incremental",
                 "parameters": {
-                  "dataCollectionEndpointId": {
-                    "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupManagement')), 'Microsoft.Resources/deployments', format('DataCollectionEndpoint_{0}', parameters('timeStamp'))), '2022-09-01').outputs.resourceId.value]"
-                  },
+                  "dataCollectionEndpointId": "[if(parameters('enableMonitoring'), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupManagement')), 'Microsoft.Resources/deployments', format('DataCollectionEndpoint_{0}', parameters('timeStamp'))), '2022-09-01').outputs.resourceId.value), createObject('value', ''))]",
                   "logAWorkspaceResourceId": "[if(parameters('enableMonitoring'), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupManagement')), 'Microsoft.Resources/deployments', format('LogAnalytics_{0}', parameters('timeStamp'))), '2022-09-01').outputs.resourceId.value), createObject('value', ''))]",
                   "location": {
                     "value": "[parameters('location')]"
@@ -4848,9 +4840,7 @@
                 },
                 "mode": "Incremental",
                 "parameters": {
-                  "dataCollectionEndpointId": {
-                    "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupManagement')), 'Microsoft.Resources/deployments', format('DataCollectionEndpoint_{0}', parameters('timeStamp'))), '2022-09-01').outputs.resourceId.value]"
-                  },
+                  "dataCollectionEndpointId": "[if(parameters('enableMonitoring'), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupManagement')), 'Microsoft.Resources/deployments', format('DataCollectionEndpoint_{0}', parameters('timeStamp'))), '2022-09-01').outputs.resourceId.value), createObject('value', ''))]",
                   "logAWorkspaceResourceId": "[if(parameters('enableMonitoring'), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupManagement')), 'Microsoft.Resources/deployments', format('LogAnalytics_{0}', parameters('timeStamp'))), '2022-09-01').outputs.resourceId.value), createObject('value', ''))]",
                   "location": {
                     "value": "[parameters('location')]"

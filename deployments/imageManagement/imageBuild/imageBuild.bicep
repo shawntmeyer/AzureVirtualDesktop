@@ -322,7 +322,7 @@ var adminUserName = 'vmadmin'
 
 var logContainerName = 'image-customization-logs'
 var logContainerUri = collectCustomizationLogs
-  ? '${logsStorageAccount.outputs.primaryBlobEndpoint}${logContainerName}/'
+  ? '${logsStorageAccount!.outputs.primaryBlobEndpoint}${logContainerName}/'
   : ''
 
 var imageDefinitionFeatures = empty(imageDefinitionResourceId)
@@ -332,7 +332,7 @@ var imageDefinitionFeatures = empty(imageDefinitionResourceId)
       imageDefinitionIsHigherStoragePerformanceSupported ? { name: 'DiskControllerTypes', value: 'SCSI, NVMe' } : null
       imageDefinitionSecurityType != 'Standard' ? { name: 'SecurityType', value: imageDefinitionSecurityType } : null
     ], item => item != null)
-  : existingImageDefinition.properties.features
+  : existingImageDefinition!.properties.features
 
 var galleryImageDefinitionHyperVGeneration = endsWith(mpSku, 'g2') || startsWith(mpSku, 'win11') ? 'V2' : 'V1'
 var galleryImageDefinitionName = empty(imageDefinitionResourceId)
@@ -357,8 +357,8 @@ var galleryImageDefinitionPublisher = !empty(imageDefinitionPublisher)
 
 var galleryImageDefinitionSecurityType = empty(imageDefinitionResourceId)
   ? imageDefinitionSecurityType
-  : !empty(filter(existingImageDefinition.properties.features, feature => feature.name == 'SecurityType'))
-      ? filter(existingImageDefinition.properties.features, feature => feature.name == 'SecurityType')[0].value
+  : !empty(filter(existingImageDefinition!.properties.features, feature => feature.name == 'SecurityType'))
+      ? filter(existingImageDefinition!.properties.features, feature => feature.name == 'SecurityType')[0].value
       : 'Standard'
 var galleryImageDefinitionSku = !empty(imageDefinitionSku) ? replace(imageDefinitionSku, ' ', '') : mpSku
 // build an image version from the ISO 8601 timestamp
@@ -406,7 +406,7 @@ var vmSecurityType = galleryImageDefinitionSecurityType == 'TrustedLaunch'
   ? 'TrustedLaunch'
   : galleryImageDefinitionSecurityType == 'ConfidentialVM' ? 'ConfidentialVM' : 'Standard'
 
-var remoteLocation = !empty(remoteComputeGalleryResourceId) ? remoteComputeGallery.location : ''
+var remoteLocation = !empty(remoteComputeGalleryResourceId) ? remoteComputeGallery!.location : ''
 
 // * Prerequisite Resources * //
 
@@ -485,18 +485,18 @@ module remoteImageDefinition '../../sharedModules/resources/compute/gallery/imag
     features: imageDefinitionFeatures
     hyperVGeneration: empty(imageDefinitionResourceId)
       ? galleryImageDefinitionHyperVGeneration
-      : any(existingImageDefinition.properties.hyperVGeneration)
+      : any(existingImageDefinition!.properties.hyperVGeneration)
     osType: 'Windows'
     osState: 'Generalized'
     publisher: empty(imageDefinitionResourceId)
       ? galleryImageDefinitionPublisher
-      : existingImageDefinition.properties.identifier.publisher
+      : existingImageDefinition!.properties.identifier.publisher
     offer: empty(imageDefinitionResourceId)
       ? galleryImageDefinitionOffer
-      : existingImageDefinition.properties.identifier.offer
+      : existingImageDefinition!.properties.identifier.offer
     sku: empty(imageDefinitionResourceId)
       ? galleryImageDefinitionSku
-      : existingImageDefinition.properties.identifier.sku
+      : existingImageDefinition!.properties.identifier.sku
     tags: tags[?'Microsoft.Compute/galleries/images'] ?? {}
   }
 }
@@ -508,8 +508,8 @@ module roleAssignmentContributorBuildRg '../../sharedModules/resources/authoriza
   scope: resourceGroup(imageBuildResourceGroupName)
   params: {
     principalId: empty(userAssignedIdentityResourceId)
-      ? userAssignedIdentity.outputs.principalId
-      : existingUserAssignedIdentity.properties.principalId
+      ? userAssignedIdentity!.outputs.principalId
+      : existingUserAssignedIdentity!.properties.principalId
     roleDefinitionId: '9980e02c-c2be-4d73-94e8-173b1dc7cf3c' // Virtual Machine Contributor
     principalType: 'ServicePrincipal'
   }
@@ -523,8 +523,8 @@ module roleAssignmentBlobDataContributorBuilderRg '../../sharedModules/resources
   scope: resourceGroup(imageBuildResourceGroupName)
   params: {
     principalId: empty(userAssignedIdentityResourceId)
-      ? userAssignedIdentity.outputs.principalId
-      : existingUserAssignedIdentity.properties.principalId
+      ? userAssignedIdentity!.outputs.principalId
+      : existingUserAssignedIdentity!.properties.principalId
     roleDefinitionId: 'ba92f5b4-2d11-453d-a403-e96b0029c9fe' // Storage Blob Data Contributor
     principalType: 'ServicePrincipal'
   }
@@ -662,7 +662,7 @@ module orchestrationVm '../../sharedModules/resources/compute/virtual-machine/ma
     tags: tags[?'Microsoft.Compute/virtualMachines'] ?? {}
     userAssignedIdentities: empty(userAssignedIdentityResourceId)
       ? {
-          '${userAssignedIdentity.outputs.resourceId}': {}
+          '${userAssignedIdentity!.outputs.resourceId}': {}
         }
       : {
           '${userAssignedIdentityResourceId}': {}
@@ -682,7 +682,7 @@ module imageVm '../../sharedModules/resources/compute/virtual-machine/main.bicep
   scope: resourceGroup(imageBuildResourceGroupName)
   params: {
     hibernationEnabled: !empty(filter(imageDefinitionFeatures, feature => feature.name == 'IsHibernateSupported'))
-      ? bool(filter(imageDefinitionFeatures, feature => feature.name == 'IsHibernateSupported')[0].value)
+      ? bool(filter(imageDefinitionFeatures, feature => feature.name == 'IsHibernateSupported')[0]!.value)
       : false
     location: computeLocation
     name: imageVmName
@@ -690,7 +690,7 @@ module imageVm '../../sharedModules/resources/compute/virtual-machine/main.bicep
     adminUsername: adminUserName
     bootDiagnostics: false
     diskControllerType: !empty(filter(imageDefinitionFeatures, feature => feature.name == 'DiskControllerTypes'))
-      ? contains(filter(imageDefinitionFeatures, feature => feature.name == 'DiskControllerTypes')[0].value, 'NVMe')
+      ? contains(filter(imageDefinitionFeatures, feature => feature.name == 'DiskControllerTypes')[0]!.value, 'NVMe')
           ? 'NVMe'
           : 'SCSI'
       : 'SCSI'
@@ -711,7 +711,7 @@ module imageVm '../../sharedModules/resources/compute/virtual-machine/main.bicep
             imageDefinitionFeatures,
             feature => feature.name == 'IsAcceleratedNetworkSupported'
           ))
-          ? bool(filter(imageDefinitionFeatures, feature => feature.name == 'IsAcceleratedNetworkSupported')[0].value)
+          ? bool(filter(imageDefinitionFeatures, feature => feature.name == 'IsAcceleratedNetworkSupported')[0]!.value)
           : false
         deleteOption: 'Delete'
         ipConfigurations: [
@@ -738,7 +738,7 @@ module imageVm '../../sharedModules/resources/compute/virtual-machine/main.bicep
     tags: tags[?'Microsoft.Compute/virtualMachines'] ?? {}
     userAssignedIdentities: empty(userAssignedIdentityResourceId)
       ? {
-          '${userAssignedIdentity.outputs.resourceId}': {}
+          '${userAssignedIdentity!.outputs.resourceId}': {}
         }
       : {
           '${userAssignedIdentityResourceId}': {}
@@ -757,7 +757,6 @@ module customizeImage 'modules/customizeImage.bicep' = {
   scope: resourceGroup(imageBuildResourceGroupName)
   params: {
     adminPw: adminPw
-    adminUserName: adminUserName
     cloud: cloud
     appsToRemove: appsToRemove
     location: computeLocation
@@ -768,8 +767,8 @@ module customizeImage 'modules/customizeImage.bicep' = {
     installTeams: installTeams
     installVirtualDesktopOptimizationTool: installVirtualDesktopOptimizationTool
     userAssignedIdentityClientId: empty(userAssignedIdentityResourceId)
-      ? userAssignedIdentity.outputs.clientId
-      : existingUserAssignedIdentity.properties.clientId
+      ? userAssignedIdentity!.outputs.clientId
+      : existingUserAssignedIdentity!.properties.clientId
     orchestrationVmName: orchestrationVm.outputs.name
     office365AppsToInstall: office365AppsToInstall
     imageVmName: imageVm.outputs.name
@@ -801,8 +800,8 @@ module stopAndGeneralizeImageVM '../../sharedModules/resources/compute/virtual-m
       {
         name: 'UserAssignedIdentityClientId'
         value: empty(userAssignedIdentityResourceId)
-          ? userAssignedIdentity.outputs.clientId
-          : existingUserAssignedIdentity.properties.clientId
+          ? userAssignedIdentity!.outputs.clientId
+          : existingUserAssignedIdentity!.properties.clientId
       }
       {
         name: 'VmResourceId'
@@ -830,7 +829,7 @@ module captureImage 'modules/captureImage.bicep' = {
     imageDefinitionSecurityType: galleryImageDefinitionSecurityType
     imageName: !empty(imageDefinitionResourceId)
       ? last(split(imageDefinitionResourceId, '/'))
-      : imageDefinition.outputs.name
+      : imageDefinition!.outputs.name
     imageVersionDefaultReplicaCount: imageVersionDefaultReplicaCount
     imageVersionDefaultStorageAccountType: imageVersionDefaultStorageAccountType
     imageVersionExcludeFromLatest: imageVersionExcludeFromLatest
@@ -864,8 +863,8 @@ module removeImageBuildResources '../../sharedModules/resources/compute/virtual-
       {
         name: 'UserAssignedIdentityClientId'
         value: empty(userAssignedIdentityResourceId)
-          ? userAssignedIdentity.outputs.clientId
-          : existingUserAssignedIdentity.properties.clientId
+          ? userAssignedIdentity!.outputs.clientId
+          : existingUserAssignedIdentity!.properties.clientId
       }
       {
         name: 'ImageResourceId'
@@ -893,7 +892,7 @@ module remoteImageVersion '../../sharedModules/resources/compute/gallery/image/v
     location: location
     name: imageVersionName
     galleryName: last(split(remoteComputeGalleryResourceId, '/'))
-    imageName: remoteImageDefinition.outputs.name
+    imageName: remoteImageDefinition!.outputs.name
     endOfLifeDate: imageVersionEndOfLifeDate
     excludeFromLatest: remoteImageVersionExcludeFromLatest
     replicaCount: remoteImageVersionDefaultReplicaCount
@@ -904,5 +903,5 @@ module remoteImageVersion '../../sharedModules/resources/compute/gallery/image/v
 }
 
 output imageDefinitionId string = empty(imageDefinitionResourceId)
-  ? imageDefinition.outputs.resourceId
+  ? imageDefinition!.outputs.resourceId
   : imageDefinitionResourceId
