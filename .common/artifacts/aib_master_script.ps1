@@ -109,9 +109,8 @@ ForEach ($Customizer in $Customizers) {
             Write-Output "Extracting '$DestFile' to '$DestinationPath'."
             Expand-Archive -Path $DestFile -DestinationPath $DestinationPath -Force
             Write-Output "Finding PowerShell script in root of '$DestinationPath'."
-            $PSScript = (Get-ChildItem -Path $DestinationPath -filter '*.ps1').FullName
-            If ($PSScript) {
-                If ($PSScript.count -gt 1) { $PSScript = $PSScript[0] }
+            $PSScript = Get-ChildItem -Path $DestinationPath -Filter '*.ps1' | Select-Object -First 1 -ExpandProperty FullName
+            If ($null -ne $PSScript) {
                 If ($Arguments) {
                     Write-Output "Calling PowerShell Script '$PSScript' with arguments '$Arguments'"
                     & $PSScript $Arguments

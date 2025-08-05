@@ -4,8 +4,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.36.177.2456",
-      "templateHash": "5798464716424608414"
+      "version": "0.37.4.10188",
+      "templateHash": "226461841597566788"
     }
   },
   "parameters": {
@@ -715,8 +715,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.36.177.2456",
-              "templateHash": "4748573053937211545"
+              "version": "0.37.4.10188",
+              "templateHash": "12488389241263905719"
             }
           },
           "parameters": {
@@ -880,8 +880,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.36.177.2456",
-                      "templateHash": "16012610682007146887"
+                      "version": "0.37.4.10188",
+                      "templateHash": "15358680869613732775"
                     }
                   },
                   "parameters": {
@@ -1140,8 +1140,8 @@
                           "metadata": {
                             "_generator": {
                               "name": "bicep",
-                              "version": "0.36.177.2456",
-                              "templateHash": "5652972202101744962"
+                              "version": "0.37.4.10188",
+                              "templateHash": "4620384731392814384"
                             }
                           },
                           "parameters": {
@@ -1234,8 +1234,8 @@
                           "metadata": {
                             "_generator": {
                               "name": "bicep",
-                              "version": "0.36.177.2456",
-                              "templateHash": "5652972202101744962"
+                              "version": "0.37.4.10188",
+                              "templateHash": "4620384731392814384"
                             }
                           },
                           "parameters": {
@@ -1362,8 +1362,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.36.177.2456",
-              "templateHash": "8391430426786133343"
+              "version": "0.37.4.10188",
+              "templateHash": "2714345509783324192"
             }
           },
           "parameters": {
@@ -1429,8 +1429,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.36.177.2456",
-                      "templateHash": "9451105516418288976"
+                      "version": "0.37.4.10188",
+                      "templateHash": "3423985917440763293"
                     }
                   },
                   "parameters": {
@@ -1496,8 +1496,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.36.177.2456",
-                      "templateHash": "6359306260421221184"
+                      "version": "0.37.4.10188",
+                      "templateHash": "8375326678188348252"
                     }
                   },
                   "parameters": {
@@ -1541,8 +1541,8 @@
                           "metadata": {
                             "_generator": {
                               "name": "bicep",
-                              "version": "0.36.177.2456",
-                              "templateHash": "18297893090085661258"
+                              "version": "0.37.4.10188",
+                              "templateHash": "1449062318143951188"
                             }
                           },
                           "parameters": {
@@ -1584,5 +1584,11 @@
         "[subscriptionResourceId('Microsoft.Resources/deployments', format('Network-Resources-{0}', parameters('timeStamp')))]"
       ]
     }
-  ]
+  ],
+  "outputs": {
+    "vnetResourceId": {
+      "type": "string",
+      "value": "[if(parameters('deployVnet'), reference(subscriptionResourceId('Microsoft.Resources/deployments', format('Network-Resources-{0}', parameters('timeStamp'))), '2022-09-01').outputs.vNetResourceId.value, '')]"
+    }
+  }
 }
