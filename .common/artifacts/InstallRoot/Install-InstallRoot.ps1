@@ -265,7 +265,7 @@ $InstalledApp = Get-InstalledApplication -Name $SoftwareName
 If ($InstalledApp -and $InstalledApp.ProductCode -ne '') {
     $ProductCode = $InstalledApp.ProductCode
     Write-Log -Message "Removing $SoftwareName with Product Code $ProductCode"
-    $uninstall = Start-Process -FilePath 'msixexec.exe' -ArgumentList "/X $($Application.ProductCode) /qn" -Wait -PassThru
+    $uninstall = Start-Process -FilePath 'msiexec.exe' -ArgumentList "/X $($Application.ProductCode) /qn" -Wait -PassThru
     If ($Uninstall.ExitCode -eq '0' -or $Uninstall.ExitCode -eq '3010') {
         Write-Log -Message "Uninstalled successfully"
     }
