@@ -4,6 +4,8 @@
     the files are contained with this script in the root of a folder.
 .PARAMETER ApplicationsToSTIG
     This parameter defines the third party applications that should be STIGd by this script. This needs to be defined as a JSON string to support Run Commands.
+.PARAMETER CloudOnly
+    This parameter defines whether or not cloud only identity is used on the system with fslogix. If selected then the system will be able to use cmdkey to save the storage account key.
 .NOTES
     To use this script offline, download the lgpo tool from 'https://download.microsoft.com/download/8/5/C/85C25433-A1B0-4FFA-9429-7E023E7DA8D8/LGPO.zip' and store it in the root of the folder where the script is located.'
     to the root of the folder where this script is located. Then download the latest STIG GPOs ZIP from 'https://public.cyber.mil/stigs/gpo' and and save at at STIGs.zip in the root
@@ -16,7 +18,8 @@
 [CmdletBinding()]
 param (
     [Parameter()]
-    [string]$ApplicationsToSTIG = '["Adobe Acrobat Pro", "Adobe Acrobat Reader", "Google Chrome", "Mozilla Firefox"]'
+    [string]$ApplicationsToSTIG = '["Adobe Acrobat Pro", "Adobe Acrobat Reader", "Google Chrome", "Mozilla Firefox"]',
+    [bool]$CloudOnly
 )
 #region Initialization
 $Script:Name = 'Apply-STIGs'
@@ -564,7 +567,7 @@ ForEach ($gpoFolder in $GPOFolders) {
         #>
         $SecEditFile = (Get-ChildItem -Path $gpoFolder -Recurse -Filter "GptTmpl.inf" | Where-Object { $_.DirectoryName -match "SecEdit" }).FullName
         $Content = Get-Content $SecEditFile
-        $filteredLines = $Content | Where-Object {-not ($_ -match "^NewAdministratorName") -and -not ($_ -match "^EnableAdminAccount") }
+        $filteredLines = $Content | Where-Object { -not ($_ -match "^NewAdministratorName") -and -not ($_ -match "^EnableAdminAccount") }
         Set-Content -Path $SecEditFile -Value $filteredLines
     }
 }
@@ -589,6 +592,22 @@ SeDenyNetworkLogonRight = *S-1-5-32-546
 SeDenyInteractiveLogonRight = *S-1-5-32-546
 SeDenyRemoteInteractiveLogonRight = *S-1-5-32-546
 '@
+If ($CloudOnly) {
+    $lines = $SecFileContent -split "`r?`n"
+    $matchIndex = $lines | ForEach-Object -Begin { $i = 0 } -Process {
+        if ($_ -eq '[Registry Values]') { $i }
+        $i++
+    } | Select-Object -First 1
+    
+    if ($null -ne $matchIndex) {
+        $lines = $lines[0..$matchIndex] + @('MACHINE\System\CurrentControlSet\Control\Lsa\DisableDomainCreds=4,0') + $lines[($matchIndex + 1)..($lines.Length - 1)]
+    }
+    else {
+        Write-Warning "Match not found. Appending line at the end."
+        $lines += $NewLine
+    }
+    $SecFileContent = $lines -join "`r`n"
+}
 # Applying AVD Exceptions
 $SecTemplate = Join-Path -Path $Script:TempDir -ChildPath "$OutputFilePrefix.inf"
 $SecFileContent | Out-File -FilePath $SecTemplate -Encoding unicode
