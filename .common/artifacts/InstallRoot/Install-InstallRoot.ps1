@@ -1,5 +1,5 @@
 #region Initialization
-$SoftwareName = 'DoD InstallRoot'
+$SoftwareName = 'InstallRoot'
 $DownloadUrl = "https://dl.dod.cyber.mil/wp-content/uploads/pki-pke/msi/InstallRoot_5.6x64.msi"
 $Script:Name = 'Install-InstallRoot'
 #endregion
@@ -23,10 +23,10 @@ function Write-Log {
     #>
 
     Param (
-        [Parameter(Mandatory=$false, Position=0)]
-        [ValidateSet("Info","Warning","Error")]
+        [Parameter(Mandatory = $false, Position = 0)]
+        [ValidateSet("Info", "Warning", "Error")]
         $category = 'Info',
-        [Parameter(Mandatory=$true, Position=1)]
+        [Parameter(Mandatory = $true, Position = 1)]
         $message
     )
 
@@ -60,7 +60,7 @@ function New-Log {
     #>
 
     Param (
-        [Parameter(Mandatory = $true, Position=0)]
+        [Parameter(Mandatory = $true, Position = 0)]
         [string] $Path
     )
 
@@ -77,6 +77,91 @@ function New-Log {
     $script:Log = Join-Path $path $logfile
 
     Add-Content $script:Log "Date`t`t`tCategory`t`tDetails"
+}
+
+Function Get-InstalledApplication {
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullorEmpty()]
+        [string[]]$Name
+    )
+
+    Begin {
+        [string[]]$regKeyApplications = 'Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall', 'Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall'
+    }
+    Process { 
+        ## Enumerate the installed applications from the registry for applications that have the "DisplayName" property
+        [psobject[]]$regKeyApplication = @()
+        ForEach ($regKey in $regKeyApplications) {
+            If (Test-Path -LiteralPath $regKey -ErrorAction 'SilentlyContinue' -ErrorVariable '+ErrorUninstallKeyPath') {
+                [psobject[]]$UninstallKeyApps = Get-ChildItem -LiteralPath $regKey -ErrorAction 'SilentlyContinue' -ErrorVariable '+ErrorUninstallKeyPath'
+                ForEach ($UninstallKeyApp in $UninstallKeyApps) {
+                    Try {
+                        [psobject]$regKeyApplicationProps = Get-ItemProperty -LiteralPath $UninstallKeyApp.PSPath -ErrorAction 'Stop'
+                        If ($regKeyApplicationProps.DisplayName) { [psobject[]]$regKeyApplication += $regKeyApplicationProps }
+                    }
+                    Catch {
+                        Continue
+                    }
+                }
+            }
+        }
+
+        ## Create a custom object with the desired properties for the installed applications and sanitize property details
+        [psobject[]]$installedApplication = @()
+        ForEach ($regKeyApp in $regKeyApplication) {
+            Try {
+                [string]$appDisplayName = ''
+                [string]$appDisplayVersion = ''
+                [string]$appPublisher = ''
+
+                ## Bypass any updates or hotfixes
+                If (($regKeyApp.DisplayName -match '(?i)kb\d+') -or ($regKeyApp.DisplayName -match 'Cumulative Update') -or ($regKeyApp.DisplayName -match 'Security Update') -or ($regKeyApp.DisplayName -match 'Hotfix')) {
+                    Continue
+                }
+
+                ## Remove any control characters which may interfere with logging and creating file path names from these variables
+                $appDisplayName = $regKeyApp.DisplayName -replace '[^\u001F-\u007F]', ''
+                $appDisplayVersion = $regKeyApp.DisplayVersion -replace '[^\u001F-\u007F]', ''
+                $appPublisher = $regKeyApp.Publisher -replace '[^\u001F-\u007F]', ''
+
+                ## Determine if application is a 64-bit application
+                [boolean]$Is64BitApp = If (($is64Bit) -and ($regKeyApp.PSPath -notmatch '^Microsoft\.PowerShell\.Core\\Registry::HKEY_LOCAL_MACHINE\\SOFTWARE\\Wow6432Node')) { $true } Else { $false }
+
+                If ($name) {
+                    ## Verify if there is a match with the application name(s) passed to the script
+                    ForEach ($application in $Name) {
+                        $applicationMatched = $false
+                        #  Check for a contains application name match
+                        If ($regKeyApp.DisplayName -match [regex]::Escape($application)) {
+                            $applicationMatched = $true
+                        }
+
+                        If ($applicationMatched) {
+                            $installedApplication += New-Object -TypeName 'PSObject' -Property @{
+                                SearchString       = $name
+                                UninstallSubkey    = $regKeyApp.PSChildName
+                                ProductCode        = If ($regKeyApp.PSChildName -match $MSIProductCodeRegExPattern) { $regKeyApp.PSChildName } Else { [string]::Empty }
+                                DisplayName        = $appDisplayName
+                                DisplayVersion     = $appDisplayVersion
+                                UninstallString    = $regKeyApp.UninstallString
+                                InstallSource      = $regKeyApp.InstallSource
+                                InstallLocation    = $regKeyApp.InstallLocation
+                                InstallDate        = $regKeyApp.InstallDate
+                                Publisher          = $appPublisher
+                                Is64BitApplication = $Is64BitApp
+                            }
+                        }
+                    }
+                }
+            }
+            Catch {
+                Continue
+            }
+        }
+        Write-Output -InputObject $installedApplication
+    }
 }
 
 Function Get-InternetFile {
@@ -109,8 +194,8 @@ Function Get-InternetFile {
             Else {
                 Write-Verbose "${CmdletName}: Url does not contain file name. Trying 'Location' Response Header."
                 $request = [System.Net.WebRequest]::Create($url)
-                $request.AllowAutoRedirect=$false
-                $response=$request.GetResponse()
+                $request.AllowAutoRedirect = $false
+                $response = $request.GetResponse()
                 $Location = $response.GetResponseHeader("Location")
                 If ($Location) {
                     $OutputFileName = [System.IO.Path]::GetFileName($Location)
@@ -121,7 +206,7 @@ Function Get-InternetFile {
                     $result = Invoke-WebRequest -Method GET -Uri $Url -UseBasicParsing
                     $contentDisposition = $result.Headers.'Content-Disposition'
                     If ($contentDisposition) {
-                        $OutputFileName = $contentDisposition.Split("=")[1].Replace("`"","")
+                        $OutputFileName = $contentDisposition.Split("=")[1].Replace("`"", "")
                         Write-Verbose "${CmdletName}: File Name from 'Content-Disposition' Response Header is '$OutputFileName'."
                     }
                 }
@@ -172,8 +257,21 @@ If (!$PathMSI) {
     $null = New-Item -Path $TempDir -ItemType Directory -Force
     Write-Log -Category Info -message "Msi not found, must download from the internet."
     $PathMSI = Get-InternetFile -Url $DownloadUrl -OutputDirectory $TempDir -OutputFileName 'InstallRoot.msi'
-} Else {
+}
+Else {
     Write-Log -Category Info -message "Found file '$PathMsi'"
+}
+$InstalledApp = Get-InstalledApplication -Name $SoftwareName
+If ($InstalledApp -and $InstalledApp.ProductCode -ne '') {
+    $ProductCode = $InstalledApp.ProductCode
+    Write-Log -Message "Removing $SoftwareName with Product Code $ProductCode"
+    $uninstall = Start-Process -FilePath 'msixexec.exe' -ArgumentList "/X $($Application.ProductCode) /qn" -Wait -PassThru
+    If ($Uninstall.ExitCode -eq '0' -or $Uninstall.ExitCode -eq '3010') {
+        Write-Log -Message "Uninstalled successfully"
+    }
+    Else {
+        Write-Log -Message "$ProductCode uninstall exit code $($uninstall.ExitCode)" -category Warning
+    }
 }
 Write-Log -Category Info -message "Installing '$SoftwareName' via cmdline: 'msiexec /i $pathMSI /qn'"
 $Installer = Start-Process -FilePath 'msiexec.exe' -ArgumentList "/i `"$PathMSI`" /qn" -Wait -PassThru
@@ -190,4 +288,4 @@ Else {
     Write-Log -Category Warning -Message "The Installer exit code is $($Installer.ExitCode)"
 }
 Write-Log -Category Info -message "Completed '$SoftwareName' Installation."
-If (Test-Path -Path $TempDir) {Remove-Item -Path $TempDir -Recurse -Force}
+If (Test-Path -Path $TempDir) { Remove-Item -Path $TempDir -Recurse -Force }
