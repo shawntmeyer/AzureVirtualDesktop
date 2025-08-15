@@ -572,10 +572,11 @@ ForEach ($gpoFolder in $GPOFolders) {
         $filteredLines = $Content | Where-Object { -not ($_ -match "^NewAdministratorName") -and -not ($_ -match "^EnableAdminAccount") }
         Set-Content -Path $SecEditFile -Value $filteredLines
     }
+    Write-Log -Message "Running 'LGPO.exe /g `"$gpoFolder`"'"
+    $lgpo = Start-Process -FilePath "$env:SystemRoot\System32\lgpo.exe" -ArgumentList "/g `"$gpoFolder`"" -Wait -PassThru
+    Write-Log -Message "'lgpo.exe' exited with code [$($lgpo.ExitCode)]."
 }
-Write-Log -Message "Running 'LGPO.exe /g `"$gpoFolder`"'"
-$lgpo = Start-Process -FilePath "$env:SystemRoot\System32\lgpo.exe" -ArgumentList "/g `"$gpoFolder`"" -Wait -PassThru
-Write-Log -Message "'lgpo.exe' exited with code [$($lgpo.ExitCode)]."
+
 
 Write-Log -Message "Applying AVD Exceptions"
 $OutputFilePrefix = 'AVD-Exceptions'
