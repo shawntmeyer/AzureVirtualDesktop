@@ -115,7 +115,7 @@ Function Get-InstalledApplication {
 
                         If ($applicationMatched) {
                             $installedApplication += New-Object -TypeName 'PSObject' -Property @{
-                                SearchString       = $name
+                                SearchString       = $application
                                 UninstallSubkey    = $regKeyApp.PSChildName
                                 ProductCode        = If ($regKeyApp.PSChildName -match $MSIProductCodeRegExPattern) { $regKeyApp.PSChildName } Else { [string]::Empty }
                                 DisplayName        = $appDisplayName
@@ -538,7 +538,7 @@ $null = Get-ChildItem -Path $Script:TempDir -Directory -Recurse | Where-Object {
 Write-Log -Message "Getting List of Applicable GPO folders."
 
 $GPOFolders = Get-ChildItem -Path $Script:TempDir -Directory
-[array]$ApplicableFolders = $GPOFolders | Where-Object { $_.Name -like "DoD*Windows $osVersion*" -or $_.Name -like 'DoD*Edge*' -or $_.Name -like 'DoD*Firewall*' -or $_.Name -like 'DoD*Internet Explorer*' -or $_.Name -like 'DoD*Defender Antivirus*' } 
+[array]$ApplicableFolders = $GPOFolders | Where-Object { $_.Name -like "DoD*Windows $osVersion*" -or $_.Name -like 'DoD*Edge*' -or $_.Name -like 'DoD*Firewall*' -or $_.Name -like 'DoD*Internet Explorer*' -or $_.Name -like 'DoD*Defender Antivirus*' }
 If (Get-InstalledApplication -Name 'Microsoft 365', 'Office', 'Teams') {
     $ApplicableFolders += $GPOFolders | Where-Object { $_.Name -match 'M365' } 
 }
@@ -546,6 +546,8 @@ $InstalledAppsToSTIG = (Get-InstalledApplication -Name $AppsToSTIG).SearchString
 ForEach ($SearchString in $InstalledAppsToSTIG) {
     $ApplicableFolders += $GPOFolders | Where-Object { $_.Name -match "$SearchString" }
 }
+Write-Log -Message "Found $($ApplicableFolders.Count) applicable GPO folders:"
+$ApplicableFolders | ForEach-Object { Write-Log -Message "  $_" } 
 [array]$GPOFolders = @()
 ForEach ($folder in $ApplicableFolders.FullName) {
     $gpoFolderPath = (Get-ChildItem -Path $folder -Filter 'GPOs' -Directory).FullName
