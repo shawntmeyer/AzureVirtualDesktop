@@ -32,28 +32,6 @@ New-Item -Path $Script:TempDir -ItemType Directory -Force | Out-Null
 
 #region Functions
 
-Function ConvertFrom-JsonString {
-    [CmdletBinding()]
-    param (
-        [string]$JsonString,
-        [string]$Name,
-        [switch]$SensitiveValues      
-    )
-    If ($JsonString -ne '[]' -and $JsonString -ne $null) {
-        [array]$Array = $JsonString.replace('\', '') | ConvertFrom-Json
-        If ($Array.Length -gt 0) {
-            If ($SensitiveValues) { Write-Log -message "Array '$Name' has $($Array.Length) members" } Else { Write-Log -message "$($Name): '$($Array -join "', '")'" }
-            Return $Array
-        }
-        Else {
-            Return $null
-        }            
-    }
-    Else {
-        Return $null
-    }    
-}
-
 Function Get-InstalledApplication {
     [CmdletBinding()]
     Param (
@@ -495,9 +473,11 @@ Function Update-LocalGPOTextFile {
 
 #region Main
 
-New-Log
+New-Log -Path (Join-Path -Path "$env:SystemRoot\Logs" -ChildPath 'Configuration')
 Write-Log -Message "Starting '$PSCommandPath'."
-[array]$AppsToSTIG = ConvertFrom-JsonString -JsonString $ApplicationsToSTIG -Name 'AppsToSTIG'
+If ($ApplicationsToSTIG -ne $null) { 
+    [array]$ApplicationsToSTIG = $ApplicationsToSTIG.replace('\', '') | ConvertFrom-Json
+}
 
 Write-Log -message "Checking for 'lgpo.exe' in '$env:SystemRoot\system32'."
 
