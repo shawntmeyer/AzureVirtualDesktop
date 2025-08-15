@@ -332,6 +332,7 @@ Function Update-LocalGPOTextFile {
 }
 
 Function Write-Log {
+    [CmdletBinding()]
     Param (
         [Parameter(Mandatory = $false, Position = 0)]
         [ValidateSet("Info", "Warning", "Error")]
@@ -371,7 +372,7 @@ Write-Log -Category Info -Message "Starting '$PSCommandPath'."
 
 Write-Log -Category Info -Message "Running Script to Configure Microsoft Edge Policies."
 $EdgeTemplatesCab = (Get-ChildItem -Path $PSScriptRoot -Filter '*.cab').FullName
-If ($EdgeTemplatesCab.Count -eq 0) {
+If (!$EdgeTemplatesCab) {
     $APIUrl = "https://edgeupdates.microsoft.com/api/products?view=enterprise"
     $EdgeUpdatesJSON = Invoke-WebRequest -Uri $APIUrl -UseBasicParsing
     $content = $EdgeUpdatesJSON.content | ConvertFrom-Json      

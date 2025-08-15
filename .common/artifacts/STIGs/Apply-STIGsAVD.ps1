@@ -19,7 +19,7 @@
 param (
     [Parameter()]
     [string]$ApplicationsToSTIG = '["Adobe Acrobat Pro", "Adobe Acrobat Reader", "Google Chrome", "Mozilla Firefox"]',
-    [bool]$CloudOnly
+    [switch]$CloudOnly
 )
 #region Initialization
 $Script:Name = 'Apply-STIGs'
@@ -576,7 +576,6 @@ ForEach ($gpoFolder in $GPOFolders) {
     $lgpo = Start-Process -FilePath "$env:SystemRoot\System32\lgpo.exe" -ArgumentList "/g `"$gpoFolder`"" -Wait -PassThru
     Write-Log -Message "'lgpo.exe' exited with code [$($lgpo.ExitCode)]."
 }
-
 
 Write-Log -Message "Applying AVD Exceptions"
 $OutputFilePrefix = 'AVD-Exceptions'
