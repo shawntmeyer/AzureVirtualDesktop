@@ -320,7 +320,7 @@ function New-Log {
 
     Param (
         [Parameter(Position = 0)]
-        [string] $Path = (Join-Path -Path "$env:SystemRoot\Logs" -ChildPath 'Configuration')
+        [string] $Path = (Join-Path -Path $env:SystemRoot -ChildPath 'Logs')
     )
 
     # Create central log file with given date
@@ -569,9 +569,7 @@ ForEach ($gpoFolder in $GPOFolders) {
         #>
         $SecEditFile = (Get-ChildItem -Path $gpoFolder -Recurse -Filter "GptTmpl.inf" | Where-Object { $_.DirectoryName -match "SecEdit" }).FullName
         $Content = Get-Content $SecEditFile
-        $Content = $Content | Where-Object { -not ($_ -match "^NewAdministratorName") -and -not ($_ -match "^EnableAdminAccount") }
-        $Content = $Content -Replace 'ADD YOUR DOMAIN ADMINS,ADD YOUR ENTERPRISE ADMINS', '' -Replace '= ,', '= '
-        If ($CloudOnly) { $Content = $Content -Replace 'DisableDomainCreds=4,1', 'DisableDomainCreds=4,0' }
+        $Content = $Content | Where-Object { (-not ($_ -like 'NewAdministratorName*')) -and (-not ($_ -like 'EnableAdminAccount*')) }
         Set-Content -Path $SecEditFile -Value $Content -Encoding Unicode
     }
     Write-Log -Message "Running 'LGPO.exe /g `"$gpoFolder`"'"
@@ -579,6 +577,30 @@ ForEach ($gpoFolder in $GPOFolders) {
     Write-Log -Message "'lgpo.exe' exited with code [$($lgpo.ExitCode)]."
 }
 
+Write-Log -Message "Applying AVD Exceptions"
+$OutputFilePrefix = 'AVD-Exceptions'
+$SecFileContent = @'
+[Unicode]
+Unicode=yes
+[Version]
+signature="$CHICAGO$"
+Revision=1
+[Privilege Rights]
+SeRemoteInteractiveLogonRight = *S-1-5-32-555,*S-1-5-32-544
+SeDenyBatchLogonRight = *S-1-5-32-546
+SeDenyNetworkLogonRight = *S-1-5-32-546
+SeDenyInteractiveLogonRight = *S-1-5-32-546
+SeDenyRemoteInteractiveLogonRight = *S-1-5-32-546
+'@
+
+If ($CloudOnly) {
+    $SecFileContent += "`n[Registry Values]"
+    $SecFileContent += "`nMACHINE\System\CurrentControlSet\Control\Lsa\DisableDomainCreds=4,0"
+}
+
+# Applying AVD Exceptions
+$SecTemplate = Join-Path -Path $Script:TempDir -ChildPath "$OutputFilePrefix.inf"
+$SecFileContent | Out-File -FilePath $SecTemplate -Encoding unicode
 # Remove Setting that breaks AVD
 Update-LocalGPOTextFile -outfileprefix $OutputFilePrefix -Scope 'Computer' -RegistryKeyPath 'SOFTWARE\Policies\Microsoft\Cryptography\Configuration\SSL\00010002' -RegistryValue 'EccCurves' -Delete -Verbose
 # Remove Firewall Configuration that breaks stand-alone workstation Remote Desktop.
