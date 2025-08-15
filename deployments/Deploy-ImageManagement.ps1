@@ -172,26 +172,19 @@ if ((!$SkipDownloadingNewSources) -and (Test-Path -Path $downloadFilePath)) {
             $DownloadUrl = $Download.DownloadUrl
         }
         Elseif ($Download.APIUrl -ne '') {
+            Write-Output "Retrieving the url of the latest version of the Edge Templates from API Url."
             $APIUrl = $Download.APIUrl
             $EdgeUpdatesJSON = Invoke-WebRequest -Uri $APIUrl -UseBasicParsing
             $content = $EdgeUpdatesJSON.content | ConvertFrom-Json      
             $Edgereleases = ($content | Where-Object { $_.Product -eq 'Stable' }).releases
             $latestrelease = $Edgereleases | Where-Object { $_.Platform -eq 'Windows' -and $_.Architecture -eq 'x64' } | Sort-Object ProductVersion | Select-Object -last 1
-            $EdgeUrl = $latestrelease.artifacts.location
             $EdgeLatestStableVersion = $latestrelease.ProductVersion
             $policyfiles = ($content | Where-Object { $_.Product -eq 'Policy' }).releases
             $latestPolicyFile = $policyfiles | Where-Object { $_.ProductVersion -eq $EdgeLatestStableVersion }
             If (-not($latestPolicyFile)) {   
                 $latestpolicyfile = $policyfiles | Sort-Object ProductVersion | Select-Object -last 1
-            }  
-            $EdgeTemplatesUrl = $latestpolicyfile.artifacts.Location   
-            Write-Output "Getting download Urls for latest Edge browser and policy templates from '$APIUrl'."
-            If ($SoftwareName -eq 'Edge Enterprise') {
-                $DownloadUrl = $EdgeUrl
             }
-            Elseif ($SoftwareName -eq 'Edge Enterprise Administrative Templates') {
-                $DownloadUrl = $EdgeTemplatesUrl
-            }
+            $DownloadUrl = $latestpolicyfile.artifacts.Location   
         }
         Elseif ($Download.GitHubRepo -ne '') {
             $Repo = $Download.GitHubRepo
