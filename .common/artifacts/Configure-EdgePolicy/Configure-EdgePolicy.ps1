@@ -119,19 +119,6 @@ Function Invoke-LGPO {
 }
 
 function New-Log {
-    <#
-    .SYNOPSIS
-    Sets default log file and stores in a script accessible variable $script:Log
-    Log File name "packageExecution_$date.log"
-
-    .PARAMETER Path
-    Path to the log file
-
-    .EXAMPLE
-    New-Log c:\Windows\Logs
-    Create a new log file in c:\Windows\Logs
-    #>
-
     Param (
         [Parameter(Mandatory = $true, Position = 0)]
         [string] $Path
@@ -365,14 +352,14 @@ Function Write-Log {
 $null = New-Item -Path $Script:TempDir -ItemType Directory -Force
 [array]$SmartScreenAllowListDomains = $SmartScreenAllowListDomains.Replace('\"', '"').Replace('\[', '[').Replace('\]', ']') | ConvertFrom-Json
 [array]$PopupsAllowedForUrls = $PopupsAllowedForUrls.Replace('\"', '"').Replace('\[', '[').Replace('\]', ']') | ConvertFrom-Json
-New-Log -Path (Join-Path -Path $env:SystemRoot -ChildPath 'Logs')
+New-Log -Path (Join-Path -Path "$env:SystemRoot\Logs" -ChildPath 'Configuration')
 $ErrorActionPreference = 'Stop'
 Write-Log -Category Info -Message "Starting '$PSCommandPath'."
 #endregion
 
 Write-Log -Category Info -Message "Running Script to Configure Microsoft Edge Policies."
 $EdgeTemplatesCab = (Get-ChildItem -Path $PSScriptRoot -Filter '*.cab').FullName
-If (!$EdgeTemplatesCab) {
+If ($null -eq $EdgeTemplatesCab) {
     $APIUrl = "https://edgeupdates.microsoft.com/api/products?view=enterprise"
     $EdgeUpdatesJSON = Invoke-WebRequest -Uri $APIUrl -UseBasicParsing
     $content = $EdgeUpdatesJSON.content | ConvertFrom-Json      
