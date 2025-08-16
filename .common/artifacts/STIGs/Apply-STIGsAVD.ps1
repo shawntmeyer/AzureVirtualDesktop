@@ -19,7 +19,7 @@
 param (
     [Parameter()]
     [string]$ApplicationsToSTIG = '["Adobe Acrobat Pro", "Adobe Acrobat Reader", "Google Chrome", "Mozilla Firefox"]',
-    [switch]$CloudOnly
+    [string]$CloudOnly = 'True'
 )
 #region Initialization
 $Script:Name = 'Apply-STIGs'
@@ -478,6 +478,7 @@ Write-Log -Message "Starting '$PSCommandPath'."
 If ($ApplicationsToSTIG -ne $null) { 
     [array]$ApplicationsToSTIG = $ApplicationsToSTIG.replace('\', '') | ConvertFrom-Json
 }
+[bool]$CloudOnly = $CloudOnly.ToLower() -eq 'true'
 
 Write-Log -message "Checking for 'lgpo.exe' in '$env:SystemRoot\system32'."
 
@@ -522,7 +523,7 @@ $GPOFolders = Get-ChildItem -Path $Script:TempDir -Directory
 If (Get-InstalledApplication -Name 'Microsoft 365', 'Office', 'Teams') {
     $ApplicableFolders += $GPOFolders | Where-Object { $_.Name -match 'M365' } 
 }
-$InstalledAppsToSTIG = (Get-InstalledApplication -Name $AppsToSTIG).SearchString
+$InstalledAppsToSTIG = (Get-InstalledApplication -Name $ApplicationsToSTIG).SearchString
 ForEach ($SearchString in $InstalledAppsToSTIG) {
     $ApplicableFolders += $GPOFolders | Where-Object { $_.Name -match "$SearchString" }
 }

@@ -119,10 +119,10 @@ module runCommands 'runCommands.bicep' = [
       logsContainerUri: logsContainerUri
       logsUserAssignedIdentityClientId: empty(logsUserAssignedIdentityResourceId)
         ? ''
-        : logsUserAssignedIdentity.properties.clientId
+        : logsUserAssignedIdentity!.properties.clientId
       scriptsUserAssignedIdentityClientId: empty(scriptsUserAssignedIdentityResourceId)
         ? ''
-        : scriptsUserAssignedIdentity.properties.clientId
+        : scriptsUserAssignedIdentity!.properties.clientId
       timeStamp: timeStamp
       virtualMachineName: vmNames[i]
     }
@@ -143,10 +143,10 @@ module runCommand 'runCommand.bicep' = [
       logsContainerUri: logsContainerUri
       logsUserAssignedIdentityClientId: empty(logsUserAssignedIdentityResourceId)
         ? ''
-        : logsUserAssignedIdentity.properties.clientId
+        : logsUserAssignedIdentity!.properties.clientId
       scriptsUserAssignedIdentityClientId: empty(scriptsUserAssignedIdentityResourceId)
         ? ''
-        : scriptsUserAssignedIdentity.properties.clientId
+        : scriptsUserAssignedIdentity!.properties.clientId
       parameters: parameters
       protectedParameter: protectedParameter
       scriptContent: scriptContent
