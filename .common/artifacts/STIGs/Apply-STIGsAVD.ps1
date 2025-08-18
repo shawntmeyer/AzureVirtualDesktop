@@ -282,7 +282,7 @@ Function Invoke-LGPO {
     }
 }
 
-function New-Log {
+Function New-Log {
     <#
     .SYNOPSIS
     Sets default log file and stores in a script accessible variable $script:Log
@@ -316,7 +316,7 @@ function New-Log {
     Add-Content $script:Log "Date`t`t`tCategory`t`tDetails"
 }
 
-function Write-Log {
+Function Write-Log {
     Param (
         [Parameter(Mandatory = $false, Position = 0)]
         [ValidateSet("Info", "Warning", "Error")]
