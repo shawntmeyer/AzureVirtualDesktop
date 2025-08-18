@@ -518,14 +518,14 @@ $null = Get-ChildItem -Path $Script:TempDir -Directory -Recurse | Where-Object {
 
 Write-Log -Message "Getting List of Applicable GPO folders."
 
-$GPOFolders = Get-ChildItem -Path $Script:TempDir -Directory
-[array]$ApplicableFolders = $GPOFolders | Where-Object { $_.Name -like "DoD*Windows $osVersion*" -or $_.Name -like 'DoD*Edge*' -or $_.Name -like 'DoD*Firewall*' -or $_.Name -like 'DoD*Internet Explorer*' -or $_.Name -like 'DoD*Defender Antivirus*' }
+$STIGFolders = Get-ChildItem -Path $Script:TempDir -Directory
+[array]$ApplicableFolders = $STIGFolders | Where-Object { $_.Name -like "DoD*Windows $osVersion*" -or $_.Name -like 'DoD*Edge*' -or $_.Name -like 'DoD*Firewall*' -or $_.Name -like 'DoD*Internet Explorer*' -or $_.Name -like 'DoD*Defender Antivirus*' }
 If (Get-InstalledApplication -Name 'Microsoft 365', 'Office', 'Teams') {
-    $ApplicableFolders += $GPOFolders | Where-Object { $_.Name -match 'M365' } 
+    $ApplicableFolders += $STIGFolders | Where-Object { $_.Name -match 'M365' } 
 }
 $InstalledAppsToSTIG = (Get-InstalledApplication -Name $ApplicationsToSTIG).SearchString
 ForEach ($SearchString in $InstalledAppsToSTIG) {
-    $ApplicableFolders += $GPOFolders | Where-Object { $_.Name -match "$SearchString" }
+    $ApplicableFolders += $STIGFolders | Where-Object { $_.Name -match "$SearchString" }
 }
 Write-Log -Message "Found $($ApplicableFolders.Count) applicable GPO folders:"
 $ApplicableFolders | ForEach-Object { Write-Log -Message "  $_" } 
@@ -535,7 +535,7 @@ ForEach ($folder in $ApplicableFolders.FullName) {
     $GPOFolders += $gpoFolderPath
 }
 ForEach ($gpoFolder in $GPOFolders) {
-    If ($gpoFolder -like "DoD*Windows $osVersion*") {
+    If ($gpoFolder -match "DoD Windows $osVersion") {
         <# Remove the policies that disable and rename the administrator account.
             # this should be done via the following code in run commands.
             
