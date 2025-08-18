@@ -157,7 +157,7 @@ function New-Log {
 $Script:Name = 'Install-LGPO'
 $Script:TempDir = Join-Path -Path $env:Temp -ChildPath $Script:Name
 $null = New-Item -Path $TempDir -ItemType Directory -Force
-New-Log
+New-Log -Path (Join-Path -Path "$env:SystemRoot\Logs" -ChildPath 'Software')
 $ErrorActionPreference = 'Stop'
 Write-Log -category Info -message "Starting '$PSCommandPath'."
 #endregion Initialization
