@@ -76,6 +76,61 @@ Function Split-ArgumentString {
     return $arguments
 }
 
+Function ConvertTo-ParametersSplat {
+    param (
+        [string]$ArgumentString
+    )
+
+    if ([string]::IsNullOrWhiteSpace($ArgumentString)) {
+        return @{}
+    }
+
+    $tokens = Split-ArgumentString -ArgumentString $ArgumentString
+    $parameters = @{}
+    
+    $i = 0
+    while ($i -lt $tokens.Count) {
+        $token = $tokens[$i]
+        
+        # If this is a parameter (starts with -)
+        if ($token -match '^-(\w+)$') {
+            $paramName = $matches[1]  # Remove the dash
+            
+            # Check if there's a value following this parameter
+            if (($i + 1) -lt $tokens.Count -and $tokens[$i + 1] -notmatch '^-\w+$') {
+                # Parameter with value
+                $i++  # Move to the value
+                $value = $tokens[$i]
+                
+                # Handle PowerShell booleans
+                if ($value -eq '$true') {
+                    $parameters[$paramName] = $true
+                }
+                elseif ($value -eq '$false') {
+                    $parameters[$paramName] = $false
+                }
+                else {
+                    # Remove quotes if present
+                    $cleanValue = $value.Trim('"')
+                    $parameters[$paramName] = $cleanValue
+                }
+            }
+            else {
+                # This is a switch parameter (no value)
+                $parameters[$paramName] = $true
+            }
+        }
+        else {
+            # Handle positional arguments (rare in this context)
+            # You could add logic here if needed
+        }
+        
+        $i++
+    }
+    
+    return $parameters
+}
+
 Start-Transcript -Path "$env:SystemRoot\Logs\$Name.log" -Force
 Write-OutputWithTimeStamp "Starting '$Name' script with the following parameters."
 Write-Output ( $PSBoundParameters | Format-Table -AutoSize )
@@ -151,7 +206,8 @@ switch ($Ext) {
   'ps1' {
     If ($Arguments) {
       Write-OutputWithTimeStamp "Calling PowerShell Script '$DestFile' with arguments '$Arguments'"
-      & $DestFile (Split-ArgumentString -ArgumentString $Arguments)
+      $parameterSplat = ConvertTo-ParametersSplat -ArgumentString $Arguments
+      & $DestFile @parameterSplat
     }
     Else {
       Write-OutputWithTimeStamp "Calling PowerShell Script '$DestFile'"
@@ -166,8 +222,9 @@ switch ($Ext) {
     $PSScript = (Get-ChildItem -Path $DestinationPath -filter '*.ps1').FullName
     If ($PSScript.count -gt 1) { $PSScript = $PSScript[0] }
     If ($Arguments) {
-      Write-OutputWithTimeStamp "Calling PowerShell Script '$PSScript' with arguments '$Arguments'"
-      & $PSScript ( Split-ArgumentString -ArgumentString $Arguments )
+      Write-OutputWithTimeStamp "Calling PowerShell Script '$DestFile' with arguments '$Arguments'"
+      $parameterSplat = ConvertTo-ParametersSplat -ArgumentString $Arguments
+      & $PSScript @parameterSplat
     }
     Else {
       Write-OutputWithTimeStamp "Calling PowerShell Script '$PSScript'"         

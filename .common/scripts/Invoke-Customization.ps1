@@ -224,7 +224,7 @@ switch ($Ext) {
     If ($Arguments) {
       Write-OutputWithTimeStamp "Calling PowerShell Script '$DestFile' with arguments '$Arguments'"
       $parameterSplat = ConvertTo-ParametersSplat -ArgumentString $Arguments
-      & $DestFile @parameterSplat
+      & $PSScript @parameterSplat
     }
     Else {
       Write-OutputWithTimeStamp "Calling PowerShell Script '$PSScript'"         
