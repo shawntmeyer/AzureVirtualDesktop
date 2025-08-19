@@ -17,6 +17,15 @@ function Write-OutputWithTimeStamp {
   Write-Output $Entry
 }
 
+function Split-ArgumentString {
+    param (
+        [string]$ArgumentString
+    )
+
+    $tokens = [System.Management.Automation.PSParser]::Tokenize($ArgumentString, [ref]$null)
+    return $tokens | Where-Object { $_.Type -eq 'CommandArgument' } | ForEach-Object { $_.Content }
+}
+
 Start-Transcript -Path "$env:SystemRoot\Logs\$Name.log" -Force
 Write-OutputWithTimeStamp "Starting '$Name' script with the following parameters."
 Write-Output ( $PSBoundParameters | Format-Table -AutoSize )
@@ -49,7 +58,7 @@ switch ($Ext) {
   'exe' {
       If ($Arguments) {
         Write-OutputWithTimeStamp "Executing '`"$DestFile`" $Arguments'"
-        $Install = Start-Process -FilePath "$DestFile" -ArgumentList $Arguments -NoNewWindow -Wait -PassThru
+        $Install = Start-Process -FilePath "$DestFile" -ArgumentList (Split-ArgumentString -ArgumentString $Arguments) -NoNewWindow -Wait -PassThru
         Write-OutputWithTimeStamp "Installation ended with exit code $($Install.ExitCode)."
       }
       Else {
@@ -64,7 +73,7 @@ switch ($Ext) {
         $Arguments = "/i $DestFile $Arguments"
       }
       Write-OutputWithTimeStamp "Executing 'msiexec.exe $Arguments'"
-      $MsiExec = Start-Process -FilePath msiexec.exe -ArgumentList $Arguments -Wait -PassThru
+      $MsiExec = Start-Process -FilePath msiexec.exe -ArgumentList (Split-ArgumentString -ArgumentString $Arguments) -Wait -PassThru
       Write-OutputWithTimeStamp "Installation ended with exit code $($MsiExec.ExitCode)."
 
     }
@@ -77,7 +86,11 @@ switch ($Ext) {
   'bat' {
     If ($Arguments) {
       Write-OutputWithTimeStamp "Executing 'cmd.exe `"$DestFile`" $Arguments'"
-      Start-Process -FilePath cmd.exe -ArgumentList "`"$DestFile`" $Arguments" -Wait
+      [array]$argumentList = Split-ArgumentString -ArgumentString $Arguments
+      If ($argumentList -notcontains $DestFile) {
+        $argumentList = @("$DestFile") + $argumentList
+      }
+      Start-Process -FilePath cmd.exe -ArgumentList $argumentList -Wait
     }
     Else {
       Write-OutputWithTimeStamp "Executing 'cmd.exe `"$DestFile`"'"
@@ -87,7 +100,7 @@ switch ($Ext) {
   'ps1' {
     If ($Arguments) {
       Write-OutputWithTimeStamp "Calling PowerShell Script '$DestFile' with arguments '$Arguments'"
-      & $DestFile $Arguments
+      & $DestFile (Split-ArgumentString -ArgumentString $Arguments)
     }
     Else {
       Write-OutputWithTimeStamp "Calling PowerShell Script '$DestFile'"
@@ -103,7 +116,7 @@ switch ($Ext) {
     If ($PSScript.count -gt 1) { $PSScript = $PSScript[0] }
     If ($Arguments) {
       Write-OutputWithTimeStamp "Calling PowerShell Script '$PSScript' with arguments '$Arguments'"
-      & $PSScript $Arguments
+      & $PSScript ( Split-ArgumentString -ArgumentString $Arguments )
     }
     Else {
       Write-OutputWithTimeStamp "Calling PowerShell Script '$PSScript'"         

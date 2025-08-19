@@ -1,0 +1,75 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.37.4.10188",
+      "templateHash": "9868908164325078291"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string"
+    },
+    "vmName": {
+      "type": "string"
+    },
+    "runCommandName": {
+      "type": "string"
+    },
+    "logsUserAssignedIdentityClientId": {
+      "type": "string"
+    },
+    "logsContainerUri": {
+      "type": "string"
+    },
+    "parameters": {
+      "type": "array"
+    },
+    "protectedParameter": {
+      "type": "secureObject",
+      "defaultValue": {}
+    },
+    "scriptContent": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "scriptUri": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "scriptsUserAssignedIdentityClientId": {
+      "type": "string"
+    },
+    "timeoutInSeconds": {
+      "type": "int"
+    },
+    "timeStamp": {
+      "type": "string"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Compute/virtualMachines/runCommands",
+      "apiVersion": "2023-03-01",
+      "name": "[format('{0}/{1}', parameters('vmName'), parameters('runCommandName'))]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "errorBlobManagedIdentity": "[if(empty(parameters('logsUserAssignedIdentityClientId')), null(), createObject('clientId', parameters('logsUserAssignedIdentityClientId')))]",
+        "errorBlobUri": "[if(empty(parameters('logsContainerUri')), null(), format('{0}/{1}-{2}-error-{3}.log', parameters('logsContainerUri'), reference(resourceId('Microsoft.Compute/virtualMachines', parameters('vmName')), '2023-03-01', 'full'), parameters('runCommandName'), parameters('timeStamp')))]",
+        "outputBlobManagedIdentity": "[if(empty(parameters('logsUserAssignedIdentityClientId')), null(), createObject('clientId', parameters('logsUserAssignedIdentityClientId')))]",
+        "outputBlobUri": "[if(empty(parameters('logsContainerUri')), null(), format('{0}/{1}-{2}-output-{3}.log', parameters('logsContainerUri'), reference(resourceId('Microsoft.Compute/virtualMachines', parameters('vmName')), '2023-03-01', 'full'), parameters('runCommandName'), parameters('timeStamp')))]",
+        "parameters": "[if(empty(parameters('parameters')), null(), parameters('parameters'))]",
+        "protectedParameters": "[if(not(empty(parameters('protectedParameter'))), createArray(parameters('protectedParameter')), null())]",
+        "source": {
+          "scriptUri": "[if(empty(parameters('scriptUri')), null(), parameters('scriptUri'))]",
+          "script": "[if(empty(parameters('scriptContent')), null(), parameters('scriptContent'))]",
+          "scriptUriManagedIdentity": "[if(empty(parameters('scriptsUserAssignedIdentityClientId')), null(), createObject('clientId', parameters('scriptsUserAssignedIdentityClientId')))]"
+        },
+        "timeoutInSeconds": "[if(equals(parameters('timeoutInSeconds'), 5400), null(), parameters('timeoutInSeconds'))]",
+        "treatFailureAsDeploymentFailure": true
+      }
+    }
+  ]
+}
