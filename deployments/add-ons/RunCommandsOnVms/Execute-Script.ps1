@@ -17,13 +17,63 @@ function Write-OutputWithTimeStamp {
   Write-Output $Entry
 }
 
-function Split-ArgumentString {
+Function Split-ArgumentString {
     param (
         [string]$ArgumentString
     )
 
-    $tokens = [System.Management.Automation.PSParser]::Tokenize($ArgumentString, [ref]$null)
-    return $tokens | Where-Object { $_.Type -eq 'CommandArgument' } | ForEach-Object { $_.Content }
+    if ([string]::IsNullOrWhiteSpace($ArgumentString)) {
+        return @()
+    }
+
+    # For PowerShell execution with &, we want individual arguments, not combined ones
+    $arguments = @()
+    $currentArg = ""
+    $inQuotes = $false
+    
+    for ($i = 0; $i -lt $ArgumentString.Length; $i++) {
+        $char = $ArgumentString[$i]
+        
+        if ($char -eq '"' -and ($i -eq 0 -or $ArgumentString[$i-1] -ne '\')) {
+            $inQuotes = !$inQuotes
+            $currentArg += $char
+        }
+        elseif ($char -eq ' ' -and !$inQuotes) {
+            if ($currentArg.Length -gt 0) {
+                # Handle boolean conversion
+                $value = $currentArg.Trim('"')
+                if ($value -eq 'true') {
+                    $arguments += '$true'
+                }
+                elseif ($value -eq 'false') {
+                    $arguments += '$false'
+                }
+                else {
+                    $arguments += $value
+                }
+                $currentArg = ""
+            }
+        }
+        else {
+            $currentArg += $char
+        }
+    }
+    
+    # Add the last argument
+    if ($currentArg.Length -gt 0) {
+        $value = $currentArg.Trim('"')
+        if ($value -eq 'true') {
+            $arguments += '$true'
+        }
+        elseif ($value -eq 'false') {
+            $arguments += '$false'
+        }
+        else {
+            $arguments += $value
+        }
+    }
+    
+    return $arguments
 }
 
 Start-Transcript -Path "$env:SystemRoot\Logs\$Name.log" -Force
@@ -69,13 +119,14 @@ switch ($Ext) {
     }
   'msi' {
     If ($Arguments) {
-      If ($Arguments -notcontains $SourceFileName) {
-        $Arguments = "/i $DestFile $Arguments"
+      $Arguments = Split-ArgumentString -ArgumentString $Arguments
+      If ($Arguments -notcontains $DestFile) {
+        $InstallArg = "/i $DestFile"
+        $Arguments = @($InstallArg) + $Arguments
       }
       Write-OutputWithTimeStamp "Executing 'msiexec.exe $Arguments'"
-      $MsiExec = Start-Process -FilePath msiexec.exe -ArgumentList (Split-ArgumentString -ArgumentString $Arguments) -Wait -PassThru
+      $MsiExec = Start-Process -FilePath msiexec.exe -ArgumentList $Arguments -Wait -PassThru
       Write-OutputWithTimeStamp "Installation ended with exit code $($MsiExec.ExitCode)."
-
     }
     Else {
       Write-OutputWithTimeStamp "Executing 'msiexec.exe /i $DestFile /qn'"
@@ -86,11 +137,11 @@ switch ($Ext) {
   'bat' {
     If ($Arguments) {
       Write-OutputWithTimeStamp "Executing 'cmd.exe `"$DestFile`" $Arguments'"
-      [array]$argumentList = Split-ArgumentString -ArgumentString $Arguments
-      If ($argumentList -notcontains $DestFile) {
-        $argumentList = @("$DestFile") + $argumentList
+      $Arguments = Split-ArgumentString -ArgumentString $Arguments
+      If ($Arguments -notcontains $DestFile) {
+        $Arguments = @("$DestFile") + $Arguments
       }
-      Start-Process -FilePath cmd.exe -ArgumentList $argumentList -Wait
+      Start-Process -FilePath cmd.exe -ArgumentList $Arguments -Wait
     }
     Else {
       Write-OutputWithTimeStamp "Executing 'cmd.exe `"$DestFile`"'"
