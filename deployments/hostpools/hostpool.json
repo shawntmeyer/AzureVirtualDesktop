@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.37.4.10188",
-      "templateHash": "7385910528762169593"
+      "templateHash": "18310289388327825797"
     }
   },
   "parameters": {
@@ -13669,7 +13669,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.37.4.10188",
-              "templateHash": "13176610342393409263"
+              "templateHash": "5300856696078321618"
             }
           },
           "parameters": {
@@ -19581,7 +19581,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.37.4.10188",
-                      "templateHash": "5990368236578999950"
+                      "templateHash": "12225093152733045014"
                     }
                   },
                   "parameters": {
@@ -19626,7 +19626,7 @@
                       "location": "[parameters('location')]",
                       "tags": "[parameters('tags')]",
                       "properties": {
-                        "protectedItemType": "Microsoft.Compute/virtualMachines",
+                        "protectedItemType": "Microsoft.ClassicCompute/virtualMachines",
                         "policyId": "[parameters('PolicyId')]",
                         "sourceResourceId": "[resourceId(parameters('VirtualMachineResourceGroupName'), 'Microsoft.Compute/virtualMachines', format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[copyIndex()], parameters('sessionHostIndex')), 3, '0')))]"
                       }

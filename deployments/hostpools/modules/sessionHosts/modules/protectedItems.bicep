@@ -15,7 +15,7 @@ resource protectedItems_Vm 'Microsoft.recoveryServices/vaults/backupFabrics/prot
   location: location
   tags: tags
   properties: {
-    protectedItemType: 'Microsoft.Compute/virtualMachines'
+    protectedItemType: 'Microsoft.ClassicCompute/virtualMachines'
     policyId: PolicyId
     sourceResourceId: resourceId(VirtualMachineResourceGroupName, 'Microsoft.Compute/virtualMachines', '${virtualMachineNamePrefix}${padLeft((i + sessionHostIndex), 3, '0')}')
   }
