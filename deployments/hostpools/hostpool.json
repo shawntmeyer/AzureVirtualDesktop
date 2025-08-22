@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.37.4.10188",
-      "templateHash": "5789652599451474395"
+      "templateHash": "10223421989652309681"
     }
   },
   "parameters": {
@@ -13669,7 +13669,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.37.4.10188",
-              "templateHash": "9148498382264453084"
+              "templateHash": "16556283492266393462"
             }
           },
           "parameters": {
@@ -19577,7 +19577,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.37.4.10188",
-                      "templateHash": "4718538226955375598"
+                      "templateHash": "10350925113137582808"
                     }
                   },
                   "parameters": {
@@ -19608,7 +19608,7 @@
                       },
                       "type": "Microsoft.RecoveryServices/vaults/backupFabrics/protectionContainers/protectedItems",
                       "apiVersion": "2024-04-01",
-                      "name": "[format('{0}/Azure/IaasVMContainer;iaasvmcontainerv2;{1};{2}{3};vm;iaasvmcontainerv2;{4};{5}{6}', parameters('recoveryServicesVaultName'), resourceGroup().name, parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[copyIndex()], parameters('sessionHostIndex')), 3, '0'), resourceGroup().name, parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[copyIndex()], parameters('sessionHostIndex')), 3, '0'))]",
+                      "name": "[format('{0}/Azure/IaasVMContainer;iaasvmcontainerv2;{1};{2}{3}/vm;iaasvmcontainerv2;{4};{5}{6}', parameters('recoveryServicesVaultName'), resourceGroup().name, parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[copyIndex()], parameters('sessionHostIndex')), 3, '0'), resourceGroup().name, parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[copyIndex()], parameters('sessionHostIndex')), 3, '0'))]",
                       "location": "[parameters('location')]",
                       "properties": {
                         "protectedItemType": "Microsoft.Compute/virtualMachines",

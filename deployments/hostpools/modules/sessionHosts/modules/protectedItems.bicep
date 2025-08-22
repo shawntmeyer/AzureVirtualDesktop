@@ -19,7 +19,7 @@ resource vms 'Microsoft.Compute/virtualMachines@2022-08-01' existing = [for i in
 }]
 
 resource backupProtectedItems 'Microsoft.RecoveryServices/vaults/backupFabrics/protectionContainers/protectedItems@2024-04-01' = [for i in range(0, sessionHostCount): {
-  name: '${recoveryServicesVaultName}/Azure/IaasVMContainer;iaasvmcontainerv2;${resourceGroup().name};${virtualMachineNamePrefix}${padLeft((i + sessionHostIndex), 3, '0')};vm;iaasvmcontainerv2;${resourceGroup().name};${virtualMachineNamePrefix}${padLeft((i + sessionHostIndex), 3, '0')}'
+  name: '${recoveryServicesVaultName}/Azure/IaasVMContainer;iaasvmcontainerv2;${resourceGroup().name};${virtualMachineNamePrefix}${padLeft((i + sessionHostIndex), 3, '0')}/vm;iaasvmcontainerv2;${resourceGroup().name};${virtualMachineNamePrefix}${padLeft((i + sessionHostIndex), 3, '0')}'
   location: location
   properties: {
     protectedItemType: 'Microsoft.Compute/virtualMachines'
