@@ -1,4 +1,3 @@
-param location string
 param policyName string
 param recoveryServicesVaultName string
 param sessionHostCount int
@@ -18,9 +17,13 @@ resource vms 'Microsoft.Compute/virtualMachines@2022-08-01' existing = [for i in
   name: '${virtualMachineNamePrefix}${padLeft((i + sessionHostIndex), 3, '0')}'
 }]
 
+resource backupProtectionContainers 'Microsoft.RecoveryServices/vaults/backupFabrics/protectionContainers@2024-04-01' = [for i in range(0, sessionHostCount): {
+  name: '${recoveryServicesVaultName}/Azure/IaasVMContainer;iaasvmcontainerv2;${resourceGroup().name};${virtualMachineNamePrefix}${padLeft((i + sessionHostIndex), 3, '0')}'
+}]
+
 resource backupProtectedItems 'Microsoft.RecoveryServices/vaults/backupFabrics/protectionContainers/protectedItems@2024-04-01' = [for i in range(0, sessionHostCount): {
-  name: '${recoveryServicesVaultName}/Azure/IaasVMContainer;iaasvmcontainerv2;${resourceGroup().name};${virtualMachineNamePrefix}${padLeft((i + sessionHostIndex), 3, '0')}/vm;iaasvmcontainerv2;${resourceGroup().name};${virtualMachineNamePrefix}${padLeft((i + sessionHostIndex), 3, '0')}'
-  location: location
+  name: 'vm;iaasvmcontainerv2;${resourceGroup().name};${virtualMachineNamePrefix}${padLeft((i + sessionHostIndex), 3, '0')}'
+  parent: backupProtectionContainers[i]
   properties: {
     protectedItemType: 'Microsoft.Compute/virtualMachines'
     policyId: backupPolicy.id
