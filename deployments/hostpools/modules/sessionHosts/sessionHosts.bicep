@@ -390,13 +390,11 @@ module protectedItems_Vm 'modules/protectedItems.bicep' = [for i in range(1, ses
   scope: resourceGroup(resourceGroupHosts)
   params: {
     location: location
-    PolicyId: deploymentType == 'Complete' ? '${recoveryServicesVault!.outputs.resourceId}/backupPolicies/${backupPolicyName}' : '${existingRecoveryServicesVaultResourceId}/backupPolicies/${backupPolicyName}'
+    policyName: backupPolicyName
     recoveryServicesVaultName: deploymentType == 'Complete' ? recoveryServicesVault!.outputs.name : last(split(existingRecoveryServicesVaultResourceId, '/'))
     sessionHostCount: i == sessionHostBatchCount && divisionRemainderValue > 0 ? divisionRemainderValue : maxResourcesPerTemplateDeployment
     sessionHostIndex: i == 1 ? sessionHostIndex : ((i - 1) * maxResourcesPerTemplateDeployment) + sessionHostIndex
-    tags: union({'cm-resource-parent': hostPoolResourceId}, tags[?'Microsoft.recoveryServices/vaults'] ?? {})
     virtualMachineNamePrefix: virtualMachineNamePrefix
-    VirtualMachineResourceGroupName: resourceGroupHosts
   }
   dependsOn: [
     virtualMachines[i-1]
