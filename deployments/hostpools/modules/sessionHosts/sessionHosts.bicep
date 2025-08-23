@@ -389,7 +389,7 @@ module protectedItems_Vm 'modules/protectedItems.bicep' = [for i in range(1, ses
   name: 'BackupProtectedItems_VirtualMachines_${i-1}_${timeStamp}'
   scope: resourceGroup(resourceGroupHosts)
   params: {
-    backupPolicyId: deploymentType == 'Complete' ? '${recoveryServicesVault!.outputs.resourceId}/backupPolicies/${backupPolicyName}' : '${existingRecoveryServicesVaultResourceId}/backupPolicies/${backupPolicyName}'
+    policyName: backupPolicyName
     recoveryServicesVaultName: deploymentType == 'Complete' ? recoveryServicesVault!.outputs.name : last(split(existingRecoveryServicesVaultResourceId, '/'))
     sessionHostCount: i == sessionHostBatchCount && divisionRemainderValue > 0 ? divisionRemainderValue : maxResourcesPerTemplateDeployment
     sessionHostIndex: i == 1 ? sessionHostIndex : ((i - 1) * maxResourcesPerTemplateDeployment) + sessionHostIndex
