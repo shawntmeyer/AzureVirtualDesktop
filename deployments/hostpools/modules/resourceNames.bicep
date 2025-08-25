@@ -367,7 +367,7 @@ output encryptionKeyNames object = {
   virtualMachines: '${hpBaseName}-encryption-key-vms'
   confidentialVMs: '${hpBaseName}-encryption-key-confidential-vms'
 }
-output locations object = locations
+output smbServerLocation string = locationVirtualMachinesAbbreviation
 output logAnalyticsWorkspaceName string = logAnalyticsWorkspaceName
 output netAppAccountName string = netAppAccountName
 output netAppCapacityPoolName string = netAppCapacityPoolName

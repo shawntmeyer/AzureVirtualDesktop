@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.37.4.10188",
-      "templateHash": "255852509204538453"
+      "templateHash": "12517609300377033674"
     }
   },
   "parameters": {
@@ -1092,7 +1092,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.37.4.10188",
-              "templateHash": "11366735054450195478"
+              "templateHash": "6957289940749180059"
             }
           },
           "parameters": {
@@ -1547,9 +1547,9 @@
                 "confidentialVMs": "[format('{0}-encryption-key-confidential-vms', variables('hpBaseName'))]"
               }
             },
-            "locations": {
-              "type": "object",
-              "value": "[variables('locations')]"
+            "smbServerLocation": {
+              "type": "string",
+              "value": "[variables('locationVirtualMachinesAbbreviation')]"
             },
             "logAnalyticsWorkspaceName": {
               "type": "string",
@@ -7838,7 +7838,7 @@
             "value": "[parameters('fslogixShareSizeInGB')]"
           },
           "smbServerLocation": {
-            "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.locations.value[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('virtualMachineSubnetResourceId'), '/')[2], split(parameters('virtualMachineSubnetResourceId'), '/')[4]), 'Microsoft.Network/virtualNetworks', split(parameters('virtualMachineSubnetResourceId'), '/')[8]), '2023-04-01', 'full').location].abbreviation]"
+            "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.smbServerLocation.value]"
           },
           "storageAccountNamePrefix": {
             "value": "[reference(subscriptionResourceId('Microsoft.Resources/deployments', format('ResourceNames_{0}', parameters('timeStamp'))), '2022-09-01').outputs.storageAccountNames.value.fslogix]"

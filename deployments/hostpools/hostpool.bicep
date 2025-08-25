@@ -1051,7 +1051,7 @@ module fslogix 'modules/fslogix/fslogix.bicep' = if (deploymentType == 'Complete
     resourceGroupStorage: resourceNames.outputs.resourceGroupStorage
     serverFarmId: deploymentType == 'Complete' ? management!.outputs.appServicePlanId : ''
     shareSizeInGB: fslogixShareSizeInGB
-    smbServerLocation: resourceNames.outputs.locations[locationVirtualMachines].abbreviation
+    smbServerLocation: resourceNames.outputs.smbServerLocation
     storageAccountNamePrefix: resourceNames.outputs.storageAccountNames.fslogix
     storageCount: fslogixStorageCount
     storageIndex: fslogixStorageIndex
