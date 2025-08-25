@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.37.4.10188",
-      "templateHash": "16823305045653071782"
+      "templateHash": "255852509204538453"
     }
   },
   "parameters": {
@@ -13669,7 +13669,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.37.4.10188",
-              "templateHash": "1801334741292265088"
+              "templateHash": "11774991707119778020"
             }
           },
           "parameters": {
@@ -19540,86 +19540,6 @@
                   }
                 }
               }
-            },
-            {
-              "copy": {
-                "name": "protectedItems_Vm",
-                "count": "[length(range(1, parameters('sessionHostBatchCount')))]"
-              },
-              "condition": "[and(parameters('recoveryServices'), or(equals(parameters('deploymentType'), 'Complete'), not(empty(parameters('existingRecoveryServicesVaultResourceId')))))]",
-              "type": "Microsoft.Resources/deployments",
-              "apiVersion": "2022-09-01",
-              "name": "[format('BackupProtectedItems_VirtualMachines_{0}_{1}', sub(range(1, parameters('sessionHostBatchCount'))[copyIndex()], 1), parameters('timeStamp'))]",
-              "resourceGroup": "[parameters('resourceGroupHosts')]",
-              "properties": {
-                "expressionEvaluationOptions": {
-                  "scope": "inner"
-                },
-                "mode": "Incremental",
-                "parameters": {
-                  "policyName": {
-                    "value": "[variables('backupPolicyName')]"
-                  },
-                  "recoveryServicesVaultName": "[if(equals(parameters('deploymentType'), 'Complete'), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupHosts')), 'Microsoft.Resources/deployments', format('RecoveryServicesVault_VirtualMachines_{0}', parameters('timeStamp'))), '2022-09-01').outputs.name.value), createObject('value', last(split(parameters('existingRecoveryServicesVaultResourceId'), '/'))))]",
-                  "sessionHostCount": "[if(and(equals(range(1, parameters('sessionHostBatchCount'))[copyIndex()], parameters('sessionHostBatchCount')), greater(parameters('divisionRemainderValue'), 0)), createObject('value', parameters('divisionRemainderValue')), createObject('value', parameters('maxResourcesPerTemplateDeployment')))]",
-                  "sessionHostIndex": "[if(equals(range(1, parameters('sessionHostBatchCount'))[copyIndex()], 1), createObject('value', parameters('sessionHostIndex')), createObject('value', add(mul(sub(range(1, parameters('sessionHostBatchCount'))[copyIndex()], 1), parameters('maxResourcesPerTemplateDeployment')), parameters('sessionHostIndex'))))]",
-                  "virtualMachineNamePrefix": {
-                    "value": "[parameters('virtualMachineNamePrefix')]"
-                  }
-                },
-                "template": {
-                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-                  "contentVersion": "1.0.0.0",
-                  "metadata": {
-                    "_generator": {
-                      "name": "bicep",
-                      "version": "0.37.4.10188",
-                      "templateHash": "180646972674303375"
-                    }
-                  },
-                  "parameters": {
-                    "policyName": {
-                      "type": "string"
-                    },
-                    "recoveryServicesVaultName": {
-                      "type": "string"
-                    },
-                    "sessionHostCount": {
-                      "type": "int"
-                    },
-                    "sessionHostIndex": {
-                      "type": "int"
-                    },
-                    "virtualMachineNamePrefix": {
-                      "type": "string"
-                    }
-                  },
-                  "variables": {
-                    "v2VmContainer": "IaasVMContainer;iaasvmcontainerv2;",
-                    "v2Vm": "vm;iaasvmcontainerv2;"
-                  },
-                  "resources": [
-                    {
-                      "copy": {
-                        "name": "protectedItems_Vm",
-                        "count": "[length(range(0, parameters('sessionHostCount')))]"
-                      },
-                      "type": "Microsoft.RecoveryServices/vaults/backupFabrics/protectionContainers/protectedItems",
-                      "apiVersion": "2024-10-01",
-                      "name": "[format('{0}/Azure/{1}{2};{3}{4}/{5}{6};{7}{8}', parameters('recoveryServicesVaultName'), variables('v2VmContainer'), resourceGroup().name, parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[copyIndex()], parameters('sessionHostIndex')), 3, '0'), variables('v2Vm'), resourceGroup().name, parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[copyIndex()], parameters('sessionHostIndex')), 3, '0'))]",
-                      "properties": {
-                        "protectedItemType": "Microsoft.Compute/virtualMachines",
-                        "policyId": "[resourceId('Microsoft.RecoveryServices/vaults/backupPolicies', parameters('recoveryServicesVaultName'), parameters('policyName'))]",
-                        "sourceResourceId": "[resourceId(resourceGroup().name, 'Microsoft.Compute/virtualMachines', format('{0}{1}', parameters('virtualMachineNamePrefix'), padLeft(add(range(0, parameters('sessionHostCount'))[copyIndex()], parameters('sessionHostIndex')), 3, '0')))]"
-                      }
-                    }
-                  ]
-                }
-              },
-              "dependsOn": [
-                "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupHosts')), 'Microsoft.Resources/deployments', format('RecoveryServicesVault_VirtualMachines_{0}', parameters('timeStamp')))]",
-                "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupHosts')), 'Microsoft.Resources/deployments', format('VirtualMachines_Batch_{0}_{1}', sub(range(1, parameters('sessionHostBatchCount'))[sub(range(1, parameters('sessionHostBatchCount'))[copyIndex()], 1)], 1), parameters('timeStamp')))]"
-              ]
             },
             {
               "type": "Microsoft.Resources/deployments",

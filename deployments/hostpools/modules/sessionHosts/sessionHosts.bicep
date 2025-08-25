@@ -385,6 +385,7 @@ module recoveryServicesVault '../../../sharedModules/resources/recovery-services
   }
 }
 
+/* Disabled temporarily until we can figure out why protected Items fail via ARM/Bicep.
 module protectedItems_Vm 'modules/protectedItems.bicep' = [for i in range(1, sessionHostBatchCount): if (recoveryServices && (deploymentType == 'Complete' || !empty(existingRecoveryServicesVaultResourceId))) {
   name: 'BackupProtectedItems_VirtualMachines_${i-1}_${timeStamp}'
   scope: resourceGroup(resourceGroupHosts)
@@ -399,7 +400,7 @@ module protectedItems_Vm 'modules/protectedItems.bicep' = [for i in range(1, ses
     virtualMachines[i-1]
   ]
 }]
-
+*/
 module getFlattenedVmNamesArray 'modules/flattenVirtualMachineNames.bicep' = {
   name: 'FlattenVirtualMachineNames_${timeStamp}'
   scope: resourceGroup(resourceGroupHosts)
