@@ -1,5 +1,8 @@
 [CmdletBinding(SupportsShouldProcess = $true)]
 param (
+    [Parameter(Mandatory = $false)]
+    [string]$AllowDeveloperTools = 'True',
+
     #JSON String of the SmartScreenAllowListDomains
     # https://learn.microsoft.com/en-us/deployedge/microsoft-edge-policies#smartscreenallowlistdomains
     [Parameter(Mandatory = $false)]
@@ -352,6 +355,7 @@ Function Write-Log {
 $null = New-Item -Path $Script:TempDir -ItemType Directory -Force
 [array]$SmartScreenAllowListDomains = $SmartScreenAllowListDomains.Replace('\"', '"').Replace('\[', '[').Replace('\]', ']') | ConvertFrom-Json
 [array]$PopupsAllowedForUrls = $PopupsAllowedForUrls.Replace('\"', '"').Replace('\[', '[').Replace('\]', ']') | ConvertFrom-Json
+[bool]$AllowDeveloperTools = $AllowDeveloperTools.ToLower() -eq 'true'
 New-Log -Path (Join-Path -Path "$env:SystemRoot\Logs" -ChildPath 'Configuration')
 $ErrorActionPreference = 'Stop'
 Write-Log -Category Info -Message "Starting '$PSCommandPath'."
@@ -439,6 +443,10 @@ If (Test-Path -Path "$env:SystemRoot\System32\Lgpo.exe") {
             $i++
         }
     }
+    if ($AllowDeveloperTools) {
+        # https://learn.microsoft.com/en-us/deployedge/microsoft-edge-browser-policies/developertoolsavailability
+        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Edge' -RegistryValue 'DeveloperToolsAvailability' -RegistryType 'DWORD' -RegistryData 1 -outfileprefix $appName -Verbose
+    }
     Invoke-LGPO -Verbose
 }
 Else {
@@ -468,6 +476,10 @@ Else {
             Set-RegistryValue -Path 'HKLM:\Software\Policies\Microsoft\Edge\PopupsAllowedForUrls' -Name $i -PropertyType 'STRING' -Value $url
             $i++
         }
+    }
+    If($AllowDeveloperTools) {
+        # https://learn.microsoft.com/en-us/deployedge/microsoft-edge-browser-policies/developertoolsavailability
+        Set-RegistryValue -Path 'HKLM:\Software\Policies\Microsoft\Edge' -Name 'DeveloperToolsAvailability' -PropertyType 'DWORD' -Value 1
     }
 }
 Write-Log -Category Info -Message "Edge Group Policy Configuration Complete."
