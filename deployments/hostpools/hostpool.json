@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.37.4.10188",
-      "templateHash": "12517609300377033674"
+      "templateHash": "2392434011055428990"
     }
   },
   "parameters": {
@@ -5458,7 +5458,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.37.4.10188",
-              "templateHash": "8369053208310739119"
+              "templateHash": "8404112986491292028"
             }
           },
           "parameters": {
@@ -6252,9 +6252,6 @@
                   "locationVirtualMachines": {
                     "value": "[parameters('locationVirtualMachines')]"
                   },
-                  "logAnalyticsWorkspaceResourceId": {
-                    "value": "[parameters('logAnalyticsWorkspaceResourceId')]"
-                  },
                   "deploymentVirtualMachineName": {
                     "value": "[parameters('deploymentVirtualMachineName')]"
                   },
@@ -6278,7 +6275,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.37.4.10188",
-                      "templateHash": "11423147036113295481"
+                      "templateHash": "2015638826193016972"
                     }
                   },
                   "parameters": {
@@ -6300,9 +6297,6 @@
                     "locationVirtualMachines": {
                       "type": "string"
                     },
-                    "logAnalyticsWorkspaceResourceId": {
-                      "type": "string"
-                    },
                     "deploymentVirtualMachineName": {
                       "type": "string"
                     },
@@ -6320,12 +6314,6 @@
                     }
                   },
                   "variables": {
-                    "applicationGroupLogs": [
-                      {
-                        "categoryGroup": "allLogs",
-                        "enabled": true
-                      }
-                    ],
                     "desktopVirtualizationUserRoleId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '1d18fff3-a72a-46b5-b4a9-0b38a3cd7e63')]"
                   },
                   "resources": [
@@ -6339,20 +6327,6 @@
                         "hostPoolArmPath": "[parameters('hostPoolResourceId')]",
                         "applicationGroupType": "Desktop"
                       }
-                    },
-                    {
-                      "condition": "[not(empty(parameters('logAnalyticsWorkspaceResourceId')))]",
-                      "type": "Microsoft.Insights/diagnosticSettings",
-                      "apiVersion": "2021-05-01-preview",
-                      "scope": "[format('Microsoft.DesktopVirtualization/applicationGroups/{0}', parameters('desktopApplicationGroupName'))]",
-                      "name": "[format('diag-{0}', parameters('desktopApplicationGroupName'))]",
-                      "properties": {
-                        "logs": "[variables('applicationGroupLogs')]",
-                        "workspaceId": "[parameters('logAnalyticsWorkspaceResourceId')]"
-                      },
-                      "dependsOn": [
-                        "[resourceId('Microsoft.DesktopVirtualization/applicationGroups', parameters('desktopApplicationGroupName'))]"
-                      ]
                     },
                     {
                       "copy": {

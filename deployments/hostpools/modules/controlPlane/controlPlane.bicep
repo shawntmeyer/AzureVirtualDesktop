@@ -150,7 +150,6 @@ module applicationGroup 'modules/applicationGroup.bicep' = {
     hostPoolResourceId: hostPool.outputs.resourceId
     location: locationControlPlane
     locationVirtualMachines: locationVirtualMachines
-    logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceResourceId
     deploymentVirtualMachineName: deploymentVirtualMachineName
     resourceGroupDeployment: resourceGroupDeployment
     appGroupSecurityGroups: appGroupSecurityGroups

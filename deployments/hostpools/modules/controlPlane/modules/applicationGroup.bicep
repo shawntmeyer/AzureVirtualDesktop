@@ -4,19 +4,11 @@ param desktopFriendlyName string
 param hostPoolResourceId string
 param location string
 param locationVirtualMachines string
-param logAnalyticsWorkspaceResourceId string
 param deploymentVirtualMachineName string
 param resourceGroupDeployment string
 param appGroupSecurityGroups array
 param tags object
 param timeStamp string
-
-var applicationGroupLogs = [
-  {
-    categoryGroup: 'allLogs'
-    enabled: true
-  }
-]
 
 var desktopVirtualizationUserRoleId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '1d18fff3-a72a-46b5-b4a9-0b38a3cd7e63')
 
@@ -29,15 +21,6 @@ resource applicationGroup 'Microsoft.DesktopVirtualization/applicationGroups@202
   properties: {
     hostPoolArmPath: hostPoolResourceId
     applicationGroupType: 'Desktop'
-  }
-}
-
-resource applicationGroup_DiagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if(!empty(logAnalyticsWorkspaceResourceId)) {
-  name: 'diag-${desktopApplicationGroupName}'
-  scope: applicationGroup
-  properties: {
-    logs: applicationGroupLogs
-    workspaceId: logAnalyticsWorkspaceResourceId
   }
 }
 
