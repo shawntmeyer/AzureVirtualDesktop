@@ -35,7 +35,7 @@ There are several Azure resource prerequisite that are required to run this depl
   
   Machines on this network need to be able to connect to the following network destinations:
   <ul>
-  <li>Resource Manager Url TCP Port 443 (Commercial - management.azure.com, US Gov - management.usgovcloudapi.net). See [Air-Gapped Cloud Information](imageAir-GappedCloud.md) for the Azure Secret and Azure Top Secret environment information. You can leverage the [AzureResourceManager service tag](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/service-tags) in NSGs and the Azure Firewall to configure this access.
+  <li>Resource Manager Url TCP Port 443 (Commercial - management.azure.com, US Gov - management.usgovcloudapi.net). See <a href="imageAir-GappedCloud.md">Air-Gapped Cloud Image Management Details</a> for the Azure Secret and Azure Top Secret environment information. You can leverage the <a href="https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/service-tags">AzureResourceManager service tag</a> in NSGs and the Azure Firewall to configure this access.
   </li>
   </ul>
   </details>
@@ -117,8 +117,8 @@ There are several Azure resource prerequisite that are required to run this depl
   
   The following steps must be completed if you plan to use this service.
   <ul>
-    <li>[Register the resource provider](https://learn.microsoft.com/azure/azure-netapp-files/azure-netapp-files-register)</li>
-    <li>[Enable the shared AD feature](https://learn.microsoft.com/azure/azure-netapp-files/create-active-directory-connections#shared_ad) - this feature is required if you plan to deploy more than one domain joined NetApp account in the same Azure subscription and region.</li>
+    <li><a href="https://learn.microsoft.com/azure/azure-netapp-files/azure-netapp-files-register">Register the resource provider</a></li>
+    <li><a href="https://learn.microsoft.com/azure/azure-netapp-files/create-active-directory-connections#shared_ad">Enable the shared AD feature</a> - this feature is required if you plan to deploy more than one domain joined NetApp account in the same Azure subscription and region.</li>
   </ul>
   </details>
 - <details><summary><b>AVD Private Link</b></summary>
@@ -203,7 +203,7 @@ If you did not launch pwsh as an administrator, use the following command:
 Install-Module -Name Az -AllowClobber -Force -Scope CurrentUser
 ```
 
-Additional Information can be found [here](https://learn.microsoft.com/en-us/powershell/azure/install-azure-powershell).
+Additional Information can be found at [Install Azure Powershell](https://learn.microsoft.com/en-us/powershell/azure/install-azure-powershell).
 
 #### Bicep Installation
 
@@ -226,7 +226,7 @@ if (-not $env:path.Contains($installPath)) { $env:path += ";$installPath" }
 bicep --help
 ```
 
-Additional Information can be found [here](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/install).
+Additional Information can be found [Install Bicep](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/install).
 
 ### Authentication to Azure
 
@@ -369,13 +369,13 @@ The [deployments/Deploy-ImageManagement.ps1](../deployments/Deploy-ImageManageme
 <ol>
     <li>With the '-DeployImageManagementResources' switch, deploys the resources in the [deployments/imageManagement/imageManagement.bicep](../deployments/imageManagement/imageManagement.bicep) to create the following Azure resources in the Image Management resource group:
         <ul>
-            <li>[Compute Gallery](https://learn.microsoft.com/en-us/azure/virtual-machines/azure-compute-gallery)</li>
-            <li>[Storage Account](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview)</li>
-            <li>[Storage Account Blob Container](https://learn.microsoft.com/en-us/azure/storage/blobs/blob-containers-portal)</li>
-            <li><b>Optional</b> [Storage Account Diagnostic Setting to LogAnalytics](https://learn.microsoft.com/en-us/azure/storage/blobs/monitor-blob-storage?tabs=azure-portal)</li>
-            <li>[User Assigned Managed Identity](https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/overview)</li>
-            <li>[Necessary role assignments](https://learn.microsoft.com/en-US/Azure/role-based-access-control/role-assignments)</li>
-            <li><b>Optional</b> [Private Endpoint](https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview)</li>
+            <li><a href="https://learn.microsoft.com/en-us/azure/virtual-machines/azure-compute-gallery">Compute Gallery</a></li>
+            <li><a href="https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview">Storage Account</a></li>
+            <li><a href="https://learn.microsoft.com/en-us/azure/storage/blobs/blob-containers-portal">Storage Account Blob Container</a></li>
+            <li><b>Optional</b> <a href="https://learn.microsoft.com/en-us/azure/storage/blobs/monitor-blob-storage?tabs=azure-portal">Storage Account Diagnostic Setting to LogAnalytics</a></li>
+            <li><a href="https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/overview">User Assigned Managed Identity</a></li>
+            <li><a href="https://learn.microsoft.com/en-US/Azure/role-based-access-control/role-assignments">Necessary role assignments</a></li>
+            <li><b>Optional</b> <a href="https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview"></a></li>
         </ul>
     </li>
     <li>If the '-SkipDownloadingNewSources' switch is <u>not</u> set, downloads new source files into a temporary directory, generates a text file containing file versioning information, and then copies those directories/files to the Artifacts directory overwriting any existing files.</li>

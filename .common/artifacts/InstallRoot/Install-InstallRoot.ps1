@@ -6,22 +6,6 @@ $Script:Name = 'Install-InstallRoot'
 
 #region Supporting Functions
 function Write-Log {
-
-    <#
-    .SYNOPSIS
-    Creates a log file and stores logs based on categories with tab seperation
-
-    .PARAMETER category
-    Category to put into the trace
-
-    .PARAMETER message
-    Message to be loged
-
-    .EXAMPLE
-    Log 'Info' 'Message'
-
-    #>
-
     Param (
         [Parameter(Mandatory = $false, Position = 0)]
         [ValidateSet("Info", "Warning", "Error")]
@@ -45,20 +29,7 @@ function Write-Log {
     Add-Content $File $content -ErrorAction Stop
 }
 
-function New-Log {
-    <#
-    .SYNOPSIS
-    Sets default log file and stores in a script accessible variable $script:Log
-    Log File name "packageExecution_$date.log"
-
-    .PARAMETER Path
-    Path to the log file
-
-    .EXAMPLE
-    New-Log c:\Windows\Logs
-    Create a new log file in c:\Windows\Logs
-    #>
-
+function New-Log {    
     Param (
         [Parameter(Mandatory = $true, Position = 0)]
         [string] $Path
@@ -178,36 +149,36 @@ Function Get-InternetFile {
     Begin {
         ## Get the name of this function and write header
         [string]${CmdletName} = $PSCmdlet.MyInvocation.MyCommand.Name
-        Write-Verbose "Starting ${CmdletName} with the following parameters: $PSBoundParameters"
+        Write-Log -Message "Starting ${CmdletName} with the following parameters: $PSBoundParameters"
     }
     Process {
 
         $start_time = Get-Date
 
         If (!$OutputFileName) {
-            Write-Verbose "${CmdletName}: No OutputFileName specified. Trying to get file name from URL."
+            Write-Log -Message "${CmdletName}: No OutputFileName specified. Trying to get file name from URL."
             If ((split-path -path $Url -leaf).Contains('.')) {
 
                 $OutputFileName = split-path -path $url -leaf
-                Write-Verbose "${CmdletName}: Url contains file name - '$OutputFileName'."
+                Write-Log -Message "${CmdletName}: Url contains file name - '$OutputFileName'."
             }
             Else {
-                Write-Verbose "${CmdletName}: Url does not contain file name. Trying 'Location' Response Header."
+                Write-Log -Message "${CmdletName}: Url does not contain file name. Trying 'Location' Response Header."
                 $request = [System.Net.WebRequest]::Create($url)
                 $request.AllowAutoRedirect = $false
                 $response = $request.GetResponse()
                 $Location = $response.GetResponseHeader("Location")
                 If ($Location) {
                     $OutputFileName = [System.IO.Path]::GetFileName($Location)
-                    Write-Verbose "${CmdletName}: File Name from 'Location' Response Header is '$OutputFileName'."
+                    Write-Log -Message "${CmdletName}: File Name from 'Location' Response Header is '$OutputFileName'."
                 }
                 Else {
-                    Write-Verbose "${CmdletName}: No 'Location' Response Header returned. Trying 'Content-Disposition' Response Header."
+                    Write-Log -Message "${CmdletName}: No 'Location' Response Header returned. Trying 'Content-Disposition' Response Header."
                     $result = Invoke-WebRequest -Method GET -Uri $Url -UseBasicParsing
                     $contentDisposition = $result.Headers.'Content-Disposition'
                     If ($contentDisposition) {
                         $OutputFileName = $contentDisposition.Split("=")[1].Replace("`"", "")
-                        Write-Verbose "${CmdletName}: File Name from 'Content-Disposition' Response Header is '$OutputFileName'."
+                        Write-Log -Message "${CmdletName}: File Name from 'Content-Disposition' Response Header is '$OutputFileName'."
                     }
                 }
             }
@@ -216,50 +187,46 @@ Function Get-InternetFile {
         If ($OutputFileName) { 
             $wc = New-Object System.Net.WebClient
             $OutputFile = Join-Path $OutputDirectory $OutputFileName
-            Write-Verbose "${CmdletName}: Downloading file at '$url' to '$OutputFile'."
+            Write-Log -Message "${CmdletName}: Downloading file at '$url' to '$OutputFile'."
             Try {
                 $wc.DownloadFile($url, $OutputFile)
                 $time = (Get-Date).Subtract($start_time).Seconds
                 
-                Write-Verbose "${CmdletName}: Time taken: '$time' seconds."
+                Write-Log -Message "${CmdletName}: Time taken: '$time' seconds."
                 if (Test-Path -Path $outputfile) {
                     $totalSize = (Get-Item $outputfile).Length / 1MB
-                    Write-Verbose "${CmdletName}: Download was successful. Final file size: '$totalsize' mb"
+                    Write-Log -Message "${CmdletName}: Download was successful. Final file size: '$totalsize' mb"
                     Return $OutputFile
                 }
             }
             Catch {
-                Write-Error "${CmdletName}: Error downloading file. Please check url."
+                Write-Log -Category Error -Message "${CmdletName}: Error downloading file. Please check url."
                 Return $Null
             }
         }
         Else {
-            Write-Error "${CmdletName}: No OutputFileName specified. Unable to download file."
+            Write-Log -Category Error -Message "${CmdletName}: No OutputFileName specified. Unable to download file."
             Return $Null
         }
     }
     End {
-        Write-Verbose "Ending ${CmdletName}"
+        Write-Log -Message "Ending ${CmdletName}"
     }
 }
 #endregion
 
-## MAIN
-
-#region Initialization
-
 New-Log (Join-Path -Path $Env:SystemRoot -ChildPath 'Logs')
 $ErrorActionPreference = 'Stop'
-Write-Log -category Info -message "Starting '$PSCommandPath'."
+Write-Log -message "Starting '$PSCommandPath'."
 $PathMSI = (Get-ChildItem -Path $PSScriptRoot -Filter '*.msi').FullName
 $TempDir = Join-Path -Path $env:Temp -ChildPath 'InstallRoot'
 If (!$PathMSI) {
     $null = New-Item -Path $TempDir -ItemType Directory -Force
-    Write-Log -Category Info -message "Msi not found, must download from the internet."
+    Write-Log -Message "Msi not found, must download from the internet."
     $PathMSI = Get-InternetFile -Url $DownloadUrl -OutputDirectory $TempDir -OutputFileName 'InstallRoot.msi'
 }
 Else {
-    Write-Log -Category Info -message "Found file '$PathMsi'"
+    Write-Log -message "Found file '$PathMsi'"
 }
 $InstalledApp = Get-InstalledApplication -Name $SoftwareName
 If ($InstalledApp -and $InstalledApp.ProductCode -ne '') {
@@ -273,10 +240,10 @@ If ($InstalledApp -and $InstalledApp.ProductCode -ne '') {
         Write-Log -Message "$ProductCode uninstall exit code $($uninstall.ExitCode)" -category Warning
     }
 }
-Write-Log -Category Info -message "Installing '$SoftwareName' via cmdline: 'msiexec /i $pathMSI /qn'"
+Write-Log -message "Installing '$SoftwareName' via cmdline: 'msiexec /i $pathMSI /qn'"
 $Installer = Start-Process -FilePath 'msiexec.exe' -ArgumentList "/i `"$PathMSI`" /qn" -Wait -PassThru
 If ($($Installer.ExitCode) -eq 0) {
-    Write-Log -Category Info -message "'$SoftwareName' installed successfully."
+    Write-Log -message "'$SoftwareName' installed successfully."
     $i = 0
     Do {
         Start-Sleep -Seconds 1
@@ -287,5 +254,5 @@ If ($($Installer.ExitCode) -eq 0) {
 Else {
     Write-Log -Category Warning -Message "The Installer exit code is $($Installer.ExitCode)"
 }
-Write-Log -Category Info -message "Completed '$SoftwareName' Installation."
+Write-Log -message "Completed '$SoftwareName' Installation."
 If (Test-Path -Path $TempDir) { Remove-Item -Path $TempDir -Recurse -Force }
