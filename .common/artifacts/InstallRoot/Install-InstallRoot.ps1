@@ -5,28 +5,28 @@ $Script:Name = 'Install-InstallRoot'
 #endregion
 
 #region Supporting Functions
-function Write-Log {
+Function Write-Log {
     Param (
         [Parameter(Mandatory = $false, Position = 0)]
         [ValidateSet("Info", "Warning", "Error")]
-        $category = 'Info',
+        $Category = 'Info',
         [Parameter(Mandatory = $true, Position = 1)]
-        $message
+        $Message
     )
 
-    $date = get-date
-    $content = "[$date]`t$category`t`t$message`n"
-    Write-Verbose "$Script:Name $content" -verbose
-
-    if (! $script:Log) {
-        $File = Join-Path -Path $env:TEMP -ChildPath "$Script:Name.log"
-        Write-Warning "Log file not found, create new $File"
-        $script:Log = $File
+    $Date = get-date
+    $Content = "[$Date]`t$Category`t`t$Message`n" 
+    Add-Content $Script:Log $content -ErrorAction Stop
+    If ($Verbose) {
+        Write-Verbose $Content
     }
-    else {
-        $File = $script:Log
+    Else {
+        Switch ($Category) {
+            'Info' { Write-Host $content }
+            'Error' { Write-Error $Content }
+            'Warning' { Write-Warning $Content }
+        }
     }
-    Add-Content $File $content -ErrorAction Stop
 }
 
 function New-Log {    
@@ -255,4 +255,4 @@ Else {
     Write-Log -Category Warning -Message "The Installer exit code is $($Installer.ExitCode)"
 }
 Write-Log -message "Completed '$SoftwareName' Installation."
-If (Test-Path -Path $TempDir) { Remove-Item -Path $TempDir -Recurse -Force }
+If (Test-Path -Path $TempDir) { Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue }
