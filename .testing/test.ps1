@@ -1,694 +1,239 @@
-#Microsoft.RDInfra.RDPowerShell and Get-Package both require powershell 5.0 or higher.
-#Requires -Version 5.0
-
-<#
+<# 
 .SYNOPSIS
-Common functions to be used by DSC scripts
-#>
+    This script checks for cached login information for the Remote Desktop Client for Windows in the HKCU hive. If found, it clears the cache.
+    Then the script launches the Remote Desktop Client for Windows and automatically subscribes to the Feed.
+    It monitors the system for smart card removal and automatically disconnects remote sessions when this occurs. The script also monitors the Remote
+    Desktop client process and closes when the process closes to remove the event subsccriber.
 
-# Setting to Tls12 due to Azure web app security requirements
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+.DESCRIPTION 
+    This script first creates a WMI Event Subscriber in this PowerShell session that looks for the removal of a PNP device that matches a
+    Smart Card (PNPClass = 'SmartCard'.). This subscription is configured with an action to kill all msrdc processes which
+    disconnects the remote session, but does not log the user off the remote session or close the AVD Client. In order for the user to reconnect to
+    any session, they must reinsert their CAC and reauthenticate. This is useful for environments where users are required to remove their CAC
+    when they leave their desk.
 
-<# [CalledByARMTemplate] #>
-function Write-Log {
-    [CmdletBinding()]
-    param
-    (
-        [Parameter(Mandatory = $true)]
-        [string]$Message
-    )
-     
-    try {
-        if ($Err) {
-            $Message = "[ERROR] $Message"
-        }
-        
-        Write-Verbose $Message
-    }
-    catch {
-        throw [System.Exception]::new("Some error occurred while writing to log file with message: $Message", $PSItem.Exception)
-    }
-}
-
-function AddDefaultUsers {
-    param
-    (
-        [Parameter(Mandatory = $true)]
-        [string]$TenantName,
-
-        [Parameter(Mandatory = $true)]
-        [string]$HostPoolName,
-
-        [Parameter(Mandatory = $true)]
-        [string]$ApplicationGroupName,
-
-        [Parameter(Mandatory = $false)]
-        [string]$DefaultUsers
-    )
-    $ErrorActionPreference = "Stop"
-
-    Write-Log "Adding Default users. Argument values: App Group: $ApplicationGroupName, TenantName: $TenantName, HostPoolName: $HostPoolName, DefaultUsers: $DefaultUsers"
-
-    # Sanitizing DefaultUsers string
-    $DefaultUsers = $DefaultUsers.Replace("`"", "").Replace("'", "").Replace(" ", "")
-
-    if (-not ([string]::IsNullOrEmpty($DefaultUsers))) {
-        $UserList = $DefaultUsers.split(",", [System.StringSplitOptions]::RemoveEmptyEntries)
-
-        foreach ($user in $UserList) {
-            try {
-                Add-RdsAppGroupUser -TenantName "$TenantName" -HostPoolName "$HostPoolName" -AppGroupName $ApplicationGroupName -UserPrincipalName $user
-                Write-Log "Successfully assigned user $user to App Group: $ApplicationGroupName. Other details -> TenantName: $TenantName, HostPoolName: $HostPoolName."
-            }
-            catch {
-                Write-Log "An error ocurred assigining user $user to App Group $ApplicationGroupName. Other details -> TenantName: $TenantName, HostPoolName: $HostPoolName."
-                Write-Log ($PSItem | Format-List -Force | Out-String)
-            }
-        }
-    }
-}
-
-function ValidateServicePrincipal {
-    param
-    (
-        [Parameter(Mandatory = $true)]
-        [string]$isServicePrincipal,
-
-        [Parameter(Mandatory = $false)]
-        [AllowEmptyString()]
-        [string]$AadTenantId = ""
-    )
-
-    if ($isServicePrincipal -eq "True") {
-        if ([string]::IsNullOrEmpty($AadTenantId)) {
-            throw "When IsServicePrincipal = True, AadTenant ID is mandatory. Please provide a valid AadTenant ID."
-        }
-    }
-}
-
-function Is1809OrLater {
-    $OSVersionInfo = Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion"
-    if ($null -ne $OSVersionInfo) {
-        if ($null -ne $OSVersionInfo.ReleaseId) {
-            Write-Log -Message "Build: $($OSVersionInfo.ReleaseId)"
-            $rdshIs1809OrLaterBool = @{$true = $true; $false = $false }[$OSVersionInfo.ReleaseId -ge 1809]
-        }
-    }
-    return $rdshIs1809OrLaterBool
-}
-
-<# [CalledByARMTemplate] #>
-function ExtractDeploymentAgentZipFile {
-    param
-    (
-        [Parameter(Mandatory = $true)]
-        [string]$ScriptPath,
-        [Parameter(Mandatory = $true)]
-        [string]$DeployAgentLocation
-    )
-
-    if (Test-Path $DeployAgentLocation) {
-        Remove-Item -Path $DeployAgentLocation -Force -Confirm:$false -Recurse
-    }
+    After the WMI Subscriber is created, the script then checks to determine if any cached user subscription is present and if it is, then the
+    AVD client executable is called with the '/reset' switch to clear out this data for the new user.
     
-    New-Item -Path "$DeployAgentLocation" -ItemType directory -Force
+    Next, the script launches the AVD Client with a command line that automatically starts the subscription process to populate the feed. If there
+    is only one resource in the feed, then the script will automatically launch the Remote Desktop connection to this resource. Otherwise, the feed
+    is displayed and the user can select the desired resource.
     
-    # Locating and extracting DeployAgent.zip
-    $DeployAgentFromRepo = (LocateFile -Name 'DeployAgent.zip' -SearchPath $ScriptPath -Recurse)
-    
-    Write-Log -Message "Extracting 'Deployagent.zip' file into '$DeployAgentLocation' folder inside VM"
-    Expand-Archive $DeployAgentFromRepo -DestinationPath "$DeployAgentLocation"
-}
-
-<# [CalledByARMTemplate] #>
-function isRdshServer {
-    $rdshIsServer = $true
-
-    $OSVersionInfo = Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion"
-    
-    if ($null -ne $OSVersionInfo) {
-        if ($null -ne $OSVersionInfo.InstallationType) {
-            $rdshIsServer = @{$true = $true; $false = $false }[$OSVersionInfo.InstallationType -eq "Server"]
-        }
-    }
-
-    return $rdshIsServer
-}
-
-
-<#
-.Description
-Call this function using dot source notation like ". AuthenticateRdsAccount" because the Add-RdsAccount function this calls creates variables using the AllScope option that other WVD poweshell module functions like Set-RdsContext require. Note that this creates a variable named "$authentication" that will overwrite any existing variable with that name in the scope this is dot sourced to.
-
-Calling code should set $ErrorActionPreference = "Stop" before calling this function to ensure that detailed error information is thrown if there is an error.
-#>
-function AuthenticateRdsAccount {
-    param(
-        [Parameter(mandatory = $true)]
-        [string]$DeploymentUrl,
-    
-        [Parameter(mandatory = $true)]
-        [pscredential]$Credential,
-    
-        [switch]$ServicePrincipal,
-    
-        [Parameter(mandatory = $false)]
-        [AllowEmptyString()]
-        [string]$TenantId = ""
-    )
-
-    if ($ServicePrincipal) {
-        Write-Log -Message "Authenticating using service principal $($Credential.username) and Tenant id: $TenantId"
-    }
-    else {
-        $PSBoundParameters.Remove('ServicePrincipal')
-        $PSBoundParameters.Remove('TenantId')
-        Write-Log -Message "Authenticating using user $($Credential.username)"
-    }
-    
-    $authentication = $null
-    try {
-        $authentication = Add-RdsAccount @PSBoundParameters
-        if (!$authentication) {
-            throw $authentication
-        }
-    }
-    catch {
-        throw [System.Exception]::new("Error authenticating Windows Virtual Desktop account, ServicePrincipal = $ServicePrincipal", $PSItem.Exception)
-    }
-    
-    Write-Log -Message "Windows Virtual Desktop account authentication successful. Result:`n$($authentication | Out-String)"
-}
-
-function SetTenantGroupContextAndValidate {
-    param(
-        [Parameter(mandatory = $true)]
-        [string]$TenantGroupName,
-
-        [Parameter(mandatory = $true)]
-        [string]$TenantName
-    )
-
-    Set-StrictMode -Version Latest
-    $ErrorActionPreference = "Stop"
-
-    # Set context to the appropriate tenant group
-    $currentTenantGroupName = (Get-RdsContext).TenantGroupName
-    if ($TenantGroupName -ne $currentTenantGroupName) {
-        Write-Log -Message "Running switching to the $TenantGroupName context"
-
-        try {
-            #As of Microsoft.RDInfra.RDPowerShell version 1.0.1534.2001 this throws a System.NullReferenceException when the TenantGroupName doesn't exist.
-            Set-RdsContext -TenantGroupName $TenantGroupName
-        }
-        catch {
-            throw [System.Exception]::new("Error setting RdsContext using tenant group ""$TenantGroupName"", this may be caused by the tenant group not existing or the user not having access to the tenant group", $PSItem.Exception)
-        }
-    }
-    
-    $tenants = $null
-    try {
-        $tenants = (Get-RdsTenant -Name $TenantName)
-    }
-    catch {
-        throw [System.Exception]::new("Error getting the tenant with name ""$TenantName"", this may be caused by the tenant not existing or the account doesn't have access to the tenant", $PSItem.Exception)
-    }
-    
-    if (!$tenants) {
-        throw "No tenant with name ""$TenantName"" exists or the account doesn't have access to it."
-    }
-}
-
-function LocateFile {
-    param (
-        [Parameter(mandatory = $true)]
-        [string]$Name,
-        [string]$SearchPath = '.',
-        [switch]$Recurse
-    )
-    
-    Write-Log -Message "Locating '$Name' within: '$SearchPath'"
-    $Path = (Get-ChildItem "$SearchPath\" -Filter $Name -Recurse:$Recurse).FullName
-    if ((-not $Path) -or (-not (Test-Path $Path))) {
-        throw "'$Name' file not found at '$SearchPath'"
-    }
-    if (@($Path).Length -ne 1) {
-        throw "Multiple '$Name' files found at '$SearchPath': [`n$Path`n]"
-    }
-
-    return $Path
-}
-
-function ImportRDPSMod {
-    param(
-        [string]$Source = 'attached',
-        [string]$ArtifactsPath
-    )
-
-    $ErrorActionPreference = "Stop"
-
-    $ModName = 'Microsoft.RDInfra.RDPowershell'
-    $Mod = (get-module $ModName)
-
-    if ($Mod) {
-        Write-Log -Message 'RD PowerShell module already imported (Not going to re-import)'
-        return
-    }
-        
-    $Path = 'C:\_tmp_RDPSMod\'
-    if (test-path $Path) {
-        Write-Log -Message "Remove tmp dir '$Path'"
-        Remove-Item -Path $Path -Force -Recurse
-    }
-    
-    if ($Source -eq 'attached') {
-        if ((-not $ArtifactsPath) -or (-not (test-path $ArtifactsPath))) {
-            throw "invalid param: ArtifactsPath = '$ArtifactsPath'"
-        }
-
-        # Locating and extracting PowerShellModules.zip
-        $ZipPath = (LocateFile -Name 'PowerShellModules.zip' -SearchPath $ArtifactsPath -Recurse)
-
-        Write-Log -Message "Extracting RD PowerShell module file '$ZipPath' into '$Path'"
-        Expand-Archive $ZipPath -DestinationPath $Path -Force
-        Write-Log -Message "Successfully extracted RD PowerShell module file '$ZipPath' into '$Path'"
-    }
-    else {
-        $Version = ($Source.Trim().ToLower() -split 'gallery@')[1]
-        if ($null -eq $Version -or $Version.Trim() -eq '') {
-            throw "invalid param: Source = $Source"
-        }
-
-        Write-Log -Message "Downloading RD PowerShell module (version: v$Version) from PowerShell Gallery into '$Path'"
-        if ($Version -eq 'latest') {
-            Save-Module -Name $ModName -Path $Path -Force
-        }
-        else {
-            Save-Module -Name $ModName -Path $Path -Force -RequiredVersion (new-object System.Version($Version))
-        }
-        Write-Log -Message "Successfully downloaded RD PowerShell module (version: v$Version) from PowerShell Gallery into '$Path'"
-    }
-
-    $DLLPath = (LocateFile -Name "$ModName.dll" -SearchPath $Path -Recurse)
-
-    Write-Log -Message "Importing RD PowerShell module DLL '$DLLPath"
-    Import-Module $DLLPath -Force
-    Write-Log -Message "Successfully imported RD PowerShell module DLL '$DLLPath"
-}
-
-<# [CalledByARMTemplate] #>
-function GetCurrSessionHostName {
-    $Wmi = (Get-WmiObject win32_computersystem)
-    return "$($Wmi.DNSHostName).$($Wmi.Domain)"
-}
-
-<# [CalledByARMTemplate] #>
-function GetSessionHostDesiredStates {
-    return ('Available', 'NeedsAssistance')
-}
-
-<# [CalledByARMTemplate] #>
-function IsRDAgentRegistryValidForRegistration {
-    $ErrorActionPreference = "Stop"
-
-    $RDInfraReg = Get-ItemProperty -Path 'Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\RDInfraAgent' -ErrorAction SilentlyContinue
-    if (!$RDInfraReg) {
-        return @{
-            result = $false;
-            msg    = 'RD Infra registry missing';
-        }
-    }
-    Write-Log -Message 'RD Infra registry exists'
-
-    Write-Log -Message 'Check RD Infra registry values to see if RD Agent is registered'
-    if ($RDInfraReg.RegistrationToken -ne '') {
-        return @{
-            result = $false;
-            msg    = 'RegistrationToken in RD Infra registry is not empty'
-        }
-    }
-    if ($RDInfraReg.IsRegistered -ne 1) {
-        return @{
-            result = $false;
-            msg    = "Value of 'IsRegistered' in RD Infra registry is $($RDInfraReg.IsRegistered), but should be 1"
-        }
-    }
-    
-    return @{
-        result = $true
-    }
-}
-
-<# [CalledByARMTemplate] indirectly because this is called by InstallRDAgents #>
-function RunMsiWithRetry {
-    param(
-        [Parameter(mandatory = $true)]
-        [string]$programDisplayName,
-
-        [Parameter(mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
-        [String[]]$argumentList, #Must have at least 1 value
-
-        [Parameter(mandatory = $true)]
-        [string]$msiOutputLogPath,
-
-        [Parameter(mandatory = $false)]
-        [switch]$isUninstall,
-
-        [Parameter(mandatory = $false)]
-        [switch]$msiLogVerboseOutput
-    )
-    Set-StrictMode -Version Latest
-    $ErrorActionPreference = "Stop"
-
-    if ($msiLogVerboseOutput) {
-        $argumentList += "/l*vx+ ""$msiOutputLogPath""" 
-    }
-    else {
-        $argumentList += "/liwemo+! ""$msiOutputLogPath"""
-    }
-
-    $retryTimeToSleepInSec = 30
-    $retryCount = 0
-    $sts = $null
-    do {
-        $modeAndDisplayName = ($(if ($isUninstall) { "Uninstalling" } else { "Installing" }) + " $programDisplayName")
-
-        if ($retryCount -gt 0) {
-            Write-Log -Message "Retrying $modeAndDisplayName in $retryTimeToSleepInSec seconds because it failed with Exit code=$sts This will be retry number $retryCount"
-            Start-Sleep -Seconds $retryTimeToSleepInSec
-        }
-
-        Write-Log -Message ( "$modeAndDisplayName" + $(if ($msiLogVerboseOutput) { " with verbose msi logging" } else { "" }))
-
-
-        $processResult = Start-Process -FilePath "msiexec.exe" -ArgumentList $argumentList -Wait -Passthru
-        $sts = $processResult.ExitCode
-
-        $retryCount++
-    } 
-    while ($sts -eq 1618 -and $retryCount -lt 20) # Error code 1618 is ERROR_INSTALL_ALREADY_RUNNING see https://docs.microsoft.com/en-us/windows/win32/msi/-msiexecute-mutex .
-
-    if ($sts -eq 1618) {
-        Write-Log "Stopping retries for $modeAndDisplayName. The last attempt failed with Exit code=$sts which is ERROR_INSTALL_ALREADY_RUNNING"
-        throw "Stopping because $modeAndDisplayName finished with Exit code=$sts"
-    }
-    else {
-        Write-Log -Message "$modeAndDisplayName finished with Exit code=$sts"
-    }
-
-    return $sts
-}
-
-
-<#
-.DESCRIPTION
-Parse registration token to get claim section of the token
-
-.PARAMETER token
-The registration token
-
-[CalledByARMTemplate]
-#>
-function ParseRegistrationToken {
-    [cmdletbinding()]
-    Param(
-        [Parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
-        [string]$RegistrationToken
-    )
+    The script monitors the MSRDCW process (Remote Deskotp Client) every 5 seconds until there is an exit code. Once there is an exit code, the script
+    exits which removes the WMI Event Subscriber registration.
  
-    Set-StrictMode -Version 1.0
-    $ClaimsSection = $RegistrationToken.Split(".")[1].Replace('-', '+').Replace('_', '/')
-    while ($ClaimsSection.Length % 4) { 
-        $ClaimsSection += "=" 
+.NOTES 
+    The query for the WMI Event Subscription can be adjusted to run more/less frequently on the line that begins with '$Query'. The time is an
+    integer value in Seconds and found after 'WITHIN'. Default is 5 seconds.
+
+.COMPONENT 
+    No PowerShell modules required.
+
+.LINK 
+    https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/register-wmievent?view=powershell-5.1
+    https://learn.microsoft.com/en-us/azure/virtual-desktop/uri-scheme
+
+.Parameter SubscribeUrl
+    This value determines the Url of the Remote Desktop Feed which varies by environment. The placeholder in this script is/was automatically
+    updated by the installation script.
+    The list of Urls can be found at
+    https://learn.microsoft.com/en-us/azure/virtual-desktop/users/connect-microsoft-store?source=recommendations#subscribe-to-a-workspace.
+#>
+
+[CmdletBinding()]
+param (
+    [Parameter()]
+    [string]$SubscribeUrl
+)
+#region Functions
+Function Write-Log {
+    [CmdletBinding()]
+    param (
+        [Parameter()]
+        [string]
+        $EventLog = $EventLog,
+        [Parameter()]
+        [string]
+        $EventSource = $EventSource,
+        [Parameter()]
+        [string]
+        [ValidateSet('Information', 'Warning', 'Error')]
+        $EntryType = 'Information',
+        [Parameter()]
+        [Int]
+        $EventID,
+        [Parameter()]
+        [string]
+        $Message
+    )
+    Write-EventLog -LogName $EventLog -Source $EventSource -EntryType $EntryType -EventId $EventId -Message $Message -ErrorAction SilentlyContinue
+    Switch ($EntryType) {
+        'Information' { Write-Host $Message }
+        'Warning' { Write-Warning $Message }
+        'Error' { Write-Error $Message }
     }
-    
-    $ClaimsByteArray = [System.Convert]::FromBase64String($ClaimsSection)
-    $ClaimsArray = [System.Text.Encoding]::ASCII.GetString($ClaimsByteArray)
-    $Claims = $ClaimsArray | ConvertFrom-Json
-    return $Claims
 }
 
-<#
-.DESCRIPTION
-Get Agent MSI endpoint. If the endpoint cannot be obtained, this method returns a null value to the caller
-
-.PARAMETER BrokerAgentApi
-AgentMsiController endpoint on broker, which will return the agent msi endpoints
-
-.PARAMETER HostpoolId
-The Hostpool Id
-
-[CalledByARMTemplate]
-#>
-function GetAgentMSIEndpoint {
-    Param(
-        [Parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
-        [string] $BrokerAgentApi
-    )
-
-    Set-StrictMode -Version 1.0
-    $ErrorActionPreference = "Stop"
-
-    try {
-        Write-Log -Message "Invoking broker agent api $BrokerAgentApi to get msi endpoint"
-        $result = Invoke-WebRequest -Uri $BrokerAgentApi -UseBasicParsing
-        $responseJson = $result.Content | ConvertFrom-Json
+Function Reset-MSRDCW {
+    Write-Log -EventID 200 -Message "Resetting the Remote Desktop Client."
+    If (Get-Process | Where-Object { $_.Name -eq 'msrdc' }) {
+        Write-Log -EventID 201 -Message "Disconnecting all open session host connections."
+        Stop-Process -Name 'msrdc' -Force
+        $counter = 0
+        Do {
+            $counter ++
+            Start-Sleep -Seconds 1
+        } Until ($counter -eq 30 -or (!(Get-Process | Where-Object { $_.Name -eq 'msrdc' })))
     }
-    catch {
-        $responseBody = $_.ErrorDetails.Message
-        Write-Log $responseBody
-        return $null
-    }
-
-    Write-Log -Message "Obtained agent msi endpoint $($responseJson.agentEndpoint)"
-    return $responseJson.agentEndpoint
+    Get-Process | Where-Object { $_.Name -eq 'msrdcw' } | Stop-Process -Force
+    Get-Process | Where-Object { $_.Name -eq 'Microsoft.AAD.BrokerPlugin' } | Stop-Process -Force
+    Write-Log -EventID 202 -Message "Removing cached credentials and configuration from the client."
+    $reset = Start-Process -FilePath "$env:ProgramFiles\Remote Desktop\msrdcw.exe" -ArgumentList "/reset /f" -wait -PassThru
+    Write-Log -EventID 203 -Message "msrdcw.exe /reset exit code: [$($reset.ExitCode)]"
 }
+#endregion Functions
 
-<#
-.DESCRIPTION
-Download Agent MSI from storage blob if they are available
+#region Variables
+[string]$EventLog = 'Application'
+[string]$EventSource = 'AVD_SmartCard_Monitor'
+$ScriptFullName = $MyInvocation.MyCommand.Path
 
-.PARAMETER AgentEndpoint
-The Agent MSI storage blob endpoint which will downloaded on the session host
-
-.PARAMETER AgentInstallerFolder
-The destination folder to download the MSI
-
-[CalledByARMTemplate]
-#>
-function DownloadAgentMSI {
-    Param(
-        [Parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
-        [string]$AgentEndpoint,
-
-        [Parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
-        [string]$PrivateLinkAgentEndpoint,
-
-        [Parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
-        [string]$AgentDownloadFolder
-    )
-    
-    Set-StrictMode -Version 1.0
-
-    $AgentInstaller = $null
-
+# Create event source if it doesn't exist
+if (-not [System.Diagnostics.EventLog]::SourceExists($EventSource)) {
     try {
-        Write-Log -Message "Trying to download agent msi from $AgentEndpoint"
-        Invoke-WebRequest -Uri $AgentEndpoint -OutFile "$AgentDownloadFolder\RDAgent.msi"
-        $AgentInstaller = Join-Path $AgentDownloadFolder "RDAgent.msi"
-    } 
-    catch {
-        Write-Log "Error while downloading agent msi from $AgentEndpoint"
-        Write-Log $_.Exception.Message
+        New-EventLog -LogName $EventLog -Source $EventSource -ErrorAction Stop
     }
+    catch {
+        # If we can't create the source, use a generic one
+        $EventSource = 'Application'
+    }
+}
+#endregion Variables
 
-    if (-not $AgentInstaller) {
+Write-Log -EntryType Information -EventId 100 -Message "Executing '$ScriptFullName'."
+
+# Create a WMI Event Subscription
+Write-Log -EntryType Information -EventId 101 -Message "Creating a WMI Event Subscription to monitor for Smart Card removal."
+
+try {
+    # Clean up any existing subscription first
+    $SourceIdentifier = "Remove_SMARTCARD_Event"
+    Get-EventSubscriber -SourceIdentifier $SourceIdentifier -ErrorAction SilentlyContinue | Unregister-Event -Force
+
+    $Query = "SELECT * FROM __InstanceDeletionEvent WITHIN 5 WHERE TargetInstance ISA 'Win32_PnPEntity' AND TargetInstance.PNPClass = 'SmartCard'"
+    
+    $EventAction = {
+        param($EventData, $SourceEventArgs)
+        
         try {
-            Write-Log -Message "Trying to download agent msi from $PrivateLinkAgentEndpoint"
-            Invoke-WebRequest -Uri $AgentEndpoint -OutFile "$AgentDownloadFolder\RDAgent.msi"
-            $AgentInstaller = Join-Path $AgentDownloadFolder "RDAgent.msi"
-        } 
-        catch {
-            Write-Log "Error while downloading agent msi from $PrivateLinkAgentEndpoint"
-            Write-Log  $_.Exception.Message
-        }
-    }
-
-    return $AgentInstaller
-}
-
-<#
-.DESCRIPTION
-Downloads the latest agent msi from storage blob.
-
-.PARAMETER RegistrationToken
-A Token that contains the Broker endpoint
-
-.PARAMETER AgentInstallerFolder
-The folder to which to download the agent msi
-
-[CalledByARMTemplate]
-#>
-function GetAgentInstaller {
-    Param(
-        [Parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
-        [string]$RegistrationToken,
-
-        [Parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
-        [string]$AgentInstallerFolder
-    )
-
-    Try {
-        $ParsedToken = ParseRegistrationToken $RegistrationToken
-        if (-not $ParsedToken.GlobalBrokerResourceIdUri) {
-            Write-Log -Message "Unable to obtain broker agent check endpoint"
-            return
-        }
-
-        $BrokerAgentUri = [System.UriBuilder] $ParsedToken.GlobalBrokerResourceIdUri
-        $BrokerAgentUri.Path = "api/agentMsi/v1/agentVersion"
-        $BrokerAgentUri = $BrokerAgentUri.Uri.AbsoluteUri
-        Write-Log -Message "Obtained broker agent api $BrokerAgentUri"
-
-        $AgentMSIEndpointUri = [System.UriBuilder] (GetAgentMSIEndpoint $BrokerAgentUri)
-        if (-not $AgentMSIEndpointUri) {
-            Write-Log -Message "Unable to get Agent MSI endpoints from storage blob"
-            return
-        }
-
-        $AgentDownloadFolder = New-Item -Path $AgentInstallerFolder -Name "RDAgent" -ItemType "directory" -Force
-        $PrivateLinkAgentMSIEndpointUri = [System.UriBuilder] $AgentMSIEndpointUri.Uri.AbsoluteUri
-        $PrivateLinkAgentMSIEndpointUri.Host = "$($ParsedToken.EndpointPoolId).$($AgentMSIEndpointUri.Host)"
-        Write-Log -Message "Attempting to download agent msi from $($AgentMSIEndpointUri.Uri.AbsoluteUri), or $($AgentMSIEndpointUri.Uri.AbsoluteUri)"
-
-        $AgentInstaller = DownloadAgentMSI $AgentMSIEndpointUri $PrivateLinkAgentMSIEndpointUri $AgentDownloadFolder
-        if (-not $AgentInstaller) {
-            Write-Log -Message "Failed to download agent msi from $AgentMSIEndpointUri"
-        }
-        else {
-            Write-Log "Successfully downloaded the agent from $AgentMSIEndpointUri"
-        }
-
-        return $AgentInstaller
-    } 
-    Catch {
-        Write-Log "There was an error while downloading agent msi"
-        Write-Log $_.Exception.Message
-    }
-}
-
-<#
-.DESCRIPTION
-Uninstalls any existing RDAgent BootLoader and RD Infra Agent installations and then installs the RDAgent BootLoader and RD Infra Agent using the specified registration token.
-
-.PARAMETER AgentInstallerFolder
-Required path to MSI installer file
-
-.PARAMETER AgentBootServiceInstallerFolder
-Required path to MSI installer file
-
-[CalledByARMTemplate]
-#>
-function InstallRDAgents {
-    Param(
-        [Parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
-        [string]$AgentInstallerFolder,
-        
-        [Parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
-        [string]$AgentBootServiceInstallerFolder,
-    
-        [Parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
-        [string]$RegistrationToken,
-    
-        [Parameter(mandatory = $false)]
-        [switch]$EnableVerboseMsiLogging,
-        
-        [Parameter(Mandatory = $false)]
-        [bool]$UseAgentDownloadEndpoint = $true
-    )
-
-    $ErrorActionPreference = "Stop"
-
-    Write-Log -Message "Boot loader folder is $AgentBootServiceInstallerFolder"
-    #$AgentBootServiceInstaller = LocateFile -SearchPath $AgentBootServiceInstallerFolder -Name "*.msi"
-
-    if ($UseAgentDownloadEndpoint) {
-        Write-Log -Message "Obtaining agent installer"
-        $AgentInstaller = GetAgentInstaller $RegistrationToken $AgentInstallerFolder
-        if (-not $AgentInstaller) {
-            Write-Log -Message "Unable to download latest agent msi from storage blob. Using the agent msi from the extension."
-        }
-    }
-
-    if (-not $AgentInstaller) {
-        Write-Log -Message "Installing the bundled agent msi"
-        $AgentInstaller = LocateFile -SearchPath $AgentInstallerFolder -Name "*.msi"
-    }
-
-    $msiNamesToUninstall = @(
-        @{ msiName = "Remote Desktop Services Infrastructure Agent"; displayName = "RD Infra Agent"; logPath = "C:\Users\AgentUninstall.txt" }, 
-        @{ msiName = "Remote Desktop Agent Boot Loader"; displayName = "RDAgentBootLoader"; logPath = "C:\Users\AgentBootLoaderUnInstall.txt" }
-    )
-    
-    foreach ($u in $msiNamesToUninstall) {
-        while ($true) {
-            try {
-                $installedMsi = Get-Package -ProviderName msi -Name $u.msiName
-            }
-            catch {
-                #Ignore the error if it was due to no packages being found.
-                if ($PSItem.FullyQualifiedErrorId -eq "NoMatchFound,Microsoft.PowerShell.PackageManagement.Cmdlets.GetPackage") {
-                    break
-                }
-    
-                throw;
-            }
-    
-            #$oldVersion = $installedMsi.Version
-            #$productCodeParameter = $installedMsi.FastPackageReference
-    
-            #RunMsiWithRetry -programDisplayName "$($u.displayName) $oldVersion" -isUninstall -argumentList @("/x $productCodeParameter", "/quiet", "/qn", "/norestart", "/passive") -msiOutputLogPath $u.logPath -msiLogVerboseOutput:$EnableVerboseMsiLogging
-        }
-    }
-
-    Write-Log -Message "Installing RD Infra Agent on VM $AgentInstaller"
-    #RunMsiWithRetry -programDisplayName "RD Infra Agent" -argumentList @("/i $AgentInstaller", "/quiet", "/qn", "/norestart", "/passive", "REGISTRATIONTOKEN=$RegistrationToken") -msiOutputLogPath "C:\Users\AgentInstall.txt" -msiLogVerboseOutput:$EnableVerboseMsiLogging
-
-    Write-Log -Message "Installing RDAgent BootLoader on VM $AgentBootServiceInstaller"
-    #RunMsiWithRetry -programDisplayName "RDAgent BootLoader" -argumentList @("/i $AgentBootServiceInstaller", "/quiet", "/qn", "/norestart", "/passive") -msiOutputLogPath "C:\Users\AgentBootLoaderInstall.txt" -msiLogVerboseOutput:$EnableVerboseMsiLogging
-
-    <#
-    #$bootloaderServiceName = "RDAgentBootLoader"
-    #$startBootloaderRetryCount = 0
-    while ( -not (Get-Service $bootloaderServiceName -ErrorAction SilentlyContinue)) {
-        $retry = ($startBootloaderRetryCount -lt 6)
-        $msgToWrite = "Service $bootloaderServiceName was not found. "
-        if ($retry) { 
-            $msgToWrite += "Retrying again in 30 seconds, this will be retry $startBootloaderRetryCount" 
-            Write-Log -Message $msgToWrite
-        } 
-        else {
-            $msgToWrite += "Retry limit exceeded" 
-            Write-Log -Err $msgToWrite
-            throw $msgToWrite
-        }
+            $EventLog = 'Application'
+            $EventSource = 'AVD_SmartCard_Monitor'
+            $pnpEntity = $EventData.NewEvent.TargetInstance
             
-        $startBootloaderRetryCount++
-        Start-Sleep -Seconds 30
+            $message = "Device Removed:`n`tCaption: $($pnpEntity.Caption)`n`tPNPDeviceID: $($pnpEntity.PNPDeviceID)`n`tManufacturer: $($pnpEntity.Manufacturer)"
+            Write-EventLog -LogName $EventLog -Source $EventSource -EventId 150 -EntryType 'Information' -Message $message -ErrorAction SilentlyContinue
+            
+            $msrdcwProcess = Get-Process -Name 'msrdcw' -ErrorAction SilentlyContinue
+            if ($msrdcwProcess) {
+                $msrdcProcess = Get-Process -Name 'msrdc' -ErrorAction SilentlyContinue
+                if ($msrdcProcess) {
+                    Write-EventLog -LogName $EventLog -Source $EventSource -EventId 151 -EntryType 'Information' -Message "Disconnecting all open session host connections." -ErrorAction SilentlyContinue
+                    Stop-Process -Name 'msrdc' -Force -ErrorAction SilentlyContinue
+                    
+                    $counter = 0
+                    do {
+                        $counter++
+                        Start-Sleep -Seconds 1
+                        $msrdcProcess = Get-Process -Name 'msrdc' -ErrorAction SilentlyContinue
+                    } while ($counter -lt 30 -and $msrdcProcess)
+                }
+                else {
+                    Write-EventLog -LogName $EventLog -Source $EventSource -EventId 151 -EntryType 'Information' -Message "No open session host connections." -ErrorAction SilentlyContinue
+                }
+            }
+            else {
+                Write-EventLog -LogName $EventLog -Source $EventSource -EventId 152 -EntryType 'Information' -Message "The Remote Desktop Client is not running." -ErrorAction SilentlyContinue
+            }
+        }
+        catch {
+            Write-EventLog -LogName 'Application' -Source 'Application' -EventId 199 -EntryType 'Error' -Message "Error in smart card event handler: $($_.Exception.Message)" -ErrorAction SilentlyContinue
+        }
     }
 
-    Write-Log -Message "Starting service $bootloaderServiceName"
-    Start-Service $bootloaderServiceName
-        #>
+    # Register the WMI event with proper error handling
+    Register-WmiEvent -Query $Query -Action $EventAction -SourceIdentifier $SourceIdentifier -ErrorAction Stop | Out-Null
+    
+    # Verify the subscription was created
+    $subscription = Get-EventSubscriber -SourceIdentifier $SourceIdentifier -ErrorAction SilentlyContinue
+    if ($subscription) {
+        Write-Log -EventID 102 -Message "WMI Event Subscription created successfully. Subscription ID: $($subscription.SubscriptionId)"
+    }
+    else {
+        throw "Event subscription verification failed"
+    }
 }
+catch {
+    Write-Log -EntryType Error -EventID 103 -Message "Failed to create WMI Event Subscription: $($_.Exception.Message)"
+    Write-Log -EntryType Warning -EventID 104 -Message "Continuing without smart card monitoring..."
+}
+
+# Handle Client Reset on launch
+If (Test-Path -Path 'HKCU:\Software\Microsoft\RdClientRadc') {
+    Reset-MSRDCW
+}
+# Turn off Telemetry on every launch since this is not a policy.
+$RegKey = 'HKCU:\Software\Microsoft\RdClientRadc'
+$RegValue = 'EnableMSRDCTelemetry'
+New-Item -Path $RegKey -Force | Out-Null
+New-ItemProperty -Path $RegKey -Name $RegValue -PropertyType DWORD -Value 0 -Force | Out-Null
+
+Write-Log -EventID 110 -Message "Starting Remote Desktop Client."
+If ($Null -ne $SubscribeUrl -and $SubscribeUrl -ne '') {
+    $MSRDCW = Start-Process -FilePath "$env:ProgramFiles\Remote Desktop\Msrdcw.exe" -ArgumentList "ms-rd:subscribe?url=$SubscribeUrl" -PassThru
+}
+Else {
+    $MSRDCW = Start-Process -FilePath "$env:ProgramFiles\Remote Desktop\Msrdcw.exe" -PassThru
+}
+
+$ClientDir = "$env:UserProfile\AppData\Local\rdclientwpf"
+$JSONFile = Join-Path -Path $ClientDir -ChildPath 'ISubscription.json'
+
+# Wait for JSON File to be populated or catch the case where the Remote Desktop Client window is closed.
+# We have to catch ExitCode 0 as a separate condition since it evaluates as null.
+Write-Log -EventId 111 -Message "Waiting for the Remote Desktop Client to populate the JSON file to get feed information."
+do {
+    If (Test-Path $JSONFile) {
+        $AVDInfo = Get-Content $JSONFile | ConvertFrom-Json
+        $WorkSpaceOID = $AVDInfo.TenantCollection.TenantID
+        $User = $AVDInfo.Username
+    }
+    Start-Sleep -Seconds 1
+} until ($null -ne $User -or $null -ne $MSRDCW.ExitCode)
+
+If ($User) {
+    Write-Log -EventId 112 -Message "'$User' feed downloaded. Determining if user has only 1 resource assigned to connect to that resource automatically."
+    $Apps = $AVDInfo.TenantCollection.remoteresourcecollection
+    If ($SubscribeUrl -match '.us') { $env = 'usgov' } Else { $env = 'avdarm' }
+    If ($apps.count -eq 1) {
+        Write-Log -EventId 113 -Message 'Only 1 resource assigned to user. Automatically connecting to the resource.'
+        $URL = -join ("ms-avd:connect?workspaceId=", $WorkSpaceOID, "&resourceid=", $apps.ID, "&username=", $User, "&env=", $env, "&version=0")
+        Start-Process -FilePath "$URL"
+    }
+    Else {
+        Write-Log -EventID 114 -Message 'User has either 0 or more than 1 resource assigned. Not taking action.'
+    }
+}
+
+# Enter a loop that waits for the Azure Virtual Desktop client to exit. If it has not then wait for the window to exit before continuing.
+Write-Log -EventID 115 -Message "Waiting for the Remote Desktop Client to exit or the smart card to be removed."
+Do {
+    Start-Sleep -Seconds 5
+} Until ($null -ne $MSRDCW.ExitCode)
+
+Write-Log -EventID 198 -Message "The Remote Desktop Client closed with exit code [$($MSRDCW.exitcode)]."
+
+If ($MSRDCW.ExitCode -ne -1) {
+    # ExitCode -1 is returned when the AVD client is forceably closed with Stop-Process.
+    Reset-MSRDCW  
+}
+Write-Log -EventID 199 -Message "Exiting `"$ScriptFullName`""

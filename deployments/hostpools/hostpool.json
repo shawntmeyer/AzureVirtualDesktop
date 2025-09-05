@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.37.4.10188",
-      "templateHash": "2392434011055428990"
+      "templateHash": "5174542281510027396"
     }
   },
   "parameters": {
@@ -13643,7 +13643,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.37.4.10188",
-              "templateHash": "11774991707119778020"
+              "templateHash": "12582289846613255278"
             }
           },
           "parameters": {
@@ -16449,7 +16449,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.37.4.10188",
-                      "templateHash": "11324704317049516868"
+                      "templateHash": "4226920050227855948"
                     }
                   },
                   "parameters": {
@@ -16757,7 +16757,7 @@
                       "name": "[replace(parameters('virtualMachineNameConv'), '###', padLeft(add(range(0, parameters('sessionHostCount'))[copyIndex()], parameters('sessionHostIndex')), 3, '0'))]",
                       "location": "[parameters('location')]",
                       "tags": "[union(createObject('cm-resource-parent', parameters('hostPoolResourceId')), coalesce(tryGet(parameters('tags'), 'Microsoft.Compute/virtualMachines'), createObject()))]",
-                      "zones": "[if(or(not(empty(parameters('dedicatedHostResourceId'))), not(empty(parameters('dedicatedHostGroupResourceId')))), parameters('dedicatedHostGroupZones'), if(and(equals(parameters('availability'), 'availabilityZones'), not(empty(parameters('availabilityZones')))), createArray(parameters('availabilityZones')[mod(range(0, parameters('sessionHostCount'))[copyIndex()], length(parameters('availabilityZones')))]), null()))]",
+                      "zones": "[if(or(not(empty(parameters('dedicatedHostResourceId'))), not(empty(parameters('dedicatedHostGroupResourceId')))), parameters('dedicatedHostGroupZones'), if(and(equals(parameters('availability'), 'availabilityZones'), not(empty(parameters('availabilityZones')))), createArray(parameters('availabilityZones')[mod(add(range(0, parameters('sessionHostCount'))[copyIndex()], parameters('sessionHostIndex')), length(parameters('availabilityZones')))]), null()))]",
                       "identity": "[variables('identity')]",
                       "properties": {
                         "additionalCapabilities": {

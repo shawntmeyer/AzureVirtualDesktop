@@ -193,7 +193,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2022-11-01' = [for i 
   location: location
   tags: union({'cm-resource-parent': hostPoolResourceId}, tags[?'Microsoft.Compute/virtualMachines'] ?? {})
   zones: !empty(dedicatedHostResourceId) || !empty(dedicatedHostGroupResourceId) ? dedicatedHostGroupZones : availability == 'availabilityZones' && !empty(availabilityZones) ? [
-    availabilityZones[i % length(availabilityZones)]
+    availabilityZones[(i + sessionHostIndex) % length(availabilityZones)]
   ] : null
   identity: identity
   properties: {

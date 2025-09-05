@@ -187,9 +187,9 @@
         ]
     },
     "DoDSTIGGPOPackage": {
-        "DownloadUrl": "",
-        "WebSiteUrl": "https://public.cyber.mil/stigs/gpo",
-        "SearchString": "*GPOs*",
+        "DownloadUrl": "https://dl.dod.cyber.mil/wp-content/uploads/stigs/zip/U_STIG_GPO_Package_July_2025.zip",
+        "WebSiteUrl": "",
+        "SearchString": "",
         "APIUrl": "",
         "GitHubRepo": "",
         "GitHubFileNamePattern": "",
