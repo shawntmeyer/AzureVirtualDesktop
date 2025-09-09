@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.37.4.10188",
-      "templateHash": "10917351657854151642"
+      "templateHash": "13889143325432949841"
     },
     "name": "Zero Trust Architecture Custom Windows Image Builder",
     "description": "This solution allows you to create a custom image much like Azure VM Image Builder, but utilizes zero trust architecture and does not require that service.",
@@ -1906,7 +1906,7 @@
     {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2022-09-01",
-      "name": "[format('{0}RoleAssign-MI-VirtMachContr-BuildRG-{1}', variables('depPrefix'), parameters('timeStamp'))]",
+      "name": "[format('{0}RA-MI-VirtMachContr-BuildRG-{1}', variables('depPrefix'), parameters('timeStamp'))]",
       "resourceGroup": "[variables('imageBuildResourceGroupName')]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -2007,7 +2007,7 @@
       "condition": "[parameters('collectCustomizationLogs')]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2022-09-01",
-      "name": "[format('{0}RoleAssign-MI-StorageBlobDataContr-BuildRG-{1}', variables('depPrefix'), parameters('timeStamp'))]",
+      "name": "[format('{0}RA-MI-StorBlobDataContr-BuildRG-{1}', variables('depPrefix'), parameters('timeStamp'))]",
       "resourceGroup": "[variables('imageBuildResourceGroupName')]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -8296,7 +8296,7 @@
       },
       "dependsOn": [
         "[subscriptionResourceId('Microsoft.Resources/resourceGroups', variables('imageBuildResourceGroupName'))]",
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}RoleAssign-MI-VirtMachContr-BuildRG-{1}', variables('depPrefix'), parameters('timeStamp')))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}RA-MI-VirtMachContr-BuildRG-{1}', variables('depPrefix'), parameters('timeStamp')))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('imageBuildResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}ManagedIdentity-{1}', variables('depPrefix'), parameters('timeStamp')))]"
       ]
     },

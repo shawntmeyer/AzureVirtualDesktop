@@ -504,7 +504,7 @@ module remoteImageDefinition '../../sharedModules/resources/compute/gallery/imag
 // * Role Assignments * //
 
 module roleAssignmentContributorBuildRg '../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = {
-  name: '${depPrefix}RoleAssign-MI-VirtMachContr-BuildRG-${timeStamp}'
+  name: '${depPrefix}RA-MI-VirtMachContr-BuildRG-${timeStamp}'
   scope: resourceGroup(imageBuildResourceGroupName)
   params: {
     principalId: empty(userAssignedIdentityResourceId)
@@ -519,7 +519,7 @@ module roleAssignmentContributorBuildRg '../../sharedModules/resources/authoriza
 }
 
 module roleAssignmentBlobDataContributorBuilderRg '../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = if (collectCustomizationLogs) {
-  name: '${depPrefix}RoleAssign-MI-StorageBlobDataContr-BuildRG-${timeStamp}'
+  name: '${depPrefix}RA-MI-StorBlobDataContr-BuildRG-${timeStamp}'
   scope: resourceGroup(imageBuildResourceGroupName)
   params: {
     principalId: empty(userAssignedIdentityResourceId)
