@@ -5,7 +5,7 @@ metadata description = 'This solution allows you to create a custom image much l
 metadata author = 'shawn.meyer@microsoft.com'
 
 @description('Value appended to the deployment names.')
-param timeStamp string = utcNow()
+param timeStamp string = utcNow('yyyyMMddhhmmss')
 
 @description('Deployment location. Note that the compute resources will be deployed to the region where the subnet is located.')
 param location string = deployment().location

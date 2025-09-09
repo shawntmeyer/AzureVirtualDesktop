@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.37.4.10188",
-      "templateHash": "3304906681857507838"
+      "templateHash": "10917351657854151642"
     },
     "name": "Zero Trust Architecture Custom Windows Image Builder",
     "description": "This solution allows you to create a custom image much like Azure VM Image Builder, but utilizes zero trust architecture and does not require that service.",
@@ -14,7 +14,7 @@
   "parameters": {
     "timeStamp": {
       "type": "string",
-      "defaultValue": "[utcNow()]",
+      "defaultValue": "[utcNow('yyyyMMddhhmmss')]",
       "metadata": {
         "description": "Value appended to the deployment names."
       }
@@ -1104,9 +1104,9 @@
         ]
       },
       "DoDInstallRoot": {
-        "DownloadUrl": "https://dl.dod.cyber.mil/wp-content/uploads/pki-pke/msi/InstallRoot_5.6x64_NonAdmin.msi",
+        "DownloadUrl": "https://dl.dod.cyber.mil/wp-content/uploads/pki-pke/msi/InstallRoot_5.6x64.msi",
         "WebSiteUrl": "https://public.cyber.mil/pki-pke/tools-configuration-files",
-        "SearchString": "InstallRoot*x64_NonAdmin.msi",
+        "SearchString": "InstallRoot*x64.msi",
         "APIUrl": "",
         "GitHubRepo": "",
         "GitHubFileNamePattern": "",
@@ -1116,9 +1116,9 @@
         ]
       },
       "DoDSTIGGPOPackage": {
-        "DownloadUrl": "",
-        "WebSiteUrl": "https://public.cyber.mil/stigs/gpo",
-        "SearchString": "*GPOs*",
+        "DownloadUrl": "https://dl.dod.cyber.mil/wp-content/uploads/stigs/zip/U_STIG_GPO_Package_July_2025.zip",
+        "WebSiteUrl": "",
+        "SearchString": "",
         "APIUrl": "",
         "GitHubRepo": "",
         "GitHubFileNamePattern": "",
