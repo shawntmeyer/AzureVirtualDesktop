@@ -1,7 +1,7 @@
 [CmdletBinding(SupportsShouldProcess = $true)]
 param (
     [string]$MaxIdleTime = '21600000',
-    [string]$MaxDisconnectionTime = '21600000'
+    [string]$MaxDisconnectionionTime = '21600000'
 )
 
 #region Functions
@@ -289,7 +289,7 @@ function New-Log {
 
 #region Initialization
 [int]$MaxIdleTime = $MaxIdleTime
-[int]$MaxDisconnectTime = $MaxDisconnectTime
+[int]$MaxDisconnectionTime = $MaxDisconnectionTime
 [string]$Script:AppName = 'RDServicesPolicy'
 [string]$Script:Name = "Configure-RemoteDesktopServicesPolicy"
 [string]$Script:TempDir = Join-Path -Path $env:Temp -ChildPath $ScriptName
@@ -319,9 +319,8 @@ If (-not(Test-Path -Path "$env:SystemRoot\System32\lgpo.exe")) {
 
 If (Test-Path -Path "$env:SystemRoot\System32\lgpo.exe") {
     Write-Log -category Info -message "Now Configuring Remote Desktop Services Timeout Settings."
-    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Windows NT\Terminal Services' -RegistryValue 'MaxDisconnectionTime' -RegistryType 'DWORD' -RegistryData $MaxDisconnectTime -outfileprefix $appName -Verbose
+    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Windows NT\Terminal Services' -RegistryValue 'MaxDisconnectionTime' -RegistryType 'DWORD' -RegistryData $MaxDisconnectionTime -outfileprefix $appName -Verbose
     Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Windows NT\Terminal Services' -RegistryValue 'MaxIdleTime' -RegistryType 'DWORD' -RegistryData $MaxIdleTime -outfileprefix $appName -Verbose
-    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Windows NT\Terminal Services' -RegistryValue 'fResetBroken' -RegistryType 'DWORD' -RegistryData 1 -outfileprefix $appName -Verbose
     Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Windows NT\Terminal Services' -RegistryValue 'fEnableTimeZoneRedirection' -RegistryType 'DWORD' -RegistryData 1 -outfileprefix $appName -Verbose
     Invoke-LGPO -Verbose
     Write-Log -category Info -message "Remote Desktop Services Timeout Settings Configured."
@@ -330,7 +329,6 @@ Else {
     Write-Log -Category Warning -Message "Unable to configure local policy with lgpo tool because it was not found. Updating registry settings instead."
     Set-RegistryValue -Path 'HKLM:\Software\Policies\Microsoft\Windows NT\Terminal Services' -Name 'MaxDisconnectionTime' -PropertyType 'DWord' -Value $MaxDisconnectTime
     Set-RegistryValue -Path 'HKLM:\Software\Policies\Microsoft\Windows NT\Terminal Services' -Name 'MaxIdleTime' -PropertyType 'DWord' -Value $MaxIdleTime
-    Set-RegistryValue -Path 'HKLM:\Software\Policies\Microsoft\Windows NT\Terminal Services' -Name 'fResetBroken' -PropertyType 'DWord' -Value 1
     Set-RegistryValue -Path 'HKLM:\Software\Policies\Microsoft\Windows NT\Terminal Services' -Name 'fEnableTimeZoneRedirection' -PropertyType 'DWord' -Value 1
     Write-Log -Category Info -Message "Remote Desktop Services Timeout Settings Configured via Registry."
 }
