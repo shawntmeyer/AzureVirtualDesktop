@@ -4,7 +4,10 @@
   "parameters": {
     "nameConvResTypeAtEnd": {
       "value": false
-    },    
+    },
+    "customResourceGroupName": {
+      "value": ""
+    },
     "logAnalyticsWorkspaceResourceId": {
       "value": ""
     },

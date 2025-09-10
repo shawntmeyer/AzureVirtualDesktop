@@ -7,6 +7,9 @@ param artifactsContainerName string = 'artifacts'
 
 param location string = deployment().location
 
+@description('Optional. Custom Resource Group Name. If not provided, a resource group will be created using the Cloud Adoption Framework naming convention.')
+param customResourceGroupName string = ''
+
 @description('Optional. Reverse the normal Cloud Adoption Framework naming convention by putting the resource type abbreviation at the end of the resource name.')
 param nameConvResTypeAtEnd bool = false
 
@@ -86,7 +89,8 @@ var nameConv_Suffix_withoutResType = 'LOCATION'
 var nameConvSuffix = nameConvResTypeAtEnd ? '${nameConv_Suffix_withoutResType}-RESOURCETYPE' : nameConv_Suffix_withoutResType
 var nameConv_ImageManagement_ResGroup = nameConvResTypeAtEnd ? 'avd-image-management-${nameConvSuffix}' : 'RESOURCETYPE-avd-image-management-${nameConvSuffix}'
 var nameConv_ImageManagement_Resources = nameConvResTypeAtEnd ? 'avd-image-management-${nameConvSuffix}' : 'RESOURCETYPE-avd-image-management-${nameConvSuffix}'
-var resourceGroupName = replace(replace(nameConv_ImageManagement_ResGroup, 'LOCATION', locations[location].abbreviation), 'RESOURCETYPE', resourceAbbreviations.resourceGroups)
+
+var resourceGroupName = !empty(customResourceGroupName) ? replace(replace(nameConv_ImageManagement_ResGroup, 'LOCATION', locations[location].abbreviation), 'RESOURCETYPE', resourceAbbreviations.resourceGroups) : customResourceGroupName
 var remoteResourceGroupName = !empty(remoteLocation) ? replace(replace(nameConv_ImageManagement_ResGroup, 'LOCATION', locations[remoteLocation].abbreviation), 'RESOURCETYPE', resourceAbbreviations.resourceGroups) : ''
 var blobContainerName = replace(replace(toLower(artifactsContainerName), '_', '-'), ' ', '-')
 var galleryName = replace(replace(replace(nameConv_ImageManagement_Resources, 'RESOURCETYPE', resourceAbbreviations.computeGalleries), 'LOCATION', locations[location].abbreviation), '-', '_')

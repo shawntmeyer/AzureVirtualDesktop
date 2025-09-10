@@ -4,8 +4,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.36.177.2456",
-      "templateHash": "6080012377272065800"
+      "version": "0.37.4.10188",
+      "templateHash": "12597548469099690089"
     }
   },
   "parameters": {
@@ -21,6 +21,13 @@
     "location": {
       "type": "string",
       "defaultValue": "[deployment().location]"
+    },
+    "customResourceGroupName": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional. Custom Resource Group Name. If not provided, a resource group will be created using the Cloud Adoption Framework naming convention."
+      }
     },
     "nameConvResTypeAtEnd": {
       "type": "bool",
@@ -403,7 +410,7 @@
     "nameConvSuffix": "[if(parameters('nameConvResTypeAtEnd'), format('{0}-RESOURCETYPE', variables('nameConv_Suffix_withoutResType')), variables('nameConv_Suffix_withoutResType'))]",
     "nameConv_ImageManagement_ResGroup": "[if(parameters('nameConvResTypeAtEnd'), format('avd-image-management-{0}', variables('nameConvSuffix')), format('RESOURCETYPE-avd-image-management-{0}', variables('nameConvSuffix')))]",
     "nameConv_ImageManagement_Resources": "[if(parameters('nameConvResTypeAtEnd'), format('avd-image-management-{0}', variables('nameConvSuffix')), format('RESOURCETYPE-avd-image-management-{0}', variables('nameConvSuffix')))]",
-    "resourceGroupName": "[replace(replace(variables('nameConv_ImageManagement_ResGroup'), 'LOCATION', variables('locations')[parameters('location')].abbreviation), 'RESOURCETYPE', variables('resourceAbbreviations').resourceGroups)]",
+    "resourceGroupName": "[if(not(empty(parameters('customResourceGroupName'))), replace(replace(variables('nameConv_ImageManagement_ResGroup'), 'LOCATION', variables('locations')[parameters('location')].abbreviation), 'RESOURCETYPE', variables('resourceAbbreviations').resourceGroups), parameters('customResourceGroupName'))]",
     "remoteResourceGroupName": "[if(not(empty(parameters('remoteLocation'))), replace(replace(variables('nameConv_ImageManagement_ResGroup'), 'LOCATION', variables('locations')[parameters('remoteLocation')].abbreviation), 'RESOURCETYPE', variables('resourceAbbreviations').resourceGroups), '')]",
     "blobContainerName": "[replace(replace(toLower(parameters('artifactsContainerName')), '_', '-'), ' ', '-')]",
     "galleryName": "[replace(replace(replace(variables('nameConv_ImageManagement_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').computeGalleries), 'LOCATION', variables('locations')[parameters('location')].abbreviation), '-', '_')]",
@@ -505,8 +512,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.36.177.2456",
-              "templateHash": "11980299989394995277"
+              "version": "0.37.4.10188",
+              "templateHash": "4744082758082091393"
             }
           },
           "parameters": {
@@ -910,8 +917,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.36.177.2456",
-              "templateHash": "15348478390269751572"
+              "version": "0.37.4.10188",
+              "templateHash": "4038296559050263141"
             }
           },
           "parameters": {
