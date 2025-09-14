@@ -47,7 +47,7 @@ There are several Azure resource prerequisite that are required to run this depl
   
   The deployment of the custom image build option depends on many artifacts that must be hosted in Azure Blob storage to satisfy Zero Trust principals or to build the custom image on Air-Gapped clouds. See [Air-Gapped Cloud Image Management Details](imageAir-GappedCloud.md) for more information. This repo contains the deploy-imagemanagement.ps1 helper script that should be used to deploy the image management resources and upload the artifacts to the created storage account.
 
-  > **Important:** Before running this script, ensure that your user has been granted 'Storage Blob Data Contributor' rights to the subscription. See Azure Permissions below.
+  > **Important:** Before running this script, see the Azure Permissions section below.
 
   </details>
 - <details><summary><b>Azure Permissions</b></summary>
