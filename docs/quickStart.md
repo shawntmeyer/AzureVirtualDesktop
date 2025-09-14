@@ -45,13 +45,16 @@ There are several Azure resource prerequisite that are required to run this depl
   </details>
 - <details><summary><b>Image Management Resources</b></summary>
   
-  The deployment of the custom image build option depends on many artifacts that must be hosted in Azure Blob storage to satisfy Zero Trust principals or to build the custom image on Air-Gapped clouds. See [Air-Gapped Cloud Image Management Details](imageAir-GappedCloud.md) for more information. This repo contains a helper script that should be used to deploy the image management resources and upload the artifacts to the created storage account. See *deployments/imageManagement/Deploy-ImageManagement.ps1*.
+  The deployment of the custom image build option depends on many artifacts that must be hosted in Azure Blob storage to satisfy Zero Trust principals or to build the custom image on Air-Gapped clouds. See [Air-Gapped Cloud Image Management Details](imageAir-GappedCloud.md) for more information. This repo contains a helper script that should be used to deploy the image management resources and upload the artifacts to the created storage account. See *deployments/imageManagement/Deploy-ImageManagement.ps1*. Before running this script, ensure that your user has been granted 'Storage Blob Data Contributor' rights to the subscription.
   </details>
 - <details><summary><b>Azure Permissions</b></summary>
-  
-  Ensure the principal deploying the solution has the "Owner" or ("Contributor" and "User Access Administrator") roles assigned on the target Azure subscription.
+  <ul>
+  <li><b>Required:</b> Ensure the principal deploying the solution has the "Owner" or ("Contributor" and "User Access Administrator") roles assigned on the target Azure subscription.</li>
   
   > **Important:** Ensure that your role assignment does not have a condition that prevents you from assigning the 'Role-Based Access Control Administrator' role to other principals as the deployment assigns this role to the deployment user-assigned managed identity in order to allow it to automatically remove the role assignments that it creates during deployment.
+  <li><b>Optional:</b> If you wish to use Azure Key Vaults to store and manage secrets, you'll want to assign your user (or administrative group) the 'Key Vault Administrator' role.</li>
+  <li><b>Optional:</b> To upload content to the Image Assets storage account, grant your user (or group) the 'Storage Blob Data Contributor' rights to the image assets storage acccount or the image management resource group.</li>
+  </ul>
   </details>
 - <details><summary><b>Security Group</b></summary>
   Create a security group for your AVD users.
