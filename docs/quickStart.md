@@ -56,8 +56,8 @@ There are several Azure resource prerequisite that are required to run this depl
   
   > **Important:** Ensure that your role assignment does not have a condition that prevents you from assigning the 'Role-Based Access Control Administrator' role to other principals as the deployment assigns this role to the deployment user-assigned managed identity in order to allow it to automatically remove the role assignments that it creates during deployment.
   
-  <li><b>Optional:</b> If you wish to use Azure Key Vaults to store and manage secrets, you'll want to assign your user (or administrative group) the 'Key Vault Administrator' role.</li>
-  <li><b>Optional:</b> To upload content to the Image Assets storage account, grant your user (or group) the 'Storage Blob Data Contributor' rights to the image assets storage acccount or the image management resource group.</li>
+  <li><b>Optional:</b> If you wish to use Azure Key Vaults to store and manage secrets, you'll want to ensure that the user principals managing Azure Virtual Desktop in your environment are granted the 'Key Vault Administrator' role to the subscription or at least the regional secrets key vaults and regional encryption key vaults (if customer managed keys are specified).</li>
+  <li><b>Optional:</b> To utilize the image management resources for custom image builds or post deployment scripts, ensure that the user principals managing Azure Virtual Desktop in your environment are granted the 'Storage Blob Data Contributor' role to the subscription or at least the image management resource group.</li>
   </ul>
   </details>
 - <details><summary><b>Security Group</b></summary>
