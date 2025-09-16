@@ -2,7 +2,6 @@ param(
   [string]$APIVersion,
   [string]$Arguments='',
   [string]$BlobStorageSuffix,
-  [string]$BuildDir='',
   [string]$Name,
   [string]$Uri,
   [string]$UserAssignedIdentityClientId
@@ -135,11 +134,7 @@ Start-Transcript -Path "$env:SystemRoot\Logs\$Name.log" -Force
 Write-OutputWithTimeStamp "Starting '$Name' script with the following parameters."
 Write-Output ( $PSBoundParameters | Format-Table -AutoSize )
 If ($Arguments -eq '') { $Arguments = $null }
-If ($BuildDir -ne '') {
-  $TempDir = Join-Path $BuildDir -ChildPath $Name
-} Else {
-  $TempDir = Join-Path $Env:TEMP -ChildPath $Name
-}
+$TempDir = Join-Path $Env:TEMP -ChildPath $Name
 New-Item -Path $TempDir -ItemType Directory -Force | Out-Null
 $WebClient = New-Object System.Net.WebClient
 If ($Uri -match $BlobStorageSuffix -and $UserAssignedIdentityClientId -ne '') {
@@ -232,5 +227,5 @@ switch ($Ext) {
     }
   }
 }
-If ((Split-Path $TempDir -Parent) -eq $Env:Temp) {Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue}
+Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue
 Stop-Transcript
