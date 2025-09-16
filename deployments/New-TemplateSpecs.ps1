@@ -7,6 +7,7 @@ param (
     [bool]$createNetwork = $true,
     [bool]$createCustomImage = $true,
     [bool]$createHostPool = $true,
+    [bool]$CreateAddOns = $true,
     [bool]$UpdateBicep = $true
 )
 
@@ -100,4 +101,15 @@ if ($createHostPool) {
     New-AzTemplateSpec -ResourceGroupName $ResourceGroupName -Name 'AVD-HostPool' -DisplayName 'Azure Virtual Desktop Host Pool' -Description 'Deploys an Azure Virtual Desktop Host Pool' -TemplateFile $templateFile -UiFormDefinitionFile $uiFormDefinition -Location $Location -Version '1.0.0' -Force
 }
 
+if ($CreateAddOns) {
+    If ($BicepInstalled) {
+        $bicepFile = Join-Path -Path $PSScriptRoot -ChildPath 'add-ons\RunCommandsOnVms\main.bicep'
+        Write-Output "Transpiling Bicep file '$bicepFile' to JSON"
+        Start-Process -FilePath $Bicep -ArgumentList "build $bicepFile" -Wait -NoNewWindow
+    }
+    $templateFile = Join-Path -Path $PSScriptRoot -ChildPath 'add-ons\RunCommandsOnVms\main.json'
+    $uiFormDefinition = Join-Path -Path $PSScriptRoot -ChildPath 'add-ons\RunCommandsOnVms\uiFormDefinition.json'
+    Write-Output 'Creating Run Commands on VMs Template Spec'
+    New-AzTemplateSpec -ResourceGroupName $ResourceGroupName -Name 'RunCommandsOnVMs' -DisplayName 'Run Commands on VMs' -Description 'Run scripts on Virtual Machines' -TemplateFile $templateFile -UiFormDefinitionFile $uiFormDefinition -Location $Location -Version '1.0.0' -Force
+}
 Write-Output "Template Specs Created. You can now find them in the Azure Portal in the '$ResourceGroupName' resource group"
