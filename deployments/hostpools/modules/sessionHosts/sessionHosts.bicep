@@ -306,6 +306,7 @@ module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sess
     subnetResourceId: subnetResourceId
     tags: tags
     timeStamp: timeStamp
+    timeZone: timeZone
     useAgentDownloadEndpoint: useAgentDownloadEndpoint
     virtualMachineAdminPassword: virtualMachineAdminPassword
     virtualMachineAdminUserName: virtualMachineAdminUserName

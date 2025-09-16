@@ -14,7 +14,8 @@ param (
     [string]$RemoteStorageAccountKeys,
     [string]$Shares,
     [string]$StorageAccountDNSSuffix,
-    [string]$StorageService
+    [string]$StorageService,
+    [string]$TimeZone
 )
 
 
@@ -302,6 +303,10 @@ if ($Shares.Count -gt 1) {
 Write-Log -message "ProfileShareName: $ProfileShareName"
 Write-Log -message "OfficeShareName: $OfficeShareName"
 Write-Log -message "StorageService: $StorageService"
+Write-Log -message "TimeZone: $TimeZone"
+
+Write-Log -message "Configuring Time Zone to: $TimeZone"
+Set-TimeZone -Id "$TimeZone"
 
 $TeamsInstalled = Get-AppxProvisionedPackage -Online | Where-Object {$_.DisplayName -eq 'MSTeams'}
 $M365AppsInstalled = Get-InstalledApplication -Name 'Microsoft 365 Apps'
