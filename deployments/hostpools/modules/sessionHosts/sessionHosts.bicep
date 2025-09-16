@@ -50,6 +50,7 @@ param fslogixLocalStorageAccountResourceIds array
 param fslogixOSSGroups array
 param fslogixRemoteNetAppVolumeResourceIds array
 param fslogixRemoteStorageAccountResourceIds array
+param fslogixSizeInMBs int
 param fslogixStorageService string
 param hibernationEnabled bool
 param hostPoolResourceId string
@@ -282,7 +283,8 @@ module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sess
     fslogixLocalNetAppServerFqdns: [for i in range(0, length(sortedLocalNetAppResourceIds)) : localNetAppVolumes[i]!.outputs.smbServerFqdn]
     fslogixLocalStorageAccountResourceIds: fslogixLocalStorageAccountResourceIds
     fslogixRemoteNetAppServerFqdns: [for i in range(0, length(sortedRemoteNetAppResourceIds)) : remoteNetAppVolumes[i]!.outputs.smbServerFqdn]
-    fslogixRemoteStorageAccountResourceIds: fslogixRemoteStorageAccountResourceIds    
+    fslogixRemoteStorageAccountResourceIds: fslogixRemoteStorageAccountResourceIds
+    fslogixSizeInMBs: fslogixSizeInMBs    
     fslogixStorageService: fslogixStorageService
     hibernationEnabled: hibernationEnabled
     hostPoolResourceId: deploymentType == 'Complete' ? hostPoolResourceId : hostPoolUpdate!.outputs.resourceId

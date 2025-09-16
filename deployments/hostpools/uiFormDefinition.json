@@ -163,7 +163,6 @@
 										"label": "(UTC+10:00) Guam, Port Moresby",
 										"value": "West Pacific Standard Time"
 									}
-
 								],
 								"required": true
 							},
@@ -2322,6 +2321,20 @@
 							}
 						},
 						{
+							"name": "sizeInMBs",
+							"type": "Microsoft.Common.Slider",
+							"label": "FSLogix VHD Size (MB)",
+							"defaultValue": 30720,
+							"toolTip": "Input the max size of the users fslogix containers.",
+							"min": 10240,
+							"max": 1048576,
+							"showStepMarkers": true,
+							"constraints": {
+								"required": true
+							},
+							"visible": "[or(steps('userProfiles').configureSessionHosts, equals(steps('userProfiles').deployStorage, true))]"
+						},
+						{
 							"name": "ouPath",
 							"type": "Microsoft.Common.TextBox",
 							"defaultValue": "[steps('identity').virtualMachines.ouPath]",
@@ -3173,7 +3186,7 @@
 							"name": "automation",
 							"type": "Microsoft.Common.Section",
 							"label": "Automation",
-							"elements": [								
+							"elements": [
 								{
 									"name": "deployIncreaseQuota",
 									"type": "Microsoft.Common.CheckBox",
@@ -4277,6 +4290,7 @@
 				"artifactsUserAssignedIdentityResourceId": "[if(steps('hosts').customScripts.addCustomScripts, if(not(empty(steps('hosts').customScripts.managedIdentity)), steps('hosts').customScripts.managedIdentity.id, ''), '')]",
 				"sessionHostCustomizations": "[if(steps('hosts').customScripts.addCustomScripts, steps('hosts').customScripts.customizations, parse('[]'))]",
 				"fslogixContainerType": "[if(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').fslogixContainerType, 'ProfileContainer')]",
+				"fslogixSizeInMBs": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), or(steps('userProfiles').configureSessionHosts, equals(steps('userProfiles').deployStorage, true))), steps('userProfiles').sizeInMBs, 30720)]",
 				"deployFSLogixStorage": "[if(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').deployStorage, false)]",
 				"fslogixConfigureSessionHosts": "[if(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').configureSessionHosts, false)]",
 				"fslogixOUPath": "[if(and(not(equals(steps('identity').virtualMachines.solution, 'EntraId')), equals(steps('userProfiles').deployStorage, true)), steps('userProfiles').ouPath, '')]",

@@ -14,6 +14,7 @@ param (
     [string]$RemoteStorageAccountKeys,
     [string]$RunCommandName = 'Set-SessionHostConfiguration',
     [string]$Shares,
+    [string]$SizeInMBs,
     [string]$StorageAccountDNSSuffix,
     [string]$StorageService
 )
@@ -94,12 +95,14 @@ Function ConvertFrom-JsonString {
     If ($JsonString -ne '[]' -and $JsonString -ne $null) {
         [array]$Array = $JsonString.replace('\', '') | ConvertFrom-Json
         If ($Array.Length -gt 0) {
-            If ($SensitiveValues) {Write-Log -message "Array '$Name' has $($Array.Length) members"} Else {Write-Log -message "$($Name): '$($Array -join "', '")'"}
+            If ($SensitiveValues) { Write-Log -message "Array '$Name' has $($Array.Length) members" } Else { Write-Log -message "$($Name): '$($Array -join "', '")'" }
             Return $Array
-        } Else {
+        }
+        Else {
             Return $null
         }            
-    } Else {
+    }
+    Else {
         Return $null
     }    
 }
@@ -122,7 +125,7 @@ Function Convert-GroupToSID {
         }
         Catch {
             Try {
-                $groupSID = (New-Object System.Security.Principal.NTAccount($DomainName,"$GroupName")).Translate([System.Security.Principal.SecurityIdentifier]).Value
+                $groupSID = (New-Object System.Security.Principal.NTAccount($DomainName, "$GroupName")).Translate([System.Security.Principal.SecurityIdentifier]).Value
             }
             Catch {
                 Write-Error -Message "Failed to convert group name '$GroupName' to SID."
@@ -269,7 +272,8 @@ Function Set-RegistryValue {
             If ($Value -ne $CurrentValue) {
                 Write-Log -message "[Set-RegistryValue]: Setting Value of $($Path)\$($Name) : $Value"
                 Set-ItemProperty -Path $Path -Name $Name -Value $Value -Force | Out-Null
-            } Else {
+            }
+            Else {
                 Write-Log -message "[Set-RegistryValue]: Value of $($Path)\$($Name) is already set to $Value"
             }           
         }
@@ -307,6 +311,14 @@ Write-Log -message "NvidiaVmSize: $NvidiaVmSize"
 Write-Log -message "DisableUpdates: $DisableUpdates"
 [bool]$ConfigureFSLogix = [System.Convert]::ToBoolean($ConfigureFSLogix)
 Write-Log -message "ConfigureFSLogix: $ConfigureFSLogix"
+if ($SizeInMBs -ne '' -and $null -ne $SizeInMBs) {
+    [int]$SizeInMBs = $SizeInMBs
+    Write-Log -message "SizeInMBs: $SizeInMBs"
+}
+Else {
+    [int]$SizeInMBs = 30000
+    Write-Log -message "SizeInMBs not specified. Defaulting to: $SizeInMBs"
+}  
 
 #Convert CloudCache to Boolean
 $CloudCache = [System.Convert]::ToBoolean($CloudCache)
@@ -316,7 +328,8 @@ Write-Log -message "CloudCache: $CloudCache"
 $ProfileShareName = $Shares[0]
 if ($Shares.Count -gt 1) {
     $OfficeShareName = $Shares[1]
-} Else {
+}
+Else {
     $OfficeShareName = $null
 }
 
@@ -328,10 +341,10 @@ Write-Log -message "*** Building Array of Registry Settings ***"
 $RegSettings = New-Object System.Collections.ArrayList
 If ($DisableUpdates -eq 'true') {
     # Disable Automatic Updates: https://learn.microsoft.com/azure/virtual-desktop/set-up-customize-master-image#disable-automatic-updates
-    $RegSettings.Add(@{Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU'; Name = 'NoAutoUpdate'; PropertyType = 'DWORD'; Value = 1})
+    $RegSettings.Add(@{Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU'; Name = 'NoAutoUpdate'; PropertyType = 'DWORD'; Value = 1 })
 }
 # Enable Time Zone Redirection: https://learn.microsoft.com/azure/virtual-desktop/set-up-customize-master-image#set-up-time-zone-redirection
-$RegSettings.Add(@{Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services'; Name = 'fEnableTimeZoneRedirection'; PropertyType = 'DWORD'; Value = 1})
+$RegSettings.Add(@{Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services'; Name = 'fEnableTimeZoneRedirection'; PropertyType = 'DWORD'; Value = 1 })
 
 ##############################################################
 #  Add GPU Settings
@@ -340,16 +353,16 @@ $RegSettings.Add(@{Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Terminal
 if ($AmdVmSize -eq 'true' -or $NvidiaVmSize -eq 'true') {
     Write-Log -message "Adding GPU Settings"
     # Configure GPU-accelerated app rendering: https://learn.microsoft.com/azure/virtual-desktop/configure-vm-gpu#configure-gpu-accelerated-app-rendering
-    $RegSettings.Add(@{Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services'; Name = 'bEnumerateHWBeforeSW'; PropertyType = 'DWORD'; Value = 1})
+    $RegSettings.Add(@{Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services'; Name = 'bEnumerateHWBeforeSW'; PropertyType = 'DWORD'; Value = 1 })
     # Configure fullscreen video encoding: https://learn.microsoft.com/azure/virtual-desktop/configure-vm-gpu#configure-fullscreen-video-encoding
-    $RegSettings.Add(@{Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services'; Name = 'AVC444ModePreferred'; PropertyType = 'DWORD'; Value = 1})
+    $RegSettings.Add(@{Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services'; Name = 'AVC444ModePreferred'; PropertyType = 'DWORD'; Value = 1 })
 }
 
 # This setting applies only to VM Size's recommended for AVD with a Nvidia GPU
-if($NvidiaVmSize -eq 'true') {
+if ($NvidiaVmSize -eq 'true') {
     Write-Log -message "Adding Nvidia GPU Settings"
     # Configure GPU-accelerated frame encoding: https://learn.microsoft.com/azure/virtual-desktop/configure-vm-gpu#configure-gpu-accelerated-frame-encoding
-    $RegSettings.Add(@{Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services'; Name = 'AVChardwareEncodePreferred'; PropertyType = 'DWORD'; Value = 1})
+    $RegSettings.Add(@{Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services'; Name = 'AVChardwareEncodePreferred'; PropertyType = 'DWORD'; Value = 1 })
 }
 
 If ($ConfigureFSLogix) {
@@ -363,7 +376,7 @@ If ($ConfigureFSLogix) {
     [System.Collections.ArrayList]$RemoteOfficeContainerPaths = @()
     [System.Collections.ArrayList]$RemoteCloudCacheOfficeContainerPaths = @()
 
-    switch($StorageService) {
+    switch ($StorageService) {
         'AzureFiles' {
             Write-Log -message "Gathering Azure Files Storage Account Parameters"
             # Convert escaped JSON strings to arrays
@@ -432,7 +445,7 @@ If ($ConfigureFSLogix) {
             Write-Log -message "LocalProfileContainerPath: '\\$($LocalNetAppServers[0])\$($ProfileShareName)'"
             $LocalCloudCacheProfileContainerPaths.Add("type=smb,connectionString=\\$($LocalNetAppServers[0])\$($ProfileShareName)")
             Write-Log -message "LocalCloudCacheProfileContainerPath: 'type=smb,connectionString=\\$($LocalNetAppServers[0])\$($ProfileShareName)'"
-            If($LocalNetAppServers.Length -gt 1 -and $OfficeShareName) {            
+            If ($LocalNetAppServers.Length -gt 1 -and $OfficeShareName) {            
                 $LocalOfficeContainerPaths.Add("\\$($LocalNetAppServers[1])\$($OfficeShareName)")
                 Write-Log -message "LocalOfficeContainerPath: \\$($LocalNetAppServers[1])\$($OfficeShareName)"
                 $LocalCloudCacheOfficeContainerPaths.Add("type=smb,connectionString=\\$($LocalNetAppServers[1])\$($OfficeShareName)")
@@ -473,7 +486,7 @@ If ($ConfigureFSLogix) {
     # Specifies the number of times the system should attempt to reattach the VHD(x) container if it's disconnected unexpectedly: https://learn.microsoft.com/fslogix/reference-configuration-settings?tabs=profiles#reattachretrycount
     $RegSettings.Add([PSCustomObject]@{ Name = 'ReAttachRetryCount'; Path = 'HKLM:\SOFTWARE\FSLogix\Profiles'; PropertyType = 'DWord'; Value = 3 })
     # Specifies the maximum size of the user's container in megabytes. Newly created VHD(x) containers are of this size: https://learn.microsoft.com/fslogix/reference-configuration-settings?tabs=profiles#sizeinmbs
-    $RegSettings.Add([PSCustomObject]@{ Name = 'SizeInMBs'; Path = 'HKLM:\SOFTWARE\FSLogix\Profiles'; PropertyType = 'DWord'; Value = 30000 })
+    $RegSettings.Add([PSCustomObject]@{ Name = 'SizeInMBs'; Path = 'HKLM:\SOFTWARE\FSLogix\Profiles'; PropertyType = 'DWord'; Value = $SizeInMBs })
     # Specifies the file extension for the profile containers: https://learn.microsoft.com/fslogix/reference-configuration-settings?tabs=profiles#volumetype
     $RegSettings.Add([PSCustomObject]@{ Name = 'VolumeType'; Path = 'HKLM:\SOFTWARE\FSLogix\Profiles'; PropertyType = 'String'; Value = 'VHDX' })
 
@@ -508,7 +521,7 @@ If ($ConfigureFSLogix) {
         # Specifies the number of times the system should attempt to reattach the VHD(x) container if it's disconnected unexpectedly: https://learn.microsoft.com/fslogix/reference-configuration-settings?tabs=odfc#reattachretrycount
         $RegSettings.Add([PSCustomObject]@{ Name = 'ReAttachRetryCount'; Path = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'; PropertyType = 'DWord'; Value = 3 })
         # Specifies the maximum size of the user's container in megabytes: https://learn.microsoft.com/fslogix/reference-configuration-settings?tabs=odfc#sizeinmbs
-        $RegSettings.Add([PSCustomObject]@{ Name = 'SizeInMBs'; Path = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'; PropertyType = 'DWord'; Value = 30000 })
+        $RegSettings.Add([PSCustomObject]@{ Name = 'SizeInMBs'; Path = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'; PropertyType = 'DWord'; Value = $SizeInMBs })
         # Specifies the type of container: https://learn.microsoft.com/fslogix/reference-configuration-settings?tabs=odfc#volumetype
         $RegSettings.Add([PSCustomObject]@{ Name = 'VolumeType'; Path = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'; PropertyType = 'String'; Value = 'VHDX' })
         If ($LocalStorageAccountKeys.Count -gt 0) {
@@ -544,7 +557,8 @@ If ($ConfigureFSLogix) {
                 Write-Log -message "RemoteCloudCacheProfileContainerPath: '$RemoteCloudCacheProfileContainerPath'"
                 [array]$ProfileContainerPaths = @($LocalProfileContainerPath + $RemoteProfileContainerPath)
                 [array]$CloudCacheProfileContainerPaths = @($LocalCloudCacheProfileContainerPath + $RemoteCloudCacheProfileContainerPath)
-            } Else {
+            }
+            Else {
                 [array]$ProfileContainerPaths = @($LocalProfileContainerPath)
                 [array]$CloudCacheProfileContainerPaths = @($LocalCloudCacheProfileContainerPath)
             }
@@ -553,7 +567,8 @@ If ($ConfigureFSLogix) {
                 Write-Log -message "Adding Cloud Cache Profile Container Settings: $OSSGroupSID : '$($CloudCacheProfileContainerPaths -join "', '")'"
                 # List of file system locations to search for the user's profile VHD(X) file: https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=ccd#ccdlocations
                 $RegSettings.Add([PSCustomObject]@{ Name = 'CCDLocations'; Path = "HKLM:\SOFTWARE\FSLogix\Profiles\ObjectSpecific\$OSSGroupSID"; PropertyType = 'MultiString'; Value = $CloudCacheProfileContainerPaths })
-            } Else {
+            }
+            Else {
                 Write-Log -message "Adding Profile Container Settings: $OSSGroupSID : '$($ProfileContainerPaths -join "', '")'"
                 # List of file system locations to search for the user's profile VHD(X) file: https://learn.microsoft.com/fslogix/profile-container-configuration-reference#vhdlocations
                 $RegSettings.Add([PSCustomObject]@{ Name = 'VHDLocations'; Path = "HKLM:\SOFTWARE\FSLogix\Profiles\ObjectSpecific\$OSSGroupSID"; PropertyType = 'MultiString'; Value = $ProfileContainerPaths })
@@ -571,7 +586,8 @@ If ($ConfigureFSLogix) {
                     Write-Log -message "RemoteCloudCacheOfficeContainerPath: '$RemoteCloudCacheOfficeContainerPath'"
                     [array]$OfficeContainerPaths = @($LocalOfficeContainerPath + $RemoteOfficeContainerPath)
                     [array]$CloudCacheOfficeContainerPaths = @($LocalCloudCacheOfficeContainerPath + $RemoteCloudCacheOfficeContainerPath)
-                } Else {
+                }
+                Else {
                     [array]$OfficeContainerPaths = @($LocalOfficeContainerPath)
                     [array]$CloudCacheOfficeContainerPaths = @($LocalCloudCacheOfficeContainerPath)
                 }
@@ -579,18 +595,21 @@ If ($ConfigureFSLogix) {
                     Write-Log -message "Adding Cloud Cache Office Container Settings: $OSSGroupSID : '$($CloudCacheOfficeContainerPaths -join "', '")'"
                     # List of file system locations to search for the user's profile VHD(X) file: https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=ccd#ccdlocations
                     $RegSettings.Add([PSCustomObject]@{ Name = 'CCDLocations'; Path = "HKLM:\SOFTWARE\Policies\FSLogix\ODFC\ObjectSpecific\$OSSGroupSID"; PropertyType = 'MultiString'; Value = $CloudCacheOfficeContainerPaths })
-                } Else {
+                }
+                Else {
                     Write-Log -message "Adding Office Container Settings: $OSSGroupSID : '$($OfficeContainerPaths -join "', '")'"
                     # List of file system locations to search for the user's profile VHD(X) file: https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=odfc#vhdlocations-1
                     $RegSettings.Add([PSCustomObject]@{ Name = 'VHDLocations'; Path = "HKLM:\SOFTWARE\Policies\FSLogix\ODFC\ObjectSpecific\$OSSGroupSID"; PropertyType = 'MultiString'; Value = $OfficeContainerPaths })
                 }
             }  
         }          
-    } Else {
+    }
+    Else {
         If ($RemoteStorageAccountNames.Count -gt 0) {
             $ProfileContainerPaths = $LocalProfileContainerPaths + $RemoteProfileContainerPaths
             $CloudCacheProfileContainerPaths = $LocalCloudCacheProfileContainerPaths + $RemoteCloudCacheProfileContainerPaths
-        } Else {
+        }
+        Else {
             $ProfileContainerPaths = $LocalProfileContainerPaths
             $CloudCacheProfileContainerPaths = $LocalCloudCacheProfileContainerPaths
         }
@@ -598,7 +617,8 @@ If ($ConfigureFSLogix) {
             Write-Log -message "Adding Cloud Cache Profile Container Settings: '$($CloudCacheProfileContainerPaths -join "', '")'"   
             # List of file system locations to search for the user's profile VHD(X) file: https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=ccd#ccdlocations 
             $RegSettings.Add([PSCustomObject]@{ Name = 'CCDLocations'; Path = 'HKLM:\SOFTWARE\FSLogix\Profiles'; PropertyType = 'MultiString'; Value = $CloudCacheProfileContainerPaths })             
-        } Else {
+        }
+        Else {
             Write-Log -message "Adding Profile Container Settings: '$($ProfileContainerPaths -join "', '")'"
             # List of file system locations to search for the user's profile VHD(X) file: https://learn.microsoft.com/fslogix/profile-container-configuration-reference#vhdlocations
             $RegSettings.Add([PSCustomObject]@{ Name = 'VHDLocations'; Path = 'HKLM:\SOFTWARE\FSLogix\Profiles'; PropertyType = 'MultiString'; Value = $ProfileContainerPaths })
@@ -607,7 +627,8 @@ If ($ConfigureFSLogix) {
             If ($RemoteStorageAccountNames.Count -gt 0) {
                 $OfficeContainerPaths = $LocalOfficeContainerPaths + $RemoteOfficeContainerPaths
                 $CloudCacheOfficeContainerPaths = $LocalCloudCacheOfficeContainerPaths + $RemoteCloudCacheOfficeContainerPaths
-            } Else {
+            }
+            Else {
                 $OfficeContainerPaths = $LocalOfficeContainerPaths
                 $CloudCacheOfficeContainerPaths = $LocalCloudCacheOfficeContainerPaths
             }
@@ -615,7 +636,8 @@ If ($ConfigureFSLogix) {
                 Write-Log -message "Adding Cloud Cache Office Container Settings: '$($CloudCacheOfficeContainerPaths -join "', '")'"
                 # List of file system locations to search for the user's profile VHD(X) file: https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=ccd#ccdlocations
                 $RegSettings.Add([PSCustomObject]@{ Name = 'CCDLocations'; Path = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'; PropertyType = 'MultiString'; Value = $CloudCacheOfficeContainerPaths })
-            } Else {
+            }
+            Else {
                 Write-Log -message "Adding Office Container Settings: '$($OfficeContainerPaths -join "', '")'"
                 # List of file system locations to search for the user's profile VHD(X) file: https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=odfc#vhdlocations-1
                 $RegSettings.Add([PSCustomObject]@{ Name = 'VHDLocations'; Path = 'HKLM:\SOFTWARE\Policies\FSLogix\ODFC'; PropertyType = 'MultiString'; Value = $OfficeContainerPaths })
@@ -660,7 +682,7 @@ ForEach ($Setting in $RegSettings) {
 
 # Resize OS Disk
 Write-Log -message "Resizing OS Disk"
-$driveLetter = $env:SystemDrive.Substring(0,1)
+$driveLetter = $env:SystemDrive.Substring(0, 1)
 $size = Get-PartitionSupportedSize -DriveLetter $driveLetter
 Resize-Partition -DriveLetter $driveLetter -Size $size.SizeMax
 Write-Log -message "OS Disk Resized"

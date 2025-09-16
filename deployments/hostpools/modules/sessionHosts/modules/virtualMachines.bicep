@@ -31,6 +31,7 @@ param fslogixLocalStorageAccountResourceIds array
 param fslogixOSSGroups array
 param fslogixRemoteNetAppServerFqdns array
 param fslogixRemoteStorageAccountResourceIds array
+param fslogixSizeInMBs int
 param fslogixStorageService string
 param hibernationEnabled bool
 param hostPoolResourceId string
@@ -529,6 +530,10 @@ resource runCommand_ConfigureSessionHost 'Microsoft.Compute/virtualMachines/runC
       {
         name: 'Shares'
         value: string(fslogixFileShareNames)
+      }
+      {
+        name: 'SizeInMBs'
+        value: string(fslogixSizeInMBs)
       }
       {
         name: 'StorageAccountDNSSuffix'

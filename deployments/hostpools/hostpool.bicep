@@ -380,6 +380,9 @@ param fslogixShareSizeInGB int = 100
 ])
 param fslogixContainerType string = 'ProfileContainer'
 
+@description('Optional. The size of the FSLogix containers in MB. This value is used to set the SizeInMBs registry key on the session hosts.')
+param fslogixSizeInMBs int = 30000
+
 @description('''Optional.
 Determines whether or not to Shard Azure Files Storage by deploying more than one storage account, and if so how the Session Hosts are Configured.
 If 'None' is selected, then no sharding is performed and only 1 storage account is deployed when deploying storage accounts.
@@ -1121,6 +1124,7 @@ module sessionHosts 'modules/sessionHosts/sessionHosts.bicep' = {
     fslogixOSSGroups: fslogixShardOptions == 'ShardOSS' ? map(fslogixUserGroups, group => group.displayName) : []
     fslogixRemoteNetAppVolumeResourceIds: fslogixExistingRemoteNetAppVolumeResourceIds
     fslogixRemoteStorageAccountResourceIds: fslogixExistingRemoteStorageAccountResourceIds
+    fslogixSizeInMBs: fslogixSizeInMBs
     fslogixStorageService: split(fslogixStorageService, ' ')[0]
     hibernationEnabled: hibernationEnabled
     hostPoolResourceId: deploymentType == 'Complete' ? controlPlane!.outputs.hostPoolResourceId : existingHostPoolResourceId
