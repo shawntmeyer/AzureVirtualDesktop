@@ -21,7 +21,7 @@ param(
     [Parameter(ParameterSetName = 'UpdateOnly', Mandatory = $false)]
     [switch] $SkipDownloadingNewSources,
 
-    # Determines a custom parameter file.
+    # Determines a custom parameter file to use for the deployment of the storage resources and downloads.
     [Parameter(ParameterSetName = 'Deploy', Mandatory = $false)]
     [Parameter(ParameterSetName = 'UpdateOnly', Mandatory = $false)]
     [string] $ParameterFilePrefix,
