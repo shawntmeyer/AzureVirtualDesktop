@@ -21,6 +21,11 @@ param(
     [Parameter(ParameterSetName = 'UpdateOnly', Mandatory = $false)]
     [switch] $SkipDownloadingNewSources,
 
+    # Determines a custom parameter file.
+    [Parameter(ParameterSetName = 'Deploy', Mandatory = $false)]
+    [Parameter(ParameterSetName = 'UpdateOnly', Mandatory = $false)]
+    [string] $ParameterFilePrefix,
+
     # Determines whether or not to deploy/redeploy the storage account using BICEP and the parameter file contained in the storageAccount folder
     [Parameter(ParameterSetName = 'Deploy')]
     [switch]$DeployImageManagementResources,
@@ -46,6 +51,14 @@ $ErrorActionPreference = 'Stop'
 
 $Context = Get-AzContext
 
+$InstallPath = Join-Path -Path $env:USERPROFILE -ChildPath '.bicep'
+$Bicep = Join-Path -Path $InstallPath -ChildPath 'bicep.exe'
+$BicepInstalled = Test-Path -Path $Bicep
+if ($BicepInstalled) {
+    $Version = (Get-Item $Bicep).VersionInfo.FileVersion
+    Write-Output "Bicep CLI found. Version: $Version"
+}
+
 If ($null -eq $Context) {
     Throw 'You are not logged in to Azure. Please login to azure before continuing'
     Exit
@@ -54,14 +67,19 @@ Else {
     $Environment = $Context.Environment.Name
     $StorageEndpointSuffix = $Context.Environment.StorageEndpointSuffix
     $EnvSuffix = $StorageEndpointSuffix.Substring(5, ($StorageEndpointSuffix.length - 5))
-    If ($Environment -eq 'AzureCloud' -or $Environment -eq 'AzureUSGovernment') {
-        $downloadsParametersPrefix = 'public'
+    If ($ParameterFilePrefix -ne '' -and $null -ne $ParameterFilePrefix) {
+        Write-Output "Using custom parameter file prefix: '$ParameterFilePrefix'."
     }
-    Elseif ($Environment -match 'USN') {
-        $downloadsParametersPrefix = 'topsecret'
-    }
-    Else {
-        $downloadsParametersPrefix = 'secret'    
+    Else {        
+        If ($Environment -eq 'AzureCloud' -or $Environment -eq 'AzureUSGovernment') {
+            $downloadsParametersPrefix = 'public'
+        }
+        Elseif ($Environment -match 'USN') {
+            $downloadsParametersPrefix = 'topsecret'
+        }
+        Else {
+            $downloadsParametersPrefix = 'secret'    
+        }
     }
 }
 
@@ -101,8 +119,19 @@ Write-Verbose "#################################################################
 
 If ($DeployImageManagementResources) {
     $BicepPath = Join-Path -Path $PSScriptRoot -ChildPath 'imageManagement'
-    $Template = (Get-ChildItem -Path $BicepPath -filter 'imageManagement.bicep').FullName
-    $Parameters = (Get-ChildItem -Path (Join-Path -Path $BicepPath -ChildPath 'parameters') -Filter 'imagemanagement.parameters.json').FullName  
+    If ($BicepInstalled) {
+        $Template = (Get-ChildItem -Path $BicepPath -filter 'imageManagement.bicep').FullName
+    }
+    Else {
+        $Template = (Get-ChildItem -Path $BicepPath -filter 'imageManagement.json').FullName
+    }
+    If ($ParameterFilePrefix -ne '' -and $null -ne $ParameterFilePrefix) {
+        $Parameters = (Get-ChildItem -Path (Join-Path -Path $BicepPath -ChildPath 'parameters') -Filter "$ParameterFilePrefix.imagemanagement.parameters.json").FullName
+    }
+    Else {
+        $Parameters = (Get-ChildItem -Path (Join-Path -Path $BicepPath -ChildPath 'parameters') -Filter 'imagemanagement.parameters.json').FullName
+    }
+
     Write-Output "Deploying Image Management Resources using BICEP template and parameter file."
     New-AzDeployment -Name "ImageManagement-$Time" -Location $Location -TemplateFile $Template -TemplateParameterFile $Parameters -verbose -artifactsContainerName $ArtifactsContainerName
     $DeploymentOutputs = (Get-AzSubscriptionDeployment -Name "ImageManagement-$Time").Outputs
