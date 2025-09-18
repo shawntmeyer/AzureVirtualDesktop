@@ -362,7 +362,7 @@ var galleryImageDefinitionSecurityType = empty(imageDefinitionResourceId)
       : 'Standard'
 var galleryImageDefinitionSku = !empty(imageDefinitionSku) ? replace(imageDefinitionSku, ' ', '') : mpSku
 // build an image version from the ISO 8601 timestamp
-var autoImageVersionName = '${substring(timeStamp, 0, 4)}.${substring(timeStamp, 4, 4)}.${substring(timeStamp, 9, 4)}'
+var autoImageVersionName = '${substring(timeStamp, 0, 4)}.${substring(timeStamp, 4, 4)}.${substring(timeStamp, 8, 4)}'
 var imageVersionName = imageMajorVersion != -1 && imageMajorVersion != -1 && imagePatch != -1
   ? '${imageMajorVersion}.${imageMinorVersion}.${imagePatch}'
   : autoImageVersionName
