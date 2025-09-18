@@ -346,11 +346,10 @@ $null = New-Item -Path $Script:TempDir -ItemType Directory -Force
 New-Log -Path (Join-Path -Path "$env:SystemRoot\Logs" -ChildPath 'Configuration')
 $ErrorActionPreference = 'Stop'
 Write-Log -category Info -message "Starting '$PSCommandPath'."
+Write-Log -Category Info -Message "Parameters: DeferQualityUpdatesPeriodInDays='$DeferQualityUpdatesPeriodInDays', ScheduledInstallDay='$ScheduledInstallDay', ScheduledInstallTime='$ScheduledInstallTime'."
 #endregion
 
 Write-Log -message "Checking for 'lgpo.exe' in '$env:SystemRoot\system32'."
-
-Write-Log -Message "Checking for lgpo.exe in '$env:SystemRoot\system32'."
 
 If (-not(Test-Path -Path "$env:SystemRoot\System32\lgpo.exe")) {
     Write-Log -Category Info -Message "'lgpo.exe' not found in '$env:SystemRoot\system32'."
@@ -410,6 +409,9 @@ If (Test-Path -Path "$env:SystemRoot\System32\Lgpo.exe") {
     Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ScheduledInstallThirdWeek' -Delete -outfileprefix $Script:AppName -Verbose
     Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ScheduledInstallFourthWeek' -Delete -outfileprefix $Script:AppName -Verbose    
     Invoke-LGPO -Verbose
+    Write-Log -category Info -message "Windows Update Settings Configured."
+    $gpupdate = Start-Process -FilePath 'gpupdate.exe' -ArgumentList '/force' -Wait -PassThru
+    Write-Log -Message "GPUpdate exitcode: '$($gpupdate.exitcode)'"
 } Else {
     Write-Log -Category Warning -Message "Unable to configure local policy with lgpo tool because it was not found. Updating registry settings instead."
     $regKey = "HKLM:\Software\Policies\Microsoft\Windows\WindowsUpdate"

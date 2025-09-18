@@ -19,6 +19,7 @@
 param (
     [Parameter()]
     [string]$ApplicationsToSTIG = '["Adobe Acrobat Pro", "Adobe Acrobat Reader", "Google Chrome", "Mozilla Firefox"]',
+    # Set to True if using Cloud only identity with fslogix so credentials can be saved to the local credential manager for storage account access.
     [string]$CloudOnly = 'True'
 )
 #region Initialization
@@ -28,6 +29,10 @@ If ($osCaption -match 'Windows 11') { $osVersion = 11 } Else { $osVersion = 10 }
 $Script:TempDir = Join-Path -Path $env:Temp -ChildPath $Script:Name
 If (Test-Path -Path $Script:TempDir) { Remove-Item -Path $Script:TempDir -Recurse -ErrorAction SilentlyContinue }
 New-Item -Path $Script:TempDir -ItemType Directory -Force | Out-Null
+If ($ApplicationsToSTIG -ne $null) { 
+    [array]$ApplicationsToSTIG = $ApplicationsToSTIG.replace('\', '') | ConvertFrom-Json
+}
+[bool]$CloudOnly = $CloudOnly.ToLower() -eq 'true'
 #endregion
 
 #region Functions
@@ -475,10 +480,7 @@ Function Update-LocalGPOTextFile {
 
 New-Log -Path (Join-Path -Path "$env:SystemRoot\Logs" -ChildPath 'Configuration')
 Write-Log -Message "Starting '$PSCommandPath'."
-If ($ApplicationsToSTIG -ne $null) { 
-    [array]$ApplicationsToSTIG = $ApplicationsToSTIG.replace('\', '') | ConvertFrom-Json
-}
-[bool]$CloudOnly = $CloudOnly.ToLower() -eq 'true'
+Write-Log -Category Info -Message "Parameters: ApplicationsToSTIG: $($ApplicatonsToSTIG -join ','), CloudOnly: $CloudOnly"
 
 Write-Log -message "Checking for 'lgpo.exe' in '$env:SystemRoot\system32'."
 
@@ -591,6 +593,8 @@ Update-LocalGPOTextFile -outfileprefix $OutputFilePrefix -Scope 'Computer' -Regi
 # Remove Edge Proxy Configuration
 Update-LocalGPOTextFile -outfileprefix $OutputFilePrefix -Scope 'Computer' -RegistryKeyPath 'SOFTWARE\Policies\Microsoft\Edge' -RegistryValue 'ProxySettings' -Delete -Verbose
 Invoke-LGPO -SearchTerm $OutputFilePrefix
+$GPUpdate = Start-Process -FilePath 'gpupdate.exe' -ArgumentList '/force' -Wait -PassThru
+Write-Log -Message "'gpupdate.exe' exited with code [$($GPUpdate.ExitCode)])."
 
 #Disable Secondary Logon Service
 #WN10-00-000175

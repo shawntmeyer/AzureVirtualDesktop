@@ -297,6 +297,7 @@ $Null = New-Item $Script:TempDir -ItemType Directory -Force
 New-Log -Path (Join-Path -Path $env:SystemRoot -ChildPath 'Logs')
 $ErrorActionPreference = 'Stop'
 Write-Log -category Info -message "Starting '$PSCommandPath'."
+Write-Log -Category Info -Message "Parameters: MaxIdleTime='$MaxIdleTime', MaxDisconnectionTime='$MaxDisconnectionTime'."
 #endregion
 
 Write-Log -Message "Checking for lgpo.exe in '$env:SystemRoot\system32'."
@@ -324,6 +325,8 @@ If (Test-Path -Path "$env:SystemRoot\System32\lgpo.exe") {
     Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Windows NT\Terminal Services' -RegistryValue 'fEnableTimeZoneRedirection' -RegistryType 'DWORD' -RegistryData 1 -outfileprefix $appName -Verbose
     Invoke-LGPO -Verbose
     Write-Log -category Info -message "Remote Desktop Services Timeout Settings Configured."
+    $gpupdate = Start-Process -FilePath 'gpupdate.exe' -ArgumentList '/force' -Wait -PassThru
+    Write-Log -Message "GPUpdate exitcode: '$($gpupdate.exitcode)'"
 }
 Else {
     Write-Log -Category Warning -Message "Unable to configure local policy with lgpo tool because it was not found. Updating registry settings instead."

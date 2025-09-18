@@ -359,6 +359,7 @@ $null = New-Item -Path $Script:TempDir -ItemType Directory -Force
 New-Log -Path (Join-Path -Path "$env:SystemRoot\Logs" -ChildPath 'Configuration')
 $ErrorActionPreference = 'Stop'
 Write-Log -Category Info -Message "Starting '$PSCommandPath'."
+Write-Log -Category Info -Message "Parameters: AllowDeveloperTools='$AllowDeveloperTools', SmartScreenAllowListDomains='$($SmartScreenAllowListDomains -join ',')', PopupsAllowedForUrls='$($PopupsAllowedForUrls -join ',')'."
 #endregion
 
 Write-Log -Category Info -Message "Running Script to Configure Microsoft Edge Policies."
@@ -448,6 +449,8 @@ If (Test-Path -Path "$env:SystemRoot\System32\Lgpo.exe") {
         Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Edge' -RegistryValue 'DeveloperToolsAvailability' -RegistryType 'DWORD' -RegistryData 1 -outfileprefix $appName -Verbose
     }
     Invoke-LGPO -Verbose
+    $gpupdate = Start-Process -FilePath 'gpupdate.exe' -ArgumentList '/force' -Wait -PassThru
+    Write-Log -Message "GPUpdate exitcode: '$($gpupdate.exitcode)'"
 }
 Else {
     Write-Log -Category Warning -Message "Unable to configure local policy with lgpo tool because it was not found. Updating registry settings instead."

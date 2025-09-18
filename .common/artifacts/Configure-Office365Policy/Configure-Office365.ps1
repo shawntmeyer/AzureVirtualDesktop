@@ -501,6 +501,8 @@ If (Test-Path -Path "$env:SystemRoot\System32\lgpo.exe") {
     }
     Invoke-LGPO -Verbose
     Write-Log -category Info -message "Completed Configuring Office 365 Group Policy."
+    $gpupdate = Start-Process -FilePath 'gpupdate.exe' -ArgumentList '/force' -Wait -PassThru
+    Write-Log -Message "GPUpdate exitcode: '$($gpupdate.exitcode)'"
 }
 Else {
     Write-Log -Category Warning -Message "Unable to configure local policy with lgpo tool because it was not found. Updating registry settings instead."
