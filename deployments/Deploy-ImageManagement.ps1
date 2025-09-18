@@ -51,14 +51,6 @@ $ErrorActionPreference = 'Stop'
 
 $Context = Get-AzContext
 
-$InstallPath = Join-Path -Path $env:USERPROFILE -ChildPath '.bicep'
-$Bicep = Join-Path -Path $InstallPath -ChildPath 'bicep.exe'
-$BicepInstalled = Test-Path -Path $Bicep
-if ($BicepInstalled) {
-    $Version = (Get-Item $Bicep).VersionInfo.FileVersion
-    Write-Output "Bicep CLI found. Version: $Version"
-}
-
 If ($null -eq $Context) {
     Throw 'You are not logged in to Azure. Please login to azure before continuing'
     Exit
@@ -69,6 +61,7 @@ Else {
     $EnvSuffix = $StorageEndpointSuffix.Substring(5, ($StorageEndpointSuffix.length - 5))
     If ($ParameterFilePrefix -ne '' -and $null -ne $ParameterFilePrefix) {
         Write-Output "Using custom parameter file prefix: '$ParameterFilePrefix'."
+        $downloadsParametersPrefix = $ParameterFilePrefix
     }
     Else {        
         If ($Environment -eq 'AzureCloud' -or $Environment -eq 'AzureUSGovernment') {
@@ -81,10 +74,6 @@ Else {
             $downloadsParametersPrefix = 'secret'    
         }
     }
-}
-
-if ([string]::IsNullOrEmpty($TempDir)) {
-    throw "The TempDir parameter cannot be null or empty."
 }
 
 $TempArtifactsDir = Join-Path -Path $TempDir -ChildPath 'Artifacts'
@@ -118,20 +107,14 @@ Write-Verbose "## 1 - Deploy/Update Storage Account and gather variables        
 Write-Verbose "###########################################################################"
 
 If ($DeployImageManagementResources) {
-    $BicepPath = Join-Path -Path $PSScriptRoot -ChildPath 'imageManagement'
-    If ($BicepInstalled) {
-        $Template = (Get-ChildItem -Path $BicepPath -filter 'imageManagement.bicep').FullName
-    }
-    Else {
-        $Template = (Get-ChildItem -Path $BicepPath -filter 'imageManagement.json').FullName
-    }
+    $TemplatePath = Join-Path -Path $PSScriptRoot -ChildPath 'imageManagement'
+    $Template = (Get-ChildItem -Path $TemplatePath -filter 'imageManagement.json').FullName
     If ($ParameterFilePrefix -ne '' -and $null -ne $ParameterFilePrefix) {
-        $Parameters = (Get-ChildItem -Path (Join-Path -Path $BicepPath -ChildPath 'parameters') -Filter "$ParameterFilePrefix.imagemanagement.parameters.json").FullName
+        $Parameters = (Get-ChildItem -Path (Join-Path -Path $TemplatePath -ChildPath 'parameters') -Filter "$ParameterFilePrefix.imagemanagement.parameters.json").FullName
     }
     Else {
-        $Parameters = (Get-ChildItem -Path (Join-Path -Path $BicepPath -ChildPath 'parameters') -Filter 'imagemanagement.parameters.json').FullName
+        $Parameters = (Get-ChildItem -Path (Join-Path -Path $TemplatePath -ChildPath 'parameters') -Filter 'imagemanagement.parameters.json').FullName
     }
-
     Write-Output "Deploying Image Management Resources using BICEP template and parameter file."
     New-AzDeployment -Name "ImageManagement-$Time" -Location $Location -TemplateFile $Template -TemplateParameterFile $Parameters -verbose -artifactsContainerName $ArtifactsContainerName
     $DeploymentOutputs = (Get-AzSubscriptionDeployment -Name "ImageManagement-$Time").Outputs
