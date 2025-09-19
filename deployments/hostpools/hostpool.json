@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.37.4.10188",
-      "templateHash": "6188141214288105975"
+      "templateHash": "8064673231001035990"
     }
   },
   "parameters": {
@@ -1039,7 +1039,7 @@
     "beginAvSetRange": "[div(parameters('sessionHostIndex'), variables('maxAvSetMembers'))]",
     "endAvSetRange": "[div(add(parameters('sessionHostCount'), parameters('sessionHostIndex')), variables('maxAvSetMembers'))]",
     "availabilitySetsCount": "[length(range(variables('beginAvSetRange'), add(sub(variables('endAvSetRange'), variables('beginAvSetRange')), 1)))]",
-    "createDeploymentVm": "[and(equals(parameters('deploymentType'), 'Complete'), or(or(or(or(contains(parameters('keyManagementStorageAccounts'), 'CustomerManaged'), parameters('confidentialVMOSDiskEncryption')), not(empty(parameters('desktopFriendlyName')))), contains(parameters('identitySolution'), 'DomainServices')), contains(parameters('fslogixStorageService'), 'AzureNetApp')))]",
+    "createDeploymentVm": "[and(equals(parameters('deploymentType'), 'Complete'), or(or(or(or(or(contains(parameters('keyManagementStorageAccounts'), 'CustomerManaged'), contains(parameters('keyManagementDisks'), 'CustomerManaged')), parameters('confidentialVMOSDiskEncryption')), not(empty(parameters('desktopFriendlyName')))), contains(parameters('identitySolution'), 'DomainServices')), contains(parameters('fslogixStorageService'), 'AzureNetApp')))]",
     "deployControlPlaneRG": "[and(equals(parameters('deploymentType'), 'Complete'), empty(parameters('existingFeedWorkspaceResourceId')))]",
     "resourceGroupsCount": "[add(add(add(add(if(variables('createDeploymentVm'), 1, 0), if(equals(parameters('deploymentType'), 'Complete'), 2, 0)), if(variables('deployControlPlaneRG'), 1, 0)), if(and(equals(parameters('avdPrivateLinkPrivateRoutes'), 'All'), not(empty(parameters('globalFeedPrivateEndpointSubnetResourceId')))), 1, 0)), if(parameters('deployFSLogixStorage'), 1, 0))]",
     "fslogixNTFSGroups": "[if(empty(parameters('fslogixUserGroups')), parameters('appGroupSecurityGroups'), parameters('fslogixUserGroups'))]",

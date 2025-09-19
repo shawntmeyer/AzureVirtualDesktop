@@ -637,7 +637,7 @@ var beginAvSetRange = sessionHostIndex / maxAvSetMembers // This determines the 
 var endAvSetRange = (sessionHostCount + sessionHostIndex) / maxAvSetMembers // This determines the availability set to end with.
 var availabilitySetsCount = length(range(beginAvSetRange, (endAvSetRange - beginAvSetRange) + 1))
 
-var createDeploymentVm = deploymentType == 'Complete' && (contains(keyManagementStorageAccounts, 'CustomerManaged') || confidentialVMOSDiskEncryption || !empty(desktopFriendlyName) || contains(identitySolution, 'DomainServices') || contains(fslogixStorageService, 'AzureNetApp'))
+var createDeploymentVm = deploymentType == 'Complete' && (contains(keyManagementStorageAccounts, 'CustomerManaged') || contains(keyManagementDisks, 'CustomerManaged') || confidentialVMOSDiskEncryption || !empty(desktopFriendlyName) || contains(identitySolution, 'DomainServices') || contains(fslogixStorageService, 'AzureNetApp'))
 
 var deployControlPlaneRG = deploymentType == 'Complete' && empty(existingFeedWorkspaceResourceId)
 var resourceGroupsCount = ( createDeploymentVm ? 1 : 0 ) + ( deploymentType == 'Complete' ? 2 : 0 ) + ( deployControlPlaneRG ? 1 : 0 ) + ( avdPrivateLinkPrivateRoutes == 'All' && !empty(globalFeedPrivateEndpointSubnetResourceId) ? 1 : 0 ) + ( deployFSLogixStorage ? 1 : 0 ) 
