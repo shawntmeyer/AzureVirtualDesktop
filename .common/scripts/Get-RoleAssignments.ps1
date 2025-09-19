@@ -37,7 +37,7 @@ Try {
     Write-Output "Searching for role assignment for Principal '$PrincipalId' with Role '$RoleDefinitionId' across $($ResIds.Count) resource(s)"
     
     $StartTime = Get-Date
-    $TimeoutSeconds = 180
+    $TimeoutSeconds = 120
     $FoundRoleAssignments = @{}
     $Attempt = 1
 
@@ -97,15 +97,13 @@ Try {
     } while ($ElapsedTime.TotalSeconds -lt $TimeoutSeconds)
 
     if ($FoundRoleAssignments.Count -eq 0) {
-        $ErrorMessage = "Role assignment not found on any resources after $TimeoutSeconds seconds. Principal ID: '$PrincipalId', Role Definition ID: '$RoleDefinitionId', Resources checked: $($ResIds -join ', ')"
-        Write-Warning $ErrorMessage
+        Write-Warning = "Role assignment not found on any resources after $TimeoutSeconds seconds. Principal ID: '$PrincipalId', Role Definition ID: '$RoleDefinitionId', Resources checked: $($ResIds -join ', ')"
     } elseif ($FoundRoleAssignments.Count -lt $ResIds.Count) {
         $MissingResources = $ResIds | Where-Object { -not $FoundRoleAssignments.ContainsKey($_) }
-        $ErrorMessage = "Role assignment not found on all resources after $TimeoutSeconds seconds. Principal ID: '$PrincipalId', Role Definition ID: '$RoleDefinitionId'. Missing on resources: $($MissingResources -join ', ')"
-        Write-Warning $ErrorMessage
+        Write-Warning "Role assignment not found on all resources after $TimeoutSeconds seconds. Principal ID: '$PrincipalId', Role Definition ID: '$RoleDefinitionId'. Missing on resources: $($MissingResources -join ', ')"
     }
 }
 catch {
     Write-Error "Error querying role assignments: $($_.Exception.Message)"
-    throw
+    throw $($_.Exception.Message)
 }
