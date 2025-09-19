@@ -42,6 +42,6 @@ resource runCommand 'Microsoft.Compute/virtualMachines/runCommands@2023-03-01' =
       script: loadTextContent('../../../../.common/scripts/Get-RoleAssignments.ps1')
     }
     timeoutInSeconds: 180
-    treatFailureAsDeploymentFailure: true
+    treatFailureAsDeploymentFailure: false
   }
 }
