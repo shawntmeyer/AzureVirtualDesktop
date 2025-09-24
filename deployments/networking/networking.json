@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.37.4.10188",
-      "templateHash": "226461841597566788"
+      "templateHash": "1139252713779499020"
     }
   },
   "parameters": {
@@ -609,7 +609,7 @@
     "tablePrivateDnsZone": "[if(parameters('createAzureTableZone'), format('privatelink.table.{0}', environment().suffixes.storage), '')]",
     "keyVaultPrivateDnsZone": "[if(parameters('createAzureKeyVaultZone'), format('privatelink{0}', replace(environment().suffixes.keyvaultDns, 'vault', 'vaultcore')), '')]",
     "avdFeedPrivateDnsZone": "[if(parameters('createAvdFeedZone'), if(startsWith(variables('cloud'), 'us'), format('privatelink.wvd.{0}', variables('cloudSuffix')), variables('privateDnsZones_AzureVirtualDesktop')[environment().name]), '')]",
-    "avdGlobalFeedPrivateDnsZone": "[if(parameters('createAvdGlobalFeedZone'), if(startsWith(variables('cloud'), 'us'), format('privatelink.wvd.{0}', variables('cloudSuffix')), variables('privateDnsZones_AzureVirtualDesktopGlobalFeed')[environment().name]), '')]",
+    "avdGlobalFeedPrivateDnsZone": "[if(parameters('createAvdGlobalFeedZone'), if(startsWith(variables('cloud'), 'us'), format('privatelink-global.wvd.{0}', variables('cloudSuffix')), variables('privateDnsZones_AzureVirtualDesktopGlobalFeed')[environment().name]), '')]",
     "webAppPrivateDnsZone": "[if(parameters('createAzureWebAppZone'), if(startsWith(variables('cloud'), 'us'), format('privatelink.azurewebsites.{0}', variables('cloudSuffix')), format('privatelink.azurewebsites.{0}', variables('privateDnsZoneSuffixes_AzureWebApps')[environment().name])), '')]",
     "privateDnsZones": [
       "[variables('backupPrivateDnsZone')]",

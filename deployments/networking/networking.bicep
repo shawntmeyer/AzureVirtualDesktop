@@ -180,7 +180,7 @@ var queuePrivateDnsZone = createAzureQueueZone ? 'privatelink.queue.${environmen
 var tablePrivateDnsZone = createAzureTableZone ? 'privatelink.table.${environment().suffixes.storage}' : ''
 var keyVaultPrivateDnsZone = createAzureKeyVaultZone ? 'privatelink${replace(environment().suffixes.keyvaultDns, 'vault', 'vaultcore')}' : ''
 var avdFeedPrivateDnsZone = createAvdFeedZone ? startsWith(cloud, 'us') ? 'privatelink.wvd.${cloudSuffix}' : privateDnsZones_AzureVirtualDesktop[environment().name] : ''
-var avdGlobalFeedPrivateDnsZone = createAvdGlobalFeedZone ? startsWith(cloud, 'us') ? 'privatelink.wvd.${cloudSuffix}' : privateDnsZones_AzureVirtualDesktopGlobalFeed[environment().name] : ''
+var avdGlobalFeedPrivateDnsZone = createAvdGlobalFeedZone ? startsWith(cloud, 'us') ? 'privatelink-global.wvd.${cloudSuffix}' : privateDnsZones_AzureVirtualDesktopGlobalFeed[environment().name] : ''
 var webAppPrivateDnsZone = createAzureWebAppZone ? startsWith(cloud, 'us') ? 'privatelink.azurewebsites.${cloudSuffix}' : 'privatelink.azurewebsites.${privateDnsZoneSuffixes_AzureWebApps[environment().name]}' : ''
 
 var privateDnsZones = [
