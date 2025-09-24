@@ -1,37 +1,27 @@
 targetScope = 'subscription'
+var locationVirtualMachines = 'usseceast'
+var locationControlPlane = 'ussecwest'
+var identifier = 'myavd'
+var index = ''
+var nameConvResTypeAtEnd = false
 
-param existingHostPoolResourceId string
-param existingFeedWorkspaceResourceId string
-param fslogixStorageCustomPrefix string
-param identifier string
-param index string
-param locationControlPlane string
-param locationGlobalFeed string
-param locationVirtualMachines string
-param nameConvResTypeAtEnd bool
-param virtualMachineNamePrefix string
 
-var cloud = toLower(environment().name)
-var locations = startsWith(cloud, 'us') ? (loadJsonContent('../../../.common/data/locations.json')).other : (loadJsonContent('../../../.common/data/locations.json'))[environment().name]
-
+var cloud = 'ussec'
+var locations = startsWith(cloud, 'us') ? (loadJsonContent('../.common/data/locations.json')).other : (loadJsonContent('../.common/data/locations.json'))[environment().name]
 #disable-next-line BCP329
 var varLocationVirtualMachines = startsWith(cloud, 'us') ? substring(locationVirtualMachines, 5, length(locationVirtualMachines)-5) : locationVirtualMachines
+#disable-next-line BCP329
 var locationVirtualMachinesAbbreviation = locations[varLocationVirtualMachines].abbreviation
 #disable-next-line BCP329
 var varLocationControlPlane = startsWith(cloud, 'us') ? substring(locationControlPlane, 5, length(locationControlPlane)-5) : locationControlPlane
 var locationControlPlaneAbbreviation = locations[varLocationControlPlane].abbreviation
 
-var resourceAbbreviations = loadJsonContent('../../../.common/data/resourceAbbreviations.json')
+var resourceAbbreviations = loadJsonContent('../.common/data/resourceAbbreviations.json')
 
-var existingHostPoolName = empty(existingHostPoolResourceId) ? '' : split(existingHostPoolResourceId, '/')[8]
+var nameConvReversed = nameConvResTypeAtEnd
 
-var nameConvReversed = !empty(existingHostPoolName) ? !startsWith(existingHostPoolName, resourceAbbreviations.hostPools) : nameConvResTypeAtEnd
-
-var arrHostPoolName = split(existingHostPoolName, '-')
-var lengthArrHostPoolName = length(arrHostPoolName)
-
-var hpIdentifier = !empty(existingHostPoolName) ? nameConvReversed ? lengthArrHostPoolName < 5 ? arrHostPoolName[0] : '${arrHostPoolName[0]}-${arrHostPoolName[1]}' : lengthArrHostPoolName < 5 ? arrHostPoolName[1] : '${arrHostPoolName[1]}-${arrHostPoolName[2]}' : identifier
-var hpIndex = !empty(existingHostPoolName) ? lengthArrHostPoolName == 3 ? '' : nameConvReversed ? lengthArrHostPoolName < 5 ? arrHostPoolName[1] : arrHostPoolName[2] : lengthArrHostPoolName < 5 ? arrHostPoolName[2] : arrHostPoolName[3] : index  
+var hpIdentifier = identifier
+var hpIndex = index  
 
 var hpBaseName = empty(hpIndex) ? hpIdentifier : '${hpIdentifier}-${hpIndex}'
 var hpResPrfx = nameConvReversed ? hpBaseName : 'RESOURCETYPE-${hpBaseName}'
@@ -140,51 +130,6 @@ var logAnalyticsWorkspaceName = replace(
   ''
 )
 
-// Global Feed Resources
-var globalFeedResourceGroupName = !(empty(locationGlobalFeed))
-  ? replace(
-      replace(
-        (nameConvReversed ? 'avd-global-feed-${nameConvSuffix}' : 'RESOURCETYPE-avd-global-feed-${nameConvSuffix}'),
-        'LOCATION',
-        locationControlPlaneAbbreviation
-      ),
-      'RESOURCETYPE',
-      '${resourceAbbreviations.resourceGroups}'
-    )
-  : ''
-var globalFeedWorkspaceName = replace(
-  (nameConvReversed ? 'avd-global-feed-RESOURCETYPE' : 'RESOURCETYPE-avd-global-feed'),
-  'RESOURCETYPE',
-  resourceAbbreviations.workspaces
-)
-
-// Control Plane Shared Resources
-var resourceGroupControlPlane = empty(existingHostPoolResourceId)
-  ? empty(existingFeedWorkspaceResourceId)
-    ? replace(
-        replace(
-          replace(nameConv_Shared_ResGroup, 'TOKEN', 'control-plane'),
-          'LOCATION',
-          '${locationControlPlaneAbbreviation}'
-        ),
-        'RESOURCETYPE',
-        '${resourceAbbreviations.resourceGroups}'
-      )
-    : split(existingFeedWorkspaceResourceId, '/')[4]
-  : split(existingHostPoolResourceId, '/')[4]
-
-var workspaceName = empty(existingFeedWorkspaceResourceId)
-  ? replace(
-      replace(
-        replace(nameConv_Shared_Resources, 'RESOURCETYPE', resourceAbbreviations.workspaces),
-        'LOCATION',
-        locationControlPlaneAbbreviation
-      ),
-      'TOKEN-',
-      ''
-    )
-  : last(split(existingFeedWorkspaceResourceId, '/'))
-
 // Control Plane HostPool Resources
 var desktopApplicationGroupName = replace(
   replace(replace(nameConv_HP_Resources, 'TOKEN-', ''), 'RESOURCETYPE', resourceAbbreviations.desktopApplicationGroups),
@@ -249,21 +194,7 @@ var resourceGroupHosts = replace(
   'RESOURCETYPE',
   '${resourceAbbreviations.resourceGroups}'
 )
-var vmNamePrefixWithoutDash = toLower(last(virtualMachineNamePrefix) == '-'
-  ? take(virtualMachineNamePrefix, length(virtualMachineNamePrefix) - 1)
-  : virtualMachineNamePrefix)
-var availabilitySetNamePrefix = nameConvReversed
-  ? '${vmNamePrefixWithoutDash}-${resourceAbbreviations.availabilitySets}-'
-  : '${resourceAbbreviations.availabilitySets}-${vmNamePrefixWithoutDash}-'
-var virtualMachineNameConv = nameConvReversed
-  ? '${virtualMachineNamePrefix}###-${resourceAbbreviations.virtualMachines}'
-  : '${resourceAbbreviations.virtualMachines}-${virtualMachineNamePrefix}###'
-var diskNameConv = nameConvReversed
-  ? '${virtualMachineNamePrefix}###-${resourceAbbreviations.osdisks}'
-  : '${resourceAbbreviations.osdisks}-${virtualMachineNamePrefix}###'
-var networkInterfaceNameConv = nameConvReversed
-  ? '${virtualMachineNamePrefix}###-${resourceAbbreviations.networkInterfaces}'
-  : '${resourceAbbreviations.networkInterfaces}-${virtualMachineNamePrefix}###'
+
 var diskAccessName = replace(
   replace(
     replace(nameConv_HP_Resources, 'RESOURCETYPE', resourceAbbreviations.diskAccesses),
@@ -312,9 +243,6 @@ var netAppCapacityPoolName = replace(
 // App Attach and FSLogix Storage Account Naming Convention (max 15 characters for domain join)
 var appAttachStorageAccountName = take('appattach${uniqueStringManagement}', 15)
 var uniqueStringStorage = take(uniqueString(subscription().subscriptionId, resourceGroupStorage), 6)
-var fslogixStorageAccountNamePrefix = empty(fslogixStorageCustomPrefix)
-  ? 'fslogix${uniqueStringStorage}'
-  : toLower(fslogixStorageCustomPrefix)
 var increaseQuotaFAStorageAccountName = 'saquota${uniqueStringStorage}'
 var sessionHostReplacerFAStorageAccountName = 'shreplacer${uniqueStringHosts}'
 
@@ -340,7 +268,6 @@ output appInsightsNames object = {
   sessionHostReplacement: replace(appInsightsNameConv, 'TOKEN-', 'shreplacer-${uniqueStringHosts}-')
 }
 output appServicePlanName string = appServicePlanName
-output availabilitySetNamePrefix string = availabilitySetNamePrefix
 output dataCollectionEndpointName string = dataCollectionEndpointName
 output depVirtualMachineName string = depVirtualMachineName
 output depVirtualMachineNicName string = depVirtualMachineNicName
@@ -357,7 +284,7 @@ output functionAppNames object = {
   increaseStorageQuota: replace(functionAppNameConv, 'TOKEN-', 'saquota-${uniqueStringStorage}-')
   sessionHostReplacement: replace(functionAppNameConv, 'TOKEN-', 'shreplacer-${uniqueStringHosts}-')
 }
-output globalFeedWorkspaceName string = globalFeedWorkspaceName
+
 output hostPoolName string = hostPoolName
 output keyVaultNames object = {
   encryptionKeys: keyVaultNameEncryption
@@ -365,7 +292,7 @@ output keyVaultNames object = {
 }
 output encryptionKeyNames object = {
   appAttach: 'encryption-key-appattach-${appAttachStorageAccountName}'
-  fslogix: '${hpBaseName}-encryption-key-${fslogixStorageAccountNamePrefix}##'
+
   increaseStorageQuota: '${hpBaseName}-encryption-key-${increaseQuotaFAStorageAccountName}'
   sessionHostReplacement: '${hpBaseName}-encryption-key-${sessionHostReplacerFAStorageAccountName}'
   virtualMachines: '${hpBaseName}-encryption-key-vms'
@@ -381,8 +308,6 @@ output recoveryServicesVaultNames object = {
   fslogixStorage: replace(recoveryServicesVaultsNameConv, 'TOKEN-', 'fslogix-')
   virtualMachines: replace(recoveryServicesVaultsNameConv, 'TOKEN-', 'vms-')
 }
-output resourceGroupControlPlane string = resourceGroupControlPlane
-output resourceGroupGlobalFeed string = globalFeedResourceGroupName
 output resourceGroupHosts string = resourceGroupHosts
 output resourceGroupDeployment string = resourceGroupDeployment
 output resourceGroupManagement string = resourceGroupManagement
@@ -390,12 +315,9 @@ output resourceGroupStorage string = resourceGroupStorage
 output scalingPlanName string = scalingPlanName
 output storageAccountNames object = {
   appAttach: appAttachStorageAccountName
-  fslogix: fslogixStorageAccountNamePrefix
   increaseStorageQuota: increaseQuotaFAStorageAccountName
   sessionHostReplacement: sessionHostReplacerFAStorageAccountName
 }
 output userAssignedIdentityNameConv string = userAssignedIdentityNameConv
-output virtualMachineNameConv string = virtualMachineNameConv
-output virtualMachineDiskNameConv string = diskNameConv
-output virtualMachineNicNameConv string = networkInterfaceNameConv
-output workspaceName string = workspaceName
+
+output locations object = locations
