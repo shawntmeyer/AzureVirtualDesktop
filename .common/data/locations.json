@@ -219,5 +219,34 @@
             "abbreviation": "va",
             "recoveryServicesGeo": "ugv"
         }
+    },
+    "other": {
+        "north": {
+            "abbreviation": "no"
+        },
+        "east": {
+            "abbreviation": "ea"
+        },     
+        "south": {
+            "abbreviation": "so"
+        },
+        "west": {
+            "abbreviation": "we"
+        },
+        "central": {
+            "abbreviation": "ce"
+        },
+        "northcentral": {
+            "abbreviation": "noce"
+        },
+        "eastcentral": {
+            "abbreviation": "wece"
+        },
+        "southcentral": {
+            "abbreviation": "soce"
+        },
+        "westcentral": {
+            "abbreviation": "wece"
+        }        
     }
 }

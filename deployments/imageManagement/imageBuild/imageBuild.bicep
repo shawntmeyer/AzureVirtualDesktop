@@ -277,8 +277,7 @@ var installers = []
 var customizers = union(customizations, installers)
 
 var cloud = toLower(environment().name)
-
-var locations = loadJsonContent('../../../.common/data/locations.json')[environment().name]
+var locations = startsWith(cloud, 'us') ? (loadJsonContent('../../../.common/data/locations.json')).other : (loadJsonContent('../../../.common/data/locations.json'))[environment().name]
 var resourceAbbreviations = loadJsonContent('../../../.common/data/resourceAbbreviations.json')
 var downloads = startsWith(cloud, 'usn')
   ? loadJsonContent('../parameters/topsecret.downloads.parameters.json')

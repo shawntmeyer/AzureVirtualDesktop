@@ -82,8 +82,7 @@ param tags object = {}
 param timeStamp string = utcNow('yyyyMMddhhmm')
 
 // Naming conventions
-
-var locations = loadJsonContent('../../.common/data/locations.json')[environment().name]
+var locations = startsWith(environment().name, 'US') ? (loadJsonContent('../../.common/data/locations.json')).other : (loadJsonContent('../../.common/data/locations.json'))[environment().name]
 var resourceAbbreviations = loadJsonContent('../../.common/data/resourceAbbreviations.json')
 var nameConv_Suffix_withoutResType = 'LOCATION'
 var nameConvSuffix = nameConvResTypeAtEnd ? '${nameConv_Suffix_withoutResType}-RESOURCETYPE' : nameConv_Suffix_withoutResType
