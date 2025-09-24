@@ -277,6 +277,9 @@ var installers = []
 var customizers = union(customizations, installers)
 
 var cloud = toLower(environment().name)
+// account for air-gapped cloud location prefixes
+#disable-next-line BCP329
+var varLocation = startsWith(cloud, 'us') ? substring(location, 5, length(location)-5) : location
 var locations = startsWith(cloud, 'us') ? (loadJsonContent('../../../.common/data/locations.json')).other : (loadJsonContent('../../../.common/data/locations.json'))[environment().name]
 var resourceAbbreviations = loadJsonContent('../../../.common/data/resourceAbbreviations.json')
 var downloads = startsWith(cloud, 'usn')
@@ -310,8 +313,8 @@ var customNetworkInterfaceName = nameConvResTypeAtEnd
 var imageBuildResourceGroupName = empty(imageBuildResourceGroupId)
   ? (empty(customBuildResourceGroupName)
       ? nameConvResTypeAtEnd
-          ? 'avd-image-builds-${locations[location].abbreviation}-${resourceAbbreviations.resourceGroups}'
-          : '${resourceAbbreviations.resourceGroups}-avd-image-builds-${locations[location].abbreviation}'
+          ? 'avd-image-builds-${locations[varLocation].abbreviation}-${resourceAbbreviations.resourceGroups}'
+          : '${resourceAbbreviations.resourceGroups}-avd-image-builds-${locations[varLocation].abbreviation}'
       : customBuildResourceGroupName)
   : last(split(imageBuildResourceGroupId, '/'))
 
@@ -430,8 +433,8 @@ module userAssignedIdentity '../../sharedModules/resources/managed-identity/user
   params: {
     location: location
     name: nameConvResTypeAtEnd
-      ? 'avd-image-builder-${locations[location].abbreviation}-${resourceAbbreviations.userAssignedIdentities}'
-      : '${resourceAbbreviations.userAssignedIdentities}-image-builder-${locations[location].abbreviation}'
+      ? 'avd-image-builder-${locations[varLocation].abbreviation}-${resourceAbbreviations.userAssignedIdentities}'
+      : '${resourceAbbreviations.userAssignedIdentities}-image-builder-${locations[varLocation].abbreviation}'
     tags: tags[?'Microsoft.ManagedIdentity/userAssignedIdentities'] ?? {}
   }
   dependsOn: [

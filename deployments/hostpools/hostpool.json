@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.37.4.10188",
-      "templateHash": "9486206051768906303"
+      "templateHash": "16917935202731108494"
     }
   },
   "parameters": {
@@ -1099,7 +1099,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.37.4.10188",
-              "templateHash": "10901253945914491623"
+              "templateHash": "9420452666235429526"
             }
           },
           "parameters": {
@@ -1671,9 +1671,10 @@
               "workspaces": "vdws",
               "imageDefinitions": "vmid"
             },
-            "locations": "[if(startsWith(environment().name, 'US'), variables('$fxv#0').other, variables('$fxv#1')[environment().name])]",
-            "locationVirtualMachinesAbbreviation": "[variables('locations')[parameters('locationVirtualMachines')].abbreviation]",
-            "locationControlPlaneAbbreviation": "[variables('locations')[parameters('locationControlPlane')].abbreviation]",
+            "cloud": "[toLower(environment().name)]",
+            "locations": "[if(startsWith(variables('cloud'), 'us'), variables('$fxv#0').other, variables('$fxv#1')[environment().name])]",
+            "locationVirtualMachinesAbbreviation": "[if(startsWith(variables('cloud'), 'us'), variables('locations')[substring(parameters('locationVirtualMachines'), 5, sub(length(parameters('locationVirtualMachines')), 5))], variables('locations')[parameters('locationVirtualMachines')].abbreviation)]",
+            "locationControlPlaneAbbreviation": "[if(startsWith(variables('cloud'), 'us'), variables('locations')[substring(parameters('locationControlPlane'), 5, sub(length(parameters('locationControlPlane')), 5))], variables('locations')[parameters('locationControlPlane')].abbreviation)]",
             "resourceAbbreviations": "[variables('$fxv#2')]",
             "existingHostPoolName": "[if(empty(parameters('existingHostPoolResourceId')), '', split(parameters('existingHostPoolResourceId'), '/')[8])]",
             "nameConvReversed": "[if(not(empty(variables('existingHostPoolName'))), not(startsWith(variables('existingHostPoolName'), variables('resourceAbbreviations').hostPools)), parameters('nameConvResTypeAtEnd'))]",

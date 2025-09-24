@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.37.4.10188",
-      "templateHash": "6088720282848335978"
+      "templateHash": "9374417747814593278"
     },
     "name": "Zero Trust Architecture Custom Windows Image Builder",
     "description": "This solution allows you to create a custom image much like Azure VM Image Builder, but utilizes zero trust architecture and does not require that service.",
@@ -1425,6 +1425,7 @@
     "installers": [],
     "customizers": "[union(parameters('customizations'), variables('installers'))]",
     "cloud": "[toLower(environment().name)]",
+    "varLocation": "[if(startsWith(variables('cloud'), 'us'), substring(parameters('location'), 5, sub(length(parameters('location')), 5)), parameters('location'))]",
     "locations": "[if(startsWith(variables('cloud'), 'us'), variables('$fxv#0').other, variables('$fxv#1')[environment().name])]",
     "resourceAbbreviations": "[variables('$fxv#2')]",
     "downloads": "[if(startsWith(variables('cloud'), 'usn'), variables('$fxv#3'), if(startsWith(variables('cloud'), 'uss'), variables('$fxv#4'), variables('$fxv#5')))]",
@@ -1434,7 +1435,7 @@
     "privateEndpointNameConv": "[replace(format('{0}', if(parameters('nameConvResTypeAtEnd'), format('RESOURCE-SUBRESOURCE-{0}-RESOURCETYPE', variables('vnetName')), format('RESOURCETYPE-RESOURCE-SUBRESOURCE-{0}', variables('vnetName')))), 'RESOURCETYPE', variables('resourceAbbreviations').privateEndpoints)]",
     "privateEndpointName": "[replace(replace(variables('privateEndpointNameConv'), 'SUBRESOURCE', 'blob'), 'RESOURCE', variables('logStorageAccountName'))]",
     "customNetworkInterfaceName": "[if(parameters('nameConvResTypeAtEnd'), format('{0}-{1}', variables('privateEndpointName'), variables('resourceAbbreviations').networkInterfaces), format('{0}-{1}', variables('resourceAbbreviations').networkInterfaces, variables('privateEndpointName')))]",
-    "imageBuildResourceGroupName": "[if(empty(parameters('imageBuildResourceGroupId')), if(empty(parameters('customBuildResourceGroupName')), if(parameters('nameConvResTypeAtEnd'), format('avd-image-builds-{0}-{1}', variables('locations')[parameters('location')].abbreviation, variables('resourceAbbreviations').resourceGroups), format('{0}-avd-image-builds-{1}', variables('resourceAbbreviations').resourceGroups, variables('locations')[parameters('location')].abbreviation)), parameters('customBuildResourceGroupName')), last(split(parameters('imageBuildResourceGroupId'), '/')))]",
+    "imageBuildResourceGroupName": "[if(empty(parameters('imageBuildResourceGroupId')), if(empty(parameters('customBuildResourceGroupName')), if(parameters('nameConvResTypeAtEnd'), format('avd-image-builds-{0}-{1}', variables('locations')[variables('varLocation')].abbreviation, variables('resourceAbbreviations').resourceGroups), format('{0}-avd-image-builds-{1}', variables('resourceAbbreviations').resourceGroups, variables('locations')[variables('varLocation')].abbreviation)), parameters('customBuildResourceGroupName')), last(split(parameters('imageBuildResourceGroupId'), '/')))]",
     "adminPw": "1qaz@WSX1qaz@WSX",
     "adminUserName": "vmadmin",
     "logContainerName": "image-customization-logs",
@@ -1473,7 +1474,7 @@
           "location": {
             "value": "[parameters('location')]"
           },
-          "name": "[if(parameters('nameConvResTypeAtEnd'), createObject('value', format('avd-image-builder-{0}-{1}', variables('locations')[parameters('location')].abbreviation, variables('resourceAbbreviations').userAssignedIdentities)), createObject('value', format('{0}-image-builder-{1}', variables('resourceAbbreviations').userAssignedIdentities, variables('locations')[parameters('location')].abbreviation)))]",
+          "name": "[if(parameters('nameConvResTypeAtEnd'), createObject('value', format('avd-image-builder-{0}-{1}', variables('locations')[variables('varLocation')].abbreviation, variables('resourceAbbreviations').userAssignedIdentities)), createObject('value', format('{0}-image-builder-{1}', variables('resourceAbbreviations').userAssignedIdentities, variables('locations')[variables('varLocation')].abbreviation)))]",
           "tags": {
             "value": "[coalesce(tryGet(parameters('tags'), 'Microsoft.ManagedIdentity/userAssignedIdentities'), createObject())]"
           }

@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.37.4.10188",
-      "templateHash": "12815141637441420954"
+      "templateHash": "10555826524232166471"
     }
   },
   "parameters": {
@@ -684,23 +684,26 @@
       "workspaces": "vdws",
       "imageDefinitions": "vmid"
     },
-    "locations": "[if(startsWith(environment().name, 'US'), variables('$fxv#0').other, variables('$fxv#1')[environment().name])]",
+    "cloud": "[toLower(environment().name)]",
+    "varLocation": "[if(startsWith(variables('cloud'), 'us'), substring(parameters('location'), 5, sub(length(parameters('location')), 5)), parameters('location'))]",
+    "varRemoteLocation": "[if(not(empty(parameters('remoteLocation'))), if(startsWith(variables('cloud'), 'us'), substring(parameters('remoteLocation'), 5, sub(length(parameters('remoteLocation')), 5)), parameters('remoteLocation')), '')]",
+    "locations": "[if(startsWith(variables('cloud'), 'us'), variables('$fxv#0').other, variables('$fxv#1')[environment().name])]",
     "resourceAbbreviations": "[variables('$fxv#2')]",
     "nameConv_Suffix_withoutResType": "LOCATION",
     "nameConvSuffix": "[if(parameters('nameConvResTypeAtEnd'), format('{0}-RESOURCETYPE', variables('nameConv_Suffix_withoutResType')), variables('nameConv_Suffix_withoutResType'))]",
     "nameConv_ImageManagement_ResGroup": "[if(parameters('nameConvResTypeAtEnd'), format('avd-image-management-{0}', variables('nameConvSuffix')), format('RESOURCETYPE-avd-image-management-{0}', variables('nameConvSuffix')))]",
     "nameConv_ImageManagement_Resources": "[if(parameters('nameConvResTypeAtEnd'), format('avd-image-management-{0}', variables('nameConvSuffix')), format('RESOURCETYPE-avd-image-management-{0}', variables('nameConvSuffix')))]",
-    "resourceGroupName": "[if(empty(parameters('customResourceGroupName')), replace(replace(variables('nameConv_ImageManagement_ResGroup'), 'LOCATION', variables('locations')[parameters('location')].abbreviation), 'RESOURCETYPE', variables('resourceAbbreviations').resourceGroups), parameters('customResourceGroupName'))]",
-    "remoteResourceGroupName": "[if(not(empty(parameters('remoteLocation'))), replace(replace(variables('nameConv_ImageManagement_ResGroup'), 'LOCATION', variables('locations')[parameters('remoteLocation')].abbreviation), 'RESOURCETYPE', variables('resourceAbbreviations').resourceGroups), '')]",
+    "resourceGroupName": "[if(empty(parameters('customResourceGroupName')), replace(replace(variables('nameConv_ImageManagement_ResGroup'), 'LOCATION', variables('locations')[variables('varLocation')].abbreviation), 'RESOURCETYPE', variables('resourceAbbreviations').resourceGroups), parameters('customResourceGroupName'))]",
+    "remoteResourceGroupName": "[if(not(empty(parameters('remoteLocation'))), replace(replace(variables('nameConv_ImageManagement_ResGroup'), 'LOCATION', variables('locations')[variables('varRemoteLocation')].abbreviation), 'RESOURCETYPE', variables('resourceAbbreviations').resourceGroups), '')]",
     "blobContainerName": "[replace(replace(toLower(parameters('artifactsContainerName')), '_', '-'), ' ', '-')]",
-    "galleryName": "[replace(replace(replace(variables('nameConv_ImageManagement_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').computeGalleries), 'LOCATION', variables('locations')[parameters('location')].abbreviation), '-', '_')]",
-    "remoteGalleryName": "[if(not(empty(parameters('remoteLocation'))), replace(replace(replace(variables('nameConv_ImageManagement_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').computeGalleries), 'LOCATION', variables('locations')[parameters('remoteLocation')].abbreviation), '-', '_'), '')]",
-    "identityName": "[replace(replace(variables('nameConv_ImageManagement_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').userAssignedIdentities), 'LOCATION', variables('locations')[parameters('location')].abbreviation)]",
+    "galleryName": "[replace(replace(replace(variables('nameConv_ImageManagement_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').computeGalleries), 'LOCATION', variables('locations')[variables('varLocation')].abbreviation), '-', '_')]",
+    "remoteGalleryName": "[if(not(empty(parameters('remoteLocation'))), replace(replace(replace(variables('nameConv_ImageManagement_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').computeGalleries), 'LOCATION', variables('locations')[variables('varRemoteLocation')].abbreviation), '-', '_'), '')]",
+    "identityName": "[replace(replace(variables('nameConv_ImageManagement_Resources'), 'RESOURCETYPE', variables('resourceAbbreviations').userAssignedIdentities), 'LOCATION', variables('locations')[variables('varLocation')].abbreviation)]",
     "vnetName": "[if(not(empty(parameters('privateEndpointSubnetResourceId'))), split(parameters('privateEndpointSubnetResourceId'), '/')[8], '')]",
     "privateEndpointNameConv": "[replace(format('{0}', if(parameters('nameConvResTypeAtEnd'), format('RESOURCE-SUBRESOURCE-{0}-RESOURCETYPE', variables('vnetName')), format('RESOURCETYPE-RESOURCE-SUBRESOURCE-{0}', variables('vnetName')))), 'RESOURCETYPE', variables('resourceAbbreviations').privateEndpoints)]",
     "privateEndpointName": "[replace(replace(variables('privateEndpointNameConv'), 'SUBRESOURCE', 'blob'), 'RESOURCE', variables('storageName'))]",
     "customNetworkInterfaceName": "[if(parameters('nameConvResTypeAtEnd'), format('{0}-{1}', variables('privateEndpointName'), variables('resourceAbbreviations').networkInterfaces), format('{0}-{1}', variables('resourceAbbreviations').networkInterfaces, variables('privateEndpointName')))]",
-    "storageName": "[take(format('{0}imageassets{1}{2}', variables('resourceAbbreviations').storageAccounts, variables('locations')[parameters('location')].abbreviation, uniqueString(subscription().subscriptionId, variables('resourceGroupName'))), 24)]",
+    "storageName": "[take(format('{0}imageassets{1}{2}', variables('resourceAbbreviations').storageAccounts, variables('locations')[variables('varLocation')].abbreviation, uniqueString(subscription().subscriptionId, variables('resourceGroupName'))), 24)]",
     "storageKind": "StorageV2"
   },
   "resources": [

@@ -11,11 +11,12 @@ param locationVirtualMachines string
 param nameConvResTypeAtEnd bool
 param virtualMachineNamePrefix string
 
-var locations = startsWith(environment().name, 'US') ? (loadJsonContent('../../../.common/data/locations.json')).other : (loadJsonContent('../../../.common/data/locations.json'))[environment().name]
+var cloud = toLower(environment().name)
+var locations = startsWith(cloud, 'us') ? (loadJsonContent('../../../.common/data/locations.json')).other : (loadJsonContent('../../../.common/data/locations.json'))[environment().name]
 #disable-next-line BCP329
-var locationVirtualMachinesAbbreviation = locations[locationVirtualMachines].abbreviation
+var locationVirtualMachinesAbbreviation = startsWith(cloud, 'us') ? locations[substring(locationVirtualMachines, 5, length(locationVirtualMachines)-5)] : locations[locationVirtualMachines].abbreviation
 #disable-next-line BCP329
-var locationControlPlaneAbbreviation = locations[locationControlPlane].abbreviation
+var locationControlPlaneAbbreviation = startsWith(cloud, 'us') ? locations[substring(locationControlPlane, 5, length(locationControlPlane)-5)] : locations[locationControlPlane].abbreviation
 
 var resourceAbbreviations = loadJsonContent('../../../.common/data/resourceAbbreviations.json')
 

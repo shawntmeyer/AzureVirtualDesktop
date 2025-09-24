@@ -82,24 +82,31 @@ param tags object = {}
 param timeStamp string = utcNow('yyyyMMddhhmm')
 
 // Naming conventions
-var locations = startsWith(environment().name, 'US') ? (loadJsonContent('../../.common/data/locations.json')).other : (loadJsonContent('../../.common/data/locations.json'))[environment().name]
+var cloud = toLower(environment().name)
+// account for air-gapped cloud location prefixes
+#disable-next-line BCP329
+var varLocation = startsWith(cloud, 'us') ? substring(location, 5, length(location)-5) : location
+#disable-next-line BCP329
+var varRemoteLocation = !empty(remoteLocation) ? (startsWith(cloud, 'us') ? substring(remoteLocation, 5, length(remoteLocation)-5) : remoteLocation) : ''
+var locations = startsWith(cloud, 'us') ? (loadJsonContent('../../.common/data/locations.json')).other : (loadJsonContent('../../.common/data/locations.json'))[environment().name]
 var resourceAbbreviations = loadJsonContent('../../.common/data/resourceAbbreviations.json')
 var nameConv_Suffix_withoutResType = 'LOCATION'
 var nameConvSuffix = nameConvResTypeAtEnd ? '${nameConv_Suffix_withoutResType}-RESOURCETYPE' : nameConv_Suffix_withoutResType
 var nameConv_ImageManagement_ResGroup = nameConvResTypeAtEnd ? 'avd-image-management-${nameConvSuffix}' : 'RESOURCETYPE-avd-image-management-${nameConvSuffix}'
 var nameConv_ImageManagement_Resources = nameConvResTypeAtEnd ? 'avd-image-management-${nameConvSuffix}' : 'RESOURCETYPE-avd-image-management-${nameConvSuffix}'
-
-var resourceGroupName = empty(customResourceGroupName) ? replace(replace(nameConv_ImageManagement_ResGroup, 'LOCATION', locations[location].abbreviation), 'RESOURCETYPE', resourceAbbreviations.resourceGroups) : customResourceGroupName
-var remoteResourceGroupName = !empty(remoteLocation) ? replace(replace(nameConv_ImageManagement_ResGroup, 'LOCATION', locations[remoteLocation].abbreviation), 'RESOURCETYPE', resourceAbbreviations.resourceGroups) : ''
+#disable-next-line BCP329
+var resourceGroupName = empty(customResourceGroupName) ? replace(replace(nameConv_ImageManagement_ResGroup, 'LOCATION', locations[varLocation].abbreviation), 'RESOURCETYPE', resourceAbbreviations.resourceGroups) : customResourceGroupName
+#disable-next-line BCP329
+var remoteResourceGroupName = !empty(remoteLocation) ? replace(replace(nameConv_ImageManagement_ResGroup, 'LOCATION', locations[varRemoteLocation].abbreviation), 'RESOURCETYPE', resourceAbbreviations.resourceGroups) : ''
 var blobContainerName = replace(replace(toLower(artifactsContainerName), '_', '-'), ' ', '-')
-var galleryName = replace(replace(replace(nameConv_ImageManagement_Resources, 'RESOURCETYPE', resourceAbbreviations.computeGalleries), 'LOCATION', locations[location].abbreviation), '-', '_')
-var remoteGalleryName = !empty(remoteLocation) ? replace(replace(replace(nameConv_ImageManagement_Resources, 'RESOURCETYPE', resourceAbbreviations.computeGalleries), 'LOCATION', locations[remoteLocation].abbreviation), '-', '_') : ''
-var identityName = replace(replace(nameConv_ImageManagement_Resources, 'RESOURCETYPE', resourceAbbreviations.userAssignedIdentities), 'LOCATION', locations[location].abbreviation)
+var galleryName = replace(replace(replace(nameConv_ImageManagement_Resources, 'RESOURCETYPE', resourceAbbreviations.computeGalleries), 'LOCATION', locations[varLocation].abbreviation), '-', '_')
+var remoteGalleryName = !empty(remoteLocation) ? replace(replace(replace(nameConv_ImageManagement_Resources, 'RESOURCETYPE', resourceAbbreviations.computeGalleries), 'LOCATION', locations[varRemoteLocation].abbreviation), '-', '_') : ''
+var identityName = replace(replace(nameConv_ImageManagement_Resources, 'RESOURCETYPE', resourceAbbreviations.userAssignedIdentities), 'LOCATION', locations[varLocation].abbreviation)
 var vnetName = !empty(privateEndpointSubnetResourceId) ? split(privateEndpointSubnetResourceId, '/')[8] : ''
 var privateEndpointNameConv = replace('${nameConvResTypeAtEnd ? 'RESOURCE-SUBRESOURCE-${vnetName}-RESOURCETYPE' : 'RESOURCETYPE-RESOURCE-SUBRESOURCE-${vnetName}'}', 'RESOURCETYPE', resourceAbbreviations.privateEndpoints)
 var privateEndpointName = replace(replace(privateEndpointNameConv, 'SUBRESOURCE', 'blob'), 'RESOURCE', storageName)
 var customNetworkInterfaceName = nameConvResTypeAtEnd ? '${privateEndpointName}-${resourceAbbreviations.networkInterfaces}' : '${resourceAbbreviations.networkInterfaces}-${privateEndpointName}'
-var storageName = take('${resourceAbbreviations.storageAccounts}imageassets${locations[location].abbreviation}${uniqueString(subscription().subscriptionId, resourceGroupName)}', 24)
+var storageName = take('${resourceAbbreviations.storageAccounts}imageassets${locations[varLocation].abbreviation}${uniqueString(subscription().subscriptionId, resourceGroupName)}', 24)
 var storageKind = 'StorageV2'
 
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {

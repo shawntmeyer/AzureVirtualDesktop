@@ -142,7 +142,7 @@ var cloudSuffix = replace(replace(replace(environment().resourceManager, 'https:
 
 var locations = startsWith(cloud, 'us') ? (loadJsonContent('../../.common/data/locations.json')).other : (loadJsonContent('../../.common/data/locations.json'))[environment().name]
 #disable-next-line BCP329
-var locationAbbreviation = locations[location].abbreviation
+var locationAbbreviation = locations[startsWith(cloud, 'us') ? substring(location, 5, length(location)-5) : location].abbreviation
 var recoveryServicesGeo = startsWith(cloud, 'us') ? azureRecoveryServicesGeoCode : locations[location].recoveryServicesGeo
 var resourceAbbreviations = loadJsonContent('../../.common/data/resourceAbbreviations.json')
 var nameConvSuffix = nameConvResTypeAtEnd ? 'LOCATION-RESOURCETYPE' : 'LOCATION'

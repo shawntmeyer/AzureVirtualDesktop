@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.37.4.10188",
-      "templateHash": "2388995043038426257"
+      "templateHash": "10081969417750565269"
     }
   },
   "parameters": {
@@ -857,7 +857,7 @@
     "cloud": "[toLower(environment().name)]",
     "cloudSuffix": "[replace(replace(replace(environment().resourceManager, 'https://management.azure.', ''), 'https://management.', ''), '/', '')]",
     "locations": "[if(startsWith(variables('cloud'), 'us'), variables('$fxv#0').other, variables('$fxv#1')[environment().name])]",
-    "locationAbbreviation": "[variables('locations')[parameters('location')].abbreviation]",
+    "locationAbbreviation": "[variables('locations')[if(startsWith(variables('cloud'), 'us'), substring(parameters('location'), 5, sub(length(parameters('location')), 5)), parameters('location'))].abbreviation]",
     "recoveryServicesGeo": "[if(startsWith(variables('cloud'), 'us'), parameters('azureRecoveryServicesGeoCode'), variables('locations')[parameters('location')].recoveryServicesGeo)]",
     "resourceAbbreviations": "[variables('$fxv#2')]",
     "nameConvSuffix": "[if(parameters('nameConvResTypeAtEnd'), 'LOCATION-RESOURCETYPE', 'LOCATION')]",
