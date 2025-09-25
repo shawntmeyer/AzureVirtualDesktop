@@ -12,7 +12,9 @@ param nameConvResTypeAtEnd bool
 param virtualMachineNamePrefix string
 
 var cloud = toLower(environment().name)
-var locations = startsWith(cloud, 'us') ? (loadJsonContent('../../../.common/data/locations.json')).other : (loadJsonContent('../../../.common/data/locations.json'))[environment().name]
+var locationsObject = loadJsonContent('../../../.common/data/locations.json')
+var locationsEnvProperty = startsWith(cloud, 'us') ? 'other' : environment().name 
+var locations = locationsObject[locationsEnvProperty]
 
 #disable-next-line BCP329
 var varLocationVirtualMachines = startsWith(cloud, 'us') ? substring(locationVirtualMachines, 5, length(locationVirtualMachines)-5) : locationVirtualMachines
