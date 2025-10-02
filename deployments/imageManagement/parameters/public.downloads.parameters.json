@@ -26,7 +26,8 @@
         "GitHubFileNamePattern": "",
         "DestinationFileName": "FSLogix.zip",
         "DestinationFolders": [
-            ""
+            "",
+            "Install-FSLogix"
         ]
     },
     "Office365DeploymentTool": {
