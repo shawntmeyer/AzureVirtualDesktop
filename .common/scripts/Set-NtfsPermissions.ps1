@@ -347,7 +347,7 @@ try {
             $GroupSID = $null
             Write-Log -message "Found Group: $FullyQualifiedGroupName"
             $UserGroups += $FullyQualifiedGroupName
-            $GroupSID = (Get-AzADGroup -Identity "$FullyQualifiedGroupName").SID
+            $GroupSID = (Get-ADGroup -Identity "$FullyQualifiedGroupName").SID
             $SDDLUserGroupsString += '(A;;0x1301bf;;;' + $GroupSID + ')'
         }
         Else {
