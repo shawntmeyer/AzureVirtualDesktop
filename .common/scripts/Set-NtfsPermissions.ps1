@@ -87,7 +87,7 @@ Function ConvertFrom-JsonString {
     }    
 }
 
-Function Get-FullyQualifiedGroupName {
+Function Get-ADGroupDetails {
     [CmdletBinding()]
     param (
         [Parameter()]
@@ -107,7 +107,8 @@ Function Get-FullyQualifiedGroupName {
         $netbiosName = $domain.NetBIOSName
         # Combine NetBIOS name and group name
         $GroupName = "$netbiosName\$($group.SamAccountName)"
-        Return $GroupName
+        $GroupSID = $Group.SID
+        Return [PSCustomObject]@{Name=$GroupName, SID=$GroupSID}
     }
     Return $null
 }
@@ -322,12 +323,12 @@ try {
         Write-Log -message "Processing AdminGroupNames by searching AD for Groups with the provided display name and returning the SamAccountName and SDDL String"
         ForEach ($DisplayName in $AdminGroupNames) {
             Write-Log -message "Processing AdminGroupName: $DisplayName"
-            $FullyQualifiedGroupName = $null
-            $FullyQualifiedGroupName = Get-FullyQualifiedGroupName -GroupDisplayName $DisplayName -Credential $DomainCredential
-            If ($null -ne $FullyQualifiedGroupName) {
-                Write-Log -message "Found Group: $FullyQualifiedGroupName"
-                $AdminGroups += $FullyQualifiedGroupName
-                $GroupSID = (Get-ADGroup -Identity "$FullyQualifiedGroupName").SID
+            $GroupDetails = $null
+            $GroupDetails = Get-ADGroupDetails -GroupDisplayName $DisplayName -Credential $DomainCredential
+            If ($null -ne $GroupDetails) {
+                Write-Log -message "Found Group: $($GroupDetails.Name)"
+                $AdminGroups += $GroupDetails.Name
+                $GroupSID = $GroupDetails.SID
                 $SDDLAdminGroupsString += '(A;OICI;FA;;;' + $GroupSID + ')'
             }
             Else {
@@ -341,13 +342,13 @@ try {
     [array]$SDDLUserGroupsString = @()
     ForEach ($DisplayName in $UserGroupNames) {
         Write-Log -message "Processing UserGroupName: $DisplayName"
-        $FullyQualifiedGroupName = $null
-        $FullyQualifiedGroupName = Get-FullyQualifiedGroupName -GroupDisplayName $DisplayName -Credential $DomainCredential
-        If ($null -ne $FullyQualifiedGroupName) {
+        $GroupDetails = $null
+        $GroupDetails = Get-ADGroupDetails -GroupDisplayName $DisplayName -Credential $DomainCredential
+        If ($null -ne $GroupDetails) {
             $GroupSID = $null
-            Write-Log -message "Found Group: $FullyQualifiedGroupName"
-            $UserGroups += $FullyQualifiedGroupName
-            $GroupSID = (Get-ADGroup -Identity "$FullyQualifiedGroupName").SID
+            Write-Log -message "Found Group: $($GroupDetails.Name)"
+            $UserGroups += $GroupDetails.Name
+            $GroupSID = $GroupDetails.SID
             $SDDLUserGroupsString += '(A;;0x1301bf;;;' + $GroupSID + ')'
         }
         Else {
