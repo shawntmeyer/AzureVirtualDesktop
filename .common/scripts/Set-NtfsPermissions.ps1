@@ -234,7 +234,61 @@ function Write-Log {
     Add-Content $Script:Log $content -ErrorAction Stop
 }
 
+function Set-AzureFileSharePermissions {
+    param(
+        [string]$FileShareName,
+        [string]$StorageAccountName,
+        [string]$StorageSuffix,
+        [string]$SDDLSString
+    )
+
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+    $ResourceUrl = 'https://' + $StorageAccountName + '.file.' + $StorageSuffix + '/'
+
+    $AccessToken = (Invoke-RestMethod `
+            -Headers @{Metadata = "true" } `
+            -Uri $('http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=' + $ResourceUrl + '&client_id=' + $UserAssignedIdentityClientId)).access_token
+
+    $Headers = @{
+        'x-ms-version'             = '2024-11-04'
+        'x-ms-date'                = (Get-Date).ToUniversalTime().ToString('R')
+        'x-ms-file-request-intent' = 'backup'
+    }
+    $Body = @{
+        permission = $SDDLString
+        format     = 'sddl'
+    } | ConvertTo-Json
+    $Uri = $($ResourceUrl + $FileShareName + '?restype=share&comp=filepermission')
+
+    # Create Permission API call to create the permission key
+    $Response = Invoke-WebRequest -Authentication 'Bearer' -Body $Body -Headers $Headers -Method 'PUT' -Token $AccessToken -Uri $Uri -SslProtocol 'Tls12' -RetryIntervalSec 60 -MaximumRetryCount 5
+
+    # Get Directory Properties API call to force metadata creation
+    $Headers = @{
+        'x-ms-version'             = '2024-11-04'
+        'x-ms-date'                = (Get-Date).ToUniversalTime().ToString('R')
+        'x-ms-file-request-intent' = 'backup'
+    }
+    Invoke-WebRequest -Authentication 'Bearer' -Headers $Headers -Method 'GET' -Token $AccessToken -Uri $($ResourceUrl + $FileShareName + '?restype=directory') | Out-Null
+
+    # Set Directory Properties API call to set the NTFS permissions on the root of the file share
+    $Headers = @{
+        'Content-Type'              = 'application/json'
+        'x-ms-date'                 = (Get-Date).ToUniversalTime().ToString('R')
+        'x-ms-version'              = '2024-11-04'
+        'x-ms-file-creation-time'   = 'preserve'
+        'x-ms-file-last-write-time' = 'preserve'
+        'x-ms-file-request-intent'  = 'backup'
+        'x-ms-file-change-time'     = 'now'
+        'x-ms-file-permission-key'  = $Response.Headers.'x-ms-file-permission-key'[0]
+    }
+    Invoke-WebRequest -Authentication 'Bearer' -Headers $Headers -Method 'PUT' -Token $AccessToken -Uri $($ResourceUrl + $FileShareName + '?restype=directory&comp=properties') | Out-Null
+}
+
 try {
+
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     
     New-Log -Path $Script:LogDir
     write-log -message "*** Parameter Values ***"
@@ -261,10 +315,11 @@ try {
     Write-Log -message "DNSRoot: $($Domain.DNSRoot)"
     Write-Log -message "NetBIOSName: $($Domain.NetBIOSName)"
 
-    # Get the SamAccountName for all the DisplayNames provided.
+    # Get the SamAccountName, SIDs, and Build an SDDL String for all the DisplayNames provided.
     if ($AdminGroupNames.Count -gt 0) {
         [array]$AdminGroups = @()
-        Write-Log -message "Processing AdminGroupNames by searching AD for Groups with the provided display name and returning the SamAccountName"
+        $SDDLAdminGroupsString = @()
+        Write-Log -message "Processing AdminGroupNames by searching AD for Groups with the provided display name and returning the SamAccountName and SDDL String"
         ForEach ($DisplayName in $AdminGroupNames) {
             Write-Log -message "Processing AdminGroupName: $DisplayName"
             $FullyQualifiedGroupName = $null
@@ -272,6 +327,8 @@ try {
             If ($null -ne $FullyQualifiedGroupName) {
                 Write-Log -message "Found Group: $FullyQualifiedGroupName"
                 $AdminGroups += $FullyQualifiedGroupName
+                $GroupSID = (Get-ADGroup -Identity "$FullyQualifiedGroupName").SID
+                $SDDLAdminGroupsString += '(A;OICI;FA;;;' + $GroupSID + ')'
             }
             Else {
                 Write-Log -message "Admin Group not found in Active Directory"
@@ -279,18 +336,22 @@ try {
         }
     }
 
-    Write-Log -message "Processing UserGroupNames by searching AD for Groups with the provided display name and returning the SamAccountName"
+    Write-Log -message "Processing UserGroupNames by searching AD for Groups with the provided display name and returning the SamAccountName and SDDL String"
     [array]$UserGroups = @()
+    [array]$SDDLUserGroupsString = @()
     ForEach ($DisplayName in $UserGroupNames) {
         Write-Log -message "Processing UserGroupName: $DisplayName"
         $FullyQualifiedGroupName = $null
         $FullyQualifiedGroupName = Get-FullyQualifiedGroupName -GroupDisplayName $DisplayName -Credential $DomainCredential
         If ($null -ne $FullyQualifiedGroupName) {
+            $GroupSID = $null
             Write-Log -message "Found Group: $FullyQualifiedGroupName"
             $UserGroups += $FullyQualifiedGroupName
+            $GroupSID = (Get-AzADGroup -Identity "$FullyQualifiedGroupName").SID
+            $SDDLUserGroupsString += '(A;;0x1301bf;;;' + $GroupSID + ')'
         }
         Else {
-            Write-Log -message "User not found"
+            Write-Log -message "User Group not found in Active Directory"
         }    
     }
 
@@ -335,18 +396,8 @@ try {
                 $StorageAccountName = $StorageAccountPrefix + ($i + $StIndex).ToString().PadLeft(2, '0')
                 Write-Log -message "Processing Storage Account Name: $StorageAccountName"
                 $FileServer = '\\' + $StorageAccountName + $FilesSuffix
-                # Get the storage account key
-                $StorageKey = (Invoke-RestMethod `
-                        -Headers $AzureManagementHeader `
-                        -Method 'POST' `
-                        -Uri $($ResourceManagerUriFixed + '/subscriptions/' + $SubscriptionId + '/resourceGroups/' + $StorageAccountResourceGroupName + '/providers/Microsoft.Storage/storageAccounts/' + $StorageAccountName + '/listKeys?api-version=2023-05-01')).keys[0].value
-                
-                # Create credential for accessing the storage account
-                Write-Log -message "Building Storage Key Credential"
-                $StorageUsername = 'Azure\' + $StorageAccountName
-                $StoragePassword = ConvertTo-SecureString -String "$($StorageKey)" -AsPlainText -Force
-                [pscredential]$StorageKeyCredential = New-Object System.Management.Automation.PSCredential ($StorageUsername, $StoragePassword)
-                Write-Log -message "Successfully Built Storage Key Credential"
+                $ResourceUrl = 'https://' + $StorageAccountName + $FilesSuffix
+                    
                 # Get / create kerberos key for Azure Storage Account
                 Write-Log -message "Getting Kerberos Key for Azure Storage Account"
                 $KerberosKey = ((Invoke-RestMethod `
@@ -453,20 +504,22 @@ try {
                     $NewPassword = ConvertTo-SecureString -String $Key -AsPlainText -Force
                     Set-ADAccountPassword -Credential $DomainCredential -Identity $DistinguishedName -Reset -NewPassword $NewPassword | Out-Null
                 }
+                $SDDLStartString = 'O:BAG:SYD:PAI(A;OICIIO;0x1301bf;;;CO)(A;;0x1301bf;;;AU)(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)'
+
                 if ($ShardAzureFilesStorage -eq 'true') {
                     foreach ($Share in $Shares) {
-                        $FileShare = $FileServer + '\' + $Share
                         $UserGroup = $null
                         [array]$UserGroup += $UserGroups[$i]
                         Write-Log -message "Processing File Share: $FileShare with UserGroup = $($UserGroups[$i])"
                         if ($AdminGroups.Count -gt 0) {
                             Write-Log -message "Admin Groups provided, executing Update-ACL with Admin Groups"
-                            Update-ACL -AdminGroups $AdminGroups -Credential $StorageKeyCredential -FileShare $FileShare -UserGroups $UserGroup
+                            $SDDLString = ($SDDLStartString + $SDDLAdminGroupsString + $SDDLUserGroupsString[$i]) -replace ' ', ''
                         }
                         Else {
                             Write-Log -message "Admin Groups not provided, executing Update-ACL without Admin Groups"
-                            Update-ACL -Credential $StorageKeyCredential -FileShare $FileShare -UserGroups $UserGroup
+                            $SDDLString = ($SDDLStartString + $SDDLUserGroupsString) -replace ' ', ''
                         }
+                        Set-AzureFileSharePermissions -FileShareName $Share -StorageAccountName $StorageAccountName -StorageSuffix $StorageSuffix -SDDLSString $SDDLString
                     }
                 }
                 Else {
@@ -475,12 +528,13 @@ try {
                         Write-Log -message "Processing File Share: $FileShare"
                         if ($AdminGroups.Count -gt 0) {
                             Write-Log -message "Admin Groups provided, executing Update-ACL with Admin Groups"
-                            Update-ACL -AdminGroups $AdminGroups -Credential $StorageKeyCredential -FileShare $FileShare -UserGroups $UserGroups
+                            $SDDLString = ($SDDLStartString + $SDDLAdminGroupsString + $SDDLUserGroupsString) -replace ' ', ''
                         }
                         Else {
                             Write-Log -message "Admin Groups not provided, executing Update-ACL without Admin Groups"
-                            Update-ACL -Credential $StorageKeyCredential -FileShare $FileShare -UserGroups $UserGroups
+                            $SDDLString = ($SDDLStartString + $SDDLUserGroupsString) -replace ' ', ''
                         }
+                        Set-AzureFileSharePermissions -FileShareName $Share -StorageAccountName $StorageAccountName -StorageSuffix $StorageSuffix -SDDLSString $SDDLString
                     }
                 }
             }
