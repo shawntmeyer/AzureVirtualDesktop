@@ -108,7 +108,10 @@ Function Get-ADGroupDetails {
         # Combine NetBIOS name and group name
         $GroupName = "$netbiosName\$($group.SamAccountName)"
         $GroupSID = $Group.SID
-        Return [PSCustomObject]@{Name=$GroupName, SID=$GroupSID}
+        Return [PSCustomObject]@{
+            Name=$GroupName
+            SID=$GroupSID
+        }
     }
     Return $null
 }
