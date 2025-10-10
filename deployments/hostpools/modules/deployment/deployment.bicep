@@ -41,6 +41,7 @@ var roleDefinitions = {
   DesktopVirtualizationApplicationGroupContributor: '86240b0e-9422-4c43-887b-b61143f32ba8'
   KeyVaultCryptoOfficer: '14b46e9e-c2b7-41b4-b07b-48a6ebf60603'
   RoleBasedAccessControlAdministrator: 'f58310d9-a9f6-439a-9e8d-f62e7b41a168'
+  storageFileDataPrivilegedContributor: '69566ab7-960f-475b-8e7c-b3118f30c6bd'
   StorageAccountContributor: '17d1049b-9a84-46fb-8f53-869881c3d3ab'
   VirtualMachineContributor: '9980e02c-c2be-4d73-94e8-173b1dc7cf3c'
 }
@@ -114,8 +115,14 @@ var roleAssignmentsManagement = union(
 var roleAssignmentsStorage = fslogix && contains(identitySolution, 'DomainServices')
   ? [
       {
-        roleDefinitionId: roleDefinitions.StorageAccountContributor // (Purpose: domain join storage account & set NTFS permissions on the file share)
+        roleDefinitionId: roleDefinitions.StorageAccountContributor // (Purpose: domain join storage account)
         depName: 'Storage-StorageAcctCont'
+        resourceGroup: resourceGroupStorage
+        subscription: subscription().subscriptionId
+      }
+      {
+        roleDefinitionId: roleDefinitions.storageFileDataPrivilegedContributor // (Purpose: set NTFS permissions on the file share)
+        depName: 'Storage-StorageFileDataPrivCont'
         resourceGroup: resourceGroupStorage
         subscription: subscription().subscriptionId
       }

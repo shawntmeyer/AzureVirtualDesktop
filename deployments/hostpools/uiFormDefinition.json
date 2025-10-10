@@ -874,7 +874,7 @@
 										"inFullScreen": false
 									},
 									"transforms": {
-										"selection": "selectedObjects|[*].{displayName:displayName, objectId:id}"
+										"selection": "selectedObjects|[*].{displayName:displayName, objectId:id, onPremisesSecurityIdentifier:onPremisesSecurityIdentifier}"
 									}
 								},
 								{
@@ -2731,7 +2731,7 @@
 										}
 									},
 									"transforms": {
-										"selection": "selectedObjects|[*].{displayName:displayName, objectId:id}"
+										"selection": "selectedObjects|[*].{displayName:displayName, objectId:id, onPremisesSecurityIdentifier:onPremisesSecurityIdentifier}"
 									}
 								},
 								{
@@ -3096,7 +3096,7 @@
 										"inFullScreen": false
 									},
 									"transforms": {
-										"selection": "selectedObjects|[*].{displayName:displayName, objectId:id}"
+										"selection": "selectedObjects|[*].{displayName:displayName, objectId:id, onPremisesSecurityIdentifier:onPremisesSecurityIdentifier}"
 									}
 								},
 								{
