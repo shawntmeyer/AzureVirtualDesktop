@@ -1,6 +1,6 @@
 param location string
 param deploymentVmName string
-param timeStamp string
+param deploymentSuffix string
 param userAssignedIdentityClientId string
 param virtualMachinesResourceGroup string
 param virtualMachineNames array
@@ -11,7 +11,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2022-03-01' existing 
 
 resource removeRunCommands 'Microsoft.Compute/virtualMachines/runCommands@2023-09-01' = {
   parent: virtualMachine
-  name: 'Remove_RunCommands_${timeStamp}'
+  name: 'Remove-RunCommands-${deploymentSuffix}'
   location: location
   properties: {    
     asyncExecution: true

@@ -59,6 +59,7 @@ param imageOffer string
 param imagePublisher string
 param imageSku string
 param integrityMonitoring bool
+param intuneEnrollment bool
 param keyExpirationInDays int
 param keyManagementDisks string
 param location string
@@ -87,7 +88,7 @@ param sessionHostIndex int
 param storageSuffix string
 param subnetResourceId string
 param tags object
-param timeStamp string
+param deploymentSuffix string
 param timeZone string
 param useAgentDownloadEndpoint bool
 param virtualMachineNameConv string
@@ -128,7 +129,7 @@ resource hostPoolGet 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' exis
 // Required for EntraID login
 module roleAssignment_VirtualMachineUserLogin '../../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = [
   for i in range(0, length(appGroupSecurityGroups)): if (deploymentType == 'Complete' && !contains(identitySolution, 'DomainServices')) {
-    name: 'RA-Hosts-VMLoginUser-${i}_${timeStamp}'
+    name: 'RA-Hosts-VMLoginUser-${i}-${deploymentSuffix}'
     scope: resourceGroup(resourceGroupHosts)
     params: {
       principalId: appGroupSecurityGroups[i]
@@ -139,7 +140,7 @@ module roleAssignment_VirtualMachineUserLogin '../../../sharedModules/resources/
 ]
 
 module hostPoolUpdate 'modules/hostPoolUpdate.bicep' = if(deploymentType != 'Complete') {
-  name: 'HostPoolRegistrationTokenUpdate_${timeStamp}'
+  name: 'HostPoolRegistrationTokenUpdate-${deploymentSuffix}'
   scope: resourceGroup(split(hostPoolResourceId, '/')[4])
   params: {
     hostPoolType: deploymentType != 'Complete' ? hostPoolGet!.properties.hostPoolType : ''
@@ -152,7 +153,7 @@ module hostPoolUpdate 'modules/hostPoolUpdate.bicep' = if(deploymentType != 'Com
 
 module diskAccessResource '../../../sharedModules/resources/compute/disk-access/main.bicep' = if (deployDiskAccessResource && deploymentType == 'Complete') {
   scope: resourceGroup(resourceGroupHosts)
-  name: 'DiskAccess_${timeStamp}'
+  name: 'DiskAccess-${deploymentSuffix}'
   params: {
     name: diskAccessName
     location: location
@@ -183,7 +184,7 @@ module diskAccessResource '../../../sharedModules/resources/compute/disk-access/
 }
 
 module diskAccessPolicy 'modules/diskNetworkAccessPolicy.bicep' = if (deployDiskAccessPolicy) {
-  name: 'ManagedDisks_NetworkAccess_Policy_${timeStamp}'
+  name: 'ManagedDisks-NetworkAccess-Policy-${deploymentSuffix}'
   params: {
     diskAccessId: deployDiskAccessResource ? diskAccessResource!.outputs.resourceId : ''
     location: location
@@ -192,7 +193,7 @@ module diskAccessPolicy 'modules/diskNetworkAccessPolicy.bicep' = if (deployDisk
 }
 
 module customerManagedKeys 'modules/customerManagedKeys.bicep' =  if (deploymentType == 'Complete' && keyManagementDisks != 'PlatformManaged') {
-  name: 'Customer_Managed_Keys_${timeStamp}'
+  name: 'Customer-Managed-Keys-${deploymentSuffix}'
   scope: resourceGroup(resourceGroupHosts)
   params: {    
     confidentialVMOrchestratorObjectId: confidentialVMOrchestratorObjectId
@@ -209,19 +210,19 @@ module customerManagedKeys 'modules/customerManagedKeys.bicep' =  if (deployment
     location: location
     deploymentResourceGroupName: resourceGroupDeployment
     tags: tags
-    timeStamp: timeStamp
+    deploymentSuffix: deploymentSuffix
   }
 }
 
 module artifactsUserAssignedIdentity 'modules/getUserAssignedIdentity.bicep' = if(!empty(artifactsUserAssignedIdentityResourceId)) {
-  name: 'ArtifactsUserAssignedIdentity_${timeStamp}'
+  name: 'ArtifactsUserAssignedIdentity-${deploymentSuffix}'
   params: {
     userAssignedIdentityResourceId: artifactsUserAssignedIdentityResourceId
   }
 }
 
 module availabilitySets '../../../sharedModules/resources/compute/availability-set/main.bicep' = [for i in range(0, availabilitySetsCount): if (pooledHostPool && availability == 'AvailabilitySets') {
-  name: '${availabilitySetNamePrefix}${padLeft((i + availabilitySetsIndex), 2, '0')}_${timeStamp}'
+  name: '${availabilitySetNamePrefix}${padLeft((i + availabilitySetsIndex), 2, '0')}-${deploymentSuffix}'
   scope: resourceGroup(resourceGroupHosts)
   params: {
     name: '${availabilitySetNamePrefix}${padLeft((i + availabilitySetsIndex), 2, '0')}'
@@ -235,14 +236,14 @@ module availabilitySets '../../../sharedModules/resources/compute/availability-s
 }]
 
 module localNetAppVolumes 'modules/getNetAppVolumeSmbServerFqdn.bicep' = [for i in range(0, length(sortedLocalNetAppResourceIds)): if(!empty(sortedLocalNetAppResourceIds)) {
-  name: 'LocalNetAppVolumes-${i}-${timeStamp}'
+  name: 'LocalNetAppVolumes-${i}-${deploymentSuffix}'
   params: {
     netAppVolumeResourceId: sortedLocalNetAppResourceIds[i]
   }
 }]
 
 module remoteNetAppVolumes 'modules/getNetAppVolumeSmbServerFqdn.bicep' = [for i in range(0, length(sortedRemoteNetAppResourceIds)) : if(!empty(sortedRemoteNetAppResourceIds)) {
-  name: 'RemoteNetAppVolumes-${i}-${timeStamp}'
+  name: 'RemoteNetAppVolumes-${i}-${deploymentSuffix}'
   params: {
     netAppVolumeResourceId: sortedRemoteNetAppResourceIds[i]
   }
@@ -250,7 +251,7 @@ module remoteNetAppVolumes 'modules/getNetAppVolumeSmbServerFqdn.bicep' = [for i
 
 @batchSize(5)
 module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sessionHostBatchCount): {
-  name: 'VirtualMachines_Batch_${i-1}_${timeStamp}'
+  name: 'VirtualMachines-Batch-${i-1}-${deploymentSuffix}'
   scope: resourceGroup(resourceGroupHosts)
   params: {
     artifactsContainerUri: artifactsContainerUri
@@ -293,6 +294,7 @@ module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sess
     imagePublisher: imagePublisher
     imageSku: imageSku
     integrityMonitoring: integrityMonitoring
+    intuneEnrollment: intuneEnrollment
     location: location
     networkInterfaceNameConv: networkInterfaceNameConv
     osDiskNameConv: osDiskNameConv
@@ -307,7 +309,7 @@ module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sess
     storageSuffix: storageSuffix
     subnetResourceId: subnetResourceId
     tags: tags
-    timeStamp: timeStamp
+    deploymentSuffix: deploymentSuffix
     timeZone: timeZone
     useAgentDownloadEndpoint: useAgentDownloadEndpoint
     virtualMachineAdminPassword: virtualMachineAdminPassword
@@ -324,7 +326,7 @@ module virtualMachines 'modules/virtualMachines.bicep' = [for i in range(1, sess
 }]
 
 module recoveryServicesVault '../../../sharedModules/resources/recovery-services/vault/main.bicep' = if (deploymentType == 'Complete' && recoveryServices) {
-  name: 'RecoveryServicesVault_VirtualMachines_${timeStamp}'
+  name: 'RecoveryServicesVault-VirtualMachines-${deploymentSuffix}'
   scope: resourceGroup(resourceGroupHosts)
   params: {
     location: location
@@ -390,7 +392,7 @@ module recoveryServicesVault '../../../sharedModules/resources/recovery-services
 
 /* Disabled temporarily until we can figure out why protected Items fail via ARM/Bicep.
 module protectedItems_Vm 'modules/protectedItems.bicep' = [for i in range(1, sessionHostBatchCount): if (recoveryServices && (deploymentType == 'Complete' || !empty(existingRecoveryServicesVaultResourceId))) {
-  name: 'BackupProtectedItems_VirtualMachines_${i-1}_${timeStamp}'
+  name: 'BackupProtectedItems-VirtualMachines-${i-1}-${deploymentSuffix}'
   scope: resourceGroup(resourceGroupHosts)
   params: {
     policyName: backupPolicyName
@@ -405,7 +407,7 @@ module protectedItems_Vm 'modules/protectedItems.bicep' = [for i in range(1, ses
 }]
 */
 module getFlattenedVmNamesArray 'modules/flattenVirtualMachineNames.bicep' = {
-  name: 'FlattenVirtualMachineNames_${timeStamp}'
+  name: 'FlattenVirtualMachineNames-${deploymentSuffix}'
   scope: resourceGroup(resourceGroupHosts)
   params: {
     virtualMachineNamesPerBatch: [for i in range(1, sessionHostBatchCount):virtualMachines[i-1].outputs.virtualMachineNames]

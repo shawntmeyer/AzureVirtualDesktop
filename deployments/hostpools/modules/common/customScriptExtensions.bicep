@@ -4,7 +4,7 @@ param output bool = true
 param parameters string
 param scriptFileName string
 param tags object
-param timeStamp string = utcNow('yyyyMMddhhmmss')
+param deploymentSuffix string = utcNow('yyyyMMddhhmmss')
 param userAssignedIdentityClientId string
 param virtualMachineName string
 
@@ -23,7 +23,7 @@ resource customScriptExtension 'Microsoft.Compute/virtualMachines/extensions@202
     typeHandlerVersion: '1.10'
     autoUpgradeMinorVersion: true
     settings: {
-      timeStamp: timeStamp
+      deploymentSuffix: deploymentSuffix
     }
     protectedSettings: {
       commandToExecute: 'powershell -ExecutionPolicy Unrestricted -File ${scriptFileName} ${parameters}'

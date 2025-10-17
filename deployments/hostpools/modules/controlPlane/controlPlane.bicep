@@ -36,7 +36,7 @@ param scalingPlanName string
 param scalingPlanSchedules array
 param startVmOnConnect bool
 param tags object
-param timeStamp string
+param deploymentSuffix string
 param virtualMachinesTimeZone string
 param workspaceFeedPrivateEndpointSubnetResourceId string
 param workspaceFriendlyName string
@@ -92,28 +92,28 @@ var hostPoolPrivateEndpointNICName = replace(
 )
 
 module hostPoolPrivateEndpointVnet '../common/vnetLocation.bicep' = if (avdPrivateLinkPrivateRoutes != 'None' && !empty(hostPoolPrivateEndpointSubnetResourceId)) {
-  name: 'HostPoolPrivateEndpointVnet_${timeStamp}'
+  name: 'HostPoolPrivateEndpointVnet-${deploymentSuffix}'
   params: {
     privateEndpointSubnetResourceId: hostPoolPrivateEndpointSubnetResourceId
   }
 }
 
 module workspaceFeedPrivateEndpointVnet '../common/vnetLocation.bicep' = if ((avdPrivateLinkPrivateRoutes == 'All' || avdPrivateLinkPrivateRoutes == 'FeedAndHostPool') && !empty(workspaceFeedPrivateEndpointSubnetResourceId)) {
-  name: 'WorkspaceFeedPrivateEndpointVnet_${timeStamp}'
+  name: 'WorkspaceFeedPrivateEndpointVnet-${deploymentSuffix}'
   params: {
     privateEndpointSubnetResourceId: workspaceFeedPrivateEndpointSubnetResourceId
   }
 }
 
 module globalFeedPrivateEndpointVnet '../common/vnetLocation.bicep' = if (avdPrivateLinkPrivateRoutes == 'All' && !empty(globalFeedPrivateEndpointSubnetResourceId)) {
-  name: 'GlobalFeedPrivateEndpointVnet_${timeStamp}'
+  name: 'GlobalFeedPrivateEndpointVnet-${deploymentSuffix}'
   params: {
     privateEndpointSubnetResourceId: globalFeedPrivateEndpointSubnetResourceId
   }
 }
 
 module hostPool 'modules/hostPool.bicep' = {
-  name: 'HostPool_${timeStamp}'
+  name: 'HostPool-${deploymentSuffix}'
   scope: resourceGroup(resourceGroupControlPlane)
   params: {
     hostPoolRDPProperties: hostPoolRDPProperties
@@ -135,13 +135,13 @@ module hostPool 'modules/hostPool.bicep' = {
     privateEndpointSubnetResourceId: hostPoolPrivateEndpointSubnetResourceId
     startVmOnConnect: startVmOnConnect
     tags: tags
-    timeStamp: timeStamp
+    deploymentSuffix: deploymentSuffix
     virtualMachineTemplate: hostPoolVmTemplate
   }
 }
 
 module applicationGroup 'modules/applicationGroup.bicep' = {
-  name: 'ApplicationGroup_${timeStamp}'
+  name: 'ApplicationGroup-${deploymentSuffix}'
   scope: resourceGroup(resourceGroupControlPlane)
   params: {
     deploymentUserAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
@@ -154,7 +154,7 @@ module applicationGroup 'modules/applicationGroup.bicep' = {
     resourceGroupDeployment: resourceGroupDeployment
     appGroupSecurityGroups: appGroupSecurityGroups
     tags: tags
-    timeStamp: timeStamp
+    deploymentSuffix: deploymentSuffix
   }
 }
 
@@ -164,7 +164,7 @@ resource existingFeedWorkspace 'Microsoft.DesktopVirtualization/workspaces@2023-
 }
 
 module feedWorkspace 'modules/workspace.bicep' = {
-  name: 'WorkspaceFeed_${timeStamp}'
+  name: 'WorkspaceFeed-${deploymentSuffix}'
   scope: resourceGroup(resourceGroupControlPlane)
   params: {
     applicationGroupResourceId: applicationGroup.outputs.ApplicationGroupResourceId
@@ -194,13 +194,13 @@ module feedWorkspace 'modules/workspace.bicep' = {
     privateEndpointSubnetResourceId: workspaceFeedPrivateEndpointSubnetResourceId
     publicNetworkAccess: workspacePublicNetworkAccess
     tags: tags
-    timeStamp: timeStamp
+    deploymentSuffix: deploymentSuffix
     workspaceName: workspaceName
   }
 }
 
 module scalingPlan 'modules/scalingPlan.bicep' = if (deployScalingPlan && contains(hostPoolType, 'Pooled')) {
-  name: 'ScalingPlan_${timeStamp}'
+  name: 'ScalingPlan-${deploymentSuffix}'
   scope: resourceGroup(resourceGroupControlPlane)
   params: {
     diagnosticWorkspaceId: logAnalyticsWorkspaceResourceId
@@ -216,7 +216,7 @@ module scalingPlan 'modules/scalingPlan.bicep' = if (deployScalingPlan && contai
 }
 
 module globalWorkspace 'modules/workspace.bicep' = if (empty(existingGlobalWorkspaceResourceId) && avdPrivateLinkPrivateRoutes == 'All' && !empty(globalFeedPrivateDnsZoneResourceId) && !empty(globalFeedPrivateEndpointSubnetResourceId)) {
-  name: 'Global_Feed_Workspace_${timeStamp}'
+  name: 'Global-Feed-Workspace-${deploymentSuffix}'
   scope: resourceGroup(resourceGroupGlobalFeed)
   params: {
     applicationGroupResourceId: ''
@@ -236,7 +236,7 @@ module globalWorkspace 'modules/workspace.bicep' = if (empty(existingGlobalWorks
     privateEndpointSubnetResourceId: globalFeedPrivateEndpointSubnetResourceId
     publicNetworkAccess: 'Enabled'
     tags: tags
-    timeStamp: timeStamp
+    deploymentSuffix: deploymentSuffix
     workspaceName: globalWorkspaceName
   }
   dependsOn: [

@@ -389,41 +389,45 @@
 					"label": "Identity",
 					"elements": [
 						{
+							"name": "solution",
+							"type": "Microsoft.Common.OptionsGroup",
+							"visible": true,
+							"label": "Identity Provider",
+							"defaultValue": "[if(or(equals(steps('basics').deploymentType, 'Complete'), empty(steps('basics').hostPoolApi.tags.vmIdentityType)), 'Active Directory Domain Services (ADDS)', if(equals(steps('basics').hostPoolApi.tags.vmIdentityType, 'EntraId'), 'Entra Id', if(contains(steps('basics').hostPoolApi.tags.vmIdentityType, 'ActiveDirectory'), 'Active Directory Domain Services (ADDS)', if(contains(steps('basics').hostPoolApi.tags.vmIdentityType, 'Kerberos'), 'Entra Kerberos (Hybrid Identities)', 'Entra Domain Services'))))]",
+							"toolTip": "Choose the identity service provider for your users and session hosts. Your choices explained:</br></br><b>Active Directory Domain Services (ADDS)</b>: The users are sourced from ADDS and session hosts will be domain joined.</br></br><b>Entra Domain Services</b>: The users are sourced from Entra ID or ADDS and the session hosts are joined to Entra Domain Services.</br></br><b>Entra ID</b>: The users are sourced from Entra ID and the session hosts will join Entra ID.</br></br><b>Entra Kerberos (hybrid identities)</b>: The Users are sourced from ADDS, but the session hosts will be joined to Entra ID.",
+							"constraints": {
+								"required": true,
+								"allowedValues": [
+									{
+										"label": "Active Directory Domain Services (ADDS)",
+										"value": "ActiveDirectoryDomainServices"
+									},
+									{
+										"label": "Entra Domain Services",
+										"value": "EntraDomainServices"
+									},
+									{
+										"label": "Entra Id",
+										"value": "EntraId"
+									},
+									{
+										"label": "Entra Kerberos (Hybrid Identities)",
+										"value": "EntraKerberos"
+									}
+								]
+							}
+						},
+						{
 							"name": "virtualMachines",
 							"type": "Microsoft.Common.Section",
 							"label": "Virtual Machines",
 							"elements": [
 								{
-									"name": "solution",
-									"type": "Microsoft.Common.OptionsGroup",
-									"visible": true,
-									"label": "Identity Provider",
-									"defaultValue": "[if(or(equals(steps('basics').deploymentType, 'Complete'), empty(steps('basics').hostPoolApi.tags.vmIdentityType)), 'Active Directory Domain Services (AD DS)', if(contains(steps('basics').hostPoolApi.tags.vmIdentityType, 'EntraId'), 'Entra Id', if(contains(steps('basics').hostPoolApi.tags.vmIdentityType, 'ActiveDirectory'), 'Active Directory Domain Services (AD DS)', 'Entra Domain Services')))]",
-									"toolTip": "Choose the Identity Solution for the virtual machines.",
-									"constraints": {
-										"required": true,
-										"allowedValues": [
-											{
-												"label": "Active Directory Domain Services (AD DS)",
-												"value": "ActiveDirectoryDomainServices"
-											},
-											{
-												"label": "Entra Id",
-												"value": "EntraId"
-											},
-											{
-												"label": "Entra Domain Services",
-												"value": "EntraDomainServices"
-											}
-										]
-									}
-								},
-								{
 									"name": "intune",
 									"type": "Microsoft.Common.OptionsGroup",
-									"visible": "[equals(steps('identity').virtualMachines.solution, 'EntraId')]",
+									"visible": "[not(contains(steps('identity').solution, 'DomainServices'))]",
 									"label": "Intune Enrollment",
-									"defaultValue": "[if(or(equals(steps('basics').deploymentType, 'Complete'), empty(steps('basics').hostPoolApi.tags.vmIdentityType)), 'No', if(contains(steps('basics').hostPoolApi.tags.vmIdentityType, 'Intune'), 'Yes', 'No'))]",
+									"defaultValue": "[if(or(equals(steps('basics').deploymentType, 'Complete'), empty(steps('basics').hostPoolApi.tags.intuneEnrollment)), 'No', if(steps('basics').hostPoolApi.tags.intuneEnrollment, 'Yes', 'No'))]",
 									"toolTip": "If Intune is configured in your Azure AD tenant, you can choose to have the VM automatically enrolled during the deployment by selecting Yes.",
 									"constraints": {
 										"required": false,
@@ -442,25 +446,29 @@
 								{
 									"name": "domainName",
 									"type": "Microsoft.Common.TextBox",
-									"visible": "[not(equals(steps('identity').virtualMachines.solution, 'EntraId'))]",
+									"visible": "[contains(steps('identity').solution, 'DomainServices')]",
 									"defaultValue": "[if(equals(steps('basics').deploymentType, 'Complete'), '', coalesce(steps('basics').hostPoolApi.tags.vmDomain, ''))]",
 									"label": "Domain Name",
-									"toolTip": "Provide domain name for the selected Active Directory solution.",
+									"toolTip": "Provide domain name for the selected Virtual Machine Identity solution.",
 									"placeholder": "Example: contoso.com",
 									"constraints": {
-										"required": true
+										"regex": "^([a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,}$",
+										"required": true,
+										"validationMessage": "Provide a valid fully qualified domain name."
 									}
 								},
 								{
 									"name": "ouPath",
 									"type": "Microsoft.Common.TextBox",
 									"defaultValue": "[if(equals(steps('basics').deploymentType, 'Complete'), '', coalesce(steps('basics').hostPoolApi.tags.vmOUPath , ''))]",
-									"visible": "[not(equals(steps('identity').virtualMachines.solution, 'EntraId'))]",
+									"visible": "[or(equals(steps('identity').solution, 'ActiveDirectoryDomainServices'), equals(steps('identity').solution, 'EntraDomainServices'))]",
 									"label": "OU Path",
 									"toolTip": "Input the distinguished name of the desired organization unit for the AVD session hosts.",
 									"placeholder": "Example: OU=pooled,OU=avd,DC=contoso,DC=com",
 									"constraints": {
-										"required": true
+										"regex": "^(OU=[^,]+,)*(DC=[^,]+)(,DC=[^,]+)*$",
+										"required": true,
+										"validationMessage": "Provide a valid OU path in Distinguished Name format."
 									}
 								}
 							]
@@ -474,7 +482,7 @@
 								{
 									"name": "source",
 									"type": "Microsoft.Common.OptionsGroup",
-									"label": "[if(equals(steps('identity').virtualMachines.solution, 'EntraId'), 'VM Admin Credentials source', 'Domain Join and VM Admin Credentials source')]",
+									"label": "[if(contains(steps('identity').solution, 'DomainServices'), 'Domain Join and VM Admin Credentials source', 'VM Admin Credentials source')]",
 									"defaultValue": "[if(equals(steps('basics').deploymentType, 'Complete'), 'Manual Entry', 'Key Vault')]",
 									"toolTip": "Select 'Manual Entry' to specify the secrets manually or 'Key Vault' to reference secrets from a Key Vault.",
 									"constraints": {
@@ -496,14 +504,14 @@
 									"name": "domainJoinUserPrincipalName",
 									"type": "Microsoft.Common.TextBox",
 									"label": "Domain Join Account UserPrincipalName",
-									"toolTip": "Enter the user principal name with domain join privileges.",
+									"toolTip": "Enter the user principal name with permissions to join computers to the domain in the selected OU.",
 									"placeholder": "domainjoin@contoso.com",
 									"constraints": {
 										"required": true,
 										"regex": "^[a-z0-9A-Z_.-]+@(?:[a-z0-9]+\\.)+[a-z]+$",
 										"validationMessage": "The value must be a valid user principal name."
 									},
-									"visible": "[and(not(equals(steps('identity').virtualMachines.solution, 'EntraId')), equals(steps('identity').credentials.source, 'manual'))]"
+									"visible": "[and(contains(steps('identity').solution, 'DomainServices'), equals(steps('identity').credentials.source, 'manual'))]"
 								},
 								{
 									"name": "domainJoinUserPassword",
@@ -519,7 +527,7 @@
 									"options": {
 										"hideConfirmation": false
 									},
-									"visible": "[and(not(equals(steps('identity').virtualMachines.solution, 'EntraId')), equals(steps('identity').credentials.source, 'manual'))]"
+									"visible": "[and(contains(steps('identity').solution, 'DomainServices'), equals(steps('identity').credentials.source, 'manual'))]"
 								},
 								{
 									"name": "localAdminUsername",
@@ -555,7 +563,7 @@
 								{
 									"name": "secretsInfoBox1",
 									"type": "Microsoft.Common.InfoBox",
-									"visible": "[and(equals(steps('identity').virtualMachines.solution, 'EntraId'), equals(steps('identity').credentials.source, 'keyVault'))]",
+									"visible": "[and(not(contains(steps('identity').solution, 'DomainServices')), equals(steps('identity').credentials.source, 'keyVault'))]",
 									"options": {
 										"text": "This add-on requires that the following secret names and values are stored in a key vault that you will select below:</br><ul><li><b>VirtualMachineAdminUserName</b>: The virtual machine administrator username.</li><li><b>VirtualMachineAdminPassword</b>: The virtual machine administrator password.",
 										"style": "Info"
@@ -564,7 +572,7 @@
 								{
 									"name": "secretsInfoBox2",
 									"type": "Microsoft.Common.InfoBox",
-									"visible": "[and(not(equals(steps('identity').virtualMachines.solution, 'EntraId')), equals(steps('identity').credentials.source, 'keyVault'))]",
+									"visible": "[and(contains(steps('identity').solution, 'DomainServices'), equals(steps('identity').credentials.source, 'keyVault'))]",
 									"options": {
 										"text": "This add-on requires that the following secret names and values are stored in a key vault that you will select below:</br><ul><li><b>DomainJoinUserPrincipalName</b>: The domain join account UserPrincipalName (i.e., domjoin@contoso.local).</li><li><b>DomainJoinUserPassword</b>: The password associated with the domain join user account.</li><li><b>VirtualMachineAdminUserName</b>: The virtual machine administrator username.</li><li><b>VirtualMachineAdminPassword</b>: The virtual machine administrator password.",
 										"style": "Info"
@@ -848,7 +856,7 @@
 										"name": "ObjectPickerBlade",
 										"extension": "Microsoft_AAD_IAM",
 										"parameters": {
-											"queries": "[if(contains(steps('identity').virtualMachines.solution, 'DomainServices'), 4194304, 32)]",
+											"queries": "[if(or(equals(steps('identity').solution, 'ActiveDirectoryDomainServices'), equals(steps('identity').solution, 'EntraKerberos')), 4194304, 32)]",
 											"disablers": 4,
 											"bladeSubtitle": "Pick the groups to assign",
 											"additionalQueriesOnSearch": 0,
@@ -874,7 +882,7 @@
 										"inFullScreen": false
 									},
 									"transforms": {
-										"selection": "selectedObjects|[*].{displayName:displayName, objectId:id, onPremisesSecurityIdentifier:onPremisesSecurityIdentifier}"
+										"groups": "selectedObjects|[*].{id:id, name:displayName}"
 									}
 								},
 								{
@@ -883,7 +891,7 @@
 									"label": "Select Groups",
 									"keyPath": "displayName",
 									"descriptionKeyPath": "id",
-									"value": "[steps('controlPlane').assignments.groupPickerBlade.transformed.selection]",
+									"value": "[steps('controlPlane').assignments.groupPickerBlade.transformed.groups]",
 									"visible": true,
 									"barColor": "[if(empty(steps('controlPlane').assignments.groupPickerBlade), '#FF0000', '#7fba00')]",
 									"constraints": {
@@ -2341,15 +2349,43 @@
 							"visible": "[and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').configureSessionHosts)]"
 						},
 						{
+							"name": "domainName",
+							"type": "Microsoft.Common.TextBox",
+							"visible": "[equals(steps('identity').solution, 'EntraKerberos')]",
+							"label": "User Active Directory Domain Name",
+							"toolTip": "Provide domain name from where users are synchronized.",
+							"placeholder": "Example: contoso.com",
+							"constraints": {
+								"regex": "^([a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,}$",
+								"required": true,
+								"validationMessage": "Provide a valid fully qualified domain name."
+							}
+						},
+						{
+							"name": "domainGuid",
+							"type": "Microsoft.Common.TextBox",
+							"visible": "[equals(steps('identity').solution, 'EntraKerberos')]",
+							"label": "Domain GUID",
+							"toolTip": "GUID for the on-premises domain. Can be determined with the following Powershell command: '(Get-ADDomain).ObjectGUID.Guid'.",
+							"placeholder": "Example: A1B2C3D4-E5F6-7890-1234-56789ABCDEF0",
+							"constraints": {
+								"regex": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+								"required": false,
+								"validationMessage": "The value must be a valid GUID."
+							}
+						},
+						{
 							"name": "ouPath",
 							"type": "Microsoft.Common.TextBox",
 							"defaultValue": "[steps('identity').virtualMachines.ouPath]",
-							"visible": "[and(not(equals(steps('identity').virtualMachines.solution, 'EntraId')), equals(steps('userProfiles').deployStorage, true))]",
+							"visible": "[and(equals(steps('identity').solution, 'ActiveDirectoryDomainServices'), equals(steps('userProfiles').deployStorage, true))]",
 							"label": "Storage OU Path",
 							"toolTip": "Input the distinguished name of the desired organization unit for storage computer objects.",
 							"placeholder": "Example: OU=pooled,OU=avd,DC=contoso,DC=com",
 							"constraints": {
-								"required": true
+								"regex": "^(OU=[^,]+,)*(DC=[^,]+)(,DC=[^,]+)*$",								
+								"required": true,
+								"validationMessage": "Provide a valid OU distinguished name."								
 							}
 						},
 						{
@@ -2360,7 +2396,7 @@
 							"defaultValue": "Azure Files",
 							"toolTip": "Select the storage service that provides the SMB file share to support the use of FSLogix.",
 							"constraints": {
-								"allowedValues": "[if(equals(steps('identity').virtualMachines.solution, 'EntraId'), parse('[{\"label\":\"Azure Files\",\"value\":\"AzureFiles\"}]'), parse('[{\"label\":\"Azure Files\",\"value\":\"AzureFiles\"},{\"label\":\"Azure NetApp Files\",\"value\":\"AzureNetAppFiles\"}]'))]"
+								"allowedValues": "[if(not(equals(steps('identity').solution, 'ActiveDirectoryDomainServices')), parse('[{\"label\":\"Azure Files\",\"value\":\"AzureFiles\"}]'), parse('[{\"label\":\"Azure Files\",\"value\":\"AzureFiles\"},{\"label\":\"Azure NetApp Files\",\"value\":\"AzureNetAppFiles\"}]'))]"
 							}
 						},
 						{
@@ -2648,7 +2684,7 @@
 								{
 									"name": "shardingHeader",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(or(steps('userProfiles').configureSessionHosts, equals(steps('userProfiles').deployStorage, true)), not(equals(steps('identity').virtualMachines.solution, 'EntraId')))]",
+									"visible": "[and(or(steps('userProfiles').configureSessionHosts, equals(steps('userProfiles').deployStorage, true)), not(equals(steps('identity').solution, 'EntraId')))]",
 									"options": {
 										"text": "<u>Sharding and User Group(s) to Share Assignment(s)</u>"
 									}
@@ -2656,7 +2692,7 @@
 								{
 									"name": "shardingTextBlock1",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(or(steps('userProfiles').configureSessionHosts, equals(steps('userProfiles').deployStorage, true)), not(equals(steps('identity').virtualMachines.solution, 'EntraId')))]",
+									"visible": "[and(or(steps('userProfiles').configureSessionHosts, equals(steps('userProfiles').deployStorage, true)), not(equals(steps('identity').solution, 'EntraId')))]",
 									"options": {
 										"text": "In order to improve scalability of user profile data, you have the option to deploy more than one storage account per host pool. This architectural pattern is called 'Sharding'.",
 										"link": {
@@ -2668,7 +2704,7 @@
 								{
 									"name": "shardingInfoBox1",
 									"type": "Microsoft.Common.InfoBox",
-									"visible": "[and(or(steps('userProfiles').configureSessionHosts, equals(steps('userProfiles').deployStorage, true)), not(equals(steps('identity').virtualMachines.solution, 'EntraId')))]",
+									"visible": "[and(or(steps('userProfiles').configureSessionHosts, equals(steps('userProfiles').deployStorage, true)), not(equals(steps('identity').solution, 'EntraId')))]",
 									"options": {
 										"style": "Info",
 										"text": "If you choose to Shard the user profile storage, you must provide a group to assign to each storage account. In order to minimize login times, to provide more than four (4) storage accounts, you must select the 'Sharding via Object Specific Settings' option below and, for ease of configuration, select 'Configure FSLogix registry settings on session hosts' above. You can find instructions on how to configure the regisry at the link provided.",
@@ -2681,22 +2717,9 @@
 									"label": "Sharding Options",
 									"defaultValue": "No Sharding",
 									"constraints": {
-										"allowedValues": [
-											{
-												"label": "No Sharding",
-												"value": "None"
-											},
-											{
-												"label": "Sharding via Permissions (Max 4 Storage Accounts)",
-												"value": "ShardPerms"
-											},
-											{
-												"label": "Sharding via Object Specific Settings",
-												"value": "ShardOSS"
-											}
-										]
+										"allowedValues": "[if(equals(steps('identity').solution, 'EntraKerberos'), parse('[{\"label\":\"No Sharding\",\"value\":\"None\"},{\"label\":\"Sharding via Permissions (Max 4 Storage Accounts)\",\"value\":\"ShardPerms\"}]'), parse('[{\"label\":\"No Sharding\",\"value\":\"None\"},{\"label\":\"Sharding via Permissions (Max 4 Storage Accounts)\",\"value\":\"ShardPerms\"},{\"label\":\"Sharding via Object Specific Settings\",\"value\":\"ShardOSS\"}]'))]"
 									},
-									"visible": "[and(or(steps('userProfiles').configureSessionHosts, equals(steps('userProfiles').deployStorage, true)), not(equals(steps('identity').virtualMachines.solution, 'EntraId')))]"
+									"visible": "[and(or(steps('userProfiles').configureSessionHosts, equals(steps('userProfiles').deployStorage, true)), not(equals(steps('identity').solution, 'EntraId')))]"
 								},
 								{
 									"name": "groupPickerBlade",
@@ -2731,7 +2754,7 @@
 										}
 									},
 									"transforms": {
-										"selection": "selectedObjects|[*].{displayName:displayName, objectId:id, onPremisesSecurityIdentifier:onPremisesSecurityIdentifier}"
+										"groups": "selectedObjects|[*].{id:id, name:displayName}"
 									}
 								},
 								{
@@ -2740,8 +2763,8 @@
 									"label": "Select User Groups",
 									"keyPath": "displayName",
 									"descriptionKeyPath": "id",
-									"value": "[steps('userProfiles').azureFiles.groupPickerBlade.transformed.selection]",
-									"visible": "[and(or(steps('userProfiles').configureSessionHosts, equals(steps('userProfiles').deployStorage, true)), not(equals(steps('identity').virtualMachines.solution, 'EntraId')), not(equals(steps('userProfiles').azureFiles.shardingOption, 'None')))]",
+									"value": "[steps('controlPlane').assignments.groupPickerBlade.transformed.groups]",
+									"visible": "[and(or(steps('userProfiles').configureSessionHosts, equals(steps('userProfiles').deployStorage, true)), not(equals(steps('identity').solution, 'EntraId')), not(equals(steps('userProfiles').azureFiles.shardingOption, 'None')))]",
 									"barColor": "[if(empty(steps('userProfiles').azureFiles.groupPickerBlade), '#FF0000', '#7fba00')]",
 									"constraints": {
 										"required": true
@@ -2751,7 +2774,7 @@
 								{
 									"name": "shardingTooManyGroupsErrorBox",
 									"type": "Microsoft.Common.InfoBox",
-									"visible": "[and(equals(steps('userProfiles').azureFiles.shardingOption, 'ShardPerms'), greater(length(steps('userProfiles').azureFiles.groupPickerBlade.transformed.selection), 4))]",
+									"visible": "[and(equals(steps('userProfiles').azureFiles.shardingOption, 'ShardPerms'), greater(length(steps('userProfiles').azureFiles.groupPickerBlade.transformed.groups), 4))]",
 									"options": {
 										"style": "Error",
 										"text": "You selected (or provided) over 4 groups. You can select/provide a maximum of 4 groups when choosing 'Sharding with Permissions' in order to minimize login time and maintain compatibility with Cloud Cache (if used). Either reduce the number of groups, or select 'Sharding with Object Specific Settings' and follow the instructions provided in the link to configure the registry on the session hosts.",
@@ -2761,7 +2784,7 @@
 								{
 									"name": "storageAccountDeployedNumberTextBlock",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(equals(steps('userProfiles').deployStorage, true), and(not(equals(steps('identity').virtualMachines.solution, 'EntraId')), not(equals(steps('userProfiles').azureFiles.shardingOption, 'None'))))]",
+									"visible": "[and(equals(steps('userProfiles').deployStorage, true), and(not(equals(steps('identity').solution, 'EntraId')), not(equals(steps('userProfiles').azureFiles.shardingOption, 'None'))))]",
 									"options": {
 										"text": "The number of groups selected or provided above determines the number of storage accounts deployed by this solution. The storage account names are automatically determined by combining a suffix with a 0-padded two digit suffix starting at the 'Storage Index' value."
 									}
@@ -2769,7 +2792,7 @@
 								{
 									"name": "storageAccountsRequiredTextBlock",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(not(equals(steps('userProfiles').deployStorage, true)), steps('userProfiles').configureSessionHosts, and(not(equals(steps('identity').virtualMachines.solution, 'EntraId')), not(equals(steps('userProfiles').azureFiles.shardingOption, 'None'))))]",
+									"visible": "[and(not(equals(steps('userProfiles').deployStorage, true)), steps('userProfiles').configureSessionHosts, and(not(equals(steps('identity').solution, 'EntraId')), not(equals(steps('userProfiles').azureFiles.shardingOption, 'None'))))]",
 									"options": {
 										"text": "The number of groups selected or provided above determines the number of storage accounts that are required when selecting existing accounts."
 									}
@@ -2777,7 +2800,7 @@
 								{
 									"name": "entraIdTexBlock",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(or(steps('userProfiles').configureSessionHosts, equals(steps('userProfiles').deployStorage, true)), equals(steps('identity').virtualMachines.solution, 'EntraId'))]",
+									"visible": "[and(or(steps('userProfiles').configureSessionHosts, equals(steps('userProfiles').deployStorage, true)), equals(steps('identity').solution, 'EntraId'))]",
 									"options": {
 										"text": "A total of 1 storage account will be deployed/required because you chose the 'Entra Id' identity provider on the 'Session Host' screen. Currently, Entra Id does not support sharding storage with multiple storage accounts."
 									}
@@ -2795,8 +2818,8 @@
 									"type": "Microsoft.Common.Slider",
 									"label": "Storage Accounts Required (Read Only)",
 									"defaultValue": 1,
-									"min": "[if(or(equals(steps('identity').virtualMachines.solution, 'EntraId'), equals(steps('userProfiles').azureFiles.shardingOption, 'None')), 1, length(steps('userProfiles').azureFiles.groupPickerBlade.transformed.selection))]",
-									"max": "[if(or(equals(steps('identity').virtualMachines.solution, 'EntraId'), equals(steps('userProfiles').azureFiles.shardingOption, 'None')), 1, length(steps('userProfiles').azureFiles.groupPickerBlade.transformed.selection))]",
+									"min": "[if(or(equals(steps('identity').solution, 'EntraId'), equals(steps('userProfiles').azureFiles.shardingOption, 'None')), 1, length(steps('userProfiles').azureFiles.groupPickerBlade.transformed.groups))]",
+									"max": "[if(or(equals(steps('identity').solution, 'EntraId'), equals(steps('userProfiles').azureFiles.shardingOption, 'None')), 1, length(steps('userProfiles').azureFiles.groupPickerBlade.transformed.groups))]",
 									"showStepMarkers": false,
 									"visible": "[or(steps('userProfiles').configureSessionHosts, equals(steps('userProfiles').deployStorage, true))]"
 								},
@@ -2831,7 +2854,7 @@
 								{
 									"name": "storageKerberosEncryption",
 									"type": "Microsoft.Common.DropDown",
-									"visible": "[and(equals(steps('userProfiles').deployStorage, true), not(equals(steps('identity').virtualMachines.solution, 'EntraId')))]",
+									"visible": "[equals(steps('userProfiles').deployStorage, true)]",
 									"label": "Storage Kerberos Encryption",
 									"defaultValue": "AES256",
 									"toolTip": "Select the Kerberos encryption for the SMB file shares to support the use of FSLogix.",
@@ -2935,7 +2958,7 @@
 								{
 									"name": "notDeployedOnlyOneSATextBox",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(steps('userProfiles').configureSessionHosts, not(equals(steps('userProfiles').deployStorage, true)), or(equals(steps('userProfiles').azureFiles.shardingOption, 'None'), equals(steps('identity').virtualMachines.solution, 'EntraId')))]",
+									"visible": "[and(steps('userProfiles').configureSessionHosts, not(equals(steps('userProfiles').deployStorage, true)), or(equals(steps('userProfiles').azureFiles.shardingOption, 'None'), equals(steps('identity').solution, 'EntraId')))]",
 									"options": {
 										"text": "Select a single storage account from the same region as the session hosts. The session hosts will be configured to store user profiles on this storage account."
 									}
@@ -2943,7 +2966,7 @@
 								{
 									"name": "notDeployedMorethanOneSATextBox",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(steps('userProfiles').configureSessionHosts, not(equals(steps('userProfiles').deployStorage, true)), not(equals(steps('identity').virtualMachines.solution, 'EntraId')), not(equals(steps('userProfiles').azureFiles.shardingOption, 'None')))]",
+									"visible": "[and(steps('userProfiles').configureSessionHosts, not(equals(steps('userProfiles').deployStorage, true)), not(equals(steps('identity').solution, 'EntraId')), not(equals(steps('userProfiles').azureFiles.shardingOption, 'None')))]",
 									"options": {
 										"text": "Select the same number of storage accounts as the groups selected/provided above from the same region as the session hosts. The session hosts will be configured to store user profiles on these storage accounts."
 									}
@@ -2981,7 +3004,7 @@
 								{
 									"name": "singleSACCTextBox",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(steps('userProfiles').configureSessionHosts, or(equals(steps('userProfiles').azureFiles.shardingOption, 'None'), equals(steps('identity').virtualMachines.solution, 'EntraId')), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]",
+									"visible": "[and(steps('userProfiles').configureSessionHosts, or(equals(steps('userProfiles').azureFiles.shardingOption, 'None'), equals(steps('identity').solution, 'EntraId')), contains(steps('userProfiles').fslogixContainerType, 'CloudCache'))]",
 									"options": {
 										"text": "<u>Optionally</u>, select a remote region (not in the same region as your session hosts) and then a single storage account from the selected region for active/active disaster recovery or high availability of user profiles using FSLogix Cloud Cache."
 									}
@@ -2989,7 +3012,7 @@
 								{
 									"name": "morethanOneSACCTextBox",
 									"type": "Microsoft.Common.TextBlock",
-									"visible": "[and(steps('userProfiles').configureSessionHosts, contains(steps('userProfiles').fslogixContainerType, 'CloudCache'), not(equals(steps('identity').virtualMachines.solution, 'EntraId')), not(equals(steps('userProfiles').azureFiles.shardingOption, 'None')))]",
+									"visible": "[and(steps('userProfiles').configureSessionHosts, contains(steps('userProfiles').fslogixContainerType, 'CloudCache'), not(equals(steps('identity').solution, 'EntraId')), not(equals(steps('userProfiles').azureFiles.shardingOption, 'None')))]",
 									"options": {
 										"text": "<u>Optionally</u>, select a remote region (not in the same region as your session hosts) and then the same number of storage accounts as the groups selected/provided above in the selected remote region. The session hosts will be configured to also store user profiles on these remote storage accounts using FSLogix Cloud Cache."
 									}
@@ -3046,13 +3069,13 @@
 							"name": "shareManagement",
 							"type": "Microsoft.Common.Section",
 							"label": "Share Management",
-							"visible": "[and(not(equals(steps('identity').virtualMachines.solution, 'EntraId')), equals(steps('userProfiles').deployStorage, true))]",
+							"visible": "[steps('userProfiles').deployStorage]",
 							"elements": [
 								{
 									"name": "shareManagementTextBox1",
 									"type": "Microsoft.Common.TextBlock",
 									"options": {
-										"text": "You can optionally enter cloud synced Active Directory sourced groups that will be assigned admin permissions to the file share to facilitate user profile management troubleshooting."
+										"text": "You can optionally select groups that will be assigned admin permissions to the file share to facilitate user profile management troubleshooting."
 									}
 								},
 								{
@@ -3070,7 +3093,7 @@
 										"name": "ObjectPickerBlade",
 										"extension": "Microsoft_AAD_IAM",
 										"parameters": {
-											"queries": 4194304,
+											"queries": "[if(or(equals(steps('identity').solution, 'ActiveDirectoryDomainServices'), equals(steps('identity').solution, 'EntraKerberos')), 4194304, 32)]",
 											"disablers": 4,
 											"bladeSubtitle": "Pick the groups to assign",
 											"additionalQueriesOnSearch": 0,
@@ -3096,7 +3119,7 @@
 										"inFullScreen": false
 									},
 									"transforms": {
-										"selection": "selectedObjects|[*].{displayName:displayName, objectId:id, onPremisesSecurityIdentifier:onPremisesSecurityIdentifier}"
+										"groups": "selectedObjects|[*].{id:id, name:displayName}"
 									}
 								},
 								{
@@ -3105,7 +3128,7 @@
 									"label": "Select Admin Groups",
 									"keyPath": "displayName",
 									"descriptionKeyPath": "id",
-									"value": "[steps('userProfiles').shareManagement.groupPickerBlade.transformed.selection]",
+									"value": "[steps('controlPlane').assignments.groupPickerBlade.transformed.groups]",
 									"visible": "[steps('userProfiles').shareManagement.configureAdminAccess]",
 									"barColor": "[if(empty(steps('userProfiles').shareManagement.groupPickerBlade), '#FF0000', '#7fba00')]",
 									"constraints": {
@@ -4227,13 +4250,21 @@
 		},
 		"outputs": {
 			"parameters": {
-				"test": "[int(substring(steps('basics').sessionHostsApi.transformed.lastname, sub(length(steps('basics').sessionHostsApi.transformed.lastname), 3), 3))]",
-				"defaultValue": "[if(equals(steps('basics').deploymentType, 'SessionHostsOnly'), coalesce(first(skip(split(steps('basics').hostPoolApi.tags.vmSubnetId, '/'), 8)), ''), '')]",
 				"deploymentType": "[steps('basics').deploymentType]",
 				"virtualMachinesTimeZone": "[if(equals(steps('basics').deploymentType, 'Complete'), steps('basics').timeZone, '')]",
 				"identifier": "[if(equals(steps('basics').deploymentType, 'Complete'), steps('basics').naming.identifier, '')]",
 				"index": "[if(equals(steps('basics').deploymentType, 'Complete'), steps('basics').naming.index, '')]",
 				"nameConvResTypeAtEnd": "[if(equals(steps('basics').deploymentType, 'Complete'), steps('basics').naming.nameConvResTypeAtEnd, false)]",
+				"identitySolution": "[steps('identity').solution]",
+				"intuneEnrollment": "[if(or(equals(steps('identity').solution, 'EntraId'), equals(steps('identity').solution, 'EntraKerberos')), steps('identity').virtualMachines.intune, false)]",
+				"domainName": "[if(contains(steps('identity').solution, 'DomainServices'), steps('identity').virtualMachines.domainName, if(and(equals(steps('identity').solution, 'EntraKerberos'), steps('userProfiles').deployStorage, equals(steps('userProfiles').storageService, 'AzureFiles')), steps('userProfiles').domainName, ''))]",
+				"domainGUID": "[if(and(equals(steps('identity').solution, 'EntraKerberos'), steps('userProfiles').deployStorage, equals(steps('userProfiles').storageService, 'AzureFiles')), steps('userProfiles').domainGuid, '')]",
+				"vmOUPath": "[if(contains(steps('identity').solution, 'DomainServices'), steps('identity').virtualMachines.ouPath, '')]",
+				"domainJoinUserPassword": "[if(and(contains(steps('identity').solution, 'DomainServices'), equals(steps('identity').credentials.source, 'manual')), steps('identity').credentials.domainJoinUserPassword, '')]",
+				"domainJoinUserPrincipalName": "[if(and(contains(steps('identity').solution, 'DomainServices'), equals(steps('identity').credentials.source, 'manual')), steps('identity').credentials.domainJoinUserPrincipalName, '')]",
+				"virtualMachineAdminPassword": "[if(equals(steps('identity').credentials.source, 'manual'), steps('identity').credentials.localAdminPassword, '')]",
+				"virtualMachineAdminUserName": "[if(equals(steps('identity').credentials.source, 'manual'), steps('identity').credentials.localAdminUsername, '')]",
+				"credentialsKeyVaultResourceId": "[if(equals(steps('identity').credentials.source, 'keyVault'), steps('identity').credentials.keyVault.id, '')]",
 				"existingHostPoolResourceId": "[if(equals(steps('basics').deploymentType, 'SessionHostsOnly'), steps('basics').hostPool.id, '')]",
 				"locationControlPlane": "[if(equals(steps('basics').deploymentType, 'Complete'), steps('controlPlane').location.name, steps('basics').hostPoolApi.location)]",
 				"existingFeedWorkspaceResourceId": "[if(and(equals(steps('basics').deploymentType, 'Complete'), equals(steps('controlPlane').workspace.createOption, 'update')), steps('controlPlane').workspace.existingWorkspace, '')]",
@@ -4244,7 +4275,7 @@
 				"hostPoolValidationEnvironment": "[if(equals(steps('basics').deploymentType, 'Complete'), steps('controlPlane').hostPool.validation, false)]",
 				"hostPoolRDPProperties": "[if(equals(steps('basics').deploymentType, 'Complete'), steps('controlPlane').hostPool.rdpProperties, '')]",
 				"startVmOnConnect": "[if(equals(steps('basics').deploymentType, 'Complete'), steps('controlPlane').hostPool.startVmOnConnect, false)]",
-				"appGroupSecurityGroups": "[if(equals(steps('basics').deploymentType, 'Complete'), steps('controlPlane').assignments.groupPickerBlade.transformed.selection, parse('[]'))]",
+				"appGroupSecurityGroups": "[if(equals(steps('basics').deploymentType, 'Complete'), steps('controlPlane').assignments.groupPickerBlade.transformed.groups, parse('[]'))]",
 				"deployScalingPlan": "[if(equals(steps('basics').deploymentType, 'Complete'), steps('controlPlane').scalingPlan.deployScalingPlan, false)]",
 				"avdObjectId": "[if(and(equals(steps('basics').deploymentType, 'Complete'), or(steps('controlPlane').hostPool.startVmOnConnect, steps('controlPlane').scalingPlan.deployScalingPlan)), if(empty(first(steps('management').avdServicePrincipalApi.value)), first(map(steps('management').servicePrincipals.avdServicePrincipalPickerBlade.transformed.selection, (sp) => sp.id)), first(map(steps('management').avdServicePrincipalApi.value, (sp) => sp.id))), '')]",
 				"scalingPlanExclusionTag": "[if(steps('controlPlane').scalingPlan.deployScalingPlan, steps('controlPlane').scalingPlan.exclusionTag, '')]",
@@ -4282,14 +4313,6 @@
 				"availabilityZones": "[if(and(equals(steps('hosts').dedicatedHosts.deployToDedicatedHosts, false), equals(steps('hosts').availability.availability, 'AvailabilityZones')), steps('hosts').availability.availabilityZones, parse('[]'))]",
 				"enableAcceleratedNetworking": "[if(and(bool(first(map(filter(first(map(filter(steps('hosts').resourceSkusApi.value, (sku) => contains(sku.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (sku) => sku.capabilities)), (sku) => equals(sku.name, 'AcceleratedNetworkingEnabled')), (sku) => sku.value))), or(equals(steps('hosts').image.source, 'marketplace'), bool(steps('hosts').image.imageDefinitionApi.transformed.IsAcceleratedNetworkSupported))), steps('hosts').specs.enableAcceleratedNetworking, false)]",
 				"hibernationEnabled": "[if(and(equals(steps('controlPlane').hostPool.type, 'Personal'), bool(first(map(filter(first(map(filter(steps('hosts').resourceSkusApi.value, (sku) => contains(sku.name, if(equals(steps('hosts').security.securityType, 'ConfidentialVM'), steps('hosts').specs.sizeConfidentialVM, steps('hosts').specs.sizeGeneric))), (sku) => sku.capabilities)), (sku) => equals(sku.name, 'HibernationSupported')), (sku) => sku.value))), or(equals(steps('hosts').image.source, 'marketplace'), bool(steps('hosts').image.imageDefinitionApi.transformed.IsHibernateSupported))), steps('hosts').specs.hibernationEnabled, false)]",
-				"identitySolution": "[if(and(equals(steps('identity').virtualMachines.solution, 'EntraId'), steps('identity').virtualMachines.intune), 'EntraIdIntuneEnrollment', steps('identity').virtualMachines.solution)]",
-				"domainName": "[steps('identity').virtualMachines.domainName]",
-				"vmOUPath": "[if(equals(steps('identity').virtualMachines.solution, 'EntraId'), '', steps('identity').virtualMachines.ouPath)]",
-				"domainJoinUserPassword": "[if(and(not(equals(steps('identity').virtualMachines.solution, 'EntraId')), equals(steps('identity').credentials.source, 'manual')), steps('identity').credentials.domainJoinUserPassword, '')]",
-				"domainJoinUserPrincipalName": "[if(and(not(equals(steps('identity').virtualMachines.solution, 'EntraId')), equals(steps('identity').credentials.source, 'manual')), steps('identity').credentials.domainJoinUserPrincipalName, '')]",
-				"virtualMachineAdminPassword": "[if(equals(steps('identity').credentials.source, 'manual'), steps('identity').credentials.localAdminPassword, '')]",
-				"virtualMachineAdminUserName": "[if(equals(steps('identity').credentials.source, 'manual'), steps('identity').credentials.localAdminUsername, '')]",
-				"credentialsKeyVaultResourceId": "[if(equals(steps('identity').credentials.source, 'keyVault'), steps('identity').credentials.keyVault.id, '')]",
 				"avdAgentsDSCPackage": "[steps('hosts').registration.avdAgentsDSCPackage]",
 				"useAgentDownloadEndpoint": "[steps('hosts').registration.useAgentDownloadEndpoint]",
 				"artifactsContainerUri": "[if(steps('hosts').customScripts.addCustomScripts, if(and(not(empty(steps('hosts').customScripts.storageAccount)), not(empty(steps('hosts').customScripts.container))), concat(steps('hosts').customScripts.storageAccount.blobEndpoint, steps('hosts').customScripts.container), ''), '')]",
@@ -4299,21 +4322,21 @@
 				"fslogixSizeInMBs": "[if(and(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').configureSessionHosts), steps('userProfiles').sizeInMBs, 30720)]",
 				"deployFSLogixStorage": "[if(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').deployStorage, false)]",
 				"fslogixConfigureSessionHosts": "[if(equals(steps('userProfiles').profileSolution, 'FSLogix'), steps('userProfiles').configureSessionHosts, false)]",
-				"fslogixOUPath": "[if(and(not(equals(steps('identity').virtualMachines.solution, 'EntraId')), equals(steps('userProfiles').deployStorage, true)), steps('userProfiles').ouPath, '')]",
+				"fslogixOUPath": "[if(and(equals(steps('identity').solution, 'ActiveDirectoryDomainServices'), equals(steps('userProfiles').deployStorage, true)), steps('userProfiles').ouPath, '')]",
 				"fslogixStorageService": "[if(equals(steps('userProfiles').deployStorage, true), if(equals(steps('userProfiles').storageService, 'AzureFiles'), concat('AzureFiles ', steps('userProfiles').azureFiles.storageSku), concat('AzureNetAppFiles ', steps('userProfiles').azureNetAppFiles.storageSku)), if(steps('userProfiles').configureSessionHosts, if(equals(steps('userProfiles').storageService, 'AzureFiles'), 'AzureFiles Standard', 'AzureNetAppFiles Standard'), 'AzureFiles Standard'))]",
 				"netAppVolumesSubnetResourceId": "[if(and(equals(steps('userProfiles').deployStorage, true), equals(steps('userProfiles').storageService, 'AzureNetAppFiles')), steps('userProfiles').azureNetAppFiles.subnet, '')]",
 				"existingSharedActiveDirectoryConnection": "[if(and(equals(steps('userProfiles').deployStorage, true), equals(steps('userProfiles').storageService, 'AzureNetAppFiles')), steps('userProfiles').azureNetAppFiles.existingSharedActiveDirectoryConnection, false)]",
 				"fslogixExistingLocalNetAppVolumeResourceIds": "[if(and(steps('userProfiles').configureSessionHosts, not(equals(steps('userProfiles').deployStorage, true)), equals(steps('userProfiles').storageService, 'AzureNetAppFiles')), steps('userProfiles').azureNetAppFiles.localVolumes, parse('[]'))]",
 				"fslogixExistingRemoteNetAppVolumeResourceIds": "[if(and(steps('userProfiles').configureSessionHosts, contains(steps('userProfiles').fslogixContainerType, 'CloudCache'), equals(steps('userProfiles').storageService, 'AzureNetAppFiles')), steps('userProfiles').azureNetAppFiles.remoteVolumes, parse('[]'))]",
 				"fslogixShardOptions": "[if(and(equals(steps('userProfiles').storageService, 'AzureFiles'), or(steps('userProfiles').configureSessionHosts, equals(steps('userProfiles').deployStorage, true))), steps('userProfiles').azureFiles.shardingOption, 'None')]",
-				"fslogixUserGroups": "[if(and(equals(steps('userProfiles').storageService, 'AzureFiles'), or(steps('userProfiles').configureSessionHosts, equals(steps('userProfiles').deployStorage, true)), not(equals(steps('userProfiles').azureFiles.shardingOption, 'None')), not(equals(steps('identity').virtualMachines.solution, 'EntraId'))), steps('userProfiles').azureFiles.groupPickerBlade.transformed.selection, parse('[]'))]",
+				"fslogixUserGroups": "[if(and(equals(steps('userProfiles').storageService, 'AzureFiles'), or(steps('userProfiles').configureSessionHosts, equals(steps('userProfiles').deployStorage, true)), not(equals(steps('userProfiles').azureFiles.shardingOption, 'None')), not(equals(steps('identity').solution, 'EntraId'))), steps('userProfiles').azureFiles.groupPickerBlade.transformed.groups, parse('[]'))]",
 				"fslogixShareSizeInGB": "[if(equals(steps('userProfiles').deployStorage, true), if(equals(steps('userProfiles').storageService, 'AzureFiles'), steps('userProfiles').azureFiles.storageShareSize, steps('userProfiles').azureNetAppFiles.storageShareSize), 100)]",
 				"fslogixStorageIndex": "[if(and(equals(steps('userProfiles').deployStorage, true), equals(steps('userProfiles').storageService, 'AzureFiles')), steps('userProfiles').azureFiles.storageIndex, 0)]",
-				"fslogixStorageAccountADKerberosEncryption": "[if(and(equals(steps('userProfiles').deployStorage, true), equals(steps('userProfiles').storageService, 'AzureFiles')), steps('userProfiles').azureFiles.storageKerberosEncryption, 'RC4')]",
+				"fslogixStorageKerberosEncryptionType": "[if(and(equals(steps('userProfiles').deployStorage, true), equals(steps('userProfiles').storageService, 'AzureFiles')), steps('userProfiles').azureFiles.storageKerberosEncryption, 'RC4')]",
 				"keyManagementStorageAccounts": "[if(and(equals(steps('userProfiles').deployStorage, true), equals(steps('userProfiles').storageService, 'AzureFiles')), steps('userProfiles').azureFiles.keyManagement, 'MicrosoftManaged')]",
 				"fslogixExistingLocalStorageAccountResourceIds": "[if(and(steps('userProfiles').configureSessionHosts, not(equals(steps('userProfiles').deployStorage, true)), equals(steps('userProfiles').storageService, 'AzureFiles')), steps('userProfiles').azureFiles.existingLocalStorageAccounts, parse('[]'))]",
 				"fslogixExistingRemoteStorageAccountResourceIds": "[if(and(steps('userProfiles').configureSessionHosts, contains(steps('userProfiles').fslogixContainerType, 'CloudCache'), equals(steps('userProfiles').storageService, 'AzureFiles')), steps('userProfiles').azureFiles.existingRemoteStorageAccounts, parse('[]'))]",
-				"fslogixAdminGroups": "[if(steps('userProfiles').shareManagement.configureAdminAccess, steps('userProfiles').shareManagement.groupPickerBlade.transformed.selection, parse('[]'))]",
+				"fslogixAdminGroups": "[if(steps('userProfiles').shareManagement.configureAdminAccess, steps('userProfiles').shareManagement.groupPickerBlade.transformed.groups, parse('[]'))]",
 				"deployIncreaseQuota": "[if(and(equals(steps('basics').deploymentType, 'Complete'), equals(steps('userProfiles').azureFiles.storageSku, 'Premium')), steps('management').automation.deployIncreaseQuota, false)]",
 				"recoveryServices": "[steps('management').backup.recoveryServices]",
 				"existingRecoveryServicesVaultResourceId": "[if(and(equals(steps('basics').deploymentType, 'SessionHostsOnly'), equals(steps('basics').hostPoolApi.properties.hostPoolType, 'Personal'), steps('management').backup.recoveryServices), steps('management').backup.recoveryServicesVault, '')]",

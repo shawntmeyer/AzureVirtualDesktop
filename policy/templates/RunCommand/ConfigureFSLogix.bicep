@@ -15,21 +15,21 @@ param virtualMachineName string
 var fslogixLocalStorageAccountNames = [for id in fslogixLocalStorageAccountResourceIds: last(split(id, '/'))]
 var fslogixRemoteStorageAccountNames = [for id in fslogixRemoteStorageAccountResourceIds: last(split(id, '/'))]
 //  only get keys if EntraId
-var fslogixLocalSAKey1 = contains(identitySolution, 'EntraId') && !empty(fslogixLocalStorageAccountResourceIds) ? [ localStorageAccounts[0].listkeys().keys[0].value ] : []
-var fslogixLocalSAKey2 = contains(identitySolution, 'EntraId') && length(fslogixLocalStorageAccountResourceIds) > 1 ? [ localStorageAccounts[1].listkeys().keys[0].value ] : []
+var fslogixLocalSAKey1 = identitySolution == 'EntraId' && !empty(fslogixLocalStorageAccountResourceIds) ? [ localStorageAccounts[0].listkeys().keys[0].value ] : []
+var fslogixLocalSAKey2 = identitySolution == 'EntraId' && length(fslogixLocalStorageAccountResourceIds) > 1 ? [ localStorageAccounts[1].listkeys().keys[0].value ] : []
 var fslogixLocalStorageAccountKeys = union(fslogixLocalSAKey1, fslogixLocalSAKey2)
-var fslogixRemoteAKey1 = contains(identitySolution, 'EntraId') && !empty(fslogixRemoteStorageAccountResourceIds) ? [ remoteStorageAccounts[0].listkeys().keys[0].value ] : []
-var fslogixRemoteSAKey2 = contains(identitySolution, 'EntraId') && length(fslogixRemoteStorageAccountResourceIds) > 1 ? [ remoteStorageAccounts[1].listkeys().keys[0].value ] : []
+var fslogixRemoteAKey1 = identitySolution == 'EntraId' && !empty(fslogixRemoteStorageAccountResourceIds) ? [ remoteStorageAccounts[0].listkeys().keys[0].value ] : []
+var fslogixRemoteSAKey2 = identitySolution == 'EntraId' && length(fslogixRemoteStorageAccountResourceIds) > 1 ? [ remoteStorageAccounts[1].listkeys().keys[0].value ] : []
 var fslogixRemoteStorageAccountKeys = union(fslogixRemoteAKey1, fslogixRemoteSAKey2)
 
 // call on new storage accounts only if we need the Storage Key(s)
-resource localStorageAccounts 'Microsoft.Storage/storageAccounts@2023-01-01' existing = [for resId in fslogixLocalStorageAccountResourceIds: if(contains(identitySolution, 'EntraId') && !empty(fslogixLocalStorageAccountResourceIds)) {
+resource localStorageAccounts 'Microsoft.Storage/storageAccounts@2023-01-01' existing = [for resId in fslogixLocalStorageAccountResourceIds: if(identitySolution == 'EntraId' && !empty(fslogixLocalStorageAccountResourceIds)) {
   name: last(split(resId, '/'))
   scope: resourceGroup(split(resId, '/')[2], split(resId, '/')[4])
 }]
 
 // call on remote storage accounts only if we need the Storage Key(s)
-resource remoteStorageAccounts 'Microsoft.Storage/storageAccounts@2023-01-01' existing = [for resId in fslogixRemoteStorageAccountResourceIds: if(contains(identitySolution, 'EntraId') && !empty(fslogixRemoteStorageAccountResourceIds)) {
+resource remoteStorageAccounts 'Microsoft.Storage/storageAccounts@2023-01-01' existing = [for resId in fslogixRemoteStorageAccountResourceIds: if(identitySolution == 'EntraId' && !empty(fslogixRemoteStorageAccountResourceIds)) {
   name: last(split(resId, '/'))
   scope: resourceGroup(split(resId, '/')[2], split(resId, '/')[4])
 }]

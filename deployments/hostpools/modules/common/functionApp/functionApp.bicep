@@ -24,7 +24,7 @@ param resourceGroupRoleAssignments array = []
 param serverFarmId string
 param storageAccountName string
 param tags object
-param timeStamp string
+param deploymentSuffix string
 
 var cloudSuffix = replace(replace(environment().resourceManager, 'https://management.', ''), '/', '')
 // ensure that private endpoint name and nic name are not longer than 80
@@ -222,14 +222,14 @@ resource applicationInsights 'Microsoft.Insights/components@2020-02-02' = if (en
 }
 
 module updatePrivateLinkScope '../privateLinkScopes/get-PrivateLinkScope.bicep' = if (enableApplicationInsights && !empty(privateLinkScopeResourceId)) {
-  name: 'PrivateLlinkScope-${timeStamp}'
+  name: 'PrivateLlinkScope-${deploymentSuffix}'
   scope: subscription()
   params: {
     privateLinkScopeResourceId: privateLinkScopeResourceId
     scopedResourceIds: [
       applicationInsights.id
     ]
-    timeStamp: timeStamp
+    deploymentSuffix: deploymentSuffix
   }
 }
 
@@ -385,7 +385,7 @@ resource privateDnsZoneGroup_functionApp 'Microsoft.Network/privateEndpoints/pri
 
 module roleAssignments_resourceGroups '../../../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = [
   for i in range(0, length(resourceGroupRoleAssignments)): {
-    name: 'set-role-assignment-${i}-${timeStamp}'
+    name: 'set-role-assignment-${i}-${deploymentSuffix}'
     scope: resourceGroup(resourceGroupRoleAssignments[i].scope)
     params: {
       principalId: functionApp.identity.principalId
@@ -396,7 +396,7 @@ module roleAssignments_resourceGroups '../../../../sharedModules/resources/autho
 ]
 
 module roleAssignment_storageAccount '../roleAssignment-storageAccount.bicep' = {
-  name: 'set-role-assignment-storage-${timeStamp}'
+  name: 'set-role-assignment-storage-${deploymentSuffix}'
   params: {
     principalIds: [functionApp.identity.principalId]
     principalType: 'ServicePrincipal'

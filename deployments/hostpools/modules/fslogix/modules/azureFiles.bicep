@@ -11,6 +11,8 @@ param deploymentVirtualMachineName string
 param domainJoinUserPassword string
 @secure()
 param domainJoinUserPrincipalName string
+param domainName string
+param domainGuid string
 param fslogixEncryptionKeyNameConv string
 param encryptionKeyVaultUri string
 param encryptionUserAssignedIdentityResourceId string
@@ -47,12 +49,12 @@ param storageAccountNamePrefix string
 param storageCount int
 param storageIndex int
 param storageSku string
-param storageSolution string
 param tags object
-param timeStamp string
+param deploymentSuffix string
 param timeZone string
 
 var adminRoleDefinitionId = 'a7264617-510b-434b-a828-9731dc254ea7' // Storage File Data SMB Share Elevated Contributor
+var userRoleDefinitionId = '0c867c2a-1d8c-454a-a3db-ab2ea1bdc8bb' // Storage File Data SMB Share Contributor
 
 var privateEndpointVnetName = !empty(privateEndpointSubnetResourceId) && privateEndpoint
   ? split(privateEndpointSubnetResourceId, '/')[8]
@@ -101,11 +103,21 @@ resource storageAccounts 'Microsoft.Storage/storageAccounts@2022-09-01' = [
       allowBlobPublicAccess: false
       allowCrossTenantReplication: false
       allowedCopyScope: privateEndpoint ? 'PrivateLink' : 'AAD'
-      allowSharedKeyAccess: true
-      azureFilesIdentityBasedAuthentication: contains(identitySolution, 'DomainServices')
+      allowSharedKeyAccess: identitySolution == 'EntraId' ? true : false
+      azureFilesIdentityBasedAuthentication: identitySolution != 'EntraId'
         ? {
-            defaultSharePermission: 'StorageFileDataSmbShareContributor'
-            directoryServiceOptions: identitySolution == 'EntraDomainServices' ? 'AADDS' : 'None'
+            defaultSharePermission: contains(identitySolution, 'DomainServices')
+              ? 'StorageFileDataSmbShareContributor'
+              : 'None'
+            directoryServiceOptions: identitySolution == 'EntraDomainServices'
+              ? 'AADDS'
+              : identitySolution == 'EntraIDKerberos' ? 'AADKERB' : 'None'
+            activeDirectoryProperties: identitySolution == 'EntraKerberos'
+              ? {
+                  domainGuid: domainGuid
+                  domainName: domainName
+                }
+              : {}
           }
         : null
       defaultToOAuthAuthentication: false
@@ -177,12 +189,27 @@ resource fileServices 'Microsoft.Storage/storageAccounts/fileServices@2022-09-01
   }
 ]
 
+// Assigns the SMB Contributor role to the Storage Account for the user groups so they can write their profile directories.
+module roleAssignmentsUsers '../../common/roleAssignment-storageAccount.bicep' = [
+  for i in range(0, storageCount): if (!contains(identitySolution, 'DomainServices')) {
+    name: '${storageAccounts[i].name}-UserRoleAssignments-${deploymentSuffix}'
+    params: {
+      principalIds: shardingOptions == 'None'
+        ? map(shareUserGroups, group => group.id)
+        : [map(shareUserGroups, group => group.id)[i]]
+      principalType: 'Group'
+      storageAccountResourceId: storageAccounts[i].id
+      roleDefinitionId: userRoleDefinitionId
+    }
+  }
+]
+
 // Assigns the SMB Elevated Contributor role to the Storage Account for admins so they can adjust NTFS permissions if needed.
 module roleAssignmentsAdmins '../../common/roleAssignment-storageAccount.bicep' = [
-  for i in range(0, storageCount): if (contains(identitySolution, 'DomainServices') && !empty(shareAdminGroups)) {
-    name: '${storageAccounts[i].name}_AdminRoleAssignments_${timeStamp}'
+  for i in range(0, storageCount): if (!empty(shareAdminGroups)) {
+    name: '${storageAccounts[i].name}-AdminRoleAssignments-${deploymentSuffix}'
     params: {
-      principalIds: map(shareAdminGroups, group => group.objectId)
+      principalIds: map(shareAdminGroups, group => group.id)
       principalType: 'Group'
       storageAccountResourceId: storageAccounts[i].id
       roleDefinitionId: adminRoleDefinitionId
@@ -192,7 +219,7 @@ module roleAssignmentsAdmins '../../common/roleAssignment-storageAccount.bicep' 
 
 module shares 'shares.bicep' = [
   for i in range(0, storageCount): {
-    name: '${storageAccounts[i].name}_fileShares_${timeStamp}'
+    name: '${storageAccounts[i].name}-fileShares-${deploymentSuffix}'
     params: {
       fileShares: fileShares
       shareSizeInGB: shareSizeInGB
@@ -207,7 +234,7 @@ module shares 'shares.bicep' = [
 
 module privateEndpoints '../../../../sharedModules/resources/network/private-endpoint/main.bicep' = [
   for i in range(0, storageCount): if (privateEndpoint) {
-    name: '${storageAccounts[i].name}_privateEndpoint_${timeStamp}'
+    name: '${storageAccounts[i].name}-privateEndpoint-${deploymentSuffix}'
     params: {
       customNetworkInterfaceName: replace(
         replace(replace(privateEndpointNICNameConv, 'SUBRESOURCE', 'file'), 'RESOURCE', '${storageAccounts[i].name}'),
@@ -280,26 +307,21 @@ resource storageAccounts_file_diagnosticSettings 'Microsoft.Insights/diagnosticS
   }
 ]
 
-module SetNTFSPermissions 'domainJoinSetNTFSPermissions.bicep' = if (contains(identitySolution, 'DomainServices')) {
-  name: 'Set-NTFSPermissions_${timeStamp}'
+module configureADDSAuth 'domainJoin.bicep' = if (identitySolution == 'ActiveDirectoryDomainServices') {
+  name: 'Join-Domain-${deploymentSuffix}'
   scope: resourceGroup(deploymentResourceGroupName)
   params: {
-    adminGroupNames: map(shareAdminGroups, group => group.displayName)
     domainJoinUserPrincipalName: domainJoinUserPrincipalName
     domainJoinUserPassword: domainJoinUserPassword
+    hostPoolName: last(split(hostPoolResourceId, '/'))
     kerberosEncryptionType: kerberosEncryptionType
     location: location
     ouPath: ouPath
     resourceGroupStorage: resourceGroupStorage
-    shardingOptions: shardingOptions
-    shares: fileShares
     storageAccountNamePrefix: storageAccountNamePrefix
     storageCount: storageCount
     storageIndex: storageIndex
-    storageSolution: storageSolution
-    timeStamp: timeStamp
     userAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
-    userGroupNames: map(shareUserGroups, group => group.displayName)
     virtualMachineName: deploymentVirtualMachineName
   }
   dependsOn: [
@@ -308,8 +330,30 @@ module SetNTFSPermissions 'domainJoinSetNTFSPermissions.bicep' = if (contains(id
   ]
 }
 
+module SetNTFSPermissions 'setNTFSPermissionsAzureFiles.bicep' = {
+  name: 'Set-NTFS-Permissions-${deploymentSuffix}'
+  scope: resourceGroup(deploymentResourceGroupName)
+  params: {
+    adminGroups: contains(identitySolution, 'DomainServices') ? map(shareAdminGroups, group => group.name) : []
+    location: location
+    shardingOptions: shardingOptions
+    shares: fileShares
+    storageAccountNamePrefix: storageAccountNamePrefix
+    storageCount: storageCount
+    storageIndex: storageIndex
+    userAssignedIdentityClientId: deploymentUserAssignedIdentityClientId
+    userGroups: contains(identitySolution, 'DomainServices') ? map(shareUserGroups, group => group.name) : []
+    virtualMachineName: deploymentVirtualMachineName
+  }
+  dependsOn: [
+    privateEndpoints
+    shares
+    configureADDSAuth
+  ]
+}
+
 module recoveryServicesVault '../../../../sharedModules/resources/recovery-services/vault/main.bicep' = if (recoveryServices) {
-  name: 'RecoveryServices_AzureFiles_${timeStamp}'
+  name: 'RecoveryServices-AzureFiles-${deploymentSuffix}'
   scope: resourceGroup(resourceGroupStorage)
   params: {
     location: location
@@ -402,7 +446,7 @@ module recoveryServicesVault '../../../../sharedModules/resources/recovery-servi
 }
 
 module increaseQuotaFunctionApp '../../common/functionApp/functionApp.bicep' = if (storageSku == 'Premium' && increaseQuota) {
-  name: 'IncreaseQuotaFunctionApp_${timeStamp}'
+  name: 'IncreaseQuotaFunctionApp-${deploymentSuffix}'
   params: {
     location: location
     applicationInsightsName: increaseQuotaApplicationInsightsName
@@ -442,14 +486,14 @@ module increaseQuotaFunctionApp '../../common/functionApp/functionApp.bicep' = i
     serverFarmId: serverFarmId
     storageAccountName: increaseQuotaStorageAccountName
     tags: tags
-    timeStamp: timeStamp
+    deploymentSuffix: deploymentSuffix
     encryptionKeyName: increaseQuotaEncryptionKeyName
     encryptionKeyVaultUri: encryptionKeyVaultUri
   }
 }
 
 module increaseQuotaFunction '../../common/functionApp/function.bicep' = if (storageSku == 'Premium' && increaseQuota && storageCount > 0) {
-  name: 'IncreaseQuotaFunction_${timeStamp}'
+  name: 'IncreaseQuotaFunction-${deploymentSuffix}'
   params: {
     files: {
       'requirements.psd1': loadTextContent('../../../../../.common/scripts/auto-increase-file-share/requirements.psd1')

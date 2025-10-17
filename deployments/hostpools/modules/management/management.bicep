@@ -28,7 +28,7 @@ param privateEndpointNameConv string
 param privateEndpointNICNameConv string
 param resourceGroupManagement string
 param tags object
-param timeStamp string
+param deploymentSuffix string
 @secure()
 param virtualMachineAdminPassword string
 @secure()
@@ -59,7 +59,7 @@ var secretList = union(
 )
 
 module secretsKeyVault '../../../sharedModules/resources/key-vault/vault/main.bicep' = if (deploySecretsKeyVault && !empty(secretList)) {
-  name: 'Secrets_KeyVault_${timeStamp}'
+  name: 'Secrets-KeyVault-${deploymentSuffix}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
     name: secretsKeyVaultName
@@ -105,7 +105,7 @@ module secretsKeyVault '../../../sharedModules/resources/key-vault/vault/main.bi
 }
 
 module encryptionKeyVault '../../../sharedModules/resources/key-vault/vault/main.bicep' = if (deployEncryptionKeysKeyVault) {
-  name: 'Encryption_Keys_KeyVault_${timeStamp}'
+  name: 'Encryption-Keys-KeyVault-${deploymentSuffix}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
     name: encryptionKeysKeyVaultName
@@ -149,7 +149,7 @@ module encryptionKeyVault '../../../sharedModules/resources/key-vault/vault/main
 
 module logAnalyticsWorkspace 'modules/logAnalyticsWorkspace.bicep' = if (enableMonitoring) {
   scope: resourceGroup(resourceGroupManagement)
-  name: 'LogAnalytics_${timeStamp}'
+  name: 'LogAnalytics-${deploymentSuffix}'
   params: {
     logAnalyticsWorkspaceName: logAnalyticsWorkspaceName
     logAnalyticsWorkspaceRetention: logAnalyticsWorkspaceRetention
@@ -161,7 +161,7 @@ module logAnalyticsWorkspace 'modules/logAnalyticsWorkspace.bicep' = if (enableM
 
 // Data Collection Rule for AVD Insights required for the Azure Monitor Agent
 module avdInsightsDataCollectionRules 'modules/avdInsightsDataCollectionRules.bicep' = if (enableMonitoring) {
-  name: 'AVDInsights_DataCollectionRule_${timeStamp}'
+  name: 'AVDInsights-DataCollectionRule-${deploymentSuffix}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
     dataCollectionEndpointId: enableMonitoring ? dataCollectionEndpoint!.outputs.resourceId : ''
@@ -173,7 +173,7 @@ module avdInsightsDataCollectionRules 'modules/avdInsightsDataCollectionRules.bi
 
 // Data Collection Rule for VM Insights required for the Azure Monitor Agent
 module vmInsightsDataCollectionRules 'modules/vmInsightsDataCollectionRules.bicep' = if (enableMonitoring) {
-  name: 'VMInsights_DataCollectionRule_${timeStamp}'
+  name: 'VMInsights-DataCollectionRule-${deploymentSuffix}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
     dataCollectionEndpointId: enableMonitoring ? dataCollectionEndpoint!.outputs.resourceId : ''
@@ -184,7 +184,7 @@ module vmInsightsDataCollectionRules 'modules/vmInsightsDataCollectionRules.bice
 }
 
 module dataCollectionEndpoint 'modules/dataCollectionEndpoint.bicep' = if (enableMonitoring) {
-  name: 'DataCollectionEndpoint_${timeStamp}'
+  name: 'DataCollectionEndpoint-${deploymentSuffix}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
     location: location
@@ -195,19 +195,19 @@ module dataCollectionEndpoint 'modules/dataCollectionEndpoint.bicep' = if (enabl
 }
 
 module updatePrivateLinkScope '../common/privateLinkScopes/get-PrivateLinkScope.bicep' = if (enableMonitoring && !empty(azureMonitorPrivateLinkScopeResourceId)) {
-  name: 'PrivateLlinkScope-${timeStamp}'
+  name: 'PrivateLlinkScope-${deploymentSuffix}'
   params: {
     privateLinkScopeResourceId: azureMonitorPrivateLinkScopeResourceId
     scopedResourceIds: [
       logAnalyticsWorkspace!.outputs.resourceId
       dataCollectionEndpoint!.outputs.resourceId
     ]
-    timeStamp: timeStamp
+    deploymentSuffix: deploymentSuffix
   }
 }
 
 module hostingPlan 'modules/functionAppHostingPlan.bicep' = if (enableQuotaManagement) {
-  name: 'FunctionAppHostingPlan_${timeStamp}'
+  name: 'FunctionAppHostingPlan-${deploymentSuffix}'
   scope: resourceGroup(resourceGroupManagement)
   params: {
     functionAppKind: 'functionApp'

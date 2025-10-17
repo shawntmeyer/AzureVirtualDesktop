@@ -1,7 +1,7 @@
 param diskAccessId string
 param diskName string
 param location string
-param timeStamp string
+param deploymentSuffix string
 param vmName string
 
 resource getDisk 'Microsoft.Compute/disks@2023-10-02' existing = {
@@ -9,7 +9,7 @@ resource getDisk 'Microsoft.Compute/disks@2023-10-02' existing = {
 }
 
 module updateDisk 'updateOSDisk.bicep' = {
-  name: 'Update_OSDisk_${vmName}_Stage2_${timeStamp}'
+  name: 'Update-OSDisk-${vmName}-Stage2-${deploymentSuffix}'
   params: {
     diskName: diskName
     creationData: getDisk.properties.creationData

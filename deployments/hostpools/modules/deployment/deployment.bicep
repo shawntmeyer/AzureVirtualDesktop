@@ -23,7 +23,7 @@ param resourceGroupHosts string
 param resourceGroupManagement string
 param resourceGroupStorage string
 param tags object
-param timeStamp string
+param deploymentSuffix string
 param userAssignedIdentityNameConv string
 param virtualMachineName string
 param virtualMachineNICName string
@@ -144,7 +144,7 @@ var roleAssignments = union(
 )
 
 module deploymentUserAssignedIdentity '../../../sharedModules/resources/managed-identity/user-assigned-identity/main.bicep' = {
-  name: 'UserAssignedIdentity_Deployment_${timeStamp}'
+  name: 'UserAssignedIdentity-Deployment-${deploymentSuffix}'
   scope: resourceGroup(resourceGroupDeployment)
   params: {
     location: locationVirtualMachines
@@ -161,7 +161,7 @@ module deploymentUserAssignedIdentity '../../../sharedModules/resources/managed-
 module roleAssignments_deployment '../../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = [
   for i in range(0, length(roleAssignments)): {
     scope: resourceGroup(roleAssignments[i].subscription, roleAssignments[i].resourceGroup)
-    name: 'RA-${roleAssignments[i].depName}-${timeStamp}'
+    name: 'RA-${roleAssignments[i].depName}-${deploymentSuffix}'
     params: {
       principalId: deploymentUserAssignedIdentity.outputs.principalId
       principalType: 'ServicePrincipal'
@@ -172,7 +172,7 @@ module roleAssignments_deployment '../../../sharedModules/resources/authorizatio
 
 // Deployment VM
 module virtualMachine 'modules/virtualMachine.bicep' = {
-  name: 'VirtualMachine_Deployment_${timeStamp}'
+  name: 'VirtualMachine-Deployment-${deploymentSuffix}'
   scope: resourceGroup(resourceGroupDeployment)
   params: {
     identitySolution: identitySolution
@@ -198,7 +198,7 @@ module virtualMachine 'modules/virtualMachine.bicep' = {
       },
       tags[?'Microsoft.Compute/virtualMachines'] ?? {}
     )
-    timeStamp: timeStamp
+    deploymentSuffix: deploymentSuffix
     userAssignedIdentitiesResourceIds: {
       '${deploymentUserAssignedIdentity.outputs.resourceId}': {}
     }

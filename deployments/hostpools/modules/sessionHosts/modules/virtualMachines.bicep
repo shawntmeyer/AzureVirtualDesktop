@@ -40,6 +40,7 @@ param imageOffer string
 param imagePublisher string
 param imageSku string
 param integrityMonitoring bool
+param intuneEnrollment bool
 param location string
 param networkInterfaceNameConv string
 param osDiskNameConv string
@@ -54,7 +55,7 @@ param secureBootEnabled bool
 param storageSuffix string
 param subnetResourceId string
 param tags object
-param timeStamp string
+param deploymentSuffix string
 param timeZone string
 param useAgentDownloadEndpoint bool
 @secure()
@@ -83,11 +84,11 @@ var fslogixRemoteNetAppOfficeShare = length(fslogixRemoteNetAppServerFqdns) > 1 
 var fslogixLocalStorageAccountNames = [for id in fslogixLocalStorageAccountResourceIds: last(split(id, '/'))]
 var fslogixRemoteStorageAccountNames = [for id in fslogixRemoteStorageAccountResourceIds: last(split(id, '/'))]
 //  only get keys if EntraId
-var fslogixLocalSAKey1 = contains(identitySolution, 'EntraId') && !empty(fslogixLocalStorageAccountResourceIds) ? [ localStorageAccounts[0].listkeys().keys[0].value ] : []
-var fslogixLocalSAKey2 = contains(identitySolution, 'EntraId') && length(fslogixLocalStorageAccountResourceIds) > 1 ? [ localStorageAccounts[1].listkeys().keys[0].value ] : []
+var fslogixLocalSAKey1 = identitySolution == 'EntraId' && !empty(fslogixLocalStorageAccountResourceIds) ? [ localStorageAccounts[0].listkeys().keys[0].value ] : []
+var fslogixLocalSAKey2 = identitySolution == 'EntraId' && length(fslogixLocalStorageAccountResourceIds) > 1 ? [ localStorageAccounts[1].listkeys().keys[0].value ] : []
 var fslogixLocalStorageAccountKeys = union(fslogixLocalSAKey1, fslogixLocalSAKey2)
-var fslogixRemoteAKey1 = contains(identitySolution, 'EntraId') && !empty(fslogixRemoteStorageAccountResourceIds) ? [ remoteStorageAccounts[0].listkeys().keys[0].value ] : []
-var fslogixRemoteSAKey2 = contains(identitySolution, 'EntraId') && length(fslogixRemoteStorageAccountResourceIds) > 1 ? [ remoteStorageAccounts[1].listkeys().keys[0].value ] : []
+var fslogixRemoteAKey1 = identitySolution == 'EntraId' && !empty(fslogixRemoteStorageAccountResourceIds) ? [ remoteStorageAccounts[0].listkeys().keys[0].value ] : []
+var fslogixRemoteSAKey2 = identitySolution == 'EntraId' && length(fslogixRemoteStorageAccountResourceIds) > 1 ? [ remoteStorageAccounts[1].listkeys().keys[0].value ] : []
 var fslogixRemoteStorageAccountKeys = union(fslogixRemoteAKey1, fslogixRemoteSAKey2)
 
 // Dynamic parameters for the Anti-Malware Extension
@@ -147,7 +148,6 @@ var ImageReference = empty(customImageResourceId) ? {
 } : {
   id: customImageResourceId
 }
-var intune = contains(identitySolution, 'IntuneEnrollment')
 
 // call on the host pool to get the registration token
 resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' existing = {
@@ -156,13 +156,13 @@ resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' existin
 }
 
 // call on new storage accounts only if we need the Storage Key(s)
-resource localStorageAccounts 'Microsoft.Storage/storageAccounts@2023-01-01' existing = [for resId in fslogixLocalStorageAccountResourceIds: if(contains(identitySolution, 'EntraId') && !empty(fslogixLocalStorageAccountResourceIds)) {
+resource localStorageAccounts 'Microsoft.Storage/storageAccounts@2023-01-01' existing = [for resId in fslogixLocalStorageAccountResourceIds: if(identitySolution == 'EntraId' && !empty(fslogixLocalStorageAccountResourceIds)) {
   name: last(split(resId, '/'))
   scope: resourceGroup(split(resId, '/')[2], split(resId, '/')[4])
 }]
 
 // call on remote storage accounts only if we need the Storage Key(s)
-resource remoteStorageAccounts 'Microsoft.Storage/storageAccounts@2023-01-01' existing = [for resId in fslogixRemoteStorageAccountResourceIds: if(contains(identitySolution, 'EntraId') && !empty(fslogixRemoteStorageAccountResourceIds)) {
+resource remoteStorageAccounts 'Microsoft.Storage/storageAccounts@2023-01-01' existing = [for resId in fslogixRemoteStorageAccountResourceIds: if(identitySolution == 'EntraId' && !empty(fslogixRemoteStorageAccountResourceIds)) {
   name: last(split(resId, '/'))
   scope: resourceGroup(split(resId, '/')[2], split(resId, '/')[4])
 }]
@@ -284,7 +284,7 @@ resource extension_JsonADDomainExtension 'Microsoft.Compute/virtualMachines/exte
   name: 'JsonADDomainExtension'
   location: location
   properties: {
-    forceUpdateTag: timeStamp
+    forceUpdateTag: deploymentSuffix
     publisher: 'Microsoft.Compute'
     type: 'JsonADDomainExtension'
     typeHandlerVersion: '1.3'
@@ -302,7 +302,7 @@ resource extension_JsonADDomainExtension 'Microsoft.Compute/virtualMachines/exte
   }
 }]
 
-resource extension_AADLoginForWindows 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): if (contains(identitySolution, 'EntraId')) {
+resource extension_AADLoginForWindows 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): if (identitySolution == 'EntraId') {
   parent: virtualMachine[i]
   name: 'AADLoginForWindows'
   location: location
@@ -311,7 +311,7 @@ resource extension_AADLoginForWindows 'Microsoft.Compute/virtualMachines/extensi
     type: 'AADLoginForWindows'
     typeHandlerVersion: '1.0'
     autoUpgradeMinorVersion: true
-    settings: intune ? {
+    settings: intuneEnrollment ? {
       mdmId: '0000000a-0000-0000-c000-000000000000'
     } : null
   }
@@ -576,7 +576,7 @@ resource runCommand_ConfigureSessionHost 'Microsoft.Compute/virtualMachines/runC
 }]
 
 module postDeploymentScripts 'invokeCustomizations.bicep' = [for i in range(0, sessionHostCount): if(!empty(sessionHostCustomizations)) {
-  name: '${virtualMachine[i].name}-Customizations-${timeStamp}'
+  name: '${virtualMachine[i].name}-Customizations-${deploymentSuffix}'
   params: {
     artifactsContainerUri: artifactsContainerUri
     customizations: sessionHostCustomizations
@@ -608,7 +608,7 @@ resource extension_DSC_installAvdAgents 'Microsoft.Compute/virtualMachines/exten
           }
           aadJoin: !contains(identitySolution, 'DomainServices')
           UseAgentDownloadEndpoint: useAgentDownloadEndpoint
-          mdmId: intune ? '0000000a-0000-0000-c000-000000000000' : ''
+          mdmId: intuneEnrollment ? '0000000a-0000-0000-c000-000000000000' : ''
         }
       }
       protectedSettings: {
@@ -625,12 +625,12 @@ resource extension_DSC_installAvdAgents 'Microsoft.Compute/virtualMachines/exten
 ]
 
 module updateOSDiskNetworkAccess 'getOSDisk.bicep' = [for i in range(0, sessionHostCount): {
-  name: '${virtualMachine[i].name}-disable-osDisk-PublicAccess_${timeStamp}'
+  name: '${virtualMachine[i].name}-disable-osDisk-PublicAccess-${deploymentSuffix}'
   params: {
     diskAccessId: diskAccessId
     diskName: virtualMachine[i].properties.storageProfile.osDisk.name
     location: location
-    timeStamp: timeStamp
+    deploymentSuffix: deploymentSuffix
     vmName: virtualMachine[i].name
   }
 }]

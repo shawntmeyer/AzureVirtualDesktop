@@ -5,7 +5,7 @@ metadata description = 'This solution allows you to create a custom image much l
 metadata author = 'shawn.meyer@microsoft.com'
 
 @description('Value appended to the deployment names.')
-param timeStamp string = utcNow('yyyyMMddhhmmss')
+param timeStamp string = utcNow('yyyyMMddHHmmss')
 
 @description('Deployment location. Note that the compute resources will be deployed to the region where the subnet is located.')
 param location string = deployment().location
@@ -272,6 +272,8 @@ param tags object = {}
 
 // * VARIABLE DECLARATIONS * //
 
+var deploymentSuffix = startsWith(deployment().name, 'Microsoft.Template-') ? substring(deployment().name, 19, 14) : timeStamp
+
 var installers = []
 // elimnate duplicates
 var customizers = union(customizations, installers)
@@ -364,7 +366,7 @@ var galleryImageDefinitionSecurityType = empty(imageDefinitionResourceId)
       : 'Standard'
 var galleryImageDefinitionSku = !empty(imageDefinitionSku) ? replace(imageDefinitionSku, ' ', '') : mpSku
 // build an image version from the ISO 8601 timestamp
-var autoImageVersionName = '${substring(timeStamp, 0, 4)}.${substring(timeStamp, 4, 4)}.${substring(timeStamp, 8, 4)}'
+var autoImageVersionName = '${substring(deploymentSuffix, 0, 4)}.${substring(deploymentSuffix, 4, 4)}.${substring(deploymentSuffix, 8, 4)}'
 var imageVersionName = imageMajorVersion != -1 && imageMajorVersion != -1 && imagePatch != -1
   ? '${imageMajorVersion}.${imageMinorVersion}.${imagePatch}'
   : autoImageVersionName
@@ -399,10 +401,10 @@ var imageVersionReplicationRegions = empty(remoteComputeGalleryResourceId)
       ? union(localImageVersionTargetRegions, defaultRemoteImageVersionTargetRegions)
       : localImageVersionTargetRegions
 
-var imageVersionEndOfLifeDate = imageVersionEOLinDays > 0 ? dateTimeAdd(timeStamp, 'P${imageVersionEOLinDays}D') : ''
+var imageVersionEndOfLifeDate = imageVersionEOLinDays > 0 ? dateTimeAdd(deploymentSuffix, 'P${imageVersionEOLinDays}D') : ''
 
-var imageVmName = take('${depPrefix}vmimg-${uniqueString(timeStamp)}', 15)
-var orchestrationVmName = take('${depPrefix}vmorc-${uniqueString(timeStamp)}', 15)
+var imageVmName = take('${depPrefix}vmimg-${uniqueString(deploymentSuffix)}', 15)
+var orchestrationVmName = take('${depPrefix}vmorc-${uniqueString(deploymentSuffix)}', 15)
 
 var vmSecurityType = galleryImageDefinitionSecurityType == 'TrustedLaunch'
   ? 'TrustedLaunch'
@@ -428,7 +430,7 @@ resource imageBuildRg 'Microsoft.Resources/resourceGroups@2023-07-01' = if (empt
 // * Managed Identity * //
 
 module userAssignedIdentity '../../sharedModules/resources/managed-identity/user-assigned-identity/main.bicep' = if (empty(userAssignedIdentityResourceId)) {
-  name: '${depPrefix}ManagedIdentity-${timeStamp}'
+  name: '${depPrefix}ManagedIdentity-${deploymentSuffix}'
   scope: resourceGroup(imageBuildResourceGroupName)
   params: {
     location: location
@@ -455,7 +457,7 @@ resource existingImageDefinition 'Microsoft.Compute/galleries/images@2024-03-03'
 }
 
 module imageDefinition '../../sharedModules/resources/compute/gallery/image/main.bicep' = if (empty(imageDefinitionResourceId)) {
-  name: '${depPrefix}Gallery-Image-Definition-${timeStamp}'
+  name: '${depPrefix}Gallery-Image-Definition-${deploymentSuffix}'
   scope: resourceGroup(split(computeGalleryResourceId, '/')[4])
   params: {
     location: location
@@ -478,7 +480,7 @@ resource remoteComputeGallery 'Microsoft.Compute/galleries@2024-03-03' existing 
 }
 
 module remoteImageDefinition '../../sharedModules/resources/compute/gallery/image/main.bicep' = if (!empty(remoteComputeGalleryResourceId)) {
-  name: '${depPrefix}Remote-Gallery-Image-Definition-${timeStamp}'
+  name: '${depPrefix}Remote-Gallery-Image-Definition-${deploymentSuffix}'
   scope: resourceGroup(split(remoteComputeGalleryResourceId, '/')[2], split(remoteComputeGalleryResourceId, '/')[4])
   params: {
     galleryName: last(split(remoteComputeGalleryResourceId, '/'))
@@ -506,7 +508,7 @@ module remoteImageDefinition '../../sharedModules/resources/compute/gallery/imag
 // * Role Assignments * //
 
 module roleAssignmentContributorBuildRg '../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = {
-  name: '${depPrefix}RA-MI-VirtMachContr-BuildRG-${timeStamp}'
+  name: '${depPrefix}RA-MI-VirtMachContr-BuildRG-${deploymentSuffix}'
   scope: resourceGroup(imageBuildResourceGroupName)
   params: {
     principalId: empty(userAssignedIdentityResourceId)
@@ -521,7 +523,7 @@ module roleAssignmentContributorBuildRg '../../sharedModules/resources/authoriza
 }
 
 module roleAssignmentBlobDataContributorBuilderRg '../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = if (collectCustomizationLogs) {
-  name: '${depPrefix}RA-MI-StorBlobDataContr-BuildRG-${timeStamp}'
+  name: '${depPrefix}RA-MI-StorBlobDataContr-BuildRG-${deploymentSuffix}'
   scope: resourceGroup(imageBuildResourceGroupName)
   params: {
     principalId: empty(userAssignedIdentityResourceId)
@@ -535,7 +537,7 @@ module roleAssignmentBlobDataContributorBuilderRg '../../sharedModules/resources
 // * Logging * //
 
 module logsStorageAccount '../../sharedModules/resources/storage/storage-account/main.bicep' = if (collectCustomizationLogs) {
-  name: '${depPrefix}Logs-StorageAccount-${timeStamp}'
+  name: '${depPrefix}Logs-StorageAccount-${deploymentSuffix}'
   scope: resourceGroup(imageBuildResourceGroupName)
   params: {
     #disable-next-line BCP335
@@ -625,7 +627,7 @@ module logsStorageAccount '../../sharedModules/resources/storage/storage-account
 // * Orchestration VM * //
 
 module orchestrationVm '../../sharedModules/resources/compute/virtual-machine/main.bicep' = {
-  name: '${depPrefix}Orchestration-VM-${timeStamp}'
+  name: '${depPrefix}Orchestration-VM-${deploymentSuffix}'
   scope: resourceGroup(imageBuildResourceGroupName)
   params: {
     location: computeLocation
@@ -680,7 +682,7 @@ module orchestrationVm '../../sharedModules/resources/compute/virtual-machine/ma
 // * Image VM * //
 
 module imageVm '../../sharedModules/resources/compute/virtual-machine/main.bicep' = {
-  name: '${depPrefix}Image-VM-${timeStamp}'
+  name: '${depPrefix}Image-VM-${deploymentSuffix}'
   scope: resourceGroup(imageBuildResourceGroupName)
   params: {
     hibernationEnabled: !empty(filter(imageDefinitionFeatures, feature => feature.name == 'IsHibernateSupported'))
@@ -755,7 +757,7 @@ module imageVm '../../sharedModules/resources/compute/virtual-machine/main.bicep
 // * Image Customizations * //
 
 module customizeImage 'modules/customizeImage.bicep' = {
-  name: '${depPrefix}Customize-Image-${timeStamp}'
+  name: '${depPrefix}Customize-Image-${deploymentSuffix}'
   scope: resourceGroup(imageBuildResourceGroupName)
   params: {
     adminPw: adminPw
@@ -789,7 +791,7 @@ module customizeImage 'modules/customizeImage.bicep' = {
 // * VM Generalization * //
 
 module stopAndGeneralizeImageVM '../../sharedModules/resources/compute/virtual-machine/runCommand/main.bicep' = {
-  name: '${depPrefix}Generalize-VM-${timeStamp}'
+  name: '${depPrefix}Generalize-VM-${deploymentSuffix}'
   scope: resourceGroup(imageBuildResourceGroupName)
   params: {
     location: computeLocation
@@ -822,7 +824,7 @@ module stopAndGeneralizeImageVM '../../sharedModules/resources/compute/virtual-m
 // * Capture Image * //
 
 module captureImage 'modules/captureImage.bicep' = {
-  name: '${depPrefix}Capture-Image-${timeStamp}'
+  name: '${depPrefix}Capture-Image-${deploymentSuffix}'
   params: {
     computeGalleryResourceId: computeGalleryResourceId
     depPrefix: depPrefix
@@ -840,7 +842,7 @@ module captureImage 'modules/captureImage.bicep' = {
     imageVersionEndOfLifeDate: imageVersionEndOfLifeDate
     location: computeLocation
     tags: tags
-    timeStamp: timeStamp
+    deploymentSuffix: deploymentSuffix
     virtualMachineResourceId: imageVm.outputs.resourceId
   }
   dependsOn: [
@@ -851,7 +853,7 @@ module captureImage 'modules/captureImage.bicep' = {
 // * Cleanup Temporary Resources * //
 
 module removeImageBuildResources '../../sharedModules/resources/compute/virtual-machine/runCommand/main.bicep' = {
-  name: '${depPrefix}Remove-Image-Image-Build-Resources-${timeStamp}'
+  name: '${depPrefix}Remove-Image-Image-Build-Resources-${deploymentSuffix}'
   scope: resourceGroup(imageBuildResourceGroupName)
   params: {
     asyncExecution: true
@@ -888,7 +890,7 @@ module removeImageBuildResources '../../sharedModules/resources/compute/virtual-
 }
 
 module remoteImageVersion '../../sharedModules/resources/compute/gallery/image/version/main.bicep' = if (!empty(remoteComputeGalleryResourceId)) {
-  name: '${depPrefix}Remote-ImageVersion-${timeStamp}'
+  name: '${depPrefix}Remote-ImageVersion-${deploymentSuffix}'
   scope: resourceGroup(split(remoteComputeGalleryResourceId, '/')[2], split(remoteComputeGalleryResourceId, '/')[4])
   params: {
     location: location
