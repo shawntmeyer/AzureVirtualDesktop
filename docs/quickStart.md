@@ -356,13 +356,13 @@ The [deployments/Deploy-ImageManagement.ps1](../deployments/Deploy-ImageManageme
 
    - [deployments/imageManagement/parameters/imageManagement.parameters.json](../deployments/imageManagement/parameters/imageManagement.parameters.json)
 
-    > [!Important]
-    > For Zero Trust deployments and other details see [Image Management Parameters](parameters.md#avd-image-management-parameters) for an explanation of all the parameters.
+      > [!IMPORTANT]
+      > For Zero Trust deployments and other details see [Image Management Parameters](parameters.md#avd-image-management-parameters) for an explanation of all the parameters.
 
    - [deployments/imageManagement/parameters/public.downloads.parameters.json](../deployments/imageManagement/parameters/public.downloads.parameters.json)
 
-    > [!Important]
-    > Copy the correct downloads parameters file for the cloud you are in. (i.e. public.downloads.parameters.json for AzureCloud (commercial/IL2) and AzureUSGovernment (IL4/5), secret for Azure Secret, and topsecret for Azure Top Secret).
+      > [!IMPORTANT]
+      > Copy the correct downloads parameters file for the cloud you are in. (i.e. public.downloads.parameters.json for AzureCloud (commercial/IL2) and AzureUSGovernment (IL4/5), secret for Azure Secret, and topsecret for Azure Top Secret).
 
 1. Set required parameters and make any optional updates desired in
 
