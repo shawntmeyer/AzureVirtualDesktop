@@ -273,7 +273,7 @@ try {
         $ResourceUrl = 'https://' + $StorageAccountName + $FilesSuffix  # HTTPS: https://stavd01.file.core.windows.net
         if ($AdminGroups.Count -eq 0 -and $UsersGroups.Count -eq 0) {
             Write-Output "No Admin or User Groups provided, Setting default permissions for $StorageAccountName"
-            $SDDLString = ($SDDLStartString + $SDDLUserGroupsString) -replace ' ', ''
+            $SDDLString = ($SDDLStartString + $SDDLBuiltInUsersString) -replace ' ', ''
         }
         Elseif ($ShardAzureFilesStorage -eq 'true') {
             # Check if storage is sharded (different user groups per storage account)
