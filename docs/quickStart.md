@@ -476,14 +476,14 @@ This option opens the deployment UI for the solution in the Azure Portal. Be sur
 
 #### Option 3: Using Command Line
 
-1. Create a parameters file [`<identifier>`-`<index>`.parameters.json] based on [deployments/hostpools/parameters/solution.parameters.json](../deployments/hostpools/parameters/hostpool.parameters.json) by reviewing the documentation at [AVD Host Pool Parameters](parameters.md#avd-host-pool-deployment-parameters).
+1. Create a parameters file [\<identifier>-\<index>.parameters.json] based on [deployments/hostpools/parameters/solution.parameters.json](../deployments/hostpools/parameters/hostpool.parameters.json) by reviewing the documentation at [AVD Host Pool Parameters](parameters.md#avd-host-pool-deployment-parameters) or run through a portal ui deployment and saving off the parameter file produced. Be sure to remove the `timeStamp` parameter from the exported parameter file.
 
 1. Deploy the AVD Host Pool (and supporting resources)
 
     ``` powershell
     $Location = '<Region>'
     $DeploymentName = '<valid deployment name>'
-    New-AzDeployment -Location $Location -Name $DeploymentName -TemplateFile '.\deployments\hostpools\hostpool.bicep' -TemplateParameterFile '.\deployments\hostpools\parameters\hostpoolid.parameters.json' -Verbose
+    New-AzDeployment -Location $Location -Name $DeploymentName -TemplateFile '.\deployments\hostpools\hostpool.bicep' -TemplateParameterFile '.\deployments\hostpools\parameters\<identifier>-<index>.parameters.json' -Verbose
     ```
 
 ## Validation
