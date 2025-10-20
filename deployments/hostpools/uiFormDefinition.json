@@ -476,7 +476,7 @@
 									"toolTip": "Input the distinguished name of the desired organization unit for the AVD session hosts.",
 									"placeholder": "Example: OU=pooled,OU=avd,DC=contoso,DC=com",
 									"constraints": {
-										"regex": "(?i)^(OU=[^,]+,)*(DC=[^,]+)(,DC=[^,]+)*$",
+										"regex": "^(?:\\s*[Oo][Uu]\\s*=\\s*[^,]+\\s*,\\s*)+[Dd][Cc]\\s*=\\s*[A-Za-z0-9-]+\\s*(?:,\\s*[Dd][Cc]\\s*=\\s*[A-Za-z0-9-]+\\s*)+$",
 										"required": true,
 										"validationMessage": "Provide a valid OU path in Distinguished Name format."
 									}
@@ -2393,7 +2393,7 @@
 							"toolTip": "Input the distinguished name of the desired organization unit for storage computer objects.",
 							"placeholder": "Example: OU=pooled,OU=avd,DC=contoso,DC=com",
 							"constraints": {
-								"regex": "(?i)^(OU=[^,]+,)*(DC=[^,]+)(,DC=[^,]+)*$",
+								"regex": "^(?:\\s*[Oo][Uu]\\s*=\\s*[^,]+\\s*,\\s*)+[Dd][Cc]\\s*=\\s*[A-Za-z0-9-]+\\s*(?:,\\s*[Dd][Cc]\\s*=\\s*[A-Za-z0-9-]+\\s*)+$",
 								"required": true,
 								"validationMessage": "Provide a valid OU distinguished name."
 							}
