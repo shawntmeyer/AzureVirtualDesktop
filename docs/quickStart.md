@@ -348,10 +348,13 @@ If you plan to build custom images or add custom software or run scripts during 
 
 The [deployments/Deploy-ImageManagement.ps1](../deployments/Deploy-ImageManagement.ps1) script is the easiest way to ensure all necessary image management resources (scripts and installers and Compute Gallery for custom image option.) are present for the AVD deployment.
 
-1. Create a custom imageManagement parameter file for your environment by copying [deployments/imageManagement/parameters/imageManagement.parameters.json](../deployments/imageManagement/parameters/imageManagement.parameters.json) to a new file and naming it with a custom prefix, hereafter referred to as `<customprefix>`.
-
 > [!IMPORTANT]
 > For Zero Trust deployments, see [Image Management Parameters](parameters.md#avd-image-management-parameters) for an explanation of all the parameters.
+
+> [!IMPORTANT]
+> For Air-Gapped cloud instructions, see [Custom Image Air-Gapped Cloud Considerations](imageAir-GappedCloud.md) for more detailed instructions.
+
+1. Create a custom imageManagement parameter file for your environment by copying [deployments/imageManagement/parameters/imageManagement.parameters.json](../deployments/imageManagement/parameters/imageManagement.parameters.json) to a new file and naming it with a custom prefix, hereafter referred to as `<customprefix>`.
 
 1. Create a custom downloads parameters file by copying the appropriate downloads.parameters.json file from the [deployments/imageManagement/parameters](../deployments/imageManagement/parameters) for the cloud you are in (i.e. public.downloads.parameters.json for AzureCloud (commercial/IL2) and AzureUSGovernment (IL4/5), secret for Azure Secret, and topsecret for Azure Top Secret) to a new file with the same custom prefix.
 
