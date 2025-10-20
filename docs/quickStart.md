@@ -348,6 +348,9 @@ While utilizing private endpoints is optional, it must be deployed in order to f
 
 ### Deploy Image Management Resources
 
+> [!IMPORTANT]
+> For Zero Trust deployments and other details see [Image Management Parameters](parameters.md#avd-image-management-parameters) for an explanation of all the parameters.
+
 If you plan to build custom images or to add custom software or run scripts during the deployment of your session hosts, you should deploy the image management resources to support Zero Trust. You can also chose not to deploy these resources, but the image build VM will need access to the Internet to download the source files required for installation/configuration.
 
 The [deployments/Deploy-ImageManagement.ps1](../deployments/Deploy-ImageManagement.ps1) script is the easiest way to ensure all necessary image management resources (scripts and installers and Compute Gallery for custom image option.) are present for the AVD deployment.
