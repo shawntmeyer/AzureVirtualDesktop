@@ -95,8 +95,8 @@ There are several Azure resource prerequisite that are required to run this depl
     | **Azure Table Storage**<br>- storage quota function app | privatelink.table.core.windows.net | privatelink.table.core.usgovcloudapi.net |
     | **Azure Web Sites**<br>- storage quota function app | privatelink.azurewebsites.net | privatelink.azurewebsites.us |
 
-  <div style="border-left: 4px solid #2b6cb0; background-color: #f0f4f8; padding: 10px 15px; margin: 10px 0; font-family: sans-serif;">
-  <strong style="color: #2b6cb0;">❗Note:</strong>
+  <div style="border-left: 4px solid #2b6cb0; background-color:#f0f4f8; padding: 10px 15px; margin: 10px 0; font-family: sans-serif;">
+  <strong style="color:#2b6cb0;">❗Note:</strong>
     <ul>
     <li>For Private DNS values on Azure Secret, see [Azure Government Secret Private DNS Zone Values](https://review.learn.microsoft.com/en-us/microsoft-government-secret/azure/azure-government-secret/services/networking/private-link/private-endpoint-dns?branch=main)</li>
     <li>For Private DNS zone values on Azure Top Secret, see [Azure Government Top Secret Private DNS Zone Values](https://review.learn.microsoft.com/en-us/microsoft-government-topsecret/azure/azure-government-top-secret/services/networking/private-link/private-endpoint-dns?branch=main)</li>
@@ -348,9 +348,6 @@ While utilizing private endpoints is optional, it must be deployed in order to f
 
 ### Deploy Image Management Resources
 
-> [!IMPORTANT]
-> For Zero Trust deployments and other details see [Image Management Parameters](parameters.md#avd-image-management-parameters) for an explanation of all the parameters.
-
 If you plan to build custom images or to add custom software or run scripts during the deployment of your session hosts, you should deploy the image management resources to support Zero Trust. You can also chose not to deploy these resources, but the image build VM will need access to the Internet to download the source files required for installation/configuration.
 
 The [deployments/Deploy-ImageManagement.ps1](../deployments/Deploy-ImageManagement.ps1) script is the easiest way to ensure all necessary image management resources (scripts and installers and Compute Gallery for custom image option.) are present for the AVD deployment.
@@ -360,7 +357,7 @@ The [deployments/Deploy-ImageManagement.ps1](../deployments/Deploy-ImageManageme
    - [deployments/imageManagement/parameters/imageManagement.parameters.json](../deployments/imageManagement/parameters/imageManagement.parameters.json)
 
      > [!IMPORTANT]
-     > For Zero Trust deployments and other details see [Image Management Parameters](parameters.md#avd-image-management-parameters) for an explanation of all the parameters.
+     > For Zero Trust deployments, see [Image Management Parameters](parameters.md#avd-image-management-parameters) for an explanation of all the parameters.
 
    - [deployments/imageManagement/parameters/public.downloads.parameters.json](../deployments/imageManagement/parameters/public.downloads.parameters.json)
 
@@ -423,7 +420,8 @@ This deployment can be done via Command Line, Blue Button, or through a Template
 
 #### Option 1: Blue-Button Deployment via the Azure Portal
 
-> **Important:** For Air-Gapped Networks, you must use a template spec.
+> [!Important]
+> For Air-Gapped Networks, you must use a template spec.
 
 This option opens the deployment UI for the solution in the Azure Portal. Be sure to select the button for the correct cloud. If your desired cloud is not listed, please use the template spec detailed in the Quick Start guide.
 
