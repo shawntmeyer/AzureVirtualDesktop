@@ -104,20 +104,12 @@ resource storageAccounts 'Microsoft.Storage/storageAccounts@2022-09-01' = [
       allowCrossTenantReplication: false
       allowedCopyScope: privateEndpoint ? 'PrivateLink' : 'AAD'
       allowSharedKeyAccess: identitySolution == 'EntraId' ? true : false
-      azureFilesIdentityBasedAuthentication: identitySolution != 'EntraId'
+      azureFilesIdentityBasedAuthentication: identitySolution != 'EntraId' && identitySolution != 'EntraKerberos'
         ? {
             defaultSharePermission: contains(identitySolution, 'DomainServices')
               ? 'StorageFileDataSmbShareContributor'
               : 'None'
-            directoryServiceOptions: identitySolution == 'EntraDomainServices'
-              ? 'AADDS'
-              : identitySolution == 'EntraIDKerberos' ? 'AADKERB' : 'None'
-            activeDirectoryProperties: identitySolution == 'EntraKerberos'
-              ? {
-                  domainGuid: domainGuid
-                  domainName: domainName
-                }
-              : {}
+            directoryServiceOptions: identitySolution == 'EntraDomainServices' ? 'AADDS' : 'None'
           }
         : null
       defaultToOAuthAuthentication: false
@@ -225,9 +217,25 @@ module shares 'shares.bicep' = [
       shareSizeInGB: shareSizeInGB
       StorageAccountName: storageAccounts[i].name
       storageSku: storageSku
+    }    
+  }
+]
+
+module entraKerberos 'azureFilesEntraKerberos.bicep' = [
+  for i in range(0, storageCount): if (identitySolution == 'EntraKerberos') {
+    name: '${storageAccounts[i].name}-entra-kerberos-${deploymentSuffix}'
+    params: {
+      domainGuid: domainGuid
+      domainName: domainName
+      storageAccountName: storageAccounts[i].name
+      kind: storageSku == 'Standard' ? 'StorageV2' : 'FileStorage'
+      sku: {
+        name: '${storageSku}${storageRedundancy}'
+      }
+      location: location
     }
     dependsOn: [
-      roleAssignmentsAdmins
+      shares[i]
     ]
   }
 ]

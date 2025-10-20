@@ -418,6 +418,16 @@
 							}
 						},
 						{
+							"name": "entraKerberosInfoBox",
+							"type": "Microsoft.Common.InfoBox",
+							"visible": "[equals(steps('identity').solution, 'EntraKerberos')]",
+							"options": {
+								"text": "Enabling authentication to FSLogix storage accounts using Entra Kerberos requires additional steps that cannot be completed using this automation solution. After this deployment completes, you'll need to complete the following tasks as detailed in the link:<ol><li>Grant admin consent to the new service principal</li><li>Disable multifactor authentication on the storage account</li></ol>",
+								"style": "Info",
+								"uri": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-identity-auth-hybrid-identities-enable?tabs=azure-portal%2Cintune"
+							}
+						},
+						{
 							"name": "virtualMachines",
 							"type": "Microsoft.Common.Section",
 							"label": "Virtual Machines",
@@ -2353,11 +2363,11 @@
 							"type": "Microsoft.Common.TextBox",
 							"visible": "[equals(steps('identity').solution, 'EntraKerberos')]",
 							"label": "User Active Directory Domain Name",
-							"toolTip": "Provide domain name from where users are synchronized.",
+							"toolTip": "Provide domain name from where users are synchronized. This is required to use file explorer to configure permissions.",
 							"placeholder": "Example: contoso.com",
 							"constraints": {
 								"regex": "^([a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,}$",
-								"required": true,
+								"required": false,
 								"validationMessage": "Provide a valid fully qualified domain name."
 							}
 						},
@@ -2365,13 +2375,13 @@
 							"name": "domainGuid",
 							"type": "Microsoft.Common.TextBox",
 							"visible": "[equals(steps('identity').solution, 'EntraKerberos')]",
-							"label": "Domain GUID",
-							"toolTip": "GUID for the on-premises domain. Can be determined with the following Powershell command: '(Get-ADDomain).ObjectGUID.Guid'.",
+							"label": "Domain Guid",
+							"toolTip": "ObjectId from the on-premises domain. Can be determined with the following Powershell command: '(Get-ADDomain).ObjectGUID.Guid'.",
 							"placeholder": "Example: A1B2C3D4-E5F6-7890-1234-56789ABCDEF0",
 							"constraints": {
 								"regex": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
-								"required": false,
-								"validationMessage": "The value must be a valid GUID."
+								"required": "[not(empty(steps('userProfiles').domainName))]",
+								"validationMessage": "The value must be a valid Guid."
 							}
 						},
 						{
@@ -2383,9 +2393,9 @@
 							"toolTip": "Input the distinguished name of the desired organization unit for storage computer objects.",
 							"placeholder": "Example: OU=pooled,OU=avd,DC=contoso,DC=com",
 							"constraints": {
-								"regex": "(?i)^(OU=[^,]+,)*(DC=[^,]+)(,DC=[^,]+)*$",								
+								"regex": "(?i)^(OU=[^,]+,)*(DC=[^,]+)(,DC=[^,]+)*$",
 								"required": true,
-								"validationMessage": "Provide a valid OU distinguished name."								
+								"validationMessage": "Provide a valid OU distinguished name."
 							}
 						},
 						{
@@ -4258,7 +4268,7 @@
 				"identitySolution": "[steps('identity').solution]",
 				"intuneEnrollment": "[if(or(equals(steps('identity').solution, 'EntraId'), equals(steps('identity').solution, 'EntraKerberos')), steps('identity').virtualMachines.intune, false)]",
 				"domainName": "[if(contains(steps('identity').solution, 'DomainServices'), steps('identity').virtualMachines.domainName, if(and(equals(steps('identity').solution, 'EntraKerberos'), steps('userProfiles').deployStorage, equals(steps('userProfiles').storageService, 'AzureFiles')), steps('userProfiles').domainName, ''))]",
-				"domainGUID": "[if(and(equals(steps('identity').solution, 'EntraKerberos'), steps('userProfiles').deployStorage, equals(steps('userProfiles').storageService, 'AzureFiles')), steps('userProfiles').domainGuid, '')]",
+				"domainGuid": "[if(and(equals(steps('identity').solution, 'EntraKerberos'), steps('userProfiles').deployStorage, equals(steps('userProfiles').storageService, 'AzureFiles')), steps('userProfiles').domainGuid, '')]",
 				"vmOUPath": "[if(contains(steps('identity').solution, 'DomainServices'), steps('identity').virtualMachines.ouPath, '')]",
 				"domainJoinUserPassword": "[if(and(contains(steps('identity').solution, 'DomainServices'), equals(steps('identity').credentials.source, 'manual')), steps('identity').credentials.domainJoinUserPassword, '')]",
 				"domainJoinUserPrincipalName": "[if(and(contains(steps('identity').solution, 'DomainServices'), equals(steps('identity').credentials.source, 'manual')), steps('identity').credentials.domainJoinUserPrincipalName, '')]",

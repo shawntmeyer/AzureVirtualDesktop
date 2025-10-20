@@ -15,13 +15,13 @@ There are three main methods for deploying the Azure Virtual Desktop (AVD) compo
 
 1. Blue-Button Deployment from Github (not applicable to Air-Gapped Clouds)
 2. Template Spec Deployment and GUI
-3. Command Line Tools - Bicep and the PowerShell Az Modules.
+3. Command Line Tools - AzCLI or PowerShell with Az Modules.
 
 All methods require some initial setup in order for a successful deployment
 
 ## Prerequisites
 
-There are several Azure resource prerequisite that are required to run this deployment. Read and complete the steps in this section to create the basic resources required for a successful pilot deployment. See the official [Prerequisites](#prerequisites) for more information (including how to integrate this solution into an existing Azure Landing Zone). See [Microsoft Learn | Azure Virtual Desktop Prerequisites](https://learn.microsoft.com/en-us/azure/virtual-desktop/prerequisites) for the latest information.
+There are several Azure resource prerequisite that are required to run this deployment. Read and complete the steps in this section to create the basic resources required for a successful pilot deployment. See [Microsoft Learn | Azure Virtual Desktop Prerequisites](https://learn.microsoft.com/en-us/azure/virtual-desktop/prerequisites) for the latest information.
 
 ### Required
 
@@ -61,18 +61,20 @@ There are several Azure resource prerequisite that are required to run this depl
   </ul>
   </details>
 - <details><summary><b>Security Group</b></summary>
-  Create a security group for your AVD users.
+  Create a security group for your AVD users. The type of group you must create depends on the Identity Solution:
   <ul>
   <li>Active Directory Domain Services: create the group in Active Directory and ensure the group has synchronized to Entra ID.</li>
+  <li>Entra Domain Services: create the group in Entra ID or Active Directory and ensure the group has synchronized to Entra ID Domain Services.</li>
+  <li>Entra Kerberos: create the group in Active Directory and ensure the group has synchronized to Entra ID.
   <li>Entra ID: create the group in Entra ID.</li>
-  <li>Entra Domain Services: create the group in Entra ID and ensure the group has synchronized to Entra ID Domain Services.</li>
+  </ul>
   </details>
 
 ### Optional
 
 - <details><summary><b>Domain Services</b></summary>
   
-  If you plan to domain join the session hosts, ensure Active Directory Domain Services or Entra Domain Services is available in your enviroment and that you are synchronizing the required objects. AD Sites & Services should be configured for the address space of your Azure virtual network if you are extending your on-premises Active Directory infrastruture into the cloud.
+  If you plan to utilize hybrid identities with either the Active Directory Domain Services or Entra Kerberos identity options, then ensure Active Directory Domain Services and that you are synchronizing the required objects. AD Sites & Services should be configured for the address space of your Azure virtual network if you are extending your on-premises Active Directory infrastruture into the cloud.
   </details>
 - <details><summary><b>DNS</b></summary>
   
@@ -93,8 +95,13 @@ There are several Azure resource prerequisite that are required to run this depl
     | **Azure Table Storage**<br>- storage quota function app | privatelink.table.core.windows.net | privatelink.table.core.usgovcloudapi.net |
     | **Azure Web Sites**<br>- storage quota function app | privatelink.azurewebsites.net | privatelink.azurewebsites.us |
 
-    - For Private DNS values on Azure Secret, see [Azure Government Secret Private DNS Zone Values](https://review.learn.microsoft.com/en-us/microsoft-government-secret/azure/azure-government-secret/services/networking/private-link/private-endpoint-dns?branch=main)
-    - For Private DNS zone values on Azure Top Secret, see [Azure Government Top Secret Private DNS Zone Values](https://review.learn.microsoft.com/en-us/microsoft-government-topsecret/azure/azure-government-top-secret/services/networking/private-link/private-endpoint-dns?branch=main)
+  <div style="border-left: 4px solid #2b6cb0; background-color: #f0f4f8; padding: 10px 15px; margin: 10px 0; font-family: sans-serif;">
+  <strong style="color: #2b6cb0;">❗Note:</strong>
+    <ul>
+    <li>For Private DNS values on Azure Secret, see [Azure Government Secret Private DNS Zone Values](https://review.learn.microsoft.com/en-us/microsoft-government-secret/azure/azure-government-secret/services/networking/private-link/private-endpoint-dns?branch=main)</li>
+    <li>For Private DNS zone values on Azure Top Secret, see [Azure Government Top Secret Private DNS Zone Values](https://review.learn.microsoft.com/en-us/microsoft-government-topsecret/azure/azure-government-top-secret/services/networking/private-link/private-endpoint-dns?branch=main)</li>
+    </ul>
+  </div>
   </details>
 - <details><summary><b>Domain Permissions</b></summary>
   <ul>
@@ -299,7 +306,7 @@ In order to deploy the Azure Virtual Desktop standalone or spoke network and req
 
 2. Populate the form with correct values. Use the the tool tips for more detailed parameter information.
 
-    ![Image Build Form](images/networking-virtualNetwork.png)
+    ![Network Deployment Form](images/networking-virtualNetwork.png)
 
 3. Once all values are populated, deploy the template. Parameter values and the template can be downloaded from the deployment view.
 
@@ -345,28 +352,36 @@ If you plan to build custom images or to add custom software or run scripts duri
 
 The [deployments/Deploy-ImageManagement.ps1](../deployments/Deploy-ImageManagement.ps1) script is the easiest way to ensure all necessary image management resources (scripts and installers and Compute Gallery for custom image option.) are present for the AVD deployment.
 
+1. You should first create custom parameter files for your environment by copying the following two files and renaming the copy with a common prefix.
+
+- [deployments/imageManagement/parameters/imageManagement.parameters.json](../deployments/imageManagement/parameters/imageManagement.parameters.json)
+- [deployments/imageManagement/parameters/public.downloads.parameters.json](../deployments/imageManagement/parameters/public.downloads.parameters.json)
+
 > [!Important]
 > For Zero Trust deployments and other details, see [image management parameters](parameters.md#avd-image-management-parameters) for an explanation of all the available parameters.
 
+> [!Important]
+> Copy the correct downloads parameters file for the cloud you are in.
+
 1. Set required parameters and make any optional updates desired in [deployments/imageManagement/parameters/imageManagement.parameters.json](../deployments/imageManagement/parameters/imageManagement.parameters.json) file.
 
-1. **[Optional]** If you wish to add any custom scripts or installers beyond what is already included in the artifacts directory [.common/artifacts](../.common/artifacts), then gather your installers and create a new folder inside the artifacts directory for each customizer or application. In the folder create or place one and only one PowerShell script (.ps1) that installs the application or performs the desired customization. For an example of the installation script and supporting files, see the [.common/artifacts/VSCode](../.common/artifacts/VSCode) folder. These customizations can be applied to the custom image via the `customizations` deployment parameter.
+2. **[Optional]** If you wish to add any custom scripts or installers beyond what is already included in the artifacts directory [.common/artifacts](../.common/artifacts), then gather your installers and create a new folder inside the artifacts directory for each customizer or application. In the folder create or place one and only one PowerShell script (.ps1) that installs the application or performs the desired customization. For an example of the installation script and supporting files, see the [.common/artifacts/VSCode](../.common/artifacts/VSCode) folder. These customizations can be applied to the custom image via the `customizations` deployment parameter.
 
-1. **[Optional]** The `SkipDownloadingNewSources` switch parameter will disable the downloading of the latest installers (or other files) from the Internet (or other network). Do not use this switch if you want to enable an "evergreen" capability that helps you keep your images and session hosts up to date. In addition, update the Urls specified in the `<environment>.downloads.parameters.json`[^2] file in the [deployments/imageManagement/parameters](../deployments/imageManagement/parameters) folder to match your network environment. You can also not depend on this automated capability and add source files directly to the appropriate location in the [.common/artifacts](../.common/artifacts/) folder. This directory is processed by zipping the contents of each child directory into a zip file and then all existing files in the root plus the zip files are added to the blob storage container in the Storage Account.
+3. **[Optional]** The `SkipDownloadingNewSources` switch parameter will disable the downloading of the latest installers (or other files) from the Internet (or other network). Do not use this switch if you want to enable an "evergreen" capability that helps you keep your images and session hosts up to date. In addition, update the Urls specified in the `<environment>.downloads.parameters.json`[^2] file in the [deployments/imageManagement/parameters](../deployments/imageManagement/parameters) folder to match your network environment. You can also not depend on this automated capability and add source files directly to the appropriate location in the [.common/artifacts](../.common/artifacts/) folder. This directory is processed by zipping the contents of each child directory into a zip file and then all existing files in the root plus the zip files are added to the blob storage container in the Storage Account.
 
-1. Open the PowerShell version where you installed the Az module above. If not already connected to your Azure Environment, then connect to the correct Azure Environment where `<Environment>` equals "AzureCloud", "AzureUSGovernment", or the Air-Gapped equivalent.
+4. Open the PowerShell version where you installed the Az module above. If not already connected to your Azure Environment, then connect to the correct Azure Environment where `<Environment>` equals "AzureCloud", "AzureUSGovernment", or the Air-Gapped equivalent.
 
     ``` powershell
     Connect-AzAccount -Environment <Environment>
     ```
 
-1. Ensure that your context is configured with the subscription to where you want to deploy the image management resources.
+5. Ensure that your context is configured with the subscription to where you want to deploy the image management resources.
 
     ``` powershell
     Set-AzContext -Subscription <subscriptionID>
     ```
 
-1. Change directories to the [deployments](../deployments) folder and execute the [Deploy-ImageManagement.ps1](../deployments/Deploy-ImageManagement.ps1) script as follows:
+6. Change directories to the [deployments](../deployments) folder and execute the [Deploy-ImageManagement.ps1](../deployments/Deploy-ImageManagement.ps1) script as follows:
 
     ``` powershell
     .\Deploy-ImageManagement.ps1 -DeployImageManagementResources -Location <Region> [-SkipDownloadingNewSources] [-TempDir <Temp directory for artifacts>] [-DeleteExistingBlobs] [-TeamsTenantType <TeamsTenantType>]

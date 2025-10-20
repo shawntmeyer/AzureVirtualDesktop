@@ -5,6 +5,7 @@ param (
     [string]$DisableUpdates,
     [string]$ConfigureFSLogix,
     [string]$CloudCache = 'false',
+    [string]$IdentitySolution,
     [string]$LocalNetAppServers,
     [string]$LocalStorageAccountNames,
     [string]$LocalStorageAccountKeys,
@@ -681,6 +682,10 @@ If ($ConfigureFSLogix) {
             }
         )
     }
+    If ($IdentitySolution -eq 'EntraKerberos') {
+        $RegSettings.Add([PSCustomObject]@{ Name = 'CloudKerberosTicketRetrievalEnabled'; Path = 'HKLM:\SYSTEM\CurrentControlSet\Control\Lsa\Kerberos\Parameters'; PropertyType = 'DWord'; Value = 1})
+    }
+
 
     $LocalAdministrator = (Get-LocalUser | Where-Object { $_.SID -like '*-500' }).Name
     $LocalGroups = 'FSLogix Profile Exclude List', 'FSLogix ODFC Exclude List'

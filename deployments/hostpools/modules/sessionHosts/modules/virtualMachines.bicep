@@ -302,7 +302,7 @@ resource extension_JsonADDomainExtension 'Microsoft.Compute/virtualMachines/exte
   }
 }]
 
-resource extension_AADLoginForWindows 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): if (identitySolution == 'EntraId') {
+resource extension_AADLoginForWindows 'Microsoft.Compute/virtualMachines/extensions@2021-03-01' = [for i in range(0, sessionHostCount): if (identitySolution == 'EntraId' || identitySolution == 'EntraKerberos') {
   parent: virtualMachine[i]
   name: 'AADLoginForWindows'
   location: location
@@ -506,6 +506,10 @@ resource runCommand_ConfigureSessionHost 'Microsoft.Compute/virtualMachines/runC
       {
         name: 'CloudCache'
         value: contains(fslogixContainerType, 'CloudCache') ? 'true' : 'false'
+      }
+      {
+        name: 'IdentitySolution'
+        value: identitySolution
       }
       {
         name: 'LocalNetAppServers'

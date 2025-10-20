@@ -9,6 +9,7 @@ param azureFilePrivateDnsZoneResourceId string
 param azureFunctionAppPrivateDnsZoneResourceId string
 param azureQueuePrivateDnsZoneResourceId string
 param azureTablePrivateDnsZoneResourceId string
+param deploymentSuffix string
 param deploymentUserAssignedIdentityClientId string
 param deploymentVirtualMachineName string
 @secure()
@@ -58,7 +59,6 @@ param storageIndex int
 param storageSku string
 param storageSolution string
 param tags object
-param deploymentSuffix string
 param timeZone string
 param userAssignedIdentityNameConv string
 

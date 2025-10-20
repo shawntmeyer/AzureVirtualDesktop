@@ -5,6 +5,7 @@ param (
     [string]$DisableUpdates,
     [string]$ConfigureFSLogix,
     [string]$CloudCache = 'false',
+    [string]$IdentitySolution,
     [string]$LocalNetAppServers,
     [string]$LocalStorageAccountNames,
     [string]$LocalStorageAccountKeys,
@@ -318,10 +319,12 @@ if ($ConfigureFSLogix) {
     if ($SizeInMBs -ne '' -and $null -ne $SizeInMBs) {
         [int]$SizeInMBs = $SizeInMBs
         Write-Log -message "SizeInMBs: $SizeInMBs"
-    } Else {
+    }
+    Else {
         [int]$SizeInMBs = 30000
         Write-Log -message "SizeInMBs not specified. Defaulting to: $SizeInMBs"
-    }  
+    }
+    $IdentitySolution = ConvertFrom-JsonString -JsonString $IdentitySolution -Name 'IdentitySolution'  
 }
 
 Write-Log -message "TimeZone: $TimeZone"
@@ -660,7 +663,7 @@ If ($ConfigureFSLogix) {
         $customRedirFilePath = "$customRedirFolder\redirections.xml"
         $redirectionsXMLContent = $redirectionsXMLStart
         if ($AzCLIInstalled) {
-             $redirectionsXMLContent = $redirectionsXMLContent + "`n" + $redirectionsXMLExcludesAzCLI
+            $redirectionsXMLContent = $redirectionsXMLContent + "`n" + $redirectionsXMLExcludesAzCLI
         }
         if ($TeamsInstalled) {
             $redirectionsXMLContent = $redirectionsXMLContent + "`n" + $redirectionsXMLExcludesTeams
@@ -677,6 +680,9 @@ If ($ConfigureFSLogix) {
                 Value        = $customRedirFolder
             }
         )
+    }
+    If ($IdentitySolution -eq 'EntraKerberos') {
+        $RegSettings.Add([PSCustomObject]@{ Name = 'CloudKerberosTicketRetrievalEnabled'; Path = 'HKLM:\SYSTEM\CurrentControlSet\Control\Lsa\Kerberos\Parameters'; PropertyType = 'DWord'; Value = 1})
     }
 
     $LocalAdministrator = (Get-LocalUser | Where-Object { $_.SID -like '*-500' }).Name
