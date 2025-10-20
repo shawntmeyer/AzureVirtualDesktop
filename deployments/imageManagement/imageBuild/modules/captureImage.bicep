@@ -14,14 +14,14 @@ param imageVersionExcludeFromLatest bool
 param imageVersionReplicationRegions array
 param location string
 param tags object
-param timeStamp string
+param deploymentSuffix string
 param virtualMachineResourceId string
 
 // Image Definitions with Security Type = 'TrustedLaunchSupported', 'ConfidentialVMSupported', or TrustedLaunchConfidentialVMSupported' do not
 // support capture directly from a VM. Must create a legacy managed image first.
 
 module managedImage '../../../sharedModules/resources/compute/image/main.bicep' = if(contains(imageDefinitionSecurityType, 'Supported')) {
-  name: '${depPrefix}Image-${timeStamp}'
+  name: '${depPrefix}Image-${deploymentSuffix}'
   scope: resourceGroup(imageBuildResourceGroupName)
   params: {
     hyperVGeneration: hyperVGeneration
@@ -33,7 +33,7 @@ module managedImage '../../../sharedModules/resources/compute/image/main.bicep' 
 }
 
 module imageVersion '../../../sharedModules/resources/compute/gallery/image/version/main.bicep' = {
-  name: '${depPrefix}ImageVersion-${timeStamp}'
+  name: '${depPrefix}ImageVersion-${deploymentSuffix}'
   scope: resourceGroup(split(computeGalleryResourceId, '/')[2], split(computeGalleryResourceId, '/')[4])
   params: {
     location: location

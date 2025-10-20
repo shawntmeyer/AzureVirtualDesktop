@@ -9,6 +9,7 @@ param azureFilePrivateDnsZoneResourceId string
 param azureFunctionAppPrivateDnsZoneResourceId string
 param azureQueuePrivateDnsZoneResourceId string
 param azureTablePrivateDnsZoneResourceId string
+param deploymentSuffix string
 param deploymentUserAssignedIdentityClientId string
 param deploymentVirtualMachineName string
 @secure()
@@ -16,6 +17,7 @@ param domainJoinUserPassword string
 @secure()
 param domainJoinUserPrincipalName string
 param domainName string
+param domainGuid string
 param encryptionKeyVaultResourceId string
 param encryptionKeyVaultUri string
 param fslogixAdminGroups array
@@ -57,12 +59,11 @@ param storageIndex int
 param storageSku string
 param storageSolution string
 param tags object
-param timeStamp string
 param timeZone string
 param userAssignedIdentityNameConv string
 
 module customerManagedKeys 'modules/customerManagedKeys.bicep' = if (storageSolution == 'AzureFiles' && keyManagementStorageAccounts != 'MicrosoftManaged') {
-  name: 'CustomerManagedKeys_${timeStamp}'
+  name: 'Customer-Managed-Keys-${deploymentSuffix}'
   scope: resourceGroup(resourceGroupStorage)
   params: {
     deploymentResourceGroupName: resourceGroupDeployment
@@ -76,7 +77,7 @@ module customerManagedKeys 'modules/customerManagedKeys.bicep' = if (storageSolu
     storageCount: storageCount
     storageIndex: storageIndex
     tags: tags
-    timeStamp: timeStamp
+    deploymentSuffix: deploymentSuffix
     userAssignedIdentityNameConv: userAssignedIdentityNameConv
     fslogixEncryptionKeyNameConv: fslogixEncryptionKeyNameConv
     increaseQuotaEncryptionKeyName: increaseQuotaEncryptionKeyName
@@ -89,7 +90,7 @@ module azureNetAppFiles 'modules/azureNetAppFiles.bicep' = if (storageSolution =
   identitySolution,
   'DomainServices'
 )) {
-  name: 'AzureNetAppFiles_${timeStamp}'
+  name: 'Azure-NetAppFiles-${deploymentSuffix}'
   scope: resourceGroup(resourceGroupStorage)
   params: {
     activeDirectoryConnection: activeDirectoryConnection
@@ -109,18 +110,17 @@ module azureNetAppFiles 'modules/azureNetAppFiles.bicep' = if (storageSolution =
     resourceGroupDeployment: resourceGroupDeployment
     smbServerLocation: smbServerLocation
     storageSku: storageSku
-    storageSolution: storageSolution
     tagsNetAppAccount: union(
       { 'cm-resource-parent': hostPoolResourceId },
       tags[?'Microsoft.NetApp/netAppAccounts'] ?? {}
     )
-    timeStamp: timeStamp
+    deploymentSuffix: deploymentSuffix
   }
 }
 
 // Azure files for FSLogix
 module azureFiles 'modules/azureFiles.bicep' = if (storageSolution == 'AzureFiles') {
-  name: 'AzureFiles_${timeStamp}'
+  name: 'Azure-Files-${deploymentSuffix}'
   scope: resourceGroup(resourceGroupStorage)
   params: {
     availability: availability
@@ -135,6 +135,8 @@ module azureFiles 'modules/azureFiles.bicep' = if (storageSolution == 'AzureFile
     deploymentResourceGroupName: resourceGroupDeployment
     domainJoinUserPassword: contains(identitySolution, 'DomainServices') ? domainJoinUserPassword : ''
     domainJoinUserPrincipalName: contains(identitySolution, 'DomainServices') ? domainJoinUserPrincipalName : ''
+    domainName: domainName
+    domainGuid: domainGuid
     encryptionKeyVaultUri: encryptionKeyVaultUri
     encryptionUserAssignedIdentityResourceId: keyManagementStorageAccounts == 'MicrosoftManaged'
       ? ''
@@ -174,9 +176,8 @@ module azureFiles 'modules/azureFiles.bicep' = if (storageSolution == 'AzureFile
     storageCount: storageCount
     storageIndex: storageIndex
     storageSku: storageSku
-    storageSolution: storageSolution
     tags: tags
-    timeStamp: timeStamp
+    deploymentSuffix: deploymentSuffix
     timeZone: timeZone
   }
 }

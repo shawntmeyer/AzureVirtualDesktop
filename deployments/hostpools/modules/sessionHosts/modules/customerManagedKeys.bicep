@@ -12,7 +12,7 @@ param keyVaultUri string
 param deploymentVirtualMachineName string
 param deploymentResourceGroupName string
 param tags object
-param timeStamp string
+param deploymentSuffix string
 
 var keyVaultName = last(split(keyVaultResourceId, '/'))
 var keyVaultResourceGroup = split(keyVaultResourceId, '/')[4]
@@ -26,7 +26,7 @@ var diskEncryptionSetEncryptionType = confidentialVMOSDiskEncryption
       : 'EncryptionAtRestWithPlatformAndCustomerKeys')
 
 module key '../../../../sharedModules/resources/key-vault/vault/key/main.bicep' = if (!confidentialVMOSDiskEncryption) {
-  name: 'Encryption_Key_${timeStamp}'
+  name: 'Encryption-Key-${deploymentSuffix}'
   scope: resourceGroup(keyVaultResourceGroup)
   params: {
     attributesEnabled: true
@@ -63,10 +63,10 @@ module key '../../../../sharedModules/resources/key-vault/vault/key/main.bicep' 
 }
 
 module confidentialVM_key '../../../../sharedModules/resources/compute/virtual-machine/runCommand/main.bicep' = if (confidentialVMOSDiskEncryption) {
-  name: 'Set_EncryptionKey_ConfidentialVMOSDisk_${timeStamp}'
+  name: 'Set-EncryptionKey-ConfidentialVMOSDisk-${deploymentSuffix}'
   scope: resourceGroup(deploymentResourceGroupName)
   params: {
-    name: 'Set_ConfidentialVM_Key_Disks'
+    name: 'Set-ConfidentialVM-Key-Disks'
     parameters: [
       {
         name: 'KeyName'
@@ -92,7 +92,7 @@ module confidentialVM_key '../../../../sharedModules/resources/compute/virtual-m
 }
 
 module roleAssignment_ConfVMOrchestrator_ReleaseUser '../../management/modules/key_RBAC.bicep' = if (confidentialVMOSDiskEncryption) {
-  name: 'RoleAssignment_ConfVMOrchestrator_ReleaseUser_${timeStamp}'
+  name: 'RoleAssignment-ConfVMOrchestrator-ReleaseUser-${deploymentSuffix}'
   scope: resourceGroup(keyVaultResourceGroup)
   params: {
     keyName: keyName
@@ -107,7 +107,7 @@ module roleAssignment_ConfVMOrchestrator_ReleaseUser '../../management/modules/k
 }
 
 module diskEncryptionSet '../../../../sharedModules/resources/compute/disk-encryption-set/main.bicep' = {
-  name: 'DiskEncryptionSet_${timeStamp}'
+  name: 'DiskEncryptionSet-${deploymentSuffix}'
   params: {
     rotationToLatestKeyVersionEnabled: confidentialVMOSDiskEncryption ? false : true
     name: confidentialVMOSDiskEncryption
@@ -128,7 +128,7 @@ module diskEncryptionSet '../../../../sharedModules/resources/compute/disk-encry
 }
 
 module roleAssignment_DiskEncryptionSet_EncryptUser '../../management/modules/key_RBAC.bicep' = {
-  name: 'RA_DiskEncryptionSet_CryptoServiceEncryptionUser_${timeStamp}'
+  name: 'RA-DiskEncryptionSet-CryptoServiceEncryptionUser-${deploymentSuffix}'
   scope: resourceGroup(keyVaultResourceGroup)
   params: {
     keyName: keyName
@@ -140,7 +140,7 @@ module roleAssignment_DiskEncryptionSet_EncryptUser '../../management/modules/ke
 }
 
 module getDiskEncryptionSetCryptoUserRoleAssignment '../../common/get-RoleAssignments.bicep' = {
-  name: 'Get_DiskEncryptionSet_Crypto_User_RoleAssignment_${timeStamp}'
+  name: 'Get-DiskEncryptionSet-Crypto-User-RoleAssignment-${deploymentSuffix}'
   scope: resourceGroup(deploymentResourceGroupName)
   params: {
     location: location
@@ -157,7 +157,7 @@ module getDiskEncryptionSetCryptoUserRoleAssignment '../../common/get-RoleAssign
 }
 
 module getDiskEncryptionSetCryptoReleaseUserRoleAssignment '../../common/get-RoleAssignments.bicep' = if (confidentialVMOSDiskEncryption) {
-  name: 'Get_DiskEncryptionSet_CryptoReleaseUser_RoleAssignment_${timeStamp}'
+  name: 'Get-DiskEncryptionSet-CryptoReleaseUser-RoleAssignment-${deploymentSuffix}'
   scope: resourceGroup(deploymentResourceGroupName)
   params: {
     location: location

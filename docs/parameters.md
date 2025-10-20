@@ -1,4 +1,4 @@
-[**Home**](../README.md) | [**Design**](design.md) | [**Features**](features.md) | [**Get Started**](quickStart.md) | [**Troubleshooting**](troubleshooting.md) | [**Scope**](scope.md) | [**Zero Trust Framework**](zeroTrustFramework.md)
+[**Home**](../README.md) | [**Design**](design.md) | [**Features**](features.md) | [**Get Started**](quickStart.md) | [**Limitations**](limitations.md) | [**Troubleshooting**](troubleshooting.md) | [**Zero Trust Framework**](zeroTrustFramework.md)
 
 # Parameters
 
@@ -9,7 +9,7 @@
 | Parameter | Description | Type | Allowed | Default |
 | --------- | ----------- | :--: | :-----: | ------- |
 
-| `identitySolution` | The service providing domain services for Azure Virtual Desktop.  This is needed to properly configure the session hosts and if applicable, the Azure Storage Account. | string | 'ActiveDirectoryDomainServices'<br/>'EntraDomainServices'<br/>'EntraId'<br/>'EntraIdIntuneEnrollment' | |
+| `identitySolution` | The service providing domain services for Azure Virtual Desktop.  This is needed to properly configure the session hosts and if applicable, the Azure Storage Account. | string | 'ActiveDirectoryDomainServices'<br/>'EntraDomainServices'<br/>'EntraId'<br/>'EntraKerberos' | |
 | `virtualMachineNamePrefix` | The prefix of the virtual machine name. Virtual Machines are named based on the prefix with the 3 character index incremented at the end (i.e., prefix001, prefix002, etc.) | string | 2 - 12 characters | |
 | `virtualMachineSubnetResourceId` | The resource Id of the subnet onto which the Virtual Machines will be deployed. | string | resource id | |
 
@@ -26,6 +26,7 @@
 | `existingHostPoolResourceId` | The resource ID of the existing host to which hosts will be added when the `deploymentType` = 'SessionHostsOnly'. | string | resourceId | '' |
 | `existingHostsResourceGroupName` | The name of the resource group housing the compute objects (i.e., virtual machines, disks, nics, recovery services vault, disk encryption sets, disk accesses, etc.) when the the `deploymentType` = 'SessionHostsOnly'. | string | | '' |
 | `identifier` | An identifier used to distinquish each host pool. This normally represents the persona. Required when `deploymentType` = 'Complete'. | string | 3- 10 characters | |
+| `intuneEntrollment ` | Determines if the virtual machines are enrolled in Intune when they are Entra ID Joined. Used when `identitySolution` = 'EntraId' or 'EntraKerberos'. | bool | true<br/>false | false |
 | `secretsKeyVaultPrivateEndpointSubnetResourceId` | The resource id of the subnet on which to create the secrets Key Vault private endpoint. Required when the `deploySecretsKeyVault` and `deployPrivateEndpoints` parameters are set to true. | string | resource id | '' |
 | `hostPoolResourcesPrivateEndpointSubnetResourceId` | The resource ID of the subnet where the host pool specific resources such as storage accounts and disk encryption key vaults private endpoints are attached. Required when `deployPrivateEndpoints` = true. | string | resource id | '' |
 | `hostPoolPrivateEndpointSubnetResourceId` | The resource ID of the subnet where the AVD Private Link endpoints will be created. Required when `avdPrivateLinkPrivateRoutes` is not set to 'None'. | string | resource id | '' |

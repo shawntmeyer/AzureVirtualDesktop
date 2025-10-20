@@ -5,6 +5,7 @@ param (
     [string]$DisableUpdates,
     [string]$ConfigureFSLogix,
     [string]$CloudCache = 'false',
+    [string]$IdentitySolution,
     [string]$LocalNetAppServers,
     [string]$LocalStorageAccountNames,
     [string]$LocalStorageAccountKeys,
@@ -18,7 +19,6 @@ param (
     [string]$StorageService,
     [string]$TimeZone
 )
-
 
 #region Functions
 
@@ -271,14 +271,21 @@ Function Set-RegistryValue {
 $Script:Name = 'Set-SessionHostConfiguration'
 # from https://learn.microsoft.com/en-us/microsoftteams/new-teams-vdi-requirements-deploy#recommended-for-exclusion
 # only specifying the folders that do not affect performance per article
-$redirectionsXMLContent = @'
+$redirectionsXMLStart = @'
 <?xml version="1.0" encoding="UTF-8"?>
 <FrxProfileFolderRedirection ExcludeCommonFolders="0">
 <Excludes>
+'@
+$redirectionsXMLExcludesTeams = @'
 <Exclude Copy="0">AppData\Local\Packages\MSTeams_8wekyb3d8bbwe\LocalCache\Microsoft\MSTeams\Logs</Exclude>
 <Exclude Copy="0">AppData\Local\Packages\MSTeams_8wekyb3d8bbwe\LocalCache\Microsoft\MSTeams\PerfLog</Exclude>
 <Exclude Copy="0">AppData\Local\Packages\MSTeams_8wekyb3d8bbwe\LocalCache\Microsoft\MSTeams\EBWebView\WV2Profile_tfw\GPUCache</Exclude>
 <Exclude Copy="0">AppData\Local\Packages\Microsoft.Windows.StartMenuExperienceHost_cw5n1h2txyewy\TempState</Exclude>
+'@
+$redirectionsXMLExcludesAzCLI = @'
+<Exclude Copy="0">.Azure</Exclude>
+'@
+$redirectionsXMLEnd = @'
 </Excludes>
 <Includes>
 </Includes>
@@ -312,27 +319,18 @@ if ($ConfigureFSLogix) {
     if ($SizeInMBs -ne '' -and $null -ne $SizeInMBs) {
         [int]$SizeInMBs = $SizeInMBs
         Write-Log -message "SizeInMBs: $SizeInMBs"
-    } Else {
+    }
+    Else {
         [int]$SizeInMBs = 30000
         Write-Log -message "SizeInMBs not specified. Defaulting to: $SizeInMBs"
-    }  
+    }
+    $IdentitySolution = ConvertFrom-JsonString -JsonString $IdentitySolution -Name 'IdentitySolution'  
 }
 
 Write-Log -message "TimeZone: $TimeZone"
 
 Write-Log -message "Configuring Time Zone to: $TimeZone"
 Set-TimeZone -Id "$TimeZone"
-
-$TeamsInstalled = Get-AppxProvisionedPackage -Online | Where-Object { $_.DisplayName -eq 'MSTeams' }
-$M365AppsInstalled = Get-InstalledApplication -Name 'Microsoft 365 Apps'
-
-if ($M365AppsInstalled) {
-    Write-Log -message 'New Microsoft 365 Apps are installed on this image.'
-}
-
-if ($TeamsInstalled) {
-    Write-Log -message 'New Teams Client is installed on this image.'
-}
 
 Write-Log -message "*** Building Array of Registry Settings ***"
 $RegSettings = New-Object System.Collections.ArrayList
@@ -343,7 +341,7 @@ If ($DisableUpdates -eq 'true') {
     $RegSettings.Add(@{Path = 'HKLM:\SOFTWARE\Policies\Microsoft\EdgeUpdate'; Name = 'UpdateDefault'; PropertyType = 'DWORD'; Value = 0 })
     # Set the OneDrive Update Ring to Deferred: https://learn.microsoft.com/en-us/sharepoint/use-group-policy#set-the-sync-app-update-ring
     $RegSettings.Add(@{Path = 'HKLM:\SOFTWARE\Policies\Microsoft\OneDrive'; Name = 'GPOSetUpdateRing'; PropertyType = 'DWORD'; Value = 0 })
-    If ($M365AppsInstalled) {
+    If (Get-InstalledApplication -Name 'Microsoft 365 Apps') {
         # Disable Office Automatic Updates: https://learn.microsoft.com/azure/virtual-desktop/set-up-customize-master-image#disable-office-automatic-updates
         $RegSettings.Add(@{Path = 'HKLM:\SOFTWARE\Policies\Microsoft\office\16.0\common\officeupdate'; Name = 'hideupdatenotifications'; PropertyType = 'DWORD'; Value = 1 })
         $RegSettings.Add(@{Path = 'HKLM:\SOFTWARE\Policies\Microsoft\office\16.0\common\officeupdate'; Name = 'hideenabledisableupdates'; PropertyType = 'DWORD'; Value = 1 })
@@ -376,6 +374,8 @@ if ($NvidiaVmSize -eq 'true') {
 }
 
 If ($ConfigureFSLogix) {
+    $AzCLIInstalled = Get-InstalledApplication -Name 'Azure CLI'
+    $TeamsInstalled = Get-AppxProvisionedPackage -Online | Where-Object { $_.DisplayName -eq 'MSTeams' }
     # Create Array Lists so it is easy to add them
     [System.Collections.ArrayList]$LocalProfileContainerPaths = @()
     [System.Collections.ArrayList]$LocalCloudCacheProfileContainerPaths = @()
@@ -654,15 +654,21 @@ If ($ConfigureFSLogix) {
             }
         }    
     }
-    Write-Log -message "Checking for Teams"
-    If ($TeamsInstalled) {
-        Write-Log -message "Teams is installed"
+    If ($TeamsInstalled -or $AzCLIInstalled) {
         $customRedirFolder = "$env:ProgramData\FSLogix_CustomRedirections"
         Write-Log -message "Creating custom redirections.xml file in $customRedirFolder"
         If (-not (Test-Path $customRedirFolder )) {
             New-Item -Path $customRedirFolder -ItemType Directory -Force
         }
         $customRedirFilePath = "$customRedirFolder\redirections.xml"
+        $redirectionsXMLContent = $redirectionsXMLStart
+        if ($AzCLIInstalled) {
+            $redirectionsXMLContent = $redirectionsXMLContent + "`n" + $redirectionsXMLExcludesAzCLI
+        }
+        if ($TeamsInstalled) {
+            $redirectionsXMLContent = $redirectionsXMLContent + "`n" + $redirectionsXMLExcludesTeams
+        }
+        $redirectionsXMLContent = $redirectionsXMLContent + "`n" + $redirectionsXMLEnd
         $redirectionsXMLContent | Out-File -FilePath $customRedirFilePath -Encoding unicode
         # Path where FSLogix looks for the redirections.xml file to copy from and into the user's profile: https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=profiles#redirxmlsourcefolder
         
@@ -674,6 +680,9 @@ If ($ConfigureFSLogix) {
                 Value        = $customRedirFolder
             }
         )
+    }
+    If ($IdentitySolution -eq 'EntraKerberos') {
+        $RegSettings.Add([PSCustomObject]@{ Name = 'CloudKerberosTicketRetrievalEnabled'; Path = 'HKLM:\SYSTEM\CurrentControlSet\Control\Lsa\Kerberos\Parameters'; PropertyType = 'DWord'; Value = 1})
     }
 
     $LocalAdministrator = (Get-LocalUser | Where-Object { $_.SID -like '*-500' }).Name

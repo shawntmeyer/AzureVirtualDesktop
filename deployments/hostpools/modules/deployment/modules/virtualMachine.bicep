@@ -13,7 +13,7 @@ param ouPath string
 param subnetResourceId string
 param tagsNetworkInterfaces object
 param tagsVirtualMachines object
-param timeStamp string = utcNow('yyyyMMddhhmmss')
+param deploymentSuffix string
 param userAssignedIdentitiesResourceIds object
 param virtualMachineName string
 @secure()
@@ -170,7 +170,7 @@ resource extension_JsonADDomainExtension 'Microsoft.Compute/virtualMachines/exte
   name: 'JsonADDomainExtension'
   location: location
   properties: {
-    forceUpdateTag: timeStamp
+    forceUpdateTag: deploymentSuffix
     publisher: 'Microsoft.Compute'
     type: 'JsonADDomainExtension'
     typeHandlerVersion: '1.3'

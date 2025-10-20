@@ -14,11 +14,14 @@ param hostPoolMaxSessionLimit int
 param startVmOnConnect bool
 param enableMonitoring bool
 param tags object
-param timeStamp string
+param deploymentSuffix string
 param time string = utcNow('u')
 param hostPoolValidationEnvironment bool
 param virtualMachineTemplate object
 
+var vmIntuneEnrollment = contains(virtualMachineTemplate.identityType, 'DomainServices')
+  ? {}
+  : { vmIntuneEnrollment: virtualMachineTemplate.intuneEnrollment }
 var vmDomain = empty(virtualMachineTemplate.domain)
   ? {}
   : { vmDomain: virtualMachineTemplate.domain }
@@ -65,6 +68,7 @@ var hostPoolVmTemplateTags = union(
   vmImageOffer,
   vmImagePublisher,
   vmImageSku,
+  vmIntuneEnrollment,
   vmDiskEncryptionSetName
 )
 
@@ -97,7 +101,7 @@ resource hostPool 'Microsoft.DesktopVirtualization/hostPools@2023-09-05' = {
 }
 
 module hostPool_PrivateEndpoint '../../../../sharedModules/resources/network/private-endpoint/main.bicep' = if (privateEndpoint && !empty(privateEndpointSubnetResourceId)) {
-  name: '${hostPoolName}_privateEndpoint_${timeStamp}'
+  name: '${hostPoolName}-privateEndpoint-${deploymentSuffix}'
   params: {
     customNetworkInterfaceName: privateEndpointNICName
     groupIds: [

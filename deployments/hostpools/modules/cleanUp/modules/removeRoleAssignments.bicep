@@ -1,6 +1,6 @@
 param location string
 param roleAssignmentIds array
-param timeStamp string
+param deploymentSuffix string
 param userAssignedIdentityClientId string
 param managementVmName string
 
@@ -10,7 +10,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2022-03-01' existing 
 
 resource removeRoleAssignments 'Microsoft.Compute/virtualMachines/runCommands@2023-09-01' = {
   parent: virtualMachine
-  name: 'Remove_RoleAssignments_${timeStamp}'
+  name: 'Remove-RoleAssignments-${deploymentSuffix}'
   location: location
   properties: {    
     asyncExecution: true

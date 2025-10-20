@@ -23,7 +23,7 @@ param resourceGroupHosts string
 param resourceGroupManagement string
 param resourceGroupStorage string
 param tags object
-param timeStamp string
+param deploymentSuffix string
 param userAssignedIdentityNameConv string
 param virtualMachineName string
 param virtualMachineNICName string
@@ -41,6 +41,7 @@ var roleDefinitions = {
   DesktopVirtualizationApplicationGroupContributor: '86240b0e-9422-4c43-887b-b61143f32ba8'
   KeyVaultCryptoOfficer: '14b46e9e-c2b7-41b4-b07b-48a6ebf60603'
   RoleBasedAccessControlAdministrator: 'f58310d9-a9f6-439a-9e8d-f62e7b41a168'
+  storageFileDataPrivilegedContributor: '69566ab7-960f-475b-8e7c-b3118f30c6bd'
   StorageAccountContributor: '17d1049b-9a84-46fb-8f53-869881c3d3ab'
   VirtualMachineContributor: '9980e02c-c2be-4d73-94e8-173b1dc7cf3c'
 }
@@ -114,8 +115,14 @@ var roleAssignmentsManagement = union(
 var roleAssignmentsStorage = fslogix && contains(identitySolution, 'DomainServices')
   ? [
       {
-        roleDefinitionId: roleDefinitions.StorageAccountContributor // (Purpose: domain join storage account & set NTFS permissions on the file share)
+        roleDefinitionId: roleDefinitions.StorageAccountContributor // (Purpose: domain join storage account)
         depName: 'Storage-StorageAcctCont'
+        resourceGroup: resourceGroupStorage
+        subscription: subscription().subscriptionId
+      }
+      {
+        roleDefinitionId: roleDefinitions.storageFileDataPrivilegedContributor // (Purpose: set NTFS permissions on the file share)
+        depName: 'Storage-StorageFileDataPrivCont'
         resourceGroup: resourceGroupStorage
         subscription: subscription().subscriptionId
       }
@@ -137,7 +144,7 @@ var roleAssignments = union(
 )
 
 module deploymentUserAssignedIdentity '../../../sharedModules/resources/managed-identity/user-assigned-identity/main.bicep' = {
-  name: 'UserAssignedIdentity_Deployment_${timeStamp}'
+  name: 'UserAssignedIdentity-Deployment-${deploymentSuffix}'
   scope: resourceGroup(resourceGroupDeployment)
   params: {
     location: locationVirtualMachines
@@ -154,7 +161,7 @@ module deploymentUserAssignedIdentity '../../../sharedModules/resources/managed-
 module roleAssignments_deployment '../../../sharedModules/resources/authorization/role-assignment/resource-group/main.bicep' = [
   for i in range(0, length(roleAssignments)): {
     scope: resourceGroup(roleAssignments[i].subscription, roleAssignments[i].resourceGroup)
-    name: 'RA-${roleAssignments[i].depName}-${timeStamp}'
+    name: 'RA-${roleAssignments[i].depName}-${deploymentSuffix}'
     params: {
       principalId: deploymentUserAssignedIdentity.outputs.principalId
       principalType: 'ServicePrincipal'
@@ -165,7 +172,7 @@ module roleAssignments_deployment '../../../sharedModules/resources/authorizatio
 
 // Deployment VM
 module virtualMachine 'modules/virtualMachine.bicep' = {
-  name: 'VirtualMachine_Deployment_${timeStamp}'
+  name: 'VirtualMachine-Deployment-${deploymentSuffix}'
   scope: resourceGroup(resourceGroupDeployment)
   params: {
     identitySolution: identitySolution
@@ -191,7 +198,7 @@ module virtualMachine 'modules/virtualMachine.bicep' = {
       },
       tags[?'Microsoft.Compute/virtualMachines'] ?? {}
     )
-    timeStamp: timeStamp
+    deploymentSuffix: deploymentSuffix
     userAssignedIdentitiesResourceIds: {
       '${deploymentUserAssignedIdentity.outputs.resourceId}': {}
     }

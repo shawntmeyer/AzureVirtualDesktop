@@ -17,9 +17,8 @@ param shareAdminGroups array
 param shareUserGroups array
 param smbServerLocation string
 param storageSku string
-param storageSolution string
 param tagsNetAppAccount object
-param timeStamp string
+param deploymentSuffix string
 
 #disable-next-line BCP329
 var ouRelativePath = contains(ouPath, 'DC') ? substring(split(ouPath, 'DC')[0], 0, length(split(ouPath, 'DC')[0]) - 1) : ouPath
@@ -144,20 +143,17 @@ var netappServerFqdns = length(shares) > 1 ? [
   volumes[0].properties.mountTargets[0].smbServerFqdn
 ]
 
-module SetNTFSPermissions 'domainJoinSetNTFSPermissions.bicep' = {
-  name: 'Set-NTFSPermissions_${timeStamp}'
+module SetNTFSPermissions 'setNTFSPermissionsAzureNetAppFiles.bicep' = {
+  name: 'Set-NTFSPermissions-${deploymentSuffix}'
   scope: resourceGroup(resourceGroupDeployment)
   params: {
-    adminGroupNames: map(shareAdminGroups, group => group.displayName)  
+    adminGroups:map(shareAdminGroups, group => group.name)  
     domainJoinUserPrincipalName: domainJoinUserPrincipalName
     domainJoinUserPassword: domainJoinUserPassword
     location: location  
     netAppServers: netappServerFqdns
-    shardingOptions: 'None'
     shares: shares
-    storageSolution: storageSolution
-    timeStamp: timeStamp
-    userGroupNames: map(shareUserGroups, group => group.displayName)
+    userGroups: map(shareUserGroups, group => group.name)
     virtualMachineName: deploymentVirtualMachineName
   }
   dependsOn: [

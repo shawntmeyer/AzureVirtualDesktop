@@ -3,7 +3,7 @@ targetScope = 'subscription'
 param location string
 param resourceGroupHosts string
 param resourceGroupDeployment string
-param timeStamp string
+param deploymentSuffix string
 param userAssignedIdentityClientId string
 param deploymentVirtualMachineName string
 param roleAssignmentIds array
@@ -11,11 +11,11 @@ param virtualMachineNames array
 
 module removeRunCommands 'modules/removeRunCommands.bicep' = {
   scope: resourceGroup(resourceGroupDeployment)
-  name: 'Remove_RunCommands_${timeStamp}'
+  name: 'Remove-RunCommands-${deploymentSuffix}'
   params: {
     location: location
     deploymentVmName: deploymentVirtualMachineName
-    timeStamp: timeStamp
+    deploymentSuffix: deploymentSuffix
     userAssignedIdentityClientId: userAssignedIdentityClientId
     virtualMachineNames: virtualMachineNames
     virtualMachinesResourceGroup: resourceGroupHosts
@@ -26,12 +26,12 @@ module removeRunCommands 'modules/removeRunCommands.bicep' = {
 // Remove role assignments for the user Assigned Identity for resource groups other than the deployment resource group to allow the deletion of the resource group.
 module removeRoleAssignments 'modules/removeRoleAssignments.bicep' = {
   scope: resourceGroup(resourceGroupDeployment)
-  name: 'Remove_RoleAssignments_${timeStamp}'
+  name: 'Remove-RoleAssignments-${deploymentSuffix}'
   params: {
     location: location
     managementVmName: deploymentVirtualMachineName
     roleAssignmentIds: filter(roleAssignmentIds, roleAssignmentId => split(roleAssignmentId, '/')[4] != resourceGroupDeployment)
-    timeStamp: timeStamp
+    deploymentSuffix: deploymentSuffix
     userAssignedIdentityClientId: userAssignedIdentityClientId
   }
   dependsOn: [
@@ -41,11 +41,11 @@ module removeRoleAssignments 'modules/removeRoleAssignments.bicep' = {
 
 module removeDeploymentResourceGroup 'modules/removeDeploymentResourceGroup.bicep' = {
   scope: resourceGroup(resourceGroupDeployment)
-  name: 'Delete_DeploymentResourceGroup_${timeStamp}'
+  name: 'Delete-DeploymentResourceGroup-${deploymentSuffix}'
   params: {
     location: location
     deploymentVmName: deploymentVirtualMachineName
-    timeStamp: timeStamp
+    deploymentSuffix: deploymentSuffix
     userAssignedIdentityClientId: userAssignedIdentityClientId
   }
   dependsOn: [

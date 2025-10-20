@@ -1,5 +1,5 @@
 param location string
-param timeStamp string
+param deploymentSuffix string
 param userAssignedIdentityClientId string
 param deploymentVmName string
 
@@ -9,7 +9,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2022-03-01' existing 
 
 resource deleteResourceGroup 'Microsoft.Compute/virtualMachines/runCommands@2023-09-01' = {
   parent: virtualMachine
-  name: 'Delete_DeploymentResourceGroup_${timeStamp}'
+  name: 'Delete-DeploymentResourceGroup-${deploymentSuffix}'
   location: location
   properties: {    
     asyncExecution: true

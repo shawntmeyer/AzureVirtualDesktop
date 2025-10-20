@@ -5,6 +5,7 @@ param (
     [string]$DisableUpdates,
     [string]$ConfigureFSLogix,
     [string]$CloudCache = 'false',
+    [string]$IdentitySolution,
     [string]$LocalNetAppServers,
     [string]$LocalStorageAccountNames,
     [string]$LocalStorageAccountKeys,
@@ -291,13 +292,21 @@ Function Set-RegistryValue {
 
 # from https://learn.microsoft.com/en-us/microsoftteams/new-teams-vdi-requirements-deploy#recommended-for-exclusion
 # only specifying the folders that do not affect performance per article
-$redirectionsXMLContent = @'
+$redirectionsXMLStart = @'
 <?xml version="1.0" encoding="UTF-8"?>
 <FrxProfileFolderRedirection ExcludeCommonFolders="0">
 <Excludes>
+'@
+$redirectionsXMLExcludesTeams = @'
 <Exclude Copy="0">AppData\Local\Packages\MSTeams_8wekyb3d8bbwe\LocalCache\Microsoft\MSTeams\Logs</Exclude>
 <Exclude Copy="0">AppData\Local\Packages\MSTeams_8wekyb3d8bbwe\LocalCache\Microsoft\MSTeams\PerfLog</Exclude>
 <Exclude Copy="0">AppData\Local\Packages\MSTeams_8wekyb3d8bbwe\LocalCache\Microsoft\MSTeams\EBWebView\WV2Profile_tfw\GPUCache</Exclude>
+<Exclude Copy="0">AppData\Local\Packages\Microsoft.Windows.StartMenuExperienceHost_cw5n1h2txyewy\TempState</Exclude>
+'@
+$redirectionsXMLExcludesAzCLI = @'
+<Exclude Copy="0">.Azure</Exclude>
+'@
+$redirectionsXMLEnd = @'
 </Excludes>
 <Includes>
 </Includes>
@@ -644,15 +653,23 @@ If ($ConfigureFSLogix) {
             }
         }    
     }
-    Write-Log -message "Checking for Teams"
-    If (Get-InstalledApplication 'Teams') {
-        Write-Log -message "Teams is installed"
+    $AzCLIInstalled = Get-InstalledApplication -Name 'Azure CLI'
+    $TeamsInstalled = Get-AppxProvisionedPackage -Online | Where-Object { $_.DisplayName -eq 'MSTeams' }
+    If ($AzCLIInstalled -or $TeamsInstalled) {
         $customRedirFolder = "$env:ProgramData\FSLogix_CustomRedirections"
         Write-Log -message "Creating custom redirections.xml file in $customRedirFolder"
         If (-not (Test-Path $customRedirFolder )) {
             New-Item -Path $customRedirFolder -ItemType Directory -Force
         }
         $customRedirFilePath = "$customRedirFolder\redirections.xml"
+        $redirectionsXMLContent = $redirectionsXMLStart
+        if ($AzCLIInstalled) {
+             $redirectionsXMLContent = $redirectionsXMLContent + "`n" + $redirectionsXMLExcludesAzCLI
+        }
+        if ($TeamsInstalled) {
+            $redirectionsXMLContent = $redirectionsXMLContent + "`n" + $redirectionsXMLExcludesTeams
+        }
+        $redirectionsXMLContent = $redirectionsXMLContent + "`n" + $redirectionsXMLEnd
         $redirectionsXMLContent | Out-File -FilePath $customRedirFilePath -Encoding unicode
         # Path where FSLogix looks for the redirections.xml file to copy from and into the user's profile: https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=profiles#redirxmlsourcefolder
         
@@ -665,6 +682,10 @@ If ($ConfigureFSLogix) {
             }
         )
     }
+    If ($IdentitySolution -eq 'EntraKerberos') {
+        $RegSettings.Add([PSCustomObject]@{ Name = 'CloudKerberosTicketRetrievalEnabled'; Path = 'HKLM:\SYSTEM\CurrentControlSet\Control\Lsa\Kerberos\Parameters'; PropertyType = 'DWord'; Value = 1})
+    }
+
 
     $LocalAdministrator = (Get-LocalUser | Where-Object { $_.SID -like '*-500' }).Name
     $LocalGroups = 'FSLogix Profile Exclude List', 'FSLogix ODFC Exclude List'

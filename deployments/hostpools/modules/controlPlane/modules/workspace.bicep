@@ -13,7 +13,7 @@ param privateEndpointNICName string
 param publicNetworkAccess string
 param privateEndpointSubnetResourceId string
 param tags object
-param timeStamp string
+param deploymentSuffix string
 param workspaceName string
 
 var existingWorkspaceReferences = !empty(existingWorkspaceProperties) ? map(existingWorkspaceProperties.applicationGroupReferences, resId => toLower(resId)) : []
@@ -31,7 +31,7 @@ resource workspace 'Microsoft.DesktopVirtualization/workspaces@2023-09-05' = {
 }
 
 module workspace_privateEndpoint '../../../../sharedModules/resources/network/private-endpoint/main.bicep' = if (privateEndpoint && !empty(privateEndpointSubnetResourceId)) {
-  name: '${workspaceName}_privateEndpoint_${timeStamp}'
+  name: '${workspaceName}-privateEndpoint-${deploymentSuffix}'
   params: {
     customNetworkInterfaceName: privateEndpointNICName
     groupIds: groupIds
