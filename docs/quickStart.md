@@ -356,18 +356,18 @@ The [deployments/Deploy-ImageManagement.ps1](../deployments/Deploy-ImageManageme
 
    - [deployments/imageManagement/parameters/imageManagement.parameters.json](../deployments/imageManagement/parameters/imageManagement.parameters.json)
 
-    > [!Important]
-    > For Zero Trust deployments and other details, see [image management parameters](parameters.md#avd-image-management-parameters) for an explanation of all the available parameters.
+> [!Important]
+> For Zero Trust deployments and other details, see [image management parameters](parameters.md#avd-image-management-parameters) for an explanation of all the available parameters.
 
    - [deployments/imageManagement/parameters/public.downloads.parameters.json](../deployments/imageManagement/parameters/public.downloads.parameters.json)
 
-    > [!Important]
-    > Copy the correct downloads parameters file for the cloud you are in. (i.e. public.downloads.parameters.json for AzureCloud (commercial/IL2) and AzureUSGovernment (IL4/5), secret for Azure Secret, and topsecret for Azure Top Secret).
+> [!Important]
+> Copy the correct downloads parameters file for the cloud you are in. (i.e. public.downloads.parameters.json for AzureCloud (commercial/IL2) and AzureUSGovernment (IL4/5), secret for Azure Secret, and topsecret for Azure Top Secret).
 
 1. Set required parameters and make any optional updates desired in
 
-   - deployments/imageManagement/parameters/<customprefix>.imageManagement.parameters.json
-   - deployments/imageManagement/parameters/<customprefix>.downloads.parameters.json
+   - deployments/imageManagement/parameters/`<customprefix>`.imageManagement.parameters.json
+   - deployments/imageManagement/parameters/`<customprefix>`.downloads.parameters.json
   
 1. **[Optional]** If you wish to add any custom scripts or installers beyond what is already included in the artifacts directory [.common/artifacts](../.common/artifacts), then gather your installers and create a new folder inside the artifacts directory for each customizer or application. In the folder create or place one and only one PowerShell script (.ps1) that installs the application or performs the desired customization. For an example of the installation script and supporting files, see the [.common/artifacts/VSCode](../.common/artifacts/VSCode) folder. These customizations can be applied to the custom image via the `customizations` deployment parameter.
 
