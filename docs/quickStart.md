@@ -350,18 +350,18 @@ The [deployments/Deploy-ImageManagement.ps1](../deployments/Deploy-ImageManageme
 > [!NOTE]
 > For Zero Trust deployments, see [Image Management Parameters](parameters.md#avd-image-management-parameters) for an explanation of all the parameters.
 
-1. Create a custom imageManagement parameter file for your environment by copying [deployments/imageManagement/parameters/imageManagement.parameters.json](../deployments/imageManagement/parameters/imageManagement.parameters.json) to a new file and naming it with a custom prefix, hereafter referred to as `<customprefix>`.
+1. Create a custom imageManagement parameter file for your environment by copying [deployments/imageManagement/parameters/imageManagement.parameters.json](../deployments/imageManagement/parameters/imageManagement.parameters.json) to a new file and naming it with a custom prefix, hereafter referred to as \<customprefix>.
 
 1. Create a custom downloads parameters file by copying the appropriate downloads.parameters.json file from the [deployments/imageManagement/parameters](../deployments/imageManagement/parameters) for the cloud you are in (i.e. public.downloads.parameters.json for AzureCloud (commercial/IL2) and AzureUSGovernment (IL4/5), secret for Azure Secret, and topsecret for Azure Top Secret) to a new file with the same custom prefix.
 
 1. Set required parameters and make any optional updates desired in the two new files.
 
-   - deployments/imageManagement/parameters/`<customprefix>`.imageManagement.parameters.json
-   - deployments/imageManagement/parameters/`<customprefix>`.downloads.parameters.json
+   - deployments/imageManagement/parameters/\<customprefix>.imageManagement.parameters.json
+   - deployments/imageManagement/parameters/\<customprefix>.downloads.parameters.json
   
 1. **[Optional]** If you wish to add any custom scripts or installers beyond what is already included in the artifacts directory [.common/artifacts](../.common/artifacts), then gather your installers and create a new folder inside the artifacts directory for each customizer or application. In the folder create or place one and only one PowerShell script (.ps1) that installs the application or performs the desired customization. For an example of the installation script and supporting files, see the [.common/artifacts/VSCode](../.common/artifacts/VSCode) folder. These customizations can be applied to the custom image via the `customizations` deployment parameter.
 
-1. **[Optional]** The `SkipDownloadingNewSources` switch parameter will disable the downloading of the latest installers (or other files) from the Internet (or other network). Do not use this switch if you want to enable an "evergreen" capability that helps you keep your images and session hosts up to date. In addition, update the Urls specified in the `<customprefix>.downloads.parameters.json`[^2] file in the [deployments/imageManagement/parameters](../deployments/imageManagement/parameters) folder to match your network environment. You can also not depend on this automated capability and add source files directly to the appropriate location in the [.common/artifacts](../.common/artifacts/) folder. This directory is processed by zipping the contents of each child directory into a zip file and then all existing files in the root plus the zip files are added to the blob storage container in the Storage Account.
+1. **[Optional]** The `SkipDownloadingNewSources` switch parameter will disable the downloading of the latest installers (or other files) from the Internet (or other network). Do not use this switch if you want to enable an "evergreen" capability that helps you keep your images and session hosts up to date. In addition, update the Urls specified in the \<customprefix>.downloads.parameters.json`[^2] file in the [deployments/imageManagement/parameters](../deployments/imageManagement/parameters) folder to match your network environment. You can also not depend on this automated capability and add source files directly to the appropriate location in the [.common/artifacts](../.common/artifacts/) folder. This directory is processed by zipping the contents of each child directory into a zip file and then all existing files in the root plus the zip files are added to the blob storage container in the Storage Account.
 
 1. Open the PowerShell version where you installed the Az module above. If not already connected to your Azure environment, then connect to the correct Azure environment where `<Environment>` equals "AzureCloud", "AzureUSGovernment", or the air-gapped equivalent.
 
@@ -442,7 +442,7 @@ This option opens the deployment UI for the solution in the Azure Portal. Be sur
     ``` powershell
     $Location = '<Region>'
     $DeploymentName = '<valid deployment name>'
-    New-AzDeployment -Location $Location -Name $DeploymentName -TemplateFile '.\deployments\imageManagement\imageBuild\imageBuild.json' -TemplateParameterFile '.\deployments\imageManagement\imageBuild\parameters\`<customprefix>`.imageBuild.parameters.json' -Verbose
+    New-AzDeployment -Location $Location -Name $DeploymentName -TemplateFile '.\deployments\imageManagement\imageBuild\imageBuild.json' -TemplateParameterFile '.\deployments\imageManagement\imageBuild\parameters\<customprefix>.imageBuild.parameters.json' -Verbose
     ```
 
 ### Deploy an AVD Host Pool
