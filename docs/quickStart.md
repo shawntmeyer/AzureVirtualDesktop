@@ -369,23 +369,23 @@ The [deployments/Deploy-ImageManagement.ps1](../deployments/Deploy-ImageManageme
    - deployments/imageManagement/parameters/`<customprefix>`.imageManagement.parameters.json
    - deployments/imageManagement/parameters/`<customprefix>`.downloads.parameters.json
   
-1. **[Optional]** If you wish to add any custom scripts or installers beyond what is already included in the artifacts directory [.common/artifacts](../.common/artifacts), then gather your installers and create a new folder inside the artifacts directory for each customizer or application. In the folder create or place one and only one PowerShell script (.ps1) that installs the application or performs the desired customization. For an example of the installation script and supporting files, see the [.common/artifacts/VSCode](../.common/artifacts/VSCode) folder. These customizations can be applied to the custom image via the `customizations` deployment parameter.
+2. **[Optional]** If you wish to add any custom scripts or installers beyond what is already included in the artifacts directory [.common/artifacts](../.common/artifacts), then gather your installers and create a new folder inside the artifacts directory for each customizer or application. In the folder create or place one and only one PowerShell script (.ps1) that installs the application or performs the desired customization. For an example of the installation script and supporting files, see the [.common/artifacts/VSCode](../.common/artifacts/VSCode) folder. These customizations can be applied to the custom image via the `customizations` deployment parameter.
 
-1. **[Optional]** The `SkipDownloadingNewSources` switch parameter will disable the downloading of the latest installers (or other files) from the Internet (or other network). Do not use this switch if you want to enable an "evergreen" capability that helps you keep your images and session hosts up to date. In addition, update the Urls specified in the `<customprefix>.downloads.parameters.json`[^2] file in the [deployments/imageManagement/parameters](../deployments/imageManagement/parameters) folder to match your network environment. You can also not depend on this automated capability and add source files directly to the appropriate location in the [.common/artifacts](../.common/artifacts/) folder. This directory is processed by zipping the contents of each child directory into a zip file and then all existing files in the root plus the zip files are added to the blob storage container in the Storage Account.
+3. **[Optional]** The `SkipDownloadingNewSources` switch parameter will disable the downloading of the latest installers (or other files) from the Internet (or other network). Do not use this switch if you want to enable an "evergreen" capability that helps you keep your images and session hosts up to date. In addition, update the Urls specified in the `<customprefix>.downloads.parameters.json`[^2] file in the [deployments/imageManagement/parameters](../deployments/imageManagement/parameters) folder to match your network environment. You can also not depend on this automated capability and add source files directly to the appropriate location in the [.common/artifacts](../.common/artifacts/) folder. This directory is processed by zipping the contents of each child directory into a zip file and then all existing files in the root plus the zip files are added to the blob storage container in the Storage Account.
 
-1. Open the PowerShell version where you installed the Az module above. If not already connected to your Azure Environment, then connect to the correct Azure Environment where `<Environment>` equals "AzureCloud", "AzureUSGovernment", or the Air-Gapped equivalent.
+4. Open the PowerShell version where you installed the Az module above. If not already connected to your Azure Environment, then connect to the correct Azure Environment where `<Environment>` equals "AzureCloud", "AzureUSGovernment", or the Air-Gapped equivalent.
 
     ``` powershell
     Connect-AzAccount -Environment <Environment>
     ```
 
-1. Ensure that your context is configured with the subscription to where you want to deploy the image management resources.
+5. Ensure that your context is configured with the subscription to where you want to deploy the image management resources.
 
     ``` powershell
     Set-AzContext -Subscription <subscriptionID>
     ```
 
-1. Change directories to the [deployments](../deployments) folder and execute the [Deploy-ImageManagement.ps1](../deployments/Deploy-ImageManagement.ps1) script as follows:
+6. Change directories to the [deployments](../deployments) folder and execute the [Deploy-ImageManagement.ps1](../deployments/Deploy-ImageManagement.ps1) script as follows:
 
     ``` powershell
     .\Deploy-ImageManagement.ps1 -DeployImageManagementResources -Location <Region> -ParameterFilePrefix <customprefix> [-SkipDownloadingNewSources] [-TempDir <Temp directory for artifacts>] [-DeleteExistingBlobs] [-TeamsTenantType <TeamsTenantType>]
