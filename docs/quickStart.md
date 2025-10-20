@@ -348,7 +348,7 @@ If you plan to build custom images or add custom software or run scripts during 
 
 The [deployments/Deploy-ImageManagement.ps1](../deployments/Deploy-ImageManagement.ps1) script is the easiest way to ensure all necessary image management resources (scripts and installers and Compute Gallery for custom image option.) are present for the AVD deployment.
 
-> [!IMPORTANT]
+> [!INFORMATION]
 > For Zero Trust deployments, see [Image Management Parameters](parameters.md#avd-image-management-parameters) for an explanation of all the parameters.
 
 > [!IMPORTANT]
