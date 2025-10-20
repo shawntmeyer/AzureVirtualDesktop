@@ -107,8 +107,8 @@ This optional feature deploys the required resources & configuration to enable v
 
 **Deployed Resources:**
 
-- Key Vault (1 per host pool for VM disks, 1 for each fslogix storage account)
-  - Key Encryption Key
+- Key Vault
+  - Key Encryption Key (1 per host pool for VM disks, 1 for each fslogix storage account)
 - Disk Encryption Set
 
 ## SMB Multichannel
