@@ -1,4 +1,4 @@
-[**Home**](../README.md) | [**Design**](design.md) | [**Get Started**](quickStart.md) | [**Troubleshooting**](troubleshooting.md) | [**Parameters**](parameters.md) | [**Scope**](scope.md) | [**Zero Trust Framework**](zeroTrustFramework.md)
+[**Home**](../README.md) | [**Design**](design.md) | [**Get Started**](quickStart.md) | [**Limitations**](limitations.md) | [**Troubleshooting**](troubleshooting.md) | [**Parameters**](parameters.md) | [**Zero Trust Framework**](zeroTrustFramework.md)
 
 # Features
 
@@ -28,7 +28,7 @@ Azure Files and Azure NetApp Files are the only two SMB storage services availab
 
 **Reference:** [FSLogix - Microsoft Docs](https://docs.microsoft.com/en-us/fslogix/overview)
 
-When deploying Azure Files and using Active Directory Domain Services, Entra Domain Services, or Entra Kerberos identity options, you have the option to deploy more than one Azure Files storage account to shard your storage by deploying a storage account for each group defined in the `fslogixUserGroups` parameter.
+When deploying Azure Files and using Active Directory Domain Services, Entra Domain Services, or Entra Kerberos identity options, you have the option to deploy more than one Azure Files storage account to shard your storage by deploying a storage account for each group defined in the `fslogixUserGroups` parameter. This group must be sourced from Active Directory and synchronized to Entra Id.
 
 In addition to the optional deployment of resources, you can choose to configure the registry of session host VMs with the proper registry settings to support each of these container types whether or not the resources are deployed. In addition, if you choose one of the Cloud Cache options, you can provide storage accounts in remote regions to support an active/active Business Continuity and disaster recovery configuration as documented at https://learn.microsoft.com/en-us/fslogix/concepts-container-recovery-business-continuity#option-3-cloud-cache-active--active.
 
