@@ -21,7 +21,7 @@ All methods require some initial setup in order for a successful deployment
 
 ## Prerequisites
 
-There are several Azure resource prerequisite that are required to run this deployment. Read and complete the steps in this section to create the basic resources required for a successful pilot deployment. See [Microsoft Learn | Azure Virtual Desktop Prerequisites](https://learn.microsoft.com/en-us/azure/virtual-desktop/prerequisites) for the latest information.
+There are several Azure resource prerequisites that are required to run this deployment. Read and complete the steps in this section to create the basic resources required for a successful pilot deployment. See [Microsoft Learn | Azure Virtual Desktop Prerequisites](https://learn.microsoft.com/en-us/azure/virtual-desktop/prerequisites) for the latest information.
 
 ### Required
 
@@ -31,7 +31,7 @@ There are several Azure resource prerequisite that are required to run this depl
   </details>
 - <details><summary><b>Networking</b></summary>
   
-  Deployment requires a minimum of 1 Azure Virtual Network with one subnet to which the deployment virtual machine (deployment helper) and the session host(s) will be attached. For a PoC type implementation of AVD with Entra ID authentication, this Vnet can be standalone as there are no custom DNS requirements; however, for hybrid identity scenarios and zero trust implementations, the Virtual Network has DNS requirements as documented below under optional.
+  Deployment requires a minimum of 1 Azure Virtual Network with one subnet to which the deployment virtual machine (deployment helper) and the session host(s) will be attached. For a PoC-type implementation of AVD with Entra ID authentication, this VNet can be standalone as there are no custom DNS requirements; however, for hybrid identity scenarios and Zero Trust implementations, the Virtual Network has DNS requirements as documented below under optional.
   
   Machines on this network need to be able to connect to the following network destinations:
   <ul>
@@ -47,14 +47,13 @@ There are several Azure resource prerequisite that are required to run this depl
   
   The deployment of the custom image build option depends on many artifacts that must be hosted in Azure Blob storage to satisfy Zero Trust principals or to build the custom image on Air-Gapped clouds. See [Air-Gapped Cloud Image Management Details](imageAir-GappedCloud.md) for more information. This repo contains the deploy-imagemanagement.ps1 helper script that should be used to deploy the image management resources and upload the artifacts to the created storage account.
 
-  > **Important:** Before running this script, see the Azure Permissions section below.
+  **Important:** Before running this script, see the Azure Permissions section below.
 
   </details>
 - <details><summary><b>Azure Permissions</b></summary>
   <ul>
   <li><b>Required:</b> Ensure the principal deploying the solution has the "Owner" or ("Contributor" and "User Access Administrator") roles assigned on the target Azure subscription.</li>
-  
-  > **Important:** Ensure that your role assignment does not have a condition that prevents you from assigning the 'Role-Based Access Control Administrator' role to other principals as the deployment assigns this role to the deployment user-assigned managed identity in order to allow it to automatically remove the role assignments that it creates during deployment.
+  <li><b>Important:</b> Ensure that your role assignment does not have a condition that prevents you from assigning the 'Role-Based Access Control Administrator' role to other principals as the deployment assigns this role to the deployment user-assigned managed identity in order to allow it to automatically remove the role assignments that it creates during deployment.</li>
   
   <li><b>Optional:</b> If you wish to use Azure Key Vaults to store and manage secrets, you'll want to ensure that the user principals managing Azure Virtual Desktop in your environment are granted the 'Key Vault Administrator' role to the subscription or at least the regional secrets key vaults and regional encryption key vaults (if customer managed keys are specified).</li>
   <li><b>Optional:</b> To utilize the image management resources for custom image builds or post deployment scripts, ensure that the user principals managing Azure Virtual Desktop in your environment are granted the 'Storage Blob Data Contributor' role to the subscription or at least the image management resource group.</li>
@@ -65,7 +64,7 @@ There are several Azure resource prerequisite that are required to run this depl
   <ul>
   <li>Active Directory Domain Services: create the group in Active Directory and ensure the group has synchronized to Entra ID.</li>
   <li>Entra Domain Services: create the group in Entra ID or Active Directory and ensure the group has synchronized to Entra ID Domain Services.</li>
-  <li>Entra Kerberos: create the group in Active Directory and ensure the group has synchronized to Entra ID.
+  <li>Entra Kerberos: create the group in Active Directory and ensure the group has synchronized to Entra ID.</li>
   <li>Entra ID: create the group in Entra ID.</li>
   </ul>
   </details>
@@ -74,7 +73,7 @@ There are several Azure resource prerequisite that are required to run this depl
 
 - <details><summary><b>Domain Services</b></summary>
   
-  If you plan to utilize hybrid identities with either the Active Directory Domain Services or Entra Kerberos identity options, then ensure Active Directory Domain Services and that you are synchronizing the required objects. AD Sites & Services should be configured for the address space of your Azure virtual network if you are extending your on-premises Active Directory infrastruture into the cloud.
+  If you plan to utilize hybrid identities with either the Active Directory Domain Services or Entra Kerberos identity options, then ensure Active Directory Domain Services is configured and that you are synchronizing the required objects. AD Sites & Services should be configured for the address space of your Azure virtual network if you are extending your on-premises Active Directory infrastructure into the cloud.
   </details>
 - <details><summary><b>DNS</b></summary>
   
@@ -95,13 +94,9 @@ There are several Azure resource prerequisite that are required to run this depl
     | **Azure Table Storage**<br>- storage quota function app | privatelink.table.core.windows.net | privatelink.table.core.usgovcloudapi.net |
     | **Azure Web Sites**<br>- storage quota function app | privatelink.azurewebsites.net | privatelink.azurewebsites.us |
 
-  <div style="border-left: 4px solid #2b6cb0; background-color:#f0f4f8; padding: 10px 15px; margin: 10px 0; font-family: sans-serif;">
-  <strong style="color:#2b6cb0;">❗Note:</strong>
-    <ul>
-    <li>For Private DNS values on Azure Secret, see [Azure Government Secret Private DNS Zone Values](https://review.learn.microsoft.com/en-us/microsoft-government-secret/azure/azure-government-secret/services/networking/private-link/private-endpoint-dns?branch=main)</li>
-    <li>For Private DNS zone values on Azure Top Secret, see [Azure Government Top Secret Private DNS Zone Values](https://review.learn.microsoft.com/en-us/microsoft-government-topsecret/azure/azure-government-top-secret/services/networking/private-link/private-endpoint-dns?branch=main)</li>
-    </ul>
-  </div>
+  > [!NOTE]
+  > - For Private DNS values on Azure Secret, see [Azure Government Secret Private DNS Zone Values](https://review.learn.microsoft.com/en-us/microsoft-government-secret/azure/azure-government-secret/services/networking/private-link/private-endpoint-dns?branch=main)
+  > - For Private DNS zone values on Azure Top Secret, see [Azure Government Top Secret Private DNS Zone Values](https://review.learn.microsoft.com/en-us/microsoft-government-topsecret/azure/azure-government-top-secret/services/networking/private-link/private-endpoint-dns?branch=main)
   </details>
 - <details><summary><b>Domain Permissions</b></summary>
   <ul>
@@ -170,7 +165,7 @@ There are several Azure resource prerequisite that are required to run this depl
     In order to deploy Virtual Machines with Confidential VM encryption and customer managed keys, you will need to create the 'Confidential VM Orchestrator' application in your tenant. Use the following steps to complete this prerequisite.
 
     <ol>
-    <li>Open PowerShell (perferably PowerShell 7 or later), and install the latest Az Modules.
+    <li>Open PowerShell (preferably PowerShell 7 or later), and install the latest Az Modules.
 
     If you launched PowerShell (or pwsh) as an administrator, use the following command:
     ``` powershell
@@ -244,13 +239,13 @@ Additional Information can be found [Install Bicep](https://learn.microsoft.com/
 
 ### Authentication to Azure
 
-1. Connect to the correct Azure Environment where `<Environment>` equals "AzureCloud", "AzureUSGovernment", or the Air-Gapped equivalents.
+1. Connect to the correct Azure environment where `<Environment>` equals "AzureCloud", "AzureUSGovernment", or the air-gapped equivalents.
 
    ``` powershell
    Connect-AzAccount -Environment <Environment>
    ```
 
-2. Ensure that your context is configured with the subscription to where you want to deploy the image management resources.
+2. Ensure that your context is configured with the subscription where you want to deploy the image management resources.
 
    ``` powershell
    Set-AzContext -Subscription <subscriptionID>
@@ -272,19 +267,19 @@ For more information see [Template-Specs | Microsoft Learn](https://learn.micros
 
 The AVD deployments created in this repo come with the custom portal forms for each template. The easiest way to create the Template Specs from the templates in this repo is to utilize the **New-TemplateSpecs.ps1** file located in the **deployments** folder. Follow these instructions to execute this script.
 
-1. Connect to the correct Azure Environment where `<Environment>` equals 'AzureCloud', 'AzureUSGovernment', or the Air-Gapped equivalent.
+1. Connect to the correct Azure environment where `<Environment>` equals 'AzureCloud', 'AzureUSGovernment', or the air-gapped equivalent.
 
    ``` powershell
    Connect-AzAccount -Environment <Environment>
    ```
 
-2. Ensure that your context is configured with the subscription to where you want to deploy the image management resources. Replace `<subscriptionID>` with the actual subscription ID.
+2. Ensure that your context is configured with the subscription where you want to deploy the image management resources. Replace `<subscriptionID>` with the actual subscription ID.
 
    ``` powershell
    Set-AzContext -Subscription <subscriptionID>
    ```
 
-3. Change your directory to the [deployments] folder and execute the following command replacing the `<location>` placeholder with a valid region name.
+3. Change your directory to the **deployments** folder and execute the following command, replacing the `<location>` placeholder with a valid region name.
 
    ``` powershell
    .\New-TemplateSpecs.ps1 -Location <location>
@@ -298,7 +293,8 @@ In order to deploy the Azure Virtual Desktop standalone or spoke network and req
 
 #### Option 1: Blue-Button Deployment via the Azure Portal
 
-> **Important:** For Air-Gapped Networks, you must use a template spec.
+> [!IMPORTANT]
+> For Air-Gapped Networks, you must use a template spec.
 
 1. Click on the appropriate button below.
 
@@ -348,11 +344,11 @@ While utilizing private endpoints is optional, it must be deployed in order to f
 
 ### Deploy Image Management Resources
 
-If you plan to build custom images or to add custom software or run scripts during the deployment of your session hosts, you should deploy the image management resources to support Zero Trust. You can also chose not to deploy these resources, but the image build VM will need access to the Internet to download the source files required for installation/configuration.
+If you plan to build custom images or add custom software or run scripts during the deployment of your session hosts, you should deploy the image management resources to support Zero Trust. You can also choose not to deploy these resources, but the image build VM will need access to the Internet to download the source files required for installation/configuration.
 
 The [deployments/Deploy-ImageManagement.ps1](../deployments/Deploy-ImageManagement.ps1) script is the easiest way to ensure all necessary image management resources (scripts and installers and Compute Gallery for custom image option.) are present for the AVD deployment.
 
-1. You should first create custom parameter files for your environment by copying the following two files and renaming the copy with a common prefix hereby refered to by `<customprefix>`.
+1. You should first create custom parameter files for your environment by copying the following two files and renaming the copy with a common prefix, hereafter referred to as `<customprefix>`.
 
    - [deployments/imageManagement/parameters/imageManagement.parameters.json](../deployments/imageManagement/parameters/imageManagement.parameters.json)
 
@@ -373,7 +369,7 @@ The [deployments/Deploy-ImageManagement.ps1](../deployments/Deploy-ImageManageme
 
 1. **[Optional]** The `SkipDownloadingNewSources` switch parameter will disable the downloading of the latest installers (or other files) from the Internet (or other network). Do not use this switch if you want to enable an "evergreen" capability that helps you keep your images and session hosts up to date. In addition, update the Urls specified in the `<customprefix>.downloads.parameters.json`[^2] file in the [deployments/imageManagement/parameters](../deployments/imageManagement/parameters) folder to match your network environment. You can also not depend on this automated capability and add source files directly to the appropriate location in the [.common/artifacts](../.common/artifacts/) folder. This directory is processed by zipping the contents of each child directory into a zip file and then all existing files in the root plus the zip files are added to the blob storage container in the Storage Account.
 
-1. Open the PowerShell version where you installed the Az module above. If not already connected to your Azure Environment, then connect to the correct Azure Environment where `<Environment>` equals "AzureCloud", "AzureUSGovernment", or the Air-Gapped equivalent.
+1. Open the PowerShell version where you installed the Az module above. If not already connected to your Azure environment, then connect to the correct Azure environment where `<Environment>` equals "AzureCloud", "AzureUSGovernment", or the air-gapped equivalent.
 
     ``` powershell
     Connect-AzAccount -Environment <Environment>
@@ -409,7 +405,7 @@ The [deployments/Deploy-ImageManagement.ps1](../deployments/Deploy-ImageManageme
     <li>Uploads the contents of the temporary directory as individual blobs to the storage account blob container overwriting any existing blobs with the same name.</li>
 </details>
 
-> [!Important]
+> [!IMPORTANT]
 > For Air-Gapped cloud instructions, see [Custom Image Air-Gapped Cloud Considerations](imageAir-GappedCloud.md) for more detailed instructions.
 
 ### Create a Custom Image (optional)
@@ -420,7 +416,7 @@ This deployment can be done via Command Line, Blue Button, or through a Template
 
 #### Option 1: Blue-Button Deployment via the Azure Portal
 
-> [!Important]
+> [!IMPORTANT]
 > For Air-Gapped Networks, you must use a template spec.
 
 This option opens the deployment UI for the solution in the Azure Portal. Be sure to select the button for the correct cloud. If your desired cloud is not listed, please use the template spec detailed in the Quick Start guide.
@@ -461,7 +457,8 @@ The AVD solution includes all necessary resources to deploy a usable virtual des
 
 #### Option 1: Blue-Button Deployment via the Azure Portal
 
-> **Important:** For Air-Gapped Networks, you must use a template spec.
+> [!IMPORTANT]
+> For Air-Gapped Networks, you must use a template spec.
 
 This option opens the deployment UI for the solution in the Azure Portal. Be sure to select the button for the correct cloud. If your desired cloud is not listed, please use the template spec detailed in the Quick Start guide.
 
