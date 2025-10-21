@@ -342,7 +342,7 @@ Switch ($ScheduledInstallDay) {
     "Thursday" { [int]$ScheduledInstallDay = 5 }
     "Friday" { [int]$ScheduledInstallDay = 6 }
     "Saturday" { [int]$ScheduledInstallDay = 7 }
-    default { $ScheduledInstallDay = 0 }
+    default { [int]$ScheduledInstallDay = 0 }
 }
 Switch ($ScheduledInstallTime) {
     "Automatic" { [int]$ScheduledInstallTime = 24 }
