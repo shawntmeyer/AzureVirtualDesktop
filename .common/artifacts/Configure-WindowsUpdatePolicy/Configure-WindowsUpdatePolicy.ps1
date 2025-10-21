@@ -1,5 +1,8 @@
 [CmdletBinding(SupportsShouldProcess = $true)]
 param (
+    [ValidateSet("True", "False")]
+    [string]$DisableUpdates = "False",
+
     [ValidateSet("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30")]
     [string]$DeferQualityUpdatesPeriodInDays = "0",
 
@@ -324,6 +327,12 @@ function New-Log {
 #endregion Functions
 
 #region Initialization
+if ($DisableUpdates.ToLower() -eq 'true') {
+    [bool]$DisableUpdates = $true
+}
+Else {
+    [bool]$DisableUpdates = $false
+}
 [int]$DeferQualityUpdatesPeriodInDays = $DeferQualityUpdatesPeriodInDays
 Switch ($ScheduledInstallDay) {
     "Sunday" { [int]$ScheduledInstallDay = 1 }
@@ -368,89 +377,105 @@ If (-not(Test-Path -Path "$env:SystemRoot\System32\lgpo.exe")) {
 }
 
 If (Test-Path -Path "$env:SystemRoot\System32\Lgpo.exe") {
-    $regKey = "Software\Policies\Microsoft\Windows\WindowsUpdate"
-    Write-Log -category info -message "Now Configuring Windows Update Settings via LGPO."
-    If ($DeferQualityUpdatesPeriodInDays -ge 1 -and $DeferQualityUpdatesPeriodInDays -le 30) {
-        Write-Log -Category Info -Message "Setting DeferQualityUpdatesPeriodInDays to '$DeferQualityUpdatesPeriodInDays'."
-        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'DeferQualityUpdates' -RegistryType 'DWORD' -RegistryData 1 -outfileprefix $Script:AppName -Verbose
-        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'DeferQualityUpdatesPeriodInDays' -RegistryType 'DWORD' -RegistryData $DeferQualityUpdatesPeriodInDays -outfileprefix $Script:AppName -Verbose
+    if ($DisableUpdates -eq $true) {
+        $regKey = "Software\Policies\Microsoft\Windows\WindowsUpdate\AU"
+        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'NoAutoUpdate' -RegistryType 'DWORD' -RegistryData 1 -outfileprefix $Script:AppName -Verbose
     }
     Else {
-        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'DeferQualityUpdates' -Delete -outfileprefix $Script:AppName -Verbose
-        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'DeferQualityUpdatesPeriodInDays' -Delete -outfileprefix $Script:AppName -Verbose
-    }    
-    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'SetComplianceDeadline' -RegistryType 'DWORD' -RegistryData 1 -outfileprefix $Script:AppName -Verbose
-    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ConfigureDeadlineForFeatureUpdates' -RegistryType 'DWORD' -RegistryData 7 -outfileprefix $Script:AppName -Verbose
-    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ConfigureDeadlineGracePeriodForFeatureUpdates' -RegistryType 'DWORD' -RegistryData 2 -outfileprefix $Script:AppName -Verbose
-    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ConfigureDeadlineNoAutoReboot' -Delete -outfileprefix $Script:AppName -Verbose
-    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'SetComplianceDeadlineForQU' -RegistryType 'DWORD' -RegistryData 1 -outfileprefix $Script:AppName -Verbose
-    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ConfigureDeadlineForQualityUpdates' -RegistryType 'DWORD' -RegistryData 3 -outfileprefix $Script:AppName -Verbose
-    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ConfigureDeadlineGracePeriod' -RegistryType 'DWORD' -RegistryData 2 -outfileprefix $Script:AppName -Verbose
-    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ConfigureDeadlineNoAutoRebootForQualityUpdates' -Delete -outfileprefix $Script:AppName -Verbose 
-    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'SetUpdateNotificationLevel' -RegistryType 'DWORD' -RegistryData 1 -outfileprefix $Script:AppName -Verbose
-    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'UpdateNotificationLevel' -RegistryType 'DWORD' -RegistryData 1 -outfileprefix $Script:AppName -Verbose
-    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'NoUpdateNotificationDuringActiveHours' -RegistryType DWORD -RegistryData 1 -outfileprefix $Script:AppName -Verbose
+        $regKey = "Software\Policies\Microsoft\Windows\WindowsUpdate"
+        
+        Write-Log -category info -message "Now Configuring Windows Update Settings via LGPO."
+        If ($DeferQualityUpdatesPeriodInDays -ge 1 -and $DeferQualityUpdatesPeriodInDays -le 30) {
+            Write-Log -Category Info -Message "Setting DeferQualityUpdatesPeriodInDays to '$DeferQualityUpdatesPeriodInDays'."
+            Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'DeferQualityUpdates' -RegistryType 'DWORD' -RegistryData 1 -outfileprefix $Script:AppName -Verbose
+            Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'DeferQualityUpdatesPeriodInDays' -RegistryType 'DWORD' -RegistryData $DeferQualityUpdatesPeriodInDays -outfileprefix $Script:AppName -Verbose
+        }
+        Else {
+            Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'DeferQualityUpdates' -Delete -outfileprefix $Script:AppName -Verbose
+            Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'DeferQualityUpdatesPeriodInDays' -Delete -outfileprefix $Script:AppName -Verbose
+        }    
+        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'SetComplianceDeadline' -RegistryType 'DWORD' -RegistryData 1 -outfileprefix $Script:AppName -Verbose
+        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ConfigureDeadlineForFeatureUpdates' -RegistryType 'DWORD' -RegistryData 7 -outfileprefix $Script:AppName -Verbose
+        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ConfigureDeadlineGracePeriodForFeatureUpdates' -RegistryType 'DWORD' -RegistryData 2 -outfileprefix $Script:AppName -Verbose
+        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ConfigureDeadlineNoAutoReboot' -Delete -outfileprefix $Script:AppName -Verbose
+        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'SetComplianceDeadlineForQU' -RegistryType 'DWORD' -RegistryData 1 -outfileprefix $Script:AppName -Verbose
+        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ConfigureDeadlineForQualityUpdates' -RegistryType 'DWORD' -RegistryData 3 -outfileprefix $Script:AppName -Verbose
+        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ConfigureDeadlineGracePeriod' -RegistryType 'DWORD' -RegistryData 2 -outfileprefix $Script:AppName -Verbose
+        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ConfigureDeadlineNoAutoRebootForQualityUpdates' -Delete -outfileprefix $Script:AppName -Verbose 
+        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'SetUpdateNotificationLevel' -RegistryType 'DWORD' -RegistryData 1 -outfileprefix $Script:AppName -Verbose
+        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'UpdateNotificationLevel' -RegistryType 'DWORD' -RegistryData 1 -outfileprefix $Script:AppName -Verbose
+        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'NoUpdateNotificationDuringActiveHours' -RegistryType DWORD -RegistryData 1 -outfileprefix $Script:AppName -Verbose
     
-    $regKey = "Software\Policies\Microsoft\Windows\WindowsUpdate\AU"
+        $regKey = "Software\Policies\Microsoft\Windows\WindowsUpdate\AU"
 
-    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'AllowMUUpdateService' -RegistryType 'DWORD' -RegistryData 1 -outfileprefix $Script:AppName -Verbose
-    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'AUOptions' -RegistryType 'DWORD' -RegistryData 4 -outfileprefix $Script:AppName -Verbose
-    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'NoAutoUpdate' -RegistryType 'DWORD' -RegistryData 0 -outfileprefix $Script:AppName -Verbose
-    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'IncludeRecommendedUpdates' -Delete -outfileprefix $Script:AppName -Verbose
-    Write-Log -Category Info -Message "Setting ScheduledInstallDay to '$ScheduledInstallDay'."
-    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ScheduledInstallDay' -RegistryType 'DWORD' -RegistryData $ScheduledInstallDay -outfileprefix $Script:AppName -Verbose    
-    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ScheduledInstallTime' -RegistryType 'DWORD' -RegistryData $ScheduledInstallTime -outfileprefix $Script:AppName -Verbose
-    If ($ScheduledInstallTime -eq 24) {
-        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'AutomaticMaintenanceEnabled' -RegistryType 'DWORD' -RegistryData 1 -outfileprefix $Script:AppName -Verbose
-    }   
-    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ScheduledInstallEveryWeek' -RegistryType 'DWORD' -RegistryData 1 -outfileprefix $Script:AppName -Verbose
-    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ScheduledInstallFirstWeek' -Delete -outfileprefix $Script:AppName -Verbose
-    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ScheduledInstallSecondWeek' -Delete -outfileprefix $Script:AppName -Verbose
-    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ScheduledInstallThirdWeek' -Delete -outfileprefix $Script:AppName -Verbose
-    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ScheduledInstallFourthWeek' -Delete -outfileprefix $Script:AppName -Verbose    
+        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'AllowMUUpdateService' -RegistryType 'DWORD' -RegistryData 1 -outfileprefix $Script:AppName -Verbose
+        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'AUOptions' -RegistryType 'DWORD' -RegistryData 4 -outfileprefix $Script:AppName -Verbose
+        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'NoAutoUpdate' -RegistryType 'DWORD' -RegistryData 0 -outfileprefix $Script:AppName -Verbose
+        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'IncludeRecommendedUpdates' -Delete -outfileprefix $Script:AppName -Verbose
+        Write-Log -Category Info -Message "Setting ScheduledInstallDay to '$ScheduledInstallDay'."
+        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ScheduledInstallDay' -RegistryType 'DWORD' -RegistryData $ScheduledInstallDay -outfileprefix $Script:AppName -Verbose    
+        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ScheduledInstallTime' -RegistryType 'DWORD' -RegistryData $ScheduledInstallTime -outfileprefix $Script:AppName -Verbose
+        If ($ScheduledInstallTime -eq 24) {
+            Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'AutomaticMaintenanceEnabled' -RegistryType 'DWORD' -RegistryData 1 -outfileprefix $Script:AppName -Verbose
+        }   
+        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ScheduledInstallEveryWeek' -RegistryType 'DWORD' -RegistryData 1 -outfileprefix $Script:AppName -Verbose
+        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ScheduledInstallFirstWeek' -Delete -outfileprefix $Script:AppName -Verbose
+        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ScheduledInstallSecondWeek' -Delete -outfileprefix $Script:AppName -Verbose
+        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ScheduledInstallThirdWeek' -Delete -outfileprefix $Script:AppName -Verbose
+        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath $regKey -RegistryValue 'ScheduledInstallFourthWeek' -Delete -outfileprefix $Script:AppName -Verbose    
+    }
     Invoke-LGPO -Verbose
     Write-Log -category Info -message "Windows Update Settings Configured."
     $gpupdate = Start-Process -FilePath 'gpupdate.exe' -ArgumentList '/force' -Wait -PassThru
     Write-Log -Message "GPUpdate exitcode: '$($gpupdate.exitcode)'"
-} Else {
+}
+Else {
     Write-Log -Category Warning -Message "Unable to configure local policy with lgpo tool because it was not found. Updating registry settings instead."
-    $regKey = "HKLM:\Software\Policies\Microsoft\Windows\WindowsUpdate"
-    If ($DeferQualityUpdatesPeriodInDays -ge 1 -and $DeferQualityUpdatesPeriodInDays -le 30) {
-        Write-Log -Category Info -Message "Setting DeferQualityUpdatesPeriodInDays to '$DeferQualityUpdatesPeriodInDays'."
-        Set-RegistryValue -Path $regKey -Name 'DeferQualityUpdates' -PropertyType 'DWord' -Value 1
-        Set-RegistryValue -Path $regKey -Name 'DeferQualityUpdatesPeriodInDays' -PropertyType 'DWord' -Value $DeferQualityUpdatesPeriodInDays
+    if ($DisableUpdates -eq $true) {
+        $regKey = "HKLM:\Software\Policies\Microsoft\Windows\WindowsUpdate\AU"    
+        Set-RegistryValue -Path $regKey -Name 'NoAutoUpdate' -PropertyType 'DWord' -Value 1
     }
     Else {
-        Remove-RegistryValue -Path $regKey -Name 'DeferQualityUpdates'
-        Remove-RegistryValue -Path $regKey -Name 'DeferQualityUpdatesPeriodInDays'
-    }
-    Set-RegistryValue -Path $regKey -Name 'SetComplianceDeadline' -PropertyType 'DWord' -Value 1
-    Set-RegistryValue -Path $regKey -Name 'ConfigureDeadlineForFeatureUpdates' -PropertyType 'DWord' -Value 7
-    Set-RegistryValue -Path $regKey -Name 'ConfigureDeadlineGracePeriodForFeatureUpdates' -PropertyType 'DWord' -Value 2
-    Remove-RegistryValue -Path $regKey -Name 'ConfigureDeadlineNoAutoReboot'
-    Set-RegistryValue -Path $regKey -Name 'SetComplianceDeadlineForQU' -PropertyType 'DWord' -Value 1
-    Set-RegistryValue -Path $regKey -Name 'ConfigureDeadlineForQualityUpdates' -PropertyType 'DWord' -Value 3
-    Set-RegistryValue -Path $regKey -Name 'ConfigureDeadlineGracePeriod' -PropertyType 'DWord' -Value 2
-    Remove-RegistryValue -Path $regKey -Name 'ConfigureDeadlineNoAutoRebootForQualityUpdates'
-    Set-RegistryValue -Path $regKey -Name 'SetUpdateNotificationLevel' -PropertyType 'DWord' -Value 1
-    Set-RegistryValue -Path $regKey -Name 'UpdateNotificationLevel' -PropertyType 'DWord' -Value 1
-    Set-RegistryValue -Path $regKey -Name 'NoUpdateNotificationDuringActiveHours' -PropertyType 'DWord' -Value 1    
-    $regKey = "Software\Policies\Microsoft\Windows\WindowsUpdate\AU"
-    Set-RegistryValue -Path $regKey -Name 'AllowMUUpdateService' -PropertyType 'DWord' -Value 1
-    Set-RegistryValue -Path $regKey -Name 'AUOptions' -PropertyType 'DWord' -Value 4
-    Set-RegistryValue -Path $regKey -Name 'NoAutoUpdate' -PropertyType 'DWord' -Value 0
-    Remove-RegistryValue -Path $regKey -Name 'IncludeRecommendedUpdates'
-    Set-RegistryValue -Path $regKey -Name 'ScheduledInstallDay' -PropertyType 'DWord' -Value $ScheduledInstallDay
-    Set-RegistryValue -Path $regKey -Name 'ScheduledInstallTime' -PropertyType 'DWord' -Value $ScheduledInstallTime
-    If ($ScheduledInstallTime -eq 24) {
-        Set-RegistryValue -Path $regKey -Name 'AutomaticMaintenanceEnabled' -PropertyType 'DWord' -Value 1
-    }
-    Set-RegistryValue -Path $regKey -Name 'ScheduledInstallEveryWeek' -PropertyType 'DWord' -Value 1
-    Remove-RegistryValue -Path $regKey -Name 'ScheduledInstallFirstWeek'
-    Remove-RegistryValue -Path $regKey -Name 'ScheduledInstallSecondWeek'
-    Remove-RegistryValue -Path $regKey -Name 'ScheduledInstallThirdWeek'
-    Remove-RegistryValue -Path $regKey -Name 'ScheduledInstallFourthWeek'
+        $regKey = "HKLM:\Software\Policies\Microsoft\Windows\WindowsUpdate"
 
+        If ($DeferQualityUpdatesPeriodInDays -ge 1 -and $DeferQualityUpdatesPeriodInDays -le 30) {
+            Write-Log -Category Info -Message "Setting DeferQualityUpdatesPeriodInDays to '$DeferQualityUpdatesPeriodInDays'."
+            Set-RegistryValue -Path $regKey -Name 'DeferQualityUpdates' -PropertyType 'DWord' -Value 1
+            Set-RegistryValue -Path $regKey -Name 'DeferQualityUpdatesPeriodInDays' -PropertyType 'DWord' -Value $DeferQualityUpdatesPeriodInDays
+        }
+        Else {
+            Remove-RegistryValue -Path $regKey -Name 'DeferQualityUpdates'
+            Remove-RegistryValue -Path $regKey -Name 'DeferQualityUpdatesPeriodInDays'
+        }
+        Set-RegistryValue -Path $regKey -Name 'SetComplianceDeadline' -PropertyType 'DWord' -Value 1
+        Set-RegistryValue -Path $regKey -Name 'ConfigureDeadlineForFeatureUpdates' -PropertyType 'DWord' -Value 7
+        Set-RegistryValue -Path $regKey -Name 'ConfigureDeadlineGracePeriodForFeatureUpdates' -PropertyType 'DWord' -Value 2
+        Remove-RegistryValue -Path $regKey -Name 'ConfigureDeadlineNoAutoReboot'
+        Set-RegistryValue -Path $regKey -Name 'SetComplianceDeadlineForQU' -PropertyType 'DWord' -Value 1
+        Set-RegistryValue -Path $regKey -Name 'ConfigureDeadlineForQualityUpdates' -PropertyType 'DWord' -Value 3
+        Set-RegistryValue -Path $regKey -Name 'ConfigureDeadlineGracePeriod' -PropertyType 'DWord' -Value 2
+        Remove-RegistryValue -Path $regKey -Name 'ConfigureDeadlineNoAutoRebootForQualityUpdates'
+        Set-RegistryValue -Path $regKey -Name 'SetUpdateNotificationLevel' -PropertyType 'DWord' -Value 1
+        Set-RegistryValue -Path $regKey -Name 'UpdateNotificationLevel' -PropertyType 'DWord' -Value 1
+        Set-RegistryValue -Path $regKey -Name 'NoUpdateNotificationDuringActiveHours' -PropertyType 'DWord' -Value 1
+
+        $regKey = "HKLM:\Software\Policies\Microsoft\Windows\WindowsUpdate\AU"
+
+        Set-RegistryValue -Path $regKey -Name 'AllowMUUpdateService' -PropertyType 'DWord' -Value 1
+        Set-RegistryValue -Path $regKey -Name 'AUOptions' -PropertyType 'DWord' -Value 4
+        Set-RegistryValue -Path $regKey -Name 'NoAutoUpdate' -PropertyType 'DWord' -Value 0
+        Remove-RegistryValue -Path $regKey -Name 'IncludeRecommendedUpdates'
+        Set-RegistryValue -Path $regKey -Name 'ScheduledInstallDay' -PropertyType 'DWord' -Value $ScheduledInstallDay
+        Set-RegistryValue -Path $regKey -Name 'ScheduledInstallTime' -PropertyType 'DWord' -Value $ScheduledInstallTime
+        If ($ScheduledInstallTime -eq 24) {
+            Set-RegistryValue -Path $regKey -Name 'AutomaticMaintenanceEnabled' -PropertyType 'DWord' -Value 1
+        }
+        Set-RegistryValue -Path $regKey -Name 'ScheduledInstallEveryWeek' -PropertyType 'DWord' -Value 1
+        Remove-RegistryValue -Path $regKey -Name 'ScheduledInstallFirstWeek'
+        Remove-RegistryValue -Path $regKey -Name 'ScheduledInstallSecondWeek'
+        Remove-RegistryValue -Path $regKey -Name 'ScheduledInstallThirdWeek'
+        Remove-RegistryValue -Path $regKey -Name 'ScheduledInstallFourthWeek'
+    }
 }
 Write-Log -category Info -message "Completed configuring Windows Update Settings."
 
