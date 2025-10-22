@@ -1,17 +1,7 @@
 {
-    "AzCLI": {
-        "DownloadUrl": "https://aka.ms/installazurecliwindowsx64",
-        "WebsiteUrl": "",
-        "SearchString": "",
-        "APIUrl": "",
-        "GitHubRepo": "",
-        "GitHubFileNamePattern": "",
-        "DestinationFileName": "AzCli.msi",
-        "DestinationFolders": [
-            ""
-        ]
-    },
+    
     "LGPO": {
+        "Description": "Optional: Local Group Policy Object (LGPO) Tool. Used for configuring local group policies.",
         "DownloadUrl": "https://download.microsoft.com/download/8/5/c/85c25433-a1b0-4ffa-9429-7e023e7da8d8/LGPO.zip",
         "WebSiteUrl": "",
         "SearchString": "",
@@ -30,6 +20,7 @@
         ]
     },
     "FSLogix": {
+        "Description": "Required: FSLogix",
         "DownloadUrl": "https://aka.ms/fslogix_download",
         "WebSiteUrl": "",
         "SearchString": "",
@@ -43,6 +34,7 @@
         ]
     },
     "Office365DeploymentTool": {
+        "Description": "Required: Office 365 Deployment Tool",
         "DownloadUrl": "https://officecdn.microsoft.com/pr/wsus/setup.exe",
         "WebSiteUrl": "",
         "SearchString": "",
@@ -55,6 +47,7 @@
         ]
     },
     "Office365AdministrativeTemplates": {
+        "Description": "Optional: Office 365 Administrative Templates. Used for Office 365 policy configuration via LGPO.",
         "DownloadUrl": "https://download.microsoft.com/download/2/e/e/2eeec938-c014-419d-bb4b-d184871450f1/admintemplates_x64_5486-1000_en-us.exe",
         "WebsiteUrl": "https://www.microsoft.com/en-us/download/details.aspx?id=49030",
         "SearchString": "*admintemplates_x64*.exe",
@@ -67,6 +60,7 @@
         ]
     },
     "OneDrive": {
+        "Description": "Required: OneDrive Sync Client",
         "DownloadUrl": "https://go.microsoft.com/fwlink/p/?linkid=2121808",
         "WebSiteUrl": "",
         "SearchString": "",
@@ -79,6 +73,7 @@
         ]
     },
     "TeamsBootstrapper": {
+        "Description": "Required: Microsoft Teams Bootstrapper",
         "DownloadUrl": "https://go.microsoft.com/fwlink/?linkid=2243204&clcid=0x409",
         "WebSiteUrl": "",
         "SearchString": "",
@@ -91,6 +86,7 @@
         ]
     },
     "Teams64BitMSIX": {
+        "Description": "Required: Microsoft Teams 64-bit MSIX",
         "DownloadUrl": "https://go.microsoft.com/fwlink/?linkid=2196106",
         "WebSiteUrl": "",
         "SearchString": "",
@@ -103,6 +99,7 @@
         ]
     },
     "WebView2Runtime": {
+        "Description": "Required: Microsoft Edge WebView2 Runtime",
         "DownloadUrl": "https://go.microsoft.com/fwlink/?linkid=2124703",
         "WebSiteUrl": "",
         "SearchString": "",
@@ -115,6 +112,7 @@
         ]
     },
     "RemoteDesktopWebRTCRedirectorService": {
+        "Description": "Required: Microsoft Remote Desktop WebRTC Redirector Service",
         "DownloadUrl": "https://aka.ms/msrdcwebrtcsvc/msi",
         "WebsiteUrl": "",
         "SearchString": "",
@@ -127,6 +125,7 @@
         ]
     },
     "VisualStudioRedistributables": {
+        "Description": "Optional: Visual Studio C++ Redistributables",
         "DownloadUrl": "https://aka.ms/vs/17/release/vc_redist.x64.exe",
         "WebSiteUrl": "",
         "SearchString": "",
@@ -140,6 +139,7 @@
         ]
     },
     "EdgeEnterpriseAdministrativeTemplates": {
+        "Description": "Optional: Microsoft Edge Enterprise Administrative Templates. Used for Edge policy configuration via LGPO.",
         "DownloadUrl": "",
         "WebsiteUrl": "",
         "SearchString": "",
@@ -152,6 +152,7 @@
         ]
     },
     "PowerShellAzModule": {
+        "Description": "Optional: PowerShell Az Module",
         "DownloadUrl": "",
         "WebSiteUrl": "",
         "SearchString": "",
@@ -164,6 +165,7 @@
         ]
     },
     "Powershell7": {
+        "Description": "Optional: PowerShell 7",
         "DownloadUrl": "",
         "WebsiteUrl": "",
         "SearchString": "",
@@ -176,6 +178,7 @@
         ]
     },
     "VSCode": {
+        "Description": "Optional: Visual Studio Code",
         "DownloadUrl": "https://code.visualstudio.com/sha/download?build=stable&os=win32-x64",
         "WebsiteUrl": "",
         "SearchString": "",
@@ -188,6 +191,7 @@
         ]
     },
     "DoDInstallRoot": {
+        "Description": "Optional: DoD InstallRoot Application",
         "DownloadUrl": "https://dl.dod.cyber.mil/wp-content/uploads/pki-pke/msi/InstallRoot_5.6x64.msi",
         "WebSiteUrl": "https://public.cyber.mil/pki-pke/tools-configuration-files",
         "SearchString": "InstallRoot*x64.msi",
@@ -200,6 +204,7 @@
         ]
     },
     "DoDSTIGGPOPackage": {
+        "Description": "Optional: DoD STIG GPO Package - Keep it updated! Used for applying STIGs via LGPO.",
         "DownloadUrl": "https://dl.dod.cyber.mil/wp-content/uploads/stigs/zip/U_STIG_GPO_Package_July_2025.zip",
         "WebSiteUrl": "",
         "SearchString": "",
@@ -212,6 +217,7 @@
         ]
     },
     "VirtualDesktopOptimizationTool": {
+        "Description": "Optional: Virtual Desktop Optimization Tool (VDOT) used by the image build solution when selected.",
         "DownloadUrl": "https://github.com/The-Virtual-Desktop-Team/Virtual-Desktop-Optimization-Tool/archive/refs/heads/main.zip",
         "WebsiteUrl": "",
         "SearchString": "",
@@ -219,6 +225,19 @@
         "GitHubRepo": "",
         "GitHubFileNamePattern": "",
         "DestinationFileName": "VDOT.zip",
+        "DestinationFolders": [
+            ""
+        ]
+    },
+    "AzCLI": {
+        "Description": "Optional: Azure CLI Installer",
+        "DownloadUrl": "https://aka.ms/installazurecliwindowsx64",
+        "WebsiteUrl": "",
+        "SearchString": "",
+        "APIUrl": "",
+        "GitHubRepo": "",
+        "GitHubFileNamePattern": "",
+        "DestinationFileName": "AzCli.msi",
         "DestinationFolders": [
             ""
         ]
