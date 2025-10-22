@@ -252,3 +252,5 @@ output blobContainerName string           = blobContainer.name
 output blobcontainerUrl string = '${storageAccount.properties.primaryEndpoints.blob}${blobContainerName}'
 output managedIdentityClientId string     = managedIdentity.properties.clientId
 output managedIdentityResourceId string   = managedIdentity.id
+output computeGalleryResourceId string   = gallery.id
+output computeGalleryName string         = gallery.name

@@ -4,8 +4,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.37.4.10188",
-      "templateHash": "10555826524232166471"
+      "version": "0.38.33.27573",
+      "templateHash": "17423661337884665677"
     }
   },
   "parameters": {
@@ -724,7 +724,7 @@
     },
     {
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2022-09-01",
+      "apiVersion": "2025-04-01",
       "name": "[format('Image-Management-Resources-{0}', parameters('timeStamp'))]",
       "resourceGroup": "[variables('resourceGroupName')]",
       "properties": {
@@ -795,8 +795,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.37.4.10188",
-              "templateHash": "4744082758082091393"
+              "version": "0.38.33.27573",
+              "templateHash": "7217957380236222161"
             }
           },
           "parameters": {
@@ -1164,6 +1164,14 @@
             "managedIdentityResourceId": {
               "type": "string",
               "value": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('managedIdentityName'))]"
+            },
+            "computeGalleryResourceId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Compute/galleries', parameters('computeGalleryName'))]"
+            },
+            "computeGalleryName": {
+              "type": "string",
+              "value": "[parameters('computeGalleryName')]"
             }
           }
         }
@@ -1175,7 +1183,7 @@
     {
       "condition": "[not(empty(parameters('remoteLocation')))]",
       "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2022-09-01",
+      "apiVersion": "2025-04-01",
       "name": "[format('Remote-Image-Gallery-{0}', parameters('timeStamp'))]",
       "resourceGroup": "[variables('remoteResourceGroupName')]",
       "properties": {
@@ -1200,8 +1208,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.37.4.10188",
-              "templateHash": "4038296559050263141"
+              "version": "0.38.33.27573",
+              "templateHash": "4889245900198842296"
             }
           },
           "parameters": {
@@ -1287,23 +1295,35 @@
   "outputs": {
     "storageAccountResourceId": {
       "type": "string",
-      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('Image-Management-Resources-{0}', parameters('timeStamp'))), '2022-09-01').outputs.storageAccountResourceId.value]"
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('Image-Management-Resources-{0}', parameters('timeStamp'))), '2025-04-01').outputs.storageAccountResourceId.value]"
     },
     "blobContainerName": {
       "type": "string",
-      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('Image-Management-Resources-{0}', parameters('timeStamp'))), '2022-09-01').outputs.blobContainerName.value]"
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('Image-Management-Resources-{0}', parameters('timeStamp'))), '2025-04-01').outputs.blobContainerName.value]"
     },
     "blobContainerUrl": {
       "type": "string",
-      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('Image-Management-Resources-{0}', parameters('timeStamp'))), '2022-09-01').outputs.blobcontainerUrl.value]"
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('Image-Management-Resources-{0}', parameters('timeStamp'))), '2025-04-01').outputs.blobcontainerUrl.value]"
     },
     "managedIdentityClientId": {
       "type": "string",
-      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('Image-Management-Resources-{0}', parameters('timeStamp'))), '2022-09-01').outputs.managedIdentityClientId.value]"
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('Image-Management-Resources-{0}', parameters('timeStamp'))), '2025-04-01').outputs.managedIdentityClientId.value]"
     },
     "managedIdentityResourceId": {
       "type": "string",
-      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('Image-Management-Resources-{0}', parameters('timeStamp'))), '2022-09-01').outputs.managedIdentityResourceId.value]"
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('Image-Management-Resources-{0}', parameters('timeStamp'))), '2025-04-01').outputs.managedIdentityResourceId.value]"
+    },
+    "computeGalleryResourceId": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('Image-Management-Resources-{0}', parameters('timeStamp'))), '2025-04-01').outputs.computeGalleryResourceId.value]"
+    },
+    "computeGalleryName": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', format('Image-Management-Resources-{0}', parameters('timeStamp'))), '2025-04-01').outputs.computeGalleryName.value]"
+    },
+    "remoteComputeGalleryResourceId": {
+      "type": "string",
+      "value": "[if(not(empty(parameters('remoteLocation'))), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('remoteResourceGroupName')), 'Microsoft.Resources/deployments', format('Remote-Image-Gallery-{0}', parameters('timeStamp'))), '2025-04-01').outputs.resourceId.value, '')]"
     }
   }
 }

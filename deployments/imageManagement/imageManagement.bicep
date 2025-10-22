@@ -168,3 +168,7 @@ output blobContainerName string           = resources.outputs.blobContainerName
 output blobContainerUrl string = resources.outputs.blobcontainerUrl
 output managedIdentityClientId string     = resources.outputs.managedIdentityClientId
 output managedIdentityResourceId string   = resources.outputs.managedIdentityResourceId
+output computeGalleryResourceId string   = resources.outputs.computeGalleryResourceId
+output computeGalleryName string         = resources.outputs.computeGalleryName
+#disable-next-line BCP318
+output remoteComputeGalleryResourceId string = !empty(remoteLocation) ? remoteImageGallery.outputs.resourceId : ''
