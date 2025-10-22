@@ -22,17 +22,7 @@ resource dcr 'Microsoft.Insights/dataCollectionRules@2022-06-01' = {
             '\\VmInsights\\DetailedMetrics'
           ]
         }
-      ]
-      extensions: [
-        {
-          streams: [
-            'Microsoft-ServiceMap'
-          ]
-          extensionName: 'DependencyAgent'
-          extensionSettings: {}
-          name: 'DependencyAgentDataSource'
-        }
-      ]
+      ]      
     }
     destinations: {
       logAnalytics: [
@@ -50,15 +40,7 @@ resource dcr 'Microsoft.Insights/dataCollectionRules@2022-06-01' = {
         destinations: [
           'VMInsightsPerf-Logs-Dest'
         ]
-      }
-      {
-        streams: [
-          'Microsoft-ServiceMap'
-        ]
-        destinations: [
-          'VMInsightsPerf-Logs-Dest'
-        ]
-      }
+      }      
     ]
   }
 }

@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.33.27573",
-      "templateHash": "17814817544401328732"
+      "templateHash": "10097622496318559036"
     }
   },
   "parameters": {
@@ -2700,7 +2700,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "10802179556395082185"
+              "templateHash": "734321408039966084"
             }
           },
           "parameters": {
@@ -4912,7 +4912,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.38.33.27573",
-                      "templateHash": "12696103194954707362"
+                      "templateHash": "9383093225857565152"
                     }
                   },
                   "parameters": {
@@ -4951,16 +4951,6 @@
                                 "\\VmInsights\\DetailedMetrics"
                               ]
                             }
-                          ],
-                          "extensions": [
-                            {
-                              "streams": [
-                                "Microsoft-ServiceMap"
-                              ],
-                              "extensionName": "DependencyAgent",
-                              "extensionSettings": {},
-                              "name": "DependencyAgentDataSource"
-                            }
                           ]
                         },
                         "destinations": {
@@ -4975,14 +4965,6 @@
                           {
                             "streams": [
                               "Microsoft-InsightsMetrics"
-                            ],
-                            "destinations": [
-                              "VMInsightsPerf-Logs-Dest"
-                            ]
-                          },
-                          {
-                            "streams": [
-                              "Microsoft-ServiceMap"
                             ],
                             "destinations": [
                               "VMInsightsPerf-Logs-Dest"
