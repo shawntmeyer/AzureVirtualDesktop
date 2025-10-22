@@ -20,13 +20,15 @@ param (
     [Parameter()]
     [string]$ApplicationsToSTIG = '["Adobe Acrobat Pro", "Adobe Acrobat Reader", "Google Chrome", "Mozilla Firefox"]',
     # Set to True if using Cloud only identity with fslogix so credentials can be saved to the local credential manager for storage account access.
-    [string]$CloudOnly = 'True'
+    [string]$CloudOnly = 'True',
+    [string]$LGPOUrl = 'https://download.microsoft.com/download/8/5/C/85C25433-A1B0-4FFA-9429-7E023E7DA8D8/LGPO.zip',
+    [string]$STIGsUrl = 'https://dl.dod.cyber.mil/wp-content/uploads/stigs/zip/U_STIG_GPO_Package_July_2025.zip'
 )
 #region Initialization
 $Script:Name = 'Apply-STIGs'
 $osCaption = (Get-WmiObject -Class Win32_OperatingSystem).caption
 If ($osCaption -match 'Windows 11') { $osVersion = 11 } Else { $osVersion = 10 }
-$Script:TempDir = Join-Path -Path $env:Temp -ChildPath $Script:Name
+$Script:TempDir = Join-Path -Path "$env:SystemRoot\Temp" -ChildPath $Script:Name
 If (Test-Path -Path $Script:TempDir) { Remove-Item -Path $Script:TempDir -Recurse -ErrorAction SilentlyContinue }
 New-Item -Path $Script:TempDir -ItemType Directory -Force | Out-Null
 If ($ApplicationsToSTIG -ne $null) { 
@@ -199,53 +201,6 @@ Function Get-InternetFile {
     End {
         Write-Log -Message "Ending ${CmdletName}"
     }
-}
-
-Function Get-InternetUrl {
-    [CmdletBinding()]
-    Param (
-        [Parameter(
-            Mandatory,
-            HelpMessage = "Specifies the website that contains a link to the desired download."
-        )]
-        [uri]$WebSiteUrl,
-
-        [Parameter(
-            Mandatory,
-            HelpMessage = "Specifies the search string. Wildcard '*' can be used."    
-        )]
-        [string]$SearchString
-    )
-
-    $HTML = Invoke-WebRequest -Uri $WebSiteUrl -UseBasicParsing
-    $Links = $HTML.Links
-    #First try to find search string in actual link href
-    $LinkHref = $HTML.Links.Href | Get-Unique | Where-Object { $_ -like "*$SearchString*" }
-    If ($LinkHref) {
-        Return $LinkHref
-    }
-    #If not found, try to find search string in the outer html
-    $LinkHrefs = $Links | Where-Object { $_.OuterHTML -like "*$SearchString*" }
-    If ($LinkHrefs) {
-        Return $LinkHrefs.href
-    }
-    Else {
-        $Pattern = '"url":\s*"(https://[^"]*?' + $SearchString.Replace('.', '\.').Replace('*', '.*').Replace('+', '\+') + ')"' 
-        If ($HTML.Content -match $Pattern) {
-            If ($matches[1].Contains('"')) {
-                Return $matches[1].Substring(0, $matches[1].IndexOf('"'))
-            }
-            Else {
-                Return $matches[1]
-            }
-
-        }
-        else {
-            Write-Log -Category Error -Message "No download URL found using search term."
-            Return $null
-        }
-    }
-
 }
 
 Function Invoke-LGPO {
@@ -489,7 +444,7 @@ If (-not(Test-Path -Path "$env:SystemRoot\System32\lgpo.exe")) {
     $LGPOZip = Join-Path -Path $PSScriptRoot -ChildPath 'LGPO.zip'
     If (-not(Test-Path -Path $LGPOZip)) {
         Write-Log -category Info -Message "Downloading LGPO tool."
-        $LGPOZip = Get-InternetFile -Url 'https://download.microsoft.com/download/8/5/C/85C25433-A1B0-4FFA-9429-7E023E7DA8D8/LGPO.zip' -OutputDirectory $Script:TempDir -Verbose    
+        $LGPOZip = Get-InternetFile -Url $LGPOUrl -OutputDirectory $Script:TempDir -Verbose    
     }
     Write-Log -Category Info -Message "Expanding '$LGPOZip' to '$Script:TempDir'."
     Expand-Archive -Path $LGPOZip -DestinationPath $Script:TempDir -Force
@@ -502,13 +457,8 @@ $stigZip = Join-Path -Path $PSScriptRoot -ChildPath 'STIGs.zip'
 If (-not (Test-Path -Path $stigZip)) {
     $stigZip = $null
     #Download the STIG GPOs
-    $uriSTIGs = 'https://public.cyber.mil/stigs/gpo'
-    $uriGPODownload = Get-InternetUrl -WebSiteUrl $uriSTIGs -searchstring 'GPOs'
-    If ($null -eq $uriGPODownload) { Write-Log -Category Error -Message "Unable to find download link for STIG GPOs. Exiting script."; Exit 1 }
-    Write-Log -Message "Downloading STIG GPOs from '$uriGPODownload'."
-    If ($uriGPODownload) {
-        $stigZip = Get-InternetFile -url $uriGPODownload -OutputDirectory $Script:TempDir -Verbose
-    }
+    Write-Log -Message "Downloading STIG GPOs from '$STIGsUrl'."
+    $stigZip = Get-InternetFile -url $STIGsUrl -OutputDirectory $Script:TempDir -Verbose
     If ($null -eq $stigZip) { Write-Log -Category Error -Message "Unable to download STIG GPOs. Exiting script."; Exit 1 }
 } 
 
