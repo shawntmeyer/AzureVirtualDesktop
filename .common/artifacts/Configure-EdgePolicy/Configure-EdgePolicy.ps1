@@ -95,29 +95,38 @@ Function Get-InternetFile {
 Function Invoke-LGPO {
     [CmdletBinding()]
     Param (
-        [string]$InputDir = "$TempDir\LGPO",
-        [string]$SearchTerm
+        [string]$InputDir = $Script:LGPOTempDir
     )
     Begin {
         [string]${CmdletName} = $PSCmdlet.MyInvocation.MyCommand.Name
     }
     Process {
-        Write-Log -Category Info -Message "${CmdletName}: Gathering Registry text files for LGPO from '$InputDir'"
-        If ($SearchTerm) {
-            $InputFiles = Get-ChildItem -Path $InputDir -Filter "$SearchTerm*.txt"
-        }
-        Else {
-            $InputFiles = Get-ChildItem -Path $InputDir -Filter '*.txt'
-        }
-        ForEach ($RegistryFile in $inputFiles) {
+        Write-Log -Message "${CmdletName}: Gathering Registry text files for LGPO from '$InputDir'"
+        $RegFiles = Get-ChildItem -Path $InputDir -Filter '*.txt'
+        ForEach ($RegistryFile in $RegFiles) {
             $TxtFilePath = $RegistryFile.FullName
             Write-Log -Message "${CmdletName}: Now applying settings from '$txtFilePath' to Local Group Policy via LGPO.exe."
             $lgporesult = Start-Process -FilePath 'lgpo.exe' -ArgumentList "/t `"$TxtFilePath`"" -Wait -PassThru
             Write-Log -Message "${CmdletName}: LGPO exitcode: '$($lgporesult.exitcode)'"
         }
+        Write-Log -Message "${CmdletName}: Gathering Security Templates files for LGPO from '$InputDir'"
+        $ConfigFile = Get-ChildItem -Path $InputDir -Filter '*.inf'
+        If ($ConfigFile) {
+            $ConfigFile = $ConfigFile.FullName
+            Write-Log -Message "${CmdletName}: Now applying security settings from '$ConfigFile' to Local Security Policy via LGPO.exe."
+            $lgporesult = Start-Process -FilePath 'lgpo.exe' -ArgumentList "/s `"$ConfigFile`"" -Wait -PassThru
+            Write-Log -Message "${CmdletName}: LGPO exitcode: '$($lgporesult.exitcode)'"
+        }
+        Write-Log -Message "${CmdletName}: Finding Audit CSV file for LGPO from '$InputDir'"
+        $AuditFile = Get-ChildItem -Path $InputDir -Filter '*.csv'
+        If ($AuditFile) {
+            $AuditFile = $AuditFile.FullName
+            Write-Log -Message "${CmdletName}: Now applying advanced audit settings from '$AuditFile' to Local policy via LGPO.exe."
+            $lgporesult = Start-Process -FilePath 'lgpo.exe' -ArgumentList "/ac `"$AuditFile`"" -Wait -PassThru
+            Write-Log -Message "${CmdletName}: LGPO exitcode: '$($lgporesult.exitcode)'"
+        }
     }
     End {
-        Write-Log -Message "Ending ${CmdletName}"
     }
 }
 
@@ -142,7 +151,7 @@ function New-Log {
     Add-Content $script:Log "Date`t`t`tCategory`t`tDetails"
 }
 
-function Remove-RegistryValue {
+Function Remove-RegistryValue {
     param (
         [Parameter(Mandatory = $true)]
         [string]$Path,
@@ -274,51 +283,53 @@ Function Update-LocalGPOTextFile {
         [switch]$Delete,
         [Parameter(Mandatory = $false, ParameterSetName = 'DeleteAllValues')]
         [switch]$DeleteAllValues,
-        [string]$OutputDir = "$Script:TempDir\LGPO",
-        [string]$Outfileprefix = $Script:AppName
+        [string]$outputDir = $Script:LGPOTempDir
     )
-    
-    # Convert $RegistryType to UpperCase to prevent LGPO errors.
-    $ValueType = $RegistryType.ToUpper()
-    # Change String type to SZ for text file
-    If ($ValueType -eq 'STRING') { $ValueType = 'SZ' }
-    # Replace any incorrect registry entries for the format needed by text file.
-    $modified = $false
-    $SearchStrings = 'HKLM:\', 'HKCU:\', 'HKEY_CURRENT_USER:\', 'HKEY_LOCAL_MACHINE:\'
-    ForEach ($String in $SearchStrings) {
-        If ($RegistryKeyPath.StartsWith("$String") -and $modified -ne $true) {
-            $index = $String.Length
-            $RegistryKeyPath = $RegistryKeyPath.Substring($index, $RegistryKeyPath.Length - $index)
-            $modified = $true
-        }
+    Begin {
+        [string]${CmdletName} = $PSCmdlet.MyInvocation.MyCommand.Name
     }
-        
-    #Create the output file if needed.
-    $Outfile = "$OutputDir\$Outfileprefix-$Scope.txt"
-    If (-not (Test-Path -LiteralPath $Outfile)) {
-        If (-not (Test-Path -LiteralPath $OutputDir -PathType 'Container')) {
-            Try {
+    Process {
+        # Convert $RegistryType to UpperCase to prevent LGPO errors.
+        $ValueType = $RegistryType.ToUpper()
+        # Change String type to SZ for text file
+        If ($ValueType -eq 'STRING') { $ValueType = 'SZ' }
+        # Replace any incorrect registry entries for the format needed by text file.
+        $modified = $false
+        $SearchStrings = 'HKLM:\', 'HKCU:\', 'HKEY_CURRENT_USER:\', 'HKEY_LOCAL_MACHINE:\'
+        ForEach ($String in $SearchStrings) {
+            If ($RegistryKeyPath.StartsWith("$String") -and $modified -ne $true) {
+                $index = $String.Length
+                $RegistryKeyPath = $RegistryKeyPath.Substring($index, $RegistryKeyPath.Length - $index)
+                $modified = $true
+            }
+        }        
+        #Create the output file if needed.
+        $OutFile = Join-Path -Path $OutputDir -ChildPath "$Scope.txt"
+        If (-not (Test-Path -LiteralPath $Outfile)) {
+            If (-not (Test-Path -LiteralPath $OutputDir -PathType 'Container')) {
                 $null = New-Item -Path $OutputDir -Type 'Directory' -Force -ErrorAction 'Stop'
             }
-            Catch {}
+            $null = New-Item -Path $OutFile -ItemType File -ErrorAction Stop
         }
-        $null = New-Item -Path $outputdir -Name "$OutFilePrefix-$Scope.txt" -ItemType File -ErrorAction Stop
-    }
 
-    # Update file with information
-    Add-Content -Path $Outfile -Value $Scope
-    Add-Content -Path $Outfile -Value $RegistryKeyPath
-    Add-Content -Path $Outfile -Value $RegistryValue
-    If ($Delete) {
-        Add-Content -Path $Outfile -Value 'DELETE'
+        Write-Log -Message "${CmdletName}: Adding registry information to '$outfile' for LGPO.exe"
+        # Update file with information
+        Add-Content -Path $Outfile -Value $Scope
+        Add-Content -Path $Outfile -Value $RegistryKeyPath
+        Add-Content -Path $Outfile -Value $RegistryValue
+        If ($Delete) {
+            Add-Content -Path $Outfile -Value 'DELETE'
+        }
+        ElseIf ($DeleteAllValues) {
+            Add-Content -Path $Outfile -Value 'DELETEALLVALUES'
+        }
+        Else {
+            Add-Content -Path $Outfile -Value "$($ValueType):$RegistryData"
+        }
+        Add-Content -Path $Outfile -Value ""
     }
-    ElseIf ($DeleteAllValues) {
-        Add-Content -Path $Outfile -Value 'DELETEALLVALUES'
+    End {        
     }
-    Else {
-        Add-Content -Path $Outfile -Value "$($ValueType):$RegistryData"
-    }
-    Add-Content -Path $Outfile -Value ""   
 }
 
 Function Write-Log {
@@ -349,10 +360,11 @@ Function Write-Log {
 #endregion Functions
 
 #region Initialization
-[String]$Script:AppName = 'Edge'
 [string]$Script:Name = "Configure-EdgePolicy"
 [string]$Script:TempDir = Join-Path -Path $env:Temp -ChildPath $Script:Name
-$null = New-Item -Path $Script:TempDir -ItemType Directory -Force
+[string]$Script:LGPOTempDir = Join-Path -Path $Script:TempDir -ChildPath 'LGPO'
+If (-not(Test-Path -Path $Script:LGPOTempDir)) { New-Item -Path $Script:LGPOTempDir -ItemType Directory -Force | Out-Null }
+
 [array]$SmartScreenAllowListDomains = $SmartScreenAllowListDomains.Replace('\"', '"').Replace('\[', '[').Replace('\]', ']') | ConvertFrom-Json
 [array]$PopupsAllowedForUrls = $PopupsAllowedForUrls.Replace('\"', '"').Replace('\[', '[').Replace('\]', ']') | ConvertFrom-Json
 [bool]$AllowDeveloperTools = $AllowDeveloperTools.ToLower() -eq 'true'
@@ -419,34 +431,34 @@ If (-not(Test-Path -Path "$env:SystemRoot\System32\lgpo.exe")) {
 If (Test-Path -Path "$env:SystemRoot\System32\Lgpo.exe") {
     Write-Log -Category Info -Message "Now Configuring Edge Group Policy."
     # https://learn.microsoft.com/en-us/deployedge/microsoft-edge-policies#hidefirstrunexperience
-    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Edge' -RegistryValue 'HideFirstRunExperience' -RegistryType 'DWORD' -RegistryData 1 -outfileprefix $appName -Verbose
+    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Edge' -RegistryValue 'HideFirstRunExperience' -RegistryType 'DWORD' -RegistryData 1 -Verbose
     # https://learn.microsoft.com/en-us/deployedge/microsoft-edge-policies#nonremovableprofileenabled
-    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Edge' -RegistryValue 'NonRemovableProfileEnabled' -RegistryType 'DWORD' -RegistryData 1 -outfileprefix $appName -Verbose
+    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Edge' -RegistryValue 'NonRemovableProfileEnabled' -RegistryType 'DWORD' -RegistryData 1 -Verbose
     # https://learn.microsoft.com/en-us/deployedge/microsoft-edge-policies#proxysettings
-    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Edge' -RegistryValue 'ProxySettings' -Delete -outfileprefix $appName -Verbose
+    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Edge' -RegistryValue 'ProxySettings' -Delete -Verbose
     # https://learn.microsoft.com/en-us/deployedge/microsoft-edge-policies#automatichttpsdefault
-    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Edge' -RegistryValue 'AutomaticHttpsDefault' -RegistryData 0 -RegistryType DWORD -outfileprefix $appName -Verbose
+    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Edge' -RegistryValue 'AutomaticHttpsDefault' -RegistryData 0 -RegistryType DWORD -Verbose
     # https://learn.microsoft.com/en-us/deployedge/microsoft-edge-policies#downloadrestrictions
-    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Edge' -RegistryValue 'DownloadRestrictions' -RegistryType 'DWord' -RegistryData 4 -outfileprefix $appName -Verbose
+    Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Edge' -RegistryValue 'DownloadRestrictions' -RegistryType 'DWord' -RegistryData 4 -Verbose
     if ($null -ne $SmartScreenAllowListDomains -and $SmartScreenAllowListDomains.Count -gt 0) {
-        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Edge\SmartScreenAllowListDomains' -RegistryValue '*' -DeleteAllValues -outfileprefix $appName -Verbose
+        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Edge\SmartScreenAllowListDomains' -RegistryValue '*' -DeleteAllValues -Verbose
         $i = 1
         ForEach ($domain in $SmartScreenAllowListDomains) {
-            Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Edge\SmartScreenAllowListDomains' -RegistryValue $i -RegistryType 'STRING' -RegistryData $domain -outfileprefix $appName -Verbose
+            Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Edge\SmartScreenAllowListDomains' -RegistryValue $i -RegistryType 'STRING' -RegistryData $domain -Verbose
             $i++       
         }
     }
     if ($null -ne $PopupsAllowedForUrls -and $PopupsAllowedForUrls.Count -gt 0) {
-        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Edge\PopupsAllowedForUrls' -RegistryValue '*' -DeleteAllValues -outfileprefix $appName -Verbose
+        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Edge\PopupsAllowedForUrls' -RegistryValue '*' -DeleteAllValues -Verbose
         $i = 1
         ForEach ($url in $PopupsAllowedForUrls) {
-            Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Edge\PopupsAllowedForUrls' -RegistryValue $i -RegistryType 'STRING' -RegistryData $url -outfileprefix $appName -Verbose
+            Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Edge\PopupsAllowedForUrls' -RegistryValue $i -RegistryType 'STRING' -RegistryData $url -Verbose
             $i++
         }
     }
     if ($AllowDeveloperTools) {
         # https://learn.microsoft.com/en-us/deployedge/microsoft-edge-browser-policies/developertoolsavailability
-        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Edge' -RegistryValue 'DeveloperToolsAvailability' -RegistryType 'DWORD' -RegistryData 1 -outfileprefix $appName -Verbose
+        Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'Software\Policies\Microsoft\Edge' -RegistryValue 'DeveloperToolsAvailability' -RegistryType 'DWORD' -RegistryData 1 -Verbose
     }
     Invoke-LGPO -Verbose
     $gpupdate = Start-Process -FilePath 'gpupdate.exe' -ArgumentList '/force' -Wait -PassThru

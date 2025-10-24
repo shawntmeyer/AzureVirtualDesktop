@@ -1,3 +1,4 @@
+[uri]$LGPOUrl = 'https://download.microsoft.com/download/8/5/C/85C25433-A1B0-4FFA-9429-7E023E7DA8D8/LGPO.zip'
 #region Functions
 
 Function Get-InternetFile {
@@ -79,29 +80,38 @@ Function Get-InternetFile {
 Function Invoke-LGPO {
     [CmdletBinding()]
     Param (
-        [string]$InputDir = "$Script:TempDir\LGPO",
-        [string]$SearchTerm
+        [string]$InputDir = $Script:LGPOTempDir
     )
     Begin {
         [string]${CmdletName} = $PSCmdlet.MyInvocation.MyCommand.Name
     }
     Process {
-        Write-Log -Category Info -Message "${CmdletName}: Gathering Registry text files for LGPO from '$InputDir'"
-        If ($SearchTerm) {
-            $InputFiles = Get-ChildItem -Path $InputDir -Filter "$SearchTerm*.txt"
-        }
-        Else {
-            $InputFiles = Get-ChildItem -Path $InputDir -Filter '*.txt'
-        }
-        ForEach ($RegistryFile in $inputFiles) {
+        Write-Log -Message "${CmdletName}: Gathering Registry text files for LGPO from '$InputDir'"
+        $RegFiles = Get-ChildItem -Path $InputDir -Filter '*.txt'
+        ForEach ($RegistryFile in $RegFiles) {
             $TxtFilePath = $RegistryFile.FullName
             Write-Log -Message "${CmdletName}: Now applying settings from '$txtFilePath' to Local Group Policy via LGPO.exe."
             $lgporesult = Start-Process -FilePath 'lgpo.exe' -ArgumentList "/t `"$TxtFilePath`"" -Wait -PassThru
             Write-Log -Message "${CmdletName}: LGPO exitcode: '$($lgporesult.exitcode)'"
         }
+        Write-Log -Message "${CmdletName}: Gathering Security Templates files for LGPO from '$InputDir'"
+        $ConfigFile = Get-ChildItem -Path $InputDir -Filter '*.inf'
+        If ($ConfigFile) {
+            $ConfigFile = $ConfigFile.FullName
+            Write-Log -Message "${CmdletName}: Now applying security settings from '$ConfigFile' to Local Security Policy via LGPO.exe."
+            $lgporesult = Start-Process -FilePath 'lgpo.exe' -ArgumentList "/s `"$ConfigFile`"" -Wait -PassThru
+            Write-Log -Message "${CmdletName}: LGPO exitcode: '$($lgporesult.exitcode)'"
+        }
+        Write-Log -Message "${CmdletName}: Finding Audit CSV file for LGPO from '$InputDir'"
+        $AuditFile = Get-ChildItem -Path $InputDir -Filter '*.csv'
+        If ($AuditFile) {
+            $AuditFile = $AuditFile.FullName
+            Write-Log -Message "${CmdletName}: Now applying advanced audit settings from '$AuditFile' to Local policy via LGPO.exe."
+            $lgporesult = Start-Process -FilePath 'lgpo.exe' -ArgumentList "/ac `"$AuditFile`"" -Wait -PassThru
+            Write-Log -Message "${CmdletName}: LGPO exitcode: '$($lgporesult.exitcode)'"
+        }
     }
     End {
-        Write-Log -Message "Ending ${CmdletName}"
     }
 }
 
@@ -201,51 +211,53 @@ Function Update-LocalGPOTextFile {
         [switch]$Delete,
         [Parameter(Mandatory = $false, ParameterSetName = 'DeleteAllValues')]
         [switch]$DeleteAllValues,
-        [string]$OutputDir = "$Script:TempDir\LGPO",
-        [string]$Outfileprefix = $Script:Name
+        [string]$outputDir = $Script:LGPOTempDir
     )
-    
-    # Convert $RegistryType to UpperCase to prevent LGPO errors.
-    $ValueType = $RegistryType.ToUpper()
-    # Change String type to SZ for text file
-    If ($ValueType -eq 'STRING') { $ValueType = 'SZ' }
-    # Replace any incorrect registry entries for the format needed by text file.
-    $modified = $false
-    $SearchStrings = 'HKLM:\', 'HKCU:\', 'HKEY_CURRENT_USER:\', 'HKEY_LOCAL_MACHINE:\'
-    ForEach ($String in $SearchStrings) {
-        If ($RegistryKeyPath.StartsWith("$String") -and $modified -ne $true) {
-            $index = $String.Length
-            $RegistryKeyPath = $RegistryKeyPath.Substring($index, $RegistryKeyPath.Length - $index)
-            $modified = $true
-        }
+    Begin {
+        [string]${CmdletName} = $PSCmdlet.MyInvocation.MyCommand.Name
     }
-        
-    #Create the output file if needed.
-    $Outfile = "$OutputDir\$Outfileprefix-$Scope.txt"
-    If (-not (Test-Path -LiteralPath $Outfile)) {
-        If (-not (Test-Path -LiteralPath $OutputDir -PathType 'Container')) {
-            Try {
+    Process {
+        # Convert $RegistryType to UpperCase to prevent LGPO errors.
+        $ValueType = $RegistryType.ToUpper()
+        # Change String type to SZ for text file
+        If ($ValueType -eq 'STRING') { $ValueType = 'SZ' }
+        # Replace any incorrect registry entries for the format needed by text file.
+        $modified = $false
+        $SearchStrings = 'HKLM:\', 'HKCU:\', 'HKEY_CURRENT_USER:\', 'HKEY_LOCAL_MACHINE:\'
+        ForEach ($String in $SearchStrings) {
+            If ($RegistryKeyPath.StartsWith("$String") -and $modified -ne $true) {
+                $index = $String.Length
+                $RegistryKeyPath = $RegistryKeyPath.Substring($index, $RegistryKeyPath.Length - $index)
+                $modified = $true
+            }
+        }        
+        #Create the output file if needed.
+        $OutFile = Join-Path -Path $OutputDir -ChildPath "$Scope.txt"
+        If (-not (Test-Path -LiteralPath $Outfile)) {
+            If (-not (Test-Path -LiteralPath $OutputDir -PathType 'Container')) {
                 $null = New-Item -Path $OutputDir -Type 'Directory' -Force -ErrorAction 'Stop'
             }
-            Catch {}
+            $null = New-Item -Path $OutFile -ItemType File -ErrorAction Stop
         }
-        $null = New-Item -Path $outputdir -Name "$OutFilePrefix-$Scope.txt" -ItemType File -ErrorAction Stop
-    }
 
-    # Update file with information
-    Add-Content -Path $Outfile -Value $Scope
-    Add-Content -Path $Outfile -Value $RegistryKeyPath
-    Add-Content -Path $Outfile -Value $RegistryValue
-    If ($Delete) {
-        Add-Content -Path $Outfile -Value 'DELETE'
+        Write-Log -Message "${CmdletName}: Adding registry information to '$outfile' for LGPO.exe"
+        # Update file with information
+        Add-Content -Path $Outfile -Value $Scope
+        Add-Content -Path $Outfile -Value $RegistryKeyPath
+        Add-Content -Path $Outfile -Value $RegistryValue
+        If ($Delete) {
+            Add-Content -Path $Outfile -Value 'DELETE'
+        }
+        ElseIf ($DeleteAllValues) {
+            Add-Content -Path $Outfile -Value 'DELETEALLVALUES'
+        }
+        Else {
+            Add-Content -Path $Outfile -Value "$($ValueType):$RegistryData"
+        }
+        Add-Content -Path $Outfile -Value ""
     }
-    ElseIf ($DeleteAllValues) {
-        Add-Content -Path $Outfile -Value 'DELETEALLVALUES'
+    End {        
     }
-    Else {
-        Add-Content -Path $Outfile -Value "$($ValueType):$RegistryData"
-    }
-    Add-Content -Path $Outfile -Value ""   
 }
 
 Function Write-Log {
@@ -277,6 +289,8 @@ Function Write-Log {
 
 [string]$Script:Name = "Configure-DesktopWallpaper"
 [string]$Script:TempDir = Join-Path -Path "$env:SystemRoot\Temp" -ChildPath $Script:Name
+[string]$Script:LGPOTempDir = Join-Path -Path $Script:TempDir -ChildPath 'LGPO'
+If (-not(Test-Path -Path $Script:LGPOTempDir)) { New-Item -Path $Script:LGPOTempDir -ItemType Directory -Force | Out-Null }
 New-Log -Path (Join-Path -Path "$env:SystemRoot\Logs" -ChildPath 'Configuration')
 Write-Log -Category Info -Message "Starting '$PSCommandPath'."
 
@@ -301,7 +315,7 @@ If (-not(Test-Path -Path "$env:SystemRoot\System32\lgpo.exe")) {
     $LGPOZip = Get-ChildItem -Path $PSScriptRoot -Filter 'LGPO.zip' -Recurse | Select-Object -First 1
     If (-not($LGPOZip)) {
         Write-Log -Category Info -Message "Downloading LGPO tool."
-        $LGPOZip = Get-InternetFile -Url 'https://download.microsoft.com/download/8/5/C/85C25433-A1B0-4FFA-9429-7E023E7DA8D8/LGPO.zip' -OutputDirectory $Script:TempDir -Verbose
+        $LGPOZip = Get-InternetFile -Url $LGPOUrl -OutputDirectory $Script:TempDir -Verbose
     }    
     If ($LGPOZip) {
         Write-Log -Category Info -Message "Expanding '$LGPOZip' to '$Script:TempDir'."

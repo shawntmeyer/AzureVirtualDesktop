@@ -21,16 +21,18 @@ param (
     [string]$ApplicationsToSTIG = '["Adobe Acrobat Pro", "Adobe Acrobat Reader", "Google Chrome", "Mozilla Firefox"]',
     # Set to True if using Cloud only identity with fslogix so credentials can be saved to the local credential manager for storage account access.
     [string]$CloudOnly = 'True',
-    [string]$LGPOUrl = 'https://download.microsoft.com/download/8/5/C/85C25433-A1B0-4FFA-9429-7E023E7DA8D8/LGPO.zip',
+
     [string]$STIGsUrl = 'https://dl.dod.cyber.mil/wp-content/uploads/stigs/zip/U_STIG_GPO_Package_July_2025.zip'
 )
 #region Initialization
 $Script:Name = 'Apply-STIGs'
+[string]$LGPOUrl = 'https://download.microsoft.com/download/8/5/C/85C25433-A1B0-4FFA-9429-7E023E7DA8D8/LGPO.zip'
 $osCaption = (Get-WmiObject -Class Win32_OperatingSystem).caption
 If ($osCaption -match 'Windows 11') { $osVersion = 11 } Else { $osVersion = 10 }
-$Script:TempDir = Join-Path -Path "$env:SystemRoot\Temp" -ChildPath $Script:Name
-If (Test-Path -Path $Script:TempDir) { Remove-Item -Path $Script:TempDir -Recurse -ErrorAction SilentlyContinue }
-New-Item -Path $Script:TempDir -ItemType Directory -Force | Out-Null
+[string]$Script:TempDir = Join-Path -Path "$env:SystemRoot\Temp" -ChildPath $Script:Name
+[string]$Script:LGPOTempDir = Join-Path -Path $Script:TempDir -ChildPath 'LGPO'
+If (-not(Test-Path -Path $Script:LGPOTempDir)) { New-Item -Path $Script:LGPOTempDir -ItemType Directory -Force | Out-Null }
+
 If ($ApplicationsToSTIG -ne $null) { 
     [array]$ApplicationsToSTIG = $ApplicationsToSTIG.replace('\', '') | ConvertFrom-Json
 }
@@ -206,35 +208,34 @@ Function Get-InternetFile {
 Function Invoke-LGPO {
     [CmdletBinding()]
     Param (
-        [string]$InputDir = $Script:TempDir,
-        [string]$SearchTerm
+        [string]$InputDir = $Script:LGPOTempDir
     )
     Begin {
         [string]${CmdletName} = $PSCmdlet.MyInvocation.MyCommand.Name
     }
     Process {
         Write-Log -Message "${CmdletName}: Gathering Registry text files for LGPO from '$InputDir'"
-        Write-Log -Message "${CmdletName}: Gathering Security Templates files for LGPO from '$InputDir'"
-        [array]$RegistryFiles = @()
-        [array]$SecurityTemplates = @()
-        If ($SearchTerm) {
-            $RegistryFiles = Get-ChildItem -Path $InputDir -Filter "$SearchTerm*.txt"
-            $SecurityTemplates = Get-ChildItem -Path $InputDir -Filter "$SearchTerm*.inf"
-        }
-        Else {
-            $RegistryFiles = Get-ChildItem -Path $InputDir -Filter "*.txt"
-            $SecurityTemplates = Get-ChildItem -Path $InputDir -Filter '*.inf'
-        }
-        ForEach ($RegistryFile in $RegistryFiles) {
+        $RegFiles = Get-ChildItem -Path $InputDir -Filter '*.txt'
+        ForEach ($RegistryFile in $RegFiles) {
             $TxtFilePath = $RegistryFile.FullName
             Write-Log -Message "${CmdletName}: Now applying settings from '$txtFilePath' to Local Group Policy via LGPO.exe."
             $lgporesult = Start-Process -FilePath 'lgpo.exe' -ArgumentList "/t `"$TxtFilePath`"" -Wait -PassThru
             Write-Log -Message "${CmdletName}: LGPO exitcode: '$($lgporesult.exitcode)'"
         }
-        ForEach ($SecurityTemplate in $SecurityTemplates) {        
-            $SecurityTemplate = $SecurityTemplate.FullName
-            Write-Log -Message "${CmdletName}: Now applying security settings from '$SecurityTemplate' to Local Security Policy via LGPO.exe."
-            $lgporesult = Start-Process -FilePath 'lgpo.exe' -ArgumentList "/s `"$SecurityTemplate`"" -Wait -PassThru
+        Write-Log -Message "${CmdletName}: Gathering Security Templates files for LGPO from '$InputDir'"
+        $ConfigFile = Get-ChildItem -Path $InputDir -Filter '*.inf'
+        If ($ConfigFile) {
+            $ConfigFile = $ConfigFile.FullName
+            Write-Log -Message "${CmdletName}: Now applying security settings from '$ConfigFile' to Local Security Policy via LGPO.exe."
+            $lgporesult = Start-Process -FilePath 'lgpo.exe' -ArgumentList "/s `"$ConfigFile`"" -Wait -PassThru
+            Write-Log -Message "${CmdletName}: LGPO exitcode: '$($lgporesult.exitcode)'"
+        }
+        Write-Log -Message "${CmdletName}: Finding Audit CSV file for LGPO from '$InputDir'"
+        $AuditFile = Get-ChildItem -Path $InputDir -Filter '*.csv'
+        If ($AuditFile) {
+            $AuditFile = $AuditFile.FullName
+            Write-Log -Message "${CmdletName}: Now applying advanced audit settings from '$AuditFile' to Local policy via LGPO.exe."
+            $lgporesult = Start-Process -FilePath 'lgpo.exe' -ArgumentList "/ac `"$AuditFile`"" -Wait -PassThru
             Write-Log -Message "${CmdletName}: LGPO exitcode: '$($lgporesult.exitcode)'"
         }
     }
@@ -353,10 +354,6 @@ Function Update-LocalGPOTextFile {
         [Parameter(Mandatory = $true, ParameterSetName = 'Set')]
         [Parameter(Mandatory = $true, ParameterSetName = 'Delete')]
         [Parameter(Mandatory = $true, ParameterSetName = 'DeleteAllValues')]
-        [string]$OutFilePrefix,
-        [Parameter(Mandatory = $true, ParameterSetName = 'Set')]
-        [Parameter(Mandatory = $true, ParameterSetName = 'Delete')]
-        [Parameter(Mandatory = $true, ParameterSetName = 'DeleteAllValues')]
         [ValidateSet('Computer', 'User')]
         [string]$Scope,
         [Parameter(Mandatory = $true, ParameterSetName = 'Set')]
@@ -377,7 +374,7 @@ Function Update-LocalGPOTextFile {
         [switch]$Delete,
         [Parameter(Mandatory = $false, ParameterSetName = 'DeleteAllValues')]
         [switch]$DeleteAllValues,
-        [string]$outputDir = $Script:TempDir
+        [string]$outputDir = $Script:LGPOTempDir
     )
     Begin {
         [string]${CmdletName} = $PSCmdlet.MyInvocation.MyCommand.Name
@@ -398,15 +395,12 @@ Function Update-LocalGPOTextFile {
             }
         }        
         #Create the output file if needed.
-        $Outfile = "$OutputDir\$Outfileprefix-$Scope.txt"
+        $OutFile = Join-Path -Path $OutputDir -ChildPath "$Scope.txt"
         If (-not (Test-Path -LiteralPath $Outfile)) {
             If (-not (Test-Path -LiteralPath $OutputDir -PathType 'Container')) {
-                Try {
-                    $null = New-Item -Path $OutputDir -Type 'Directory' -Force -ErrorAction 'Stop'
-                }
-                Catch {}
+                $null = New-Item -Path $OutputDir -Type 'Directory' -Force -ErrorAction 'Stop'
             }
-            $null = New-Item -Path $outputdir -Name "$OutFilePrefix-$Scope.txt" -ItemType File -ErrorAction Stop
+            $null = New-Item -Path $OutFile -ItemType File -ErrorAction Stop
         }
 
         Write-Log -Message "${CmdletName}: Adding registry information to '$outfile' for LGPO.exe"
@@ -511,7 +505,6 @@ ForEach ($gpoFolder in $GPOFolders) {
 }
 
 Write-Log -Message "Applying AVD Exceptions"
-$OutputFilePrefix = 'AVD-Exceptions'
 $SecFileContent = @'
 [Unicode]
 Unicode=yes
@@ -532,17 +525,18 @@ If ($CloudOnly) {
 }
 
 # Applying AVD Exceptions
-$SecTemplate = Join-Path -Path $Script:TempDir -ChildPath "$OutputFilePrefix.inf"
+
+$SecTemplate = Join-Path -Path $Script:LGPOTempDir -ChildPath "AVD-Exceptions.inf"
 $SecFileContent | Out-File -FilePath $SecTemplate -Encoding unicode
 # Remove Setting that breaks AVD
-Update-LocalGPOTextFile -outfileprefix $OutputFilePrefix -Scope 'Computer' -RegistryKeyPath 'SOFTWARE\Policies\Microsoft\Cryptography\Configuration\SSL\00010002' -RegistryValue 'EccCurves' -Delete -Verbose
+Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'SOFTWARE\Policies\Microsoft\Cryptography\Configuration\SSL\00010002' -RegistryValue 'EccCurves' -Delete -Verbose
 # Remove Firewall Configuration that breaks stand-alone workstation Remote Desktop.
-Update-LocalGPOTextFile -outfileprefix $OutputFilePrefix -Scope 'Computer' -RegistryKeyPath 'SOFTWARE\Policies\Microsoft\WindowsFirewall\DomainProfile' -RegistryValue 'AllowLocalPolicyMerge' -Delete -Verbose
-Update-LocalGPOTextFile -outfileprefix $OutputFilePrefix -Scope 'Computer' -RegistryKeyPath 'SOFTWARE\Policies\Microsoft\WindowsFirewall\PrivateProfile' -RegistryValue 'AllowLocalPolicyMerge' -Delete -Verbose
-Update-LocalGPOTextFile -outfileprefix $OutputFilePrefix -Scope 'Computer' -RegistryKeyPath 'SOFTWARE\Policies\Microsoft\WindowsFirewall\PublicProfile' -RegistryValue 'AllowLocalPolicyMerge' -Delete -Verbose
+Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'SOFTWARE\Policies\Microsoft\WindowsFirewall\DomainProfile' -RegistryValue 'AllowLocalPolicyMerge' -Delete -Verbose
+Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'SOFTWARE\Policies\Microsoft\WindowsFirewall\PrivateProfile' -RegistryValue 'AllowLocalPolicyMerge' -Delete -Verbose
+Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'SOFTWARE\Policies\Microsoft\WindowsFirewall\PublicProfile' -RegistryValue 'AllowLocalPolicyMerge' -Delete -Verbose
 # Remove Edge Proxy Configuration
-Update-LocalGPOTextFile -outfileprefix $OutputFilePrefix -Scope 'Computer' -RegistryKeyPath 'SOFTWARE\Policies\Microsoft\Edge' -RegistryValue 'ProxySettings' -Delete -Verbose
-Invoke-LGPO -SearchTerm $OutputFilePrefix
+Update-LocalGPOTextFile -Scope 'Computer' -RegistryKeyPath 'SOFTWARE\Policies\Microsoft\Edge' -RegistryValue 'ProxySettings' -Delete -Verbose
+Invoke-LGPO
 $GPUpdate = Start-Process -FilePath 'gpupdate.exe' -ArgumentList '/force' -Wait -PassThru
 Write-Log -Message "'gpupdate.exe' exited with code [$($GPUpdate.ExitCode)])."
 
