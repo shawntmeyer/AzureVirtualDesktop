@@ -252,7 +252,7 @@
         "GitHubFileNamePattern": "*64-bit.exe",
         "DestinationFileName": "Git-64-bit.exe",
         "DestinationFolders": [
-            "Git"
+            "GitForWindows"
         ]
     }
 }
